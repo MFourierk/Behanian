@@ -1,0 +1,123 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Inventaire - Cuisine{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="header-glam cuisine-watermark">
+        <div class="header-content">
+            <h2>Inventaire Physique</h2>
+            <p class="mb-0 opacity-75">Saisie des quantités réelles</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+    
+    <div class="action-bar">
+        <a href="{% url 'cuisine:etat_stock' %}" class="btn-back">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+    </div>
+
+    <!-- Formulaire Inventaire -->
+    <div class="card shadow-sm border-0 rounded-lg">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-clipboard-check mr-2"></i> Feuille d'inventaire</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="post" id="inventaireForm">
+                {% csrf_token %}
+                
+                <div class="form-group row mb-4 align-items-end">
+                    <div class="col-sm-4">
+                        <label class="font-weight-bold">Date de l'inventaire</label>
+                        <input type="date" name="date_inventaire" class="form-control" value="{{ today }}" required>
+                    </div>
+                    <div class="col-sm-8">
+                        <label class="font-weight-bold">Filtrer par produit</label>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Taper pour filtrer la liste..." onkeyup="filterTable()">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 40%;">Article</th>
+                                <th style="width: 15%;">Unité</th>
+                                <th style="width: 20%;" class="text-center">Stock Théorique</th>
+                                <th style="width: 25%;" class="text-center bg-warning-soft">Stock Physique (Réel)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in articles %}
+                            <tr>
+                                <td class="align-middle font-weight-bold">{{ article.nom }}</td>
+                                <td class="align-middle text-muted">{{ article.get_unite_display }}</td>
+                                <td class="align-middle text-center">
+                                    <span class="badge badge-info p-2">{{ article.quantite_stock|floatformat:2 }}</span>
+                                </td>
+                                <td class="p-2 bg-light">
+                                    <input type="number" step="0.001" name="stock_physique_{{ article.id }}" 
+                                           class="form-control text-center font-weight-bold border-primary" 
+                                           placeholder="{{ article.quantite_stock|floatformat:2 }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="button" class="btn btn-secondary mr-2" onclick="window.history.back()">Annuler</button>
+                    <button type="submit" class="btn btn-success btn-lg px-5 shadow">
+                        <i class="fas fa-save mr-2"></i> Valider l'Inventaire
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterTable() {
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.querySelector(".table");
+        tr = table.getElementsByTagName("tr");
+        
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    // Focus sur le premier champ input au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input[type="number"]');
+        if(inputs.length > 0) inputs[0].focus();
+        
+        // Navigation avec Entrée
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (index + 1 < inputs.length) {
+                        inputs[index + 1].focus();
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

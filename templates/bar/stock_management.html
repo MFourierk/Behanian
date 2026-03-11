@@ -1,0 +1,189 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<style>
+    .glamour-tabs-container {
+        background: #fff;
+        padding: 1rem;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.07);
+        margin-top: 1.5rem;
+    }
+    .tabs-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        overflow-x: auto;
+        white-space: nowrap;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .tabs-row::-webkit-scrollbar {
+        display: none;
+    }
+    .tabs-row:first-child {
+        margin-bottom: 10px;
+    }
+    .glamour-tab {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-weight: 600;
+        color: #6c757d;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+    .glamour-tab i {
+        margin-right: 8px;
+        opacity: 0.8;
+    }
+    .glamour-tab.active {
+        background-color: #8e44ad;
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
+    }
+    .glamour-tab.active i {
+        opacity: 1;
+    }
+    .glamour-tab:not(.active):hover {
+        background-color: #f8f9fa;
+        color: #8e44ad;
+    }
+
+    .action-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: #fff;
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.07);
+        margin-top: 2rem;
+    }
+    .search-bar {
+        position: relative;
+        flex-grow: 1;
+    }
+    .search-bar i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    .search-bar input {
+        width: 100%;
+        padding: 12px 15px 12px 40px;
+        border-radius: 10px;
+        border: 1px solid #f0f0f0;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+    .search-bar input:focus {
+        outline: none;
+        background: #fff;
+        border-color: #8e44ad;
+        box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+    }
+
+    .filters {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    .btn-filter, .btn-action-glam {
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
+        background: #fff;
+        font-size: 0.95rem;
+    }
+    .btn-filter {
+        color: #495057;
+    }
+    .btn-filter i.fa-filter {
+        margin-right: 8px;
+    }
+    .btn-filter::after {
+        content: '\f078';
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        margin-left: 8px;
+        font-size: 0.8em;
+    }
+    .btn-filter:hover {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    .btn-action-glam {
+        background: #8e44ad;
+        background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        color: #fff;
+        border: none;
+        box-shadow: 0 4px 15px rgba(142, 68, 173, 0.2);
+    }
+    .btn-action-glam:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(142, 68, 173, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="header-glam bar-watermark">
+        <div class="header-content">
+            <h2 class="mb-0"><i class="fas fa-boxes mr-2"></i> Gestion du Stock (Bar)</h2>
+            <p class="mb-0 opacity-75">Gérez les boissons, les bons de commande, les inventaires et les casses.</p>
+        </div>
+        <div class="header-clock">
+            <span class="time"></span>
+            <span class="date"></span>
+        </div>
+    </div>
+    <a href="{% url 'bar:dashboard' %}" class="back-link"><i class="fas fa-chevron-left"></i></a>
+
+    <div class="glamour-tabs-container">
+        <div class="tabs-row">
+            <a href="#" class="glamour-tab active"><i class="fas fa-wine-bottle"></i> Articles</a>
+            <a href="#" class="glamour-tab"><i class="fas fa-shopping-cart"></i> Bons de commande</a>
+            <a href="#" class="glamour-tab"><i class="fas fa-dolly"></i> Bons de réception</a>
+            <a href="#" class="glamour-tab"><i class="fas fa-exchange-alt"></i> Entrées / Sorties</a>
+        </div>
+        <div class="tabs-row justify-content-center">
+            <a href="#" class="glamour-tab"><i class="fas fa-clipboard-list"></i> Inventaire</a>
+            <a href="#" class="glamour-tab"><i class="fas fa-exclamation-triangle"></i> Gestion des casses</a>
+        </div>
+    </div>
+
+    <div class="action-header">
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Rechercher un article...">
+        </div>
+        <div class="filters">
+            <a href="#" class="btn-filter"><i class="fas fa-filter"></i> Toutes catégories</a>
+            <a href="#" class="btn-action-glam"><i class="fas fa-plus"></i> Nouvel article</a>
+        </div>
+    </div>
+
+    <!-- Placeholder for content like a table -->
+    <div class="card" style="margin-top: 2rem;">
+        <div class="card-body">
+            <p class="text-center text-muted py-5">Le contenu de la section 'Articles' s'affichera ici.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

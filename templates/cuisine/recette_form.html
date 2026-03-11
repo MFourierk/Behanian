@@ -1,0 +1,264 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"New Recipe Card" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ingredient-form-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+    .ingredient-form-row > div:first-child {
+        flex-grow: 1;
+    }
+    .ingredient-form-row .form-control {
+        min-width: 120px;
+    }
+    .remove-form-row {
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">{{ page_title }}</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                {{ form.media }}
+                {{ formset.media }}
+
+                <h4>Recipe Details</h4>
+                <div class="row">
+                    <div class="col-md-4 mb-3">{{ form.plat.label_tag }} {{ form.plat }}</div>
+                    <div class="col-md-4 mb-3">{{ form.categorie.label_tag }} {{ form.categorie }}</div>
+                    <div class="col-md-4 mb-3">{{ form.number_of_servings.label_tag }} {{ form.number_of_servings }}</div>
+                    <div class="col-md-3 mb-3">{{ form.desired_margin.label_tag }} {{ form.desired_margin }}</div>
+                    <div class="col-md-3 mb-3">{{ form.preparation_time.label_tag }} {{ form.preparation_time }}</div>
+                </div>
+                <div class="mb-3">
+                    {{ form.instructions.label_tag }}
+                    {{ form.instructions }}
+                </div>
+
+                <hr>
+
+                <h4>Ingredients</h4>
+                {{ formset.management_form }}
+                <div id="ingredient-forms-container">
+                    {% for form in formset %}
+                        <div class="ingredient-form-row" id="form-row-{{ forloop.counter0 }}">
+                            {{ form.id }}
+                            <div class="w-100">{{ form.ingredient }}</div>
+                            <div style="width: 150px;">{{ form.quantity }}</div>
+                            <div style="width: 150px;">{{ form.prix_vente }}</div>
+                            {% if form.instance.pk and formset.can_delete %}
+                                <div class="form-check" style="width: 120px;">
+                                    {{ form.DELETE }}{{ form.DELETE.label_tag }}
+                                </div>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" data-form-id="{{ forloop.counter0 }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div id="empty-form-template" style="display: none;">
+                    <div class="ingredient-form-row" id="form-row-__prefix__">
+                        {{ formset.empty_form.id }}
+                        <div class="w-100">{{ formset.empty_form.ingredient }}</div>
+                        <div style="width: 150px;">{{ formset.empty_form.quantite }}</div>
+                        <div style="width: 150px;">{{ formset.empty_form.prix_vente }}</div>
+                        {% if formset.can_delete %}
+                            <div class="form-check" style="width: 120px;">
+                                {{ formset.empty_form.DELETE }}{{ formset.empty_form.DELETE.label_tag }}
+                            </div>
+                        {% endif %}
+                         <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" data-form-id="__prefix__">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" id="add-ingredient-button" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Add an ingredient
+                </button>
+
+                <!-- Section Financière -->
+                <div class="financial-summary-grid mt-4">
+                    <div class="form-group">
+                        <label for="cout-revient">Coût de revient total</label>
+                        <input type="text" id="cout-revient" class="form-control text-danger" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="cout-plat">Coût du plat</label>
+                        <input type="text" id="cout-plat" class="form-control text-primary" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="marge-valeur">Marge (FCFA)</label>
+                        <input type="text" id="marge-valeur" class="form-control marge-valeur" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="marge-pourcentage">Marge (%)</label>
+                        <input type="text" id="marge-pourcentage" class="form-control marge-pourcentage" readonly>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success">Enregistrer la fiche technique</button>
+                    <a href="{% url 'cuisine:recette_list' %}" class="btn btn-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('ingredient-forms-container');
+    const addButton = document.getElementById('add-ingredient-button');
+    const template = document.getElementById('empty-form-template').innerHTML;
+    const totalFormsInput = document.querySelector('#id_{{ formset.prefix }}-TOTAL_FORMS');
+    const formsetPrefix = '{{ formset.prefix }}';
+    let formNum = parseInt(totalFormsInput.value);
+
+    // Initial calculation for existing form
+    updateTotalCost();
+
+    addButton.addEventListener('click', function() {
+        const newFormHtml = template.replace(/__prefix__/g, formNum);
+        container.insertAdjacentHTML('beforeend', newFormHtml);
+        formNum++;
+        totalFormsInput.value = formNum;
+    });
+
+    container.addEventListener('click', function(e) {
+        const removeButton = e.target.closest('.remove-form-row');
+        if (removeButton) {
+            e.preventDefault();
+            const formRow = removeButton.closest('.ingredient-form-row');
+            const deleteCheckbox = formRow.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteCheckbox) {
+                deleteCheckbox.checked = true;
+                formRow.style.display = 'none';
+            } else {
+                formRow.remove();
+            }
+            updateTotalCost();
+        }
+    });
+
+    container.addEventListener('change', function(event) {
+        const target = event.target;
+        if (target.matches('select[name$="-ingredient"]')) {
+            const row = target.closest('.ingredient-form-row');
+            const ingredientId = target.value;
+            const prixVenteInput = row.querySelector('input[name$="-prix_vente"]');
+
+            if (ingredientId) {
+                fetch(`/cuisine/api/ingredient-details/${ingredientId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (prixVenteInput) {
+                            prixVenteInput.value = data.prix_vente || '0.00';
+                        }
+                        updateTotalCost();
+                    })
+                    .catch(error => console.error('Error fetching ingredient details:', error));
+            } else {
+                if (prixVenteInput) {
+                    prixVenteInput.value = '0.00';
+                }
+                updateTotalCost();
+            }
+        } else if (target.matches('input[name$="-quantite"]')) {
+            updateTotalCost();
+        }
+    });
+
+    function updateTotalCost() {
+        const rows = container.querySelectorAll('.ingredient-form-row');
+        const visibleIngredientIds = [];
+
+        rows.forEach(row => {
+            const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (row.style.display !== 'none' && (!deleteCheckbox || !deleteCheckbox.checked)) {
+                const ingredientSelect = row.querySelector('select[name$="-ingredient"]');
+                if (ingredientSelect && ingredientSelect.value) {
+                    visibleIngredientIds.push(ingredientSelect.value);
+                }
+            }
+        });
+
+        if (visibleIngredientIds.length === 0) {
+            document.getElementById('cout-revient').value = '0.00';
+            updateFinancialSummary();
+            return;
+        }
+
+        const params = new URLSearchParams();
+        visibleIngredientIds.forEach(id => params.append('ids[]', id));
+
+        fetch(`/cuisine/api/ingredients-details/?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                let totalCost = 0;
+                rows.forEach(row => {
+                    const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                     if (row.style.display !== 'none' && (!deleteCheckbox || !deleteCheckbox.checked)) {
+                        const ingredientSelect = row.querySelector('select[name$="-ingredient"]');
+                        const quantiteInput = row.querySelector('input[name$="-quantite"]');
+                        
+                        if (ingredientSelect && ingredientSelect.value && quantiteInput && quantiteInput.value) {
+                            const ingredientId = ingredientSelect.value;
+                            const quantite = parseFloat(quantiteInput.value) || 0;
+                            const ingredientData = data.ingredients[ingredientId];
+                            if (ingredientData) {
+                                totalCost += (parseFloat(ingredientData.prix_moyen) || 0) * quantite;
+                            }
+                        }
+                    }
+                });
+                document.getElementById('cout-revient').value = totalCost.toFixed(2);
+                updateFinancialSummary();
+            })
+            .catch(error => console.error('Error fetching bulk ingredient details:', error));
+    }
+
+    function updateFinancialSummary() {
+        const coutRevientTotal = parseFloat(document.getElementById('cout-revient').value) || 0;
+        const nombrePortions = parseFloat(document.getElementById('id_nombre_portions').value) || 1;
+        const margeSouhaitee = parseFloat(document.getElementById('id_marge_souhaitee').value) || 0;
+
+        const coutPlat = (nombrePortions > 0) ? (coutRevientTotal / nombrePortions) : 0;
+        document.getElementById('cout-plat').value = coutPlat.toFixed(2) + ' FCFA';
+        
+        const prixVentePlat = coutPlat * (1 + (margeSouhaitee / 100));
+        const margeValeur = prixVentePlat - coutPlat;
+        const margePourcentage = (coutPlat > 0) ? (margeValeur / coutPlat) * 100 : 0;
+
+        document.getElementById('marge-valeur').value = margeValeur.toFixed(2) + ' FCFA';
+        document.getElementById('marge-pourcentage').value = margePourcentage.toFixed(2) + ' %';
+    }
+
+    document.getElementById('id_nombre_portions').addEventListener('input', updateFinancialSummary);
+    document.getElementById('id_marge_souhaitee').addEventListener('input', updateFinancialSummary);
+
+});
+</script>
+{% endblock %}

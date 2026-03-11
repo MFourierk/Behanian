@@ -1,0 +1,393 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulaire d'Enregistrement - Hôtel BEHANIAN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        h1, h2, h3, h4, .logo, .subtitle, .form-title, .section-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .no-print-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: -20px -20px 20px -20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-print {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .btn-back {
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.08;
+        }
+        
+        .watermark img {
+            width: 600px;
+            max-width: 80vw;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+        }
+        
+        .logo {
+            margin-bottom: 10px;
+        }
+        
+        .logo img {
+            height: 80px;
+            object-fit: contain;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .form-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 30px 0;
+            text-transform: uppercase;
+            background: #333;
+            color: white;
+            padding: 10px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        .col {
+            flex: 1;
+            padding-right: 20px;
+            min-width: 200px;
+        }
+        
+        .field {
+            margin-bottom: 10px;
+        }
+        
+        .label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .value {
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 1px dotted #999;
+            padding-bottom: 2px;
+            min-height: 20px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            font-size: 11px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+        }
+        
+        .signatures {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 40%;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+
+    <div class="no-print-bar no-print">
+        <a href="{% url 'hotel:index' %}?tab=checkinout" class="btn-back">
+            &laquo; Retour au Dashboard
+        </a>
+        <div>
+            <span style="margin-right: 15px; font-weight: bold;">{{ reservation.client.nom_complet }}</span>
+            <button onclick="window.print()" class="btn-print">
+                Imprimer
+            </button>
+        </div>
+    </div>
+
+    <div class="watermark">
+        <img src="{% static 'images/Logo.png' %}" alt="Watermark">
+    </div>
+    
+    <div class="header">
+        <div class="logo">
+            <img src="{% static 'images/Logo.png' %}" alt="Hôtel BEHANIAN">
+        </div>
+        <div class="subtitle">COMPLEXE HOTELIER BEHANIAN</div>
+        <div style="font-size: 12px; margin-top: 10px;">Yopougon Beago à 2000m du Palais de justice</div>
+        <div style="font-size: 12px;">Tel: 07 58 29 11 10 / 01 43 09 76 16 | Email: complexebehanian@gmail.com</div>
+    </div>
+    
+    <div class="form-title">Fiche d'Enregistrement / Registration Form</div>
+    
+    <div class="section">
+        <div class="section-title">1. Informations Client / Guest Information</div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Nom / Surname</span>
+                    <div class="value">{{ reservation.client.nom }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Prénom / First Name</span>
+                    <div class="value">{{ reservation.client.prenom }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Date de Naissance / Date of Birth</span>
+                    <div class="value">{{ reservation.client.date_naissance|date:"d/m/Y"|default:"-" }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Nationalité / Nationality</span>
+                    <div class="value">{{ reservation.client.nationalite|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Adresse / Address</span>
+                    <div class="value">{{ reservation.client.adresse|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Ville & Pays / City & Country</span>
+                    <div class="value">
+                        {% if reservation.client.ville %}{{ reservation.client.ville }}{% endif %}
+                        {% if reservation.client.pays %} - {{ reservation.client.pays }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Téléphone / Phone</span>
+                    <div class="value">{{ reservation.client.telephone }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Type Pièce / ID Type</span>
+                    <div class="value">{{ reservation.client.piece_identite }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Numéro Pièce / ID Number</span>
+                    <div class="value">{{ reservation.client.numero_piece }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">2. Détails Séjour / Stay Details</div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Numéro Chambre / Room Number</span>
+                    <div class="value" style="font-size: 18px; font-weight: bold;">{{ reservation.chambre.numero }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Type Chambre / Room Type</span>
+                    <div class="value">{{ reservation.chambre.get_type_chambre_display }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Arrivée / Check-in</span>
+                    <div class="value">{{ reservation.date_arrivee|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Départ / Check-out</span>
+                    <div class="value">{{ reservation.date_depart|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">3. Informations Voyage / Travel Information</div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Adultes / Adults</span>
+                    <div class="value">{{ reservation.nombre_adultes }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Enfants / Children</span>
+                    <div class="value">{{ reservation.nombre_enfants }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Venant de / Arriving From</span>
+                    <div class="value">{{ reservation.provenance|default:"-" }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Allant à / Next Destination</span>
+                    <div class="value">{{ reservation.destination|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">4. Informations Paiement / Payment Information</div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Tarif Nuitée / Nightly Rate</span>
+                    <div class="value">{{ reservation.chambre.prix_nuit|floatformat:0 }} FCFA</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Coût Total / Total Cost</span>
+                    <div class="value">{{ reservation.prix_total|floatformat:0 }} FCFA</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="field">
+                    <span class="label">Mode de Paiement / Payment Mode</span>
+                    <div class="value">{{ reservation.get_mode_paiement_display }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="field">
+                    <span class="label">Avance Payée / Advance Paid</span>
+                    <div class="value">{{ reservation.avance|floatformat:0 }} FCFA</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="font-size: 10px; margin: 30px 0; text-align: justify; color: #555;">
+        <strong>Règlement intérieur :</strong> Le client accepte de respecter le règlement intérieur de l'hôtel. L'heure de départ est fixée à 12h00. Tout départ tardif sera facturé. L'hôtel décline toute responsabilité pour les objets de valeur non déposés au coffre. / <strong>Hotel Policy:</strong> The guest agrees to respect the hotel rules. Check-out time is 12:00 PM. Late check-out will be charged. The hotel is not responsible for valuables left in the room.
+    </div>
+    
+    <div class="signatures">
+        <div class="signature-box">
+            Signature du Client / Guest Signature
+        </div>
+        <div class="signature-box">
+            Réceptionniste / Receptionist<br>
+            <span style="font-size: 10px; color: #999;">{{ reservation.creee_par.username }}</span>
+        </div>
+    </div>
+
+    <div class="footer">
+        COMPLEXE HOTELIER BEHANIAN<br>
+        Yopougon Beago à 2000m du Palais de justice - Tél: 07 58 29 11 10 / 01 43 09 76 16<br>
+        Email: complexebehanian@gmail.com - Hôtel - Restaurant - Bar - Piscine
+    </div>
+
+</body>
+</html>

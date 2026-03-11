@@ -1,0 +1,90 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% include 'bar/_gestion_nav.html' %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 font-weight-bold text-dark">Bons de Commande</h4>
+            <a href="#" class="btn btn-action primary">
+                <i class="fas fa-plus"></i> Créer un Bon
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col">Numéro</th>
+                            <th scope="col">Fournisseur</th>
+                            <th scope="col">Date Commande</th>
+                            <th scope="col">Statut</th>
+                            <th scope="col" class="text-right">Total</th>
+                            <th scope="col" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bon in bons_de_commande %}
+                        <tr>
+                            <td><strong>{{ bon.numero }}</strong></td>
+                            <td>{{ bon.fournisseur.nom|default:"N/A" }}</td>
+                            <td>{{ bon.date_commande|date:"d M Y" }}</td>
+                            <td>
+                                <span class="badge badge-{{ bon.statut }}">{{ bon.get_statut_display }}</span>
+                            </td>
+                            <td class="text-right font-weight-bold">{{ bon.total|floatformat:0|intcomma }} FCFA</td>
+                            <td class="text-center">
+                                <a href="#" class="btn btn-sm btn-outline-primary">Voir</a>
+                                <a href="#" class="btn btn-sm btn-outline-secondary">Modifier</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <p class="text-muted">Aucun bon de commande pour le moment.</p>
+                                <a href="#" class="btn btn-primary">Créer le premier bon de commande</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.header-glam {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    padding: 30px;
+    border-radius: 20px;
+    color: white;
+    margin-bottom: 20px;
+}
+.btn-glam-action {
+    background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+.btn-glam-action:hover {
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.badge-brouillon { background-color: #7f8c8d; color: white; }
+.badge-envoye { background-color: #3498db; color: white; }
+.badge-recu { background-color: #2ecc71; color: white; }
+.badge-annule { background-color: #e74c3c; color: white; }
+</style>
+{% endblock %}

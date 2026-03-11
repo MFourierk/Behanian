@@ -1,0 +1,161 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Gestion des Fournisseurs - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>Gestion des Fournisseurs</h2>
+        <p class="mb-0 opacity-75">Ajoutez, modifiez et consultez vos fournisseurs</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="row">
+    <!-- Formulaire d'ajout/modification -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 id="form-title">Ajouter un Fournisseur</h5>
+                <form id="fournisseur-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" id="form_type" value="add_fournisseur">
+                    <input type="hidden" name="fournisseur_id" id="fournisseur_id">
+
+                    <div class="form-group">
+                        <label for="nom">Nom du fournisseur *</label>
+                        <input type="text" name="nom" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="personne_contact">Personne à contacter</label>
+                        <input type="text" name="personne_contact" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telephone">Téléphone</label>
+                        <input type="text" name="telephone" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adresse">Adresse</label>
+                        <textarea name="adresse" rows="3" class="form-control"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        <button type="button" id="cancel-edit" class="btn btn-secondary" style="display: none;">Annuler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des fournisseurs -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Contact</th>
+                                <th>Téléphone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in fournisseurs %}
+                            <tr>
+                                <td>{{ f.nom }}</td>
+                                <td>{{ f.personne_contact|default:"-" }}</td>
+                                <td>{{ f.telephone|default:"-" }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-info edit-btn"
+                                            data-id="{{ f.id }}"
+                                            data-nom="{{ f.nom }}"
+                                            data-contact="{{ f.personne_contact }}"
+                                            data-tel="{{ f.telephone }}"
+                                            data-email="{{ f.email }}"
+                                            data-adresse="{{ f.adresse }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Aucun fournisseur enregistré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-group { margin-bottom: 1.5rem; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('fournisseur-form');
+    const formTitle = document.getElementById('form-title');
+    const formType = document.getElementById('form_type');
+    const fournisseurId = document.getElementById('fournisseur_id');
+    const cancelBtn = document.getElementById('cancel-edit');
+
+    const nomInput = form.querySelector('[name="nom"]');
+    const contactInput = form.querySelector('[name="personne_contact"]');
+    const telInput = form.querySelector('[name="telephone"]');
+    const emailInput = form.querySelector('[name="email"]');
+    const adresseInput = form.querySelector('[name="adresse"]');
+
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remplir le formulaire avec les données
+            formTitle.textContent = 'Modifier le Fournisseur';
+            formType.value = 'edit_fournisseur';
+            fournisseurId.value = this.dataset.id;
+            
+            nomInput.value = this.dataset.nom;
+            contactInput.value = this.dataset.contact;
+            telInput.value = this.dataset.tel;
+            emailInput.value = this.dataset.email;
+            adresseInput.value = this.dataset.adresse;
+
+            cancelBtn.style.display = 'inline-block';
+            window.scrollTo(0, 0); // Remonter en haut de la page
+        });
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        // Réinitialiser le formulaire
+        formTitle.textContent = 'Ajouter un Fournisseur';
+        formType.value = 'add_fournisseur';
+        fournisseurId.value = '';
+        form.reset();
+        cancelBtn.style.display = 'none';
+    });
+});
+</script>
+
+{% endblock %}

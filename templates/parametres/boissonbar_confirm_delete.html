@@ -1,0 +1,61 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Supprimer Boisson - BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .header-glam {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); /* Red for danger */
+        padding: 30px;
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(192, 57, 43, 0.2);
+    }
+    
+    .confirm-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        padding: 40px;
+        text-align: center;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+</style>
+
+<div class="header-glam">
+    <div class="header-content">
+        <h2>Supprimer une Boisson</h2>
+        <p class="mb-0 opacity-75">Confirmation de suppression</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'parametres:boissonbar_list' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="confirm-card">
+    <i class="fas fa-exclamation-circle text-danger fa-4x mb-3"></i>
+    <h3 class="mb-3">Êtes-vous sûr ?</h3>
+    <p class="text-muted mb-4">
+        Vous êtes sur le point de supprimer la boisson <strong>"{{ object.nom }}"</strong>.<br>
+        Cette action est irréversible.
+    </p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'parametres:boissonbar_list' %}" class="btn btn-light mr-2" style="border-radius: 50px; padding: 10px 25px;">Annuler</a>
+        <button type="submit" class="btn btn-danger" style="border-radius: 50px; padding: 10px 25px;">
+            <i class="fas fa-trash mr-2"></i> Confirmer la suppression
+        </button>
+    </form>
+</div>
+{% endblock %}

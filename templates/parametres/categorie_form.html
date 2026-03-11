@@ -1,0 +1,141 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {% if object %}Modifier{% else %}Ajouter{% endif %} une Catégorie
+{% endblock %}
+
+{% block content %}
+<style>
+    .form-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        overflow: hidden;
+        background: white;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        padding: 30px;
+        color: white;
+        text-align: center;
+    }
+
+    .form-header h2 {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.6rem;
+    }
+
+    .form-body {
+        padding: 40px;
+    }
+
+    .modern-form-group {
+        margin-bottom: 25px;
+    }
+
+    .modern-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #7f8c8d;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: block;
+    }
+
+    .modern-control {
+        border: 2px solid #ecf0f1;
+        border-radius: 12px;
+        padding: 12px 15px;
+        font-size: 1rem;
+        transition: all 0.3s;
+        width: 100%;
+        color: #2c3e50;
+    }
+
+    .modern-control:focus {
+        border-color: #e67e22;
+        box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.1);
+        outline: none;
+    }
+
+    .modern-textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .btn-submit-glam {
+        background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 12px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        transition: all 0.3s;
+        width: 100%;
+        box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+    }
+
+    .btn-submit-glam:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4);
+        color: white;
+    }
+
+    .btn-cancel {
+        color: #95a5a6;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 20px;
+        transition: color 0.3s;
+    }
+
+    .btn-cancel:hover {
+        color: #7f8c8d;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="form-card">
+                <div class="form-header">
+                    <h2>{% if object %}Modifier la Catégorie{% else %}Nouvelle Catégorie{% endif %}</h2>
+                </div>
+                <div class="form-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="modern-form-group">
+                            <label class="modern-label" for="{{ form.nom.id_for_label }}">Nom de la Catégorie</label>
+                            {% render_field form.nom class="modern-control" placeholder="Ex: Entrées Chaudes" %}
+                            {% if form.nom.errors %}
+                                <div class="text-danger small mt-1">{{ form.nom.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="modern-form-group">
+                            <label class="modern-label" for="{{ form.description.id_for_label }}">Description</label>
+                            {% render_field form.description class="modern-control modern-textarea" placeholder="Description courte..." rows="4" %}
+                        </div>
+
+                        <button type="submit" class="btn-submit-glam">
+                            {% if object %}Enregistrer{% else %}Créer la Catégorie{% endif %}
+                        </button>
+                        
+                        <div class="text-center">
+                            <a href="{% url 'parametres:categorie_list' %}" class="btn-cancel">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

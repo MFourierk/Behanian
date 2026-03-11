@@ -1,0 +1,214 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Facture {{ facture.numero }}{% endblock %}
+
+{% block content %}
+<div class="header-glam facturation-watermark">
+    <div class="header-content">
+        <h2>Facture {{ facture.numero }}</h2>
+        <p class="mb-0 opacity-75">Détail de la facture</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'facturation:facture_list' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    {% if facture.statut != 'cancelled' %}
+        <a href="{% url 'facturation:avoir_create' facture.pk %}" class="btn-add-glam" style="color: #f39c12; border-color: #f39c12;">
+            <i class="fas fa-undo mr-2"></i> Créer un avoir
+        </a>
+    {% endif %}
+    <a href="{% url 'facturation:facture_pdf' facture.pk %}" class="btn-add-glam" target="_blank">
+        <i class="fas fa-print mr-2"></i> Imprimer / PDF
+    </a>
+</div>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
+        <a href="{% url 'facturation:facture_create' %}" class="tab">Nouvelle Facture</a>
+        <a href="{% url 'facturation:facture_list' %}" class="tab active">Factures</a>
+        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
+        <a href="{% url 'facturation:avoir_list' %}" class="tab">Avoirs</a>
+        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+    </div>
+</div>
+
+<div class="content-section">
+    <div class="mb-3 d-flex justify-content-between">
+        <a href="{% url 'facturation:facture_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+        <div>
+            {% if facture.statut != 'cancelled' %}
+                <a href="{% url 'facturation:avoir_create' facture.pk %}" class="btn btn-warning">Créer un avoir</a>
+            {% endif %}
+            <a href="{% url 'facturation:facture_pdf' facture.pk %}" class="btn btn-primary" target="_blank">
+                <i class="fas fa-print"></i> Imprimer / PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-5">
+            <!-- En-tête facture -->
+            <div class="row mb-4">
+                <div class="col-6">
+                    <h2 class="text-primary">FACTURE</h2>
+                    <h5>{{ facture.numero }}</h5>
+                    <p class="mb-0">Date: {{ facture.date_facturation|date:"d/m/Y" }}</p>
+                    <span class="badge badge-{% if facture.statut == 'paid' %}success{% elif facture.statut == 'sent' %}primary{% else %}secondary{% endif %} mt-2">
+                        {{ facture.get_statut_display }}
+                    </span>
+                </div>
+                <div class="col-6 text-right">
+                    <h4>{{ facture.client.nom }}</h4>
+                    {% if facture.client.adresse %}<p class="mb-0">{{ facture.client.adresse|linebreaksbr }}</p>{% endif %}
+                    {% if facture.client.telephone %}<p class="mb-0">Tél: {{ facture.client.telephone }}</p>{% endif %}
+                    {% if facture.client.email %}<p class="mb-0">{{ facture.client.email }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Lignes -->
+            <div class="table-responsive mb-4">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-center">Quantité</th>
+                            <th class="text-right">Prix Unitaire</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% regroup lignes by article.service.nom as service_list %}
+                        {% for service in service_list %}
+                            <tr class="table-secondary">
+                                <td colspan="4"><strong>{{ service.grouper }}</strong></td>
+                            </tr>
+                            {% for ligne in service.list %}
+                                <tr>
+                                    <td>
+                                        <span class="pl-3">{{ ligne.article.nom }}</span>
+                                        {% if ligne.description %}
+                                            <br><small class="text-muted pl-3">{{ ligne.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">{{ ligne.quantite|floatformat:2 }}</td>
+                                    <td class="text-right">{{ ligne.prix_unitaire|floatformat:2 }}</td>
+                                    <td class="text-right">{{ ligne.montant_ht|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Aucune ligne</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totaux -->
+            <div class="row">
+                <div class="col-md-6">
+                    {% if facture.notes %}
+                        <div class="alert alert-light border">
+                            <strong>Notes:</strong><br>
+                            {{ facture.notes|linebreaks }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td class="text-right"><strong>Sous-total:</strong></td>
+                            <td class="text-right">{{ facture.sous_total|floatformat:2 }} FCFA</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right"><strong>TVA ({{ facture.taux_tva|floatformat:2 }}%):</strong></td>
+                            <td class="text-right">{{ facture.montant_tva|floatformat:2 }} FCFA</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td class="text-right"><h4>Total TTC:</h4></td>
+                            <td class="text-right"><h4 class="text-primary">{{ facture.total|floatformat:0 }} FCFA</h4></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-5 text-center text-muted">
+                <p>Merci de votre confiance !</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Local clock script removed to use global clock
+</script>
+
+<style>
+.tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+}
+
+.tab {
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid transparent;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: -1px;
+    transition: all 0.3s ease;
+}
+
+.tab:hover {
+    color: #0056b3;
+    text-decoration: none;
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.tab.active {
+    color: #0056b3;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+    font-size: 85%;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.badge-primary {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Tableau de bord - BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* CARDS STATS */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 15px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        right: -20px;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        opacity: 0.1;
+    }
+
+    .stat-card.green::before {
+        background: #27ae60;
+    }
+
+    .stat-card.orange::before {
+        background: #f39c12;
+    }
+
+    .stat-card.blue::before {
+        background: #3498db;
+    }
+
+    .stat-card.red::before {
+        background: #e74c3c;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+
+    .stat-card.green .stat-icon {
+        background: rgba(39, 174, 96, 0.1);
+    }
+
+    .stat-card.orange .stat-icon {
+        background: rgba(243, 156, 18, 0.1);
+    }
+
+    .stat-card.blue .stat-icon {
+        background: rgba(52, 152, 219, 0.1);
+    }
+
+    .stat-card.red .stat-icon {
+        background: rgba(231, 76, 60, 0.1);
+    }
+
+    .stat-label {
+        position:absolute; top: 15px; left: 80px;
+        font-size: 13px;
+        color: #95a5a6;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .stat-value {
+        position:absolute; top: 35px; left: 80px;
+        font-size: 32px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
+
+    .stat-detail {
+        font-size: 12px;
+        color: #95a5a6;
+    }
+
+    .stat-variation {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #27ae60;
+        font-weight: 600;
+    }
+
+    /* CHARTS SECTION */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .chart-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+
+    .chart-placeholder {
+        height: 250px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #95a5a6;
+        font-size: 14px;
+    }
+
+    /* SERVICES GRID */
+    .services-section {
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+    }
+
+    .services-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .service-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .service-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin: 0 auto 12px;
+    }
+
+    .service-card.hotel .service-icon {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    }
+
+    .service-card.restaurant .service-icon {
+        background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+    }
+
+    .service-card.cuisine .service-icon {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+    }
+
+    .service-card.cave .service-icon {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+    }
+
+    .service-card.piscine .service-icon {
+        background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+    }
+
+    .service-card.events .service-icon {
+        background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
+    }
+
+    .service-card.facturation .service-icon {
+        background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
+    }
+
+    .service-card.caisse .service-icon {
+        background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    }
+
+    .service-card.params .service-icon {
+        background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    }
+
+    .service-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    /* BOTTOM SECTION */
+    .bottom-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .orders-card, .alerts-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .alert-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #fff3cd;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+
+    .alert-icon {
+        font-size: 20px;
+    }
+
+    .alert-text {
+        font-size: 14px;
+        color: #856404;
+    }
+
+    @media (max-width: 1400px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .services-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .services-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .bottom-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam dashboard-watermark">
+    <div class="header-content">
+        <h2>Tableau de bord</h2>
+        <p class="mb-0 opacity-75">Vue d'ensemble de l'activité</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<!-- STATS CARDS -->
+<div class="stats-grid">
+    <div class="stat-card green">
+        <div class="stat-icon">💵</div>
+        <div class="stat-label">Chiffre d'affaires du jour</div>
+        <div class="stat-value">{{ chiffre_affaires }} FCFA</div>
+        <div class="stat-variation">↗ {{ variation }} vs hier</div>
+    </div>
+
+    <div class="stat-card orange">
+        <div class="stat-icon">🛏️</div>
+        <div class="stat-label">Taux d'occupation</div>
+        <div class="stat-value">{{ taux_occupation }}%</div>
+        <div class="stat-detail">{{ chambres_occupees }}/{{ total_chambres }} chambres</div>
+    </div>
+
+    <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">Réservations actives</div>
+        <div class="stat-value">{{ reservations_actives }}</div>
+        <div class="stat-detail"></div>
+    </div>
+
+    <div class="stat-card red">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-label">Alertes stock</div>
+        <div class="stat-value">{{ alertes_stock }}</div>
+        <div class="stat-detail">Articles en rupture</div>
+    </div>
+</div>
+
+<!-- CHARTS -->
+<div class="charts-grid">
+    <div class="chart-card">
+        <div class="chart-title">Évolution des revenus</div>
+        <div class="chart-placeholder">
+            Graphique des revenus hebdomadaires
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <div class="chart-title">Répartition par service</div>
+        <div class="chart-placeholder">
+            Graphique circulaire
+        </div>
+    </div>
+</div>
+
+<!-- SERVICES -->
+<div class="services-section">
+    <div class="services-grid">
+        
+        <div class="service-card hotel" onclick="window.location.href='{% url 'hotel:index' %}'">
+            <div class="service-icon">🏨</div>
+            <div class="service-name">Hôtel</div>
+        </div>
+
+        <div class="service-card restaurant" onclick="window.location.href='{% url 'restaurant:index' %}'">
+            <div class="service-icon">🍽️</div>
+            <div class="service-name">Restaurant</div>
+        </div>
+
+        <div class="service-card cuisine" onclick="window.location.href='{% url 'cuisine:index' %}'">
+           <div class="service-icon">👨‍🍳</div>
+           <div class="service-name">Cuisine</div>
+        </div>
+
+        <div class="service-card cave" onclick="window.location.href='{% url 'bar:dashboard' %}'">
+            <div class="service-icon">🍷</div>
+            <div class="service-name">Cave</div>
+        </div>
+
+        <div class="service-card piscine" onclick="window.location.href='{% url 'piscine:index' %}'">
+           <div class="service-icon">🏊</div>
+           <div class="service-name">Piscine</div>
+       </div>
+
+        <div class="service-card events" onclick="window.location.href='{% url 'espaces_evenementiels:index' %}'">
+          <div class="service-icon">📅</div>
+          <div class="service-name">Événements</div>
+       </div>
+       
+       <div class="service-card facturation" onclick="window.location.href='{% url 'facturation:index' %}'">
+          <div class="service-icon">💳</div>
+          <div class="service-name">Facturation</div>
+       </div>
+
+       <div class="service-card caisse" onclick="window.location.href='{% url 'caisse:index' %}'">
+          <div class="service-icon">💰</div>
+          <div class="service-name">Caisse</div>
+       </div>
+
+       <div class="service-card params" onclick="window.location.href='{% url 'parametres:parametres_index' %}'">
+          <div class="service-icon">⚙️</div>
+          <div class="service-name">Paramètres</div>
+       </div>
+    </div>
+</div>
+
+<!-- BOTTOM SECTION -->
+<div class="bottom-grid">
+    <div class="orders-card">
+        <div class="chart-title">Dernières commandes</div>
+        <div class="chart-placeholder" style="height: 150px;">
+            Aucune commande récente
+        </div>
+    </div>
+
+    <div class="alerts-card">
+        <div class="chart-title">⚠️ Alertes de stock</div>
+        <div class="alert-item">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-text">Article en rupture de stock</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dashboard scripts
+</script>
+{% endblock %}

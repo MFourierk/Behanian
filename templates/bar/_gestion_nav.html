@@ -1,0 +1,87 @@
+<div class="gestion-nav-bar">
+    <a href="{% url 'bar:boisson_list' %}" class="nav-tab {% if active_nav == 'articles' %}active{% endif %}">
+        <i class="fas fa-wine-bottle"></i>
+        <span>Articles</span>
+    </a>
+    <a href="{% url 'bar:bon_commande_list' %}" class="nav-tab {% if active_nav == 'commandes' %}active{% endif %}">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <span>Commandes</span>
+    </a>
+    <a href="#" class="nav-tab disabled">
+        <i class="fas fa-clipboard-list"></i>
+        <span>Inventaires</span>
+        <span class="badge-bientot">Bientôt</span>
+    </a>
+    <a href="#" class="nav-tab disabled">
+        <i class="fas fa-truck"></i>
+        <span>Fournisseurs</span>
+        <span class="badge-bientot">Bientôt</span>
+    </a>
+    <a href="#" class="nav-tab disabled">
+        <i class="fas fa-map-marker-alt"></i>
+        <span>Emplacements</span>
+        <span class="badge-bientot">Bientôt</span>
+    </a>
+    <a href="#" class="nav-tab disabled">
+        <i class="fas fa-box"></i>
+        <span>Unités</span>
+        <span class="badge-bientot">Bientôt</span>
+    </a>
+</div>
+
+<style>
+.gestion-nav-bar {
+    display: flex;
+    gap: 10px;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+}
+.nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #5a6c7d;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+.nav-tab i {
+    font-size: 22px;
+    margin-bottom: 8px;
+}
+.nav-tab:hover {
+    background-color: #f8f9fa;
+    color: #34495e;
+}
+.nav-tab.active {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    color: #d4af37; /* Gold */
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(44, 62, 80, 0.2);
+}
+.nav-tab.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f5f6fa;
+}
+.badge-bientot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 9px;
+    background-color: #7f8c8d;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+</style>

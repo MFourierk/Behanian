@@ -1,0 +1,63 @@
+{% load static %}
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Réimpression du Ticket {{ ticket.numero }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h4>Aperçu de la réimpression</h4>
+                <p>Ce ticket sera marqué comme DUPLICATA et la date d'impression sera mise à jour.</p>
+            </div>
+
+            <div class="border p-4 bg-light position-relative">
+                <!-- Mention DUPLICATA -->
+                <div class="position-absolute" style="top: 10px; right: 10px; transform: rotate(-15deg);">
+                    <div class="text-danger font-weight-bold" style="font-size: 24px; opacity: 0.7;">DUPLICATA</div>
+                </div>
+
+                <div class="text-center mb-3">
+                    <img src="{% static 'images/Logo.png' %}" alt="Logo" style="width: 60px; margin-bottom: 10px;">
+                    <h3>TICKET {{ ticket.numero }}</h3>
+                    <p class="mb-1"><strong>COMPLEXE HOTELIER BEHANIAN</strong></p>
+                    <p class="mb-1"><strong>Module :</strong> {{ ticket.get_module_display }}</p>
+                    <p class="mb-1"><strong>Date :</strong> {{ ticket.date_creation|date:"d/m/Y H:i" }}</p>
+                    {% if ticket.client %}
+                    <p class="mb-1"><strong>Client :</strong> {{ ticket.client.nom_complet }}</p>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <h5>Contenu :</h5>
+                    <pre class="border p-2 bg-white">{{ ticket.contenu }}</pre>
+                </div>
+
+                <hr>
+
+                <div class="text-right">
+                    <h4>Total : {{ ticket.montant_total|floatformat:2 }} €</h4>
+                </div>
+
+                <hr>
+
+                <div class="text-center text-muted">
+                    <p class="mb-0">DUPLICATA - Réimprimé le {% now "d/m/Y H:i" %}</p>
+                    <p class="mb-0">Module : {{ ticket.get_module_display }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-right">
+            <a href="{% url 'facturation:ticket_detail' ticket.pk %}" class="btn btn-secondary">Annuler</a>
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Confirmer la réimpression</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

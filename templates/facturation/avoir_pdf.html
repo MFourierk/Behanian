@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Avoir {{ avoir.numero }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+        }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 15cm;
+            opacity: 0.1;
+            z-index: -1000;
+            text-align: center;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+        }
+        .logo-placeholder {
+            width: 150px;
+            text-align: center;
+        }
+        .company-details {
+            text-align: right;
+        }
+        .company-name {
+            color: #d35400; /* Matching Hotel theme */
+            font-weight: bold;
+            font-size: 20px;
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            text-transform: uppercase;
+        }
+        .invoice-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .invoice-title h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .invoice-details {
+            margin-bottom: 40px;
+        }
+        .invoice-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .invoice-details td {
+            padding: 5px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table th {
+            background-color: #f2f2f2;
+        }
+        .totals {
+            text-align: right;
+        }
+        .totals table {
+            width: 50%;
+            margin-left: auto;
+            border-collapse: collapse;
+        }
+        .totals td {
+            padding: 8px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">
+        <img src="file://{{ logo_path }}" alt="" style="width: 100%; height: auto;">
+    </div>
+    <div class="header-container">
+        <div class="logo-placeholder">
+            <img src="file://{{ logo_path }}" alt="Logo" style="max-width: 100%; height: auto;">
+        </div>
+        <div class="company-details">
+            <div class="company-name">COMPLEXE HOTELIER BEHANIAN</div>
+            Yopougon Beago à 2000m du Palais de justice<br>
+            Tel: 07 58 29 11 10 / 01 43 09 76 16<br>
+            Email: complexebehanian@gmail.com<br>
+        </div>
+    </div>
+
+    <div class="invoice-title">
+        <h1>AVOIR</h1>
+    </div>
+
+    <div class="invoice-details">
+        <table>
+            <tr>
+                <td>
+                    <strong>Client :</strong><br>
+                    {{ avoir.client.nom_complet }}<br>
+                    {% if avoir.client.adresse %}{{ avoir.client.adresse }}<br>{% endif %}
+                    {% if avoir.client.telephone %}Tel: {{ avoir.client.telephone }}<br>{% endif %}
+                    {% if avoir.client.email %}Email: {{ avoir.client.email }}<br>{% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <strong>Avoir N° :</strong> {{ avoir.numero }}<br>
+                    <strong>Date :</strong> {{ avoir.date_avoir|date:"d/m/Y" }}<br>
+                    {% if avoir.facture_origine %}
+                    <strong>Facture Ref :</strong> {{ avoir.facture_origine.numero }}
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Quantité</th>
+                <th style="text-align: right;">Prix Unitaire</th>
+                <th style="text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% regroup lignes by article.service.nom as service_list %}
+            {% for service in service_list %}
+                <tr>
+                    <td colspan="4" style="background-color: #e6e6e6;"><strong>{{ service.grouper }}</strong></td>
+                </tr>
+                {% for ligne in service.list %}
+                <tr>
+                    <td>{{ ligne.article.nom }} {% if ligne.description %}- {{ ligne.description }}{% endif %}</td>
+                    <td style="text-align: right;">{{ ligne.quantite|floatformat:0 }}</td>
+                    <td style="text-align: right;">{{ ligne.prix_unitaire|floatformat:"-2" }} F CFA</td>
+                    <td style="text-align: right;">{{ ligne.montant_ht|floatformat:"-2" }} F CFA</td>
+                </tr>
+                {% endfor %}
+            {% empty %}
+                <tr>
+                    <td colspan="4">Aucune ligne</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <table>
+            <tr>
+                <td><strong>Total HT :</strong></td>
+                <td style="text-align: right;">{{ avoir.sous_total|floatformat:"-2" }} F CFA</td>
+            </tr>
+            <tr>
+                <td><strong>TVA ({{ avoir.taux_tva|floatformat:"-2" }}%) :</strong></td>
+                <td style="text-align: right;">{{ avoir.montant_tva|floatformat:"-2" }} F CFA</td>
+            </tr>
+            <tr>
+                <td><strong>Total TTC :</strong></td>
+                <td style="text-align: right;"><strong>{{ avoir.total|floatformat:"-2" }} F CFA</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Ce document est un avoir et peut être utilisé pour un remboursement ou un crédit.</p>
+        <p>Merci de votre confiance.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,188 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{{ page_title }} - Cuisine{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reception-container {
+        background-color: #f7f9fc;
+        padding: 2rem;
+    }
+    .reception-header-card {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        margin-bottom: 2rem;
+    }
+    .reception-header-card .header-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .reception-header-card .header-item label {
+        font-size: 0.8rem;
+        color: #888;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    .reception-header-card .header-item span {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #333;
+    }
+    .badge-etat {
+        font-size: 0.9rem;
+        padding: 0.5em 0.8em;
+    }
+
+    .add-item-form, .item-list-card {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .item-list-card {
+        margin-top: 2rem;
+    }
+    .table thead th {
+        background-color: #f1f3f6;
+        border-bottom: none;
+        font-weight: 600;
+    }
+    .table td, .table th {
+        vertical-align: middle;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .total-footer {
+        margin-top: 1.5rem;
+        text-align: right;
+    }
+    .total-footer h4 {
+        font-weight: 700;
+        color: #3a7bd5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>{{ page_title }}</h2>
+        <p class="mb-0 opacity-75">Ajoutez et validez les articles reçus</p>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:bon_reception_list' %}" class="btn-back" title="Retour à la liste"><i class="fas fa-arrow-left"></i></a>
+    <a href="{% url 'cuisine:bon_reception_print' bon.id %}" class="btn-print" title="Imprimer le bon" target="_blank"><i class="fas fa-print"></i> Imprimer</a>
+</div>
+
+<div class="container-fluid mt-4">
+    <!-- Résumé du Bon -->
+    <div class="reception-header-card">
+        <div class="row align-items-center">
+            <div class="col-md-3 header-item">
+                <label>Fournisseur</label>
+                <span><i class="fas fa-truck mr-2"></i>{{ bon.fournisseur.nom|default:"Non spécifié" }}</span>
+            </div>
+            <div class="col-md-3 header-item">
+                <label>N° Document</label>
+                <span><i class="fas fa-file-alt mr-2"></i>{{ bon.numero_document|default:"--" }}</span>
+            </div>
+            <div class="col-md-3 header-item">
+                <label>Date de Réception</label>
+                <span><i class="fas fa-calendar-alt mr-2"></i>{{ bon.date_reception|date:"d/m/Y" }}</span>
+            </div>
+            <div class="col-md-3 text-right">
+                <span class="badge badge-{{ bon.etat }} badge-pill badge-etat">{{ bon.get_etat_display }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if bon.etat == 'en_cours' %}
+    <!-- Formulaire d'ajout de ligne -->
+    <div class="add-item-form">
+        <h5 class="mb-3">Ajouter un article</h5>
+        <form method="post" class="row align-items-end">
+            {% csrf_token %}
+            <div class="form-group col-md-5">
+                <label for="article">Article</label>
+                <select name="article" id="article" class="form-control" required>
+                    {% for article in articles %}
+                    <option value="{{ article.id }}">{{ article.nom }} ({{ article.unite }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-3">
+                <label for="quantite">Quantité Reçue</label>
+                <input type="number" step="0.01" name="quantite" id="quantite" class="form-control" required placeholder="Ex: 10.5">
+            </div>
+            <div class="form-group col-md-3">
+                <label for="prix_achat">Prix d'Achat Unitaire (FCFA)</label>
+                <input type="number" step="0.01" name="prix_achat" id="prix_achat" class="form-control" required placeholder="Ex: 1500">
+            </div>
+            <div class="form-group col-md-1 text-right">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i></button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Lignes du Bon -->
+    <div class="item-list-card">
+        <h5 class="mb-3">Articles sur ce Bon</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th class="text-right">Quantité</th>
+                        <th class="text-right">Prix U. (FCFA)</th>
+                        <th class="text-right">Total (FCFA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in bon.lignes.all %}
+                    <tr>
+                        <td>{{ ligne.article.nom }}</td>
+                        <td class="text-right">{{ ligne.quantite|floatformat:2 }} {{ ligne.article.unite }}</td>
+                        <td class="text-right">{{ ligne.prix_achat_unitaire|floatformat:2 }}</td>
+                        <td class="text-right font-weight-bold">{{ ligne.total_ligne|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-4">Aucun article ajouté pour le moment.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if bon.lignes.all %}
+        <div class="total-footer">
+            <h4>Total Général : {{ bon.total_bon|floatformat:2 }} FCFA</h4>
+        </div>
+        {% endif %}
+
+        {% if bon.etat == 'en_cours' and bon.lignes.all %}
+        <div class="text-center mt-4">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="valider_bon" class="btn btn-glam-primary btn-lg">
+                    Valider la Réception et Mettre en Stock <i class="fas fa-check-circle ml-2"></i>
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Petite amélioration pour l'UX: on peut ajouter select2 pour la recherche d'articles si la liste est longue
+// $(document).ready(function() {
+//     $('#article').select2();
+// });
+</script>
+{% endblock %}

@@ -1,0 +1,295 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section-card {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 25px rgba(0,0,0,0.07);
+        margin-bottom: 2rem;
+    }
+    .table-lignes thead th {
+        background-color: #e9ecef;
+    }
+    .table-lignes tfoot td {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    #grand-total {
+        color: #007bff;
+    }
+    .btn-delete-row {
+        color: #dc3545;
+        cursor: pointer;
+    }
+    .btn-delete-row:hover {
+        color: #a71d2a;
+    }
+    .btn-edit-row {
+        color: #007bff;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+    .btn-edit-row:hover {
+        color: #0056b3;
+    }
+    .btn-glam-primary {
+        background-image: linear-gradient(to right, #3a7bd5 0%, #3a6073  51%, #3a7bd5  100%);
+        padding: 15px 45px;
+        text-align: center;
+        text-transform: uppercase;
+        transition: 0.5s;
+        background-size: 200% auto;
+        color: white;            
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        border-radius: 50px;
+        display: inline-block;
+        border: none;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    .btn-glam-primary:hover {
+        background-position: right center; /* change the direction of the change here */
+        color: #fff;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>{{ page_title }}</h2>
+        <p class="mb-0 opacity-75">Saisie unifiée de la réception et des articles.</p>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:bon_reception_list' %}" class="btn-back" title="Retour à la liste"><i class="fas fa-arrow-left"></i></a>
+</div>
+
+<div class="container-fluid mt-4">
+    <form method="post" id="reception-form">
+        {% csrf_token %}
+        <input type="hidden" name="lignes_reception" id="lignes-reception-json">
+
+        <!-- Section 1: Informations Générales -->
+        <div class="form-section-card">
+            <h5 class="mb-4 border-bottom pb-2">Informations sur la Livraison</h5>
+            <div class="row">
+                <div class="form-group col-md-4">
+                    <label for="fournisseur">Fournisseur</label>
+                    <select name="fournisseur" id="fournisseur" class="form-control">
+                        <option value="">---------</option>
+                        {% for f in fournisseurs %}<option value="{{ f.id }}">{{ f.nom }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="numero_document">N° Facture / Bon de Livraison</label>
+                    <input type="text" name="numero_document" id="numero_document" class="form-control">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="date_reception">Date de Réception</label>
+                    <input type="date" name="date_reception" id="date_reception" class="form-control" value="{{ "now"|date:"Y-m-d" }}" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Ajout d'Articles -->
+        <div class="form-section-card">
+            <h5 class="mb-4 border-bottom pb-2">Ajouter un Article</h5>
+            <div class="row align-items-end">
+        <div class="form-group col-md-4">
+            <label for="ligne-article">Article</label>
+            <select id="ligne-article" class="form-control">
+                {% for article in articles %}
+                <option value="{{ article.id }}" data-nom="{{ article.nom }}" data-unite="{{ article.get_unite_display }}">{{ article.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="ligne-quantite">Quantité</label>
+            <input type="number" id="ligne-quantite" class="form-control" placeholder="Ex: 10.5" step="0.01">
+        </div>
+        <div class="form-group col-md-3">
+            <label for="ligne-prix">Prix d'Achat U. (FCFA)</label>
+            <input type="number" id="ligne-prix" class="form-control" placeholder="Ex: 1500" step="0.01">
+        </div>
+        <div class="form-group col-md-2 text-right">
+            <button type="button" id="btn-add-ligne" class="btn btn-primary btn-block">
+                <i class="fas fa-plus mr-1"></i> <span>Ajouter</span>
+            </button>
+        </div>
+    </div>
+        </div>
+
+        <!-- Section 3: Lignes de Réception -->
+        <div class="form-section-card">
+            <h5 class="mb-3">Articles à Réceptionner</h5>
+            <div class="table-responsive">
+                <table class="table table-lignes table-hover">
+                    <thead>
+                        <tr>
+                            <th>Article</th>
+                            <th class="text-right">Quantité</th>
+                            <th class="text-right">Prix U.</th>
+                            <th class="text-right">Total Ligne</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-lignes">
+                        <!-- Les lignes seront injectées ici par JS -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-right">Total Général</td>
+                            <td id="grand-total" class="text-right">0.00 FCFA</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 4: Validation -->
+        <div class="text-center mb-5">
+            <button type="submit" class="btn btn-glam-primary btn-lg"><i class="fas fa-check-circle mr-2"></i> Valider et Mettre en Stock</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const receptionForm = document.getElementById('reception-form');
+    const btnAddLigne = document.getElementById('btn-add-ligne');
+    const tableBody = document.getElementById('table-body-lignes');
+    const hiddenInputJSON = document.getElementById('lignes-reception-json');
+    const grandTotalEl = document.getElementById('grand-total');
+    const articleSelect = document.getElementById('ligne-article');
+    const quantiteInput = document.getElementById('ligne-quantite');
+    const prixInput = document.getElementById('ligne-prix');
+
+    let lignes = [];
+    let editIndex = null; // Index de la ligne en cours de modification
+
+    function renderTable() {
+        tableBody.innerHTML = '';
+        let grandTotal = 0;
+
+        if (lignes.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Aucun article ajouté.</td></tr>';
+        } else {
+            lignes.forEach((ligne, index) => {
+                const totalLigne = parseFloat(ligne.quantite) * parseFloat(ligne.prix_achat);
+                grandTotal += totalLigne;
+                const row = `
+                    <tr data-index="${index}">
+                        <td>${ligne.article_nom}</td>
+                        <td class="text-right">${parseFloat(ligne.quantite).toFixed(2)} ${ligne.article_unite}</td>
+                        <td class="text-right">${parseFloat(ligne.prix_achat).toFixed(2)}</td>
+                        <td class="text-right">${totalLigne.toFixed(2)}</td>
+                        <td class="text-center">
+                            <i class="fas fa-edit btn-edit-row" title="Modifier"></i>
+                            <i class="fas fa-trash-alt btn-delete-row" title="Supprimer"></i>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        grandTotalEl.textContent = `${grandTotal.toFixed(2)} FCFA`;
+        hiddenInputJSON.value = JSON.stringify(lignes);
+    }
+
+    function resetForm() {
+        articleSelect.value = articleSelect.options[0].value;
+        quantiteInput.value = '';
+        prixInput.value = '';
+        editIndex = null;
+        
+        const btnSpan = btnAddLigne.querySelector('span');
+        const btnIcon = btnAddLigne.querySelector('i');
+        btnSpan.textContent = 'Ajouter';
+        btnIcon.classList.remove('fa-save');
+        btnIcon.classList.add('fa-plus');
+        btnAddLigne.classList.remove('btn-success');
+        btnAddLigne.classList.add('btn-primary');
+        articleSelect.focus();
+    }
+
+    btnAddLigne.addEventListener('click', function() {
+        const selectedOption = articleSelect.options[articleSelect.selectedIndex];
+        const quantite = quantiteInput.value;
+        const prix = prixInput.value;
+
+        if (!quantite || parseFloat(quantite) <= 0 || !prix || parseFloat(prix) < 0) {
+            alert('Veuillez saisir une quantité et un prix valides.');
+            return;
+        }
+
+        const nouvelleLigne = {
+            article_id: selectedOption.value,
+            article_nom: selectedOption.dataset.nom,
+            article_unite: selectedOption.dataset.unite,
+            quantite: quantite,
+            prix_achat: prix
+        };
+
+        if (editIndex !== null) {
+            // Mode mise à jour
+            lignes[editIndex] = nouvelleLigne;
+        } else {
+            // Mode ajout
+            lignes.push(nouvelleLigne);
+        }
+
+        renderTable();
+        resetForm();
+    });
+
+    tableBody.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('btn-delete-row')) {
+            const rowIndex = parseInt(e.target.closest('tr').dataset.index);
+            lignes.splice(rowIndex, 1);
+            renderTable();
+            resetForm(); // Réinitialiser si on supprime pendant une édition
+        }
+
+        if (e.target && e.target.classList.contains('btn-edit-row')) {
+            const rowIndex = parseInt(e.target.closest('tr').dataset.index);
+            const ligneAmodifier = lignes[rowIndex];
+            
+            articleSelect.value = ligneAmodifier.article_id;
+            quantiteInput.value = ligneAmodifier.quantite;
+            prixInput.value = ligneAmodifier.prix_achat;
+            
+            editIndex = rowIndex;
+
+            const btnSpan = btnAddLigne.querySelector('span');
+            const btnIcon = btnAddLigne.querySelector('i');
+            btnSpan.textContent = 'Mettre à jour';
+            btnIcon.classList.remove('fa-plus');
+            btnIcon.classList.add('fa-save');
+            btnAddLigne.classList.remove('btn-primary');
+            btnAddLigne.classList.add('btn-success');
+        }
+    });
+
+    receptionForm.addEventListener('submit', function(e) {
+        if (lignes.length === 0) {
+            e.preventDefault();
+            alert('Vous ne pouvez pas valider un bon de réception vide. Veuillez ajouter au moins un article.');
+        }
+    });
+
+    // Initial render
+    renderTable();
+});
+</script>
+{% endblock %}

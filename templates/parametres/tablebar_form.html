@@ -1,0 +1,128 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Modifier Table Bar{% else %}Nouvelle Table Bar{% endif %} - BEHANIAN
+{% endblock %}
+
+{% block content %}
+<style>
+    .header-glam {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        padding: 30px;
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(142, 68, 173, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .header-glam::after {
+        content: '🍷';
+        position: absolute;
+        right: -20px;
+        bottom: -40px;
+        font-size: 150px;
+        opacity: 0.15;
+        transform: rotate(20deg);
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .header-content { position: relative; z-index: 1; }
+    
+    .form-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        padding: 30px;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 12px 15px;
+        border: 1px solid #e0e0e0;
+        height: auto;
+    }
+    
+    .form-control:focus {
+        border-color: #9b59b6;
+        box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+        transition: all 0.3s;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4);
+    }
+</style>
+
+<div class="header-glam">
+    <div class="header-content">
+        <h2>{% if form.instance.pk %}Modifier Table Bar{% else %}Nouvelle Table Bar{% endif %}</h2>
+        <p class="mb-0 opacity-75">Configuration des tables du bar</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'parametres:tablebar_list' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="form-card">
+            <form method="post">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="font-weight-bold">Numéro de Table</label>
+                    <input type="text" name="numero" class="form-control" value="{{ form.numero.value|default:'' }}" required placeholder="Ex: B1, T4, Comptoir...">
+                    {% if form.numero.errors %}<small class="text-danger">{{ form.numero.errors.0 }}</small>{% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label class="font-weight-bold">Capacité (personnes)</label>
+                    <input type="number" name="capacite" class="form-control" value="{{ form.capacite.value|default:'4' }}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="font-weight-bold">Statut Actuel</label>
+                    <select name="statut" class="form-control">
+                        {% for value, text in form.fields.statut.choices %}
+                            <option value="{{ value }}" {% if form.statut.value == value %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'parametres:tablebar_list' %}" class="btn btn-light mr-2" style="border-radius: 50px; padding: 12px 25px;">Annuler</a>
+                    <button type="submit" class="btn-submit">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

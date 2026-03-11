@@ -1,0 +1,61 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% include 'bar/_gestion_nav.html' %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 font-weight-bold text-dark">Gestion des Articles</h4>
+            <a href="#" class="btn btn-action primary">
+                <i class="fas fa-plus"></i> Ajouter un Article
+            </a>
+        </div>
+        <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Article</th>
+                                    <th>Catégorie</th>
+                                    <th>P.A.</th>
+                                    <th>P.V.</th>
+                                    <th class="text-center">Stock</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for boisson in boissons %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ boisson.nom }}</strong><br>
+                                        <small class="text-muted">{{ boisson.appellation|default:"" }} {{ boisson.millesime|default:"" }} - {{ boisson.contenance|default:"" }}</small>
+                                    </td>
+                                    <td>{{ boisson.categorie.nom }}</td>
+                                    <td class="text-nowrap">{{ boisson.prix_achat|floatformat:0|intcomma }} F</td>
+                                    <td class="text-nowrap">{{ boisson.prix_vente|floatformat:0|intcomma }} F</td>
+                                    <td class="text-center font-weight-bold">{{ boisson.quantite_stock }}</td>
+                                    <td class="text-center">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">Modifier</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <p class="text-muted">Aucun article dans la cave pour le moment.</p>
+                                        <a href="#" class="btn btn-primary">Créer le premier article</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

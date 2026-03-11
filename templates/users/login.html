@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Connexion - BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #1a4bd3; /* Deep Blue Background matching screenshot */
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .login-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .logo-img {
+        max-width: 150px; /* Increased from 100px */
+        height: auto;
+        margin-bottom: 20px; /* Increased margin */
+    }
+
+    .brand-header {
+        background-color: #d49a00; /* Gold/Orange color */
+        color: white;
+        padding: 15px 0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        font-size: 24px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .subtitle-1 {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+
+    .subtitle-2 {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        text-align: left;
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box; /* Important for padding */
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        border-color: #1a4bd3;
+        outline: none;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        background-color: #1a4bd3; /* Blue matching background */
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin-top: 10px;
+    }
+
+    .btn-login:hover {
+        background-color: #153aa6;
+    }
+
+    .footer-text {
+        margin-top: 30px;
+        color: #888;
+        font-size: 12px;
+    }
+
+    .alert {
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        font-size: 14px;
+        text-align: left;
+    }
+    
+    .alert-error {
+        background-color: #ffebee;
+        color: #c62828;
+        border: 1px solid #ef9a9a;
+    }
+    
+    .alert-success {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    
+    <!-- Logo added as requested -->
+    <img src="{% static 'images/Logo.png' %}" alt="Logo BEHANIAN" class="logo-img">
+
+    <div class="brand-header">
+        BEHANIAN
+    </div>
+
+    <div class="subtitle-1">Complexe Hôtelier</div>
+    <div class="subtitle-2">Système de Gestion Intégré</div>
+
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-error" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="form-group">
+            {{ form.username.label_tag }}
+            {{ form.username }}
+        </div>
+
+        <div class="form-group">
+            {{ form.password.label_tag }}
+            {{ form.password }}
+        </div>
+
+        <button type="submit" class="btn-login">Se connecter</button>
+    </form>
+
+    <div class="footer-text">
+        2026 BEHANIAN
+    </div>
+</div>
+{% endblock %}

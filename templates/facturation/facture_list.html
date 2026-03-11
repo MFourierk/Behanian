@@ -1,0 +1,171 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Factures{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="header-glam facturation-watermark">
+        <div class="header-content">
+            <h2>Factures</h2>
+            <p class="mb-0 opacity-75">Historique des facturations</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <a href="{% url 'facturation:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+        <a href="{% url 'facturation:index' %}" class="btn-add-glam">
+            <i class="fas fa-plus mr-2"></i> Nouvelle Facture
+        </a>
+    </div>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
+        <a href="{% url 'facturation:facture_list' %}" class="tab active">Factures</a>
+        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
+        <a href="{% url 'facturation:avoir_list' %}" class="tab">Avoirs</a>
+        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+    </div>
+</div>
+
+<div class="content-section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Liste des factures</h3>
+        </div>
+        <div class="card-body">
+            {% if factures %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Numéro</th>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for facture in factures %}
+                                <tr>
+                                    <td><strong>{{ facture.numero }}</strong></td>
+                                    <td>{{ facture.client.nom_complet }}</td>
+                                    <td>{{ facture.date_creation|date:"d/m/Y" }}</td>
+                                    <td>{{ facture.total|floatformat:0 }} FCFA</td>
+                                    <td>
+                                        <span class="badge badge-{% if facture.statut == 'paid' %}success{% elif facture.statut == 'sent' %}primary{% else %}secondary{% endif %}">
+                                            {{ facture.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'facturation:facture_detail' facture.pk %}" class="btn btn-sm btn-outline-primary">Détail</a>
+                                        <a href="{% url 'facturation:facture_pdf' facture.pk %}" class="btn btn-sm btn-outline-secondary">PDF</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Aucune facture trouvée.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+.tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+}
+
+.tab {
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid transparent;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: -1px;
+    transition: all 0.3s ease;
+}
+
+.tab:hover {
+    color: #0056b3;
+    text-decoration: none;
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.tab.active {
+    color: #0056b3;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.badge {
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.badge-primary {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+</style>
+{% endblock %}

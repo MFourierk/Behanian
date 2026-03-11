@@ -1,0 +1,136 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Détails Chambre {{ chambre.numero }} - Hôtel{% endblock %}
+
+{% block content %}
+<div class="header-glam hotel-watermark">
+    <div class="header-content">
+        <h2>Chambre N° {{ chambre.numero }}</h2>
+        <p class="mb-0 opacity-75">{{ chambre.get_type_chambre_display }} - Étage {{ chambre.etage }}</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'hotel:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    <button class="btn-add-glam">
+        <i class="fas fa-edit mr-2"></i> Modifier
+    </button>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Details Card -->
+        <div class="col-md-4">
+            <div class="card" style="border-radius: 20px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="height: 200px; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 4rem;">
+                    🛏️
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge {% if chambre.statut == 'disponible' %}bg-success{% elif chambre.statut == 'occupee' %}bg-danger{% else %}bg-warning{% endif %} p-2" style="font-size: 0.9rem;">
+                            {{ chambre.get_statut_display }}
+                        </span>
+                        <h3 class="text-warning mb-0">{{ chambre.prix_nuit|floatformat:0 }} F <small class="text-muted" style="font-size: 0.9rem;">/ nuit</small></h3>
+                    </div>
+                    
+                    <h5 class="mb-3">Équipements</h5>
+                    <div class="d-flex gap-3 mb-4">
+                        {% if chambre.capacite %}
+                        <div class="text-center">
+                            <i class="fas fa-users fa-lg text-muted mb-1"></i>
+                            <div style="font-size: 0.8rem;">{{ chambre.capacite }} Pers.</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.wifi %}
+                        <div class="text-center">
+                            <i class="fas fa-wifi fa-lg text-muted mb-1"></i>
+                            <div style="font-size: 0.8rem;">WiFi</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.climatisation %}
+                        <div class="text-center">
+                            <i class="fas fa-snowflake fa-lg text-muted mb-1"></i>
+                            <div style="font-size: 0.8rem;">Clim</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.television %}
+                        <div class="text-center">
+                            <i class="fas fa-tv fa-lg text-muted mb-1"></i>
+                            <div style="font-size: 0.8rem;">TV</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.minibar %}
+                        <div class="text-center">
+                            <i class="fas fa-cocktail fa-lg text-warning mb-1"></i>
+                            <div style="font-size: 0.8rem;">Minibar</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.machine_a_cafe %}
+                        <div class="text-center">
+                            <i class="fas fa-coffee fa-lg text-dark mb-1"></i>
+                            <div style="font-size: 0.8rem;">Café</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.baignoire %}
+                        <div class="text-center">
+                            <i class="fas fa-bath fa-lg text-info mb-1"></i>
+                            <div style="font-size: 0.8rem;">Bain</div>
+                        </div>
+                        {% endif %}
+                        {% if chambre.coffre_fort %}
+                        <div class="text-center">
+                            <i class="fas fa-lock fa-lg text-secondary mb-1"></i>
+                            <div style="font-size: 0.8rem;">Coffre</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="alert alert-light border">
+                        <small class="text-muted d-block">Description</small>
+                        {{ chambre.description|default:"Aucune description disponible." }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History/Reservations -->
+        <div class="col-md-8">
+            <div class="card h-100" style="border-radius: 20px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="mb-0 font-weight-bold">Historique des Réservations</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" style="vertical-align: middle;">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0 px-4 py-3">Client</th>
+                                    <th class="border-0 py-3">Arrivée</th>
+                                    <th class="border-0 py-3">Départ</th>
+                                    <th class="border-0 py-3">Statut</th>
+                                    <th class="border-0 px-4 py-3">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Placeholder content as we don't have the context variable for reservations yet -->
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fas fa-calendar-times fa-3x mb-3 opacity-50"></i>
+                                        <p>Aucune réservation récente.</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

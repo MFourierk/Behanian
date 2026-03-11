@@ -1,0 +1,90 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}{{ page_title }} - Cuisine{% endblock %}
+
+{% block extra_css %}
+<style>
+    .badge-etat.valide {
+        background-color: #28a745;
+        color: white;
+    }
+    .badge-etat.en_cours {
+        background-color: #ffc107;
+        color: #333;
+    }
+    .badge-etat.annule {
+        background-color: #dc3545;
+        color: white;
+    }
+    .action-icons a {
+        color: #6c757d;
+        margin: 0 5px;
+        font-size: 1.1rem;
+    }
+    .action-icons a:hover {
+        color: #343a40;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>{{ page_title }}</h2>
+        <p class="mb-0 opacity-75">Liste des réceptions de marchandises</p>
+    </div>
+</div>
+
+<div class="header-actions d-flex justify-content-between align-items-center">
+    <a href="{% url 'cuisine:index' %}" class="btn-back" title="Retour au tableau de bord"><i class="fas fa-arrow-left"></i></a>
+    
+    <div class="d-flex align-items-center">
+        <form method="get" class="me-2">
+            <input type="text" name="q" class="form-control" placeholder="Rechercher un bon..." value="{{ request.GET.q }}">
+        </form>
+        <a href="{% url 'cuisine:bon_reception_create' %}" class="btn-add-glam"><i class="fas fa-plus mr-2"></i> Nouveau Bon de Réception</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date Réception</th>
+                        <th>Fournisseur</th>
+                        <th>N° Document</th>
+                        <th>Opérateur</th>
+                        <th class="text-center">État</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bon in bons %}
+                    <tr>
+                        <td>{{ bon.id }}</td>
+                        <td>{{ bon.date_reception|date:"d/m/Y" }}</td>
+                        <td>{{ bon.fournisseur.nom|default:"--" }}</td>
+                        <td>{{ bon.numero_document|default:"--" }}</td>
+                        <td>{{ bon.operateur.get_full_name|default:bon.operateur.username }}</td>
+                        <td class="text-center">
+                            <span class="badge badge-pill badge-etat {{ bon.etat }}">{{ bon.get_etat_display }}</span>
+                        </td>
+                        <td class="text-center action-icons">
+                            <a href="{% url 'cuisine:bon_reception_detail' bon.id %}" title="Voir Détails"><i class="fas fa-eye"></i></a>
+                            <a href="{% url 'cuisine:bon_reception_print' bon.id %}" title="Imprimer" target="_blank"><i class="fas fa-print"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Aucun bon de réception trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

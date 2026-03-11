@@ -1,0 +1,398 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Nouvelle Facture{% endblock %}
+
+{% block content %}
+<div class="header-glam facturation-watermark">
+    <div class="header-content">
+        <h2>Nouvelle Facture</h2>
+        <p class="mb-0 opacity-75">Création d'une nouvelle facture client</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'facturation:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
+        <a href="{% url 'facturation:facture_create' %}" class="tab active">Nouvelle Facture</a>
+        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
+        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
+        <a href="{% url 'facturation:avoir_list' %}" class="tab">Avoirs</a>
+        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+    </div>
+</div>
+
+<div class="content-section">
+    <form method="post" id="invoiceForm">
+        {% csrf_token %}
+        
+        <!-- Informations client -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Informations client</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="client">Client *</label>
+                            <select class="form-control" id="client" name="client" required>
+                                <option value="">Sélectionner un client</option>
+                                {% for client in clients %}
+                                    <option value="{{ client.id }}">{{ client.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="invoice_date">Date de facturation *</label>
+                            <input type="date" class="form-control" id="invoice_date" name="invoice_date" value="{{ today }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="due_date">Date d'échéance</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="nif">NIF</label>
+                            <input type="text" class="form-control" id="nif" name="nif" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="stat">STAT</label>
+                            <input type="text" class="form-control" id="stat" name="stat" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="phone">Téléphone</label>
+                            <input type="text" class="form-control" id="phone" name="phone" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lignes de facture -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>Lignes de facture</h3>
+                <button type="button" class="btn btn-outline-primary" id="addLine">Ajouter une ligne</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="invoiceLines">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Article</th>
+                                <th>Description</th>
+                                <th>Quantité</th>
+                                <th>Prix unitaire</th>
+                                <th>Total</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Les lignes seront ajoutées ici dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Totaux -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>Totaux</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="services">Services concernés</label>
+                            <select multiple class="form-control" id="services" name="services">
+                                {% for service in services %}
+                                    <option value="{{ service.id }}">{{ service.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Maintenez Ctrl pour sélectionner plusieurs services</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="totals-summary">
+                            <div class="form-group row">
+                                <label class="col-sm-6 col-form-label">Sous-total:</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control text-right" id="subtotal" value="0.00" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-6 col-form-label">Taux de TVA (%):</label>
+                                <div class="col-sm-6">
+                                    <input type="number" class="form-control text-right" id="tax_rate" name="tax_rate" value="20.00" step="0.01" min="0" max="100">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-6 col-form-label">Montant TVA:</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control text-right" id="tax_amount" value="0.00" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-6 col-form-label font-weight-bold">Total TTC:</label>
+                                <div class="col-sm-6">
+                                    <input type="text" class="form-control text-right font-weight-bold" id="total" value="0.00" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div class="mt-4 text-center">
+            <button type="submit" class="btn btn-primary btn-lg">Créer la facture</button>
+            <a href="{% url 'facturation:facture_list' %}" class="btn btn-secondary btn-lg">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+let lineCounter = 0;
+const services = {{ services_json|safe }};
+const articles = {{ articles_json|safe }};
+
+function addInvoiceLine() {
+    lineCounter++;
+    const tbody = document.querySelector('#invoiceLines tbody');
+    const row = document.createElement('tr');
+    row.id = `line-${lineCounter}`;
+    
+    row.innerHTML = `
+        <td>
+            <select class="form-control service-select" name="service_${lineCounter}" required>
+                <option value="">Sélectionner un service</option>
+                ${services.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+            </select>
+        </td>
+        <td>
+            <select class="form-control article-select" name="article_${lineCounter}" required>
+                <option value="">Sélectionner un article</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control" name="description_${lineCounter}" placeholder="Description">
+        </td>
+        <td>
+            <input type="number" class="form-control quantity" name="quantity_${lineCounter}" value="1" min="0.01" step="0.01" required>
+        </td>
+        <td>
+            <input type="number" class="form-control unit-price" name="unit_price_${lineCounter}" value="0" min="0" step="0.01" required>
+        </td>
+        <td>
+            <input type="text" class="form-control line-total" name="total_${lineCounter}" value="0.00" readonly>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeLine(${lineCounter})">Supprimer</button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // Ajouter les écouteurs d'événements
+    row.querySelector('.service-select').addEventListener('change', function() {
+        updateArticlesForService(this.value, row.querySelector('.article-select'));
+    });
+    
+    row.querySelector('.quantity').addEventListener('input', calculateLineTotal);
+    row.querySelector('.unit-price').addEventListener('input', calculateLineTotal);
+    
+    calculateTotals();
+}
+
+function updateArticlesForService(serviceId, articleSelect) {
+    articleSelect.innerHTML = '<option value="">Sélectionner un article</option>';
+    if (serviceId) {
+        const filteredArticles = articles.filter(a => a.service == serviceId);
+        filteredArticles.forEach(article => {
+            const option = document.createElement('option');
+            option.value = article.id;
+            option.textContent = article.name;
+            option.dataset.price = article.unit_price;
+            articleSelect.appendChild(option);
+        });
+    }
+}
+
+function calculateLineTotal(event) {
+    const row = event.target.closest('tr');
+    const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+    const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+    const total = quantity * unitPrice;
+    row.querySelector('.line-total').value = total.toFixed(2);
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    document.querySelectorAll('.line-total').forEach(input => {
+        subtotal += parseFloat(input.value) || 0;
+    });
+    
+    const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+    const taxAmount = subtotal * (taxRate / 100);
+    const total = subtotal + taxAmount;
+    
+    document.getElementById('subtotal').value = subtotal.toFixed(2);
+    document.getElementById('tax_amount').value = taxAmount.toFixed(2);
+    document.getElementById('total').value = total.toFixed(2);
+}
+
+function removeLine(lineId) {
+    const row = document.getElementById(`line-${lineId}`);
+    if (row) {
+        row.remove();
+        calculateTotals();
+    }
+}
+
+// Gestion du changement de client
+document.getElementById('client').addEventListener('change', function() {
+    const clientId = this.value;
+    if (clientId) {
+        // Récupérer les infos du client via AJAX
+        fetch(`/facturation/api/client/${clientId}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('nif').value = data.nif || '';
+                document.getElementById('stat').value = data.stat || '';
+                document.getElementById('phone').value = data.phone || '';
+            })
+            .catch(error => console.error('Erreur:', error));
+    } else {
+        document.getElementById('nif').value = '';
+        document.getElementById('stat').value = '';
+        document.getElementById('phone').value = '';
+    }
+});
+
+// Gestion du taux de TVA
+document.getElementById('tax_rate').addEventListener('input', calculateTotals);
+
+// Bouton pour ajouter une ligne
+document.getElementById('addLine').addEventListener('click', addInvoiceLine);
+
+// Ajouter une ligne par défaut au chargement
+addInvoiceLine();
+</script>
+
+<style>
+.tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+}
+
+.tab {
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid transparent;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: -1px;
+    transition: all 0.3s ease;
+}
+
+.tab:hover {
+    color: #0056b3;
+    text-decoration: none;
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.tab.active {
+    color: #0056b3;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.totals-summary {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.form-control[readonly] {
+    background-color: #e9ecef;
+}
+
+#invoiceLines {
+    margin-bottom: 0;
+}
+
+#invoiceLines input[type="number"] {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .card-header .btn {
+        margin-top: 10px;
+    }
+}
+</style>
+{% endblock %}

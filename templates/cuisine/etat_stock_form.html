@@ -1,0 +1,69 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}État du Stock{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 5px;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>État du Stock</h2>
+        <p class="mb-0 opacity-75">Générez un rapport de stock valorisé à une date spécifique.</p>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:article_list' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+</div>
+
+<div class="container-fluid py-4">
+    <div class="card" style="max-width: 800px; margin: auto;">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Sélectionnez vos critères</h5>
+            <form action="{% url 'cuisine:etat_stock' %}" method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="date" class="form-label">Date du rapport</label>
+                    <input type="date" id="date" name="date" class="form-control" value="{{ date_str }}" required>
+                </div>
+                <div class="col-md-7">
+                    <label for="categorie" class="form-label">Catégories (laisser vide pour tout)</label>
+                    <select id="categorie" name="categorie" class="form-control" multiple>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if cat.id in categorie_ids %}selected{% endif %}>{{ cat.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 text-center mt-4">
+                    <button type="submit" name="submit_report" class="btn btn-primary btn-lg">Générer le Rapport</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#categorie').select2({
+        placeholder: "Sélectionner des catégories",
+        allowClear: true
+    });
+});
+</script>
+{% endblock %}

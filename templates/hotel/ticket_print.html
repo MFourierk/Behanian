@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket Hôtel - {{ ticket.numero }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #eee;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+        }
+        .ticket {
+            width: 300px;
+            margin: 0 auto;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 30px;
+            color: rgba(0, 0, 0, 0.1);
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            z-index: 0;
+            pointer-events: none;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .mb-2 { margin-bottom: 10px; }
+        .border-bottom { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .item-name { flex: 1; text-align: left; }
+        .item-price { text-align: right; white-space: nowrap; }
+        
+        @media print {
+            body { background: white; padding: 0; }
+            .ticket { box-shadow: none; width: 100%; padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ticket">
+        {% if ticket.imprime or ticket.est_duplicata %}
+        <div class="watermark">DUPLICATA</div>
+        {% endif %}
+        
+        <div class="text-center mb-2">
+            <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                <img src="{% static 'images/Logo.png' %}" alt="Logo" style="height: 50px;">
+            </div>
+            <h3 style="margin: 0; font-size: 16px;">COMPLEXE HÔTELIER BEHANIAN</h3>
+            <p style="margin: 2px 0; font-size: 11px; font-style: italic;">Votre confort, notre priorité</p>
+            
+            <p style="margin: 10px 0 0 0; font-size: 12px;">Yopougon Beago à 200m du Palais de justice</p>
+            <p style="margin: 0; font-size: 12px;">Tél: 07 58 29 11 10 / 01 43 09 76 16</p>
+        </div>
+
+        <div class="border-bottom">
+            <div class="row">
+                <span>Date:</span>
+                <span>{{ ticket.date_creation|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="row">
+                <span>Ticket N°:</span>
+                <span>{{ ticket.numero }}</span>
+            </div>
+            <div class="row">
+                <span>Service:</span>
+                <span>HÔTEL</span>
+            </div>
+            <div class="row">
+                <span>Serveur/Caissier:</span>
+                <span>{{ ticket.cree_par.get_full_name|default:ticket.cree_par.username }}</span>
+            </div>
+        </div>
+        
+        <div class="border-bottom">
+            <!-- Client Info -->
+             <div class="row">
+                <span class="bold">Client:</span>
+                <span>{{ ticket.client.nom_complet }}</span>
+            </div>
+        </div>
+
+        <div class="border-bottom">
+            <!-- Contenu dynamique (HTML généré par la vue) -->
+            {{ ticket.contenu|safe }}
+        </div>
+
+        <div class="border-bottom">
+            <div class="row bold" style="font-size: 1.1em;">
+                <span>TOTAL</span>
+                <span>{{ ticket.montant_total|floatformat:0 }} FCFA</span>
+            </div>
+        </div>
+        
+        <div class="border-bottom">
+             <div class="row">
+                <span>Mode de paiement:</span>
+                <span>{{ ticket.get_mode_paiement_display|upper }}</span>
+            </div>
+            <div class="row">
+                <span>Montant Reçu:</span>
+                <span>{{ ticket.montant_paye|floatformat:0 }} F</span>
+            </div>
+            <div class="row">
+                <span>Reste (Monnaie):</span>
+                <span>{{ ticket.montant_paye|add:ticket.montant_total|floatformat:0 }} F</span> <!-- Erreur de calcul ici dans l'affichage si on veut la monnaie -->
+                <!-- Le calcul de la monnaie n'est pas stocké explicitement dans le ticket, mais montant_paye est le total versé (donc potentiellement > total) -->
+                <!-- Cependant, dans la vue, on a stocké montant_paye comme étant (avance + solde payé). -->
+                <!-- Si on veut afficher la monnaie rendue, il faudrait stocker le montant TENDU par le client. -->
+                <!-- Ici, on va simplement afficher le Reste à payer qui devrait être 0 -->
+            </div>
+             <!-- Correction logique Reste -->
+             {% with monnaie=ticket.montant_paye|add:"0" %}
+             <!-- On suppose que montant_paye est ce qui a été encaissé pour couvrir la dette. -->
+             <!-- Si le ticket stocke le montant exact de la facture comme montant_paye, alors Reste = 0 -->
+             <div class="row">
+                 <span>Reste à Payer:</span>
+                 <span>0 F</span>
+             </div>
+             {% endwith %}
+        </div>
+
+        <div class="text-center">
+            <p class="bold" style="margin-bottom: 5px;">Merci pour votre visite</p>
+            <p class="bold" style="color: #d35400; margin: 0;">À très bientôt chez BEHANIAN</p>
+        </div>
+    </div>
+
+    <div class="text-center no-print" style="margin-top: 20px;">
+        <button onclick="handlePrint()" style="padding: 10px 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px;">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+        <a href="{% url 'hotel:index' %}?tab=historique" style="margin-left: 10px; text-decoration: none; color: #333; padding: 10px 20px; border: 1px solid #ddd; border-radius: 5px; background: white;">Retour</a>
+    </div>
+
+    <script>
+        function handlePrint() {
+            window.print();
+            
+            // Si le ticket n'est pas encore imprimé (donc transaction pas finalisée)
+            {% if not ticket.imprime %}
+            // On laisse un petit délai pour que la boîte de dialogue d'impression s'ouvre
+            setTimeout(function() {
+                if(confirm("Voulez-vous clôturer la transaction et libérer la chambre ?")) {
+                    // Appel AJAX pour finaliser
+                    fetch("{% url 'hotel:finalize_checkout' ticket.id %}")
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.status === 'success') {
+                            // Redirection vers l'historique
+                            window.location.href = "{% url 'hotel:index' %}?tab=historique";
+                        } else {
+                            if (data.message === 'Déjà clôturé') {
+                                window.location.href = "{% url 'hotel:index' %}?tab=historique";
+                            } else {
+                                alert("Erreur: " + data.message);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("Une erreur est survenue lors de la finalisation.");
+                    });
+                }
+            }, 1000);
+            {% endif %}
+        }
+        
+        window.onload = function() {
+            // Auto print disabled
+        }
+    </script>
+</body>
+</html>

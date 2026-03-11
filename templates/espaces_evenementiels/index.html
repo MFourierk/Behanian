@@ -1,0 +1,309 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Espaces Location - BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f6fa !important;
+    }
+
+    /* TABS */
+    .tab-buttons {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .tab-btn {
+        padding: 12px 24px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #5a6c7d;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tab-btn.active {
+        background: white;
+        color: #2c3e50;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .tab-btn:hover {
+        background: white;
+        color: #2c3e50;
+    }
+
+    /* TAB CONTENT */
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* ESPACES GRID */
+    .espaces-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 20px;
+    }
+
+    .espace-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .espace-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .espace-image {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, #a8e6cf 0%, #7dd3ae 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 70px;
+        position: relative;
+    }
+
+    .statut-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .espace-info {
+        padding: 20px;
+    }
+
+    .espace-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .espace-type {
+        font-size: 13px;
+        color: #95a5a6;
+        margin-bottom: 15px;
+    }
+
+    .espace-details {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        color: #5a6c7d;
+    }
+
+    .espace-price {
+        font-size: 20px;
+        font-weight: 700;
+        color: #27ae60;
+        margin-bottom: 15px;
+    }
+
+    .espace-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 15px;
+    }
+
+    .feature-tag {
+        padding: 4px 10px;
+        background: #f0f0f0;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #5a6c7d;
+    }
+
+    .btn-reserve {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-reserve:hover {
+        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: #95a5a6;
+        background: white;
+        border-radius: 12px;
+    }
+
+    .empty-icon {
+        font-size: 100px;
+        margin-bottom: 20px;
+        opacity: 0.2;
+    }
+
+    @media (max-width: 1400px) {
+        .espaces-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .espaces-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Script removed, using global updateClock from base_dashboard -->
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="header-glam events-watermark">
+        <div class="header-content">
+            <h2>Espaces & Événements</h2>
+            <p class="mb-0 opacity-75">Gestion des salles et réservations</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <a href="{% url 'dashboard:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+    </div>
+
+<!-- TABS -->
+<div class="tab-buttons">
+    <button class="tab-btn active" data-tab="espaces">
+        🏢 Espaces
+    </button>
+    <button class="tab-btn" data-tab="reservations">
+        📅 Réservations ({{ reservations.count }})
+    </button>
+</div>
+
+<!-- TAB ESPACES -->
+<div class="tab-content active" id="tab-espaces">
+    <div class="espaces-grid">
+        {% for espace in espaces %}
+        <div class="espace-card">
+            <div class="espace-image">
+                <span class="statut-badge">{{ espace.get_statut_display }}</span>
+                🏢
+            </div>
+            
+            <div class="espace-info">
+                <div class="espace-title">{{ espace.nom }}</div>
+                <div class="espace-type">{{ espace.get_type_espace_display }}</div>
+                
+                <div class="espace-details">
+                    <div class="detail-item">
+                        <span>👥</span>
+                        <span>{{ espace.capacite }} pers.</span>
+                    </div>
+                    <div class="detail-item">
+                        <span>⏱️</span>
+                        <span>{{ espace.prix_heure|floatformat:0 }} F/h</span>
+                    </div>
+                </div>
+                
+                <div class="espace-price">
+                    {{ espace.prix_heure|floatformat:0 }} F/h
+                </div>
+                
+                <div class="espace-features">
+                    {% if espace.projecteur %}<span class="feature-tag">projecteur</span>{% endif %}
+                    {% if espace.wifi %}<span class="feature-tag">wifi</span>{% endif %}
+                    {% if espace.climatisation %}<span class="feature-tag">climatisation</span>{% endif %}
+                    {% if espace.sonorisation %}<span class="feature-tag">sonorisation</span>{% endif %}
+                    {% if espace.decoration %}<span class="feature-tag">décoration</span>{% endif %}
+                    {% if espace.eclairage %}<span class="feature-tag">éclairage</span>{% endif %}
+                    {% if espace.tentes %}<span class="feature-tag">tentes</span>{% endif %}
+                    {% if espace.parking %}<span class="feature-tag">parking</span>{% endif %}
+                </div>
+                
+                <button class="btn-reserve">
+                    ➕ Réserver
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-icon">📅</div>
+            <h3>Aucun espace disponible</h3>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- TAB RESERVATIONS -->
+<div class="tab-content" id="tab-reservations">
+    <div class="empty-state">
+        <div class="empty-icon">📅</div>
+        <h3>Aucune réservation</h3>
+    </div>
+</div>
+
+<script>
+    // Gestion des onglets
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            this.classList.add('active');
+            const tabName = this.getAttribute('data-tab');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

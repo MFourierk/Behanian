@@ -1,0 +1,603 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Bar - BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* LAYOUT */
+    .bar-layout {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+
+    /* STATUS TABS */
+    .status-tabs-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .status-tabs-wrapper {
+        position: relative;
+    }
+
+    /* LEFT PANEL - MENU */
+    .menu-panel {
+        #background: white;
+        #border-radius: 12px;
+        padding: 20px;
+        #box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .search-box {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 1.5px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: #9b59b6;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        color: #95a5a6;
+    }
+
+    .category-filter {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        background: white;
+        border: 1.5px solid #ddd;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        color: #5a6c7d;
+    }
+
+    .filter-btn.active {
+        background: #9b59b6;
+        color: white;
+        border-color: #9b59b6;
+    }
+
+    .filter-btn:hover {
+        border-color: #9b59b6;
+    }
+
+    .boissons-grid {
+        #border-radius: 12px;
+        padding: 20px;
+        #box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .boisson-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+    }
+
+    .boisson-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .boisson-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .badge-bière, .badge-bières {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-cocktail, .badge-cocktails {
+        background: #e8d5f2;
+        color: #6f42c1;
+    }
+
+    .badge-vin, .badge-vins {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-soft, .badge-softs {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .boisson-icon {
+        font-size: 50px;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .boisson-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        min-height: 40px;
+    }
+
+    .boisson-price {
+        position: sticky;
+        left: 9em;
+        font-size: 18px;
+        font-weight: 700;
+        color: #9b59b6;
+    }
+
+    .boisson-add {
+        width: 100%;
+        padding: 8px;
+        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.3s;
+    }
+
+    .boisson-add:hover {
+        box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+    }
+
+    /* RIGHT PANEL - COMMANDE */
+    .commande-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        position: relative;
+        top: -60px;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .commande-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .commande-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .client-input {
+        width: 100%;
+        padding: 12px;
+        border: 1.5px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .client-input:focus {
+        outline: none;
+        border-color: #9b59b6;
+    }
+
+    .commande-empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: #95a5a6;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .commande-empty-icon {
+        font-size: 60px;
+        margin-bottom: 15px;
+        opacity: 0.3;
+    }
+
+    .commande-items {
+        margin-bottom: 20px;
+        max-height: 400px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .commande-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .item-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .item-qty {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .qty-btn {
+        width: 28px;
+        height: 28px;
+        border: 1.5px solid #ddd;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .qty-btn:hover {
+        background: #f8f9fa;
+        border-color: #9b59b6;
+    }
+
+    .qty-value {
+        font-weight: 600;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .item-price {
+        font-size: 14px;
+        font-weight: 700;
+        color: #9b59b6;
+    }
+
+    .commande-total {
+        padding: 20px 0;
+        border-top: 2px solid #f0f0f0;
+        margin-bottom: 15px;
+        margin-top: auto;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .total-label {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .total-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #9b59b6;
+    }
+
+    .commande-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-cuisine {
+        flex: 1;
+        padding: 12px;
+        background: white;
+        color: #2c3e50;
+        border: 1.5px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.3s;
+    }
+
+    .btn-cuisine:hover {
+        background: #f8f9fa;
+    }
+
+    .btn-paiement {
+        flex: 1;
+        padding: 12px;
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.3s;
+    }
+
+    .btn-paiement:hover {
+        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    }
+
+    @media (max-width: 1400px) {
+        .bar-layout {
+            grid-template-columns: 1fr;
+        }
+        
+        .boissons-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .commande-panel {
+            position: static;
+            height: auto;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .boissons-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .boissons-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestion des onglets
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="header-glam bar-watermark">
+        <div class="header-content">
+            <h2>Gestion Cave</h2>
+            <p class="mb-0 opacity-75">Service des boissons et cocktails</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <a href="{% url 'dashboard:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+    </div>
+
+    <div class="bar-layout">
+    <!-- LEFT PANEL - MENU -->
+    <div class="menu-panel">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+            <button class="btn-action" id="btnChoisirTable">
+                <i class="fas fa-users"></i> Choisir une table
+            </button>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Rechercher une boisson..." id="searchBoisson">
+        </div>
+
+        <!-- CATEGORY FILTER -->
+        <div class="category-filter">
+            <button class="filter-btn active" data-category="tout">Tout</button>
+            <button class="filter-btn" data-category="bières">🍺 Bières</button>
+            <button class="filter-btn" data-category="cocktails">🍹 Cocktails</button>
+            <button class="filter-btn" data-category="vins">🍷 Vins</button>
+        </div>
+
+        <!-- BOISSONS GRID -->
+        <div class="boissons-grid">
+            {% for boisson in boissons %}
+            <div class="boisson-card" data-category="{{ boisson.categorie.nom|lower }}">
+                <span class="boisson-badge badge-{{ boisson.categorie.nom|lower }}">{{ boisson.categorie.nom }}</span>
+                <div class="boisson-icon">🍺</div>
+                <div class="boisson-name">{{ boisson.nom }}</div>
+                <div class="boisson-price">{{ boisson.prix|floatformat:0 }} F</div>
+                <button class="boisson-add" onclick="ajouterBoisson('{{ boisson.nom }}', {{ boisson.prix }})">
+                    + Ajouter
+                </button>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #95a5a6;">
+                Aucune boisson disponible pour le moment.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL - COMMANDE -->
+    <div class="commande-panel">
+        <div class="commande-header">
+            <h3>🛒 Commande</h3>
+        </div>
+
+        <input type="text" class="client-input" placeholder="👤 Nom du client (optionnel)" id="clientName">
+
+        <div class="commande-empty" id="commandeEmpty">
+            <div class="commande-empty-icon">🛍️</div>
+            <p>Aucun article</p>
+            <small>Sélectionnez des articles du menu</small>
+        </div>
+
+        <div class="commande-items" id="commandeItems" style="display: none;">
+            <!-- Items will be added here dynamically -->
+        </div>
+
+        <div class="commande-total">
+            <div class="total-row">
+                <span class="total-label">Total</span>
+                <span class="total-value" id="totalValue">0 FCFA</span>
+            </div>
+        </div>
+
+        <div class="commande-actions">
+            <button class="btn-cuisine">
+                📨 Cuisine
+            </button>
+            <button class="btn-paiement">
+                💳 Paiement
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Gestion de la commande
+    let commandeItems = [];
+
+    function ajouterBoisson(nom, prix) {
+        const existingItem = commandeItems.find(item => item.nom === nom);
+        
+        if (existingItem) {
+            existingItem.quantite++;
+        } else {
+            commandeItems.push({ nom, prix, quantite: 1 });
+        }
+        
+        updateCommande();
+    }
+
+    function updateCommande() {
+        const commandeEmpty = document.getElementById('commandeEmpty');
+        const commandeItemsDiv = document.getElementById('commandeItems');
+        const totalValue = document.getElementById('totalValue');
+        
+        if (commandeItems.length === 0) {
+            commandeEmpty.style.display = 'flex';
+            commandeItemsDiv.style.display = 'none';
+        } else {
+            commandeEmpty.style.display = 'none';
+            commandeItemsDiv.style.display = 'block';
+            
+            commandeItemsDiv.innerHTML = commandeItems.map((item, index) => `
+                <div class="commande-item">
+                    <div>
+                        <div class="item-name">${item.nom}</div>
+                    </div>
+                    <div class="item-qty">
+                        <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
+                        <span class="qty-value">${item.quantite}</span>
+                        <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
+                    </div>
+                    <div class="item-price">${(item.prix * item.quantite).toLocaleString()} F</div>
+                </div>
+            `).join('');
+        }
+        
+        const total = commandeItems.reduce((sum, item) => sum + (item.prix * item.quantite), 0);
+        totalValue.textContent = total.toLocaleString() + ' FCFA';
+    }
+
+    function changeQty(index, delta) {
+        commandeItems[index].quantite += delta;
+        
+        if (commandeItems[index].quantite <= 0) {
+            commandeItems.splice(index, 1);
+        }
+        
+        updateCommande();
+    }
+
+    // Filtres de catégorie
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const category = this.getAttribute('data-category');
+            const cards = document.querySelectorAll('.boisson-card');
+            
+            cards.forEach(card => {
+                if (category === 'tout' || card.getAttribute('data-category') === category) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // Recherche
+    document.getElementById('searchBoisson').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const cards = document.querySelectorAll('.boisson-card');
+        
+        cards.forEach(card => {
+            const boissonName = card.querySelector('.boisson-name').textContent.toLowerCase();
+            card.style.display = boissonName.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Bouton choisir table
+    document.getElementById('btnChoisirTable').addEventListener('click', function() {
+        alert('Fonctionnalité "Choisir une table" - À développer');
+    });
+</script>
+{% endblock %}

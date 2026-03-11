@@ -1,0 +1,210 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Proforma {{ proforma.numero }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title">
+        <h1>Proforma {{ proforma.numero }}</h1>
+    </div>
+    <div class="page-datetime">
+        <div id="currentDate"></div>
+        <div id="currentTime"></div>
+    </div>
+</div>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
+        <a href="{% url 'facturation:facture_create' %}" class="tab">Nouvelle Facture</a>
+        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
+        <a href="{% url 'facturation:proforma_list' %}" class="tab active">Proformas</a>
+        <a href="{% url 'facturation:avoir_list' %}" class="tab">Avoirs</a>
+        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+    </div>
+</div>
+
+<div class="content-section">
+    <div class="mb-3 d-flex justify-content-between">
+        <a href="{% url 'facturation:proforma_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+        <div>
+            {% if proforma.statut == 'accepted' %}
+                <a href="{% url 'facturation:proforma_convert' proforma.pk %}" class="btn btn-success">Convertir en Facture</a>
+            {% endif %}
+            <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn btn-primary" target="_blank">
+                <i class="fas fa-print"></i> Imprimer / PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-5">
+            <!-- En-tête proforma -->
+            <div class="row mb-4">
+                <div class="col-6">
+                    <h2 class="text-primary">FACTURE PROFORMA</h2>
+                    <h5>{{ proforma.numero }}</h5>
+                    <p class="mb-0">Date: {{ proforma.date_creation|date:"d/m/Y" }}</p>
+                    <p class="mb-0">Validité: {{ proforma.date_validite|date:"d/m/Y" }}</p>
+                    <span class="badge badge-{% if proforma.statut == 'accepted' %}success{% elif proforma.statut == 'invoiced' %}info{% elif proforma.statut == 'refused' %}danger{% else %}secondary{% endif %} mt-2">
+                        {{ proforma.get_statut_display }}
+                    </span>
+                </div>
+                <div class="col-6 text-right">
+                    <h4>{{ proforma.client.nom_complet }}</h4>
+                    {% if proforma.client.adresse %}<p class="mb-0">{{ proforma.client.adresse|linebreaksbr }}</p>{% endif %}
+                    {% if proforma.client.telephone %}<p class="mb-0">Tél: {{ proforma.client.telephone }}</p>{% endif %}
+                    {% if proforma.client.email %}<p class="mb-0">{{ proforma.client.email }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Lignes -->
+            <div class="table-responsive mb-4">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-center">Quantité</th>
+                            <th class="text-right">Prix Unitaire</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% regroup lignes by article.service.nom as service_list %}
+                        {% for service in service_list %}
+                            <tr class="table-secondary">
+                                <td colspan="4"><strong>{{ service.grouper }}</strong></td>
+                            </tr>
+                            {% for ligne in service.list %}
+                                <tr>
+                                    <td>
+                                        <span class="pl-3">{{ ligne.article.nom }}</span>
+                                        {% if ligne.description %}
+                                            <br><small class="text-muted pl-3">{{ ligne.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">{{ ligne.quantite|floatformat:2 }}</td>
+                                    <td class="text-right">{{ ligne.prix_unitaire|floatformat:2 }}</td>
+                                    <td class="text-right">{{ ligne.montant_ht|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Aucune ligne</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Totaux -->
+            <div class="row">
+                <div class="col-md-6">
+                    {% if proforma.notes %}
+                        <div class="alert alert-light border">
+                            <strong>Notes:</strong><br>
+                            {{ proforma.notes|linebreaks }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td class="text-right"><strong>Sous-total:</strong></td>
+                            <td class="text-right">{{ proforma.sous_total|floatformat:2 }} FCFA</td>
+                        </tr>
+                        <tr>
+                            <td class="text-right"><strong>TVA ({{ proforma.taux_tva|floatformat:2 }}%):</strong></td>
+                            <td class="text-right">{{ proforma.montant_tva|floatformat:2 }} FCFA</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td class="text-right"><h4>Total TTC:</h4></td>
+                            <td class="text-right"><h4 class="text-primary">{{ proforma.total|floatformat:0 }} FCFA</h4></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-5 text-center text-muted">
+                <p>Merci de votre confiance !</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Local clock script removed to use global clock
+</script>
+
+<style>
+.tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+}
+
+.tab {
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid transparent;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: -1px;
+    transition: all 0.3s ease;
+}
+
+.tab:hover {
+    color: #0056b3;
+    text-decoration: none;
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.tab.active {
+    color: #0056b3;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+    font-size: 85%;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.badge-primary {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+
+.badge-info {
+    color: #fff;
+    background-color: #17a2b8;
+}
+
+.badge-danger {
+    color: #fff;
+    background-color: #dc3545;
+}
+</style>
+{% endblock %}

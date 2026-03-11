@@ -1,0 +1,28 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 mt-5">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4 text-danger" style="font-size: 48px;">
+                        ⚠️
+                    </div>
+                    <h3 class="mb-3">Confirmer la suppression</h3>
+                    <p class="text-muted mb-4">
+                        Êtes-vous sûr de vouloir supprimer l'espace <strong>{{ object.nom }}</strong> ?<br>
+                        Cette action est irréversible.
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <a href="{% url 'parametres:espace_list' %}" class="btn btn-secondary mr-2">Annuler</a>
+                        <button type="submit" class="btn btn-danger">Oui, Supprimer</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,402 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}Tickets & Avoirs - Facturation{% endblock %}
+
+
+
+{% block content %}
+<style>
+    :root {
+        --font-family: 'Inter', sans-serif;
+        --background-color: #f8f9fa;
+        --card-bg: #ffffff;
+        --text-color: #212529;
+        --text-muted: #6c757d;
+        --primary-color: #0d6efd;
+        --success-color: #198754;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --border-color: #dee2e6;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .tickets-avoirs-page {
+        font-family: var(--font-family);
+        background-color: var(--background-color);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .stat-card .stat-title {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .stat-card .stat-value.positive { color: var(--success-color); }
+    .stat-card .stat-value.negative { color: var(--danger-color); }
+    .stat-card .stat-value.neutral { color: var(--warning-color); }
+
+    .filters-bar {
+        display: flex;
+        align-items: center; /* Aligner verticalement */
+        gap: 1rem;
+        padding: 1.5rem;
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .filters-bar .search-input {
+        flex-grow: 1; /* Le champ de recherche prend l'espace restant */
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .filters-bar .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-shrink: 0; /* Empêche les filtres de rétrécir */
+    }
+
+    .filters-bar .search-input i {
+        position: absolute;
+        left: 1rem;
+        color: var(--text-muted);
+    }
+
+    .filters-bar input, .filters-bar select {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-size: 1rem;
+        background-color: #f8f9fa; /* Un fond légèrement différent */
+    }
+    
+    .filters-bar .search-input input {
+        padding-left: 2.5rem;
+        width: 100%;
+    }
+    
+    .filters-bar select, .filters-bar input[type="date"] {
+        min-width: 180px; /* Largeur minimale pour la date et le service */
+    }
+
+    .ticket-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .ticket-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 1.5rem;
+        align-items: center;
+        padding: 1.5rem;
+        background-color: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .ticket-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .ticket-item .service-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .ticket-info .ticket-id {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.25rem;
+    }
+    .ticket-info .ticket-details, .ticket-info .ticket-items {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+    }
+    .ticket-info .ticket-items {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+    }
+
+    .ticket-meta {
+        text-align: right;
+    }
+
+    .ticket-meta .amount {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .ticket-meta .service-tag {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        background-color: var(--background-color);
+        border: 1px solid var(--border-color);
+    }
+
+    .ticket-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        grid-column: 3; /* Position in the third column */
+        grid-row: 1; /* Position in the first row */
+        justify-self: end; /* Align to the end of the cell */
+        padding-left: 1.5rem;
+        border-left: 1px solid var(--border-color);
+    }
+
+    .ticket-actions .action-btn {
+        color: var(--text-muted);
+        font-size: 1.25rem;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .ticket-actions .action-btn:hover {
+        color: var(--primary-color);
+    }
+    
+    .ticket-actions .action-btn.avoir-btn:hover {
+        color: var(--danger-color);
+    }
+
+    /* Service Colors */
+    .service-icon.piscine, .service-tag.piscine { background-color: #3498db; }
+    .service-icon.bar, .service-tag.bar { background-color: #9b59b6; }
+    .service-icon.restaurant, .service-tag.restaurant { background-color: #e67e22; }
+    .service-icon.hotel, .service-tag.hotel { background-color: #1abc9c; }
+    .service-icon.espaces-location, .service-tag.espaces-location { background-color: #f1c40f; }
+    .service-icon.default, .service-tag.default { background-color: #7f8c8d; }
+
+    /* Tabs Style for Ticket List */
+    .tabs-container {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .tabs {
+        display: flex;
+        gap: 0;
+    }
+    
+    .tab {
+        padding: 12px 20px;
+        text-decoration: none;
+        color: #6c757d;
+        border: 1px solid transparent;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: -1px;
+        transition: all 0.3s ease;
+    }
+    
+    .tab:hover {
+        color: #0056b3;
+        text-decoration: none;
+        border-color: #e9ecef #e9ecef #dee2e6;
+    }
+    
+    .tab.active {
+        color: #0056b3;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+
+</style>
+
+<div class="header-glam facturation-watermark">
+    <div class="header-content">
+        <h2>Tickets & Avoirs</h2>
+        <p class="mb-0 opacity-75">Gestion des tickets et avoirs</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'facturation:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
+        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
+        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
+        <a href="{% url 'facturation:avoir_list' %}" class="tab">Avoirs</a>
+        <a href="{% url 'facturation:ticket_list' %}" class="tab active">Tickets</a>
+    </div>
+</div>
+
+<div class="tickets-avoirs-page">
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">{% trans "Tickets du jour" %}</div>
+            <div class="stat-value">{{ stats.tickets_today_count|default:"0" }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">{% trans "Total encaissé" %}</div>
+            <div class="stat-value positive">{{ stats.total_collected|default:"0"|floatformat:"-2" }} F CFA</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">{% trans "Avoirs" %}</div>
+            <div class="stat-value negative">-{{ stats.total_avoirs|default:"0"|floatformat:"-2" }} F CFA</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">{% trans "Net" %}</div>
+            <div class="stat-value neutral">{{ stats.net_total|default:"0"|floatformat:0 }} F</div>
+        </div>
+    </div>
+
+    <div class="filters-bar">
+        <div class="search-input">
+            <i class="fas fa-search"></i>
+            <input type="text" id="ticketSearch" placeholder="Rechercher par n° ticket ou client..." value="{{ request.GET.q|default:'' }}">
+        </div>
+        <div class="filter-group">
+            <input type="date" id="dateFilter" value="{{ today|date:'Y-m-d' }}">
+            <select id="serviceFilter">
+                <option value="">Tous services</option>
+                {% for service in services %}
+                <option value="{{ service.id }}" {% if request.GET.service == service.id|stringformat:'s' %}selected{% endif %}>{{ service.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="ticket-list" id="ticketList">
+        {% for ticket in tickets %}
+        <div class="ticket-item">
+            {% with service_class=ticket.service.nom|slugify|default:"default" %}
+            <div class="service-icon {{ service_class }}">
+                {% if service_class == 'restaurant' %}<i class="fas fa-utensils"></i>
+                {% elif service_class == 'bar' %}<i class="fas fa-cocktail"></i>
+                {% elif service_class == 'piscine' %}<i class="fas fa-swimmer"></i>
+                {% elif service_class == 'hotel' %}<i class="fas fa-bed"></i>
+                {% elif service_class == 'espaces-location' %}<i class="fas fa-map-marked-alt"></i>
+                {% else %}<i class="fas fa-receipt"></i>{% endif %}
+            </div>
+            
+            <div class="ticket-info">
+                <div class="ticket-id">{{ ticket.numero }}</div>
+                <div class="ticket-details">
+                    Client {{ ticket.client.nom|default:"anonyme" }} • {{ ticket.date_creation|date:"H:i" }}
+                </div>
+                <div class="ticket-items">
+                    {% for item in ticket.articles.all|slice:":3" %}{{ item.nom }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </div>
+            </div>
+
+            <div class="ticket-meta">
+                <div class="amount">{{ ticket.montant_total|floatformat:"-2" }} F CFA</div>
+                <span class="service-tag {{ service_class }}">{{ ticket.service.nom }}</span>
+            </div>
+
+            <div class="ticket-actions">
+                <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="action-btn" title="Rappel Ticket (Format Thermique)" target="_blank">
+                    <i class="fas fa-print"></i>
+                </a>
+                <a href="{% url 'facturation:ticket_detail' ticket.pk %}" class="action-btn print-btn" title="Détails du ticket">
+                    <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="action-btn avoir-btn" title="Créer un avoir" onclick="return confirm('Voulez-vous créer un avoir pour ce ticket ?');">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+            {% endwith %}
+        </div>
+        {% empty %}
+        <div class="stat-card" style="text-align: center;">
+            <p>{% trans "Aucun ticket trouvé pour les filtres sélectionnés." %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Recherche et filtres
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('ticketSearch');
+        const dateFilter = document.getElementById('dateFilter');
+        const serviceFilter = document.getElementById('serviceFilter');
+
+        function applyFilters() {
+            const baseUrl = "{% url 'facturation:ticket_list' %}";
+            const params = new URLSearchParams();
+
+            if (dateFilter.value) {
+                params.append('date', dateFilter.value);
+            }
+            if (serviceFilter.value) {
+                params.append('service', serviceFilter.value);
+            }
+            if (searchInput.value) {
+                params.append('q', searchInput.value);
+            }
+
+            window.location.href = `${baseUrl}?${params.toString()}`;
+        }
+
+        // Apply filters on change
+        dateFilter.addEventListener('change', applyFilters);
+        serviceFilter.addEventListener('change', applyFilters);
+
+        // Apply search on pressing Enter
+        searchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                applyFilters();
+            }
+        });
+    });
+</script>
+{% endblock %}

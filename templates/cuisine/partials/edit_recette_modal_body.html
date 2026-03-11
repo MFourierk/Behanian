@@ -1,0 +1,154 @@
+<div class="row mb-3">
+    <div class="col-md-7">
+        <label class="form-label">Nom du plat</label>
+        <input type="text" name="nom_plat" class="form-control" value="{{ form.instance.plat.nom }}">
+    </div>
+    <div class="col-md-5">
+        <label class="form-label">Catégorie</label>
+        {{ form.categorie }}
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-4"><label class="form-label">Portions</label>{{ form.nombre_portions }}</div>
+    <div class="col-md-4"><label class="form-label">Préparation (min)</label>{{ form.temps_preparation }}</div>
+    <div class="col-md-4"><label class="form-label">Cuisson (min)</label>{{ form.temps_cuisson }}</div>
+</div>
+
+<h5 class="mt-4">Ingrédients</h5>
+<div id="edit-formset-container">
+    <div class="ingredient-form-row-edit mb-1 d-none d-md-grid">
+        <label class="form-label small text-muted">Article</label>
+        <label class="form-label small text-muted">Quantité</label>
+        <label class="form-label small text-muted">Prix Vente</label>
+        <span></span>
+    </div>
+    {{ formset.management_form }}
+    {% for form_item in formset %}
+        <div class="ingredient-form-row-edit" id="edit-{{ form_item.prefix }}">
+            {{ form_item.id }}
+            {{ form_item.ingredient }}
+            {{ form_item.quantite }}
+            {{ form_item.prix_vente }}
+            <button type="button" class="btn btn-sm btn-outline-danger remove-form-row"><i class="fas fa-trash"></i></button>
+        </div>
+    {% endfor %}
+</div>
+<button type="button" id="add-edit-form-row" class="btn btn-sm btn-outline-secondary btn-add-ingredient mt-2"><i class="fas fa-plus"></i> Ajouter un ingrédient</button>
+
+<!-- Section Financière -->
+<div class="financial-summary-grid">
+    <div class="form-group">
+        <label for="edit-cout-revient">Coût de revient total</label>
+        <input type="text" id="edit-cout-revient" class="form-control text-danger" readonly>
+    </div>
+    <div class="form-group">
+        <label for="edit-cout-plat">Coût du plat</label>
+        <input type="text" id="edit-cout-plat" class="form-control text-primary" readonly>
+    </div>
+    <div class="form-group">
+        <label for="edit-marge-valeur">Marge (FCFA)</label>
+        <input type="text" id="edit-marge-valeur" class="form-control marge-valeur" readonly>
+    </div>
+    <div class="form-group">
+        <label for="edit-marge-pourcentage">Marge (%)</label>
+        <input type="text" id="edit-marge-pourcentage" class="form-control marge-pourcentage" readonly>
+    </div>
+</div>
+
+<div class="mb-3 mt-4">
+    <label class="form-label">Instructions</label>
+    {{ form.instructions }}
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Image du plat</label>
+    {% if form.instance.image %}
+        <div class="mb-2">
+            <img src="{{ form.instance.image.url }}" alt="Image actuelle" style="max-height: 80px; border-radius: 4px;">
+        </div>
+    {% endif %}
+    {{ form.image }}
+</div>
+
+<!-- Empty form template -->
+<div id="edit-empty-form" style="display: none;">
+    <div class="ingredient-form-row-edit">
+        {{ formset.empty_form.ingredient }}
+        {{ formset.empty_form.quantite }}
+        {{ formset.empty_form.prix_vente }}
+        <button type="button" class="btn btn-sm btn-outline-danger remove-form-row"><i class="fas fa-trash"></i></button>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('edit-formset-container');
+
+        container.addEventListener('change', function(event) {
+            if (event.target.classList.contains('article-select')) {
+                const select = event.target;
+                const ingredientId = select.value;
+                const row = select.closest('.ingredient-form-row-edit');
+                const prixVenteInput = row.querySelector('input[name$="prix_vente"]');
+
+                if (ingredientId) {
+                    fetch(`/cuisine/api/ingredient-details/${ingredientId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (prixVenteInput) {
+                                prixVenteInput.value = data.prix_vente || '0';
+                            }
+                            updateTotalCost();
+                        })
+                        .catch(error => console.error('Error fetching ingredient details:', error));
+                } else {
+                     if (prixVenteInput) {
+                        prixVenteInput.value = '0';
+                    }
+                    updateTotalCost();
+                }
+            }
+        });
+
+        function updateTotalCost() {
+            let totalCost = 0;
+            document.getElementById('edit-cout-revient').value = totalCost.toFixed(2);
+
+            const allIngredientRows = container.querySelectorAll('.ingredient-form-row-edit');
+            const ingredientIds = [];
+            allIngredientRows.forEach(row => {
+                const ingredientSelect = row.querySelector('.article-select');
+                if (ingredientSelect && ingredientSelect.value) {
+                    ingredientIds.push(ingredientSelect.value);
+                }
+            });
+
+            if (ingredientIds.length > 0) {
+                const params = new URLSearchParams();
+                ingredientIds.forEach(id => params.append('ids[]', id));
+                fetch(`/cuisine/api/ingredients-details/?${params}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        allIngredientRows.forEach(row => {
+                            const ingredientSelect = row.querySelector('.article-select');
+                            const quantiteInput = row.querySelector('input[name$="quantite"]');
+                            if (ingredientSelect && ingredientSelect.value && quantiteInput && quantiteInput.value) {
+                                const ingredientId = ingredientSelect.value;
+                                const quantite = parseFloat(quantiteInput.value) || 0;
+                                const ingredientData = data.ingredients[ingredientId];
+                                if (ingredientData) {
+                                    const prixMoyen = parseFloat(ingredientData.prix_moyen) || 0;
+                                    totalCost += prixMoyen * quantite;
+                                }
+                            }
+                        });
+                        document.getElementById('edit-cout-revient').value = totalCost.toFixed(2);
+                    })
+                    .catch(error => console.error('Error fetching ingredients details for total cost:', error));
+            } else {
+                document.getElementById('edit-cout-revient').value = '0.00';
+            }
+        }
+    });
+</script>

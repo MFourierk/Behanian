@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord - BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .dashboard h1 {
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .user-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+    }
+
+    .logout-btn {
+        display: inline-block;
+        padding: 12px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 20px;
+        transition: transform 0.2s;
+    }
+
+    .logout-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .success-message {
+        color: #28a745;
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard">
+        
+        <h1>🎉 Bienvenue sur BEHANIAN</h1>
+        
+        <div class="user-info">
+            <h2>👤 {{ user.username }}</h2>
+            <p><strong>Email :</strong> {{ user.email|default:"Non défini" }}</p>
+            <p><strong>Statut :</strong> {{ user.is_staff|yesno:"Administrateur,Utilisateur" }}</p>
+        </div>
+
+        <p style="color: #666; margin: 20px 0;">
+            Le tableau de bord complet sera développé dans les prochaines étapes.
+        </p>
+
+        <a href="{% url 'logout' %}" class="logout-btn">Se déconnecter</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+from django.urls import path
+from . import views
+
+app_name = 'hotel'
+
+urlpatterns = [
+    path('', views.hotel_index, name='index'),
+    path('chambre/<int:chambre_id>/', views.chambre_detail, name='chambre_detail'),
+    path('checkin/<int:reservation_id>/', views.checkin_reservation, name='checkin_reservation'),
+    path('checkin/direct/', views.checkin_direct, name='checkin_direct'),
+    path('reservation/create/', views.reservation_create, name='reservation_create'),
+    path('checkin/print/<int:reservation_id>/', views.print_checkin_form, name='print_checkin_form'),
+    path('checkout/<int:reservation_id>/', views.checkout_reservation, name='checkout_reservation'),
+    path('checkout/finalize/<int:ticket_id>/', views.finalize_checkout, name='finalize_checkout'),
+    path('consommation/add/<int:reservation_id>/', views.ajouter_consommation, name='ajouter_consommation'),
+    path('ticket/<int:ticket_id>/print/', views.ticket_print, name='ticket_print'),
+]

@@ -1,0 +1,207 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Gestion des Boissons (Cave){% endblock %}
+
+{% block content %}
+<style>
+    .header-glam {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); /* Bar Purple */
+        padding: 30px;
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(142, 68, 173, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .header-glam::after {
+        content: '🍷';
+        position: absolute;
+        right: -20px;
+        bottom: -40px;
+        font-size: 150px;
+        opacity: 0.15;
+        transform: rotate(20deg);
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .header-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .header-glam h2 {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.8rem;
+    }
+
+    .action-bar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+
+    .btn-add-glam {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .btn-add-glam:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        overflow: hidden;
+        border: none;
+    }
+
+    .table-glam {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .table-glam thead th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #ecf0f1;
+        color: #7f8c8d;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        padding: 20px;
+    }
+
+    .table-glam tbody td {
+        padding: 20px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+        color: #2c3e50;
+        font-weight: 500;
+    }
+
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-dispo { background: #e8f5e9; color: #2ecc71; }
+    .status-indispo { background: #ffebee; color: #e74c3c; }
+
+    .boisson-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #f8f9fa;
+    }
+</style>
+
+<div class="header-glam">
+    <div class="header-content">
+        <h2>Gestion des Boissons</h2>
+        <p class="mb-0 opacity-75">Configuration de la Cave</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'parametres:parametres_index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    <a href="{% url 'parametres:boissonbar_create' %}" class="btn-add-glam">
+        <i class="fas fa-plus"></i> Nouvelle Boisson
+    </a>
+</div>
+
+<div class="table-card">
+    <div class="table-responsive">
+        <table class="table table-glam">
+            <thead>
+                <tr>
+                    <th width="80">Image</th>
+                    <th>Nom</th>
+                    <th>Catégorie</th>
+                    <th>Prix</th>
+                    <th>Stock</th>
+                    <th>Statut</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for boisson in boissons %}
+                <tr>
+                    <td>
+                        {% if boisson.image %}
+                            <img src="{{ boisson.image.url }}" alt="{{ boisson.nom }}" class="boisson-img">
+                        {% else %}
+                            <div class="boisson-img d-flex align-items-center justify-content-center text-muted">
+                                <i class="fas fa-wine-bottle"></i>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-weight: 700;">{{ boisson.nom }}</div>
+                        {% if boisson.description %}
+                        <small class="text-muted">{{ boisson.description|truncatechars:50 }}</small>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-light">{{ boisson.categorie.nom }}</span></td>
+                    <td style="color: #8e44ad; font-weight: 700;">{{ boisson.prix|floatformat:0 }} FCFA</td>
+                    <td>
+                        {% if boisson.quantite_stock <= boisson.seuil_alerte %}
+                            <span class="text-danger font-weight-bold"><i class="fas fa-exclamation-triangle"></i> {{ boisson.quantite_stock }}</span>
+                        {% else %}
+                            <span class="text-success">{{ boisson.quantite_stock }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if boisson.disponible %}
+                            <span class="status-badge status-dispo">Disponible</span>
+                        {% else %}
+                            <span class="status-badge status-indispo">Indisponible</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <a href="{% url 'parametres:boissonbar_update' boisson.pk %}" class="btn btn-sm btn-light text-primary" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'parametres:boissonbar_delete' boisson.pk %}" class="btn btn-sm btn-light text-danger" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fas fa-wine-glass-alt fa-3x mb-3 opacity-25"></i>
+                        <p>Aucune boisson configurée.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Fiches Techniques - Cuisine{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 1rem;
+        background-color: #fff;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .search-wrapper {
+        position: relative;
+        flex-grow: 1;
+        max-width: 50%;
+    }
+    .search-wrapper .fa-search {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    .search-wrapper .form-control {
+        padding-left: 40px;
+    }
+    .actions-wrapper {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    .form-select {
+        min-width: 200px;
+    }
+    .btn-new-fiche {
+        background-color: #f39c12;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.375rem 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+    }
+    .btn-new-fiche:hover {
+        background-color: #e67e22;
+        color: white;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+    }
+
+    /* Modal Styles */
+    #newRecetteModal .modal-body, #editRecetteModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+    .ingredient-form-row {
+        display: grid;
+        grid-template-columns: 1fr 120px 40px;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    #formset-container {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    .btn-add-ingredient {
+        border-style: dashed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>Fiches Techniques</h2>
+        <p class="mb-0 opacity-75">Bibliothèque des recettes et coûts</p>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" class="form-control" placeholder="Rechercher une recette..." value="{{ request.GET.q }}">
+    </div>
+    <div class="actions-wrapper">
+        <select name="categorie" class="form-select" onchange="this.form.submit()">
+            <option value="">Toutes les catégories</option>
+            {% for cat in categories_menu %}
+                <option value="{{ cat.id }}" {% if request.GET.categorie == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nom }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn-new-fiche" data-bs-toggle="modal" data-bs-target="#newRecetteModal">
+            <i class="fas fa-plus"></i> Nouvelle fiche
+        </button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Plat</th>
+                        <th>Catégorie</th>
+                        <th class="text-center">Portions</th>
+                        <th class="text-end">Coût de Revient</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fiche in fiches %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'cuisine:recette_detail' fiche.pk %}" class="fw-bold text-decoration-none">{{ fiche.plat.nom }}</a>
+                        </td>
+                        <td>{{ fiche.plat.categorie.nom|default:"-" }}</td>
+                        <td class="text-center">{{ fiche.nombre_portions }}</td>
+                        <td class="text-end">{{ fiche.cout_revient|floatformat:0 }} FCFA</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-primary edit-recette-btn" data-bs-toggle="modal" data-bs-target="#editRecetteModal" data-fiche-id="{{ fiche.pk }}">Modifier</button>
+                            <a href="{% url 'cuisine:recette_delete' fiche.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">Aucune fiche technique ne correspond à vos critères.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouvelle Fiche Technique -->
+<div class="modal fade" id="newRecetteModal" tabindex="-1" aria-labelledby="newRecetteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="recetteModalForm" method="post" action="{% url 'cuisine:recette_create_modal' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newRecetteModalLabel"><i class="fas fa-feather-alt me-2"></i> Nouvelle fiche technique</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-7">
+                            <label for="id_nom" class="form-label">Nom du plat *</label>
+                            {{ form.nom }}
+                        </div>
+                        <div class="col-md-5">
+                            <label for="id_categorie" class="form-label">Catégorie</label>
+                            {{ form.categorie }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><label class="form-label">Portions</label>{{ form.nombre_portions }}</div>
+                        <div class="col-md-4"><label class="form-label">Préparation (min)</label>{{ form.temps_preparation }}</div>
+                        <div class="col-md-4"><label class="form-label">Cuisson (min)</label>{{ form.temps_cuisson }}</div>
+                    </div>
+
+                    <h5 class="mt-4">Ingrédients</h5>
+                    <div id="formset-container">
+                        <div class="ingredient-form-row mb-1 d-none d-md-grid">
+                            <label class="form-label small text-muted">Article</label>
+                            <label class="form-label small text-muted">Quantité</label>
+                            <span></span>
+                        </div>
+                        {{ formset.management_form }}
+                        {% for form_item in formset %}
+                            <div class="ingredient-form-row">
+                                {{ form_item.ingredient }}
+                                {{ form_item.quantite }}
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-form-row"><i class="fas fa-trash"></i></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" id="add-form-row" class="btn btn-sm btn-outline-secondary btn-add-ingredient mt-2"><i class="fas fa-plus"></i> Ajouter un ingrédient</button>
+
+                    <div class="row mb-3">
+                        <div class="col-md-8"><label for="id_prix_vente" class="form-label">Prix de vente</label>{{ form.prix_vente }}</div>
+                        <div class="col-md-4"><label for="id_marge_souhaitee" class="form-label">Marge souhaitée (%)</label>{{ form.marge_souhaitee }}</div>
+                    </div>
+
+                    <div class="mb-3 mt-4">
+                        <label for="id_instructions" class="form-label">Instructions</label>
+                        {{ form.instructions }}
+                    </div>
+                    <div class="mb-3">
+                         <label for="id_image" class="form-label">Image du plat</label>
+                        {{ form.image }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer la fiche</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="empty-form" style="display: none;">
+    <div class="ingredient-form-row">
+        {{ formset.empty_form.ingredient }}
+        {{ formset.empty_form.quantite }}
+        <button type="button" class="btn btn-sm btn-outline-danger remove-form-row"><i class="fas fa-trash"></i></button>
+    </div>
+</div>
+
+<!-- Modal Modifier Fiche Technique -->
+<div class="modal fade" id="editRecetteModal" tabindex="-1" aria-labelledby="editRecetteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="editRecetteModalForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRecetteModalLabel"><i class="fas fa-edit me-2"></i> Modifier la fiche technique</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Le contenu du formulaire sera injecté ici par JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // --- LOGIC FOR NEW RECIPE MODAL ---
+    const addIngredientBtn = document.getElementById('add-form-row');
+    const formsetContainer = document.getElementById('formset-container');
+    const emptyFormTemplate = document.getElementById('empty-form');
+    const totalFormsInput = document.querySelector('#id_{{ formset.prefix }}-TOTAL_FORMS');
+
+    if (addIngredientBtn && formsetContainer && emptyFormTemplate && totalFormsInput) {
+        addIngredientBtn.addEventListener('click', function() {
+            let formNum = parseInt(totalFormsInput.value);
+            const newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
+            const newFormRow = document.createElement('div');
+            newFormRow.className = 'ingredient-form-row';
+            newFormRow.innerHTML = newFormHtml;
+            formsetContainer.appendChild(newFormRow);
+            totalFormsInput.value = formNum + 1;
+        });
+
+        formsetContainer.addEventListener('click', function(e) {
+            const removeButton = e.target.closest('.remove-form-row');
+            if (removeButton) {
+                e.preventDefault();
+                const formRow = removeButton.closest('.ingredient-form-row');
+                formRow.remove();
+            }
+        });
+    }
+
+    const newRecetteForm = document.getElementById('recetteModalForm');
+    if (newRecetteForm) {
+        newRecetteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    let error_messages = "Erreurs de validation :\n";
+                    for (const field in data.errors) {
+                         error_messages += `${field}: ${data.errors[field][0].message}\n`;
+                    }
+                    alert(error_messages);
+                    console.error(data.errors);
+                }
+            }).catch(error => console.error('Error:', error));
+        });
+    }
+
+    // --- LOGIC FOR EDIT RECIPE MODAL ---
+    const editModalEl = document.getElementById('editRecetteModal');
+    if (editModalEl) {
+        const editModal = new bootstrap.Modal(editModalEl);
+        const editModalBody = editModalEl.querySelector('.modal-body');
+        const editForm = document.getElementById('editRecetteModalForm');
+
+        document.querySelectorAll('.edit-recette-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const ficheId = this.dataset.ficheId;
+                const jsonUrl = `/cuisine/recettes/${ficheId}/json/`;
+                const editUrl = `/cuisine/recettes/${ficheId}/edit/`;
+
+                editForm.action = editUrl;
+                editModalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
+
+                fetch(jsonUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        let formHtml = `
+                             <div class="row mb-3">
+                                <div class="col-md-7">
+                                    <label class="form-label">Nom du plat</label>
+                                    <input type="text" class="form-control" value="${data.nom}" readonly disabled>
+                                </div>
+                                 <div class="col-md-5">
+                                    <label class="form-label">Catégorie</label>
+                                     <input type="text" class="form-control" value="${data.categorie_nom}" readonly disabled>
+                                </div>
+                            </div>
+                             <div class="row mb-3">
+                                <div class="col-md-4"><label class="form-label">Portions</label><input type="number" class="form-control" name="nombre_portions" value="${data.nombre_portions}"></div>
+                                <div class="col-md-4"><label class="form-label">Marge (%)</label><input type="number" step="0.01" class="form-control" name="marge_souhaitee" value="${data.marge_souhaitee}"></div>
+                                <div class="col-md-4"><label class="form-label">Préparation (min)</label><input type="number" class="form-control" name="temps_preparation" value="${data.temps_preparation}"></div>
+                            </div>
+                             <p class="text-muted small fst-italic mt-4">La modification des ingrédients et des instructions se fait sur la page de modification complète pour plus de clarté.</p>
+                        `;
+                        editModalBody.innerHTML = formHtml;
+                    }).catch(error => editModalBody.innerHTML = '<p class="text-danger">Erreur de chargement des données.</p>');
+            });
+        });
+
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    editModal.hide();
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la modification.');
+                    console.error(data.errors);
+                }
+            }).catch(error => console.error('Error submitting form:', error));
+        });
+    }
+});
+</script>
+{% endblock %}

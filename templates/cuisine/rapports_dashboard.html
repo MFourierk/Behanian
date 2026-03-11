@@ -1,0 +1,108 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Rapports & Analyses - Cuisine{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>Rapports & Analyses</h2>
+        <p class="mb-0 opacity-75">Visualisez les performances de votre cuisine</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    <a href="{% url 'cuisine:report_consommation' %}" class="btn-action-glam">
+        <i class="fas fa-file-alt"></i> Rapport de Consommation
+    </a>
+    <a href="{% url 'cuisine:report_pertes' %}" class="btn-action-glam">
+        <i class="fas fa-file-alt"></i> Rapport Pertes & Prélèvements
+    </a>
+</div>
+
+<!-- Graphiques -->
+<div class="row mt-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Répartition des Mouvements (par quantité)</h5>
+                <canvas id="mouvementsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Top 5 Consommations (30 derniers jours)</h5>
+                <canvas id="topConsommationChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Graphique 1: Répartition des Mouvements
+    fetch("{% url 'cuisine:chart_data_mouvements' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('mouvementsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                    datasets: [{
+                        label: 'Quantité par type de mouvement',
+                        data: data.data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)',
+                            'rgba(54, 162, 235, 0.7)'
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    legend: { position: 'top' }
+                }
+            });
+        });
+
+    // Graphique 2: Top 5 Consommations
+    fetch("{% url 'cuisine:chart_data_top_consommation' %}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('topConsommationChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Valeur Consommée (FCFA)',
+                        data: data.data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        yAxes: [{ ticks: { beginAtZero: true } }]
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}

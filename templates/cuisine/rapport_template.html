@@ -1,0 +1,76 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Rapports Cuisine{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>{{ page_title }}</h2>
+        <p class="mb-0 opacity-75">Analyse des données de la cuisine</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <!-- Filtres -->
+        <form method="get" class="mb-4">
+            <div class="form-row align-items-end">
+                <div class="form-group col-md-4">
+                    <label for="start_date">Date de début</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="end_date">Date de fin</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group col-md-4">
+                    <button type="submit" class="btn btn-primary">Filtrer</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Données du Rapport -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th class="text-right">Quantité Consommée</th>
+                        <th class="text-right">Valeur Consommée</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in consommation_data %}
+                    <tr>
+                        <td>{{ item.nom }}</td>
+                        <td class="text-right">{{ item.quantite_totale|floatformat:2 }} {{ item.unite }}</td>
+                        <td class="text-right">{{ item.valeur_totale|floatformat:2 }} FCFA</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">Aucune consommation enregistrée pour cette période.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-primary">
+                        <td colspan="2" class="font-weight-bold">Total Général</td>
+                        <td class="text-right font-weight-bold">{{ total_valeur_consommee|floatformat:2 }} FCFA</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

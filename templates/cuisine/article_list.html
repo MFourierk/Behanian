@@ -1,0 +1,480 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Gestion du Stock - Cuisine{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .stat-card .icon-container {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+    .stat-card .icon-blue { background-color: #e8f0fe; color: #1967d2; }
+    .stat-card .icon-yellow { background-color: #fff8e1; color: #f9a825; }
+    .stat-card .icon-red { background-color: #fce8e6; color: #d93025; }
+    .stat-card .icon-green { background-color: #e6f4ea; color: #1e8e3e; }
+    .stat-card .stat-info h3 { font-size: 24px; font-weight: 600; margin: 0; }
+    .stat-card .stat-info p { font-size: 14px; color: #5f6368; margin: 0; }
+
+    .filter-bar {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+    }
+    .search-input {
+        flex-grow: 1;
+    }
+    .table-container {
+        max-height: 600px; /* ou la hauteur que vous préférez */
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>Gestion du Stock</h2>
+        <p class="mb-0 opacity-75">Inventaire et valorisation</p>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+</div>
+
+<!-- Modal Transformation -->
+<div class="modal fade" id="transformationModal" tabindex="-1" aria-labelledby="transformationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transformationModalLabel">Transformation / Découpe d'article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'cuisine:transformation_stock' %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="text-muted">Ex: Transformer 1 Poulet Entier en 2 Demi-Poulets</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4><i class="fas fa-arrow-up text-danger"></i> Source (A déduire)</h4>
+                            <div class="form-group">
+                                <label>Article à transformer</label>
+                                <select name="source_id" class="form-control" required onchange="updateUnit(this, 'unitSource')">
+                                    <option value="">Sélectionner...</option>
+                                    {% for article in articles %}
+                                    <option value="{{ article.id }}" data-unit="{{ article.get_unite_display }}">{{ article.nom }} (Stock: {{ article.quantite_stock|floatformat:2 }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantité à retirer</label>
+                                <div class="input-group">
+                                    <input type="number" name="qty_source" id="qty_source" class="form-control" step="0.01" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" id="unitSource">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h4><i class="fas fa-arrow-down text-success"></i> Cible (A ajouter)</h4>
+                            <div class="form-group">
+                                <label>Article obtenu</label>
+                                <select name="target_id" class="form-control" required onchange="updateUnit(this, 'unitTarget')">
+                                    <option value="">Sélectionner...</option>
+                                    {% for article in articles %}
+                                    <option value="{{ article.id }}" data-unit="{{ article.get_unite_display }}">{{ article.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantité obtenue</label>
+                                <div class="input-group">
+                                    <input type="number" name="qty_target" id="qty_target" class="form-control" step="0.01" required>
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" id="unitTarget">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Valider la transformation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Stat Card: Articles -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="icon-container icon-blue"><i class="fas fa-box"></i></div>
+                <div class="stat-info">
+                    <h3>{{ total_articles }}</h3>
+                    <p>Articles</p>
+                </div>
+            </div>
+        </div>
+        <!-- Stat Card: Valeur Stock -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="icon-container icon-yellow"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-info">
+                    <h3>{{ valeur_stock|floatformat:0 }}</h3>
+                    <p>Valeur stock</p>
+                </div>
+            </div>
+        </div>
+        <!-- Stat Card: Stock bas -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="icon-container icon-red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-info">
+                    <h3>{{ stock_bas }}</h3>
+                    <p>Stock bas</p>
+                </div>
+            </div>
+        </div>
+        <!-- Stat Card: Ruptures -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="stat-card">
+                <div class="icon-container icon-green"><i class="fas fa-chart-area"></i></div>
+                <div class="stat-info">
+                    <h3>{{ ruptures }}</h3>
+                    <p>Ruptures</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <div class="search-input">
+            <input type="text" id="searchInput" class="form-control" placeholder="Rechercher un article...">
+        </div>
+        <div class="">
+            <select id="categoryFilter" class="form-control">
+                <option value="">Toutes catégories</option>
+                {% for categorie in categories %}
+                    <option value="{{ categorie.nom }}">{{ categorie.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <a href="{% url 'cuisine:etat_stock' %}" class="btn btn-info"><i class="fas fa-file-alt"></i> État du Stock</a>
+        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#transformationModal"><i class="fas fa-cut"></i> Transformation</button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newArticleModal">+ Nouvel article</button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="table" id="articlesTable">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Nom</th>
+                            <th>Catégorie</th>
+                            <th>Stock Actuel</th>
+                            <th>Seuil Alerte</th>
+                            <th>Prix Moyen</th>
+                            <th>Prix Vente</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in articles %}
+                        <tr class="article-row" data-category="{{ article.categorie.nom|default:'' }}">
+                            <td><span class="text-muted">{{ article.code|default:"-" }}</span></td>
+                            <td style="font-weight: 500;">{{ article.nom }}</td>
+                            <td>{{ article.categorie.nom|default:"-" }}</td>
+                            <td class="{% if article.en_alerte %}text-danger{% endif %}">
+                                {{ article.quantite_stock|floatformat:2 }} {{ article.get_unite_display }}
+                                {% if article.en_alerte %}
+                                <i class="fas fa-exclamation-triangle warning-icon"></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ article.seuil_alerte|floatformat:1 }}</td>
+                            <td>{{ article.prix_moyen|floatformat:0 }} FCFA</td>
+                            <td>{{ article.prix_vente|floatformat:0 }} FCFA</td>
+                            <td>
+                                <a href="#" class="btn-icon edit-btn" data-id="{{ article.id }}" data-url="{% url 'cuisine:article_edit' article.id %}" title="Modifier">
+                                    <i class="fas fa-edit text-primary"></i>
+                                </a>
+                                <!-- Other actions -->
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Aucun article défini.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Article -->
+<div class="modal fade" id="editArticleModal" tabindex="-1" aria-labelledby="editArticleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editArticleModalLabel">Modifier l'Article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editArticleForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label for="edit_id_nom">Nom *</label>{{ edit_form.nom }}</div></div>
+                        <div class="col-md-6"><div class="form-group"><label for="edit_id_code">Code</label>{{ edit_form.code }}</div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label for="edit_id_categorie">Catégorie</label>{{ edit_form.categorie }}</div></div>
+                        <div class="col-md-6"><div class="form-group"><label for="edit_id_unite">Unité</label>{{ edit_form.unite }}</div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label for="edit_id_quantite_stock">Stock actuel</label>{{ edit_form.quantite_stock }}</div></div>
+                        <div class="col-md-6"><div class="form-group"><label for="edit_id_seuil_alerte">Stock minimum</label>{{ edit_form.seuil_alerte }}</div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label for="id_edit_prix_moyen">CMUP (Prix d'achat)</label>{{ edit_form.prix_moyen }}</div></div>
+                        <div class="col-md-6"><div class="form-group"><label for="id_edit_marge">Marge (%)</label>{{ edit_form.marge }}</div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label for="id_edit_prix_vente">Prix de vente</label>{{ edit_form.prix_vente }}</div></div>
+                        <div class="col-md-6"><div class="form-group"><label for="id_edit_emplacement">Emplacement</label>{{ edit_form.emplacement }}</div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouvel Article -->
+<div class="modal fade" id="newArticleModal" tabindex="-1" aria-labelledby="newArticleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newArticleModalLabel">Nouvel Article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="newArticleForm" method="post" action="{% url 'cuisine:article_create_modal' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_nom">Nom *</label>
+                                {{ article_form.nom }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_code">Code</label>
+                                {{ article_form.code }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_categorie">Catégorie</label>
+                                {{ article_form.categorie }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_unite">Unité</label>
+                                {{ article_form.unite }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_quantite_stock">Stock actuel</label>
+                                {{ article_form.quantite_stock }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_seuil_alerte">Stock minimum</label>
+                                {{ article_form.seuil_alerte }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_prix_moyen">CMUP (Prix d'achat)</label>
+                                {{ article_form.prix_moyen }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                             <div class="form-group">
+                                <label for="id_marge">Marge (%)</label>
+                                {{ article_form.marge }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_prix_vente">Prix de vente</label>
+                                {{ article_form.prix_vente }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_emplacement">Emplacement</label>
+                                {{ article_form.emplacement }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Initialisation et filtres ---
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const tableRows = document.querySelectorAll('#articlesTable tbody .article-row');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategory = categoryFilter.value;
+        tableRows.forEach(row => {
+            const nameMatch = row.cells[0].textContent.toLowerCase().includes(searchTerm);
+            const categoryMatch = selectedCategory === '' || row.dataset.category === selectedCategory;
+            row.style.display = (nameMatch && categoryMatch) ? '' : 'none';
+        });
+    }
+    searchInput.addEventListener('keyup', filterTable);
+    categoryFilter.addEventListener('change', filterTable);
+
+    function updateUnit(select, spanId) {
+        const unit = select.options[select.selectedIndex].dataset.unit;
+        document.getElementById(spanId).textContent = unit || '-';
+    }
+
+    // --- Logique de calcul et de soumission des formulaires ---
+    function setupForm(formId, prefix) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        // Calcul automatique du Prix de Vente
+        const prixMoyenInput = form.querySelector(`#id_${prefix}-prix_moyen`);
+        const margeInput = form.querySelector(`#id_${prefix}-marge`);
+        const prixVenteInput = form.querySelector(`#id_${prefix}-prix_vente`);
+
+        if (prixMoyenInput && margeInput && prixVenteInput) {
+            const calculate = () => {
+                const prixMoyen = parseFloat(prixMoyenInput.value);
+                const marge = parseFloat(margeInput.value);
+                if (!isNaN(prixMoyen) && !isNaN(marge) && marge >= 0) {
+                    const prixVente = prixMoyen * (1 + (marge / 100));
+                    prixVenteInput.value = Math.round(prixVente);
+                }
+            };
+            prixMoyenInput.addEventListener('input', calculate);
+            margeInput.addEventListener('input', calculate);
+        }
+
+        // Soumission AJAX
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST', body: formData, headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    displayFormErrors(form, JSON.parse(data.errors), prefix);
+                }
+            });
+        });
+    }
+
+    function displayFormErrors(form, errors, prefix) {
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+        for (const [field, errorList] of Object.entries(errors)) {
+            const fieldElement = form.querySelector(`#id_${prefix}-${field}`);
+            if (fieldElement) {
+                fieldElement.classList.add('is-invalid');
+                const errorContainer = document.createElement('div');
+                errorContainer.className = 'invalid-feedback d-block';
+                errorContainer.innerText = errorList.map(e => e.message).join(' ');
+                fieldElement.parentElement.appendChild(errorContainer);
+            }
+        }
+    }
+
+    setupForm('newArticleForm', 'new');
+    setupForm('editArticleForm', 'edit');
+
+    // --- Logique d'ouverture de la modale de modification ---
+    const editArticleModal = new bootstrap.Modal(document.getElementById('editArticleModal'));
+    const editForm = document.getElementById('editArticleForm');
+    document.querySelectorAll('.edit-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.dataset.url;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        editForm.action = url;
+                        for (const [key, value] of Object.entries(data.data)) {
+                            const field = editForm.querySelector(`[name="edit-${key}"]`);
+                            if (field) field.value = value || '';
+                        }
+                        editArticleModal.show();
+                    }
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

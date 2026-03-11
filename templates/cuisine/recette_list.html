@@ -1,0 +1,644 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Recipe Cards - Kitchen{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 1rem;
+        background-color: #fff;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .search-wrapper {
+        position: relative;
+        flex-grow: 1;
+        max-width: 50%;
+    }
+    .search-wrapper .fa-search {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    .search-wrapper .form-control {
+        padding-left: 40px;
+    }
+    .actions-wrapper {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    .form-select {
+        min-width: 200px;
+    }
+    .btn-new-fiche {
+        background-color: #f39c12;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.375rem 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+    }
+    .btn-new-fiche:hover {
+        background-color: #e67e22;
+        color: white;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+    }
+
+    /* Modal Styles */
+    #newRecetteModal .modal-body, #editRecetteModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+    .ingredient-form-row {
+        display: grid;
+        grid-template-columns: 1fr 120px 40px;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .ingredient-form-row-edit {
+        display: grid;
+        grid-template-columns: 1fr 120px 120px 40px;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .financial-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        background-color: #f7f7f7;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 1.5rem;
+        border: 1px solid #e9ecef;
+    }
+    .financial-summary-grid .form-group label {
+        font-weight: 500;
+        color: #555;
+        font-size: 0.9rem;
+    }
+    .financial-summary-grid .form-control[readonly] {
+        background-color: #fff;
+        font-weight: bold;
+        border: none;
+        box-shadow: none;
+        padding-left: 0.5rem;
+    }
+    .financial-summary-grid .marge-valeur {
+        color: #28a745;
+    }
+    .financial-summary-grid .marge-pourcentage {
+        color: #17a2b8;
+    }
+    #formset-container {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    .btn-add-ingredient {
+        border-style: dashed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-glam cuisine-watermark">
+    <div class="header-content">
+        <h2>Fiches Techniques</h2>
+        <p class="mb-0 opacity-75">Bibliothèque des recettes et coûts</p>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'cuisine:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" class="form-control" placeholder="Rechercher une recette..." value="{{ request.GET.q }}">
+    </div>
+    <div class="actions-wrapper">
+        <select name="categorie" class="form-select" onchange="this.form.submit()">
+            <option value="">Toutes les catégories</option>
+            {% for cat in categories_menu %}
+                <option value="{{ cat.id }}" {% if request.GET.categorie == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nom }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn-new-fiche" data-bs-toggle="modal" data-bs-target="#newRecetteModal">
+            <i class="fas fa-plus"></i> Nouvelle fiche
+        </button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Plat</th>
+                        <th>Catégorie</th>
+                        <th class="text-center">Portions</th>
+                        <th class="text-end">Coût de Revient</th>
+                        <th class="text-end">Prix de Vente</th>
+                        <th class="text-end">Marge (FCFA)</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fiche in fiches %}
+                    <tr>
+                        <td>
+                            <strong class="fw-bold">{{ fiche.plat.nom }}</strong>
+                        </td>
+                        <td>{{ fiche.plat.categorie.nom|default:"-" }}</td>
+                        <td class="text-center">{{ fiche.nombre_portions }}</td>
+                        <td class="text-end">{{ fiche.cout_revient|floatformat:0 }} FCFA</td>
+                        <td class="text-end fw-bold text-primary">{{ fiche.plat.prix|floatformat:0 }} FCFA</td>
+                        <td class="text-end text-success">{{ fiche.marge_valeur|floatformat:0 }} FCFA</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-primary edit-recette-btn" data-bs-toggle="modal" data-bs-target="#editRecetteModal" data-fiche-id="{{ fiche.pk }}">Modifier</button>
+                            <a href="{% url 'cuisine:recette_delete' fiche.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">Aucune fiche technique ne correspond à vos critères.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouvelle Fiche Technique -->
+<div class="modal fade" id="newRecetteModal" tabindex="-1" aria-labelledby="newRecetteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="recetteModalForm" method="post" action="{% url 'cuisine:recette_create_modal' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newRecetteModalLabel"><i class="fas fa-feather-alt me-2"></i> Nouvelle fiche technique</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-7">{{ form.nom.label_tag }}{{ form.nom }}</div>
+                        <div class="col-md-5">{{ form.categorie.label_tag }}{{ form.categorie }}</div>
+                    </div>
+                    <div class="mb-3">{{ form.description.label_tag }}{{ form.description }}</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4"><label class="form-label">Portions</label>{{ form.nombre_portions }}</div>
+                        <div class="col-md-4"><label class="form-label">Préparation (min)</label>{{ form.temps_preparation }}</div>
+                        <div class="col-md-4"><label class="form-label">Cuisson (min)</label>{{ form.temps_cuisson }}</div>
+                    </div>
+
+                    <h5 class="mt-4">Ingrédients</h5>
+                    <div id="new-formset-container">
+                        <div class="ingredient-form-row-edit mb-1 d-none d-md-grid">
+                            <label class="form-label small text-muted">Article</label>
+                            <label class="form-label small text-muted">Quantité</label>
+                            <label class="form-label small text-muted">Prix Vente</label>
+                            <span></span>
+                        </div>
+                        {{ formset.management_form }}
+                        {% for form_item in formset %}
+    <div class="ingredient-form-row-edit" id="form-row-{{ form_item.prefix }}">
+        {{ form_item.id }}
+        <div class="w-100">{{ form_item.ingredient }}</div>
+        <div style="width: 150px;">{{ form_item.quantite }}</div>
+        <div style="width: 150px;">{{ form_item.prix_vente }}</div>
+        {% if form_item.instance.pk and formset.can_delete %}
+            <div class="form-check" style="width: 120px;">
+                {{ form_item.DELETE }}{{ form_item.DELETE.label_tag }}
+            </div>
+        {% endif %}
+        <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" data-form-id="{{ forloop.counter0 }}">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" id="add-new-form-row" class="btn btn-sm btn-outline-secondary btn-add-ingredient mt-2"><i class="fas fa-plus"></i> Ajouter un ingrédient</button>
+
+                    <div class="financial-summary-grid">
+                        <div class="form-group">
+                            <label>Coût de revient total</label>
+                            <input type="text" id="new-cout-revient" class="form-control text-danger" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Coût du plat</label>
+                            <input type="text" id="new-cout-plat" class="form-control text-primary" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Marge (FCFA)</label>
+                            <input type="text" id="new-marge-valeur" class="form-control marge-valeur" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Marge (%)</label>
+                            <input type="text" id="new-marge-pourcentage" class="form-control marge-pourcentage" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-4">{{ form.instructions.label_tag }}{{ form.instructions }}</div>
+                    <div class="mb-3">{{ form.image.label_tag }}{{ form.image }}</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer la fiche</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="empty-form" style="display: none;">
+    <div class="ingredient-form-row-edit">
+        {{ formset.empty_form.ingredient }}
+        {{ formset.empty_form.quantite }}
+        {{ formset.empty_form.prix_vente }}
+        <button type="button" class="btn btn-sm btn-outline-danger remove-form-row"><i class="fas fa-trash"></i></button>
+    </div>
+</div>
+
+<!-- Modal Modifier Fiche Technique -->
+<div class="modal fade" id="editRecetteModal" tabindex="-1" aria-labelledby="editRecetteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="editRecetteModalForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRecetteModalLabel"><i class="fas fa-edit me-2"></i> Modifier la fiche technique</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Le contenu du formulaire sera injecté ici par JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ ingredients_data_json|json_script:"ingredients-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    function formatCurrency(value) {
+        return Math.round(value).toLocaleString('fr-FR') + ' FCFA';
+    }
+
+    function calculateFinancials(container, coutRevientEl, coutPlatEl, margeValeurEl, margePourcentageEl) {
+        let totalCost = 0;
+        let totalPlatCost = 0;
+
+        container.querySelectorAll('.ingredient-form-row-edit').forEach(row => {
+            const ingredientSelect = row.querySelector('select[name$="-ingredient"]');
+            const quantityInput = row.querySelector('input[name$="-quantite"]');
+            const prixVenteInput = row.querySelector('input[name$="-prix_vente"]');
+            
+            if (!ingredientSelect || !quantityInput || !prixVenteInput) return;
+
+            const ingredientId = ingredientSelect.value;
+            const quantity = parseFloat(quantityInput.value) || 0;
+            let prixVenteLigne = parseFloat(prixVenteInput.value) || 0;
+
+            if (ingredientId && quantity > 0 && window.ingredientsData[ingredientId]) {
+                const ingredientData = window.ingredientsData[ingredientId];
+                totalCost += quantity * (parseFloat(ingredientData.prix_moyen) || 0);
+                
+                if (isNaN(prixVenteLigne) || prixVenteLigne <= 0) {
+                    prixVenteLigne = parseFloat(ingredientData.prix_vente) || 0;
+                }
+                totalPlatCost += quantity * prixVenteLigne;
+            }
+        });
+
+        const margeValeur = totalPlatCost - totalCost;
+        const margePourcentage = totalCost > 0 ? (margeValeur / totalCost) * 100 : 0;
+
+        if(coutRevientEl) coutRevientEl.value = formatCurrency(totalCost);
+        if(coutPlatEl) coutPlatEl.value = formatCurrency(totalPlatCost);
+        if(margeValeurEl) margeValeurEl.value = formatCurrency(margeValeur);
+        if(margePourcentageEl) margePourcentageEl.value = margePourcentage.toFixed(1) + ' %';
+    }
+
+
+    function setupFormsetListeners(containerSelector, financialElements) {
+        const container = document.querySelector(containerSelector);
+        if (!container) return;
+
+        const callCalculate = () => calculateFinancials(container, financialElements.coutRevientEl, financialElements.coutPlatEl, financialElements.margeValeurEl, financialElements.margePourcentageEl);
+
+        container.addEventListener('change', function(e) {
+            const target = e.target;
+            if (target && target.matches('select[name$="-ingredient"]')) {
+                const ingredientId = target.value;
+                const formRow = target.closest('.ingredient-form-row-edit');
+                if (!formRow) return;
+                const prixVenteInput = formRow.querySelector('input[name$="-prix_vente"]');
+
+                if (ingredientId) {
+                    fetch(`/cuisine/api/ingredient-details/${ingredientId}/`)
+                        .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch'))
+                        .then(data => {
+                            if (prixVenteInput) {
+                                prixVenteInput.value = data.prix_vente || '0.00';
+                            }
+                            callCalculate();
+                        })
+                        .catch(error => {
+                            console.error('Error fetching ingredient details:', error);
+                            if (prixVenteInput) prixVenteInput.value = '0.00';
+                            callCalculate();
+                        });
+                } else {
+                    if (prixVenteInput) prixVenteInput.value = '';
+                    callCalculate();
+                }
+            }
+        });
+
+        container.addEventListener('input', function(e) {
+            if (e.target.matches('input[name$="-quantite"]') || e.target.matches('input[name$="-prix_vente"]')) {
+                callCalculate();
+            }
+        });
+
+        callCalculate();
+    }
+
+    window.ingredientsData = JSON.parse(document.getElementById('ingredients-data').textContent);
+
+    // --- LOGIC FOR NEW RECIPE MODAL ---
+    setupNewFormset();
+
+    function setupNewFormset() {
+        const container = document.getElementById('new-formset-container');
+        if (!container) return;
+
+        const addButton = document.getElementById('add-new-form-row');
+        const emptyFormTemplate = document.getElementById('empty-form');
+        const totalFormsInput = container.querySelector('input[name$="TOTAL_FORMS"]');
+        
+        if (addButton && emptyFormTemplate && totalFormsInput) {
+            addButton.addEventListener('click', function() {
+                let formNum = parseInt(totalFormsInput.value);
+                const newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
+                const newFormDiv = document.createElement('div');
+                newFormDiv.innerHTML = newFormHtml;
+                const newFormRow = newFormDiv.firstElementChild;
+                if(newFormRow) {
+                    container.appendChild(newFormRow);
+                    totalFormsInput.value = formNum + 1;
+                }
+            });
+        }
+
+        container.addEventListener('click', function(e) {
+            const removeButton = e.target.closest('.remove-form-row');
+            if (removeButton) {
+                e.preventDefault();
+                const formRow = removeButton.closest('.ingredient-form-row-edit');
+                if (formRow) {
+                    formRow.remove();
+                    // Recalculate after removing
+                    calculateFinancials(
+                        container,
+                        document.getElementById('new-cout-revient'),
+                        document.getElementById('new-cout-plat'),
+                        document.getElementById('new-marge-valeur'),
+                        document.getElementById('new-marge-pourcentage')
+                    );
+                }
+            }
+        });
+        
+        setupFormsetListeners('#new-formset-container', {
+            coutRevientEl: document.getElementById('new-cout-revient'),
+            coutPlatEl: document.getElementById('new-cout-plat'),
+            margeValeurEl: document.getElementById('new-marge-valeur'),
+            margePourcentageEl: document.getElementById('new-marge-pourcentage')
+        });
+    }
+
+    const newRecetteForm = document.getElementById('recetteModalForm');
+    if (newRecetteForm) {
+        newRecetteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    let error_messages = "Erreurs de validation :\n\n";
+                    for (const field in data.errors) {
+                        error_messages += `• ${field}: ${data.errors[field]}\n`;
+                    }
+                    alert(error_messages);
+                    console.error("Validation Errors:", data.errors);
+                }
+            }).catch(error => console.error('Error:', error));
+        });
+    }
+
+    // --- LOGIC FOR EDIT RECIPE MODAL ---
+    const editModalEl = document.getElementById('editRecetteModal');
+    if (editModalEl) {
+        const editModal = new bootstrap.Modal(editModalEl);
+        const editModalBody = editModalEl.querySelector('.modal-body');
+        const editForm = document.getElementById('editRecetteModalForm');
+
+        // --- Event listener for opening the modal ---
+        document.querySelectorAll('.edit-recette-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const ficheId = this.dataset.ficheId;
+                const jsonUrl = `/cuisine/recettes/edit-form/${ficheId}/`;
+                editForm.action = `/cuisine/recettes/${ficheId}/edit/`;
+
+                editModalBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>';
+
+                fetch(jsonUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.ingredientsData = data.ingredients_data; // Update the main variable
+                            editModalBody.innerHTML = data.modal_body;
+                            // Re-initialize formset logic for the new content
+                            setupEditFormset();
+                        } else {
+                            editModalBody.innerHTML = '<p class="text-danger">Erreur de chargement du formulaire.</p>';
+                        }
+                    }).catch(error => {
+                        editModalBody.innerHTML = '<p class="text-danger">Erreur de communication avec le serveur.</p>';
+                    });
+            });
+        });
+
+        // --- Logic for adding/removing ingredients in the edit modal ---
+        function setupEditFormset() {
+            const container = document.getElementById('edit-formset-container');
+            if (!container) return;
+
+            const addButton = document.getElementById('add-edit-form-row');
+            const emptyFormTemplate = document.getElementById('edit-empty-form');
+            if (!emptyFormTemplate) return;
+            const emptyForm = emptyFormTemplate.innerHTML;
+            
+            const totalFormsInput = container.querySelector('input[name$="TOTAL_FORMS"]');
+            const formsetPrefix = 'lignes';
+
+            // Financial display elements
+            const coutRevientEl = document.getElementById('edit-cout-revient');
+            const coutPlatEl = document.getElementById('edit-cout-plat');
+            const margeValeurEl = document.getElementById('edit-marge-valeur');
+            const margePourcentageEl = document.getElementById('edit-marge-pourcentage');
+
+            const callCalculate = () => calculateFinancials(container, coutRevientEl, coutPlatEl, margeValeurEl, margePourcentageEl);
+
+            // --- Event Listeners ---
+
+            if(addButton) {
+                addButton.addEventListener('click', function() {
+                    if (!totalFormsInput) return;
+                    let formNum = parseInt(totalFormsInput.value);
+                    const newFormHtml = emptyForm.replace(/__prefix__/g, formNum);
+                    const newFormDiv = document.createElement('div');
+                    newFormDiv.innerHTML = newFormHtml;
+                    // We need to append the actual element, not a div wrapper
+                    const newFormRow = newFormDiv.firstElementChild;
+                    if(newFormRow) {
+                       container.appendChild(newFormRow);
+                       totalFormsInput.value = formNum + 1;
+                    } else {
+                        console.error("Could not create new form row from template.");
+                    }
+                });
+            }
+
+            container.addEventListener('click', function(e) {
+                const removeButton = e.target.closest('.remove-form-row');
+                if (removeButton) {
+                    e.preventDefault();
+                    const formRow = removeButton.closest('.ingredient-form-row-edit');
+                    if (formRow) {
+                        formRow.remove();
+                        callCalculate(); // Recalculate after removing
+                    }
+                }
+            });
+            
+            container.addEventListener('input', function(e) {
+                // Recalculate on any input change within the formset
+                const target = e.target;
+                if (target && (target.matches('input[name$="-quantite"]') || target.matches('input[name$="-prix_vente"]'))) {
+                    callCalculate();
+                }
+            });
+
+            container.addEventListener('change', function(e) {
+                const target = e.target;
+                if (target && target.matches('select[name$="-ingredient"]')) {
+                    const ingredientId = target.value;
+                    const formRow = target.closest('.ingredient-form-row-edit');
+                    if (!formRow) return;
+                    const prixVenteInput = formRow.querySelector('input[name$="-prix_vente"]');
+
+                    if (ingredientId) {
+                        // We can still use window.ingredientsData as a cache, but fetch if needed.
+                        if (window.ingredientsData && window.ingredientsData[ingredientId]) {
+                            if(prixVenteInput) prixVenteInput.value = window.ingredientsData[ingredientId].prix_vente;
+                            callCalculate();
+                        } else {
+                            fetch(`/cuisine/api/ingredient-details/${ingredientId}/`)
+                                .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch'))
+                                .then(data => {
+                                    console.log("Fetched ingredient data for edit recipe:", data);
+                                    if (prixVenteInput) {
+                                        prixVenteInput.value = data.prix_vente || '0.00';
+                                    }
+                                    // Optionally cache it
+                                    if(!window.ingredientsData) { window.ingredientsData = {}; }
+                                    window.ingredientsData[ingredientId] = data;
+                                    callCalculate();
+                                })
+                                .catch(error => {
+                                    console.error('Error fetching ingredient details:', error);
+                                    if (prixVenteInput) prixVenteInput.value = '0.00';
+                                });
+                        }
+                    } else {
+                        if (prixVenteInput) prixVenteInput.value = '';
+                        callCalculate();
+                    }
+                }
+            });
+
+            // Initial calculation on modal load
+            callCalculate();
+        }
+
+        // --- Event listener for submitting the form ---
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    editModal.hide();
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la modification. Vérifiez les champs.');
+                    // You could add more sophisticated error display here
+                    console.error(data.errors);
+                }
+            }).catch(error => console.error('Error submitting form:', error));
+        });
+    }
+});
+</script>
+{% endblock %}

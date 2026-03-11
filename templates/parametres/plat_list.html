@@ -1,0 +1,186 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Gestion des Plats & Menus{% endblock %}
+
+{% block content %}
+<style>
+    /* Table Styles */
+    .table-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        overflow: hidden;
+        border: none;
+    }
+
+    .table-glam {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .table-glam thead th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #ecf0f1;
+        color: #7f8c8d;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        padding: 20px;
+    }
+
+    .table-glam tbody td {
+        padding: 20px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+        color: #2c3e50;
+        font-weight: 500;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        margin: 0 3px;
+        text-decoration: none;
+    }
+
+    .btn-edit { background: #fdedec; color: #c0392b; }
+    .btn-edit:hover { background: #c0392b; color: white; }
+
+    .btn-delete { background: #fadbd8; color: #e74c3c; }
+    .btn-delete:hover { background: #e74c3c; color: white; }
+
+    /* Module Specific Add Button */
+    .btn-add-module {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(192, 57, 43, 0.3);
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+    }
+
+    .btn-add-module:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(192, 57, 43, 0.4);
+        color: white;
+    }
+
+    .status-badge {
+        padding: 6px 15px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-true { background: #eafaf1; color: #2ecc71; }
+    .status-false { background: #fadbd8; color: #e74c3c; }
+
+    .price-tag {
+        font-weight: 700;
+        color: #2c3e50;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="header-glam cuisine-watermark">
+        <div class="header-content">
+            <h2>Plats & Menus</h2>
+            <p class="mb-0 opacity-75">Liste de tous les plats et boissons</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <a href="{% url 'parametres:parametres_index' %}" class="btn-back" title="Retour">
+            &laquo;
+        </a>
+        <!-- Create button removed as per instruction: "puisque que les plats créés en Cusine sont sythématiquement les plats de Restaurant" -->
+        <a href="{% url 'cuisine:recette_new_plat' %}" class="btn-add-module">
+             <i class="fas fa-plus mr-2"></i> Nouveau Plat (Cuisine)
+        </a>
+    </div>
+
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-glam">
+                <thead>
+                    <tr>
+                        <th>Nom du Plat</th>
+                        <th>Catégorie</th>
+                        <th>Prix</th>
+                        <th>Préparation</th>
+                        <th>Disponibilité</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plat in plats %}
+                    <tr>
+                        <td>
+                            <span style="font-weight: 700; font-size: 1.1rem;">{{ plat.nom }}</span>
+                            {% if plat.description %}
+                            <div class="small text-muted mt-1">{{ plat.description|truncatechars:40 }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if plat.categorie %}
+                                <span class="badge badge-light">{{ plat.categorie.nom }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="price-tag">{{ plat.prix }} FCFA</span></td>
+                        <td>
+                            {% if plat.temps_preparation %}
+                                <i class="far fa-clock text-muted mr-1"></i> {{ plat.temps_preparation }} min
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if plat.disponible %}
+                            <span class="status-badge status-true">Disponible</span>
+                            {% else %}
+                            <span class="status-badge status-false">Indisponible</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <!-- We redirect to cuisine edit to handle ingredients as well -->
+                            <a href="{% if plat.fiche_technique %}{% url 'cuisine:recette_edit' plat.fiche_technique.pk %}{% else %}{% url 'parametres:plat_update' plat.pk %}{% endif %}" class="action-btn btn-edit" title="Modifier">
+                                <i class="fas fa-pencil-alt"></i>
+                            </a>
+                            <a href="{% url 'parametres:plat_delete' plat.pk %}" class="action-btn btn-delete" title="Supprimer">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-utensils fa-3x mb-3"></i>
+                                <p>Aucun plat enregistré.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

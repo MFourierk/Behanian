@@ -1,0 +1,57 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: 85vh; background-color: #f8f9fa;">
+    <div class="card border-0 text-center p-4" style="max-width: 400px; width: 100%; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); background: white;">
+        
+        <div class="card-body px-4 py-2">
+            <!-- Icone Poubelle Rouge -->
+            <div class="mb-4 position-relative d-inline-block">
+                <div class="icon-circle d-flex align-items-center justify-content-center mx-auto" style="width: 80px; height: 80px; background-color: #fee2e2; border-radius: 50%;">
+                    <i class="fas fa-trash-alt text-danger" style="font-size: 32px; color: #ef4444 !important;"></i>
+                </div>
+                <!-- Petits éléments décoratifs flottants (optionnel pour le côté glamour/image 2) -->
+                <span style="position: absolute; top: 0; right: 0; color: #ef4444;">+</span>
+                <span style="position: absolute; bottom: 10px; left: -10px; color: #ef4444; font-size: 10px;">+</span>
+            </div>
+
+            <h4 class="mb-3" style="font-weight: 700; color: #1f2937;">Supprimer la chambre ?</h4>
+            
+            <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.5;">
+                Vous êtes sur le point de supprimer la chambre <strong>{{ object.numero }}</strong>.<br>
+                Cette action est irréversible et ne peut pas être annulée.
+            </p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="{% url 'parametres:chambre_list' %}" class="btn btn-outline-danger flex-fill py-2" style="border-radius: 12px; font-weight: 600; border-width: 2px;">
+                        Annuler
+                    </a>
+                    <button type="submit" class="btn btn-danger flex-fill py-2" style="border-radius: 12px; font-weight: 600; background-color: #ef4444; border-color: #ef4444;">
+                        Supprimer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-outline-danger {
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+    .btn-outline-danger:hover {
+        background-color: #fee2e2;
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+    .btn-danger:hover {
+        background-color: #dc2626;
+        border-color: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+</style>
+{% endblock %}

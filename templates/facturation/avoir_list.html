@@ -1,0 +1,173 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Avoirs{% endblock %}
+
+{% block content %}
+<div class="header-glam facturation-watermark">
+    <div class="header-content">
+        <h2>Avoirs</h2>
+        <p class="mb-0 opacity-75">Historique des avoirs</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'facturation:index' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    <a href="{% url 'facturation:avoir_create' %}" class="btn-add-glam">
+        <i class="fas fa-plus mr-2"></i> Créer un avoir
+    </a>
+</div>
+
+<div class="tabs-container">
+    <div class="tabs">
+        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
+        <a href="{% url 'facturation:index' %}" class="tab">Nouvelle Facture</a>
+        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
+        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
+        <a href="{% url 'facturation:avoir_list' %}" class="tab active">Avoirs</a>
+        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+    </div>
+</div>
+
+<div class="content-section">
+    <div class="card">
+        <div class="card-header">
+            <h3>Liste des avoirs</h3>
+        </div>
+        <div class="card-body">
+            {% if avoirs %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Numéro</th>
+                                <th>Facture d'origine</th>
+                                <th>Client</th>
+                                <th>Date</th>
+                                <th>Motif</th>
+                                <th>Total</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for avoir in avoirs %}
+                                <tr>
+                                    <td><strong>{{ avoir.numero }}</strong></td>
+                                    <td>{{ avoir.facture_origine.numero }}</td>
+                                    <td>{{ avoir.client.nom_complet }}</td>
+                                    <td>{{ avoir.date_avoir|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <small>{{ avoir.motif|truncatewords:10 }}</small>
+                                    </td>
+                                    <td>{{ avoir.total|floatformat:0 }} FCFA</td>
+                                    <td>
+                                        <span class="badge badge-{% if avoir.statut == 'accepted' %}success{% elif avoir.statut == 'sent' %}primary{% else %}secondary{% endif %}">
+                                            {{ avoir.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'facturation:avoir_detail' avoir.pk %}" class="btn btn-sm btn-outline-primary">Détail</a>
+                                        <a href="{% url 'facturation:avoir_pdf' avoir.pk %}" class="btn btn-sm btn-outline-secondary">PDF</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">Aucun avoir trouvé.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+.tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+}
+
+.tab {
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid transparent;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: -1px;
+    transition: all 0.3s ease;
+}
+
+.tab:hover {
+    color: #0056b3;
+    text-decoration: none;
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.tab.active {
+    color: #0056b3;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.badge {
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.badge-primary {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.badge-secondary {
+    color: #fff;
+    background-color: #6c757d;
+}
+</style>
+{% endblock %}

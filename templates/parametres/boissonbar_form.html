@@ -1,0 +1,162 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}Modifier Boisson{% else %}Nouvelle Boisson{% endif %} - BEHANIAN
+{% endblock %}
+
+{% block content %}
+<style>
+    .header-glam {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        padding: 30px;
+        border-radius: 20px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(142, 68, 173, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .header-glam::after {
+        content: '🍷';
+        position: absolute;
+        right: -20px;
+        bottom: -40px;
+        font-size: 150px;
+        opacity: 0.15;
+        transform: rotate(20deg);
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .header-content { position: relative; z-index: 1; }
+    
+    .form-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        padding: 30px;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        padding: 12px 15px;
+        border: 1px solid #e0e0e0;
+        height: auto;
+    }
+    
+    .form-control:focus {
+        border-color: #9b59b6;
+        box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
+        transition: all 0.3s;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4);
+    }
+</style>
+
+<div class="header-glam">
+    <div class="header-content">
+        <h2>{% if form.instance.pk %}Modifier Boisson{% else %}Nouvelle Boisson{% endif %}</h2>
+        <p class="mb-0 opacity-75">Configuration de la carte des boissons</p>
+    </div>
+    <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+    </div>
+</div>
+
+<div class="action-bar">
+    <a href="{% url 'parametres:boissonbar_list' %}" class="btn-back">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="form-card">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold">Nom de la boisson</label>
+                        <input type="text" name="nom" class="form-control" value="{{ form.nom.value|default:'' }}" required>
+                        {% if form.nom.errors %}<small class="text-danger">{{ form.nom.errors.0 }}</small>{% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold">Catégorie</label>
+                        <select name="categorie" class="form-control" required>
+                            {% for value, text in form.fields.categorie.choices %}
+                                <option value="{{ value }}" {% if form.categorie.value == value %}selected{% endif %}>{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold">Prix (FCFA)</label>
+                        <input type="number" name="prix" class="form-control" value="{{ form.prix.value|default:'' }}" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="font-weight-bold">Image</label>
+                        <div class="custom-file">
+                            <input type="file" name="image" class="custom-file-input" id="customFile">
+                            <label class="custom-file-label" for="customFile">Choisir une image...</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="font-weight-bold">Stock Initial</label>
+                        <input type="number" name="quantite_stock" class="form-control" value="{{ form.quantite_stock.value|default:'0' }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="font-weight-bold">Seuil Alerte</label>
+                        <input type="number" name="seuil_alerte" class="form-control" value="{{ form.seuil_alerte.value|default:'10' }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-center">
+                        <div class="custom-control custom-switch mt-4">
+                            <input type="checkbox" name="disponible" class="custom-control-input" id="switchDispo" {% if form.disponible.value %}checked{% endif %}>
+                            <label class="custom-control-label" for="switchDispo">Disponible à la vente</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="font-weight-bold">Description</label>
+                    <textarea name="description" class="form-control" rows="3">{{ form.description.value|default:'' }}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'parametres:boissonbar_list' %}" class="btn btn-light mr-2" style="border-radius: 50px; padding: 12px 25px;">Annuler</a>
+                    <button type="submit" class="btn-submit">Enregistrer la Boisson</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

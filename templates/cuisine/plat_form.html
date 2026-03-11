@@ -1,0 +1,693 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Nouveau Plat - Cuisine{% endblock %}
+
+{% block content %}
+<style>
+    /* Split Layout */
+    @media (min-width: 768px) {
+        body {
+            overflow: hidden; /* Prevent body scroll on desktop */
+        }
+        
+        .page-container-glam {
+            height: calc(100vh - 70px); /* Adjust for main-content padding */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding-bottom: 0 !important;
+        }
+
+        .split-layout {
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 1fr 500px; /* Wider form as requested */
+            gap: 20px;
+        }
+        
+        .plats-list-container {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 5px;
+            padding-bottom: 20px;
+        }
+
+        .form-container {
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            min-width: 0; /* Prevent grid blowout */
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .page-container-glam {
+            height: auto;
+            overflow-y: auto;
+        }
+        
+        .split-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .plats-list-container {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 0;
+        }
+    }
+    
+    /* Left Side: Grid */
+
+    .plat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Compact grid */
+        gap: 15px;
+    }
+
+    .plat-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+        border: 1px solid rgba(0,0,0,0.02);
+        position: relative;
+    }
+
+    .plat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    .plat-image {
+        height: 120px;
+        width: 100%;
+        object-fit: cover;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #e0e0e0;
+        position: relative;
+    }
+
+    .plat-info {
+        padding: 10px 12px;
+    }
+
+    .plat-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #2c3e50;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .plat-category {
+        font-size: 0.75rem;
+        color: #95a5a6;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+
+    .plat-price {
+        color: #e74c3c;
+        font-weight: 700;
+        font-size: 0.9rem;
+        float: right;
+    }
+
+    /* Right Side: Form */
+    /* Form styles moved to media query for layout */
+    
+    .compact-form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.06);
+        border-top: 4px solid #e74c3c;
+    }
+
+    /* Form Elements */
+    .modern-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #7f8c8d;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .modern-control {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        width: 100%;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        background: #fcfcfc;
+    }
+
+    .modern-control:focus {
+        border-color: #e74c3c;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        outline: none;
+    }
+
+    .modern-form-group {
+        margin-bottom: 12px;
+    }
+
+    /* Ingredients Table */
+    .ingredients-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid #eee;
+    }
+
+    .btn-add-ing {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .btn-add-ing:hover {
+        transform: scale(1.1);
+        background: #c0392b;
+    }
+
+    .btn-delete-row {
+        color: #e74c3c;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.2s;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px; /* Larger for HTML entity */
+        line-height: 1;
+        font-weight: 300;
+    }
+    
+    .btn-delete-row:hover {
+        background: #fdf2f1;
+        transform: scale(1.1);
+        color: #c0392b;
+    }
+    
+    .btn-save-glam {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 10px rgba(192, 57, 43, 0.2);
+        transition: all 0.3s;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .btn-save-glam:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(192, 57, 43, 0.3);
+    }
+
+    /* File Input Styling */
+    .hidden-file-input {
+        display: none;
+    }
+    
+    .custom-file-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        background: white;
+        border: 1px dashed #e74c3c;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #7f8c8d;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+        width: 100%;
+        text-align: center;
+        height: 38px; /* Match height of other inputs */
+    }
+    
+    .custom-file-label:hover {
+        background: #fdf2f1;
+        border-color: #c0392b;
+        color: #c0392b;
+    }
+    
+    .custom-file-label i {
+        margin-right: 8px;
+        font-size: 1.1em;
+    }
+
+    /* Add Line Button Styling */
+    .btn-add-line-glam {
+        background: transparent;
+        border: 1px solid #e74c3c;
+        color: #e74c3c;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-add-line-glam:hover {
+        background: #e74c3c;
+        color: white;
+        box-shadow: 0 2px 5px rgba(231, 76, 60, 0.3);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+        width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent; 
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #bdc3c7; 
+        border-radius: 10px;
+    }
+
+    /* Bootstrap-like Utilities (Ensure layout works if BS is missing) */
+    .d-flex { display: flex !important; }
+    .justify-content-between { justify-content: space-between !important; }
+    .align-items-center { align-items: center !important; }
+    .align-items-end { align-items: flex-end !important; }
+    .mb-2 { margin-bottom: 0.5rem !important; }
+    .mb-3 { margin-bottom: 1rem !important; }
+    .m-0 { margin: 0 !important; }
+    .mr-2 { margin-right: 0.5rem !important; }
+    .row { display: flex; flex-wrap: wrap; margin-right: -10px; margin-left: -10px; }
+    [class^="col-"] { position: relative; width: 100%; padding-right: 10px; padding-left: 10px; }
+    .col-4 { flex: 0 0 33.333333%; max-width: 33.333333%; }
+    .col-5 { flex: 0 0 41.666667%; max-width: 41.666667%; }
+    .col-7 { flex: 0 0 58.333333%; max-width: 58.333333%; }
+    .col-12 { flex: 0 0 100%; max-width: 100%; }
+</style>
+
+<div class="page-container-glam">
+    <div class="header-glam cuisine-watermark">
+        <div class="header-content">
+            <h2>{% if edit_mode %}Modifier{% else %}Nouveau{% endif %} Plat</h2>
+            <p class="mb-0 opacity-75">Gestion du menu et de la carte</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+    
+    <div class="action-bar">
+        <a href="{% url 'cuisine:plat_list' %}" class="btn-back">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+    </div>
+    
+    <div class="split-layout">
+        <!-- LEFT COLUMN: GRID OF PLATS -->
+        <div class="plats-list-container">
+            <div class="plat-grid">
+                {% for plat in plats %}
+                <div class="plat-card" onclick="editPlat({{ plat.id }})" style="cursor: pointer;">
+                    <div class="plat-image">
+                        {% if plat.image %}
+                            <img src="{{ plat.image.url }}" alt="{{ plat.nom }}" style="width:100%; height:100%; object-fit:cover;">
+                        {% else %}
+                            <i class="fas fa-utensils fa-2x"></i>
+                        {% endif %}
+                        <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.6), transparent); height:40px;"></div>
+                    </div>
+                    <div class="plat-info">
+                        <div class="plat-name" title="{{ plat.nom }}">{{ plat.nom }}</div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="plat-category">{{ plat.categorie.nom }}</span>
+                            <span class="plat-price">{{ plat.prix }} F</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div style="color: #bdc3c7;">
+                        <i class="fas fa-plate-wheat fa-3x mb-3"></i>
+                        <p>Aucun plat dans la carte.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: CREATION FORM -->
+        <div class="form-container">
+            <div class="compact-form-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="m-0" style="color: #2c3e50; font-weight: 700; font-size: 1.1rem;" id="formTitle">
+                        <i class="fas fa-plus-circle text-danger mr-2"></i>Nouveau Plat
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetForm()" id="btnReset" style="display:none; border-radius: 20px;">
+                        <i class="fas fa-redo mr-1"></i>Nouveau
+                    </button>
+                </div>
+                
+                <form method="post" id="recetteForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="plat_id" id="plat_id">
+                    
+                    <!-- Row 1: Nom & Categorie -->
+                    <div class="row">
+                        <div class="col-7">
+                            <div class="modern-form-group">
+                                <label class="modern-label">Nom du plat</label>
+                                <input type="text" name="nom" class="modern-control" required placeholder="Ex: Poulet Braisé">
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <div class="modern-form-group">
+                                <label class="modern-label">Catégorie</label>
+                                <select name="categorie" class="modern-control" required>
+                                    <option value="">Choix...</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}">{{ cat.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                             <div class="modern-form-group" style="background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px dashed #dcdcdc;">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" name="is_accompagnement" id="is_accompagnement" style="width: 20px; height: 20px; margin-right: 10px;">
+                                    <label for="is_accompagnement" class="modern-label m-0" style="cursor: pointer;">Est un Accompagnement ? (Sera visible dans l'onglet Accompagnements du Restaurant)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Prix, Temps, Image -->
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="modern-form-group">
+                                <label class="modern-label">Prix (FCFA)</label>
+                                <input type="number" name="prix" class="modern-control" required min="0">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="modern-form-group">
+                                <label class="modern-label">Temps (min)</label>
+                                <input type="number" name="temps_preparation" class="modern-control" value="15">
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="modern-form-group">
+                                <label class="modern-label">Image</label>
+                                <input type="file" name="image" id="id_image" class="hidden-file-input" onchange="updateFileName(this)">
+                                <label for="id_image" class="custom-file-label" id="fileLabel">
+                                    <i class="fas fa-camera"></i> <span class="file-text">Choisir une image</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingredients Section -->
+                    <div class="modern-form-group">
+                        <div class="d-flex justify-content-between align-items-end mb-2">
+                            <label class="modern-label m-0">Fiche Technique (Articles)</label>
+                            <button type="button" class="btn-add-line-glam" onclick="ajouterArticle()">
+                                <i class="fas fa-plus"></i> Ajouter une ligne
+                            </button>
+                        </div>
+                        
+                        <div class="ingredients-box">
+                            <div class="d-flex align-items-center mb-2">
+                                <label class="modern-label mr-2 mb-0" style="font-size: 0.7rem;">Portions:</label>
+                                <input type="number" name="nombre_portions" value="1" class="modern-control py-1 px-2" style="width: 60px; height: 25px;">
+                            </div>
+
+                            <table style="width: 100%;">
+                                <tbody id="articlesList">
+                                    <tr class="article-row" id="row_1">
+                                        <td style="padding-bottom: 5px;">
+                                            <select name="article_1" class="modern-control py-1" required onchange="updateUnite(this)" style="font-size: 0.85rem;">
+                                                <option value="">Article...</option>
+                                                {% for article in articles %}
+                                                    <option value="{{ article.id }}" data-unite="{{ article.get_unite_display }}">{{ article.nom }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td style="width: 80px; padding-bottom: 5px; padding-left: 5px;">
+                                            <input type="number" name="quantite_1" class="modern-control py-1" required placeholder="Qté" step="0.001" style="font-size: 0.85rem;">
+                                        </td>
+                                        <td style="width: 40px; font-size: 0.7rem; color: #95a5a6; padding-left: 5px;" class="unite-cell"></td>
+                                        <td style="width: 40px; padding-bottom: 5px; text-align: center;">
+                                            <button type="button" class="btn-delete-row" onclick="supprimerLigne(1)" title="Supprimer la ligne">
+                                                &times;
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Description & Instructions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="modern-form-group">
+                                <label class="modern-label">Description (Menu)</label>
+                                <textarea name="description" class="modern-control" rows="2" placeholder="Description pour le client..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden Instructions field for simplicity, or we can add it if user wants strict separate fields -->
+                    <input type="hidden" name="instructions" value="Voir articles">
+
+                    <button type="submit" class="btn-save-glam" id="btnSubmit">
+                        <i class="fas fa-check-circle mr-2"></i> Enregistrer le Plat
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let articleCount = 1;
+    
+    // Initial Articles Options (stored for JS reuse)
+    const articlesOptions = `
+        <option value="">Article...</option>
+        {% for article in articles %}
+            <option value="{{ article.id }}" data-unite="{{ article.get_unite_display }}">{{ article.nom }}</option>
+        {% endfor %}
+    `;
+
+    function updateFileName(input) {
+        if (input.files && input.files[0]) {
+            const fileName = input.files[0].name;
+            const label = document.getElementById('fileLabel');
+            const textSpan = label.querySelector('.file-text');
+            textSpan.textContent = fileName.length > 20 ? fileName.substring(0, 17) + '...' : fileName;
+            label.style.borderColor = '#2ecc71';
+            label.style.color = '#27ae60';
+            label.querySelector('i').className = 'fas fa-check';
+        }
+    }
+    
+    function updateUnite(select) {
+        const option = select.options[select.selectedIndex];
+        const unite = option.getAttribute('data-unite');
+        const row = select.closest('tr');
+        row.querySelector('.unite-cell').textContent = unite || '-';
+    }
+
+    function ajouterArticle(ingId = null, qty = null) {
+        articleCount++;
+        const tbody = document.getElementById('articlesList');
+        const tr = document.createElement('tr');
+        tr.className = 'article-row';
+        tr.id = 'row_' + articleCount;
+        
+        tr.innerHTML = `
+            <td style="padding-bottom: 5px;">
+                <select name="article_${articleCount}" class="modern-control py-1" required onchange="updateUnite(this)" style="font-size: 0.85rem;">
+                    ${articlesOptions}
+                </select>
+            </td>
+            <td style="width: 80px; padding-bottom: 5px; padding-left: 5px;">
+                <input type="number" name="quantite_${articleCount}" class="modern-control py-1" required placeholder="Qté" step="0.001" style="font-size: 0.85rem;">
+            </td>
+            <td style="width: 40px; font-size: 0.7rem; color: #95a5a6; padding-left: 5px;" class="unite-cell"></td>
+            <td style="width: 40px; padding-bottom: 5px; text-align: center;">
+                <button type="button" class="btn-delete-row" onclick="supprimerLigne(${articleCount})" title="Supprimer la ligne">
+                    &times;
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+
+        // Pre-fill if data provided
+        if (ingId) {
+            const select = tr.querySelector('select');
+            select.value = ingId;
+            updateUnite(select); // Update unit display
+        }
+        if (qty) {
+            tr.querySelector('input[type="number"]').value = qty;
+        }
+    }
+
+    function supprimerLigne(id) {
+        const row = document.getElementById('row_' + id);
+        if (row) {
+            // If it's the only row, just clear it
+            const rows = document.querySelectorAll('.article-row');
+            if (rows.length === 1) {
+                row.querySelector('select').value = '';
+                row.querySelector('input').value = '';
+                row.querySelector('.unite-cell').textContent = '';
+            } else {
+                row.remove();
+            }
+        }
+    }
+
+    function resetForm() {
+        document.getElementById('recetteForm').reset();
+        document.getElementById('plat_id').value = '';
+        
+        // Uncheck accompaniment if not handled by reset()
+        const accCheck = document.getElementById('is_accompagnement');
+        if(accCheck) accCheck.checked = false;
+        
+        // Reset UI
+        document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-danger mr-2"></i>Nouveau Plat';
+        document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-check-circle mr-2"></i> Enregistrer le Plat';
+        document.getElementById('btnReset').style.display = 'none';
+        
+        // Reset File Input
+        const fileLabel = document.getElementById('fileLabel');
+        fileLabel.querySelector('.file-text').textContent = 'Choisir une image';
+        fileLabel.style.borderColor = '#e74c3c';
+        fileLabel.style.color = '#7f8c8d';
+        fileLabel.querySelector('i').className = 'fas fa-camera';
+
+        // Reset Articles Table
+        const tbody = document.getElementById('articlesList');
+        tbody.innerHTML = '';
+        articleCount = 0;
+        ajouterArticle(); // Add one empty row
+    }
+
+    function editPlat(id) {
+        // Show loading state if desired
+        
+        fetch(`/cuisine/api/plat/${id}/`)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    const data = result.data;
+                    
+                    // Fill Form
+                    document.getElementById('plat_id').value = data.id;
+                    document.querySelector('input[name="nom"]').value = data.nom;
+                    document.querySelector('select[name="categorie"]').value = data.categorie_id;
+                    document.querySelector('input[name="prix"]').value = data.prix;
+                    document.querySelector('input[name="temps_preparation"]').value = data.temps_preparation;
+                    document.querySelector('textarea[name="description"]').value = data.description || '';
+                    document.querySelector('input[name="is_accompagnement"]').checked = data.is_accompagnement;
+                    
+                    // Update UI
+                    document.getElementById('formTitle').innerHTML = `<i class="fas fa-edit text-warning mr-2"></i>Modifier: ${data.nom}`;
+                    document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save mr-2"></i> Modifier le Plat';
+                    document.getElementById('btnReset').style.display = 'block';
+                    
+                    // Image Label
+                    if (data.image_url) {
+                        const fileLabel = document.getElementById('fileLabel');
+                        fileLabel.querySelector('.file-text').textContent = 'Modifier l\'image (Actuelle existante)';
+                        fileLabel.style.borderColor = '#3498db';
+                        fileLabel.style.color = '#3498db';
+                    } else {
+                         // Reset File Input visual
+                        const fileLabel = document.getElementById('fileLabel');
+                        fileLabel.querySelector('.file-text').textContent = 'Choisir une image';
+                        fileLabel.style.borderColor = '#e74c3c';
+                        fileLabel.style.color = '#7f8c8d';
+                        fileLabel.querySelector('i').className = 'fas fa-camera';
+                    }
+
+                    // Articles
+                    const tbody = document.getElementById('articlesList');
+                    tbody.innerHTML = '';
+                    articleCount = 0; // Reset counter for clean IDs
+                    
+                    if (data.has_fiche) {
+                        document.querySelector('input[name="nombre_portions"]').value = data.portions;
+                        // data.instructions is hidden or optional
+                        
+                        if (data.articles.length > 0) {
+                            data.articles.forEach(ing => {
+                                ajouterArticle(ing.id, ing.quantite);
+                            });
+                        } else {
+                            ajouterArticle();
+                        }
+                    } else {
+                        // Reset Fiche parts if no fiche
+                         document.querySelector('input[name="nombre_portions"]').value = 1;
+                         ajouterArticle();
+                    }
+                } else {
+                    alert('Erreur lors du chargement du plat: ' + result.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Une erreur est survenue');
+            });
+    }
+</script>
+{% endblock %}
