@@ -8,13 +8,13 @@ from django.utils.decorators import method_decorator
 from hotel.models import Chambre
 from restaurant.models import Table, PlatMenu, CategorieMenu
 from espaces_evenementiels.models import EspaceEvenementiel
-from bar.models import BoissonBar, CategorieBar
+from bar.models import BoissonBar, CategorieBar, TableBar
 
 from django.http import HttpResponse
 
 @login_required
 def parametres_index(request):
-    return HttpResponse("Test de la vue parametres_index")
+    return render(request, 'parametres/index.html')
 
 # --- BAR : BOISSONS ---
 @method_decorator(login_required, name='dispatch')
@@ -93,6 +93,46 @@ class CategorieBarDeleteView(DeleteView):
     
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Catégorie supprimée avec succès.")
+        return super().delete(request, *args, **kwargs)
+
+
+# --- BAR : TABLES ---
+@method_decorator(login_required, name='dispatch')
+class TableBarListView(ListView):
+    model = TableBar
+    template_name = 'parametres/tablebar_list.html'
+    context_object_name = 'tables'
+
+@method_decorator(login_required, name='dispatch')
+class TableBarCreateView(CreateView):
+    model = TableBar
+    template_name = 'parametres/tablebar_form.html'
+    fields = ['numero', 'capacite', 'statut', 'zone']
+    success_url = reverse_lazy('parametres:tablebar_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Table créée avec succès.")
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class TableBarUpdateView(UpdateView):
+    model = TableBar
+    template_name = 'parametres/tablebar_form.html'
+    fields = ['numero', 'capacite', 'statut', 'zone']
+    success_url = reverse_lazy('parametres:tablebar_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, "Table modifiée avec succès.")
+        return super().form_valid(form)
+
+@method_decorator(login_required, name='dispatch')
+class TableBarDeleteView(DeleteView):
+    model = TableBar
+    template_name = 'parametres/tablebar_confirm_delete.html'
+    success_url = reverse_lazy('parametres:tablebar_list')
+
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, "Table supprimée avec succès.")
         return super().delete(request, *args, **kwargs)
 
 
@@ -175,6 +215,7 @@ class TableDeleteView(DeleteView):
         messages.success(self.request, "Table supprimée avec succès.")
         return super().delete(request, *args, **kwargs)
 
+
 # --- RESTAURANT : CATEGORIES ---
 @method_decorator(login_required, name='dispatch')
 class CategorieListView(ListView):
@@ -253,9 +294,9 @@ class PlatDeleteView(DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Plat supprimé avec succès.")
         return super().delete(request, *args, **kwargs)
-        
 
-# --- ESPACES --- 
+
+# --- ESPACES ---
 @method_decorator(login_required, name='dispatch')
 class EspaceListView(ListView):
     model = EspaceEvenementiel

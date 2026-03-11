@@ -1,0 +1,360 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Articles - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        padding: 28px 30px;
+        border-radius: 18px;
+        margin-bottom: 24px;
+        box-shadow: 0 10px 25px rgba(142, 68, 173, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-header::after {
+        content: '🍷';
+        position: absolute;
+        right: -10px;
+        bottom: -30px;
+        font-size: 120px;
+        opacity: 0.1;
+        pointer-events: none;
+    }
+    .page-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.95rem; }
+
+    .toolbar {
+        background: white;
+        border-radius: 14px;
+        padding: 16px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+    .search-box i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    .search-box input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        background: #f8f9fa;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .search-box input:focus {
+        outline: none;
+        border-color: #8e44ad;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(142,68,173,0.1);
+    }
+
+    .filter-select {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        background: #f8f9fa;
+        font-size: 0.9rem;
+        color: #495057;
+        cursor: pointer;
+    }
+    .filter-select:focus { outline: none; border-color: #8e44ad; }
+
+    .btn-add {
+        background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        color: white;
+        padding: 10px 22px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(142,68,173,0.3);
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .btn-add:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(142,68,173,0.4); color: white; }
+
+    .articles-table-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .articles-table { width: 100%; border-collapse: collapse; }
+    .articles-table thead th {
+        background: #f8f9fa;
+        padding: 14px 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #7f8c8d;
+        border-bottom: 2px solid #ecf0f1;
+        white-space: nowrap;
+    }
+    .articles-table tbody td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f5f5f5;
+        vertical-align: middle;
+        color: #2c3e50;
+    }
+    .articles-table tbody tr:hover { background: #fdf8ff; }
+    .articles-table tbody tr:last-child td { border-bottom: none; }
+
+    .article-ref { font-size: 0.78rem; color: #8e44ad; font-weight: 600; font-family: monospace; }
+    .article-nom { font-weight: 700; font-size: 0.95rem; }
+    .article-desc { font-size: 0.8rem; color: #7f8c8d; margin-top: 2px; }
+
+    .badge-categorie {
+        background: #f3e5f5;
+        color: #8e44ad;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .badge-statut {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+    .statut-actif    { background: #eafaf1; color: #27ae60; }
+    .statut-sommeil  { background: #fef9e7; color: #e67e22; }
+    .statut-supprime { background: #fdecea; color: #e74c3c; }
+
+    .stock-ok   { color: #27ae60; font-weight: 700; }
+    .stock-bas  { color: #e67e22; font-weight: 700; }
+    .stock-zero { color: #e74c3c; font-weight: 700; }
+
+    .prix-tag { font-weight: 700; color: #2c3e50; }
+    .prix-achat { font-size: 0.78rem; color: #7f8c8d; }
+
+    .action-group { display: flex; gap: 6px; justify-content: flex-end; }
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        text-decoration: none;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    .btn-edit    { background: #e8f4fd; color: #3498db; }
+    .btn-edit:hover { background: #3498db; color: white; }
+    .btn-copy    { background: #eafaf1; color: #27ae60; }
+    .btn-copy:hover { background: #27ae60; color: white; }
+    .btn-sleep   { background: #fef9e7; color: #e67e22; }
+    .btn-sleep:hover { background: #e67e22; color: white; }
+    .btn-del     { background: #fdecea; color: #e74c3c; }
+    .btn-del:hover { background: #e74c3c; color: white; }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
+    .empty-state i { font-size: 3rem; color: #e1bee7; margin-bottom: 15px; display: block; }
+
+    .stats-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .stat-mini {
+        background: white;
+        border-radius: 12px;
+        padding: 12px 18px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 140px;
+    }
+    .stat-mini-icon { font-size: 1.3rem; }
+    .stat-mini-val { font-weight: 700; font-size: 1.2rem; color: #2c3e50; }
+    .stat-mini-lbl { font-size: 0.78rem; color: #7f8c8d; }
+
+    .compose-badge {
+        background: #e8f4fd;
+        color: #3498db;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-wine-bottle mr-2"></i> Articles</h2>
+            <p>Gestion des fiches articles de la Cave — {{ total }} article(s)</p>
+        </div>
+        <a href="{% url 'bar:article_create' %}" class="btn-add">
+            <i class="fas fa-plus"></i> Nouvel Article
+        </a>
+    </div>
+
+    <!-- Barre de navigation -->
+    <div class="tabs-nav mb-3" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="{% url 'bar:stock_management' %}" class="tab-btn" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;font-weight:600;font-size:0.88rem;color:#6c757d;text-decoration:none;background:white;border:1px solid #e9ecef;">
+            <i class="fas fa-chart-bar"></i> Tableau de bord
+        </a>
+        <a href="{% url 'bar:articles_list' %}" class="tab-btn" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;font-weight:600;font-size:0.88rem;color:white;text-decoration:none;background:#8e44ad;border:1px solid #8e44ad;box-shadow:0 4px 12px rgba(142,68,173,0.3);">
+            <i class="fas fa-wine-bottle"></i> Articles
+        </a>
+        <a href="{% url 'bar:bon_commande_list' %}" class="tab-btn" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;font-weight:600;font-size:0.88rem;color:#6c757d;text-decoration:none;background:white;border:1px solid #e9ecef;">
+            <i class="fas fa-shopping-cart"></i> Bons de commande
+        </a>
+    </div>
+
+    <!-- Toolbar filtres -->
+    <form method="get" class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="q" value="{{ q }}" placeholder="Rechercher par nom ou référence...">
+        </div>
+        <select name="categorie" class="filter-select" onchange="this.form.submit()">
+            <option value="">Toutes les familles</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if categorie_id == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nom }}</option>
+            {% endfor %}
+        </select>
+        <select name="statut" class="filter-select" onchange="this.form.submit()">
+            <option value="">Tous les statuts</option>
+            <option value="actif"   {% if statut_filtre == 'actif' %}selected{% endif %}>Actif</option>
+            <option value="sommeil" {% if statut_filtre == 'sommeil' %}selected{% endif %}>En sommeil</option>
+        </select>
+        <button type="submit" class="btn-add" style="background:#6c757d; box-shadow:none;">
+            <i class="fas fa-filter"></i> Filtrer
+        </button>
+        {% if q or categorie_id or statut_filtre %}
+        <a href="{% url 'bar:articles_list' %}" class="btn-add" style="background:#e9ecef; color:#495057; box-shadow:none;">
+            <i class="fas fa-times"></i> Réinitialiser
+        </a>
+        {% endif %}
+    </form>
+
+    <!-- Table des articles -->
+    <div class="articles-table-card">
+        <div style="overflow-x:auto;">
+            <table class="articles-table">
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Désignation</th>
+                        <th>Famille</th>
+                        <th>Prix achat</th>
+                        <th>Prix vente</th>
+                        <th>Unité</th>
+                        <th>Stock</th>
+                        <th>Statut</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td><span class="article-ref">{{ article.reference|default:"-" }}</span></td>
+                        <td>
+                            <div class="article-nom">
+                                {{ article.nom }}
+                                {% if article.est_compose %}<span class="compose-badge">Pack</span>{% endif %}
+                            </div>
+                            {% if article.description %}
+                            <div class="article-desc">{{ article.description|truncatechars:40 }}</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge-categorie">{{ article.categorie.nom }}</span></td>
+                        <td>
+                            <div class="prix-achat">{{ article.prix_achat|floatformat:0 }} FCFA</div>
+                            {% if article.marge %}<div class="prix-achat">Marge : {{ article.marge }}%</div>{% endif %}
+                        </td>
+                        <td><span class="prix-tag">{{ article.prix|floatformat:0 }} FCFA</span></td>
+                        <td style="font-size:0.85rem;">{{ article.unite_affichee }}</td>
+                        <td>
+                            {% if article.quantite_stock == 0 %}
+                                <span class="stock-zero"><i class="fas fa-times-circle"></i> Rupture</span>
+                            {% elif article.quantite_stock <= article.seuil_alerte %}
+                                <span class="stock-bas"><i class="fas fa-exclamation-triangle"></i> {{ article.quantite_stock }}</span>
+                            {% else %}
+                                <span class="stock-ok"><i class="fas fa-check-circle"></i> {{ article.quantite_stock }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge-statut statut-{{ article.statut }}">
+                                {{ article.get_statut_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <a href="{% url 'bar:article_edit' article.pk %}" class="btn-action btn-edit" title="Modifier">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <a href="{% url 'bar:article_dupliquer' article.pk %}" class="btn-action btn-copy" title="Dupliquer (Ctrl+D)">
+                                    <i class="fas fa-copy"></i>
+                                </a>
+                                <a href="{% url 'bar:article_sommeil' article.pk %}" class="btn-action btn-sleep" title="{% if article.statut == 'actif' %}Mettre en sommeil{% else %}Réactiver{% endif %}">
+                                    <i class="fas {% if article.statut == 'actif' %}fa-moon{% else %}fa-sun{% endif %}"></i>
+                                </a>
+                                <a href="{% url 'bar:article_delete' article.pk %}" class="btn-action btn-del" title="Supprimer">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9">
+                            <div class="empty-state">
+                                <i class="fas fa-wine-bottle"></i>
+                                <p>Aucun article trouvé.</p>
+                                <a href="{% url 'bar:article_create' %}" class="btn-add" style="display:inline-flex; margin-top:10px;">
+                                    <i class="fas fa-plus"></i> Créer le premier article
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

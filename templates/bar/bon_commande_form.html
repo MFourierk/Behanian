@@ -1,0 +1,335 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white; padding: 24px 30px; border-radius: 18px;
+        margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .form-card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .form-section-title { font-weight: 700; color: #8e44ad; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f3e5f5; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
+    .form-group input, .form-group select, .form-group textarea {
+        padding: 10px 14px; border: 1px solid #e9ecef; border-radius: 10px;
+        font-size: 0.92rem; background: #f8f9fa; transition: all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none; border-color: #8e44ad; background: white;
+        box-shadow: 0 0 0 3px rgba(142,68,173,0.1);
+    }
+    .form-group.full { grid-column: 1 / -1; }
+
+    /* Type toggle */
+    .type-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+    .type-btn {
+        flex: 1; padding: 14px; border-radius: 12px; border: 2px solid #e9ecef;
+        background: white; cursor: pointer; text-align: center; transition: all 0.2s;
+        font-weight: 600; font-size: 0.95rem; color: #7f8c8d;
+    }
+    .type-btn.active-achat { border-color: #27ae60; background: #eafaf1; color: #27ae60; }
+    .type-btn.active-vente { border-color: #8e44ad; background: #f3e5f5; color: #8e44ad; }
+    .type-btn i { display: block; font-size: 1.4rem; margin-bottom: 6px; }
+
+    /* Lignes articles */
+    .lignes-table { width: 100%; border-collapse: collapse; }
+    .lignes-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.8rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; }
+    .lignes-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    .lignes-table input, .lignes-table select { padding: 8px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; }
+    .lignes-table input:focus, .lignes-table select:focus { outline: none; border-color: #8e44ad; background: white; }
+    .ligne-total { font-weight: 700; color: #8e44ad; font-size: 0.9rem; text-align: right; }
+
+    .btn-add-ligne {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 9px 18px; background: #f3e5f5; color: #8e44ad;
+        border-radius: 10px; font-weight: 600; font-size: 0.88rem;
+        border: 2px dashed #d7aef0; cursor: pointer; transition: all 0.2s; margin-top: 12px;
+    }
+    .btn-add-ligne:hover { background: #8e44ad; color: white; border-style: solid; }
+
+    .btn-del-ligne { background: #fdecea; color: #e74c3c; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .btn-del-ligne:hover { background: #e74c3c; color: white; }
+
+    .total-bar { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 16px 24px; border-radius: 12px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 16px; }
+    .total-label { font-size: 0.9rem; opacity: 0.85; }
+    .total-value { font-size: 1.5rem; font-weight: 700; }
+
+    .actions-bar { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+    .btn-save { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 12px 28px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(142,68,173,0.3); transition: all 0.2s; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(142,68,173,0.4); }
+    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-cancel-form:hover { border-color: #bdc3c7; color: #2c3e50; }
+    .btn-confirm { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+    .btn-confirm:hover { box-shadow: 0 6px 16px rgba(39,174,96,0.4); }
+</style>
+
+<div class="container-fluid py-4">
+
+    <a href="/bar/stock/?tab=commandes" style="display:inline-flex;align-items:center;gap:6px;color:#8e44ad;font-weight:600;margin-bottom:16px;text-decoration:none;">
+        <i class="fas fa-chevron-left"></i> Retour aux bons de commande
+    </a>
+
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-shopping-cart mr-2"></i> {{ page_title }}</h2>
+            <p>Cave BEHANIAN — Gestion des commandes</p>
+        </div>
+    </div>
+
+    <form method="post" id="bc-form">
+        {% csrf_token %}
+
+        <!-- TYPE -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-tag"></i> Type de commande</div>
+            <div class="type-toggle">
+                <div class="type-btn {% if type_commande == "achat" or bon and bon.type_commande == "achat" %}active-achat{% endif %}" onclick="setType('achat', this)">
+                    <i class="fas fa-arrow-down"></i>
+                    Commande Fournisseur (Achat)
+                    <small style="display:block;font-weight:400;font-size:0.8rem;margin-top:4px;">Approvisionner la Cave</small>
+                </div>
+                <div class="type-btn {% if type_commande == "vente" or bon and bon.type_commande == "vente" %}active-vente{% endif %}" onclick="setType('vente', this)">
+                    <i class="fas fa-arrow-up"></i>
+                    Commande Client (Vente)
+                    <small style="display:block;font-weight:400;font-size:0.8rem;margin-top:4px;">Vendre à un client</small>
+                </div>
+            </div>
+            <input type="hidden" name="type_commande" id="type_commande" value="{{ type_commande|default:'achat' }}">
+        </div>
+
+        <!-- EN-TÊTE -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations générales</div>
+            <div class="form-grid">
+                <div class="form-group" id="fournisseur-group">
+                    <label>Fournisseur</label>
+                    <select name="fournisseur">
+                        <option value="">— Sélectionner —</option>
+                        {% for f in fournisseurs %}
+                        <option value="{{ f.pk }}" {% if bon and bon.fournisseur_id == f.pk %}selected{% endif %}>{{ f.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" id="client-group" style="display:none;">
+                    <label>Client</label>
+                    <select name="client">
+                        <option value="">— Sélectionner —</option>
+                        {% for c in clients %}
+                        <option value="{{ c.pk }}" {% if bon and bon.client_id == c.pk %}selected{% endif %}>{{ c.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select name="statut">
+                        <option value="brouillon" {% if not bon or bon.statut == "brouillon" %}selected{% endif %}>Brouillon</option>
+                        <option value="confirme" {% if bon and bon.statut == 'confirme' %}selected{% endif %}>Confirmé</option>
+                        <option value="envoye" {% if bon and bon.statut == 'envoye' %}selected{% endif %}>Envoyé</option>
+                        <option value="partiel" {% if bon and bon.statut == 'partiel' %}selected{% endif %}>Partiel</option>
+                        <option value="recu" {% if bon and bon.statut == 'recu' %}selected{% endif %}>Reçu</option>
+                        <option value="livre" {% if bon and bon.statut == 'livre' %}selected{% endif %}>Livré</option>
+                        <option value="facture" {% if bon and bon.statut == 'facture' %}selected{% endif %}>Facturé</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date de commande</label>
+                    <input type="date" name="date_commande" value="{% if bon %}{{ bon.date_commande|date:'Y-m-d' }}{% endif %}">
+                </div>
+                <div class="form-group">
+                    <label>Date de livraison prévue</label>
+                    <input type="date" name="date_livraison_prevue" value="{% if bon %}{{ bon.date_livraison_prevue|date:'Y-m-d' }}{% endif %}">
+                </div>
+                <div class="form-group full">
+                    <label>Notes / Observations</label>
+                    <textarea name="notes" rows="2" placeholder="Informations complémentaires...">{% if bon %}{{ bon.notes }}{% endif %}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIGNES ARTICLES -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-list"></i> Articles commandés</div>
+            <div style="overflow-x:auto;">
+                <table class="lignes-table">
+                    <thead>
+                        <tr>
+                            <th style="width:35%;">Article</th>
+                            <th style="width:15%;">Qté commandée</th>
+                            <th style="width:18%;">Prix unitaire (FCFA)</th>
+                            <th style="width:18%;">Total ligne</th>
+                            <th style="width:10%;">Note</th>
+                            <th style="width:4%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lignes-body">
+                        {% if lignes %}
+                            {% for ligne in lignes %}
+                            <tr class="ligne-row">
+                                <td>
+                                    <select name="article_id[]" class="article-select" onchange="majPrix(this)">
+                                        <option value="">— Choisir un article —</option>
+                                        {% for art in articles %}
+                                        <option value="{{ art.pk }}"
+                                            data-prix-achat="{{ art.prix_achat }}"
+                                            data-prix-vente="{{ art.prix }}"
+                                            {% if ligne.article_id == art.pk %}selected{% endif %}>
+                                            {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="quantite[]" value="{{ ligne.quantite_commandee }}" min="0.01" step="0.01" class="qte-input" oninput="majTotal(this)"></td>
+                                <td><input type="number" name="prix_unitaire[]" value="{{ ligne.prix_unitaire }}" min="0" step="1" class="prix-input" oninput="majTotal(this)"></td>
+                                <td class="ligne-total">{{ ligne.total_ligne|floatformat:0 }} FCFA</td>
+                                <td><input type="text" name="notes_ligne[]" value="{{ ligne.notes_ligne }}" placeholder="Note..."></td>
+                                <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr class="ligne-row">
+                                <td>
+                                    <select name="article_id[]" class="article-select" onchange="majPrix(this)">
+                                        <option value="">— Choisir un article —</option>
+                                        {% for art in articles %}
+                                        <option value="{{ art.pk }}" data-prix-achat="{{ art.prix_achat }}" data-prix-vente="{{ art.prix }}">
+                                            {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td><input type="number" name="quantite[]" value="1" min="0.01" step="0.01" class="qte-input" oninput="majTotal(this)"></td>
+                                <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotal(this)"></td>
+                                <td class="ligne-total">0 FCFA</td>
+                                <td><input type="text" name="notes_ligne[]" placeholder="Note..."></td>
+                                <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" class="btn-add-ligne" onclick="ajouterLigne()">
+                <i class="fas fa-plus"></i> Ajouter une ligne
+            </button>
+
+            <div class="total-bar">
+                <span class="total-label">Total commande :</span>
+                <span class="total-value" id="grand-total">0 FCFA</span>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="actions-bar">
+            <a href="/bar/stock/?tab=commandes" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+            <button type="submit" name="action" value="brouillon" class="btn-save">
+                <i class="fas fa-save"></i> Enregistrer en brouillon
+            </button>
+            <button type="submit" name="action" value="confirme" class="btn-save btn-confirm">
+                <i class="fas fa-check"></i> Confirmer la commande
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Template ligne vide (pour JS) -->
+<template id="ligne-template">
+    <tr class="ligne-row">
+        <td>
+            <select name="article_id[]" class="article-select" onchange="majPrix(this)">
+                <option value="">— Choisir un article —</option>
+                {% for art in articles %}
+                <option value="{{ art.pk }}" data-prix-achat="{{ art.prix_achat }}" data-prix-vente="{{ art.prix }}">
+                    {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td><input type="number" name="quantite[]" value="1" min="0.01" step="0.01" class="qte-input" oninput="majTotal(this)"></td>
+        <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotal(this)"></td>
+        <td class="ligne-total">0 FCFA</td>
+        <td><input type="text" name="notes_ligne[]" placeholder="Note..."></td>
+        <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+    </tr>
+</template>
+
+<script>
+const typeCommande = document.getElementById('type_commande');
+
+function setType(type, el) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active-achat','active-vente'));
+    el.classList.add(type === 'achat' ? 'active-achat' : 'active-vente');
+    typeCommande.value = type;
+    document.getElementById('fournisseur-group').style.display = type === 'achat' ? '' : 'none';
+    document.getElementById('client-group').style.display = type === 'vente' ? '' : 'none';
+}
+
+// Init affichage selon type
+(function() {
+    const t = typeCommande.value;
+    document.getElementById('fournisseur-group').style.display = t === 'achat' ? '' : 'none';
+    document.getElementById('client-group').style.display = t === 'vente' ? '' : 'none';
+})();
+
+function majPrix(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const row = sel.closest('tr');
+    const isAchat = typeCommande.value === 'achat';
+    const prix = isAchat ? (opt.dataset.prixAchat || 0) : (opt.dataset.prixVente || 0);
+    row.querySelector('.prix-input').value = prix;
+    majTotal(sel);
+}
+
+function majTotal(el) {
+    const row = el.closest('tr');
+    const qte = parseFloat(row.querySelector('.qte-input').value) || 0;
+    const prix = parseFloat(row.querySelector('.prix-input').value) || 0;
+    const total = qte * prix;
+    row.querySelector('.ligne-total').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    majGrandTotal();
+}
+
+function majGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('.ligne-row').forEach(row => {
+        const qte = parseFloat(row.querySelector('.qte-input')?.value) || 0;
+        const prix = parseFloat(row.querySelector('.prix-input')?.value) || 0;
+        total += qte * prix;
+    });
+    document.getElementById('grand-total').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+}
+
+function ajouterLigne() {
+    const tpl = document.getElementById('ligne-template');
+    const clone = tpl.content.cloneNode(true);
+    document.getElementById('lignes-body').appendChild(clone);
+}
+
+function supprimerLigne(btn) {
+    const rows = document.querySelectorAll('.ligne-row');
+    if (rows.length <= 1) { alert('Le bon doit avoir au moins une ligne.'); return; }
+    btn.closest('tr').remove();
+    majGrandTotal();
+}
+
+// Confirmer = forcer statut dans le formulaire
+document.querySelectorAll('button[name=action]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (this.value === 'confirme') {
+            document.querySelector('select[name=statut]').value = 'confirme';
+        }
+    });
+});
+
+majGrandTotal();
+</script>
+{% endblock %}

@@ -1,0 +1,382 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        padding: 24px 30px;
+        border-radius: 18px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 20px rgba(142,68,173,0.2);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .form-header h2 { margin: 0; font-size: 1.6rem; font-weight: 700; }
+    .form-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    .section-title {
+        font-weight: 700;
+        color: #8e44ad;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f3e5f5;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .full-width { grid-column: 1 / -1; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-weight: 600; font-size: 0.85rem; color: #2c3e50; }
+    .form-label span { color: #e74c3c; }
+
+    .form-control {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        background: #f8f9fa;
+        font-size: 0.9rem;
+        color: #2c3e50;
+        transition: all 0.2s;
+        width: 100%;
+    }
+    .form-control:focus {
+        outline: none;
+        border-color: #8e44ad;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(142,68,173,0.1);
+    }
+
+    textarea.form-control { resize: vertical; min-height: 80px; }
+
+    .toggle-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+    }
+    .toggle-label { font-size: 0.9rem; color: #2c3e50; font-weight: 500; }
+
+    .prix-mode-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+    .prix-mode-btn {
+        flex: 1;
+        padding: 12px;
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        background: #f8f9fa;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .prix-mode-btn.selected {
+        border-color: #8e44ad;
+        background: #f3e5f5;
+        color: #8e44ad;
+    }
+    .prix-mode-btn i { display: block; font-size: 1.4rem; margin-bottom: 6px; }
+
+    .prix-manuel-group, .prix-marge-group { transition: all 0.3s; }
+    .hidden { display: none !important; }
+
+    .prix-calcule {
+        background: #f3e5f5;
+        border-radius: 10px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .prix-calcule-label { font-size: 0.85rem; color: #8e44ad; font-weight: 600; }
+    .prix-calcule-val { font-size: 1.2rem; font-weight: 700; color: #8e44ad; margin-left: auto; }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(142,68,173,0.3);
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(142,68,173,0.4); }
+
+    .btn-cancel {
+        background: #f8f9fa;
+        color: #6c757d;
+        padding: 12px 24px;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+    .btn-cancel:hover { background: #e9ecef; color: #495057; }
+
+    .image-preview {
+        width: 100%;
+        height: 160px;
+        border-radius: 10px;
+        border: 2px dashed #e1bee7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #f9f5ff;
+        cursor: pointer;
+        position: relative;
+    }
+    .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .image-preview-placeholder { text-align: center; color: #8e44ad; }
+    .image-preview-placeholder i { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .image-preview-placeholder span { font-size: 0.82rem; }
+</style>
+
+<div class="container-fluid py-4">
+    <a href="{% url 'bar:stock_management' %}?tab=articles" class="back-link mb-3 d-inline-block">
+       <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <!-- Header -->
+    <div class="form-header">
+        <div style="width:50px;height:50px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;">
+            <i class="fas fa-{% if mode == 'edit' %}pencil-alt{% else %}plus{% endif %}"></i>
+        </div>
+        <div>
+            <h2>{{ page_title }}</h2>
+            <p>{% if mode == 'edit' %}Modifier la fiche article{% else %}Créer une nouvelle fiche article{% endif %}</p>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Section Identification -->
+        <div class="form-card">
+            <div class="section-title"><i class="fas fa-tag"></i> Identification</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Désignation <span>*</span></label>
+                    <input type="text" name="nom" class="form-control" value="{{ article.nom|default:'' }}" required placeholder="Ex: Whisky Jameson 70cl">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Référence <span style="color:#7f8c8d;font-weight:400;">(auto si vide)</span></label>
+                    <input type="text" name="reference" class="form-control" value="{{ article.reference|default:'' }}" placeholder="Ex: WHI-0001">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Famille / Catégorie <span>*</span></label>
+                    <select name="categorie" class="form-control" required>
+                        <option value="">-- Sélectionner --</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if article.categorie_id == cat.id %}selected{% endif %}>{{ cat.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Statut</label>
+                    <select name="statut" class="form-control">
+                        <option value="actif" {% if article.statut == 'actif' or not article %}selected{% endif %}>✅ Actif</option>
+                        <option value="sommeil" {% if article.statut == 'sommeil' %}selected{% endif %}>💤 En sommeil</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" placeholder="Description de l'article...">{{ article.description|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Prix -->
+        <div class="form-card">
+            <div class="section-title"><i class="fas fa-tags"></i> Tarification</div>
+
+            <div class="prix-mode-selector">
+                <div class="prix-mode-btn {% if not article or article.mode_prix == 'manuel' %}selected{% endif %}" onclick="setPrixMode('manuel')">
+                    <i class="fas fa-keyboard"></i>
+                    Prix manuel
+                </div>
+                <div class="prix-mode-btn {% if article.mode_prix == 'marge' %}selected{% endif %}" onclick="setPrixMode('marge')">
+                    <i class="fas fa-percentage"></i>
+                    Prix par marge
+                </div>
+            </div>
+            <input type="hidden" name="mode_prix" id="mode_prix" value="{{ article.mode_prix|default:'manuel' }}">
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Prix d'achat (FCFA)</label>
+                    <input type="number" name="prix_achat" id="prix_achat" class="form-control" value="{{ article.prix_achat|default:'0' }}" step="1" min="0" oninput="calculerPrix()">
+                </div>
+
+                <div class="form-group prix-marge-group {% if not article or article.mode_prix == 'manuel' %}hidden{% endif %}">
+                    <label class="form-label">Marge (%)</label>
+                    <input type="number" name="marge" id="marge" class="form-control" value="{{ article.marge|default:'0' }}" step="0.1" min="0" oninput="calculerPrix()">
+                </div>
+
+                <div class="form-group prix-manuel-group {% if article.mode_prix == 'marge' %}hidden{% endif %}">
+                    <label class="form-label">Prix de vente (FCFA) <span>*</span></label>
+                    <input type="number" name="prix" id="prix_manuel" class="form-control" value="{{ article.prix|default:'0' }}" step="1" min="0">
+                </div>
+            </div>
+
+            <div class="prix-calcule prix-marge-group {% if not article or article.mode_prix == 'manuel' %}hidden{% endif %}">
+                <i class="fas fa-calculator" style="color:#8e44ad;"></i>
+                <span class="prix-calcule-label">Prix de vente calculé :</span>
+                <span class="prix-calcule-val" id="prix_calcule_affiche">0 FCFA</span>
+                <input type="hidden" name="prix" id="prix_marge">
+            </div>
+        </div>
+
+        <!-- Section Unité & Stock -->
+        <div class="form-card">
+            <div class="section-title"><i class="fas fa-boxes"></i> Unité de vente & Stock</div>
+            <div class="form-grid-3">
+                <div class="form-group">
+                    <label class="form-label">Unité standard</label>
+                    <select name="unite_standard" class="form-control" onchange="toggleUnitePerso(this)">
+                        <option value="bouteille" {% if article.unite_standard == 'bouteille' or not article %}selected{% endif %}>Bouteille</option>
+                        <option value="verre"     {% if article.unite_standard == 'verre' %}selected{% endif %}>Verre</option>
+                        <option value="cl"        {% if article.unite_standard == 'cl' %}selected{% endif %}>Cl</option>
+                        <option value="litre"     {% if article.unite_standard == 'litre' %}selected{% endif %}>Litre</option>
+                        <option value="autre"     {% if article.unite_standard == 'autre' %}selected{% endif %}>Autre (personnalisé)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="unite_perso_group" {% if not article or article.unite_standard != 'autre' %}style="display:none"{% endif %}>
+                    <label class="form-label">Unité personnalisée</label>
+                    <select name="unite_personnalisee" class="form-control">
+                        <option value="">-- Choisir --</option>
+                        {% for u in unites %}
+                        <option value="{{ u.id }}" {% if article.unite_personnalisee_id == u.id %}selected{% endif %}>{{ u }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Seuil d'alerte stock</label>
+                    <input type="number" name="seuil_alerte" class="form-control" value="{{ article.seuil_alerte|default:'10' }}" min="0">
+                </div>
+            </div>
+            <div class="form-grid" style="margin-top:16px;">
+                <div class="toggle-group">
+                    <input type="checkbox" name="disponible" id="disponible" {% if not article or article.disponible %}checked{% endif %} style="width:18px;height:18px;accent-color:#8e44ad;">
+                    <label for="disponible" class="toggle-label">Disponible à la vente</label>
+                </div>
+                <div class="toggle-group">
+                    <input type="checkbox" name="est_compose" id="est_compose" {% if article.est_compose %}checked{% endif %} style="width:18px;height:18px;accent-color:#8e44ad;">
+                    <label for="est_compose" class="toggle-label">Article composé (pack / nomenclature)</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Image -->
+        <div class="form-card">
+            <div class="section-title"><i class="fas fa-image"></i> Image</div>
+            <div class="form-group">
+                <div class="image-preview" onclick="document.getElementById('image_input').click()">
+                    {% if article.image %}
+                    <img src="{{ article.image.url }}" id="preview_img">
+                    {% else %}
+                    <div class="image-preview-placeholder" id="preview_placeholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Cliquer pour ajouter une image</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <input type="file" name="image" id="image_input" accept="image/*" style="display:none" onchange="previewImage(this)">
+            </div>
+        </div>
+
+        <!-- Boutons -->
+        <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
+            <a href="{% url 'bar:stock_management' %}?tab=articles" class="btn-cancel">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save"></i>
+                {% if mode == 'edit' %}Enregistrer les modifications{% else %}Créer l'article{% endif %}
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+function setPrixMode(mode) {
+    document.getElementById('mode_prix').value = mode;
+    document.querySelectorAll('.prix-mode-btn').forEach(b => b.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    if (mode === 'manuel') {
+        document.querySelectorAll('.prix-manuel-group').forEach(e => e.classList.remove('hidden'));
+        document.querySelectorAll('.prix-marge-group').forEach(e => e.classList.add('hidden'));
+    } else {
+        document.querySelectorAll('.prix-manuel-group').forEach(e => e.classList.add('hidden'));
+        document.querySelectorAll('.prix-marge-group').forEach(e => e.classList.remove('hidden'));
+        calculerPrix();
+    }
+}
+
+function calculerPrix() {
+    const achat = parseFloat(document.getElementById('prix_achat').value) || 0;
+    const marge = parseFloat(document.getElementById('marge').value) || 0;
+    const prixCalc = achat * (1 + marge / 100);
+    document.getElementById('prix_calcule_affiche').textContent = Math.round(prixCalc).toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('prix_marge').value = prixCalc.toFixed(2);
+}
+
+function toggleUnitePerso(select) {
+    const group = document.getElementById('unite_perso_group');
+    group.style.display = select.value === 'autre' ? 'flex' : 'none';
+}
+
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const preview = input.closest('.form-card').querySelector('.image-preview');
+            preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Init calcul
+calculerPrix();
+</script>
+{% endblock %}

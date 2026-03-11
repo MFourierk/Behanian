@@ -1,189 +1,1221 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}Stock - Cave BEHANIAN{% endblock %}
 
-{% block scripts %}
-{{ block.super }}
+{% block content %}
 <style>
-    .glamour-tabs-container {
-        background: #fff;
-        padding: 1rem;
+    /* ===== HEADER ===== */
+    .page-header {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        padding: 28px 30px;
         border-radius: 18px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.07);
-        margin-top: 1.5rem;
-    }
-    .tabs-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        overflow-x: auto;
-        white-space: nowrap;
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-    .tabs-row::-webkit-scrollbar {
-        display: none;
-    }
-    .tabs-row:first-child {
-        margin-bottom: 10px;
-    }
-    .glamour-tab {
-        display: inline-flex;
-        align-items: center;
-        padding: 10px 18px;
-        border-radius: 12px;
-        font-weight: 600;
-        color: #6c757d;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        font-size: 0.95rem;
-    }
-    .glamour-tab i {
-        margin-right: 8px;
-        opacity: 0.8;
-    }
-    .glamour-tab.active {
-        background-color: #8e44ad;
-        color: #fff;
-        box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
-    }
-    .glamour-tab.active i {
-        opacity: 1;
-    }
-    .glamour-tab:not(.active):hover {
-        background-color: #f8f9fa;
-        color: #8e44ad;
-    }
-
-    .action-header {
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(142,68,173,0.2);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-        background-color: #fff;
-        border-radius: 18px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.07);
-        margin-top: 2rem;
-    }
-    .search-bar {
         position: relative;
-        flex-grow: 1;
+        overflow: hidden;
     }
-    .search-bar i {
+    .page-header::after {
+        content: '🍷';
         position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #adb5bd;
+        right: -10px;
+        bottom: -30px;
+        font-size: 130px;
+        opacity: 0.08;
+        pointer-events: none;
     }
-    .search-bar input {
-        width: 100%;
-        padding: 12px 15px 12px 40px;
-        border-radius: 10px;
-        border: 1px solid #f0f0f0;
-        background: #f8f9fa;
-        transition: all 0.3s ease;
-        font-size: 0.95rem;
-    }
-    .search-bar input:focus {
-        outline: none;
-        background: #fff;
-        border-color: #8e44ad;
-        box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
-    }
+    .page-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.95rem; }
 
-    .filters {
+    /* ===== ONGLETS ===== */
+    .tabs-nav {
         display: flex;
-        gap: 1rem;
-        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        background: white;
+        padding: 10px 14px;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
     }
-    .btn-filter, .btn-action-glam {
+    .tab-btn {
         display: inline-flex;
         align-items: center;
-        padding: 12px 20px;
+        gap: 7px;
+        padding: 9px 16px;
         border-radius: 10px;
         font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        border: 1px solid #e9ecef;
-        background: #fff;
-        font-size: 0.95rem;
-    }
-    .btn-filter {
-        color: #495057;
-    }
-    .btn-filter i.fa-filter {
-        margin-right: 8px;
-    }
-    .btn-filter::after {
-        content: '\f078';
-        font-family: "Font Awesome 5 Free";
-        font-weight: 900;
-        margin-left: 8px;
-        font-size: 0.8em;
-    }
-    .btn-filter:hover {
-        background-color: #f8f9fa;
-        border-color: #dee2e6;
-    }
-    .btn-action-glam {
-        background: #8e44ad;
-        background: linear-gradient(135deg, #8e44ad, #9b59b6);
-        color: #fff;
+        font-size: 0.88rem;
+        color: #6c757d;
+        cursor: pointer;
+        background: transparent;
         border: none;
-        box-shadow: 0 4px 15px rgba(142, 68, 173, 0.2);
+        transition: all 0.2s ease;
     }
-    .btn-action-glam:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(142, 68, 173, 0.3);
+    .tab-btn:hover { background: #f3e5f5; color: #8e44ad; }
+    .tab-btn.active {
+        background: #8e44ad;
+        color: white;
+        box-shadow: 0 4px 12px rgba(142,68,173,0.3);
     }
-</style>
-{% endblock %}
 
-{% block content %}
+    /* ===== CONTENU ONGLETS ===== */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ===== STATS CARDS ===== */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-top: 4px solid transparent;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    .stat-card.purple { border-top-color: #8e44ad; }
+    .stat-card.orange { border-top-color: #e67e22; }
+    .stat-card.red    { border-top-color: #e74c3c; }
+    .stat-card.blue   { border-top-color: #3498db; }
+    .stat-card.green  { border-top-color: #27ae60; }
+    .stat-icon {
+        width: 50px; height: 50px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; flex-shrink: 0;
+    }
+    .stat-icon.purple { background: #f3e5f5; color: #8e44ad; }
+    .stat-icon.orange { background: #fef3e2; color: #e67e22; }
+    .stat-icon.red    { background: #fdecea; color: #e74c3c; }
+    .stat-icon.blue   { background: #e8f4fd; color: #3498db; }
+    .stat-icon.green  { background: #eafaf1; color: #27ae60; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: #2c3e50; line-height: 1; }
+    .stat-label { font-size: 0.85rem; color: #7f8c8d; margin-top: 4px; }
+
+    /* ===== PANELS ===== */
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel {
+        background: white; border-radius: 16px;
+        padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .panel-title {
+        font-weight: 700; color: #2c3e50; font-size: 1rem;
+        margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .pratique-item {
+        display: flex; align-items: flex-start; gap: 12px;
+        padding: 12px; border-radius: 10px; margin-bottom: 8px;
+    }
+    .pratique-item.ok   { background: #eafaf1; }
+    .pratique-item.warn { background: #fef9e7; }
+    .pratique-icon {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; flex-shrink: 0;
+    }
+    .pratique-icon.ok   { background: #d5f5e3; color: #27ae60; }
+    .pratique-icon.warn { background: #fdebd0; color: #e67e22; }
+    .pratique-titre { font-weight: 600; font-size: 0.9rem; color: #27ae60; }
+    .pratique-titre.warn { color: #e67e22; }
+    .pratique-detail { font-size: 0.8rem; color: #7f8c8d; margin-top: 2px; }
+    .score-badge {
+        background: #27ae60; color: white; border-radius: 20px;
+        padding: 3px 12px; font-size: 0.85rem; font-weight: 700; margin-left: auto;
+    }
+    .critique-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .critique-item:last-child { border-bottom: none; }
+    .badge-rupture { background: #fdecea; color: #e74c3c; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-bas     { background: #fef3e2; color: #e67e22; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .empty-critique { text-align: center; padding: 30px; color: #27ae60; }
+    .empty-critique i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+
+    /* ===== ARTICLES ===== */
+    .toolbar {
+        background: white; border-radius: 14px;
+        padding: 14px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        display: flex; gap: 12px; align-items: center;
+        flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .search-box { position: relative; flex: 1; min-width: 200px; }
+    .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #adb5bd; }
+    .search-box input {
+        width: 100%; padding: 10px 14px 10px 38px;
+        border-radius: 10px; border: 1px solid #e9ecef;
+        background: #f8f9fa; font-size: 0.9rem; transition: all 0.2s;
+    }
+    .search-box input:focus { outline: none; border-color: #8e44ad; background: white; box-shadow: 0 0 0 3px rgba(142,68,173,0.1); }
+    .filter-select {
+        padding: 10px 14px; border-radius: 10px;
+        border: 1px solid #e9ecef; background: #f8f9fa;
+        font-size: 0.9rem; color: #495057; cursor: pointer;
+    }
+    .btn-purple {
+        background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        color: white; padding: 10px 20px; border-radius: 10px;
+        font-weight: 600; font-size: 0.9rem; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 8px;
+        box-shadow: 0 4px 12px rgba(142,68,173,0.3);
+        transition: all 0.2s; border: none; cursor: pointer; white-space: nowrap;
+    }
+    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(142,68,173,0.4); color: white; }
+
+    .articles-table-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
+    .articles-table { width: 100%; border-collapse: collapse; }
+    .articles-table thead th {
+        background: #f8f9fa; padding: 14px 20px;
+        font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: #7f8c8d; border-bottom: 2px solid #ecf0f1;
+    }
+    .articles-table tbody td { padding: 14px 20px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    .articles-table tbody tr:hover { background: #fdf8ff; }
+    .articles-table tbody tr:last-child td { border-bottom: none; }
+
+    .article-ref { font-size: 0.78rem; color: #8e44ad; font-weight: 600; font-family: monospace; }
+    .article-nom { font-weight: 700; font-size: 0.95rem; color: #2c3e50; }
+    .article-desc { font-size: 0.8rem; color: #7f8c8d; margin-top: 2px; }
+    .badge-cat { background: #f3e5f5; color: #8e44ad; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .badge-statut { padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .statut-actif   { background: #eafaf1; color: #27ae60; }
+    .statut-sommeil { background: #fef9e7; color: #e67e22; }
+    .stock-ok   { color: #27ae60; font-weight: 700; }
+    .stock-bas  { color: #e67e22; font-weight: 700; }
+    .stock-zero { color: #e74c3c; font-weight: 700; }
+    .prix-tag  { font-weight: 700; color: #2c3e50; }
+    .prix-achat-small { font-size: 0.78rem; color: #7f8c8d; }
+    .compose-badge { background: #e8f4fd; color: #3498db; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; }
+
+    .action-group { display: flex; gap: 5px; justify-content: flex-end; }
+    .btn-action {
+        width: 30px; height: 30px; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 12px; text-decoration: none; transition: all 0.2s;
+        border: none; cursor: pointer;
+    }
+    .btn-edit  { background: #e8f4fd; color: #3498db; }
+    .btn-edit:hover  { background: #3498db; color: white; }
+    .btn-copy  { background: #eafaf1; color: #27ae60; }
+    .btn-copy:hover  { background: #27ae60; color: white; }
+    .btn-sleep { background: #fef9e7; color: #e67e22; }
+    .btn-sleep:hover { background: #e67e22; color: white; }
+    .btn-del   { background: #fdecea; color: #e74c3c; }
+    .btn-del:hover   { background: #e74c3c; color: white; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #7f8c8d; }
+    .empty-state i { font-size: 3rem; color: #e1bee7; margin-bottom: 15px; display: block; }
+
+    /* ===== BADGES BONS DE COMMANDE ===== */
+    .bc-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .bc-badge.brouillon { background: #f5f5f5; color: #7f8c8d; }
+    .bc-badge.confirme  { background: #e8f4fd; color: #3498db; }
+    .bc-badge.envoye    { background: #fef3e2; color: #e67e22; }
+    .bc-badge.partiel   { background: #fdecd2; color: #d35400; }
+    .bc-badge.recu      { background: #eafaf1; color: #27ae60; }
+    .bc-badge.facture   { background: #f3e5f5; color: #8e44ad; }
+    .bc-badge.annule    { background: #fdecea; color: #e74c3c; }
+    .bc-badge.retard    { background: #fdecea; color: #e74c3c; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+    .coming-soon {
+        text-align: center; padding: 80px 20px;
+        background: white; border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .coming-soon i { font-size: 3.5rem; color: #e1bee7; margin-bottom: 16px; display: block; }
+    .coming-soon h4 { font-weight: 700; color: #2c3e50; margin-bottom: 8px; }
+    .coming-soon p { color: #7f8c8d; font-size: 0.9rem; }
+</style>
+
 <div class="container-fluid py-4">
-    <div class="header-glam bar-watermark">
-        <div class="header-content">
-            <h2 class="mb-0"><i class="fas fa-boxes mr-2"></i> Gestion du Stock (Bar)</h2>
-            <p class="mb-0 opacity-75">Gérez les boissons, les bons de commande, les inventaires et les casses.</p>
+
+    <!-- HEADER -->
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-boxes mr-2"></i> Stock</h2>
+            <p>Gérez les boissons, les bons de commande, les inventaires et les casses.</p>
         </div>
         <div class="header-clock">
             <span class="time"></span>
             <span class="date"></span>
         </div>
     </div>
-    <a href="{% url 'bar:dashboard' %}" class="back-link"><i class="fas fa-chevron-left"></i></a>
 
-    <div class="glamour-tabs-container">
-        <div class="tabs-row">
-            <a href="#" class="glamour-tab active"><i class="fas fa-wine-bottle"></i> Articles</a>
-            <a href="#" class="glamour-tab"><i class="fas fa-shopping-cart"></i> Bons de commande</a>
-            <a href="#" class="glamour-tab"><i class="fas fa-dolly"></i> Bons de réception</a>
-            <a href="#" class="glamour-tab"><i class="fas fa-exchange-alt"></i> Entrées / Sorties</a>
+    <a href="{% url 'bar:dashboard' %}" class="back-link d-inline-block mb-3">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+
+    <!-- ONGLETS -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="showTab('dashboard', this)">
+            <i class="fas fa-chart-bar"></i> Tableau de bord
+        </button>
+        <button class="tab-btn" onclick="showTab('articles', this)">
+            <i class="fas fa-wine-bottle"></i> Articles
+        </button>
+        <button class="tab-btn" onclick="showTab('commandes', this)">
+            <i class="fas fa-shopping-cart"></i> Bons de commande
+        </button>
+        <button class="tab-btn" onclick="showTab('reception', this)">
+            <i class="fas fa-dolly"></i> Bons de réception
+        </button>
+        <button class="tab-btn" onclick="showTab('mouvements', this)">
+            <i class="fas fa-exchange-alt"></i> Entrées / Sorties
+        </button>
+        <button class="tab-btn" onclick="showTab('inventaire', this)">
+            <i class="fas fa-clipboard-list"></i> Inventaire
+        </button>
+        <button class="tab-btn" onclick="showTab('casses', this)">
+            <i class="fas fa-exclamation-triangle"></i> Gestion des casses
+        </button>
+    </div>
+
+    <!-- ===== ONGLET : TABLEAU DE BORD ===== -->
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="stats-grid">
+            <div class="stat-card purple">
+                <div class="stat-icon purple"><i class="fas fa-wine-glass"></i></div>
+                <div><div class="stat-value">{{ total_articles }}</div><div class="stat-label">Articles en stock</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-chart-line"></i></div>
+                <div><div class="stat-value">{{ valeur_stock|floatformat:0 }} F</div><div class="stat-label">Valeur du stock</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div><div class="stat-value">{{ stock_bas }}</div><div class="stat-label">Stock bas</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+                <div><div class="stat-value">{{ ruptures }}</div><div class="stat-label">Ruptures</div></div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon blue"><i class="fas fa-shopping-cart"></i></div>
+                <div><div class="stat-value">{{ commandes_en_cours }}</div><div class="stat-label">Commandes en cours</div></div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon green"><i class="fas fa-chart-bar"></i></div>
+                <div><div class="stat-value">{{ total_unites }}</div><div class="stat-label">Total unités</div></div>
+            </div>
         </div>
-        <div class="tabs-row justify-content-center">
-            <a href="#" class="glamour-tab"><i class="fas fa-clipboard-list"></i> Inventaire</a>
-            <a href="#" class="glamour-tab"><i class="fas fa-exclamation-triangle"></i> Gestion des casses</a>
+
+        <div class="bottom-grid">
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-lightbulb text-warning"></i> Bonnes pratiques
+                    <span class="score-badge">{{ score }}/{{ score_total }}</span>
+                </div>
+                {% for p in bonnes_pratiques %}
+                <div class="pratique-item {% if p.ok %}ok{% else %}warn{% endif %}">
+                    <div class="pratique-icon {% if p.ok %}ok{% else %}warn{% endif %}">
+                        <i class="fas {% if p.ok %}fa-check{% else %}fa-exclamation{% endif %}"></i>
+                    </div>
+                    <div>
+                        <div class="pratique-titre {% if not p.ok %}warn{% endif %}">{{ p.titre }}</div>
+                        <div class="pratique-detail">{{ p.detail }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-exclamation-triangle text-danger"></i> Articles critiques
+                </div>
+                {% if articles_critiques %}
+                    {% for article in articles_critiques %}
+                    <div class="critique-item">
+                        <div>
+                            <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ article.nom }}</div>
+                            <div style="font-size:0.82rem;color:#7f8c8d;">Stock : {{ article.quantite_stock }} unités</div>
+                        </div>
+                        {% if article.quantite_stock == 0 %}
+                            <span class="badge-rupture">Rupture</span>
+                        {% else %}
+                            <span class="badge-bas">Stock bas</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-critique">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Tous les stocks sont au niveau requis</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <div class="action-header">
-        <div class="search-bar">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="Rechercher un article...">
+    <!-- ===== ONGLET : ARTICLES ===== -->
+    <div id="tab-articles" class="tab-content">
+
+        <!-- Toolbar Articles -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div style="font-weight:700; color:#2c3e50; font-size:1.1rem;">
+                <i class="fas fa-wine-bottle" style="color:#8e44ad;"></i>
+                Fiches Articles — <span style="color:#8e44ad;">{{ total_articles }} article(s)</span>
+            </div>
+            <a href="{% url 'bar:article_create' %}" class="btn-purple">
+                <i class="fas fa-plus"></i> Nouvel Article
+            </a>
         </div>
-        <div class="filters">
-            <a href="#" class="btn-filter"><i class="fas fa-filter"></i> Toutes catégories</a>
-            <a href="#" class="btn-action-glam"><i class="fas fa-plus"></i> Nouvel article</a>
+
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-articles" placeholder="Rechercher par nom ou référence..." oninput="filtrerArticles()">
+            </div>
+            <select id="filter-categorie" class="filter-select" onchange="filtrerArticles()">
+                <option value="">Toutes les familles</option>
+                {% for cat in categories %}
+                <option value="{{ cat.nom }}">{{ cat.nom }}</option>
+                {% endfor %}
+            </select>
+            <select id="filter-statut" class="filter-select" onchange="filtrerArticles()">
+                <option value="">Tous les statuts</option>
+                <option value="Actif">Actif</option>
+                <option value="En sommeil">En sommeil</option>
+            </select>
+        </div>
+
+        <div class="articles-table-card">
+            <div style="overflow-x:auto;">
+                <table class="articles-table" id="articles-table">
+                    <thead>
+                        <tr>
+                            <th>Référence</th>
+                            <th>Désignation</th>
+                            <th>Famille</th>
+                            <th>Prix achat</th>
+                            <th>Prix vente</th>
+                            <th>Unité</th>
+                            <th>Stock</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="articles-tbody">
+                        {% for article in boissons %}
+                        {% if article.statut != 'supprime' %}
+                        <tr class="article-row"
+                            data-nom="{{ article.nom|lower }}"
+                            data-ref="{{ article.reference|default:''|lower }}"
+                            data-categorie="{{ article.categorie.nom }}"
+                            data-statut="{{ article.get_statut_display }}">
+                            <td><span class="article-ref">{{ article.reference|default:"-" }}</span></td>
+                            <td>
+                                <div class="article-nom">
+                                    {{ article.nom }}
+                                    {% if article.est_compose %}<span class="compose-badge">Pack</span>{% endif %}
+                                </div>
+                                {% if article.description %}
+                                <div class="article-desc">{{ article.description|truncatechars:40 }}</div>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge-cat">{{ article.categorie.nom }}</span></td>
+                            <td>
+                                <div class="prix-achat-small">{{ article.prix_achat|floatformat:0 }} FCFA</div>
+                                {% if article.marge %}<div class="prix-achat-small">Marge : {{ article.marge }}%</div>{% endif %}
+                            </td>
+                            <td><span class="prix-tag">{{ article.prix|floatformat:0 }} FCFA</span></td>
+                            <td style="font-size:0.85rem;">{{ article.unite_affichee }}</td>
+                            <td>
+                                {% if article.quantite_stock == 0 %}
+                                    <span class="stock-zero"><i class="fas fa-times-circle"></i> Rupture</span>
+                                {% elif article.quantite_stock <= article.seuil_alerte %}
+                                    <span class="stock-bas"><i class="fas fa-exclamation-triangle"></i> {{ article.quantite_stock }}</span>
+                                {% else %}
+                                    <span class="stock-ok"><i class="fas fa-check-circle"></i> {{ article.quantite_stock }}</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge-statut statut-{{ article.statut }}">{{ article.get_statut_display }}</span></td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'bar:article_edit' article.pk %}" class="btn-action btn-edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
+                                    <a href="{% url 'bar:article_dupliquer' article.pk %}" class="btn-action btn-copy" title="Dupliquer"><i class="fas fa-copy"></i></a>
+                                    <a href="{% url 'bar:article_sommeil' article.pk %}" class="btn-action btn-sleep" title="{% if article.statut == 'actif' %}Mettre en sommeil{% else %}Réactiver{% endif %}">
+                                        <i class="fas {% if article.statut == 'actif' %}fa-moon{% else %}fa-sun{% endif %}"></i>
+                                    </a>
+                                    <a href="{% url 'bar:article_delete' article.pk %}" class="btn-action btn-del" title="Supprimer"><i class="fas fa-trash-alt"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% empty %}
+                        <tr id="empty-row">
+                            <td colspan="9">
+                                <div class="empty-state">
+                                    <i class="fas fa-wine-bottle"></i>
+                                    <p>Aucun article créé.</p>
+                                    <a href="{% url 'bar:article_create' %}" class="btn-purple" style="display:inline-flex;margin-top:10px;">
+                                        <i class="fas fa-plus"></i> Créer le premier article
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- Placeholder for content like a table -->
-    <div class="card" style="margin-top: 2rem;">
-        <div class="card-body">
-            <p class="text-center text-muted py-5">Le contenu de la section 'Articles' s'affichera ici.</p>
+    <!-- ===== ONGLET : BONS DE COMMANDE ===== -->
+    <div id="tab-commandes" class="tab-content">
+
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+            <div class="stat-card purple">
+                <div class="stat-icon purple"><i class="fas fa-file-alt"></i></div>
+                <div><div class="stat-value">{{ bc_total }}</div><div class="stat-label">Total bons</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-pencil-alt"></i></div>
+                <div><div class="stat-value">{{ bc_brouillons }}</div><div class="stat-label">Brouillons</div></div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon blue"><i class="fas fa-spinner"></i></div>
+                <div><div class="stat-value">{{ bc_en_cours }}</div><div class="stat-label">En cours</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+                <div><div class="stat-value">{{ bc_en_retard }}</div><div class="stat-label">En retard</div></div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-shopping-cart" style="color:#8e44ad;"></i> Bons de Commande
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a href="{% url 'bar:bon_commande_create' %}?type=achat" class="btn-purple" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">
+                    <i class="fas fa-plus"></i> Commande Fournisseur
+                </a>
+                <a href="{% url 'bar:bon_commande_create' %}?type=vente" class="btn-purple">
+                    <i class="fas fa-plus"></i> Commande Client
+                </a>
+            </div>
+        </div>
+
+        <div class="toolbar" style="margin-bottom:14px;">
+            <div class="search-box" style="flex:1;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-bc" placeholder="N° bon, fournisseur, client..." oninput="filtrerBons()">
+            </div>
+            <select id="filter-bc-type" class="filter-select" onchange="filtrerBons()">
+                <option value="">Tous les types</option>
+                <option value="achat">Achat (Fournisseur)</option>
+                <option value="vente">Vente (Client)</option>
+            </select>
+            <select id="filter-bc-statut" class="filter-select" onchange="filtrerBons()">
+                <option value="">Tous les statuts</option>
+                <option value="brouillon">Brouillon</option>
+                <option value="confirme">Confirmé</option>
+                <option value="envoye">Envoyé</option>
+                <option value="partiel">Partiel</option>
+                <option value="recu">Reçu</option>
+                <option value="livre">Livré</option>
+                <option value="facture">Facturé</option>
+                <option value="annule">Annulé</option>
+            </select>
+        </div>
+
+        <div class="articles-table-card">
+            <div style="overflow-x:auto;">
+                <table class="articles-table">
+                    <thead>
+                        <tr>
+                            <th>N° Bon</th>
+                            <th>Type</th>
+                            <th>Tiers</th>
+                            <th>Date commande</th>
+                            <th>Livraison prévue</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bc-tbody">
+                        {% for bon in bons %}
+                        <tr class="bc-row"
+                            data-numero="{{ bon.numero|lower }}"
+                            data-tiers="{{ bon.tiers_nom|lower }}"
+                            data-type="{{ bon.type_commande }}"
+                            data-statut="{{ bon.statut }}">
+                            <td><span style="font-family:monospace;font-weight:700;color:#8e44ad;font-size:0.85rem;">{{ bon.numero }}</span></td>
+                            <td>
+                                {% if bon.type_commande == 'achat' %}
+                                    <span style="background:#eafaf1;color:#27ae60;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-arrow-down"></i> Achat</span>
+                                {% else %}
+                                    <span style="background:#e8f4fd;color:#3498db;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-arrow-up"></i> Vente</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ bon.tiers_nom }}</td>
+                            <td style="font-size:0.88rem;color:#7f8c8d;">{{ bon.date_commande|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if bon.date_livraison_prevue %}
+                                    <span style="font-size:0.88rem;{% if bon.est_en_retard %}color:#e74c3c;font-weight:700;{% else %}color:#7f8c8d;{% endif %}">
+                                        {% if bon.est_en_retard %}<i class="fas fa-exclamation-triangle"></i> {% endif %}
+                                        {{ bon.date_livraison_prevue|date:"d/m/Y" }}
+                                    </span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td style="font-weight:700;color:#2c3e50;">{{ bon.total|floatformat:0 }} FCFA</td>
+                            <td>
+                                {% if bon.est_en_retard %}<span class="bc-badge retard">⚠ En retard</span>
+                                {% elif bon.statut == 'brouillon' %}<span class="bc-badge brouillon">Brouillon</span>
+                                {% elif bon.statut == 'confirme' %}<span class="bc-badge confirme">Confirmé</span>
+                                {% elif bon.statut == 'envoye' %}<span class="bc-badge envoye">Envoyé</span>
+                                {% elif bon.statut == 'partiel' %}<span class="bc-badge partiel">Partiel</span>
+                                {% elif bon.statut == 'recu' or bon.statut == 'livre' %}<span class="bc-badge recu">{{ bon.get_statut_display }}</span>
+                                {% elif bon.statut == 'facture' %}<span class="bc-badge facture">Facturé</span>
+                                {% elif bon.statut == 'annule' %}<span class="bc-badge annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'bar:bon_commande_detail' bon.pk %}" class="btn-action" style="background:#f3e5f5;color:#8e44ad;" title="Voir"><i class="fas fa-eye"></i></a>
+                                    {% if bon.statut != 'annule' and bon.statut != 'recu' and bon.statut != 'livre' and bon.statut != 'facture' %}
+                                    <a href="{% url 'bar:bon_commande_edit' bon.pk %}" class="btn-action btn-edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
+                                    {% endif %}
+                                    {% if bon.statut == 'brouillon' %}
+                                    <button class="btn-action btn-sleep" title="Confirmer" onclick="changerStatut({{ bon.pk }}, 'confirme', this)"><i class="fas fa-check"></i></button>
+                                    {% endif %}
+                                    {% if bon.statut != 'annule' and bon.statut != 'recu' and bon.statut != 'livre' and bon.statut != 'facture' %}
+                                    <form method="post" action="{% url 'bar:bon_commande_annuler' bon.pk %}" style="display:inline;" onsubmit="return confirm('Annuler ce bon ?')">
+                                        {% csrf_token %}<button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8">
+                            <div class="empty-state">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>Aucun bon de commande créé.</p>
+                                <a href="{% url 'bar:bon_commande_create' %}?type=achat" class="btn-purple" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Créer le premier bon</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    <!-- ===== ONGLET : BONS DE RÉCEPTION ===== -->
+    <div id="tab-reception" class="tab-content">
+
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+            <div class="stat-card purple">
+                <div class="stat-icon purple"><i class="fas fa-dolly"></i></div>
+                <div><div class="stat-value">{{ br_total }}</div><div class="stat-label">Total réceptions</div></div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div><div class="stat-value">{{ br_valides }}</div><div class="stat-label">Validées</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-spinner"></i></div>
+                <div><div class="stat-value">{{ br_en_cours }}</div><div class="stat-label">En cours</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-exclamation-circle"></i></div>
+                <div><div class="stat-value">{{ br_avec_ecarts }}</div><div class="stat-label">Avec écarts</div></div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-dolly" style="color:#8e44ad;"></i> Bons de Réception
+            </div>
+            <a href="{% url 'bar:bon_reception_create' %}" class="btn-purple">
+                <i class="fas fa-plus"></i> Nouveau Bon de Réception
+            </a>
+        </div>
+
+        <div class="toolbar" style="margin-bottom:14px;">
+            <div class="search-box" style="flex:1;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-br" placeholder="N° bon, fournisseur, N° document..." oninput="filtrerReceptions()">
+            </div>
+            <select id="filter-br-statut" class="filter-select" onchange="filtrerReceptions()">
+                <option value="">Tous les statuts</option>
+                <option value="brouillon">Brouillon</option>
+                <option value="en_cours">En cours</option>
+                <option value="valide">Validé</option>
+                <option value="annule">Annulé</option>
+            </select>
+        </div>
+
+        <div class="articles-table-card">
+            <div style="overflow-x:auto;">
+                <table class="articles-table">
+                    <thead>
+                        <tr>
+                            <th>N° Réception</th>
+                            <th>BC lié</th>
+                            <th>Fournisseur</th>
+                            <th>N° Doc. Fournisseur</th>
+                            <th>Date réception</th>
+                            <th>Articles</th>
+                            <th>Montant</th>
+                            <th>Opérateur</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for br in receptions %}
+                        <tr class="br-row" data-numero="{{ br.numero|lower }}" data-fournisseur="{{ br.fournisseur|lower }}" data-statut="{{ br.statut }}">
+                            <td><span style="font-family:monospace;font-weight:700;color:#8e44ad;font-size:0.85rem;">{{ br.numero }}</span></td>
+                            <td>
+                                {% if br.bon_commande %}
+                                    <span style="font-size:0.78rem;color:#3498db;font-weight:600;">{{ br.bon_commande.numero }}</span>
+                                {% else %}
+                                    <span style="color:#bdc3c7;font-size:0.82rem;">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ br.fournisseur|default:"—" }}</td>
+                            <td style="font-size:0.85rem;color:#7f8c8d;">{{ br.numero_document_fournisseur|default:"—" }}</td>
+                            <td style="font-size:0.88rem;color:#7f8c8d;">{{ br.date_reception|date:"d/m/Y" }}</td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ br.nb_articles }}</td>
+                            <td style="font-weight:700;color:#2c3e50;">{{ br.total|floatformat:0 }} FCFA</td>
+                            <td style="font-size:0.85rem;">{{ br.operateur.get_full_name|default:br.operateur.username }}</td>
+                            <td>
+                                {% if br.statut == "brouillon" %}<span class="bc-badge brouillon">Brouillon</span>
+                                {% elif br.statut == "en_cours" %}<span class="bc-badge envoye">En cours</span>
+                                {% elif br.statut == "valide" %}
+                                    <span class="bc-badge recu">✓ Validé</span>
+                                    {% if br.a_des_ecarts %}<span class="bc-badge retard" style="margin-left:4px;">⚠ Écarts</span>{% endif %}
+                                {% elif br.statut == "annule" %}<span class="bc-badge annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'bar:bon_reception_detail' br.pk %}" class="btn-action" style="background:#f3e5f5;color:#8e44ad;" title="Voir"><i class="fas fa-eye"></i></a>
+                                    {% if br.statut in "brouillon,en_cours" %}
+                                    <form method="post" action="{% url 'bar:bon_reception_valider' br.pk %}" style="display:inline;" onsubmit="return confirm('Valider ce bon et mettre à jour le stock ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-copy" title="Valider"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    <form method="post" action="{% url 'bar:bon_reception_annuler' br.pk %}" style="display:inline;" onsubmit="return confirm('Annuler ce bon ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="10">
+                            <div class="empty-state">
+                                <i class="fas fa-dolly"></i>
+                                <p>Aucun bon de réception créé.</p>
+                                <a href="{% url 'bar:bon_reception_create' %}" class="btn-purple" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Créer le premier bon</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : ENTRÉES / SORTIES ===== -->
+    <div id="tab-mouvements" class="tab-content">
+
+        <!-- Stats mouvements -->
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+            <div class="stat-card green">
+                <div class="stat-icon green"><i class="fas fa-arrow-down"></i></div>
+                <div><div class="stat-value">{{ mv_entrees_mois }}</div><div class="stat-label">Entrées ce mois</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-arrow-up"></i></div>
+                <div><div class="stat-value">{{ mv_sorties_mois }}</div><div class="stat-label">Sorties ce mois</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
+                <div><div class="stat-value">{{ mv_casses_mois }}</div><div class="stat-label">Casses / Pertes</div></div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-icon purple"><i class="fas fa-exchange-alt"></i></div>
+                <div><div class="stat-value">{{ mv_total_mois }}</div><div class="stat-label">Total mouvements</div></div>
+            </div>
+        </div>
+
+        <!-- Toolbar + Nouveau mouvement -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-exchange-alt" style="color:#8e44ad;"></i> Journal des Mouvements
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-purple" style="background:linear-gradient(135deg,#27ae60,#2ecc71);" onclick="ouvrirModalMouvement('entree')">
+                    <i class="fas fa-plus"></i> Entrée
+                </button>
+                <button class="btn-purple" style="background:linear-gradient(135deg,#e74c3c,#c0392b);" onclick="ouvrirModalMouvement('sortie')">
+                    <i class="fas fa-minus"></i> Sortie
+                </button>
+                <button class="btn-purple" style="background:linear-gradient(135deg,#e67e22,#d35400);" onclick="ouvrirModalMouvement('casse')">
+                    <i class="fas fa-exclamation-triangle"></i> Casse
+                </button>
+                <button class="btn-purple" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);" onclick="ouvrirModalMouvement('prelevement')">
+                    <i class="fas fa-user"></i> Prélèvement
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="toolbar" style="margin-bottom:14px;">
+            <div class="search-box" style="flex:1;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-mv" placeholder="Rechercher un article..." oninput="filtrerMouvements()">
+            </div>
+            <select id="filter-mv-type" class="filter-select" onchange="filtrerMouvements()">
+                <option value="">Tous les types</option>
+                <option value="entree">Entrées</option>
+                <option value="sortie">Sorties</option>
+                <option value="casse">Casses / Pertes</option>
+                <option value="inventaire">Ajustements</option>
+            </select>
+            <input type="date" id="filter-mv-date-debut" class="filter-select" onchange="filtrerMouvements()" title="Date début">
+            <input type="date" id="filter-mv-date-fin" class="filter-select" onchange="filtrerMouvements()" title="Date fin">
+        </div>
+
+        <!-- Table mouvements -->
+        <div class="articles-table-card">
+            <div style="overflow-x:auto;">
+                <table class="articles-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Article</th>
+                            <th>Quantité</th>
+                            <th>Valeur</th>
+                            <th>Opérateur</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mv-tbody">
+                        {% for mv in mouvements %}
+                        <tr class="mv-row"
+                            data-article="{{ mv.boisson.nom|lower }}"
+                            data-type="{{ mv.type_mouvement }}"
+                            data-date="{{ mv.date|date:'Y-m-d' }}">
+                            <td style="font-size:0.85rem;color:#7f8c8d;white-space:nowrap;">
+                                {{ mv.date|date:"d/m/Y H:i" }}
+                            </td>
+                            <td>
+                                {% if mv.type_mouvement == 'entree' %}
+                                    <span style="background:#eafaf1;color:#27ae60;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fas fa-arrow-down"></i> Entrée</span>
+                                {% elif mv.type_mouvement == 'sortie' %}
+                                    <span style="background:#fdecea;color:#e74c3c;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fas fa-arrow-up"></i> Sortie</span>
+                                {% elif mv.type_mouvement == 'casse' %}
+                                    <span style="background:#fef3e2;color:#e67e22;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fas fa-exclamation-triangle"></i> Casse</span>
+                                {% elif mv.type_mouvement == 'inventaire' %}
+                                    <span style="background:#e8f4fd;color:#3498db;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fas fa-clipboard-list"></i> Ajustement</span>
+                                {% else %}
+                                    <span style="background:#f3e5f5;color:#8e44ad;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;white-space:nowrap;"><i class="fas fa-user"></i> Prélèvement</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="font-weight:700;color:#2c3e50;">{{ mv.boisson.nom }}</div>
+                                <div style="font-size:0.78rem;color:#7f8c8d;">{{ mv.boisson.reference|default:"" }}</div>
+                            </td>
+                            <td>
+                                {% if mv.type_mouvement == 'entree' or mv.type_mouvement == 'inventaire' %}
+                                    <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite }}</span>
+                                {% else %}
+                                    <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite }}</span>
+                                {% endif %}
+                                <span style="font-size:0.8rem;color:#7f8c8d;">{{ mv.boisson.unite_affichee }}</span>
+                            </td>
+                            <td style="font-weight:600;color:#2c3e50;">
+                                {% if mv.boisson.prix_achat %}
+                                    {{ mv.quantite|floatformat:0 }} × {{ mv.boisson.prix_achat|floatformat:0 }} FCFA
+                                {% else %}—{% endif %}
+                            </td>
+                            <td style="font-size:0.85rem;">{{ mv.utilisateur.get_full_name|default:mv.utilisateur.username|default:"—" }}</td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;max-width:200px;">{{ mv.commentaire|default:"—"|truncatechars:60 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7">
+                            <div class="empty-state">
+                                <i class="fas fa-exchange-alt"></i>
+                                <p>Aucun mouvement enregistré.</p>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL NOUVEAU MOUVEMENT ===== -->
+    <div id="modal-mouvement" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:20px;padding:32px;width:500px;max-width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                <h3 id="modal-titre" style="font-weight:700;color:#2c3e50;margin:0;font-size:1.2rem;"></h3>
+                <button onclick="fermerModal()" style="background:#f0f0f0;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">×</button>
+            </div>
+            <form method="post" action="{% url 'bar:mouvement_create' %}">
+                {% csrf_token %}
+                <input type="hidden" name="type_mouvement" id="modal-type">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div>
+                        <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Article *</label>
+                        <select name="boisson_id" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
+                            <option value="">— Sélectionner un article —</option>
+                            {% for b in boissons %}
+                            <option value="{{ b.pk }}">{{ b.nom }} {% if b.reference %}[{{ b.reference }}]{% endif %} — Stock: {{ b.quantite_stock }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Quantité *</label>
+                        <input type="number" name="quantite" min="1" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
+                    </div>
+                    <div id="motif-group">
+                        <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Motif / Commentaire *</label>
+                        <textarea name="commentaire" rows="2" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;resize:none;" placeholder="Précisez la raison..."></textarea>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+                    <button type="button" onclick="fermerModal()" style="padding:10px 20px;border-radius:10px;border:2px solid #e9ecef;background:white;font-weight:600;cursor:pointer;color:#7f8c8d;">Annuler</button>
+                    <button type="submit" id="modal-btn-submit" style="padding:10px 24px;border-radius:10px;border:none;font-weight:700;cursor:pointer;color:white;font-size:0.95rem;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : INVENTAIRE ===== -->
+    <div id="tab-inventaire" class="tab-content">
+
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px;">
+            <div class="stat-card purple">
+                <div class="stat-icon purple"><i class="fas fa-clipboard-list"></i></div>
+                <div><div class="stat-value">{{ inv_total }}</div><div class="stat-label">Total inventaires</div></div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div><div class="stat-value">{{ inv_valides }}</div><div class="stat-label">Validés</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-spinner"></i></div>
+                <div><div class="stat-value">{{ inv_en_cours }}</div><div class="stat-label">En cours</div></div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-clipboard-list" style="color:#8e44ad;"></i> Inventaires Physiques
+            </div>
+            <a href="{% url 'bar:inventaire_create' %}" class="btn-purple">
+                <i class="fas fa-plus"></i> Nouvel Inventaire
+            </a>
+        </div>
+
+        <div class="articles-table-card">
+            <div style="overflow-x:auto;">
+                <table class="articles-table">
+                    <thead>
+                        <tr>
+                            <th>N° Inventaire</th>
+                            <th>Date création</th>
+                            <th>Articles</th>
+                            <th>Écarts</th>
+                            <th>Valeur écarts</th>
+                            <th>Créé par</th>
+                            <th>Validé le</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in inventaires %}
+                        <tr>
+                            <td><span style="font-family:monospace;font-weight:700;color:#8e44ad;font-size:0.85rem;">{{ inv.numero }}</span></td>
+                            <td style="font-size:0.85rem;color:#7f8c8d;">{{ inv.date_creation|date:"d/m/Y H:i" }}</td>
+                            <td style="font-weight:600;">{{ inv.nb_lignes }}</td>
+                            <td>
+                                {% with ecarts=inv.nb_ecarts %}
+                                {% if ecarts > 0 %}
+                                    <span style="color:#e74c3c;font-weight:700;">{{ ecarts }}</span>
+                                {% else %}
+                                    <span style="color:#27ae60;font-weight:700;">✓ 0</span>
+                                {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td style="font-weight:600;color:#e74c3c;">{{ inv.valeur_ecart_total|floatformat:0 }} FCFA</td>
+                            <td style="font-size:0.85rem;">{{ inv.cree_par.get_full_name|default:inv.cree_par.username|default:"—" }}</td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;">
+                                {% if inv.date_validation %}{{ inv.date_validation|date:"d/m/Y" }}{% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if inv.statut == "brouillon" %}<span class="bc-badge brouillon">Brouillon</span>
+                                {% elif inv.statut == "en_cours" %}<span class="bc-badge envoye">En cours</span>
+                                {% elif inv.statut == "valide" %}<span class="bc-badge recu">✓ Validé</span>
+                                {% elif inv.statut == "annule" %}<span class="bc-badge annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'bar:inventaire_detail' inv.pk %}" class="btn-action" style="background:#f3e5f5;color:#8e44ad;" title="Voir détail"><i class="fas fa-eye"></i></a>
+                                    {% if inv.statut in "brouillon,en_cours" %}
+                                    <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" style="display:inline;" onsubmit="return confirm('Valider et ajuster le stock ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-copy" title="Valider"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    <form method="post" action="{% url 'bar:inventaire_annuler' inv.pk %}" style="display:inline;" onsubmit="return confirm('Annuler cet inventaire ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="9">
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p>Aucun inventaire créé.</p>
+                                <a href="{% url 'bar:inventaire_create' %}" class="btn-purple" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Premier inventaire</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : GESTION DES CASSES ===== -->
+    <div id="tab-casses" class="tab-content">
+
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div><div class="stat-value">{{ css_total }}</div><div class="stat-label">Total déclarations</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-calendar-alt"></i></div>
+                <div><div class="stat-value">{{ css_mois }}</div><div class="stat-label">Ce mois-ci</div></div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-icon purple"><i class="fas fa-clock"></i></div>
+                <div><div class="stat-value">{{ css_en_attente }}</div><div class="stat-label">En attente</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-coins"></i></div>
+                <div><div class="stat-value">{{ css_valeur_mois|floatformat:0 }}</div><div class="stat-label">FCFA perdus (mois)</div></div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Déclarations de Casse / Perte
+            </div>
+            <a href="{% url 'bar:casse_create' %}" class="btn-purple" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">
+                <i class="fas fa-plus"></i> Déclarer une Casse
+            </a>
+        </div>
+
+        <div class="articles-table-card">
+            <div style="overflow-x:auto;">
+                <table class="articles-table">
+                    <thead>
+                        <tr>
+                            <th>N° Déclaration</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Articles</th>
+                            <th>Valeur perdue</th>
+                            <th>Déclaré par</th>
+                            <th>Description</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for css in casses %}
+                        <tr>
+                            <td><span style="font-family:monospace;font-weight:700;color:#e74c3c;font-size:0.85rem;">{{ css.numero }}</span></td>
+                            <td>
+                                {% if css.type_casse == "casse" %}<span style="background:#fdecea;color:#e74c3c;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-wine-bottle"></i> Casse</span>
+                                {% elif css.type_casse == "perte" %}<span style="background:#fef3e2;color:#e67e22;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-tint-slash"></i> Perte</span>
+                                {% elif css.type_casse == "perime" %}<span style="background:#f3e5f5;color:#8e44ad;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-calendar-times"></i> Périmé</span>
+                                {% elif css.type_casse == "vol" %}<span style="background:#fdecea;color:#c0392b;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-user-secret"></i> Vol</span>
+                                {% elif css.type_casse == "offert" %}<span style="background:#eafaf1;color:#27ae60;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-gift"></i> Offert</span>
+                                {% else %}<span style="background:#f8f9fa;color:#7f8c8d;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Autre</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.85rem;color:#7f8c8d;">{{ css.date_casse|date:"d/m/Y" }}</td>
+                            <td style="font-weight:600;text-align:center;">{{ css.nb_articles }}</td>
+                            <td style="font-weight:700;color:#e74c3c;">{{ css.total_valeur|floatformat:0 }} FCFA</td>
+                            <td style="font-size:0.85rem;">{{ css.declare_par.get_full_name|default:css.declare_par.username|default:"—" }}</td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;max-width:180px;">{{ css.description|default:"—"|truncatechars:50 }}</td>
+                            <td>
+                                {% if css.statut == "declare" %}<span class="bc-badge brouillon">⏳ En attente</span>
+                                {% elif css.statut == "valide" %}<span class="bc-badge recu">✓ Validé</span>
+                                {% elif css.statut == "annule" %}<span class="bc-badge annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'bar:casse_detail' css.pk %}" class="btn-action" style="background:#fdecea;color:#e74c3c;" title="Voir"><i class="fas fa-eye"></i></a>
+                                    {% if css.statut == "declare" %}
+                                    <form method="post" action="{% url 'bar:casse_valider' css.pk %}" style="display:inline;" onsubmit="return confirm('Valider et déduire du stock ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-copy" title="Valider"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    <form method="post" action="{% url 'bar:casse_annuler' css.pk %}" style="display:inline;" onsubmit="return confirm('Annuler cette déclaration ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="9">
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Aucune casse déclarée. C'est une bonne nouvelle !</p>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script>
+// Gestion des onglets
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+// Filtre articles côté client
+function filtrerArticles() {
+    const q = document.getElementById('search-articles').value.toLowerCase();
+    const cat = document.getElementById('filter-categorie').value;
+    const statut = document.getElementById('filter-statut').value;
+
+    document.querySelectorAll('.article-row').forEach(row => {
+        const nom = row.dataset.nom || '';
+        const ref = row.dataset.ref || '';
+        const categorie = row.dataset.categorie || '';
+        const statutRow = row.dataset.statut || '';
+
+        const matchQ = !q || nom.includes(q) || ref.includes(q);
+        const matchCat = !cat || categorie === cat;
+        const matchStatut = !statut || statutRow === statut;
+
+        row.style.display = (matchQ && matchCat && matchStatut) ? '' : 'none';
+    });
+}
+
+// Filtre bons de commande
+function filtrerBons() {
+    const q = (document.getElementById('search-bc').value || '').toLowerCase();
+    const type = document.getElementById('filter-bc-type').value;
+    const statut = document.getElementById('filter-bc-statut').value;
+    document.querySelectorAll('.bc-row').forEach(row => {
+        const matchQ = !q || (row.dataset.numero||'').includes(q) || (row.dataset.tiers||'').includes(q);
+        const matchType = !type || row.dataset.type === type;
+        const matchStatut = !statut || row.dataset.statut === statut;
+        row.style.display = (matchQ && matchType && matchStatut) ? '' : 'none';
+    });
+}
+
+// Filtre mouvements
+function filtrerMouvements() {
+    const q = (document.getElementById('search-mv').value || '').toLowerCase();
+    const type = document.getElementById('filter-mv-type').value;
+    const debut = document.getElementById('filter-mv-date-debut').value;
+    const fin = document.getElementById('filter-mv-date-fin').value;
+    document.querySelectorAll('.mv-row').forEach(row => {
+        const matchQ = !q || (row.dataset.article||'').includes(q);
+        const matchType = !type || row.dataset.type === type;
+        const date = row.dataset.date || '';
+        const matchDebut = !debut || date >= debut;
+        const matchFin = !fin || date <= fin;
+        row.style.display = (matchQ && matchType && matchDebut && matchFin) ? '' : 'none';
+    });
+}
+
+const MODAL_CONFIGS = {
+    'entree':      { titre: '➕ Nouvelle Entrée de Stock',       color: '#27ae60', label: 'Enregistrer l\'entrée' },
+    'sortie':      { titre: '➖ Nouvelle Sortie de Stock',        color: '#e74c3c', label: 'Enregistrer la sortie' },
+    'casse':       { titre: '⚠️ Déclarer une Casse / Perte',      color: '#e67e22', label: 'Déclarer la casse' },
+    'prelevement': { titre: '👤 Prélèvement Propriétaire',        color: '#8e44ad', label: 'Enregistrer le prélèvement' },
+};
+
+function ouvrirModalMouvement(type) {
+    const cfg = MODAL_CONFIGS[type];
+    document.getElementById('modal-titre').textContent = cfg.titre;
+    document.getElementById('modal-type').value = type;
+    document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`;
+    document.getElementById('modal-btn-submit').textContent = cfg.label;
+    const modal = document.getElementById('modal-mouvement');
+    modal.style.display = 'flex';
+}
+
+function fermerModal() {
+    document.getElementById('modal-mouvement').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerModal(); });
+
+// Filtre bons de réception
+function filtrerReceptions() {
+    const q = (document.getElementById('search-br').value || '').toLowerCase();
+    const statut = document.getElementById('filter-br-statut').value;
+    document.querySelectorAll('.br-row').forEach(row => {
+        const matchQ = !q || (row.dataset.numero||'').includes(q) || (row.dataset.fournisseur||'').includes(q);
+        const matchStatut = !statut || row.dataset.statut === statut;
+        row.style.display = (matchQ && matchStatut) ? '' : 'none';
+    });
+}
+
+// Changer statut bon via AJAX
+function changerStatut(pk, statut, btn) {
+    const csrfForms = document.querySelectorAll('[name=csrfmiddlewaretoken]');
+    const csrfToken = csrfForms.length ? csrfForms[0].value : '';
+    fetch(`/bar/commandes/${pk}/statut/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken},
+        body: `statut=${statut}`
+    }).then(r => r.json()).then(data => { if (data.success) location.reload(); });
+}
+
+// Ouvrir automatiquement l'onglet si paramètre URL présent
+const urlParams = new URLSearchParams(window.location.search);
+const tab = urlParams.get('tab');
+if (tab) {
+    const btn = document.querySelector(`.tab-btn[onclick*="${tab}"]`);
+    if (btn) showTab(tab, btn);
+}
+</script>
 {% endblock %}

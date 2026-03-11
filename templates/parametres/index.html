@@ -1,1 +1,230 @@
-Bonjour
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .settings-header {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        color: white;
+        padding: 30px 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .settings-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+        letter-spacing: -1px;
+    }
+
+    .settings-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+        font-weight: 300;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
+        padding-bottom: 40px;
+    }
+
+    .module-card {
+        border: none;
+        border-radius: 15px;
+        background: white;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    .module-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    }
+
+    .card-icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin: 0 auto 15px;
+        transition: transform 0.4s ease;
+    }
+
+    .module-card:hover .card-icon-wrapper {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .bg-soft-primary { background-color: #e8f0fe; color: #1a73e8; }
+    .bg-soft-success { background-color: #e6f4ea; color: #1e8e3e; }
+    .bg-soft-danger { background-color: #fce8e6; color: #d93025; }
+    .bg-soft-warning { background-color: #fef7e0; color: #f9ab00; }
+    .bg-soft-info { background-color: #e8f8fc; color: #029be5; }
+
+    .card-title {
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        font-size: 1.1rem;
+    }
+
+    .card-text {
+        color: #7f8c8d;
+        font-size: 0.85rem;
+        margin-bottom: 15px;
+        line-height: 1.4;
+        flex-grow: 1;
+    }
+
+    .btn-action-group {
+        display: grid;
+        gap: 8px;
+        margin-top: auto;
+    }
+
+    .btn-glam {
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+    }
+
+    .btn-glam-primary { background-color: #f8f9fa; color: #1a73e8; border-color: #e8f0fe; }
+    .btn-glam-primary:hover { background-color: #1a73e8; color: white; }
+
+    .btn-glam-success { background-color: #f8f9fa; color: #1e8e3e; border-color: #e6f4ea; }
+    .btn-glam-success:hover { background-color: #1e8e3e; color: white; }
+
+    .btn-glam-danger { background-color: #f8f9fa; color: #d93025; border-color: #fce8e6; }
+    .btn-glam-danger:hover { background-color: #d93025; color: white; }
+
+    .btn-glam-warning { background-color: #f8f9fa; color: #f9ab00; border-color: #fef7e0; }
+    .btn-glam-warning:hover { background-color: #f9ab00; color: white; }
+
+    .btn-glam-info { background-color: #f8f9fa; color: #029be5; border-color: #e8f8fc; }
+    .btn-glam-info:hover { background-color: #029be5; color: white; }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="settings-header header-glam params-watermark">
+        <div class="header-content">
+            <h1 class="settings-title">Paramètres Généraux</h1>
+            <p class="settings-subtitle">Configuration globale de l'application et des modules</p>
+        </div>
+        <div class="header-clock">
+            <span class="time">--:-- GMT</span>
+            <span class="date">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="settings-grid">
+
+        <!-- Module Hotel -->
+        <div class="module-card">
+            <div class="card-icon-wrapper bg-soft-primary">
+                <i class="fas fa-hotel"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Hôtel</h5>
+                <p class="card-text">Gestion intégrale des chambres, configuration des types et politique tarifaire.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:chambre_list' %}" class="btn-glam btn-glam-primary">
+                    <i class="fas fa-bed mr-2"></i> Gérer les Chambres
+                </a>
+            </div>
+        </div>
+
+        <!-- Module Restaurant -->
+        <div class="module-card">
+            <div class="card-icon-wrapper bg-soft-success">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Restaurant</h5>
+                <p class="card-text">Agencement des salles, configuration des tables et optimisation du service.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:table_list' %}" class="btn-glam btn-glam-success">
+                    <i class="fas fa-chair mr-2"></i> Gérer les Tables
+                </a>
+            </div>
+        </div>
+
+        <!-- Module Cave -->
+        <div class="module-card">
+            <div class="card-icon-wrapper" style="background-color: #f3e5f5; color: #8e44ad;">
+                <i class="fas fa-wine-glass-alt"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Cave</h5>
+                <p class="card-text">Gestion de la carte des boissons, cocktails, vins et configuration des tables.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:boissonbar_list' %}" class="btn-glam" style="background-color: #f3e5f5; color: #8e44ad; border-color: #e1bee7;">
+                    <i class="fas fa-cocktail mr-2"></i> Gérer les Boissons
+                </a>
+                <a href="{% url 'parametres:tablebar_list' %}" class="btn-glam" style="background-color: #f3e5f5; color: #8e44ad; border-color: #e1bee7;">
+                    <i class="fas fa-chair mr-2"></i> Tables de la Cave
+                </a>
+            </div>
+        </div>
+
+        <!-- Module Cuisine & Carte -->
+        <div class="module-card">
+            <div class="card-icon-wrapper bg-soft-danger">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Cuisine</h5>
+                <p class="card-text">Gestion globale des plats, catégories et fiches techniques.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:plat_list' %}" class="btn-glam btn-glam-danger">
+                    <i class="fas fa-hamburger mr-2"></i> Plats
+                </a>
+                <a href="{% url 'parametres:categorie_list' %}" class="btn-glam btn-glam-warning">
+                    <i class="fas fa-tags mr-2"></i> Catégories
+                </a>
+                <!-- Fiches Techniques : à implémenter -->
+            </div>
+        </div>
+
+        <!-- Module Espaces -->
+        <div class="module-card">
+            <div class="card-icon-wrapper bg-soft-info">
+                <i class="fas fa-glass-cheers"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Événementiel</h5>
+                <p class="card-text">Configuration des espaces de réception, salles de conférence et zones VIP.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:espace_list' %}" class="btn-glam btn-glam-info">
+                    <i class="fas fa-map-marker-alt mr-2"></i> Gérer les Espaces
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

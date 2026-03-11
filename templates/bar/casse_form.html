@@ -1,0 +1,250 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(231,76,60,0.25); }
+    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+    .back-link { display:inline-flex; align-items:center; gap:6px; color:#e74c3c; font-weight:600; margin-bottom:16px; text-decoration:none; }
+    .back-link:hover { color:#c0392b; }
+    .form-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .form-section-title { font-weight: 700; color: #e74c3c; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #fdecea; }
+    .form-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1/-1; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px 14px; border: 1px solid #e9ecef; border-radius: 10px; font-size: 0.92rem; background: #f8f9fa; transition: all 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #e74c3c; background: white; box-shadow: 0 0 0 3px rgba(231,76,60,0.1); }
+
+    /* Types de casse visuels */
+    .type-selector { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 4px; }
+    .type-btn { padding: 12px; border: 2px solid #e9ecef; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
+    .type-btn:hover { border-color: #e74c3c; background: #fdecea; }
+    .type-btn.selected { border-color: #e74c3c; background: #fdecea; }
+    .type-btn i { display: block; font-size: 1.5rem; margin-bottom: 4px; }
+    .type-btn span { font-size: 0.8rem; font-weight: 600; color: #2c3e50; }
+
+    /* Lignes */
+    .casse-table { width: 100%; border-collapse: collapse; }
+    .casse-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.78rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; }
+    .casse-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    .casse-table input, .casse-table select { padding: 8px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; }
+    .casse-table input:focus, .casse-table select:focus { outline: none; border-color: #e74c3c; background: white; }
+
+    .btn-add-ligne { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; background: #fdecea; color: #e74c3c; border-radius: 10px; font-weight: 600; font-size: 0.88rem; border: 2px dashed #f5a89a; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
+    .btn-add-ligne:hover { background: #e74c3c; color: white; border-style: solid; }
+    .btn-del-ligne { background: #fdecea; color: #e74c3c; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .btn-del-ligne:hover { background: #e74c3c; color: white; }
+
+    .total-bar { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 16px 24px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+    .total-value { font-size: 1.5rem; font-weight: 700; }
+
+    .actions-bar { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+    .btn-save { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; padding: 12px 28px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(231,76,60,0.3); transition: all 0.2s; }
+    .btn-valider { background: linear-gradient(135deg, #8e44ad, #9b59b6); box-shadow: 0 4px 12px rgba(142,68,173,0.3); }
+    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+
+    .alerte-box { background: #fef3e2; border-left: 4px solid #e67e22; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.88rem; color: #d35400; }
+</style>
+
+<div class="container-fluid py-4">
+    <a href="/bar/stock/?tab=casses" class="back-link"><i class="fas fa-chevron-left"></i> Retour aux casses</a>
+
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-exclamation-triangle mr-2"></i> {{ page_title }}</h2>
+            <p>Cave BEHANIAN — Traçabilité des pertes</p>
+        </div>
+    </div>
+
+    <div class="alerte-box">
+        <i class="fas fa-info-circle"></i>
+        <strong>Rappel :</strong> Toute casse validée sera automatiquement déduite du stock et tracée dans le journal des mouvements.
+    </div>
+
+    <form method="post" id="casse-form">
+        {% csrf_token %}
+        <input type="hidden" name="type_casse" id="type-casse-input" value="casse">
+        <input type="hidden" name="valider_maintenant" id="valider-maintenant" value="0">
+
+        <!-- Type de casse -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-tag"></i> Type de perte</div>
+            <div class="type-selector">
+                <div class="type-btn selected" onclick="selectType('casse', this)">
+                    <i class="fas fa-wine-bottle" style="color:#e74c3c;"></i>
+                    <span>Casse</span>
+                </div>
+                <div class="type-btn" onclick="selectType('perte', this)">
+                    <i class="fas fa-tint-slash" style="color:#e67e22;"></i>
+                    <span>Perte / Gâchis</span>
+                </div>
+                <div class="type-btn" onclick="selectType('perime', this)">
+                    <i class="fas fa-calendar-times" style="color:#8e44ad;"></i>
+                    <span>Périmé</span>
+                </div>
+                <div class="type-btn" onclick="selectType('vol', this)">
+                    <i class="fas fa-user-secret" style="color:#c0392b;"></i>
+                    <span>Vol / Disparition</span>
+                </div>
+                <div class="type-btn" onclick="selectType('offert', this)">
+                    <i class="fas fa-gift" style="color:#27ae60;"></i>
+                    <span>Offert / Dégustation</span>
+                </div>
+                <div class="type-btn" onclick="selectType('autre', this)">
+                    <i class="fas fa-ellipsis-h" style="color:#7f8c8d;"></i>
+                    <span>Autre</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Infos -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-info-circle"></i> Détails</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Date de la casse</label>
+                    <input type="date" name="date_casse" value="{% now 'Y-m-d' %}">
+                </div>
+                <div class="form-group full">
+                    <label>Description / Circonstances</label>
+                    <textarea name="description" rows="2" placeholder="Ex: Bouteille de Château Margaux tombée lors du service, verres brisés..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lignes -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-list"></i> Articles concernés</div>
+            <div style="overflow-x:auto;">
+                <table class="casse-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40%;">Article</th>
+                            <th style="width:15%;">Quantité perdue</th>
+                            <th style="width:15%;">Prix unitaire (FCFA)</th>
+                            <th style="width:15%;">Valeur perdue</th>
+                            <th style="width:11%;">Note</th>
+                            <th style="width:4%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lignes-body">
+                        <tr class="ligne-row">
+                            <td>
+                                <select name="article_id[]" class="article-select" onchange="majPrixCasse(this)">
+                                    <option value="">— Choisir un article —</option>
+                                    {% for art in articles %}
+                                    <option value="{{ art.pk }}" data-prix="{{ art.prix_achat }}">
+                                        {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %} — Stock: {{ art.quantite_stock }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td><input type="number" name="quantite[]" value="1" min="1" step="1" class="qte-input" oninput="majTotalCasse(this)"></td>
+                            <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotalCasse(this)"></td>
+                            <td class="ligne-total" style="font-weight:700;color:#e74c3c;text-align:right;">0 FCFA</td>
+                            <td><input type="text" name="notes_ligne[]" placeholder="Note..."></td>
+                            <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn-add-ligne" onclick="ajouterLigne()">
+                <i class="fas fa-plus"></i> Ajouter un article
+            </button>
+            <div class="total-bar">
+                <div style="opacity:0.85;font-size:0.9rem;">
+                    <span id="nb-lignes">1</span> article(s) concerné(s)
+                </div>
+                <div>
+                    <span style="opacity:0.8;font-size:0.9rem;">Valeur totale perdue : </span>
+                    <span class="total-value" id="grand-total">0 FCFA</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-bar">
+            <a href="/bar/stock/?tab=casses" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i> Enregistrer (en attente)
+            </button>
+            <button type="submit" class="btn-save btn-valider" onclick="document.getElementById('valider-maintenant').value='1';return confirm('Valider et déduire du stock immédiatement ?')">
+                <i class="fas fa-check"></i> Déclarer & Déduire le stock
+            </button>
+        </div>
+    </form>
+</div>
+
+<template id="ligne-template">
+    <tr class="ligne-row">
+        <td>
+            <select name="article_id[]" class="article-select" onchange="majPrixCasse(this)">
+                <option value="">— Choisir un article —</option>
+                {% for art in articles %}
+                <option value="{{ art.pk }}" data-prix="{{ art.prix_achat }}">
+                    {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %} — Stock: {{ art.quantite_stock }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td><input type="number" name="quantite[]" value="1" min="1" step="1" class="qte-input" oninput="majTotalCasse(this)"></td>
+        <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotalCasse(this)"></td>
+        <td class="ligne-total" style="font-weight:700;color:#e74c3c;text-align:right;">0 FCFA</td>
+        <td><input type="text" name="notes_ligne[]" placeholder="Note..."></td>
+        <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+    </tr>
+</template>
+
+<script>
+function selectType(type, btn) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('type-casse-input').value = type;
+}
+
+function majPrixCasse(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const row = sel.closest('tr');
+    row.querySelector('.prix-input').value = opt.dataset.prix || 0;
+    majTotalCasse(sel);
+}
+
+function majTotalCasse(el) {
+    const row = el.closest('tr');
+    const qte = parseFloat(row.querySelector('.qte-input').value) || 0;
+    const prix = parseFloat(row.querySelector('.prix-input').value) || 0;
+    row.querySelector('.ligne-total').textContent = (qte * prix).toLocaleString('fr-FR') + ' FCFA';
+    majGrandTotal();
+}
+
+function majGrandTotal() {
+    let total = 0;
+    document.querySelectorAll('.ligne-row').forEach(row => {
+        const qte = parseFloat(row.querySelector('.qte-input')?.value) || 0;
+        const prix = parseFloat(row.querySelector('.prix-input')?.value) || 0;
+        total += qte * prix;
+    });
+    document.getElementById('grand-total').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('nb-lignes').textContent = document.querySelectorAll('.ligne-row').length;
+}
+
+function ajouterLigne() {
+    const tpl = document.getElementById('ligne-template');
+    document.getElementById('lignes-body').appendChild(tpl.content.cloneNode(true));
+    majGrandTotal();
+}
+
+function supprimerLigne(btn) {
+    if (document.querySelectorAll('.ligne-row').length <= 1) {
+        alert('Au moins une ligne est requise.');
+        return;
+    }
+    btn.closest('tr').remove();
+    majGrandTotal();
+}
+</script>
+{% endblock %}

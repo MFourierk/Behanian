@@ -1,0 +1,360 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white; padding: 24px 30px; border-radius: 18px;
+        margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+    .back-link { display:inline-flex; align-items:center; gap:6px; color:#8e44ad; font-weight:600; margin-bottom:16px; text-decoration:none; }
+    .back-link:hover { color:#6c3483; }
+
+    .form-card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .form-section-title { font-weight: 700; color: #8e44ad; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f3e5f5; display:flex; align-items:center; gap:8px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
+    .form-group input, .form-group select, .form-group textarea {
+        padding: 10px 14px; border: 1px solid #e9ecef; border-radius: 10px;
+        font-size: 0.92rem; background: #f8f9fa; transition: all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none; border-color: #8e44ad; background: white;
+        box-shadow: 0 0 0 3px rgba(142,68,173,0.1);
+    }
+    .form-group.full { grid-column: 1 / -1; }
+
+    /* Alert BC lié */
+    .bc-alert { background: #e8f4fd; border-left: 4px solid #3498db; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display:flex; align-items:center; gap:10px; font-size:0.9rem; color:#2980b9; }
+    .bc-alert i { font-size:1.1rem; }
+
+    /* Lignes */
+    .lignes-table { width: 100%; border-collapse: collapse; }
+    .lignes-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.8rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; white-space:nowrap; }
+    .lignes-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    .lignes-table input, .lignes-table select { padding: 8px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; }
+    .lignes-table input:focus, .lignes-table select:focus { outline: none; border-color: #8e44ad; background: white; }
+
+    .ecart-positif { color: #27ae60; font-weight: 700; }
+    .ecart-negatif { color: #e74c3c; font-weight: 700; }
+    .ecart-zero    { color: #7f8c8d; }
+
+    .btn-add-ligne { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; background: #f3e5f5; color: #8e44ad; border-radius: 10px; font-weight: 600; font-size: 0.88rem; border: 2px dashed #d7aef0; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
+    .btn-add-ligne:hover { background: #8e44ad; color: white; border-style: solid; }
+    .btn-del-ligne { background: #fdecea; color: #e74c3c; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+    .btn-del-ligne:hover { background: #e74c3c; color: white; }
+
+    .total-bar { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 16px 24px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+    .total-info { font-size: 0.88rem; opacity: 0.85; }
+    .total-value { font-size: 1.5rem; font-weight: 700; }
+
+    .actions-bar { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; flex-wrap:wrap; }
+    .btn-save { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 12px 28px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(142,68,173,0.3); transition: all 0.2s; }
+    .btn-save:hover { transform: translateY(-2px); }
+    .btn-valider { background: linear-gradient(135deg, #27ae60, #2ecc71); box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
+    .btn-valider:hover { box-shadow: 0 6px 16px rgba(39,174,96,0.4); }
+    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-cancel-form:hover { border-color: #bdc3c7; color: #2c3e50; }
+
+    .spinner { display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+
+<div class="container-fluid py-4">
+
+    <a href="/bar/stock/?tab=reception" class="back-link">
+        <i class="fas fa-chevron-left"></i> Retour aux bons de réception
+    </a>
+
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-dolly mr-2"></i> {{ page_title }}</h2>
+            <p>Cave BEHANIAN — Réception des marchandises</p>
+        </div>
+    </div>
+
+    <form method="post" id="br-form">
+        {% csrf_token %}
+
+        <!-- LIEN BON DE COMMANDE -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-link"></i> Lier à un Bon de Commande (optionnel)</div>
+
+            {% if bc_prefill %}
+            <div class="bc-alert">
+                <i class="fas fa-info-circle"></i>
+                Pré-rempli depuis le bon de commande <strong>{{ bc_prefill.numero }}</strong> — {{ bc_prefill.fournisseur|default:"Sans fournisseur" }}
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label>Bon de commande lié</label>
+                <select name="bon_commande" id="bc-select" onchange="chargerLignesBC(this.value)">
+                    <option value="">— Aucun (réception indépendante) —</option>
+                    {% for bc in bons_commande %}
+                    <option value="{{ bc.pk }}"
+                        {% if bc_prefill and bc_prefill.pk == bc.pk %}selected{% endif %}>
+                        {{ bc.numero }} — {{ bc.fournisseur|default:"Sans fournisseur" }} ({{ bc.date_commande|date:"d/m/Y" }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div id="bc-loading" style="display:none;color:#8e44ad;font-size:0.88rem;margin-top:8px;">
+                <i class="fas fa-spinner fa-spin"></i> Chargement des lignes...
+            </div>
+        </div>
+
+        <!-- EN-TÊTE -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations de réception</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Fournisseur</label>
+                    <select name="fournisseur" id="fournisseur-select">
+                        <option value="">— Sélectionner —</option>
+                        {% for f in fournisseurs %}
+                        <option value="{{ f.pk }}"
+                            {% if bc_prefill and bc_prefill.fournisseur_id == f.pk %}selected{% endif %}>
+                            {{ f.nom }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>N° Document Fournisseur <span style="color:#7f8c8d;font-weight:400;">(facture, BL, etc.)</span></label>
+                    <input type="text" name="numero_document_fournisseur" placeholder="Ex: FAC-2026-0042">
+                </div>
+                <div class="form-group">
+                    <label>Date de réception</label>
+                    <input type="date" name="date_reception" value="{{ today|date:'Y-m-d' }}">
+                </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select name="statut">
+                        <option value="brouillon">Brouillon</option>
+                        <option value="en_cours">En cours</option>
+                        <option value="valide">Valider maintenant (met à jour le stock)</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Notes / Observations</label>
+                    <textarea name="notes" rows="2" placeholder="Remarques sur la réception..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIGNES -->
+        <div class="form-card">
+            <div class="form-section-title"><i class="fas fa-list"></i> Articles reçus</div>
+
+            <div style="overflow-x:auto;">
+                <table class="lignes-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30%;">Article</th>
+                            <th style="width:13%;">Qté commandée</th>
+                            <th style="width:13%;">Qté reçue</th>
+                            <th style="width:10%;">Écart</th>
+                            <th style="width:14%;">Prix unitaire (FCFA)</th>
+                            <th style="width:12%;">Total ligne</th>
+                            <th style="width:4%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lignes-body">
+                        <tr class="ligne-row">
+                            <td>
+                                <select name="article_id[]" class="article-select" onchange="majPrixReception(this)">
+                                    <option value="">— Choisir un article —</option>
+                                    {% for art in articles %}
+                                    <option value="{{ art.pk }}" data-prix="{{ art.prix_achat }}">
+                                        {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td><input type="number" name="quantite_commandee[]" value="0" min="0" step="0.01" class="qte-cmd-input" oninput="majEcart(this)"></td>
+                            <td><input type="number" name="quantite_recue[]" value="0" min="0" step="0.01" class="qte-recue-input" oninput="majEcart(this)"></td>
+                            <td class="ecart-cell ecart-zero">—</td>
+                            <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotalLigne(this)"></td>
+                            <td class="ligne-total" style="font-weight:700;color:#8e44ad;text-align:right;">0 FCFA</td>
+                            <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" class="btn-add-ligne" onclick="ajouterLigne()">
+                <i class="fas fa-plus"></i> Ajouter une ligne
+            </button>
+
+            <div class="total-bar">
+                <div class="total-info">
+                    <span id="nb-lignes">1</span> article(s) •
+                    Stock mis à jour automatiquement à la validation
+                </div>
+                <div>
+                    <span style="opacity:0.8;font-size:0.9rem;">Total réception : </span>
+                    <span class="total-value" id="grand-total">0 FCFA</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="actions-bar">
+            <a href="/bar/stock/?tab=reception" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+            <button type="submit" class="btn-save" onclick="document.querySelector('[name=statut]').value='brouillon'">
+                <i class="fas fa-save"></i> Enregistrer en brouillon
+            </button>
+            <button type="submit" class="btn-save btn-valider" onclick="document.querySelector('[name=statut]').value='valide';return confirm('Valider ce bon et mettre à jour le stock immédiatement ?')">
+                <i class="fas fa-check"></i> Valider & Mettre à jour le stock
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Template ligne -->
+<template id="ligne-template">
+    <tr class="ligne-row">
+        <td>
+            <select name="article_id[]" class="article-select" onchange="majPrixReception(this)">
+                <option value="">— Choisir un article —</option>
+                {% for art in articles %}
+                <option value="{{ art.pk }}" data-prix="{{ art.prix_achat }}">
+                    {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td><input type="number" name="quantite_commandee[]" value="0" min="0" step="0.01" class="qte-cmd-input" oninput="majEcart(this)"></td>
+        <td><input type="number" name="quantite_recue[]" value="0" min="0" step="0.01" class="qte-recue-input" oninput="majEcart(this)"></td>
+        <td class="ecart-cell ecart-zero">—</td>
+        <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotalLigne(this)"></td>
+        <td class="ligne-total" style="font-weight:700;color:#8e44ad;text-align:right;">0 FCFA</td>
+        <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
+    </tr>
+</template>
+
+<script>
+// Pré-remplir depuis un BC si sélectionné au chargement
+{% if bc_prefill %}
+window.addEventListener('load', () => chargerLignesBC({{ bc_prefill.pk }}));
+{% endif %}
+
+function majPrixReception(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const row = sel.closest('tr');
+    const prix = opt.dataset.prix || 0;
+    row.querySelector('.prix-input').value = prix;
+    majTotalLigne(sel);
+}
+
+function majEcart(el) {
+    const row = el.closest('tr');
+    const cmd = parseFloat(row.querySelector('.qte-cmd-input').value) || 0;
+    const recu = parseFloat(row.querySelector('.qte-recue-input').value) || 0;
+    const ecart = recu - cmd;
+    const cell = row.querySelector('.ecart-cell');
+    if (cmd === 0) {
+        cell.textContent = '—';
+        cell.className = 'ecart-cell ecart-zero';
+    } else if (ecart > 0) {
+        cell.textContent = '+' + ecart.toFixed(2);
+        cell.className = 'ecart-cell ecart-positif';
+    } else if (ecart < 0) {
+        cell.textContent = ecart.toFixed(2);
+        cell.className = 'ecart-cell ecart-negatif';
+    } else {
+        cell.textContent = '✓ OK';
+        cell.className = 'ecart-cell ecart-zero';
+    }
+    majTotalLigne(el);
+}
+
+function majTotalLigne(el) {
+    const row = el.closest('tr');
+    const recu = parseFloat(row.querySelector('.qte-recue-input').value) || 0;
+    const prix = parseFloat(row.querySelector('.prix-input').value) || 0;
+    row.querySelector('.ligne-total').textContent = (recu * prix).toLocaleString('fr-FR') + ' FCFA';
+    majGrandTotal();
+}
+
+function majGrandTotal() {
+    let total = 0;
+    let nb = 0;
+    document.querySelectorAll('.ligne-row').forEach(row => {
+        const recu = parseFloat(row.querySelector('.qte-recue-input')?.value) || 0;
+        const prix = parseFloat(row.querySelector('.prix-input')?.value) || 0;
+        total += recu * prix;
+        if (row.querySelector('.article-select')?.value) nb++;
+    });
+    document.getElementById('grand-total').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('nb-lignes').textContent = document.querySelectorAll('.ligne-row').length;
+}
+
+function ajouterLigne() {
+    const tpl = document.getElementById('ligne-template');
+    document.getElementById('lignes-body').appendChild(tpl.content.cloneNode(true));
+    majGrandTotal();
+}
+
+function supprimerLigne(btn) {
+    if (document.querySelectorAll('.ligne-row').length <= 1) {
+        alert('Au moins une ligne est requise.');
+        return;
+    }
+    btn.closest('tr').remove();
+    majGrandTotal();
+}
+
+function chargerLignesBC(bcId) {
+    if (!bcId) return;
+    document.getElementById('bc-loading').style.display = 'block';
+    fetch(`/bar/commandes/${bcId}/lignes/`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('bc-loading').style.display = 'none';
+
+            // Pré-remplir fournisseur
+            if (data.fournisseur_id) {
+                document.getElementById('fournisseur-select').value = data.fournisseur_id;
+            }
+
+            // Reconstruire les lignes
+            const tbody = document.getElementById('lignes-body');
+            tbody.innerHTML = '';
+            const tpl = document.getElementById('ligne-template');
+
+            data.lignes.forEach(l => {
+                const clone = tpl.content.cloneNode(true);
+                const row = clone.querySelector('tr');
+
+                const artSelect = row.querySelector('.article-select');
+                artSelect.value = l.article_id;
+
+                row.querySelector('.qte-cmd-input').value = l.reliquat;
+                row.querySelector('.qte-recue-input').value = l.reliquat;
+                row.querySelector('.prix-input').value = l.prix_unitaire;
+
+                tbody.appendChild(clone);
+
+                // Calculer écart et total
+                const newRow = tbody.lastElementChild;
+                majEcart(newRow.querySelector('.qte-recue-input'));
+            });
+
+            majGrandTotal();
+        })
+        .catch(() => {
+            document.getElementById('bc-loading').style.display = 'none';
+        });
+}
+</script>
+{% endblock %}

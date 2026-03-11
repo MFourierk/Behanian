@@ -23,7 +23,13 @@ urlpatterns = [
     path('bar/categories/ajouter/', views.CategorieBarCreateView.as_view(), name='categoriebar_create'),
     path('bar/categories/<int:pk>/modifier/', views.CategorieBarUpdateView.as_view(), name='categoriebar_update'),
     path('bar/categories/<int:pk>/supprimer/', views.CategorieBarDeleteView.as_view(), name='categoriebar_delete'),
-    
+
+    # Bar - Tables (Cave)
+    path('bar/tables/', views.TableBarListView.as_view(), name='tablebar_list'),
+    path('bar/tables/ajouter/', views.TableBarCreateView.as_view(), name='tablebar_create'),
+    path('bar/tables/<int:pk>/modifier/', views.TableBarUpdateView.as_view(), name='tablebar_update'),
+    path('bar/tables/<int:pk>/supprimer/', views.TableBarDeleteView.as_view(), name='tablebar_delete'),
+
     # Restaurant - Tables
     path('tables/', views.TableListView.as_view(), name='table_list'),
     path('tables/ajouter/', views.TableCreateView.as_view(), name='table_create'),
