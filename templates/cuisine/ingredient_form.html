@@ -1,0 +1,197 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        color: white; padding: 28px 30px; border-radius: 18px;
+        margin-bottom: 24px; box-shadow: 0 10px 25px rgba(192,57,43,0.25);
+        display: flex; justify-content: space-between; align-items: center;
+        position: relative; overflow: hidden;
+    }
+    .form-header::after { content: '🥕'; position: absolute; right: 20px; bottom: -20px; font-size: 100px; opacity: 0.08; pointer-events: none; }
+    .form-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .form-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .form-card {
+        background: white; border-radius: 16px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.06); overflow: hidden;
+    }
+    .form-section {
+        padding: 24px 28px; border-bottom: 1px solid #f0f0f0;
+    }
+    .form-section:last-child { border-bottom: none; }
+    .section-title {
+        font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 1px; color: #c0392b; margin-bottom: 18px;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
+    label span.required { color: #e74c3c; margin-left: 3px; }
+    input, select, textarea {
+        padding: 10px 14px; border-radius: 10px;
+        border: 1.5px solid #e9ecef; background: #f8f9fa;
+        font-size: 0.92rem; color: #2c3e50; transition: all 0.2s;
+        width: 100%; box-sizing: border-box;
+    }
+    input:focus, select:focus, textarea:focus {
+        outline: none; border-color: #c0392b;
+        background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
+    }
+    .hint { font-size: 0.78rem; color: #95a5a6; margin-top: 2px; }
+
+    .form-actions {
+        padding: 20px 28px; background: #fafafa;
+        display: flex; justify-content: flex-end; gap: 12px;
+        border-top: 1px solid #f0f0f0;
+    }
+    .btn-cancel {
+        padding: 11px 24px; border-radius: 10px; border: 2px solid #e9ecef;
+        background: white; font-weight: 600; cursor: pointer; color: #7f8c8d;
+        text-decoration: none; font-size: 0.92rem;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-save {
+        padding: 11px 28px; border-radius: 10px; border: none;
+        background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: white; font-weight: 700; cursor: pointer; font-size: 0.92rem;
+        display: inline-flex; align-items: center; gap: 8px;
+        box-shadow: 0 4px 12px rgba(192,57,43,0.3); transition: all 0.2s;
+    }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(192,57,43,0.4); }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="form-header">
+        <div>
+            <h2><i class="fas fa-carrot mr-2"></i> {{ page_title }}</h2>
+            <p>Renseignez les informations de l'ingrédient</p>
+</div>
+
+</div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "Ingredient" "" %}
+
+
+    
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-card">
+
+            <!-- Identification -->
+            <div class="form-section">
+                <div class="section-title"><i class="fas fa-tag"></i> Identification</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Désignation <span class="required">*</span></label>
+                        <input type="text" name="nom" value="{{ ingredient.nom|default:'' }}" required placeholder="Ex: Poulet entier, Tomates fraîches...">
+                    </div>
+                    <div class="form-group">
+                        <label>Référence</label>
+                        <input type="text" name="reference" value="{{ ingredient.reference|default:'' }}" placeholder="Ex: ING-001">
+                        <span class="hint">Laissez vide pour génération automatique</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Catégorie</label>
+                        <select name="categorie">
+                            <option value="">— Sélectionner —</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.pk }}" {% if ingredient.categorie_id == cat.pk %}selected{% endif %}>{{ cat.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fournisseur principal</label>
+                        <select name="fournisseur_principal">
+                            <option value="">— Aucun —</option>
+                            {% for f in fournisseurs %}
+                            <option value="{{ f.pk }}" {% if ingredient.fournisseur_principal_id == f.pk %}selected{% endif %}>{{ f.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group full">
+                        <label>Description</label>
+                        <textarea name="description" rows="2" placeholder="Notes, caractéristiques, allergènes...">{{ ingredient.description|default:'' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unités & Conversion -->
+            <div class="form-section">
+                <div class="section-title"><i class="fas fa-balance-scale"></i> Unités & Conversion</div>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Unité de stock <span class="required">*</span></label>
+                        <select name="unite_stock">
+                            <option value="">— Sélectionner —</option>
+                            {% for u in unites %}
+                            <option value="{{ u.pk }}" {% if ingredient.unite_stock_id == u.pk %}selected{% endif %}>{{ u.nom }} ({{ u.abreviation }})</option>
+                            {% endfor %}
+                        </select>
+                        <span class="hint">Unité d'achat et de stockage</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Unité recette</label>
+                        <select name="unite_recette">
+                            <option value="">— Même que stock —</option>
+                            {% for u in unites %}
+                            <option value="{{ u.pk }}" {% if ingredient.unite_recette_id == u.pk %}selected{% endif %}>{{ u.nom }} ({{ u.abreviation }})</option>
+                            {% endfor %}
+                        </select>
+                        <span class="hint">Unité utilisée dans les fiches techniques</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Facteur de conversion</label>
+                        <input type="number" name="facteur_conversion" value="{{ ingredient.facteur_conversion|default:'1' }}" step="0.000001" min="0.000001">
+                        <span class="hint">Ex: 1 kg stock = 1000 g recette → saisir 1000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock & Prix -->
+            <div class="form-section">
+                <div class="section-title"><i class="fas fa-boxes"></i> Stock & Prix</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Stock actuel</label>
+                        <input type="number" name="quantite_stock" value="{{ ingredient.quantite_stock|default:'0' }}" step="0.001" min="0">
+                        <span class="hint">Quantité disponible en ce moment</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Seuil d'alerte</label>
+                        <input type="number" name="seuil_alerte" value="{{ ingredient.seuil_alerte|default:'0' }}" step="0.001" min="0">
+                        <span class="hint">Alerte déclenchée en dessous de ce seuil</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock maximum</label>
+                        <input type="number" name="stock_max" value="{{ ingredient.stock_max|default:'0' }}" step="0.001" min="0">
+                        <span class="hint">Quantité maximale à commander</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Prix d'achat unitaire (FCFA)</label>
+                        <input type="number" name="prix_achat" value="{{ ingredient.prix_achat|default:'0' }}" step="0.01" min="0">
+                        <span class="hint">Prix unitaire hors CMUP</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'cuisine:stock_management' %}?tab=ingredients" class="btn-cancel">
+                <i class="fas fa-times"></i> Annuler
+            </a>
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i> {% if mode == 'edit' %}Enregistrer les modifications{% else %}Créer l'ingrédient{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

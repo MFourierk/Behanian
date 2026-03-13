@@ -1,0 +1,998 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% load static %}
+
+{% block title %}Stock - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    /* ===== HEADER ===== */
+    .page-header {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        color: white;
+        padding: 28px 30px;
+        border-radius: 18px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(192,57,43,0.25);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-header::after {
+        content: '🍽️';
+        position: absolute;
+        right: -10px;
+        bottom: -30px;
+        font-size: 130px;
+        opacity: 0.08;
+        pointer-events: none;
+    }
+    .page-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.95rem; }
+
+    /* ===== ONGLETS ===== */
+    .tabs-nav {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        background: white;
+        padding: 10px 14px;
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    .tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 16px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: #6c757d;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    .tab-btn:hover { background: #fdecea; color: #c0392b; }
+    .tab-btn.active {
+        background: #c0392b;
+        color: white;
+        box-shadow: 0 4px 12px rgba(192,57,43,0.3);
+    }
+
+    /* ===== CONTENU ONGLETS ===== */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ===== STATS CARDS ===== */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-top: 4px solid transparent;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    .stat-card.red    { border-top-color: #c0392b; }
+    .stat-card.orange { border-top-color: #e67e22; }
+    .stat-card.blue   { border-top-color: #3498db; }
+    .stat-card.green  { border-top-color: #27ae60; }
+    .stat-card.purple { border-top-color: #8e44ad; }
+    .stat-icon {
+        width: 50px; height: 50px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px; flex-shrink: 0;
+    }
+    .stat-icon.red    { background: #fdecea; color: #c0392b; }
+    .stat-icon.orange { background: #fef3e2; color: #e67e22; }
+    .stat-icon.blue   { background: #e8f4fd; color: #3498db; }
+    .stat-icon.green  { background: #eafaf1; color: #27ae60; }
+    .stat-icon.purple { background: #f3e5f5; color: #8e44ad; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: #2c3e50; line-height: 1; }
+    .stat-label { font-size: 0.85rem; color: #7f8c8d; margin-top: 4px; }
+
+    /* ===== PANELS ===== */
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel {
+        background: white; border-radius: 16px;
+        padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .panel-title {
+        font-weight: 700; color: #2c3e50; font-size: 1rem;
+        margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .critique-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .critique-item:last-child { border-bottom: none; }
+    .badge-rupture { background: #fdecea; color: #e74c3c; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-bas     { background: #fef3e2; color: #e67e22; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .empty-critique { text-align: center; padding: 30px; color: #27ae60; }
+    .empty-critique i { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+
+    /* ===== TOOLBAR & TABLE ===== */
+    .toolbar {
+        background: white; border-radius: 14px;
+        padding: 14px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        display: flex; gap: 12px; align-items: center;
+        flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .search-box { position: relative; flex: 1; min-width: 200px; }
+    .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #adb5bd; }
+    .search-box input {
+        width: 100%; padding: 10px 14px 10px 38px;
+        border-radius: 10px; border: 1px solid #e9ecef;
+        background: #f8f9fa; font-size: 0.9rem; transition: all 0.2s;
+    }
+    .search-box input:focus { outline: none; border-color: #c0392b; background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+    .filter-select {
+        padding: 10px 14px; border-radius: 10px;
+        border: 1px solid #e9ecef; background: #f8f9fa;
+        font-size: 0.9rem; color: #495057; cursor: pointer;
+    }
+    .btn-red {
+        background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: white; padding: 10px 20px; border-radius: 10px;
+        font-weight: 600; font-size: 0.9rem; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 8px;
+        box-shadow: 0 4px 12px rgba(192,57,43,0.3);
+        transition: all 0.2s; border: none; cursor: pointer; white-space: nowrap;
+    }
+    .btn-red:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(192,57,43,0.4); color: white; }
+
+    .table-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table thead th {
+        background: #f8f9fa; padding: 14px 20px;
+        font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: #7f8c8d; border-bottom: 2px solid #ecf0f1;
+    }
+    .data-table tbody td { padding: 14px 20px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    .data-table tbody tr:hover { background: #fff5f5; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    /* ===== BADGES ===== */
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .badge-brouillon { background: #f5f5f5; color: #7f8c8d; }
+    .badge-confirme  { background: #e8f4fd; color: #3498db; }
+    .badge-envoye    { background: #fef3e2; color: #e67e22; }
+    .badge-partiel   { background: #fdecd2; color: #d35400; }
+    .badge-recu,
+    .badge-valide    { background: #eafaf1; color: #27ae60; }
+    .badge-annule    { background: #fdecea; color: #e74c3c; }
+    .badge-retard    { background: #fdecea; color: #e74c3c; animation: pulse 1.5s infinite; }
+    .badge-declare   { background: #fef9e7; color: #e67e22; }
+    .badge-cat       { background: #fdecea; color: #c0392b; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+    .stock-ok   { color: #27ae60; font-weight: 700; }
+    .stock-bas  { color: #e67e22; font-weight: 700; }
+    .stock-zero { color: #e74c3c; font-weight: 700; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+    /* ===== ACTIONS ===== */
+    .action-group { display: flex; gap: 5px; justify-content: flex-end; }
+    .btn-action {
+        width: 30px; height: 30px; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 12px; text-decoration: none; transition: all 0.2s;
+        border: none; cursor: pointer;
+    }
+    .btn-view  { background: #fdecea; color: #c0392b; }
+    .btn-view:hover  { background: #c0392b; color: white; }
+    .btn-edit  { background: #e8f4fd; color: #3498db; }
+    .btn-edit:hover  { background: #3498db; color: white; }
+    .btn-ok    { background: #eafaf1; color: #27ae60; }
+    .btn-ok:hover    { background: #27ae60; color: white; }
+    .btn-del   { background: #fdecea; color: #e74c3c; }
+    .btn-del:hover   { background: #e74c3c; color: white; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #7f8c8d; }
+    .empty-state i { font-size: 3rem; color: #fadbd8; margin-bottom: 15px; display: block; }
+</style>
+
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-utensils mr-2"></i> Stock Cuisine</h2>
+            <p>Ingrédients, commandes, réceptions, fiches techniques, inventaires et casses.</p>
+</div>
+<div class="header-clock">
+            <span class="time"></span>
+            <span class="date"></span>
+        </div>
+    
+</div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Stock" "" %}
+
+
+    
+
+    <!-- ONGLETS -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="showTab('dashboard', this)">
+            <i class="fas fa-chart-bar"></i> Tableau de bord
+        </button>
+        <button class="tab-btn" onclick="showTab('ingredients', this)">
+            <i class="fas fa-carrot"></i> Ingrédients
+        </button>
+        <button class="tab-btn" onclick="showTab('commandes', this)">
+            <i class="fas fa-shopping-cart"></i> Bons de commande
+        </button>
+        <button class="tab-btn" onclick="showTab('receptions', this)">
+            <i class="fas fa-dolly"></i> Bons de réception
+        </button>
+        <button class="tab-btn" onclick="showTab('mouvements', this)">
+            <i class="fas fa-exchange-alt"></i> Entrées / Sorties
+        </button>
+        <button class="tab-btn" onclick="showTab('inventaire', this)">
+            <i class="fas fa-clipboard-list"></i> Inventaire
+        </button>
+        <button class="tab-btn" onclick="showTab('casses', this)">
+            <i class="fas fa-exclamation-triangle"></i> Casses / Pertes
+        </button>
+    </div>
+
+    <!-- ===== ONGLET : TABLEAU DE BORD ===== -->
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="stats-grid">
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-carrot"></i></div>
+                <div><div class="stat-value">{{ total_articles }}</div><div class="stat-label">Ingrédients en stock</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-chart-line"></i></div>
+                <div><div class="stat-value">{{ valeur_stock|floatformat:0 }} F</div><div class="stat-label">Valeur du stock</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
+                <div><div class="stat-value">{{ stock_bas }}</div><div class="stat-label">Stock bas</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+                <div><div class="stat-value">{{ ruptures }}</div><div class="stat-label">Ruptures</div></div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon blue"><i class="fas fa-shopping-cart"></i></div>
+                <div><div class="stat-value">{{ bc_en_cours }}</div><div class="stat-label">Commandes en cours</div></div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon green"><i class="fas fa-book-open"></i></div>
+                <div><div class="stat-value">{{ fiches_count|default:"0" }}</div><div class="stat-label">Fiches techniques</div></div>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+            <!-- Ingrédients critiques -->
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Ingrédients critiques
+                </div>
+                {% with critiques=ingredients|dictsort:"quantite_stock" %}
+                {% for ing in ingredients %}
+                {% if ing.quantite_stock <= ing.seuil_alerte %}
+                <div class="critique-item">
+                    <div>
+                        <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ ing.nom }}</div>
+                        <div style="font-size:0.82rem;color:#7f8c8d;">
+                            Stock : {{ ing.quantite_stock|floatformat:2 }}
+                            {% if ing.unite_stock %} {{ ing.unite_stock.abreviation }}{% endif %}
+                        </div>
+                    </div>
+                    {% if ing.quantite_stock <= 0 %}
+                        <span class="badge-rupture">Rupture</span>
+                    {% else %}
+                        <span class="badge-bas">Stock bas</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% empty %}
+                <div class="empty-critique">
+                    <i class="fas fa-check-circle" style="color:#27ae60;"></i>
+                    <p>Tous les stocks sont au niveau requis</p>
+                </div>
+                {% endfor %}
+                {% endwith %}
+            </div>
+
+            <!-- Derniers mouvements -->
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-history" style="color:#c0392b;"></i> Derniers mouvements
+                </div>
+                {% for mv in mouvements %}
+                <div class="critique-item">
+                    <div>
+                        <div style="font-weight:600;color:#2c3e50;font-size:0.88rem;">{{ mv.ingredient.nom }}</div>
+                        <div style="font-size:0.78rem;color:#7f8c8d;">{{ mv.date|date:"d/m H:i" }} — {{ mv.utilisateur.username|default:"—" }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        {% if mv.type_mouvement == 'entree' %}
+                            <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|floatformat:2 }}</span>
+                        {% else %}
+                            <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|floatformat:2 }}</span>
+                        {% endif %}
+                        <div style="font-size:0.75rem;color:#7f8c8d;">{{ mv.get_type_mouvement_display }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="empty-critique">
+                    <i class="fas fa-history"></i>
+                    <p>Aucun mouvement récent</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : INGRÉDIENTS ===== -->
+    <div id="tab-ingredients" class="tab-content">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.1rem;">
+                <i class="fas fa-carrot" style="color:#c0392b;"></i>
+                Ingrédients — <span style="color:#c0392b;">{{ total_articles }} article(s)</span>
+            </div>
+            <a href="{% url 'cuisine:ingredient_create' %}" class="btn-red">
+                <i class="fas fa-plus"></i> Nouvel Ingrédient
+            </a>
+        </div>
+
+        <div class="toolbar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-ing" placeholder="Rechercher par nom ou référence..." oninput="filtrerIngredients()">
+            </div>
+            <select id="filter-cat" class="filter-select" onchange="filtrerIngredients()">
+                <option value="">Toutes les catégories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.nom }}">{{ cat.nom }}</option>
+                {% endfor %}
+            </select>
+            <select id="filter-stock" class="filter-select" onchange="filtrerIngredients()">
+                <option value="">Tous les stocks</option>
+                <option value="ok">Stock OK</option>
+                <option value="bas">Stock bas</option>
+                <option value="rupture">Rupture</option>
+            </select>
+        </div>
+
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table" id="ing-table">
+                    <thead>
+                        <tr>
+                            <th>Référence</th>
+                            <th>Désignation</th>
+                            <th>Catégorie</th>
+                            <th>Unité stock</th>
+                            <th>Stock actuel</th>
+                            <th>Seuil alerte</th>
+                            <th>CMUP</th>
+                            <th>Valeur stock</th>
+                            <th>Fournisseur</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ing-tbody">
+                        {% for ing in ingredients %}
+                        <tr class="ing-row"
+                            data-nom="{{ ing.nom|lower }}"
+                            data-ref="{{ ing.reference|default:''|lower }}"
+                            data-cat="{{ ing.categorie.nom|default:'' }}"
+                            data-stock="{% if ing.quantite_stock <= 0 %}rupture{% elif ing.quantite_stock <= ing.seuil_alerte %}bas{% else %}ok{% endif %}">
+                            <td><span style="font-family:monospace;font-weight:600;color:#c0392b;font-size:0.82rem;">{{ ing.reference|default:"—" }}</span></td>
+                            <td>
+                                <div style="font-weight:700;color:#2c3e50;">{{ ing.nom }}</div>
+                                {% if ing.description %}<div style="font-size:0.78rem;color:#7f8c8d;">{{ ing.description|truncatechars:40 }}</div>{% endif %}
+                            </td>
+                            <td><span class="badge-cat">{{ ing.categorie.nom|default:"—" }}</span></td>
+                            <td style="font-size:0.85rem;">{{ ing.unite_stock.abreviation|default:"—" }}</td>
+                            <td>
+                                {% if ing.quantite_stock <= 0 %}
+                                    <span class="stock-zero"><i class="fas fa-times-circle"></i> Rupture</span>
+                                {% elif ing.quantite_stock <= ing.seuil_alerte %}
+                                    <span class="stock-bas"><i class="fas fa-exclamation-triangle"></i> {{ ing.quantite_stock|floatformat:2 }}</span>
+                                {% else %}
+                                    <span class="stock-ok"><i class="fas fa-check-circle"></i> {{ ing.quantite_stock|floatformat:2 }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.85rem;color:#7f8c8d;">{{ ing.seuil_alerte|floatformat:2 }}</td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ ing.cmup|floatformat:0 }} F</td>
+                            <td style="font-weight:700;color:#c0392b;">{{ ing.valeur_stock|floatformat:0 }} F</td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;">{{ ing.fournisseur_principal.nom|default:"—" }}</td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'cuisine:ingredient_edit' ing.pk %}" class="btn-action btn-edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
+                                    <button class="btn-action btn-ok" title="Entrée stock" onclick="ouvrirModalMouvement('entree', {{ ing.pk }}, '{{ ing.nom }}')"><i class="fas fa-plus"></i></button>
+                                    <button class="btn-action btn-del" title="Sortie stock" onclick="ouvrirModalMouvement('sortie', {{ ing.pk }}, '{{ ing.nom }}')"><i class="fas fa-minus"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="10">
+                            <div class="empty-state">
+                                <i class="fas fa-carrot"></i>
+                                <p>Aucun ingrédient créé.</p>
+                                <a href="{% url 'cuisine:ingredient_create' %}" class="btn-red" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Créer le premier ingrédient</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : BONS DE COMMANDE ===== -->
+    <div id="tab-commandes" class="tab-content">
+
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-file-alt"></i></div>
+                <div><div class="stat-value">{{ bc_total }}</div><div class="stat-label">Total bons</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-pencil-alt"></i></div>
+                <div><div class="stat-value">{{ bc_brouillons }}</div><div class="stat-label">Brouillons</div></div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon blue"><i class="fas fa-spinner"></i></div>
+                <div><div class="stat-value">{{ bc_en_cours }}</div><div class="stat-label">En cours</div></div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+                <div><div class="stat-value">{{ bc_en_retard }}</div><div class="stat-label">En retard</div></div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-shopping-cart" style="color:#c0392b;"></i> Bons de Commande Cuisine
+            </div>
+            <a href="{% url 'cuisine:bon_commande_create' %}" class="btn-red">
+                <i class="fas fa-plus"></i> Nouveau Bon de Commande
+            </a>
+        </div>
+
+        <div class="toolbar">
+            <div class="search-box" style="flex:1;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-bc" placeholder="N° bon, fournisseur..." oninput="filtrerBons()">
+            </div>
+            <select id="filter-bc-statut" class="filter-select" onchange="filtrerBons()">
+                <option value="">Tous les statuts</option>
+                <option value="brouillon">Brouillon</option>
+                <option value="confirme">Confirmé</option>
+                <option value="envoye">Envoyé</option>
+                <option value="partiel">Partiel</option>
+                <option value="recu">Reçu</option>
+                <option value="annule">Annulé</option>
+            </select>
+        </div>
+
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>N° Bon</th>
+                            <th>Fournisseur</th>
+                            <th>Date commande</th>
+                            <th>Livraison prévue</th>
+                            <th>Montant</th>
+                            <th>Créé par</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bc-tbody">
+                        {% for bon in bons %}
+                        <tr class="bc-row" data-numero="{{ bon.numero|lower }}" data-fournisseur="{{ bon.fournisseur.nom|lower|default:'' }}" data-statut="{{ bon.statut }}">
+                            <td><span style="font-family:monospace;font-weight:700;color:#c0392b;font-size:0.85rem;">{{ bon.numero }}</span></td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ bon.fournisseur.nom|default:"—" }}</td>
+                            <td style="font-size:0.88rem;color:#7f8c8d;">{{ bon.date_commande|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if bon.date_livraison_prevue %}
+                                    <span style="font-size:0.88rem;{% if bon.est_en_retard %}color:#e74c3c;font-weight:700;{% else %}color:#7f8c8d;{% endif %}">
+                                        {% if bon.est_en_retard %}<i class="fas fa-exclamation-triangle"></i> {% endif %}
+                                        {{ bon.date_livraison_prevue|date:"d/m/Y" }}
+                                    </span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td style="font-weight:700;color:#2c3e50;">{{ bon.total|floatformat:0 }} FCFA</td>
+                            <td style="font-size:0.82rem;">{{ bon.cree_par.username|default:"—" }}</td>
+                            <td>
+                                {% if bon.est_en_retard %}<span class="badge badge-retard">⚠ En retard</span>
+                                {% elif bon.statut == 'brouillon' %}<span class="badge badge-brouillon">Brouillon</span>
+                                {% elif bon.statut == 'confirme' %}<span class="badge badge-confirme">Confirmé</span>
+                                {% elif bon.statut == 'envoye' %}<span class="badge badge-envoye">Envoyé</span>
+                                {% elif bon.statut == 'partiel' %}<span class="badge badge-partiel">Partiel</span>
+                                {% elif bon.statut == 'recu' %}<span class="badge badge-recu">Reçu</span>
+                                {% elif bon.statut == 'annule' %}<span class="badge badge-annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'cuisine:bon_commande_detail' bon.pk %}" class="btn-action btn-view" title="Voir"><i class="fas fa-eye"></i></a>
+                                    {% if bon.statut not in 'annule,recu' %}
+                                    <form method="post" action="{% url 'cuisine:bon_commande_annuler' bon.pk %}" style="display:inline;" onsubmit="return confirm('Annuler ce bon ?')">
+                                        {% csrf_token %}<button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8">
+                            <div class="empty-state">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>Aucun bon de commande créé.</p>
+                                <a href="{% url 'cuisine:bon_commande_create' %}" class="btn-red" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Créer le premier bon</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : BONS DE RÉCEPTION ===== -->
+    <div id="tab-receptions" class="tab-content">
+
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px;">
+            <div class="stat-card red">
+                <div class="stat-icon red"><i class="fas fa-dolly"></i></div>
+                <div><div class="stat-value">{{ br_total }}</div><div class="stat-label">Total réceptions</div></div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                <div><div class="stat-value">{{ receptions|length }}</div><div class="stat-label">Enregistrées</div></div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-icon orange"><i class="fas fa-spinner"></i></div>
+                <div><div class="stat-value">{{ br_brouillons }}</div><div class="stat-label">Brouillons</div></div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-dolly" style="color:#c0392b;"></i> Bons de Réception Cuisine
+            </div>
+            <a href="{% url 'cuisine:bon_reception_create' %}" class="btn-red">
+                <i class="fas fa-plus"></i> Nouveau Bon de Réception
+            </a>
+        </div>
+
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>N° Réception</th>
+                            <th>BC lié</th>
+                            <th>Fournisseur</th>
+                            <th>Date réception</th>
+                            <th>Créé par</th>
+                            <th>Validé par</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for br in receptions %}
+                        <tr>
+                            <td><span style="font-family:monospace;font-weight:700;color:#c0392b;font-size:0.85rem;">{{ br.numero }}</span></td>
+                            <td>
+                                {% if br.bon_commande %}
+                                    <span style="font-size:0.78rem;color:#3498db;font-weight:600;">{{ br.bon_commande.numero }}</span>
+                                {% else %}<span style="color:#bdc3c7;">—</span>{% endif %}
+                            </td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ br.fournisseur.nom|default:"—" }}</td>
+                            <td style="font-size:0.88rem;color:#7f8c8d;">{{ br.date_reception|date:"d/m/Y" }}</td>
+                            <td style="font-size:0.82rem;">{{ br.cree_par.username|default:"—" }}</td>
+                            <td style="font-size:0.82rem;">{{ br.valide_par.username|default:"—" }}</td>
+                            <td>
+                                {% if br.statut == 'brouillon' %}<span class="badge badge-brouillon">Brouillon</span>
+                                {% elif br.statut == 'valide' %}<span class="badge badge-valide">✓ Validé</span>
+                                {% elif br.statut == 'annule' %}<span class="badge badge-annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{% url 'cuisine:bon_reception_detail' br.pk %}" class="btn-action btn-view" title="Voir"><i class="fas fa-eye"></i></a>
+                                    {% if br.statut == 'brouillon' %}
+                                    <form method="post" action="{% url 'cuisine:bon_reception_valider' br.pk %}" style="display:inline;" onsubmit="return confirm('Valider et mettre à jour le stock ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-ok" title="Valider"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    <form method="post" action="{% url 'cuisine:bon_reception_annuler' br.pk %}" style="display:inline;" onsubmit="return confirm('Annuler ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8">
+                            <div class="empty-state">
+                                <i class="fas fa-dolly"></i>
+                                <p>Aucun bon de réception créé.</p>
+                                <a href="{% url 'cuisine:bon_reception_create' %}" class="btn-red" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Créer le premier bon</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : ENTRÉES / SORTIES ===== -->
+    <div id="tab-mouvements" class="tab-content">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-exchange-alt" style="color:#c0392b;"></i> Journal des Mouvements
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-red" style="background:linear-gradient(135deg,#27ae60,#2ecc71);" onclick="ouvrirModalMouvement('entree')">
+                    <i class="fas fa-plus"></i> Entrée
+                </button>
+                <button class="btn-red" style="background:linear-gradient(135deg,#e74c3c,#c0392b);" onclick="ouvrirModalMouvement('sortie')">
+                    <i class="fas fa-minus"></i> Sortie
+                </button>
+                <button class="btn-red" style="background:linear-gradient(135deg,#e67e22,#d35400);" onclick="ouvrirModalMouvement('casse')">
+                    <i class="fas fa-exclamation-triangle"></i> Casse
+                </button>
+                <button class="btn-red" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);" onclick="ouvrirModalMouvement('inventaire')">
+                    <i class="fas fa-clipboard-list"></i> Ajustement
+                </button>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="search-box" style="flex:1;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-mv" placeholder="Rechercher un ingrédient..." oninput="filtrerMouvements()">
+            </div>
+            <select id="filter-mv-type" class="filter-select" onchange="filtrerMouvements()">
+                <option value="">Tous les types</option>
+                <option value="entree">Entrées</option>
+                <option value="sortie">Sorties</option>
+                <option value="casse">Casses</option>
+                <option value="inventaire">Ajustements</option>
+                <option value="production">Production</option>
+            </select>
+        </div>
+
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Ingrédient</th>
+                            <th>Quantité</th>
+                            <th>Opérateur</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mv-tbody">
+                        {% for mv in mouvements %}
+                        <tr class="mv-row" data-ingredient="{{ mv.ingredient.nom|lower }}" data-type="{{ mv.type_mouvement }}">
+                            <td style="font-size:0.85rem;color:#7f8c8d;white-space:nowrap;">{{ mv.date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if mv.type_mouvement == 'entree' %}
+                                    <span style="background:#eafaf1;color:#27ae60;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-arrow-down"></i> Entrée</span>
+                                {% elif mv.type_mouvement == 'sortie' %}
+                                    <span style="background:#fdecea;color:#e74c3c;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-arrow-up"></i> Sortie</span>
+                                {% elif mv.type_mouvement == 'casse' %}
+                                    <span style="background:#fef3e2;color:#e67e22;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-exclamation-triangle"></i> Casse</span>
+                                {% elif mv.type_mouvement == 'production' %}
+                                    <span style="background:#f3e5f5;color:#8e44ad;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-utensils"></i> Production</span>
+                                {% else %}
+                                    <span style="background:#e8f4fd;color:#3498db;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Ajustement</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div style="font-weight:700;color:#2c3e50;">{{ mv.ingredient.nom }}</div>
+                                <div style="font-size:0.78rem;color:#7f8c8d;">{{ mv.ingredient.reference|default:"" }}</div>
+                            </td>
+                            <td>
+                                {% if mv.type_mouvement == 'entree' or mv.type_mouvement == 'inventaire' %}
+                                    <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|floatformat:3 }}</span>
+                                {% else %}
+                                    <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|floatformat:3 }}</span>
+                                {% endif %}
+                                <span style="font-size:0.8rem;color:#7f8c8d;">{{ mv.ingredient.unite_stock.abreviation|default:"" }}</span>
+                            </td>
+                            <td style="font-size:0.85rem;">{{ mv.utilisateur.username|default:"—" }}</td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;max-width:200px;">{{ mv.commentaire|default:"—"|truncatechars:60 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-exchange-alt"></i>
+                                <p>Aucun mouvement enregistré.</p>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : INVENTAIRE ===== -->
+    <div id="tab-inventaire" class="tab-content">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-clipboard-list" style="color:#c0392b;"></i> Inventaires Physiques
+            </div>
+            <a href="{% url 'cuisine:inventaire_create' %}" class="btn-red">
+                <i class="fas fa-plus"></i> Nouvel Inventaire
+            </a>
+        </div>
+
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>N° Inventaire</th>
+                            <th>Date inventaire</th>
+                            <th>Créé par</th>
+                            <th>Validé par</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in inventaires %}
+                        <tr>
+                            <td><span style="font-family:monospace;font-weight:700;color:#c0392b;font-size:0.85rem;">{{ inv.numero }}</span></td>
+                            <td style="font-size:0.88rem;color:#7f8c8d;">{{ inv.date_inventaire|date:"d/m/Y" }}</td>
+                            <td style="font-size:0.85rem;">{{ inv.cree_par.username|default:"—" }}</td>
+                            <td style="font-size:0.85rem;">{{ inv.valide_par.username|default:"—" }}</td>
+                            <td>
+                                {% if inv.statut == 'brouillon' %}<span class="badge badge-brouillon">En cours</span>
+                                {% elif inv.statut == 'valide' %}<span class="badge badge-valide">✓ Validé</span>
+                                {% elif inv.statut == 'annule' %}<span class="badge badge-annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    {% if inv.statut == 'brouillon' %}
+                                    <form method="post" action="{% url 'cuisine:inventaire_valider' inv.pk %}" style="display:inline;" onsubmit="return confirm('Valider et ajuster le stock ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-ok" title="Valider"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p>Aucun inventaire créé.</p>
+                                <a href="{% url 'cuisine:inventaire_create' %}" class="btn-red" style="display:inline-flex;margin-top:10px;"><i class="fas fa-plus"></i> Premier inventaire</a>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET : CASSES / PERTES ===== -->
+    <div id="tab-casses" class="tab-content">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
+                <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Déclarations de Casse / Perte
+            </div>
+            <a href="{% url 'cuisine:casse_create' %}" class="btn-red" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">
+                <i class="fas fa-plus"></i> Déclarer une Casse
+            </a>
+        </div>
+
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>N° Déclaration</th>
+                            <th>Type</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Déclaré par</th>
+                            <th>Statut</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for css in casses %}
+                        <tr>
+                            <td><span style="font-family:monospace;font-weight:700;color:#e74c3c;font-size:0.85rem;">{{ css.numero }}</span></td>
+                            <td>
+                                {% if css.type_casse == 'casse' %}<span style="background:#fdecea;color:#e74c3c;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Casse</span>
+                                {% elif css.type_casse == 'perime' %}<span style="background:#f3e5f5;color:#8e44ad;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Périmé</span>
+                                {% elif css.type_casse == 'perte' %}<span style="background:#fef3e2;color:#e67e22;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Perte</span>
+                                {% elif css.type_casse == 'vol' %}<span style="background:#fdecea;color:#c0392b;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Vol</span>
+                                {% elif css.type_casse == 'offert' %}<span style="background:#eafaf1;color:#27ae60;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Offert</span>
+                                {% else %}<span style="background:#f8f9fa;color:#7f8c8d;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">Autre</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.85rem;color:#7f8c8d;">{{ css.date_casse|date:"d/m/Y" }}</td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;max-width:200px;">{{ css.description|default:"—"|truncatechars:50 }}</td>
+                            <td style="font-size:0.85rem;">{{ css.cree_par.username|default:"—" }}</td>
+                            <td>
+                                {% if css.statut == 'declare' %}<span class="badge badge-declare">⏳ En attente</span>
+                                {% elif css.statut == 'valide' %}<span class="badge badge-valide">✓ Validé</span>
+                                {% elif css.statut == 'annule' %}<span class="badge badge-annule">Annulé</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-group">
+                                    {% if css.statut == 'declare' %}
+                                    <form method="post" action="{% url 'cuisine:casse_valider' css.pk %}" style="display:inline;" onsubmit="return confirm('Valider et déduire du stock ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action btn-ok" title="Valider"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7">
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Aucune casse déclarée. Bonne nouvelle !</p>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ===== MODAL MOUVEMENT ===== -->
+<div id="modal-mouvement" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:20px;padding:32px;width:500px;max-width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+            <h3 id="modal-titre" style="font-weight:700;color:#2c3e50;margin:0;font-size:1.2rem;"></h3>
+            <button onclick="fermerModal()" style="background:#f0f0f0;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">×</button>
+        </div>
+        <form method="post" action="{% url 'cuisine:mouvement_create' %}">
+            {% csrf_token %}
+            <input type="hidden" name="type_mouvement" id="modal-type">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Ingrédient *</label>
+                    <select name="ingredient" id="modal-ingredient" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
+                        <option value="">— Sélectionner un ingrédient —</option>
+                        {% for ing in ingredients %}
+                        <option value="{{ ing.pk }}">{{ ing.nom }} — Stock: {{ ing.quantite_stock|floatformat:2 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Quantité *</label>
+                    <input type="number" name="quantite" min="0.001" step="0.001" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
+                </div>
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Commentaire</label>
+                    <textarea name="commentaire" rows="2" style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;resize:none;" placeholder="Précisez la raison..."></textarea>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+                <button type="button" onclick="fermerModal()" style="padding:10px 20px;border-radius:10px;border:2px solid #e9ecef;background:white;font-weight:600;cursor:pointer;color:#7f8c8d;">Annuler</button>
+                <button type="submit" id="modal-btn-submit" style="padding:10px 24px;border-radius:10px;border:none;font-weight:700;cursor:pointer;color:white;font-size:0.95rem;background:linear-gradient(135deg,#c0392b,#e74c3c);">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Gestion des onglets
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+// Filtres
+function filtrerIngredients() {
+    const q = document.getElementById('search-ing').value.toLowerCase();
+    const cat = document.getElementById('filter-cat').value;
+    const stock = document.getElementById('filter-stock').value;
+    document.querySelectorAll('.ing-row').forEach(row => {
+        const matchQ = !q || row.dataset.nom.includes(q) || row.dataset.ref.includes(q);
+        const matchCat = !cat || row.dataset.cat === cat;
+        const matchStock = !stock || row.dataset.stock === stock;
+        row.style.display = (matchQ && matchCat && matchStock) ? '' : 'none';
+    });
+}
+
+function filtrerBons() {
+    const q = (document.getElementById('search-bc').value || '').toLowerCase();
+    const statut = document.getElementById('filter-bc-statut').value;
+    document.querySelectorAll('.bc-row').forEach(row => {
+        const matchQ = !q || (row.dataset.numero||'').includes(q) || (row.dataset.fournisseur||'').includes(q);
+        const matchStatut = !statut || row.dataset.statut === statut;
+        row.style.display = (matchQ && matchStatut) ? '' : 'none';
+    });
+}
+
+function filtrerMouvements() {
+    const q = (document.getElementById('search-mv').value || '').toLowerCase();
+    const type = document.getElementById('filter-mv-type').value;
+    document.querySelectorAll('.mv-row').forEach(row => {
+        const matchQ = !q || (row.dataset.ingredient||'').includes(q);
+        const matchType = !type || row.dataset.type === type;
+        row.style.display = (matchQ && matchType) ? '' : 'none';
+    });
+}
+
+// Modal mouvements
+const MODAL_CONFIGS = {
+    'entree':     { titre: '➕ Nouvelle Entrée de Stock',    color: '#27ae60' },
+    'sortie':     { titre: '➖ Nouvelle Sortie de Stock',     color: '#e74c3c' },
+    'casse':      { titre: '⚠️ Déclarer une Casse / Perte',   color: '#e67e22' },
+    'inventaire': { titre: '📋 Ajustement d\'Inventaire',     color: '#3498db' },
+};
+
+function ouvrirModalMouvement(type, ingId, ingNom) {
+    const cfg = MODAL_CONFIGS[type];
+    document.getElementById('modal-titre').textContent = cfg.titre;
+    document.getElementById('modal-type').value = type;
+    document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg,${cfg.color},${cfg.color}cc)`;
+    if (ingId) {
+        document.getElementById('modal-ingredient').value = ingId;
+    }
+    document.getElementById('modal-mouvement').style.display = 'flex';
+}
+
+function fermerModal() {
+    document.getElementById('modal-mouvement').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerModal(); });
+
+// Ouvrir automatiquement l'onglet si paramètre URL présent
+const urlParams = new URLSearchParams(window.location.search);
+const tab = urlParams.get('tab');
+if (tab) {
+    const btn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
+    if (btn) showTab(tab, btn);
+}
+</script>
+{% endblock %}

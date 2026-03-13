@@ -832,3 +832,11 @@ def casse_annuler(request, pk):
         casse.save()
         messages.warning(request, f"Déclaration {casse.numero} annulée.")
     return redirect('/bar/stock/?tab=casses')
+
+def rapport_stock_cave(request):
+    get = request.GET.copy()
+    if 'module' not in get:
+        get['module'] = 'cave'
+    request.GET = get
+    from rapport.views import rapport_stock
+    return rapport_stock(request)

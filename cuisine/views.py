@@ -1,476 +1,815 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import F, Sum
-from django.db import transaction
-from django.http import JsonResponse
-from .models import Ingredient, FicheTechnique, LigneFicheTechnique, MouvementStock, CategorieIngredient, Fournisseur
-from restaurant.models import PlatMenu, CategorieMenu
-from .forms import ArticleForm, FournisseurForm, CategorieArticleForm, RecetteForm, DetailFicheTechniqueFormSet, RecetteModalForm
+from django.db.models import Sum, Q, F
 from django.utils import timezone
+from django.http import JsonResponse
 from decimal import Decimal
-from .views_stock import etat_stock, inventaire_saisie, mouvement_stock
-from .views_reports import rapport_consommation, rapport_pertes, chart_data_mouvements, chart_data_top_consommation, rapports_dashboard
-from .views_reception import bon_reception_list, bon_reception_create, bon_reception_detail, bon_reception_print
 
-@login_required
-def recette_create_modal(request):
-    if request.method == 'POST':
-        form = RecetteModalForm(request.POST, request.FILES)
-        formset = DetailFicheTechniqueFormSet(request.POST, prefix='formset-new')
+from .models import (
+    Fournisseur,
+    CategorieIngredient,
+    UniteIngredient,
+    Ingredient,
+    MouvementStockCuisine,
+    BonCommandeCuisine,
+    LigneBonCommandeCuisine,
+    BonReceptionCuisine,
+    LigneBonReceptionCuisine,
+    CategoriePlat,
+    FicheTechnique,
+    LigneFicheTechnique,
+    Plat,
+    InventaireCuisine,
+    LigneInventaireCuisine,
+    CasseCuisine,
+    LigneCasseCuisine,
+)
 
-        if form.is_valid() and formset.is_valid():
-            try:
-                with transaction.atomic():
-                    plat, created = PlatMenu.objects.get_or_create(
-                        nom=form.cleaned_data['nom'],
-                        defaults={
-                            'categorie': form.cleaned_data['categorie'],
-                            'description': form.cleaned_data['description'],
-                            'temps_preparation': form.cleaned_data['temps_preparation'] + form.cleaned_data['temps_cuisson'],
-                        }
-                    )
 
-                    if not created and hasattr(plat, 'fiche_technique'):
-                        return JsonResponse({'success': False, 'errors': {'__all__': ['Un plat avec ce nom a déjà une fiche technique.']}})
-
-                    # Mettre à jour les champs du plat, qu'il soit nouveau ou non
-                    plat.categorie = form.cleaned_data['categorie']
-                    plat.description = form.cleaned_data['description']
-                    plat.temps_preparation = form.cleaned_data['temps_preparation'] + form.cleaned_data['temps_cuisson']
-                    plat.disponible = True
-
-                    # Création de la fiche et de ses lignes
-                    fiche = FicheTechnique.objects.create(
-                        plat=plat,
-                        nombre_portions=form.cleaned_data['nombre_portions'],
-                        temps_preparation=form.cleaned_data['temps_preparation'],
-                        temps_cuisson=form.cleaned_data['temps_cuisson'],
-                        instructions=form.cleaned_data['instructions'],
-                        image=form.cleaned_data.get('image')
-                    )
-
-                    formset.instance = fiche
-                    formset.save()
-
-                    # 3. Mettre à jour le prix du plat en fonction des lignes
-                    total_prix_vente = Decimal('0.0')
-                    for ligne in fiche.lignes.all():
-                        quantite = ligne.quantite or Decimal('0.0')
-                        prix_unitaire = ligne.prix_vente if ligne.prix_vente is not None else (ligne.ingredient.prix_vente or Decimal('0.0'))
-                        total_prix_vente += quantite * prix_unitaire
-                    
-                    plat.prix = total_prix_vente
-                    plat.save()
-
-                return JsonResponse({'success': True})
-            except Exception as e:
-                return JsonResponse({'success': False, 'errors': {'__all__': [f'Une erreur technique est survenue: {e}']}})
-        else:
-            errors = {}
-            
-            # Handle non-field errors from both form and formset
-            general_errors = []
-            if form.non_field_errors():
-                general_errors.extend(form.non_field_errors())
-            if formset.non_form_errors():
-                general_errors.extend(formset.non_form_errors())
-            
-            if general_errors:
-                errors['Erreurs Générales'] = general_errors[0]
-
-            # Handle field-specific errors from the main form
-            for field, error_list in form.errors.items():
-                if field != '__all__':
-                    field_name = form.fields.get(field).label if form.fields.get(field) else field
-                    errors[field_name] = error_list[0]
-            
-            # Handle field-specific errors from the formset
-            for i, form_errors in enumerate(formset.errors):
-                if form_errors:
-                    for field, error_list in form_errors.items():
-                        field_label = formset.form.base_fields.get(field).label if formset.form.base_fields.get(field) else field
-                        errors[f'Ligne {i+1} - {field_label}'] = error_list[0]
-
-            return JsonResponse({'success': False, 'errors': errors})
-            
-    return JsonResponse({'success': False, 'errors': {'__all__': ['Méthode de requête invalide.']}})
-
+# ==============================================================================
+# TABLEAU DE BORD CUISINE
+# ==============================================================================
 
 @login_required
 def index(request):
-    """Tableau de bord de la cuisine"""
-    # Alertes de stock
-    articles_en_alerte = Ingredient.objects.filter(quantite_stock__lte=F('seuil_alerte'))
-    
-    # Derniers mouvements
-    derniers_mouvements = MouvementStock.objects.select_related('ingredient', 'utilisateur').order_by('-date')[:10]
-    
-    # Statistiques globales
-    total_articles = Ingredient.objects.count()
-    valeur_stock_agg = Ingredient.objects.aggregate(valeur=Sum(F('quantite_stock') * F('prix_moyen')))
-    valeur_stock = valeur_stock_agg['valeur'] or Decimal('0.00')
-    
+    ingredients = Ingredient.objects.filter(statut=True)
+
+    total_articles  = ingredients.count()
+    valeur_stock    = sum(i.valeur_stock for i in ingredients)
+    stock_bas       = ingredients.filter(quantite_stock__gt=0, quantite_stock__lte=F('seuil_alerte')).count()
+    ruptures        = ingredients.filter(quantite_stock__lte=0).count()
+    bc_en_cours     = BonCommandeCuisine.objects.filter(statut__in=['brouillon', 'confirme', 'envoye', 'partiel']).count()
+    derniers_mvts   = MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')[:10]
+
     context = {
-        'articles_en_alerte': articles_en_alerte,
-        'derniers_mouvements': derniers_mouvements,
+        'page_title':     'Cuisine — Tableau de bord',
         'total_articles': total_articles,
-        'valeur_stock': valeur_stock,
+        'valeur_stock':   valeur_stock,
+        'stock_bas':      stock_bas,
+        'ruptures':       ruptures,
+        'bc_en_cours':    bc_en_cours,
+        'derniers_mvts':  derniers_mvts,
     }
     return render(request, 'cuisine/index.html', context)
 
+
+# ==============================================================================
+# STOCK MANAGEMENT (page principale avec onglets)
+# ==============================================================================
+
 @login_required
-def article_list(request):
-    """Liste des articles et gestion du stock"""
-    articles_queryset = Ingredient.objects.select_related('categorie').exclude(categorie__nom__in=['Boisson', 'Boissons']).order_by('nom')
+def stock_management(request):
+    ingredients = Ingredient.objects.select_related('categorie', 'unite_stock').filter(statut=True)
 
     # Stats
-    total_articles = articles_queryset.count()
-    valeur_stock_agg = articles_queryset.aggregate(valeur=Sum(F('quantite_stock') * F('prix_moyen')))
-    valeur_stock = valeur_stock_agg['valeur'] or Decimal('0.00')
-    stock_bas = articles_queryset.filter(quantite_stock__lte=F('seuil_alerte'), quantite_stock__gt=0).count()
-    ruptures = articles_queryset.filter(quantite_stock=0).count()
-    
-    article_form = ArticleForm(prefix='new')
-    edit_form = ArticleForm(prefix='edit') # Formulaire pour l'édition
+    total_articles = ingredients.count()
+    valeur_stock   = sum(i.valeur_stock for i in ingredients)
+    stock_bas      = ingredients.filter(quantite_stock__gt=0, quantite_stock__lte=F('seuil_alerte')).count()
+    ruptures       = ingredients.filter(quantite_stock__lte=0).count()
+    bc_en_cours    = BonCommandeCuisine.objects.filter(statut__in=['brouillon', 'confirme', 'envoye', 'partiel']).count()
+
+    # Bons de commande
+    bons = BonCommandeCuisine.objects.select_related('fournisseur', 'cree_par').all()
+    bc_statut = request.GET.get('bc_statut', '')
+    bc_q      = request.GET.get('bc_q', '')
+    if bc_statut:
+        bons = bons.filter(statut=bc_statut)
+    if bc_q:
+        bons = bons.filter(Q(numero__icontains=bc_q) | Q(fournisseur__nom__icontains=bc_q))
+
+    bc_total      = BonCommandeCuisine.objects.count()
+    bc_brouillons = BonCommandeCuisine.objects.filter(statut='brouillon').count()
+    bc_en_retard  = sum(1 for b in BonCommandeCuisine.objects.filter(statut__in=['confirme', 'envoye', 'partiel']) if b.est_en_retard)
+
+    # Réceptions
+    receptions    = BonReceptionCuisine.objects.select_related('fournisseur', 'cree_par').all()
+    br_total      = receptions.count()
+    br_brouillons = receptions.filter(statut='brouillon').count()
+
+    # Mouvements
+    mouvements = MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')
+    mvt_type = request.GET.get('mvt_type', '')
+    if mvt_type:
+        mouvements = mouvements.filter(type_mouvement=mvt_type)
+
+    # Inventaires
+    inventaires = InventaireCuisine.objects.select_related('cree_par').all()
+
+    # Casses
+    casses = CasseCuisine.objects.select_related('cree_par').all()
 
     context = {
-        'articles': articles_queryset,
+        'page_title':     'Stock Cuisine',
+        'ingredients':    ingredients,
+        'categories':     CategorieIngredient.objects.all(),
+        'fournisseurs':   Fournisseur.objects.filter(actif=True),
         'total_articles': total_articles,
-        'valeur_stock': valeur_stock,
-        'stock_bas': stock_bas,
-        'ruptures': ruptures,
-        'categories': CategorieIngredient.objects.exclude(nom__in=['Boisson', 'Boissons']),
-        'article_form': article_form,
-        'edit_form': edit_form, # Ajout du formulaire d'édition au contexte
+        'valeur_stock':   valeur_stock,
+        'stock_bas':      stock_bas,
+        'ruptures':       ruptures,
+        'bc_en_cours':    bc_en_cours,
+        # BC
+        'bons':           bons,
+        'bc_total':       bc_total,
+        'bc_brouillons':  bc_brouillons,
+        'bc_en_retard':   bc_en_retard,
+        'bc_statut':      bc_statut,
+        'bc_q':           bc_q,
+        # BR
+        'receptions':     receptions,
+        'br_total':       br_total,
+        'br_brouillons':  br_brouillons,
+        # Mouvements
+        'mouvements':     mouvements[:50],
+        'mvt_type':       mvt_type,
+        # Inventaires & Casses
+        'inventaires':    inventaires,
+        'casses':         casses,
     }
-    return render(request, 'cuisine/article_list.html', context)
+    return render(request, 'cuisine/stock_management.html', context)
+
+
+# ==============================================================================
+# INGRÉDIENTS
+# ==============================================================================
 
 @login_required
-def article_create_modal(request):
+def ingredient_list(request):
+    ingredients = Ingredient.objects.select_related('categorie', 'unite_stock').filter(statut=True)
+    q = request.GET.get('q', '')
+    cat = request.GET.get('categorie', '')
+    if q:
+        ingredients = ingredients.filter(Q(nom__icontains=q) | Q(reference__icontains=q))
+    if cat:
+        ingredients = ingredients.filter(categorie_id=cat)
+    context = {
+        'page_title':  'Ingrédients',
+        'ingredients': ingredients,
+        'categories':  CategorieIngredient.objects.all(),
+        'q': q, 'categorie_id': cat,
+    }
+    return render(request, 'cuisine/ingredient_list.html', context)
+
+
+@login_required
+def ingredient_create(request):
+    categories = CategorieIngredient.objects.all()
+    unites     = UniteIngredient.objects.all()
+    fournisseurs = Fournisseur.objects.filter(actif=True)
     if request.method == 'POST':
-        form = ArticleForm(request.POST, prefix='new')
-        if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True})
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors.as_json()})
-    return JsonResponse({'success': False, 'errors': 'Invalid request'})
+        ing = Ingredient(
+            nom=request.POST.get('nom'),
+            reference=request.POST.get('reference') or None,
+            categorie_id=request.POST.get('categorie') or None,
+            description=request.POST.get('description', ''),
+            unite_stock_id=request.POST.get('unite_stock') or None,
+            unite_recette_id=request.POST.get('unite_recette') or None,
+            facteur_conversion=request.POST.get('facteur_conversion') or 1,
+            prix_achat=request.POST.get('prix_achat') or 0,
+            seuil_alerte=request.POST.get('seuil_alerte') or 0,
+            stock_max=request.POST.get('stock_max') or 0,
+            fournisseur_principal_id=request.POST.get('fournisseur_principal') or None,
+        )
+        ing.save()
+        messages.success(request, f"Ingrédient '{ing.nom}' créé.")
+        return redirect('/cuisine/stock/?tab=ingredients')
+    context = {
+        'page_title':    'Nouvel Ingrédient',
+        'categories':    categories,
+        'unites':        unites,
+        'fournisseurs':  fournisseurs,
+        'mode':          'create',
+    }
+    return render(request, 'cuisine/ingredient_form.html', context)
+
 
 @login_required
-def article_edit(request, pk):
-    article = get_object_or_404(Ingredient, pk=pk)
+def ingredient_edit(request, pk):
+    ing        = get_object_or_404(Ingredient, pk=pk)
+    categories = CategorieIngredient.objects.all()
+    unites     = UniteIngredient.objects.all()
+    fournisseurs = Fournisseur.objects.filter(actif=True)
     if request.method == 'POST':
-        form = ArticleForm(request.POST, instance=article, prefix='edit')
-        if form.is_valid():
-            form.save()
-            return JsonResponse({'success': True})
+        ing.nom = request.POST.get('nom')
+        ing.reference = request.POST.get('reference') or None
+        ing.categorie_id = request.POST.get('categorie') or None
+        ing.description = request.POST.get('description', '')
+        ing.unite_stock_id = request.POST.get('unite_stock') or None
+        ing.unite_recette_id = request.POST.get('unite_recette') or None
+        ing.facteur_conversion = request.POST.get('facteur_conversion') or 1
+        ing.prix_achat = request.POST.get('prix_achat') or 0
+        ing.seuil_alerte = request.POST.get('seuil_alerte') or 0
+        ing.stock_max = request.POST.get('stock_max') or 0
+        ing.fournisseur_principal_id = request.POST.get('fournisseur_principal') or None
+        ing.save()
+        messages.success(request, f"Ingrédient '{ing.nom}' modifié.")
+        return redirect('/cuisine/stock/?tab=ingredients')
+    context = {
+        'page_title':    'Modifier Ingrédient',
+        'ingredient':    ing,
+        'categories':    categories,
+        'unites':        unites,
+        'fournisseurs':  fournisseurs,
+        'mode':          'edit',
+    }
+    return render(request, 'cuisine/ingredient_form.html', context)
+
+
+@login_required
+def ingredient_delete(request, pk):
+    ing = get_object_or_404(Ingredient, pk=pk)
+    if request.method == 'POST':
+        ing.statut = False
+        ing.save()
+        messages.success(request, f"Ingrédient '{ing.nom}' désactivé.")
+        return redirect('/cuisine/stock/?tab=ingredients')
+    return render(request, 'cuisine/ingredient_confirm_delete.html', {'ingredient': ing})
+
+
+# ==============================================================================
+# MOUVEMENTS DE STOCK
+# ==============================================================================
+
+@login_required
+def mouvement_create(request):
+    if request.method == 'POST':
+        ing_id  = request.POST.get('ingredient')
+        type_m  = request.POST.get('type_mouvement')
+        quantite = request.POST.get('quantite')
+        commentaire = request.POST.get('commentaire', '')
+        if ing_id and type_m and quantite:
+            MouvementStockCuisine.objects.create(
+                ingredient_id  = ing_id,
+                type_mouvement = type_m,
+                quantite       = quantite,
+                commentaire    = commentaire,
+                utilisateur    = request.user,
+            )
+            messages.success(request, "Mouvement enregistré.")
+    return redirect('/cuisine/stock/?tab=mouvements')
+
+
+# ==============================================================================
+# BONS DE COMMANDE CUISINE
+# ==============================================================================
+
+@login_required
+def bon_commande_list(request):
+    return redirect('/cuisine/stock/?tab=commandes')
+
+
+@login_required
+def bon_commande_create(request):
+    fournisseurs = Fournisseur.objects.filter(actif=True)
+    ingredients  = Ingredient.objects.filter(statut=True)
+    if request.method == 'POST':
+        bon = BonCommandeCuisine(
+            fournisseur_id=request.POST.get('fournisseur') or None,
+            statut=request.POST.get('statut', 'brouillon'),
+            date_commande=request.POST.get('date_commande') or timezone.now().date(),
+            date_livraison_prevue=request.POST.get('date_livraison_prevue') or None,
+            notes=request.POST.get('notes', ''),
+            cree_par=request.user,
+        )
+        bon.save()
+        ing_ids  = request.POST.getlist('ingredient_id[]')
+        qtes     = request.POST.getlist('quantite[]')
+        prix_l   = request.POST.getlist('prix_unitaire[]')
+        notes_l  = request.POST.getlist('notes_ligne[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id and qtes[i]:
+                LigneBonCommandeCuisine.objects.create(
+                    bon=bon,
+                    ingredient_id=ing_id,
+                    quantite_commandee=qtes[i],
+                    prix_unitaire=prix_l[i] if prix_l[i] else 0,
+                    notes_ligne=notes_l[i] if i < len(notes_l) else '',
+                )
+        messages.success(request, f"Bon {bon.numero} créé.")
+        return redirect('/cuisine/stock/?tab=commandes')
+    context = {
+        'page_title':  'Nouveau Bon de Commande — Cuisine',
+        'fournisseurs': fournisseurs,
+        'ingredients':  ingredients,
+        'mode':         'create',
+    }
+    return render(request, 'cuisine/bon_commande_form.html', context)
+
+
+@login_required
+def bon_commande_detail(request, pk):
+    bon   = get_object_or_404(BonCommandeCuisine, pk=pk)
+    lignes = bon.lignes.select_related('ingredient').all()
+    return render(request, 'cuisine/bon_commande_detail.html', {
+        'page_title': f'Bon {bon.numero}', 'bon': bon, 'lignes': lignes
+    })
+
+
+@login_required
+def bon_commande_annuler(request, pk):
+    bon = get_object_or_404(BonCommandeCuisine, pk=pk)
+    if request.method == 'POST':
+        bon.statut = 'annule'
+        bon.save()
+        messages.warning(request, f"Bon {bon.numero} annulé.")
+    return redirect('/cuisine/stock/?tab=commandes')
+
+
+# ==============================================================================
+# BONS DE RÉCEPTION CUISINE
+# ==============================================================================
+
+@login_required
+def bon_reception_list(request):
+    return redirect('/cuisine/stock/?tab=receptions')
+
+
+@login_required
+def bon_reception_create(request):
+    fournisseurs = Fournisseur.objects.filter(actif=True)
+    bons_cmd     = BonCommandeCuisine.objects.filter(statut__in=['confirme', 'envoye', 'partiel'])
+    ingredients  = Ingredient.objects.filter(statut=True)
+    if request.method == 'POST':
+        br = BonReceptionCuisine(
+            fournisseur_id=request.POST.get('fournisseur') or None,
+            bon_commande_id=request.POST.get('bon_commande') or None,
+            date_reception=request.POST.get('date_reception') or timezone.now().date(),
+            notes=request.POST.get('notes', ''),
+            cree_par=request.user,
+        )
+        br.save()
+        ing_ids = request.POST.getlist('ingredient_id[]')
+        qtes    = request.POST.getlist('quantite_recue[]')
+        prix_l  = request.POST.getlist('prix_unitaire[]')
+        notes_l = request.POST.getlist('notes_ligne[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id and qtes[i]:
+                LigneBonReceptionCuisine.objects.create(
+                    bon=br,
+                    ingredient_id=ing_id,
+                    quantite_recue=qtes[i],
+                    prix_unitaire=prix_l[i] if prix_l[i] else 0,
+                    notes_ligne=notes_l[i] if i < len(notes_l) else '',
+                )
+        if request.POST.get('valider') == '1':
+            ok = br.valider(request.user)
+            if ok:
+                messages.success(request, f"Réception {br.numero} validée — stock mis à jour.")
+            else:
+                messages.error(request, "Erreur lors de la validation.")
         else:
-            return JsonResponse({'success': False, 'errors': form.errors.as_json()})
-    
-    # Si GET, on renvoie les données de l'article pour pré-remplir le form
-    data = {
-        'nom': article.nom,
-        'code': article.code,
-        'categorie': article.categorie.id if article.categorie else '',
-        'unite': article.unite.id if article.unite else '',
-        'quantite_stock': article.quantite_stock,
-        'seuil_alerte': article.seuil_alerte,
-        'prix_moyen': article.prix_moyen,
-        'prix_vente': article.prix_vente,
-        'emplacement': article.emplacement.id if article.emplacement else '',
+            messages.success(request, f"Réception {br.numero} enregistrée en brouillon.")
+        return redirect('/cuisine/stock/?tab=receptions')
+    context = {
+        'page_title':    'Nouvelle Réception — Cuisine',
+        'fournisseurs':  fournisseurs,
+        'bons_cmd':      bons_cmd,
+        'ingredients':   ingredients,
+        'mode':          'create',
     }
-    return JsonResponse({'success': True, 'data': data})
+    return render(request, 'cuisine/bon_reception_form.html', context)
+
 
 @login_required
-def get_ingredient_details(request, ingredient_id):
-    ingredient = get_object_or_404(Ingredient, pk=ingredient_id)
-    data = {
-        'prix_vente': ingredient.prix_vente,
-        'prix_moyen': ingredient.prix_moyen
-    }
-    return JsonResponse(data)
+def bon_reception_detail(request, pk):
+    br     = get_object_or_404(BonReceptionCuisine, pk=pk)
+    lignes = br.lignes.select_related('ingredient').all()
+    return render(request, 'cuisine/bon_reception_detail.html', {
+        'page_title': f'Réception {br.numero}', 'br': br, 'lignes': lignes
+    })
+
 
 @login_required
-def get_ingredients_details(request):
-    ingredient_ids = request.GET.getlist('ids[]')
-    ingredients = Ingredient.objects.filter(pk__in=ingredient_ids)
-    data = {
-        'ingredients': {
-            ingredient.id: {
-                'prix_vente': ingredient.prix_vente,
-                'prix_moyen': ingredient.prix_moyen
-            } for ingredient in ingredients
-        }
+def bon_reception_valider(request, pk):
+    br = get_object_or_404(BonReceptionCuisine, pk=pk)
+    if request.method == 'POST':
+        ok = br.valider(request.user)
+        if ok:
+            messages.success(request, f"Réception {br.numero} validée — stock mis à jour.")
+        else:
+            messages.error(request, "Impossible de valider (déjà validée ou annulée).")
+    return redirect('/cuisine/stock/?tab=receptions')
+
+
+@login_required
+def bon_reception_annuler(request, pk):
+    br = get_object_or_404(BonReceptionCuisine, pk=pk)
+    if request.method == 'POST':
+        br.statut = 'annule'
+        br.save()
+        messages.warning(request, f"Réception {br.numero} annulée.")
+    return redirect('/cuisine/stock/?tab=receptions')
+
+
+# ==============================================================================
+# FICHES TECHNIQUES
+# ==============================================================================
+
+@login_required
+def fiche_list(request):
+    fiches = FicheTechnique.objects.select_related('categorie').exclude(statut='archive')
+    q = request.GET.get('q', '')
+    cat = request.GET.get('categorie', '')
+    if q:
+        fiches = fiches.filter(nom__icontains=q)
+    if cat:
+        fiches = fiches.filter(categorie_id=cat)
+    context = {
+        'page_title': 'Fiches Techniques',
+        'fiches':     fiches,
+        'categories': CategoriePlat.objects.all(),
+        'q': q, 'categorie_id': cat,
     }
-    return JsonResponse(data)
+    return render(request, 'cuisine/fiche_list.html', context)
+
+
+@login_required
+def fiche_create(request):
+    categories   = CategoriePlat.objects.all()
+    ingredients  = Ingredient.objects.filter(statut=True).select_related('unite_recette')
+    if request.method == 'POST':
+        fiche = FicheTechnique(
+            nom=request.POST.get('nom'),
+            categorie_id=request.POST.get('categorie') or None,
+            description=request.POST.get('description', ''),
+            nb_portions=request.POST.get('nb_portions') or 1,
+            temps_preparation=request.POST.get('temps_preparation') or 0,
+            temps_cuisson=request.POST.get('temps_cuisson') or 0,
+            statut=request.POST.get('statut', 'actif'),
+            cree_par=request.user,
+        )
+        fiche.save()
+        # Lignes
+        ing_ids  = request.POST.getlist('ingredient_id[]')
+        qtes     = request.POST.getlist('quantite[]')
+        notes_l  = request.POST.getlist('notes_ligne[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id and qtes[i]:
+                LigneFicheTechnique.objects.create(
+                    fiche=fiche,
+                    ingredient_id=ing_id,
+                    quantite=qtes[i],
+                    notes_ligne=notes_l[i] if i < len(notes_l) else '',
+                )
+        messages.success(request, f"Fiche technique '{fiche.nom}' créée.")
+        return redirect('/cuisine/fiches/')
+    context = {
+        'page_title':  'Nouvelle Fiche Technique',
+        'categories':  categories,
+        'ingredients': ingredients,
+        'mode':        'create',
+    }
+    return render(request, 'cuisine/fiche_form.html', context)
+
+
+@login_required
+def fiche_edit(request, pk):
+    fiche        = get_object_or_404(FicheTechnique, pk=pk)
+    categories   = CategoriePlat.objects.all()
+    ingredients  = Ingredient.objects.filter(statut=True).select_related('unite_recette')
+    if request.method == 'POST':
+        fiche.nom               = request.POST.get('nom')
+        fiche.categorie_id      = request.POST.get('categorie') or None
+        fiche.description       = request.POST.get('description', '')
+        fiche.nb_portions       = request.POST.get('nb_portions') or 1
+        fiche.temps_preparation = request.POST.get('temps_preparation') or 0
+        fiche.temps_cuisson     = request.POST.get('temps_cuisson') or 0
+        fiche.statut            = request.POST.get('statut', 'actif')
+        fiche.save()
+        # Reconstruire les lignes
+        fiche.lignes.all().delete()
+        ing_ids = request.POST.getlist('ingredient_id[]')
+        qtes    = request.POST.getlist('quantite[]')
+        notes_l = request.POST.getlist('notes_ligne[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id and qtes[i]:
+                LigneFicheTechnique.objects.create(
+                    fiche=fiche,
+                    ingredient_id=ing_id,
+                    quantite=qtes[i],
+                    notes_ligne=notes_l[i] if i < len(notes_l) else '',
+                )
+        messages.success(request, f"Fiche technique '{fiche.nom}' modifiée.")
+        return redirect('/cuisine/fiches/')
+    context = {
+        'page_title':  f'Modifier : {fiche.nom}',
+        'fiche':       fiche,
+        'lignes':      fiche.lignes.select_related('ingredient').all(),
+        'categories':  categories,
+        'ingredients': ingredients,
+        'mode':        'edit',
+    }
+    return render(request, 'cuisine/fiche_form.html', context)
+
+
+@login_required
+def fiche_detail(request, pk):
+    fiche  = get_object_or_404(FicheTechnique, pk=pk)
+    lignes = fiche.lignes.select_related('ingredient__unite_recette').all()
+    return render(request, 'cuisine/fiche_detail.html', {
+        'page_title': fiche.nom, 'fiche': fiche, 'lignes': lignes
+    })
+
+
+@login_required
+def fiche_delete(request, pk):
+    fiche = get_object_or_404(FicheTechnique, pk=pk)
+    if request.method == 'POST':
+        nom = fiche.nom
+        fiche.statut = 'archive'
+        fiche.save()
+        messages.success(request, f"Fiche '{nom}' archivée.")
+        return redirect('/cuisine/fiches/')
+    return render(request, 'cuisine/fiche_confirm_delete.html', {'fiche': fiche})
+
+
+# ==============================================================================
+# PLATS / CARTE
+# ==============================================================================
+
+@login_required
+def plat_list(request):
+    plats = Plat.objects.select_related('categorie', 'fiche_technique').exclude(statut='archive')
+    q   = request.GET.get('q', '')
+    cat = request.GET.get('categorie', '')
+    if q:
+        plats = plats.filter(nom__icontains=q)
+    if cat:
+        plats = plats.filter(categorie_id=cat)
+    context = {
+        'page_title': 'Plats / Carte',
+        'plats':      plats,
+        'categories': CategoriePlat.objects.all(),
+        'q': q, 'categorie_id': cat,
+    }
+    return render(request, 'cuisine/plat_list.html', context)
+
+
+@login_required
+def plat_create(request):
+    categories = CategoriePlat.objects.all()
+    fiches     = FicheTechnique.objects.filter(statut='actif').exclude(plat__isnull=False)
+    if request.method == 'POST':
+        plat = Plat(
+            nom=request.POST.get('nom'),
+            categorie_id=request.POST.get('categorie') or None,
+            description_carte=request.POST.get('description_carte', ''),
+            fiche_technique_id=request.POST.get('fiche_technique') or None,
+            prix_vente=request.POST.get('prix_vente') or 0,
+            statut=request.POST.get('statut', 'disponible'),
+            ordre_carte=request.POST.get('ordre_carte') or 0,
+        )
+        plat.save()
+        messages.success(request, f"Plat '{plat.nom}' créé.")
+        return redirect('/cuisine/plats/')
+    context = {
+        'page_title': 'Nouveau Plat',
+        'categories': categories,
+        'fiches':     fiches,
+        'mode':       'create',
+    }
+    return render(request, 'cuisine/plat_form.html', context)
+
+
+@login_required
+def plat_edit(request, pk):
+    plat       = get_object_or_404(Plat, pk=pk)
+    categories = CategoriePlat.objects.all()
+    fiches     = FicheTechnique.objects.filter(statut='actif')
+    if request.method == 'POST':
+        plat.nom                 = request.POST.get('nom')
+        plat.categorie_id        = request.POST.get('categorie') or None
+        plat.description_carte   = request.POST.get('description_carte', '')
+        plat.fiche_technique_id  = request.POST.get('fiche_technique') or None
+        plat.prix_vente          = request.POST.get('prix_vente') or 0
+        plat.statut              = request.POST.get('statut', 'disponible')
+        plat.ordre_carte         = request.POST.get('ordre_carte') or 0
+        plat.save()
+        messages.success(request, f"Plat '{plat.nom}' modifié.")
+        return redirect('/cuisine/plats/')
+    context = {
+        'page_title': f'Modifier : {plat.nom}',
+        'plat':       plat,
+        'categories': categories,
+        'fiches':     fiches,
+        'mode':       'edit',
+    }
+    return render(request, 'cuisine/plat_form.html', context)
+
+
+@login_required
+def plat_delete(request, pk):
+    plat = get_object_or_404(Plat, pk=pk)
+    if request.method == 'POST':
+        plat.statut = 'archive'
+        plat.save()
+        messages.success(request, f"Plat '{plat.nom}' archivé.")
+        return redirect('/cuisine/plats/')
+    return render(request, 'cuisine/plat_confirm_delete.html', {'plat': plat})
+
+
+# ==============================================================================
+# FOURNISSEURS
+# ==============================================================================
 
 @login_required
 def fournisseur_list(request):
-    """Gérer les fournisseurs"""
-    fournisseurs = Fournisseur.objects.all().order_by('nom')
-    form = FournisseurForm()
-    
-    if request.method == 'POST':
-        form = FournisseurForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"Fournisseur '{form.cleaned_data['nom']}' ajouté.")
-            return redirect('cuisine:fournisseur_list')
-
-    return render(request, 'cuisine/fournisseur_list.html', {'fournisseurs': fournisseurs, 'form': form})
-
-
-
-@login_required
-def transformation_stock(request):
-    """Transformer un article en un autre (Ex: Poulet Entier -> 2 Demi Poulets)"""
-    if request.method == 'POST':
-        source_id = request.POST.get('source_id')
-        target_id = request.POST.get('target_id')
-        qty_source = request.POST.get('qty_source')
-        qty_target = request.POST.get('qty_target')
-        
-        if source_id and target_id and qty_source and qty_target:
-            try:
-                with transaction.atomic():
-                    source = get_object_or_404(Ingredient, id=source_id)
-                    target = get_object_or_404(Ingredient, id=target_id)
-                    
-                    q_src = Decimal(qty_source)
-                    q_tgt = Decimal(qty_target)
-                    
-                    if source.quantite_stock < q_src:
-                        messages.error(request, f"Stock insuffisant pour {source.nom}")
-                        return redirect('cuisine:article_list')
-                    
-                    # 1. Sortie du produit source
-                    MouvementStock.objects.create(
-                        ingredient=source,
-                        type_mouvement='sortie',
-                        quantite=q_src,
-                        commentaire=f"Transformation vers {target.nom}",
-                        utilisateur=request.user
-                    )
-                    
-                    # 2. Entrée du produit cible
-                    MouvementStock.objects.create(
-                        ingredient=target,
-                        type_mouvement='entree',
-                        quantite=q_tgt,
-                        commentaire=f"Transformation depuis {source.nom}",
-                        utilisateur=request.user
-                    )
-                    
-                    messages.success(request, f"Transformation effectuée : {q_src} {source.nom} -> {q_tgt} {target.nom}")
-                    
-            except Exception as e:
-                messages.error(request, f"Erreur lors de la transformation: {str(e)}")
-        
-    return redirect('cuisine:article_list')
-
-import json
-
-@login_required
-def recette_list(request):
-    """Liste des fiches techniques avec recherche et filtre."""
-    fiches_qs = FicheTechnique.objects.select_related('plat__categorie').all().order_by('plat__nom')
-
-    query = request.GET.get('q')
-    if query:
-        fiches_qs = fiches_qs.filter(plat__nom__icontains=query)
-
-    categorie_id = request.GET.get('categorie')
-    if categorie_id:
-        fiches_qs = fiches_qs.filter(plat__categorie_id=categorie_id)
-
-    categories_menu = CategorieMenu.objects.all().order_by('nom')
-
-    # Données des ingrédients pour le calcul JS
-    ingredients_data_qs = Ingredient.objects.all()
-    ingredients_data = {ing.id: {'prix_moyen': str(ing.prix_moyen or 0), 'prix_vente': str(ing.prix_vente or 0)} for ing in ingredients_data_qs}
-
-    form = RecetteModalForm()
-    formset = DetailFicheTechniqueFormSet(prefix='formset-new')
-
+    fournisseurs = Fournisseur.objects.filter(actif=True)
+    q = request.GET.get('q', '')
+    if q:
+        fournisseurs = fournisseurs.filter(Q(nom__icontains=q) | Q(telephone__icontains=q))
     context = {
-        'fiches': fiches_qs,
-        'categories_menu': categories_menu,
-        'form': form,
-        'formset': formset,
-        'ingredients_data_json': json.dumps(ingredients_data), 
+        'page_title':    'Fournisseurs',
+        'fournisseurs':  fournisseurs,
+        'q':             q,
     }
-    return render(request, 'cuisine/recette_list.html', context)
+    return render(request, 'cuisine/fournisseur_list.html', context)
+
 
 @login_required
-def recette_create(request, plat_id=None):
-    plat = None
-    if plat_id:
-        plat = get_object_or_404(PlatMenu, pk=plat_id)
-
+def fournisseur_create(request):
     if request.method == 'POST':
-        form = RecetteForm(request.POST, initial={'plat': plat})
-        if form.is_valid():
-            fiche = form.save()
-            messages.success(request, f"La fiche technique pour '{fiche.plat.nom}' a été créée. Ajoutez maintenant les articles.")
-            return redirect('cuisine:recette_edit', pk=fiche.pk)
-    else:
-        form = RecetteForm(initial={'plat': plat})
-        if plat:
-            form.fields['plat'].disabled = True
-
-    context = {
-        'form': form,
-        'page_title': 'Nouvelle Fiche Technique'
-    }
-    return render(request, 'cuisine/recette_form.html', context)
-
+        f = Fournisseur(
+            nom=request.POST.get('nom'),
+            type_fournisseur=request.POST.get('type_fournisseur', 'grossiste'),
+            personne_contact=request.POST.get('personne_contact', ''),
+            telephone=request.POST.get('telephone', ''),
+            telephone2=request.POST.get('telephone2', ''),
+            email=request.POST.get('email', ''),
+            adresse=request.POST.get('adresse', ''),
+            ville=request.POST.get('ville', ''),
+            notes=request.POST.get('notes', ''),
+        )
+        f.save()
+        messages.success(request, f"Fournisseur '{f.nom}' créé.")
+        return redirect('/cuisine/fournisseurs/')
+    return render(request, 'cuisine/fournisseur_form.html', {'page_title': 'Nouveau Fournisseur', 'mode': 'create'})
 
 
 @login_required
-def recette_edit(request, pk):
-    fiche = get_object_or_404(FicheTechnique, pk=pk)
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
+def fournisseur_edit(request, pk):
+    f = get_object_or_404(Fournisseur, pk=pk)
     if request.method == 'POST':
-        form = RecetteForm(request.POST, request.FILES, instance=fiche)
-        formset = DetailFicheTechniqueFormSet(request.POST, instance=fiche, prefix='lignes')
-
-        if form.is_valid() and formset.is_valid():
-            nom_plat = request.POST.get('nom_plat')
-            if nom_plat and fiche.plat.nom != nom_plat:
-                # Vérifier si un autre plat avec ce nom n'existe pas déjà
-                if PlatMenu.objects.filter(nom__iexact=nom_plat).exclude(pk=fiche.plat.pk).exists():
-                    return JsonResponse({
-                        'success': False, 
-                        'errors': {'__all__': ['Un plat avec ce nom existe déjà.']}
-                    }, status=400)
-                fiche.plat.nom = nom_plat
-
-            # Mettre à jour la catégorie du plat
-            categorie = form.cleaned_data.get('categorie')
-            if categorie and fiche.plat.categorie != categorie:
-                fiche.plat.categorie = categorie
-
-            fiche.plat.save()
-
-            fiche = form.save()
-            formset.save()
-
-            total_prix_vente = Decimal('0.0')
-            for ligne in formset.cleaned_data:
-                if not ligne.get('DELETE', False):
-                    ingredient = ligne.get('ingredient')
-                    quantite = ligne.get('quantite')
-                    prix_vente_specifique = ligne.get('prix_vente')
-
-                    if ingredient and quantite:
-                        prix_unitaire = prix_vente_specifique if prix_vente_specifique is not None else ingredient.prix_vente
-                        if prix_unitaire is not None:
-                            total_prix_vente += quantite * prix_unitaire
-            
-            # Mettre à jour le prix du plat et sauvegarder
-            if fiche.plat:
-                fiche.plat.prix = total_prix_vente
-                fiche.plat.save()
-            
-            
-            if is_ajax:
-                return JsonResponse({'success': True})
-            else:
-                messages.success(request, "Fiche technique mise à jour avec succès.")
-                return redirect('cuisine:recette_detail', pk=fiche.pk)
-        else:
-            if is_ajax:
-                # Renvoyer les erreurs au format JSON pour les requêtes AJAX
-                form_errors = form.errors.as_json()
-                formset_errors = formset.errors.as_json()
-                return JsonResponse({
-                    'success': False, 
-                    'errors': {'form': form_errors, 'formset': formset_errors}
-                }, status=400)
-            # Pour les requêtes non-AJAX, on continue comme avant (la page se recharge avec les erreurs)
-
-    # Si ce n'est pas POST, on affiche simplement le formulaire (pour la page complète, pas la modale)
-    form = RecetteForm(instance=fiche)
-    formset = DetailFicheTechniqueFormSet(instance=fiche, prefix='lignes')
-    
-    context = {
-        'form': form,
-        'formset': formset,
-        'fiche': fiche,
-        'page_title': f"Modifier Fiche: {fiche.plat.nom}"
-    }
-    return render(request, 'cuisine/recette_form.html', context)
-
-
-@login_required
-def recette_delete(request, pk):
-    """Supprimer une fiche technique et le plat associé."""
-    fiche = get_object_or_404(FicheTechnique, pk=pk)
-    if request.method == 'POST':
-        nom_plat = fiche.plat.nom
-        # Supprimer d'abord le plat associé
-        fiche.plat.delete()
-        # La fiche technique est automatiquement supprimée grâce à on_delete=models.CASCADE
-        messages.success(request, f"La fiche technique et le plat '{nom_plat}' ont été supprimés.")
-        return redirect('cuisine:recette_list')
-    return render(request, 'cuisine/recette_confirm_delete.html', {'object': fiche})
-
-from django.template.loader import render_to_string
-
-@login_required
-def recette_edit_get_form(request, pk):
-    fiche = get_object_or_404(FicheTechnique.objects.select_related('plat__categorie'), pk=pk)
-    
-    form = RecetteForm(instance=fiche)
-    formset = DetailFicheTechniqueFormSet(instance=fiche, prefix='lignes')
-    
-    modal_body_html = render_to_string('cuisine/partials/edit_recette_modal_body.html', {
-        'form': form,
-        'formset': formset,
-    }, request=request)
-
-    ingredients_data_qs = Ingredient.objects.all()
-    ingredients_data = {ing.id: {'prix_moyen': str(ing.prix_moyen or 0), 'prix_vente': str(ing.prix_vente or 0)} for ing in ingredients_data_qs}
-
-    return JsonResponse({
-        'success': True,
-        'modal_body': modal_body_html,
-        'ingredients_data': ingredients_data
+        f.nom              = request.POST.get('nom')
+        f.type_fournisseur = request.POST.get('type_fournisseur', 'grossiste')
+        f.personne_contact = request.POST.get('personne_contact', '')
+        f.telephone        = request.POST.get('telephone', '')
+        f.telephone2       = request.POST.get('telephone2', '')
+        f.email            = request.POST.get('email', '')
+        f.adresse          = request.POST.get('adresse', '')
+        f.ville            = request.POST.get('ville', '')
+        f.notes            = request.POST.get('notes', '')
+        f.save()
+        messages.success(request, f"Fournisseur '{f.nom}' modifié.")
+        return redirect('/cuisine/fournisseurs/')
+    return render(request, 'cuisine/fournisseur_form.html', {
+        'page_title': f'Modifier : {f.nom}', 'fournisseur': f, 'mode': 'edit'
     })
 
-@login_required
-def get_plat_details(request, plat_id):
-    """API pour récupérer les détails d'un plat pour l'édition (utilisé par l'ancienne interface)"""
-    plat = get_object_or_404(PlatMenu, id=plat_id)
-    data = {
-        'id': plat.id,
-        'nom': plat.nom,
-        'categorie_id': plat.categorie.id,
-        'prix': str(plat.prix),
-        'temps_preparation': plat.temps_preparation,
-        'description': plat.description,
-        'is_accompagnement': plat.is_accompagnement,
-    }
-    
-    if hasattr(plat, 'fiche_technique'):
-        fiche = plat.fiche_technique
-        data.update({
-            'has_fiche': True,
-            'portions': fiche.nombre_portions,
-            'instructions': fiche.instructions,
-            'articles': [
-                {
-                    'id': ligne.ingredient.id,
-                    'nom': ligne.ingredient.nom,
-                    'quantite': str(ligne.quantite),
-                    'unite': ligne.ingredient.get_unite_display()
-                } for ligne in fiche.lignes.all()
-            ]
-        })
-    else:
-        data['has_fiche'] = False
-    
-    return JsonResponse({'success': True, 'data': data})
 
+@login_required
+def fournisseur_delete(request, pk):
+    f = get_object_or_404(Fournisseur, pk=pk)
+    if request.method == 'POST':
+        f.actif = False
+        f.save()
+        messages.success(request, f"Fournisseur '{f.nom}' désactivé.")
+        return redirect('/cuisine/fournisseurs/')
+    return render(request, 'cuisine/fournisseur_confirm_delete.html', {'fournisseur': f})
+
+
+# ==============================================================================
+# INVENTAIRE
+# ==============================================================================
+
+@login_required
+def inventaire_create(request):
+    ingredients = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock')
+    if request.method == 'POST':
+        inv = InventaireCuisine(
+            date_inventaire=request.POST.get('date_inventaire') or timezone.now().date(),
+            notes=request.POST.get('notes', ''),
+            cree_par=request.user,
+        )
+        inv.save()
+        ing_ids  = request.POST.getlist('ingredient_id[]')
+        th_list  = request.POST.getlist('quantite_theorique[]')
+        ph_list  = request.POST.getlist('quantite_physique[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id:
+                LigneInventaireCuisine.objects.create(
+                    inventaire=inv,
+                    ingredient_id=ing_id,
+                    quantite_theorique=th_list[i] if th_list[i] else 0,
+                    quantite_physique=ph_list[i] if ph_list[i] else 0,
+                )
+        if request.POST.get('valider') == '1':
+            inv.valider(request.user)
+            messages.success(request, f"Inventaire {inv.numero} validé.")
+        else:
+            messages.success(request, f"Inventaire {inv.numero} enregistré.")
+        return redirect('/cuisine/stock/?tab=inventaire')
+    context = {
+        'page_title':   'Nouvel Inventaire — Cuisine',
+        'ingredients':  ingredients,
+    }
+    return render(request, 'cuisine/inventaire_form.html', context)
+
+
+@login_required
+def inventaire_valider(request, pk):
+    inv = get_object_or_404(InventaireCuisine, pk=pk)
+    if request.method == 'POST':
+        ok = inv.valider(request.user)
+        if ok:
+            messages.success(request, f"Inventaire {inv.numero} validé.")
+        else:
+            messages.error(request, "Impossible de valider.")
+    return redirect('/cuisine/stock/?tab=inventaire')
+
+
+# ==============================================================================
+# CASSES
+# ==============================================================================
+
+@login_required
+def casse_create(request):
+    ingredients = Ingredient.objects.filter(statut=True)
+    if request.method == 'POST':
+        casse = CasseCuisine(
+            type_casse=request.POST.get('type_casse', 'casse'),
+            date_casse=request.POST.get('date_casse') or timezone.now().date(),
+            description=request.POST.get('description', ''),
+            cree_par=request.user,
+        )
+        casse.save()
+        ing_ids = request.POST.getlist('ingredient_id[]')
+        qtes    = request.POST.getlist('quantite[]')
+        notes_l = request.POST.getlist('notes_ligne[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id and qtes[i]:
+                LigneCasseCuisine.objects.create(
+                    casse=casse,
+                    ingredient_id=ing_id,
+                    quantite=qtes[i],
+                    notes_ligne=notes_l[i] if i < len(notes_l) else '',
+                )
+        messages.success(request, f"Déclaration {casse.numero} créée.")
+        return redirect('/cuisine/stock/?tab=casses')
+    context = {
+        'page_title':   'Déclarer une casse — Cuisine',
+        'ingredients':  ingredients,
+    }
+    return render(request, 'cuisine/casse_form.html', context)
+
+
+@login_required
+def casse_valider(request, pk):
+    casse = get_object_or_404(CasseCuisine, pk=pk)
+    if request.method == 'POST':
+        ok = casse.valider(request.user)
+        if ok:
+            messages.success(request, f"Casse {casse.numero} validée — stock déduit.")
+        else:
+            messages.error(request, "Impossible de valider.")
+    return redirect('/cuisine/stock/?tab=casses')
+
+
+# ==============================================================================
+# AJAX HELPERS
+# ==============================================================================
+
+@login_required
+def get_ingredient_prix(request, pk):
+    ing = get_object_or_404(Ingredient, pk=pk)
+    return JsonResponse({
+        'prix_achat': float(ing.prix_achat),
+        'cmup':       float(ing.cmup),
+        'unite':      str(ing.unite_stock) if ing.unite_stock else '',
+        'reference':  ing.reference or '',
+        'stock':      float(ing.quantite_stock),
+    })
+
+
+@login_required
+def get_bc_lignes(request, pk):
+    """AJAX : lignes d'un BC pour pré-remplir un bon de réception"""
+    bon    = get_object_or_404(BonCommandeCuisine, pk=pk)
+    lignes = []
+    for l in bon.lignes.select_related('ingredient__unite_stock').all():
+        lignes.append({
+            'ingredient_id':   l.ingredient.pk,
+            'ingredient_nom':  l.ingredient.nom,
+            'quantite':        float(l.reliquat),
+            'prix_unitaire':   float(l.prix_unitaire),
+        })
+    return JsonResponse({'lignes': lignes, 'fournisseur_id': bon.fournisseur_id or ''})
+
+def rapport_stock_cuisine(request):
+    get = request.GET.copy()
+    if 'module' not in get:
+        get['module'] = 'cuisine'
+    request.GET = get
+    from rapport.views import rapport_stock
+    return rapport_stock(request)

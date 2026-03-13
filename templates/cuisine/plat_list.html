@@ -1,0 +1,272 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Plats / Carte - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25); display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
+    .page-header::after { content: '🍽️'; position: absolute; right: -10px; bottom: -30px; font-size: 130px; opacity: 0.08; pointer-events: none; }
+    .page-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+    .page-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.95rem; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 14px; border-left: 4px solid transparent; }
+    .stat-card.red    { border-left-color: #c0392b; }
+    .stat-card.green  { border-left-color: #27ae60; }
+    .stat-card.orange { border-left-color: #e67e22; }
+    .stat-card.purple { border-left-color: #8e44ad; }
+    .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-icon.red    { background: #fdecea; color: #c0392b; }
+    .stat-icon.green  { background: #eafaf1; color: #27ae60; }
+    .stat-icon.orange { background: #fef3e2; color: #e67e22; }
+    .stat-icon.purple { background: #f5eef8; color: #8e44ad; }
+    .stat-value { font-size: 1.7rem; font-weight: 700; color: #2c3e50; line-height: 1; }
+    .stat-label { font-size: 0.82rem; color: #7f8c8d; margin-top: 3px; }
+
+    .toolbar { background: white; border-radius: 14px; padding: 14px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+    .search-box { position: relative; flex: 1; min-width: 220px; }
+    .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #adb5bd; }
+    .search-box input { width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1px solid #e9ecef; background: #f8f9fa; font-size: 0.9rem; transition: all 0.2s; }
+    .search-box input:focus { outline: none; border-color: #c0392b; background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+    .filter-select { padding: 10px 14px; border-radius: 10px; border: 1px solid #e9ecef; background: #f8f9fa; font-size: 0.9rem; color: #495057; cursor: pointer; }
+    .btn-red { background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(192,57,43,0.3); transition: all 0.2s; white-space: nowrap; }
+    .btn-red:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(192,57,43,0.4); color: white; }
+
+    /* Vue par catégorie */
+    .cat-section { margin-bottom: 28px; }
+    .cat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 0 4px; }
+    .cat-icon { width: 36px; height: 36px; border-radius: 10px; background: #fdecea; color: #c0392b; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .cat-titre { font-size: 1rem; font-weight: 700; color: #2c3e50; }
+    .cat-count  { font-size: 0.78rem; color: #7f8c8d; background: #f0f0f0; padding: 2px 9px; border-radius: 20px; }
+
+    /* Cartes plats */
+    .plats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .plat-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+    .plat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+
+    .plat-card-top { padding: 16px 18px 12px; position: relative; }
+    .plat-ref { font-size: 0.7rem; font-family: monospace; font-weight: 700; color: #c0392b; background: #fdecea; padding: 2px 7px; border-radius: 6px; display: inline-block; margin-bottom: 8px; }
+    .plat-nom { font-size: 1rem; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
+    .plat-desc { font-size: 0.82rem; color: #7f8c8d; line-height: 1.4; margin-bottom: 8px; }
+
+    .statut-dot { position: absolute; top: 14px; right: 14px; width: 10px; height: 10px; border-radius: 50%; }
+    .statut-dot.disponible   { background: #27ae60; box-shadow: 0 0 0 3px rgba(39,174,96,0.2); }
+    .statut-dot.indisponible { background: #e74c3c; box-shadow: 0 0 0 3px rgba(231,76,60,0.2); }
+    .statut-dot.saisonnier   { background: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.2); }
+
+    .plat-metrics { display: grid; grid-template-columns: repeat(3,1fr); background: #fafafa; border-top: 1px solid #f5f5f5; border-bottom: 1px solid #f5f5f5; }
+    .metric { padding: 10px 6px; text-align: center; }
+    .metric-val { font-size: 0.95rem; font-weight: 700; color: #2c3e50; }
+    .metric-val.green { color: #27ae60; }
+    .metric-val.red   { color: #e74c3c; }
+    .metric-lbl { font-size: 0.68rem; color: #7f8c8d; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+    /* Barre de marge */
+    .marge-bar-wrap { padding: 8px 18px; }
+    .marge-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: #7f8c8d; margin-bottom: 4px; }
+    .marge-bar { height: 6px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+    .marge-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+
+    .plat-footer { padding: 10px 16px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid #f5f5f5; }
+    .btn-action { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; }
+    .btn-edit { background: #e8f4fd; color: #3498db; }
+    .btn-edit:hover { background: #3498db; color: white; }
+    .btn-del  { background: #fdecea; color: #e74c3c; }
+    .btn-del:hover  { background: #e74c3c; color: white; }
+
+    /* Badge statut dans footer */
+    .badge-statut { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 20px; margin-right: auto; align-self: center; }
+    .badge-statut.disponible   { background: #eafaf1; color: #27ae60; }
+    .badge-statut.indisponible { background: #fdecea; color: #e74c3c; }
+    .badge-statut.saisonnier   { background: #fef3e2; color: #f39c12; }
+
+    /* Lien fiche */
+    .fiche-link { font-size: 0.75rem; color: #7f8c8d; display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+    .fiche-link i { color: #c0392b; font-size: 0.7rem; }
+
+    .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .empty-state i { font-size: 3rem; color: #fadbd8; margin-bottom: 15px; display: block; }
+
+    /* Vue carte / liste toggle */
+    .view-toggle { display: flex; gap: 4px; background: #f0f0f0; border-radius: 8px; padding: 3px; }
+    .view-btn { width: 32px; height: 28px; border-radius: 6px; border: none; background: transparent; color: #7f8c8d; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.2s; }
+    .view-btn.active { background: white; color: #c0392b; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+</style>
+
+<div class="container-fluid py-4">
+
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-utensils mr-2"></i> Plats / Carte</h2>
+            <p>Gérez votre menu, les prix de vente et le calcul automatique des marges par plat.</p>
+        </div>
+        <div class="header-clock"><span class="time"></span><span class="date"></span></div>
+    </div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Plats / Carte" "" %}
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card red">
+            <div class="stat-icon red"><i class="fas fa-utensils"></i></div>
+            <div><div class="stat-value">{{ plats.count }}</div><div class="stat-label">Plats actifs</div></div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div><div class="stat-value">{{ nb_disponibles|default:"0" }}</div><div class="stat-label">Disponibles</div></div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-icon orange"><i class="fas fa-exclamation-circle"></i></div>
+            <div><div class="stat-value">{{ nb_rupture|default:"0" }}</div><div class="stat-label">En rupture</div></div>
+        </div>
+        <div class="stat-card purple">
+            <div class="stat-icon purple"><i class="fas fa-link"></i></div>
+            <div><div class="stat-value">{{ nb_avec_fiche|default:"0" }}</div><div class="stat-label">Avec fiche technique</div></div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Rechercher un plat..." oninput="filtrer()">
+        </div>
+        <select id="filter-cat" class="filter-select" onchange="filtrer()">
+            <option value="">Toutes les catégories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.nom }}">{{ cat.nom }}</option>
+            {% endfor %}
+        </select>
+        <select id="filter-statut" class="filter-select" onchange="filtrer()">
+            <option value="">Tous les statuts</option>
+            <option value="disponible">Disponibles</option>
+            <option value="indisponible">En rupture</option>
+            <option value="saisonnier">Saisonniers</option>
+        </select>
+        <div class="view-toggle">
+            <button class="view-btn active" id="btn-grid" onclick="setView('grid')" title="Vue grille"><i class="fas fa-th"></i></button>
+            <button class="view-btn" id="btn-list" onclick="setView('list')" title="Vue liste"><i class="fas fa-list"></i></button>
+        </div>
+        <a href="{% url 'cuisine:plat_create' %}" class="btn-red">
+            <i class="fas fa-plus"></i> Nouveau Plat
+        </a>
+    </div>
+
+    <!-- Plats par catégorie -->
+    <div id="main-content">
+        {% regroup plats by categorie as plats_par_cat %}
+        {% for cat_group in plats_par_cat %}
+        <div class="cat-section">
+            <div class="cat-header">
+                <div class="cat-icon">
+                    <i class="fas {{ cat_group.grouper.icone|default:'fa-utensils' }}"></i>
+                </div>
+                <span class="cat-titre">{{ cat_group.grouper.nom|default:"Sans catégorie" }}</span>
+                <span class="cat-count">{{ cat_group.list|length }} plat(s)</span>
+            </div>
+            <div class="plats-grid">
+                {% for plat in cat_group.list %}
+                <div class="plat-card"
+                     data-nom="{{ plat.nom|lower }}"
+                     data-cat="{{ plat.categorie.nom|default:'' }}"
+                     data-statut="{{ plat.statut }}">
+
+                    <div class="plat-card-top">
+                        <div class="statut-dot {{ plat.statut }}" title="{{ plat.get_statut_display }}"></div>
+                        <div class="plat-ref">{{ plat.reference|default:"PLT-XXXX" }}</div>
+                        <div class="plat-nom">{{ plat.nom }}</div>
+                        {% if plat.description_carte %}
+                        <div class="plat-desc">{{ plat.description_carte|truncatechars:80 }}</div>
+                        {% endif %}
+                        {% if plat.fiche_technique %}
+                        <div class="fiche-link">
+                            <i class="fas fa-book-open"></i>
+                            <span>{{ plat.fiche_technique.nom|truncatechars:35 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="plat-metrics">
+                        <div class="metric">
+                            <div class="metric-val">{{ plat.prix_vente|floatformat:0 }} F</div>
+                            <div class="metric-lbl">Prix vente</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-val">{{ plat.cout_revient|floatformat:0 }} F</div>
+                            <div class="metric-lbl">Coût rev.</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-val {% if plat.taux_marge >= 60 %}green{% elif plat.taux_marge >= 40 %}{% else %}red{% endif %}">
+                                {{ plat.taux_marge|floatformat:0 }}%
+                            </div>
+                            <div class="metric-lbl">Marge</div>
+                        </div>
+                    </div>
+
+                    {% if plat.prix_vente > 0 %}
+                    <div class="marge-bar-wrap">
+                        <div class="marge-bar-label">
+                            <span>Marge brute</span>
+                            <span>{{ plat.marge_brute|floatformat:0 }} F</span>
+                        </div>
+                        <div class="marge-bar">
+                            <div class="marge-bar-fill" style="width:{{ plat.taux_marge|floatformat:0 }}%;background:{% if plat.taux_marge >= 60 %}#27ae60{% elif plat.taux_marge >= 40 %}#f39c12{% else %}#e74c3c{% endif %};"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="plat-footer">
+                        <span class="badge-statut {{ plat.statut }}">{{ plat.get_statut_display }}</span>
+                        <a href="{% url 'cuisine:plat_edit' plat.pk %}" class="btn-action btn-edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
+                        <a href="{% url 'cuisine:plat_delete' plat.pk %}" class="btn-action btn-del" title="Archiver"><i class="fas fa-archive"></i></a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-utensils"></i>
+            <p>Aucun plat dans la carte. Commencez par ajouter vos premiers plats.</p>
+            <a href="{% url 'cuisine:plat_create' %}" class="btn-red" style="display:inline-flex;margin-top:10px;">
+                <i class="fas fa-plus"></i> Ajouter le premier plat
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+function filtrer() {
+    const q      = document.getElementById('search-input').value.toLowerCase();
+    const cat    = document.getElementById('filter-cat').value;
+    const statut = document.getElementById('filter-statut').value;
+    document.querySelectorAll('.plat-card').forEach(card => {
+        const ok = (!q      || card.dataset.nom.includes(q))
+                && (!cat    || card.dataset.cat === cat)
+                && (!statut || card.dataset.statut === statut);
+        card.style.display = ok ? '' : 'none';
+    });
+    // Masquer les sections vides
+    document.querySelectorAll('.cat-section').forEach(sec => {
+        const visible = [...sec.querySelectorAll('.plat-card')].some(c => c.style.display !== 'none');
+        sec.style.display = visible ? '' : 'none';
+    });
+}
+
+function setView(mode) {
+    const grids = document.querySelectorAll('.plats-grid');
+    document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
+    document.getElementById('btn-list').classList.toggle('active', mode === 'list');
+    grids.forEach(g => {
+        g.style.gridTemplateColumns = mode === 'list' ? '1fr' : '';
+        if (mode === 'list') {
+            g.querySelectorAll('.plat-card').forEach(c => { c.style.display = 'flex'; c.style.alignItems = 'center'; });
+        } else {
+            g.querySelectorAll('.plat-card').forEach(c => { c.style.display = ''; c.style.alignItems = ''; });
+        }
+    });
+}
+</script>
+{% endblock %}

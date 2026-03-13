@@ -1,0 +1,60 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Archiver {{ fiche.nom }} - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .form-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25); position: relative; overflow: hidden; }
+    .form-header::after { content: '📦'; position: absolute; right: 10px; bottom: -20px; font-size: 120px; opacity: 0.1; pointer-events: none; }
+    .form-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .form-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+    .confirm-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 32px; max-width: 600px; margin: 0 auto; }
+    .warning-box { background: #fef9e7; border: 2px solid #f39c12; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; display: flex; gap: 14px; align-items: flex-start; }
+    .warning-box i { color: #f39c12; font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+    .fiche-recap { background: #f8f9fa; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+    .recap-nom  { font-size: 1.1rem; font-weight: 700; color: #2c3e50; margin-bottom: 8px; }
+    .recap-line { font-size: 0.85rem; color: #7f8c8d; display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+    .btn-row { display: flex; gap: 12px; justify-content: flex-end; }
+    .btn-cancel { padding: 10px 20px; border-radius: 10px; border: 2px solid #e9ecef; background: white; font-weight: 600; cursor: pointer; color: #7f8c8d; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-cancel:hover { border-color: #3498db; color: #3498db; }
+    .btn-danger { padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #e67e22, #d35400); font-weight: 700; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(211,84,0,0.3); transition: all 0.2s; }
+    .btn-danger:hover { transform: translateY(-2px); }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="form-header">
+        <div>
+            <h2><i class="fas fa-archive mr-2"></i> Archiver une fiche technique</h2>
+            <p>La fiche sera archivée et ne sera plus proposée dans les menus. Elle reste consultable.</p>
+        </div>
+    </div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Archiver" "" %}
+
+    <div class="confirm-card">
+        <div class="warning-box">
+            <i class="fas fa-archive"></i>
+            <p>La fiche <strong>{{ fiche.nom }}</strong> sera archivée. Elle n'apparaîtra plus dans les listes actives mais ses données (coûts, ingrédients) restent disponibles pour historique. Vous pourrez la restaurer en modifiant son statut.</p>
+        </div>
+
+        <div class="fiche-recap">
+            <div class="recap-nom"><i class="fas fa-book-open" style="color:#c0392b;"></i> {{ fiche.nom }}</div>
+            {% if fiche.reference %}<div class="recap-line"><i class="fas fa-hashtag"></i> {{ fiche.reference }}</div>{% endif %}
+            {% if fiche.categorie %}<div class="recap-line"><i class="fas fa-tag"></i> {{ fiche.categorie.nom }}</div>{% endif %}
+            <div class="recap-line"><i class="fas fa-layer-group"></i> {{ fiche.nb_portions }} portion(s) — {{ fiche.cout_par_portion|floatformat:0 }} F/portion</div>
+        </div>
+
+        <div class="btn-row">
+            <a href="{% url 'cuisine:fiche_list' %}" class="btn-cancel">
+                <i class="fas fa-arrow-left"></i> Annuler
+            </a>
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger">
+                    <i class="fas fa-archive"></i> Confirmer l'archivage
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

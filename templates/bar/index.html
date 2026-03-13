@@ -1,603 +1,940 @@
 {% extends 'dashboard/base_dashboard.html' %}
-
-{% block title %}Bar - BEHANIAN{% endblock %}
+{% block title %}Cave — Interface de Vente{% endblock %}
 
 {% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
-    /* LAYOUT */
-    .bar-layout {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 20px;
-    }
+:root {
+  --cave-gold:    #c9a84c;
+  --cave-deep:    #1a1225;
+  --cave-purple:  #4a2d6b;
+  --cave-violet:  #7c3aed;
+  --cave-light:   #f4f1f9;
+  --cave-border:  #e8e2f0;
+  --cave-text:    #2d1f3d;
+  --cave-muted:   #8b7fa0;
+  --success:      #16a34a;
+  --danger:       #dc2626;
+  --warning:      #d97706;
+  --radius:       16px;
+  --shadow-sm:    0 2px 8px rgba(74,45,107,0.08);
+  --shadow-md:    0 8px 24px rgba(74,45,107,0.14);
+  --shadow-lg:    0 16px 48px rgba(74,45,107,0.18);
+}
 
-    /* STATUS TABS */
-    .status-tabs-container {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 20px;
-        margin-bottom: 20px;
-    }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color: var(--cave-text); }
 
-    .status-tabs-wrapper {
-        position: relative;
-    }
+/* ===== LAYOUT TPE ===== */
+.tpe-wrap {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  height: calc(100vh - 60px);
+  gap: 0;
+  overflow: hidden;
+}
 
-    /* LEFT PANEL - MENU */
-    .menu-panel {
-        #background: white;
-        #border-radius: 12px;
-        padding: 20px;
-        #box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
+/* ===== PANNEAU GAUCHE — CATALOGUE ===== */
+.panel-catalogue {
+  display: flex; flex-direction: column;
+  background: white; overflow: hidden;
+  border-right: 1.5px solid var(--cave-border);
+}
 
-    .search-box {
-        position: relative;
-        margin-bottom: 20px;
-    }
+/* Header catalogue */
+.cat-header {
+  padding: 18px 22px 0;
+  background: white;
+  flex-shrink: 0;
+}
+.cat-header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.cat-header-top h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; color: var(--cave-deep);
+}
+.cat-header-top .tpe-badge {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 4px 12px;
+  background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+  color: white; border-radius: 20px;
+}
 
-    .search-box input {
-        width: 100%;
-        padding: 12px 15px 12px 45px;
-        border: 1.5px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-    }
+/* Recherche */
+.search-wrap { position: relative; margin-bottom: 14px; }
+.search-wrap input {
+  width: 100%; padding: 10px 16px 10px 40px;
+  border: 1.5px solid var(--cave-border); border-radius: 12px;
+  font-size: 0.88rem; font-family: 'DM Sans', sans-serif;
+  color: var(--cave-text); background: var(--cave-light);
+  transition: border-color 0.2s;
+}
+.search-wrap input:focus { outline: none; border-color: var(--cave-violet); background: white; }
+.search-wrap i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--cave-muted); font-size: 0.85rem; }
 
-    .search-box input:focus {
-        outline: none;
-        border-color: #9b59b6;
-    }
+/* Filtres catégories */
+.cat-filters {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 14px;
+  scrollbar-width: none;
+}
+.cat-filters::-webkit-scrollbar { display: none; }
+.cat-btn {
+  flex-shrink: 0; padding: 7px 16px;
+  border: 1.5px solid var(--cave-border); border-radius: 20px;
+  background: white; font-size: 0.8rem; font-weight: 600;
+  color: var(--cave-muted); cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.cat-btn.active, .cat-btn:hover {
+  background: var(--cave-purple); color: white; border-color: var(--cave-purple);
+}
 
-    .search-icon {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 18px;
-        color: #95a5a6;
-    }
+/* Grille boissons */
+.boissons-scroll {
+  flex: 1; overflow-y: auto; padding: 16px 22px 22px;
+  scrollbar-width: thin; scrollbar-color: var(--cave-border) transparent;
+}
+.boissons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 14px;
+}
 
-    .category-filter {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
+/* Carte boisson */
+.boisson-card {
+  background: white; border-radius: var(--radius);
+  border: 1.5px solid var(--cave-border);
+  cursor: pointer; transition: all 0.22s;
+  overflow: hidden; position: relative;
+  box-shadow: var(--shadow-sm);
+}
+.boisson-card:hover {
+  transform: translateY(-3px); box-shadow: var(--shadow-md);
+  border-color: var(--cave-violet);
+}
+.boisson-card:active { transform: scale(0.97); }
+.boisson-card.rupture { opacity: 0.45; pointer-events: none; }
 
-    .filter-btn {
-        padding: 8px 16px;
-        background: white;
-        border: 1.5px solid #ddd;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        color: #5a6c7d;
-    }
+.bc-img-wrap {
+  height: 110px; background: linear-gradient(135deg, #f0ebf8, #e8e0f5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; position: relative; overflow: hidden;
+}
+.bc-img-wrap img {
+  width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;
+}
+.bc-stock-badge {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; letter-spacing: 0.5px;
+}
+.bc-stock-badge.ok     { background: #dcfce7; color: #16a34a; }
+.bc-stock-badge.bas    { background: #fef9c3; color: #d97706; }
+.bc-stock-badge.rupture{ background: #fee2e2; color: #dc2626; }
 
-    .filter-btn.active {
-        background: #9b59b6;
-        color: white;
-        border-color: #9b59b6;
-    }
+.bc-body { padding: 10px 12px 12px; }
+.bc-nom  { font-size: 0.83rem; font-weight: 600; color: var(--cave-text); margin-bottom: 6px; line-height: 1.3; min-height: 34px; }
+.bc-footer { display: flex; justify-content: space-between; align-items: center; }
+.bc-prix { font-size: 1rem; font-weight: 700; color: var(--cave-violet); }
+.bc-unite{ font-size: 0.7rem; color: var(--cave-muted); }
+.bc-add  {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+  color: white; border: none; cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; box-shadow: 0 3px 8px rgba(124,58,237,0.35);
+}
+.bc-add:hover { transform: scale(1.12); }
 
-    .filter-btn:hover {
-        border-color: #9b59b6;
-    }
+/* Flash animation quand on ajoute */
+@keyframes flash-add {
+  0%   { box-shadow: 0 0 0 0 rgba(124,58,237,0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(124,58,237,0); }
+  100% { box-shadow: var(--shadow-sm); }
+}
+.boisson-card.added { animation: flash-add 0.4s ease; }
 
-    .boissons-grid {
-        #border-radius: 12px;
-        padding: 20px;
-        #box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 15px;
-        max-height: 600px;
-        overflow-y: auto;
-    }
+/* ===== PANNEAU DROIT — TICKET ===== */
+.panel-ticket {
+  display: flex; flex-direction: column;
+  background: var(--cave-deep);
+  color: white; overflow: hidden;
+}
 
-    .boisson-card {
-        background: white;
-        border-radius: 10px;
-        padding: 15px;
-        cursor: pointer;
-        transition: all 0.3s;
-        position: relative;
-    }
+/* Header ticket */
+.ticket-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.ticket-header-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.ticket-header-top h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem; color: var(--cave-gold);
+}
+.ticket-num {
+  font-size: 0.72rem; color: rgba(255,255,255,0.45);
+  font-weight: 600; letter-spacing: 1px;
+}
 
-    .boisson-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
+/* Espace + destination */
+.ticket-meta {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  margin-bottom: 10px;
+}
+.ticket-meta select, .ticket-meta input {
+  padding: 8px 11px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07); color: white;
+  font-size: 0.8rem; font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.2s;
+}
+.ticket-meta select:focus, .ticket-meta input:focus {
+  outline: none; border-color: var(--cave-gold);
+  background: rgba(255,255,255,0.11);
+}
+.ticket-meta select option { background: var(--cave-deep); color: white; }
+.ticket-meta input::placeholder { color: rgba(255,255,255,0.35); }
 
-    .boisson-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: capitalize;
-    }
+/* Tickets en attente */
+.tickets-attente {
+  display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 4px;
+  scrollbar-width: none;
+}
+.tickets-attente::-webkit-scrollbar { display: none; }
+.ticket-attente-btn {
+  flex-shrink: 0; padding: 5px 12px;
+  background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35);
+  color: var(--cave-gold); border-radius: 20px; font-size: 0.72rem;
+  font-weight: 700; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px;
+}
+.ticket-attente-btn:hover { background: rgba(201,168,76,0.28); }
+.ticket-attente-btn.active {
+  background: var(--cave-gold); color: var(--cave-deep);
+}
+.btn-new-ticket {
+  flex-shrink: 0; padding: 5px 12px;
+  background: rgba(255,255,255,0.07); border: 1.5px dashed rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.55); border-radius: 20px; font-size: 0.72rem;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-new-ticket:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
 
-    .badge-bière, .badge-bières {
-        background: #fff3cd;
-        color: #856404;
-    }
+/* Corps ticket — lignes */
+.ticket-lines {
+  flex: 1; overflow-y: auto; padding: 14px 20px;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.ticket-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%;
+  color: rgba(255,255,255,0.2); text-align: center; gap: 10px;
+}
+.ticket-empty i { font-size: 2.5rem; }
+.ticket-empty p { font-size: 0.82rem; }
 
-    .badge-cocktail, .badge-cocktails {
-        background: #e8d5f2;
-        color: #6f42c1;
-    }
+.ticket-line {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  margin-bottom: 7px; transition: background 0.15s;
+}
+.ticket-line:hover { background: rgba(255,255,255,0.09); }
+.tl-nom  { flex: 1; font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.9); }
+.tl-ctrl { display: flex; align-items: center; gap: 6px; }
+.tl-qty-btn {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: rgba(255,255,255,0.1); border: none; color: white;
+  font-size: 0.9rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.tl-qty-btn:hover { background: rgba(255,255,255,0.2); }
+.tl-qty-btn.del:hover { background: rgba(220,38,38,0.4); }
+.tl-qty  { min-width: 22px; text-align: center; font-size: 0.88rem; font-weight: 700; color: white; }
+.tl-prix { font-size: 0.88rem; font-weight: 700; color: var(--cave-gold); min-width: 70px; text-align: right; }
 
-    .badge-vin, .badge-vins {
-        background: #f8d7da;
-        color: #721c24;
-    }
+/* Footer ticket */
+.ticket-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
 
-    .badge-soft, .badge-softs {
-        background: #d1ecf1;
-        color: #0c5460;
-    }
+.sous-total-row {
+  display: flex; justify-content: space-between; font-size: 0.8rem;
+  color: rgba(255,255,255,0.5); margin-bottom: 4px;
+}
+.total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px;
+}
+.total-label { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.7); }
+.total-value { font-size: 1.6rem; font-weight: 800; color: var(--cave-gold); letter-spacing: -0.5px; }
 
-    .boisson-icon {
-        font-size: 50px;
-        text-align: center;
-        margin-bottom: 10px;
-    }
+/* Modes de paiement */
+.paiement-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-bottom: 12px; }
+.pay-btn {
+  padding: 9px 8px; border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.75);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+}
+.pay-btn:hover, .pay-btn.selected {
+  background: rgba(201,168,76,0.2); border-color: var(--cave-gold);
+  color: var(--cave-gold);
+}
 
-    .boisson-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 15px;
-        min-height: 40px;
-    }
+/* Bouton valider */
+.btn-valider {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--cave-gold) 0%, #e8c56a 100%);
+  color: var(--cave-deep); border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 800; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s; box-shadow: 0 4px 16px rgba(201,168,76,0.4);
+}
+.btn-valider:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.5); }
+.btn-valider:disabled { opacity: 0.35; pointer-events: none; }
 
-    .boisson-price {
-        position: sticky;
-        left: 9em;
-        font-size: 18px;
-        font-weight: 700;
-        color: #9b59b6;
-    }
+/* Bouton mettre en attente */
+.btn-attente {
+  width: 100%; padding: 9px; margin-bottom: 8px;
+  background: transparent; border: 1.5px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.55); border-radius: 10px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.2s;
+}
+.btn-attente:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
 
-    .boisson-add {
-        width: 100%;
-        padding: 8px;
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        margin-top: 10px;
-        transition: all 0.3s;
-    }
+/* ===== MODAL PAIEMENT ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(10,5,20,0.75); backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--cave-deep); border-radius: 24px;
+  padding: 32px; width: 420px; max-width: 95vw;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+  animation: modal-in 0.28s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modal-in {
+  from { transform: scale(0.88) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-title {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem;
+  color: var(--cave-gold); margin-bottom: 4px;
+}
+.modal-subtitle { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+.modal-total {
+  font-size: 2.5rem; font-weight: 800; color: white;
+  text-align: center; margin-bottom: 20px; letter-spacing: -1px;
+}
+.modal-total span { font-size: 1rem; color: var(--cave-gold); margin-left: 6px; }
 
-    .boisson-add:hover {
-        box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
-    }
+/* Saisie montant rendu */
+.rendu-section { margin-bottom: 20px; }
+.rendu-section label { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block; font-weight: 600; letter-spacing: 0.5px; }
+.rendu-section input {
+  width: 100%; padding: 12px 16px;
+  background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 12px; color: white; font-size: 1.2rem; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; text-align: center; transition: border-color 0.2s;
+}
+.rendu-section input:focus { outline: none; border-color: var(--cave-gold); }
+.rendu-display {
+  text-align: center; margin-top: 10px; padding: 10px;
+  background: rgba(22,163,74,0.15); border-radius: 10px;
+  font-size: 1rem; font-weight: 700; color: #4ade80;
+  display: none;
+}
+.rendu-display.show { display: block; }
 
-    /* RIGHT PANEL - COMMANDE */
-    .commande-panel {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        position: relative;
-        top: -60px;
-        height: auto;
-        display: flex;
-        flex-direction: column;
-    }
+/* Raccourcis billets */
+.billets-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 20px; }
+.billet-btn {
+  padding: 7px; border-radius: 8px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7); font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.billet-btn:hover { background: rgba(201,168,76,0.2); color: var(--cave-gold); border-color: var(--cave-gold); }
 
-    .commande-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #f0f0f0;
-    }
+.modal-actions { display: flex; gap: 10px; }
+.modal-btn-cancel {
+  flex: 1; padding: 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6); font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.modal-btn-cancel:hover { background: rgba(220,38,38,0.2); border-color: var(--cave-danger); color: #f87171; }
+.modal-btn-confirm {
+  flex: 2; padding: 12px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--cave-gold), #e8c56a);
+  color: var(--cave-deep); border: none; font-size: 0.95rem; font-weight: 800;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.modal-btn-confirm:hover { transform: translateY(-1px); }
 
-    .commande-header h3 {
-        font-size: 18px;
-        font-weight: 700;
-        color: #2c3e50;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+/* ===== TOAST ===== */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column-reverse; gap: 8px; }
+.toast {
+  padding: 12px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+  color: white; box-shadow: var(--shadow-lg); min-width: 220px;
+  animation: toast-in 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+@keyframes toast-in {
+  from { transform: translateX(30px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.toast.success { background: linear-gradient(135deg, #166534, #16a34a); }
+.toast.error   { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+.toast.info    { background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet)); }
 
-    .client-input {
-        width: 100%;
-        padding: 12px;
-        border: 1.5px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        margin-bottom: 15px;
-    }
-
-    .client-input:focus {
-        outline: none;
-        border-color: #9b59b6;
-    }
-
-    .commande-empty {
-        text-align: center;
-        padding: 60px 20px;
-        color: #95a5a6;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .commande-empty-icon {
-        font-size: 60px;
-        margin-bottom: 15px;
-        opacity: 0.3;
-    }
-
-    .commande-items {
-        margin-bottom: 20px;
-        max-height: 400px;
-        overflow-y: auto;
-        flex: 1;
-    }
-
-    .commande-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        margin-bottom: 10px;
-    }
-
-    .item-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: #2c3e50;
-    }
-
-    .item-qty {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .qty-btn {
-        width: 28px;
-        height: 28px;
-        border: 1.5px solid #ddd;
-        background: white;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-
-    .qty-btn:hover {
-        background: #f8f9fa;
-        border-color: #9b59b6;
-    }
-
-    .qty-value {
-        font-weight: 600;
-        min-width: 20px;
-        text-align: center;
-    }
-
-    .item-price {
-        font-size: 14px;
-        font-weight: 700;
-        color: #9b59b6;
-    }
-
-    .commande-total {
-        padding: 20px 0;
-        border-top: 2px solid #f0f0f0;
-        margin-bottom: 15px;
-        margin-top: auto;
-    }
-
-    .total-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .total-label {
-        font-size: 18px;
-        font-weight: 600;
-        color: #2c3e50;
-    }
-
-    .total-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #9b59b6;
-    }
-
-    .commande-actions {
-        display: flex;
-        gap: 10px;
-    }
-
-    .btn-cuisine {
-        flex: 1;
-        padding: 12px;
-        background: white;
-        color: #2c3e50;
-        border: 1.5px solid #ddd;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        transition: all 0.3s;
-    }
-
-    .btn-cuisine:hover {
-        background: #f8f9fa;
-    }
-
-    .btn-paiement {
-        flex: 1;
-        padding: 12px;
-        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        transition: all 0.3s;
-    }
-
-    .btn-paiement:hover {
-        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-    }
-
-    @media (max-width: 1400px) {
-        .bar-layout {
-            grid-template-columns: 1fr;
-        }
-        
-        .boissons-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-        
-        .commande-panel {
-            position: static;
-            height: auto;
-        }
-    }
-
-    @media (max-width: 1024px) {
-        .boissons-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .boissons-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .tpe-wrap { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .panel-ticket { max-height: 55vh; }
+}
 </style>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-    // Gestion des onglets
-</script>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="header-glam bar-watermark">
-        <div class="header-content">
-            <h2>Gestion Cave</h2>
-            <p class="mb-0 opacity-75">Service des boissons et cocktails</p>
-        </div>
-        <div class="header-clock">
-            <span class="time">--:-- GMT</span>
-            <span class="date">Chargement...</span>
-        </div>
+<div class="tpe-wrap">
+
+  <!-- ========== PANNEAU GAUCHE — CATALOGUE ========== -->
+  <div class="panel-catalogue">
+    <div class="cat-header">
+      <div class="cat-header-top">
+        <h2>🍷 Cave &nbsp;<small style="font-family:'DM Sans';font-size:0.75rem;color:var(--cave-muted);font-weight:400;">Vente rapide</small></h2>
+        <span class="tpe-badge">TPE LIVE</span>
+      </div>
+      <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Rechercher une boisson..." oninput="filtrerBoissons()">
+      </div>
+      <div class="cat-filters" id="catFilters">
+        <button class="cat-btn active" data-cat="tout" onclick="filtrerCategorie(this)">Tout</button>
+        {% for cat in categories %}
+        <button class="cat-btn" data-cat="{{ cat.nom|lower }}" onclick="filtrerCategorie(this)">{{ cat.nom }}</button>
+        {% endfor %}
+      </div>
     </div>
 
-    <div class="action-bar">
-        <a href="{% url 'dashboard:index' %}" class="btn-back"><i class="fas fa-chevron-left"></i></a>
-    </div>
-
-    <div class="bar-layout">
-    <!-- LEFT PANEL - MENU -->
-    <div class="menu-panel">
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
-            <button class="btn-action" id="btnChoisirTable">
-                <i class="fas fa-users"></i> Choisir une table
-            </button>
-        </div>
-
-        <!-- SEARCH -->
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="Rechercher une boisson..." id="searchBoisson">
-        </div>
-
-        <!-- CATEGORY FILTER -->
-        <div class="category-filter">
-            <button class="filter-btn active" data-category="tout">Tout</button>
-            <button class="filter-btn" data-category="bières">🍺 Bières</button>
-            <button class="filter-btn" data-category="cocktails">🍹 Cocktails</button>
-            <button class="filter-btn" data-category="vins">🍷 Vins</button>
-        </div>
-
-        <!-- BOISSONS GRID -->
-        <div class="boissons-grid">
-            {% for boisson in boissons %}
-            <div class="boisson-card" data-category="{{ boisson.categorie.nom|lower }}">
-                <span class="boisson-badge badge-{{ boisson.categorie.nom|lower }}">{{ boisson.categorie.nom }}</span>
-                <div class="boisson-icon">🍺</div>
-                <div class="boisson-name">{{ boisson.nom }}</div>
-                <div class="boisson-price">{{ boisson.prix|floatformat:0 }} F</div>
-                <button class="boisson-add" onclick="ajouterBoisson('{{ boisson.nom }}', {{ boisson.prix }})">
-                    + Ajouter
-                </button>
+    <div class="boissons-scroll">
+      <div class="boissons-grid" id="boissonsGrid">
+        {% for b in boissons %}
+        <div class="boisson-card {% if b.est_en_rupture %}rupture{% endif %}"
+             data-cat="{{ b.categorie.nom|lower }}"
+             data-nom="{{ b.nom|lower }}"
+             onclick="ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}')">
+          <div class="bc-img-wrap">
+            {% if b.image %}
+            <img src="{{ b.image.url }}" alt="{{ b.nom }}">
+            {% else %}
+            🍶
+            {% endif %}
+            <span class="bc-stock-badge {% if b.est_en_rupture %}rupture{% elif b.est_stock_bas %}bas{% else %}ok{% endif %}">
+              {% if b.est_en_rupture %}Rupture{% elif b.est_stock_bas %}Stock bas{% else %}{{ b.quantite_stock }}{% endif %}
+            </span>
+          </div>
+          <div class="bc-body">
+            <div class="bc-nom">{{ b.nom }}</div>
+            <div class="bc-footer">
+              <div>
+                <div class="bc-prix">{{ b.prix|floatformat:0 }} F</div>
+                <div class="bc-unite">/ {{ b.unite_affichee }}</div>
+              </div>
+              <button class="bc-add" onclick="event.stopPropagation(); ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}')">+</button>
             </div>
-            {% empty %}
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #95a5a6;">
-                Aucune boisson disponible pour le moment.
-            </div>
-            {% endfor %}
+          </div>
         </div>
+        {% empty %}
+        <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
+          <i class="fas fa-wine-bottle" style="font-size:2rem;margin-bottom:12px;display:block;opacity:0.3;"></i>
+          Aucune boisson disponible
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PANNEAU DROIT — TICKET ========== -->
+  <div class="panel-ticket">
+
+    <div class="ticket-header">
+      <div class="ticket-header-top">
+        <h3><i class="fas fa-receipt mr-2" style="font-size:0.9rem;"></i>Ticket en cours</h3>
+        <span class="ticket-num" id="ticketNum">T-001</span>
+      </div>
+
+      <!-- Destination + référence -->
+      <div class="ticket-meta">
+        <select id="selectEspace" onchange="majTicketMeta()">
+          <option value="">📍 Espace / Destination</option>
+          <option value="restaurant">🍽️ Restaurant</option>
+          <option value="piscine">🏊 Piscine</option>
+          <option value="evenementiel">📅 Espace événementiel</option>
+          <option value="hotel">🏨 Hôtel / Chambre</option>
+          <option value="comptoir">🍸 Bar comptoir</option>
+          <option value="plage">🏖️ Plage</option>
+          <option value="visite">👤 Visiteur</option>
+        </select>
+        <input type="text" id="inputRef" placeholder="Table / Chambre / Nom..." oninput="majTicketMeta()">
+      </div>
+
+      <!-- Tickets en attente -->
+      <div class="tickets-attente" id="ticketsAttente">
+        <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
+          <i class="fas fa-circle" style="font-size:0.5rem;"></i> T-001
+        </button>
+        <button class="btn-new-ticket" onclick="nouveauTicket()">+ Nouveau</button>
+      </div>
     </div>
 
-    <!-- RIGHT PANEL - COMMANDE -->
-    <div class="commande-panel">
-        <div class="commande-header">
-            <h3>🛒 Commande</h3>
-        </div>
-
-        <input type="text" class="client-input" placeholder="👤 Nom du client (optionnel)" id="clientName">
-
-        <div class="commande-empty" id="commandeEmpty">
-            <div class="commande-empty-icon">🛍️</div>
-            <p>Aucun article</p>
-            <small>Sélectionnez des articles du menu</small>
-        </div>
-
-        <div class="commande-items" id="commandeItems" style="display: none;">
-            <!-- Items will be added here dynamically -->
-        </div>
-
-        <div class="commande-total">
-            <div class="total-row">
-                <span class="total-label">Total</span>
-                <span class="total-value" id="totalValue">0 FCFA</span>
-            </div>
-        </div>
-
-        <div class="commande-actions">
-            <button class="btn-cuisine">
-                📨 Cuisine
-            </button>
-            <button class="btn-paiement">
-                💳 Paiement
-            </button>
-        </div>
+    <!-- Lignes ticket -->
+    <div class="ticket-lines" id="ticketLines">
+      <div class="ticket-empty" id="ticketEmpty">
+        <i class="fas fa-wine-glass-alt"></i>
+        <p>Ticket vide<br><small style="opacity:0.5;">Sélectionnez des boissons</small></p>
+      </div>
+      <div id="lignesContainer"></div>
     </div>
+
+    <!-- Footer ticket -->
+    <div class="ticket-footer">
+      <div class="sous-total-row">
+        <span id="nbArticlesLabel">0 article(s)</span>
+        <span id="sousTotal">0 F</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">TOTAL À PAYER</span>
+        <span class="total-value" id="totalDisplay">0 F</span>
+      </div>
+
+      <!-- Modes de paiement -->
+      <div class="paiement-grid">
+        <button class="pay-btn selected" data-mode="especes" onclick="selectPaiement(this)">
+          <i class="fas fa-money-bill-wave"></i> Espèces
+        </button>
+        <button class="pay-btn" data-mode="carte" onclick="selectPaiement(this)">
+          <i class="fas fa-credit-card"></i> Carte / TPE
+        </button>
+        <button class="pay-btn" data-mode="mobile" onclick="selectPaiement(this)">
+          <i class="fas fa-mobile-alt"></i> Mobile Money
+        </button>
+        <button class="pay-btn" data-mode="chambre" onclick="selectPaiement(this)">
+          <i class="fas fa-bed"></i> Chambre
+        </button>
+      </div>
+
+      <button class="btn-attente" onclick="mettreEnAttente()">
+        <i class="fas fa-pause-circle"></i> Mettre en attente
+      </button>
+      <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
+        <i class="fas fa-check-circle"></i> Valider le paiement
+      </button>
+    </div>
+  </div>
 </div>
 
+<!-- ========== MODAL PAIEMENT ========== -->
+<div class="modal-overlay" id="modalPaiement">
+  <div class="modal-box">
+    <div class="modal-title">Encaissement</div>
+    <div class="modal-subtitle" id="modalSubtitle">Cave Behanian — <span id="modalMode">Espèces</span></div>
+    <div class="modal-total" id="modalTotal">0 F <span>FCFA</span></div>
+
+    <div class="rendu-section" id="renduSection">
+      <label>MONTANT REÇU (FCFA)</label>
+      <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
+      <div class="rendu-display" id="renduDisplay">Rendu : <span id="renduVal">0</span> F</div>
+    </div>
+
+    <div class="billets-grid" id="billetsGrid">
+      <button class="billet-btn" onclick="setBillet(500)">500</button>
+      <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
+      <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
+      <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
+      <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
+      <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
+      <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
+      <button class="billet-btn" onclick="setBillet(0, true)">Exact</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
+      <button class="modal-btn-confirm" onclick="confirmerPaiement()">
+        <i class="fas fa-check mr-2"></i> Confirmer & Imprimer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TOASTS ========== -->
+<div class="toast-container" id="toastContainer"></div>
+
 <script>
-    // Gestion de la commande
-    let commandeItems = [];
+// ============================================================
+// STATE
+// ============================================================
+let tickets = {
+  1: { id: 1, nom: 'T-001', espace: '', ref: '', lignes: [], paiement: 'especes' }
+};
+let ticketActifId = 1;
+let ticketCounter = 1;
+let modePaiement  = 'especes';
 
-    function ajouterBoisson(nom, prix) {
-        const existingItem = commandeItems.find(item => item.nom === nom);
-        
-        if (existingItem) {
-            existingItem.quantite++;
-        } else {
-            commandeItems.push({ nom, prix, quantite: 1 });
-        }
-        
-        updateCommande();
+// ============================================================
+// UTILITAIRES
+// ============================================================
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.4s'; setTimeout(() => t.remove(), 400); }, 2800);
+}
+
+function formatF(n) {
+  return parseInt(n).toLocaleString('fr-FR') + ' F';
+}
+
+// ============================================================
+// CATALOGUE
+// ============================================================
+function filtrerCategorie(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filtrerBoissons();
+}
+function filtrerBoissons() {
+  const q   = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.querySelector('.cat-btn.active')?.getAttribute('data-cat') || 'tout';
+  document.querySelectorAll('.boisson-card').forEach(card => {
+    const matchCat = cat === 'tout' || card.dataset.cat === cat;
+    const matchQ   = card.dataset.nom.includes(q);
+    card.style.display = (matchCat && matchQ) ? '' : 'none';
+  });
+}
+
+// ============================================================
+// AJOUTER ARTICLE
+// ============================================================
+function ajouterArticle(id, nom, prix, unite) {
+  const t = tickets[ticketActifId];
+  const existing = t.lignes.find(l => l.id === id);
+  if (existing) existing.qty++;
+  else t.lignes.push({ id, nom, prix, unite, qty: 1 });
+
+  // Flash visuel sur la carte
+  const card = document.querySelector(`.boisson-card[onclick*="${id},"]`);
+  if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
+
+  renderTicket();
+  toast(`<i class="fas fa-plus-circle mr-2"></i> ${nom} ajouté`, 'info');
+}
+
+// ============================================================
+// RENDER TICKET
+// ============================================================
+function renderTicket() {
+  const t = tickets[ticketActifId];
+  const container = document.getElementById('lignesContainer');
+  const empty     = document.getElementById('ticketEmpty');
+
+  if (!t.lignes.length) {
+    empty.style.display = 'flex';
+    container.innerHTML = '';
+    document.getElementById('nbArticlesLabel').textContent = '0 article(s)';
+    document.getElementById('sousTotal').textContent = '0 F';
+    document.getElementById('totalDisplay').textContent = '0 F';
+    document.getElementById('btnValider').disabled = true;
+    return;
+  }
+
+  empty.style.display = 'none';
+  let total = 0;
+  container.innerHTML = t.lignes.map((l, i) => {
+    total += l.prix * l.qty;
+    return `<div class="ticket-line">
+      <div class="tl-nom">${l.nom}<br><small style="opacity:0.45;font-size:0.72rem;">${l.unite}</small></div>
+      <div class="tl-ctrl">
+        <button class="tl-qty-btn del" onclick="changerQty(${i}, -1)" title="Retirer">−</button>
+        <span class="tl-qty">${l.qty}</span>
+        <button class="tl-qty-btn" onclick="changerQty(${i}, 1)" title="Ajouter">+</button>
+      </div>
+      <div class="tl-prix">${formatF(l.prix * l.qty)}</div>
+    </div>`;
+  }).join('');
+
+  const nb = t.lignes.reduce((s, l) => s + l.qty, 0);
+  document.getElementById('nbArticlesLabel').textContent = `${nb} article(s)`;
+  document.getElementById('sousTotal').textContent = formatF(total);
+  document.getElementById('totalDisplay').textContent = formatF(total);
+  document.getElementById('btnValider').disabled = false;
+
+  // Maj badge tickets en attente
+  document.querySelectorAll('.ticket-attente-btn').forEach(btn => {
+    if (parseInt(btn.dataset.tid) === ticketActifId) {
+      const tot = tickets[ticketActifId].lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+      btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${tickets[ticketActifId].nom}${tot > 0 ? ' · ' + formatF(tot) : ''}`;
     }
+  });
+}
 
-    function updateCommande() {
-        const commandeEmpty = document.getElementById('commandeEmpty');
-        const commandeItemsDiv = document.getElementById('commandeItems');
-        const totalValue = document.getElementById('totalValue');
-        
-        if (commandeItems.length === 0) {
-            commandeEmpty.style.display = 'flex';
-            commandeItemsDiv.style.display = 'none';
-        } else {
-            commandeEmpty.style.display = 'none';
-            commandeItemsDiv.style.display = 'block';
-            
-            commandeItemsDiv.innerHTML = commandeItems.map((item, index) => `
-                <div class="commande-item">
-                    <div>
-                        <div class="item-name">${item.nom}</div>
-                    </div>
-                    <div class="item-qty">
-                        <button class="qty-btn" onclick="changeQty(${index}, -1)">-</button>
-                        <span class="qty-value">${item.quantite}</span>
-                        <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
-                    </div>
-                    <div class="item-price">${(item.prix * item.quantite).toLocaleString()} F</div>
-                </div>
-            `).join('');
-        }
-        
-        const total = commandeItems.reduce((sum, item) => sum + (item.prix * item.quantite), 0);
-        totalValue.textContent = total.toLocaleString() + ' FCFA';
-    }
+function changerQty(index, delta) {
+  const t = tickets[ticketActifId];
+  t.lignes[index].qty += delta;
+  if (t.lignes[index].qty <= 0) t.lignes.splice(index, 1);
+  renderTicket();
+}
 
-    function changeQty(index, delta) {
-        commandeItems[index].quantite += delta;
-        
-        if (commandeItems[index].quantite <= 0) {
-            commandeItems.splice(index, 1);
-        }
-        
-        updateCommande();
-    }
+// ============================================================
+// META TICKET
+// ============================================================
+function majTicketMeta() {
+  tickets[ticketActifId].espace = document.getElementById('selectEspace').value;
+  tickets[ticketActifId].ref    = document.getElementById('inputRef').value;
+}
 
-    // Filtres de catégorie
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            const category = this.getAttribute('data-category');
-            const cards = document.querySelectorAll('.boisson-card');
-            
-            cards.forEach(card => {
-                if (category === 'tout' || card.getAttribute('data-category') === category) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-    });
+// ============================================================
+// TICKETS EN ATTENTE
+// ============================================================
+function nouveauTicket() {
+  ticketCounter++;
+  const nom = `T-${String(ticketCounter).padStart(3, '0')}`;
+  tickets[ticketCounter] = { id: ticketCounter, nom, espace: '', ref: '', lignes: [], paiement: 'especes' };
+  ticketActifId = ticketCounter;
 
-    // Recherche
-    document.getElementById('searchBoisson').addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const cards = document.querySelectorAll('.boisson-card');
-        
-        cards.forEach(card => {
-            const boissonName = card.querySelector('.boisson-name').textContent.toLowerCase();
-            card.style.display = boissonName.includes(searchTerm) ? '' : 'none';
-        });
-    });
+  const container = document.getElementById('ticketsAttente');
+  const btnNew    = container.querySelector('.btn-new-ticket');
+  const btn       = document.createElement('button');
+  btn.className   = 'ticket-attente-btn';
+  btn.dataset.tid = ticketCounter;
+  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${nom}`;
+  btn.onclick     = () => chargerTicket(ticketCounter);
+  container.insertBefore(btn, btnNew);
 
-    // Bouton choisir table
-    document.getElementById('btnChoisirTable').addEventListener('click', function() {
-        alert('Fonctionnalité "Choisir une table" - À développer');
-    });
+  chargerTicket(ticketCounter);
+  toast(`Nouveau ticket ${nom} créé`, 'info');
+}
+
+function chargerTicket(tid) {
+  ticketActifId = tid;
+  document.querySelectorAll('.ticket-attente-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.tid) === tid);
+  });
+  const t = tickets[tid];
+  document.getElementById('ticketNum').textContent      = t.nom;
+  document.getElementById('selectEspace').value         = t.espace;
+  document.getElementById('inputRef').value             = t.ref;
+  // Remettre le bon mode de paiement
+  modePaiement = t.paiement || 'especes';
+  document.querySelectorAll('.pay-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mode === modePaiement);
+  });
+  renderTicket();
+}
+
+function mettreEnAttente() {
+  const t = tickets[ticketActifId];
+  if (!t.lignes.length) { toast('Ticket vide — rien à mettre en attente', 'error'); return; }
+  toast(`Ticket ${t.nom} mis en attente`, 'info');
+  nouveauTicket();
+}
+
+// ============================================================
+// PAIEMENT
+// ============================================================
+function selectPaiement(btn) {
+  modePaiement = btn.dataset.mode;
+  tickets[ticketActifId].paiement = modePaiement;
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function getTotal() {
+  return tickets[ticketActifId].lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+}
+
+const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };
+
+function ouvrirModalPaiement() {
+  const t = tickets[ticketActifId];
+  if (!t.lignes.length) { toast('Ticket vide', 'error'); return; }
+
+  const total = getTotal();
+  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+  document.getElementById('modalMode').textContent = modeLabels[modePaiement] || modePaiement;
+  document.getElementById('montantRecu').value = '';
+  document.getElementById('renduDisplay').classList.remove('show');
+
+  // Cacher section rendu pour carte/chambre
+  const rendu = document.getElementById('renduSection');
+  const billets = document.getElementById('billetsGrid');
+  if (modePaiement === 'carte' || modePaiement === 'chambre') {
+    rendu.style.display = 'none'; billets.style.display = 'none';
+  } else {
+    rendu.style.display = ''; billets.style.display = '';
+  }
+
+  const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
+  const ref    = t.ref ? ` (${t.ref})` : '';
+  document.getElementById('modalSubtitle').innerHTML = `Cave Behanian${espace}${ref} — <span id="modalMode">${modeLabels[modePaiement]}</span>`;
+
+  document.getElementById('modalPaiement').classList.add('open');
+}
+
+function fermerModal() {
+  document.getElementById('modalPaiement').classList.remove('open');
+}
+
+function calcRendu() {
+  const total = getTotal();
+  const recu  = parseFloat(document.getElementById('montantRecu').value) || 0;
+  const rendu = recu - total;
+  const div   = document.getElementById('renduDisplay');
+  if (recu >= total) {
+    div.classList.add('show');
+    div.style.background = 'rgba(22,163,74,0.15)';
+    div.style.color = '#4ade80';
+    document.getElementById('renduVal').textContent = formatF(rendu);
+  } else if (recu > 0) {
+    div.classList.add('show');
+    div.style.background = 'rgba(220,38,38,0.15)';
+    div.style.color = '#f87171';
+    document.getElementById('renduVal').textContent = `Manque ${formatF(total - recu)}`;
+  } else {
+    div.classList.remove('show');
+  }
+}
+
+function setBillet(val, exact = false) {
+  if (exact) { document.getElementById('montantRecu').value = getTotal(); }
+  else       { document.getElementById('montantRecu').value = val; }
+  calcRendu();
+}
+
+function confirmerPaiement() {
+  const t     = tickets[ticketActifId];
+  const total = getTotal();
+
+  if (modePaiement === 'especes' || modePaiement === 'mobile') {
+    const recu = parseFloat(document.getElementById('montantRecu').value) || 0;
+    if (recu < total) { toast('Montant reçu insuffisant', 'error'); return; }
+  }
+
+  fermerModal();
+  // TODO : appel AJAX Django pour créer la vente + décrementer stock + générer ticket
+  // fetch('/cave/api/vente/create/', { method:'POST', body: JSON.stringify({ ticket: t, paiement: modePaiement, total }), headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')} })
+
+  toast(`<i class="fas fa-check-circle mr-2"></i> Paiement ${modeLabels[modePaiement]} validé — ${formatF(total)}`, 'success');
+
+  // Imprimer le ticket thermique
+  setTimeout(() => imprimerTicket(t, total), 600);
+
+  // Supprimer le ticket actif et créer un nouveau
+  const oldId  = ticketActifId;
+  const oldNom = t.nom;
+  delete tickets[oldId];
+  document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+  ticketCounter++;
+  const newNom = `T-${String(ticketCounter).padStart(3, '0')}`;
+  tickets[ticketCounter] = { id: ticketCounter, nom: newNom, espace: '', ref: '', lignes: [], paiement: 'especes' };
+  ticketActifId = ticketCounter;
+
+  const container = document.getElementById('ticketsAttente');
+  const btnNew    = container.querySelector('.btn-new-ticket');
+  const btn       = document.createElement('button');
+  btn.className   = 'ticket-attente-btn active';
+  btn.dataset.tid = ticketCounter;
+  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${newNom}`;
+  btn.onclick     = () => chargerTicket(ticketCounter);
+  container.insertBefore(btn, btnNew);
+  chargerTicket(ticketCounter);
+}
+
+// ============================================================
+// IMPRESSION TICKET THERMIQUE (80mm)
+// ============================================================
+function imprimerTicket(t, total) {
+  const espace = document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || '';
+  const ref    = t.ref || '—';
+  const date   = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const lignes = t.lignes.map(l => `
+    <tr>
+      <td>${l.nom}</td>
+      <td style="text-align:center;">${l.qty}</td>
+      <td style="text-align:right;">${parseInt(l.prix * l.qty).toLocaleString()}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Ticket ${t.nom}</title>
+    <style>
+      @page { margin: 0; }
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family: 'Courier New', monospace; font-size: 11px; width: 72mm; padding: 4mm; }
+      .center { text-align: center; }
+      .bold   { font-weight: bold; }
+      .sep    { border-top: 1px dashed #000; margin: 4px 0; }
+      table   { width: 100%; border-collapse: collapse; }
+      th      { font-size: 10px; padding: 2px 0; border-bottom: 1px solid #000; }
+      td      { padding: 2px 0; vertical-align: top; }
+      .total  { font-size: 14px; font-weight: bold; text-align: right; padding-top: 4px; }
+      .footer { margin-top: 6px; font-size: 9px; text-align: center; }
+    </style>
+  </head><body>
+    <div class="center bold" style="font-size:13px;">COMPLEXE BEHANIAN</div>
+    <div class="center" style="font-size:9px;">Cave — Service des boissons</div>
+    <div class="sep"></div>
+    <div>Date : ${date}</div>
+    <div>Ticket N° : ${t.nom}</div>
+    <div>Espace : ${espace}</div>
+    <div>Réf : ${ref}</div>
+    <div>Règlement : ${modeLabels[modePaiement] || modePaiement}</div>
+    <div class="sep"></div>
+    <table>
+      <thead><tr><th style="text-align:left;">Article</th><th>Qté</th><th style="text-align:right;">Montant</th></tr></thead>
+      <tbody>${lignes}</tbody>
+    </table>
+    <div class="sep"></div>
+    <div class="total">TOTAL : ${parseInt(total).toLocaleString()} FCFA</div>
+    <div class="sep"></div>
+    <div class="footer">Merci de votre visite — Complexe Behanian<br>Conservez ce ticket pour tout litige</div>
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=320,height=500');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); w.close(); }, 400);
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+// Init
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') fermerModal();
+});
 </script>
 {% endblock %}

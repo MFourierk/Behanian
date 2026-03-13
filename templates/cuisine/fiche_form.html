@@ -1,0 +1,308 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .form-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25); display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
+    .form-header::after { content: '📖'; position: absolute; right: -10px; bottom: -30px; font-size: 130px; opacity: 0.08; pointer-events: none; }
+    .form-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .form-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+    .form-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; }
+    .form-section { padding: 22px 26px; border-bottom: 1px solid #f5f5f5; }
+    .form-section:last-child { border-bottom: none; }
+    .section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #c0392b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .form-grid.full  { grid-template-columns: 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 0.83rem; font-weight: 600; color: #4a5568; }
+    .form-group label .req { color: #e74c3c; margin-left: 2px; }
+    .form-control { padding: 9px 13px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: 0.9rem; background: #f8f9fa; transition: all 0.2s; width: 100%; }
+    .form-control:focus { outline: none; border-color: #c0392b; background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+    textarea.form-control { resize: vertical; min-height: 90px; }
+
+    /* Sélecteur statut */
+    .statut-pills { display: flex; gap: 8px; }
+    .statut-opt { display: none; }
+    .statut-lbl { padding: 8px 16px; border-radius: 20px; border: 2px solid #e9ecef; font-size: 0.82rem; font-weight: 600; color: #7f8c8d; cursor: pointer; transition: all 0.2s; }
+    .statut-opt:checked + .statut-lbl { border-color: #c0392b; color: #c0392b; background: #fdecea; }
+    .statut-lbl:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* Lignes ingrédients */
+    .ingredients-table { width: 100%; border-collapse: collapse; }
+    .ingredients-table th { padding: 10px 12px; background: #f8f9fa; font-size: 0.78rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e9ecef; text-align: left; }
+    .ingredients-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+    .ingredients-table tr:last-child td { border-bottom: none; }
+    .ing-select { width: 100%; padding: 7px 10px; border-radius: 8px; border: 1.5px solid #e9ecef; font-size: 0.86rem; background: #f8f9fa; transition: all 0.2s; }
+    .ing-select:focus { outline: none; border-color: #c0392b; background: white; }
+    .qte-input { width: 90px; padding: 7px 10px; border-radius: 8px; border: 1.5px solid #e9ecef; font-size: 0.86rem; background: #f8f9fa; text-align: right; transition: all 0.2s; }
+    .qte-input:focus { outline: none; border-color: #c0392b; background: white; }
+    .unit-cell { font-size: 0.8rem; color: #7f8c8d; min-width: 50px; }
+    .cout-cell { font-size: 0.85rem; font-weight: 600; color: #2c3e50; min-width: 80px; text-align: right; }
+    .btn-del-row { width: 28px; height: 28px; border-radius: 7px; border: none; background: #fdecea; color: #e74c3c; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.2s; }
+    .btn-del-row:hover { background: #e74c3c; color: white; }
+    .btn-add-row { margin-top: 12px; padding: 8px 16px; border-radius: 9px; border: 2px dashed #e9ecef; background: transparent; color: #7f8c8d; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 7px; }
+    .btn-add-row:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* Panneau résumé coût */
+    .cost-panel { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; position: sticky; top: 20px; }
+    .cost-panel-header { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 16px 20px; }
+    .cost-panel-header h3 { font-size: 0.95rem; font-weight: 700; margin: 0; }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid #f5f5f5; }
+    .cost-row:last-child { border-bottom: none; }
+    .cost-lbl { font-size: 0.85rem; color: #7f8c8d; }
+    .cost-val { font-size: 1rem; font-weight: 700; color: #2c3e50; }
+    .cost-row.total { background: #fdecea; }
+    .cost-row.total .cost-lbl { color: #c0392b; font-weight: 700; }
+    .cost-row.total .cost-val { color: #c0392b; font-size: 1.15rem; }
+
+    .form-footer { padding: 18px 26px; background: #fafafa; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel { padding: 10px 20px; border-radius: 10px; border: 2px solid #e9ecef; background: white; font-weight: 600; cursor: pointer; color: #7f8c8d; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; transition: all 0.2s; }
+    .btn-cancel:hover { border-color: #c0392b; color: #c0392b; }
+    .btn-save { padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #c0392b, #e74c3c); font-weight: 700; cursor: pointer; color: white; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(192,57,43,0.3); transition: all 0.2s; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(192,57,43,0.4); }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="form-header">
+        <div>
+            <h2><i class="fas fa-book-open mr-2"></i> {{ page_title }}</h2>
+            <p>{% if mode == 'create' %}Créez une nouvelle recette standardisée avec son coût de revient.{% else %}Modifiez la fiche technique et ses ingrédients.{% endif %}</p>
+        </div>
+        {% if fiche.reference %}<div style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:10px;padding:10px 18px;text-align:center;"><div style="font-size:0.7rem;opacity:0.8;letter-spacing:1px;">RÉFÉRENCE</div><div style="font-size:1.1rem;font-weight:800;">{{ fiche.reference }}</div></div>{% endif %}
+    </div>
+
+    {% if mode == 'create' %}
+    {% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Nouvelle Fiche" "" %}
+    {% else %}
+    {% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Modifier Fiche" "" %}
+    {% endif %}
+
+    <form method="post" id="fiche-form">
+        {% csrf_token %}
+        <div class="layout">
+            <!-- Colonne principale -->
+            <div>
+                <!-- Identification -->
+                <div class="form-card">
+                    <div class="form-section">
+                        <div class="section-title"><i class="fas fa-tag"></i> Identification</div>
+                        <div class="form-grid full">
+                            <div class="form-group">
+                                <label>Nom de la recette <span class="req">*</span></label>
+                                <input type="text" name="nom" id="nom" class="form-control" required placeholder="Ex: Poulet braisé sauce arachide, Attiéké poisson..." value="{{ fiche.nom|default:'' }}" oninput="updateHeader()">
+                            </div>
+                        </div>
+                        <div class="form-grid" style="margin-top:14px;">
+                            <div class="form-group">
+                                <label>Catégorie</label>
+                                <select name="categorie" class="form-control">
+                                    <option value="">— Sans catégorie —</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.pk }}" {% if fiche.categorie_id == cat.pk %}selected{% endif %}>{{ cat.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Statut</label>
+                                <div class="statut-pills">
+                                    <input type="radio" name="statut" id="s-actif"     value="actif"     class="statut-opt" {% if not fiche or fiche.statut == 'actif' %}checked{% endif %}>
+                                    <label for="s-actif" class="statut-lbl">✅ Active</label>
+                                    <input type="radio" name="statut" id="s-brouillon" value="brouillon" class="statut-opt" {% if fiche.statut == 'brouillon' %}checked{% endif %}>
+                                    <label for="s-brouillon" class="statut-lbl">📝 Brouillon</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-grid full" style="margin-top:14px;">
+                            <div class="form-group">
+                                <label>Description / Méthode de préparation</label>
+                                <textarea name="description" class="form-control" placeholder="Décrivez la méthode, les étapes clés, les points de contrôle qualité...">{{ fiche.description|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paramètres -->
+                    <div class="form-section">
+                        <div class="section-title"><i class="fas fa-sliders-h"></i> Paramètres de production</div>
+                        <div class="form-grid three">
+                            <div class="form-group">
+                                <label>Nombre de portions <span class="req">*</span></label>
+                                <input type="number" name="nb_portions" id="nb_portions" class="form-control" min="1" step="0.5" value="{{ fiche.nb_portions|default:'1' }}" oninput="recalcCouts()" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Préparation (min)</label>
+                                <input type="number" name="temps_preparation" class="form-control" min="0" value="{{ fiche.temps_preparation|default:'0' }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Cuisson (min)</label>
+                                <input type="number" name="temps_cuisson" class="form-control" min="0" value="{{ fiche.temps_cuisson|default:'0' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ingrédients -->
+                <div class="form-card">
+                    <div class="form-section">
+                        <div class="section-title"><i class="fas fa-carrot"></i> Ingrédients de la recette</div>
+                        <table class="ingredients-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:45%">Ingrédient</th>
+                                    <th style="width:15%">Quantité</th>
+                                    <th style="width:12%">Unité</th>
+                                    <th style="width:18%;text-align:right;">Coût ligne</th>
+                                    <th style="width:10%;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="lignes-body">
+                                {% for ligne in lignes %}
+                                <tr class="ligne-row" data-cmup="{{ ligne.ingredient.cmup|default:'0' }}">
+                                    <td>
+                                        <select name="ingredient_id[]" class="ing-select" onchange="updateUnite(this); recalcCouts()">
+                                            <option value="">— Choisir —</option>
+                                            {% for ing in ingredients %}
+                                            <option value="{{ ing.pk }}" data-unite="{{ ing.unite_recette.symbole|default:'' }}" data-cmup="{{ ing.cmup|floatformat:2 }}" {% if ing.pk == ligne.ingredient.pk %}selected{% endif %}>{{ ing.nom }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td><input type="number" name="quantite[]" class="qte-input" step="0.01" min="0" value="{{ ligne.quantite }}" oninput="recalcCouts()"></td>
+                                    <td class="unit-cell">{{ ligne.ingredient.unite_recette.symbole|default:'—' }}</td>
+                                    <td class="cout-cell" style="text-align:right;">— F</td>
+                                    <td><button type="button" class="btn-del-row" onclick="this.closest('tr').remove(); recalcCouts()"><i class="fas fa-times"></i></button></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn-add-row" onclick="ajouterLigne()">
+                            <i class="fas fa-plus"></i> Ajouter un ingrédient
+                        </button>
+                    </div>
+                    <div class="form-footer">
+                        <a href="{% url 'cuisine:fiche_list' %}" class="btn-cancel"><i class="fas fa-times"></i> Annuler</a>
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i>
+                            {% if mode == 'create' %}Créer la fiche{% else %}Sauvegarder{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panneau coût -->
+            <div>
+                <div class="cost-panel">
+                    <div class="cost-panel-header">
+                        <h3><i class="fas fa-calculator mr-2"></i> Coût de revient</h3>
+                        <p style="margin:4px 0 0;opacity:0.7;font-size:0.8rem;">Mis à jour en temps réel</p>
+                    </div>
+                    <div class="cost-row">
+                        <span class="cost-lbl">Coût total recette</span>
+                        <span class="cost-val" id="cout-total">0 F</span>
+                    </div>
+                    <div class="cost-row">
+                        <span class="cost-lbl">Nombre de portions</span>
+                        <span class="cost-val" id="nb-portions-display">1</span>
+                    </div>
+                    <div class="cost-row total">
+                        <span class="cost-lbl"><i class="fas fa-star mr-1"></i> Coût / portion</span>
+                        <span class="cost-val" id="cout-portion">0 F</span>
+                    </div>
+                    <div class="cost-row">
+                        <span class="cost-lbl" style="font-size:0.78rem;color:#aaa;">Prix de vente suggéré (×3)</span>
+                        <span class="cost-val" id="prix-vente" style="color:#27ae60;font-size:0.92rem;">0 F</span>
+                    </div>
+                    <div style="padding:14px 20px;background:#f8f9fa;border-top:1px solid #f0f0f0;">
+                        <div style="font-size:0.75rem;color:#aaa;margin-bottom:8px;">RÉPARTITION PAR INGRÉDIENT</div>
+                        <div id="breakdown" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Données ingrédients pour JS
+const INGREDIENTS = {
+    {% for ing in ingredients %}
+    "{{ ing.pk }}": { nom: "{{ ing.nom }}", unite: "{{ ing.unite_recette.symbole|default:'' }}", cmup: {{ ing.cmup|floatformat:4|default:"0" }} },
+    {% endfor %}
+};
+
+function updateUnite(sel) {
+    const ing = INGREDIENTS[sel.value];
+    const row = sel.closest('tr');
+    if (ing) row.querySelector('.unit-cell').textContent = ing.unite || '—';
+}
+
+function recalcCouts() {
+    const rows = document.querySelectorAll('.ligne-row');
+    let total = 0;
+    const breakdown = [];
+
+    rows.forEach(row => {
+        const ingId = row.querySelector('.ing-select').value;
+        const qte   = parseFloat(row.querySelector('.qte-input').value) || 0;
+        const ing   = INGREDIENTS[ingId];
+        let cout = 0;
+        if (ing && qte) {
+            cout = ing.cmup * qte;
+            breakdown.push({ nom: ing.nom, cout });
+        }
+        row.querySelector('.cout-cell').textContent = cout.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' F';
+        total += cout;
+    });
+
+    const portions = parseFloat(document.getElementById('nb_portions').value) || 1;
+    const parPortion = total / portions;
+
+    document.getElementById('cout-total').textContent    = total.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' F';
+    document.getElementById('cout-portion').textContent  = parPortion.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' F';
+    document.getElementById('prix-vente').textContent    = (parPortion * 3).toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' F';
+    document.getElementById('nb-portions-display').textContent = portions;
+
+    // Breakdown
+    const bdEl = document.getElementById('breakdown');
+    bdEl.innerHTML = '';
+    breakdown.sort((a,b) => b.cout - a.cout).forEach(item => {
+        const pct = total > 0 ? (item.cout / total * 100).toFixed(0) : 0;
+        bdEl.innerHTML += `
+            <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:3px;">
+                    <span style="color:#4a5568;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%;">${item.nom}</span>
+                    <span style="font-weight:700;color:#c0392b;">${pct}%</span>
+                </div>
+                <div style="height:4px;background:#f0f0f0;border-radius:3px;">
+                    <div style="height:4px;background:#c0392b;border-radius:3px;width:${pct}%;"></div>
+                </div>
+            </div>`;
+    });
+}
+
+function ajouterLigne() {
+    const options = Object.entries(INGREDIENTS).map(([id, ing]) =>
+        `<option value="${id}" data-unite="${ing.unite}" data-cmup="${ing.cmup}">${ing.nom}</option>`
+    ).join('');
+    const row = document.createElement('tr');
+    row.className = 'ligne-row';
+    row.innerHTML = `
+        <td><select name="ingredient_id[]" class="ing-select" onchange="updateUnite(this);recalcCouts()">
+            <option value="">— Choisir —</option>${options}</select></td>
+        <td><input type="number" name="quantite[]" class="qte-input" step="0.01" min="0" value="" oninput="recalcCouts()"></td>
+        <td class="unit-cell">—</td>
+        <td class="cout-cell" style="text-align:right;">— F</td>
+        <td><button type="button" class="btn-del-row" onclick="this.closest('tr').remove();recalcCouts()"><i class="fas fa-times"></i></button></td>`;
+    document.getElementById('lignes-body').appendChild(row);
+}
+
+function updateHeader() {
+    // rien de spécial ici
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', recalcCouts);
+</script>
+{% endblock %}

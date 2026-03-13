@@ -1,0 +1,146 @@
+{#
+  COMPOSANT : boutons Imprimer + Télécharger PDF
+  ================================================
+  Usage dans n'importe quel template :
+
+      {% include 'components/print_buttons.html' with doc_title="Bon de Commande" %}
+
+  Ou sans argument (titre générique) :
+
+      {% include 'components/print_buttons.html' %}
+
+  Prérequis : la librairie html2pdf.js est chargée via CDN dans ce composant.
+  Pas d'installation supplémentaire requise.
+#}
+
+<!-- Boutons impression / PDF -->
+<div class="print-actions" id="print-actions">
+    <button type="button" class="btn-print" onclick="imprimerDocument()">
+        <i class="fas fa-print"></i> Imprimer
+    </button>
+    <button type="button" class="btn-pdf" onclick="exporterPDF()">
+        <i class="fas fa-file-pdf"></i> Télécharger PDF
+    </button>
+</div>
+
+<!-- Zone imprimable — entourer le contenu à imprimer avec id="printable-zone" -->
+
+<style>
+    .print-actions {
+        display: flex; gap: 10px; align-items: center;
+    }
+    .btn-print {
+        padding: 9px 18px; border-radius: 10px;
+        border: 2px solid #2c3e50; background: white;
+        color: #2c3e50; font-weight: 600; font-size: 0.88rem;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+        transition: all 0.2s;
+    }
+    .btn-print:hover { background: #2c3e50; color: white; }
+    .btn-pdf {
+        padding: 9px 18px; border-radius: 10px;
+        border: none; background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: white; font-weight: 600; font-size: 0.88rem;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+        box-shadow: 0 3px 10px rgba(192,57,43,0.3); transition: all 0.2s;
+    }
+    .btn-pdf:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(192,57,43,0.4); }
+    .btn-pdf-loading { opacity: 0.7; cursor: not-allowed; }
+
+    /* ========== STYLES D'IMPRESSION ========== */
+    @media print {
+        /* Masquer tout sauf la zone imprimable */
+        body > * { display: none !important; }
+        #printable-zone,
+        #printable-zone * { display: revert !important; visibility: visible; }
+        #printable-zone { position: fixed; top: 0; left: 0; width: 100%; }
+
+        /* Masquer les boutons dans la zone imprimable */
+        .print-actions,
+        .btn-cancel,
+        .btn-save,
+        .btn-add-ligne,
+        .btn-del-ligne,
+        .form-actions,
+        .form-footer,
+        nav, .sidebar, .breadcrumb-bar { display: none !important; }
+
+        /* En-tête d'impression */
+        .print-header { display: block !important; }
+
+        /* Bordures et couleurs pour impression */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+        /* Sauts de page */
+        .page-break { page-break-after: always; }
+    }
+
+    /* En-tête visible uniquement à l'impression */
+    .print-header {
+        display: none;
+        padding: 20px 0 16px;
+        border-bottom: 3px solid #c0392b;
+        margin-bottom: 20px;
+    }
+    .print-header-logo {
+        font-size: 1.6rem; font-weight: 800; color: #c0392b; letter-spacing: 1px;
+    }
+    .print-header-sub {
+        font-size: 0.85rem; color: #7f8c8d; margin-top: 2px;
+    }
+    .print-header-right {
+        text-align: right;
+    }
+    .print-header-right .doc-ref {
+        font-size: 1.1rem; font-weight: 700; color: #2c3e50;
+    }
+    .print-header-right .doc-date {
+        font-size: 0.82rem; color: #7f8c8d;
+    }
+</style>
+
+<!-- Librairie html2pdf.js (uniquement pour export PDF) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+// ---- Impression navigateur ----
+function imprimerDocument() {
+    window.print();
+}
+
+// ---- Export PDF via html2pdf.js ----
+function exporterPDF() {
+    const zone = document.getElementById('printable-zone');
+    if (!zone) {
+        alert('Erreur : zone imprimable introuvable (id="printable-zone")');
+        return;
+    }
+
+    const btnPdf = document.querySelector('.btn-pdf');
+    btnPdf.classList.add('btn-pdf-loading');
+    btnPdf.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+
+    // Titre du document (utilise le titre de la page ou un titre générique)
+    const docTitle = document.title.replace(' - Cuisine BEHANIAN', '').trim() || 'Document_Behanian';
+    const filename  = docTitle.replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+
+    const options = {
+        margin:      [10, 10, 10, 10],   // haut, droite, bas, gauche (mm)
+        filename:    filename,
+        image:       { type: 'jpeg', quality: 0.97 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(options).from(zone).save().then(() => {
+        btnPdf.classList.remove('btn-pdf-loading');
+        btnPdf.innerHTML = '<i class="fas fa-file-pdf"></i> Télécharger PDF';
+    }).catch(err => {
+        console.error('Erreur PDF:', err);
+        btnPdf.classList.remove('btn-pdf-loading');
+        btnPdf.innerHTML = '<i class="fas fa-file-pdf"></i> Télécharger PDF';
+        alert('Erreur lors de la génération du PDF. Utilisez le bouton Imprimer à la place.');
+    });
+}
+</script>

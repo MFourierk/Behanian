@@ -1,0 +1,215 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Déclarer une Casse - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        color: white; padding: 28px 30px; border-radius: 18px;
+        margin-bottom: 24px; box-shadow: 0 10px 25px rgba(192,57,43,0.25);
+        position: relative; overflow: hidden;
+    }
+    .form-header::after { content: '💔'; position: absolute; right: 20px; bottom: -20px; font-size: 100px; opacity: 0.08; pointer-events: none; }
+    .form-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .form-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+    .form-card { background: white; border-radius: 16px; box-shadow: 0 2px 15px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 20px; }
+    .form-section { padding: 24px 28px; border-bottom: 1px solid #f0f0f0; }
+    .form-section:last-child { border-bottom: none; }
+    .section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #c0392b; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
+    label span.req { color: #e74c3c; }
+    input, select, textarea { padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e9ecef; background: #f8f9fa; font-size: 0.92rem; color: #2c3e50; transition: all 0.2s; width: 100%; box-sizing: border-box; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #c0392b; background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+    .hint { font-size: 0.78rem; color: #95a5a6; }
+
+    /* Lignes casse */
+    .lignes-header { display: grid; grid-template-columns: 2.5fr 1fr 1.2fr 1.5fr 40px; gap: 10px; padding: 10px 14px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #7f8c8d; }
+    .ligne-row { display: grid; grid-template-columns: 2.5fr 1fr 1.2fr 1.5fr 40px; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+    .ligne-row:last-child { border-bottom: none; }
+
+    .btn-add-ligne { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 2px dashed #c0392b; background: #fff5f5; color: #c0392b; font-weight: 600; cursor: pointer; font-size: 0.88rem; transition: all 0.2s; margin-top: 12px; }
+    .btn-add-ligne:hover { background: #fdecea; }
+    .btn-del-ligne { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fdecea; color: #e74c3c; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .btn-del-ligne:hover { background: #e74c3c; color: white; }
+
+    .perte-total { background: #fff5f5; border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border: 1px solid #fad7d7; }
+    .perte-label { font-weight: 600; color: #7f8c8d; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+    .perte-value { font-weight: 800; color: #e74c3c; font-size: 1.3rem; }
+
+    /* Badge motif */
+    .motif-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+    .motif-badge.selected { border-color: #c0392b; background: #fff5f5; color: #c0392b; }
+    .motif-badge:not(.selected) { border-color: #e9ecef; background: #f8f9fa; color: #7f8c8d; }
+    .motif-badge:hover:not(.selected) { border-color: #c0392b; color: #c0392b; }
+    .motifs-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+
+    .form-actions { padding: 20px 28px; background: #fafafa; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid #f0f0f0; }
+    .btn-cancel { padding: 11px 24px; border-radius: 10px; border: 2px solid #e9ecef; background: white; font-weight: 600; cursor: pointer; color: #7f8c8d; text-decoration: none; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-save { padding: 11px 28px; border-radius: 10px; border: none; background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; font-weight: 700; cursor: pointer; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(192,57,43,0.3); transition: all 0.2s; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(192,57,43,0.4); }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="form-header">
+        <div>
+            <h2><i class="fas fa-exclamation-triangle mr-2"></i> Déclarer une Casse</h2>
+            <p>Enregistrez les pertes, détériorations ou ingrédients hors d'usage — le stock sera ajusté automatiquement</p>
+</div>
+
+</div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "Casse" "" %}
+
+
+    
+
+    <form method="post" id="casse-form">
+        {% csrf_token %}
+        <div class="form-card">
+
+            <!-- Informations générales -->
+            <div class="form-section">
+                <div class="section-title"><i class="fas fa-info-circle"></i> Informations générales</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Date de la casse <span class="req">*</span></label>
+                        <input type="date" name="date_casse" value="{% now 'Y-m-d' %}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Responsable</label>
+                        <input type="text" name="responsable" placeholder="Nom du responsable constatant la casse">
+                    </div>
+                    <div class="form-group full">
+                        <label>Motif principal <span class="req">*</span></label>
+                        <input type="hidden" name="type_casse" id="motif-hidden" required>
+                        <div class="motifs-grid" id="motifs-grid">
+                            <div class="motif-badge" onclick="selectMotif('casse', this)">💥 Casse / Bris</div>
+                            <div class="motif-badge" onclick="selectMotif('perime', this)">🗓️ Périmé</div>
+                            <div class="motif-badge" onclick="selectMotif('perte', this)">💧 Perte / Coulage</div>
+                            <div class="motif-badge" onclick="selectMotif('vol', this)">🔓 Vol</div>
+                            <div class="motif-badge" onclick="selectMotif('offert', this)">🎁 Offert / Dégustation</div>
+                            <div class="motif-badge" onclick="selectMotif('autre', this)">📝 Autre</div>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>Description / Commentaire</label>
+                        <textarea name="description" rows="2" placeholder="Détails supplémentaires sur l'incident..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingrédients concernés -->
+            <div class="form-section">
+                <div class="section-title"><i class="fas fa-list"></i> Ingrédients concernés</div>
+                <div class="lignes-header">
+                    <span>Ingrédient</span>
+                    <span>Unité</span>
+                    <span>Qté perdue</span>
+                    <span>Perte estimée (FCFA)</span>
+                    <span></span>
+                </div>
+                <div id="lignes-container">
+                    <div class="ligne-row">
+                        <select name="ingredient_id[]" class="ing-select" onchange="onIngredientChange(this)">
+                            <option value="">— Sélectionner —</option>
+                            {% for ing in ingredients %}
+                            <option value="{{ ing.pk }}" data-unite="{{ ing.unite_stock.abreviation|default:'' }}" data-prix="{{ ing.prix_unitaire_moyen|default:0 }}" data-stock="{{ ing.quantite_stock }}">
+                                {{ ing.nom }}{% if ing.quantite_stock <= 0 %} ⚠️{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="unite-display" style="font-size:0.85rem;color:#7f8c8d;padding:10px 0;">—</span>
+                        <input type="number" name="quantite[]" class="qte-input" step="0.001" min="0.001" placeholder="0.000" oninput="calcPerte(this)">
+                        <span class="perte-cell" style="font-weight:700;color:#e74c3c;padding:10px 0;">0 FCFA</span>
+                        <button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add-ligne" onclick="ajouterLigne()">
+                    <i class="fas fa-plus"></i> Ajouter un ingrédient
+                </button>
+                <div class="perte-total">
+                    <div class="perte-label">
+                        <i class="fas fa-exclamation-circle" style="color:#e74c3c;"></i>
+                        Perte financière totale estimée
+                    </div>
+                    <div class="perte-value" id="perte-total-val">0 FCFA</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'cuisine:stock_management' %}?tab=casses" class="btn-cancel"><i class="fas fa-times"></i> Annuler</a>
+            <button type="submit" class="btn-save"><i class="fas fa-check"></i> Valider la déclaration</button>
+        </div>
+    </form>
+</div>
+
+<script>
+const ingData = {
+    {% for ing in ingredients %}
+    "{{ ing.pk }}": { unite: "{{ ing.unite_stock.abreviation|default:'' }}", prix: {{ ing.cmup|default:0 }}, stock: {{ ing.quantite_stock }} },
+    {% endfor %}
+};
+
+function selectMotif(val, el) {
+    document.querySelectorAll('.motif-badge').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('motif-hidden').value = val;
+}
+
+function onIngredientChange(select) {
+    const row = select.closest('.ligne-row');
+    const pk = select.value;
+    const data = ingData[pk] || {};
+    row.querySelector('.unite-display').textContent = data.unite || '—';
+    const prixInput = row.querySelector('.qte-input');
+    row.querySelector('input[name="quantite[]"]').dataset.prix = data.prix || 0;
+    calcPerte(row.querySelector('.qte-input'));
+}
+
+function calcPerte(input) {
+    const row = input.closest('.ligne-row');
+    const ingSelect = row.querySelector('.ing-select');
+    const pk = ingSelect.value;
+    const prix = (ingData[pk] || {}).prix || 0;
+    const qte = parseFloat(input.value) || 0;
+    const perte = qte * prix;
+    row.querySelector('.perte-cell').textContent = perte.toLocaleString('fr-FR') + ' FCFA';
+    updatePerteTotal();
+}
+
+function updatePerteTotal() {
+    let total = 0;
+    document.querySelectorAll('.perte-cell').forEach(el => {
+        total += parseFloat(el.textContent.replace(/[^0-9.]/g, '')) || 0;
+    });
+    document.getElementById('perte-total-val').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+}
+
+function ajouterLigne() {
+    const tpl = document.querySelector('.ligne-row').cloneNode(true);
+    tpl.querySelector('.ing-select').value = '';
+    tpl.querySelector('.qte-input').value = '';
+    tpl.querySelector('.perte-cell').textContent = '0 FCFA';
+    tpl.querySelector('.unite-display').textContent = '—';
+    tpl.querySelector('.ing-select').onchange = function() { onIngredientChange(this); };
+    tpl.querySelector('.qte-input').oninput = function() { calcPerte(this); };
+    tpl.querySelector('.btn-del-ligne').onclick = function() { supprimerLigne(this); };
+    document.getElementById('lignes-container').appendChild(tpl);
+}
+
+function supprimerLigne(btn) {
+    if (document.querySelectorAll('.ligne-row').length > 1) {
+        btn.closest('.ligne-row').remove();
+        updatePerteTotal();
+    }
+}
+</script>
+{% endblock %}

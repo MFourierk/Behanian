@@ -1,0 +1,189 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Fiches Techniques - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25); display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
+    .page-header::after { content: '📖'; position: absolute; right: -10px; bottom: -30px; font-size: 130px; opacity: 0.08; pointer-events: none; }
+    .page-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+    .page-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.95rem; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 14px; border-left: 4px solid transparent; }
+    .stat-card.red    { border-left-color: #c0392b; }
+    .stat-card.green  { border-left-color: #27ae60; }
+    .stat-card.orange { border-left-color: #e67e22; }
+    .stat-card.blue   { border-left-color: #3498db; }
+    .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-icon.red    { background: #fdecea; color: #c0392b; }
+    .stat-icon.green  { background: #eafaf1; color: #27ae60; }
+    .stat-icon.orange { background: #fef3e2; color: #e67e22; }
+    .stat-icon.blue   { background: #e8f4fd; color: #3498db; }
+    .stat-value { font-size: 1.7rem; font-weight: 700; color: #2c3e50; line-height: 1; }
+    .stat-label { font-size: 0.82rem; color: #7f8c8d; margin-top: 3px; }
+
+    .toolbar { background: white; border-radius: 14px; padding: 14px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+    .search-box { position: relative; flex: 1; min-width: 220px; }
+    .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #adb5bd; }
+    .search-box input { width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1px solid #e9ecef; background: #f8f9fa; font-size: 0.9rem; transition: all 0.2s; }
+    .search-box input:focus { outline: none; border-color: #c0392b; background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+    .filter-select { padding: 10px 14px; border-radius: 10px; border: 1px solid #e9ecef; background: #f8f9fa; font-size: 0.9rem; color: #495057; cursor: pointer; }
+    .btn-red { background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(192,57,43,0.3); transition: all 0.2s; white-space: nowrap; }
+    .btn-red:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(192,57,43,0.4); color: white; }
+
+    /* Cartes fiches */
+    .fiches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+    .fiche-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+    .fiche-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .fiche-card-top { padding: 18px 20px 14px; border-bottom: 1px solid #f5f5f5; }
+    .fiche-ref { font-size: 0.72rem; font-family: monospace; font-weight: 700; color: #c0392b; background: #fdecea; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 8px; }
+    .fiche-nom { font-size: 1rem; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
+    .fiche-desc { font-size: 0.82rem; color: #7f8c8d; line-height: 1.4; }
+    .fiche-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-cat    { background: #fdecea; color: #c0392b; }
+    .badge-actif  { background: #eafaf1; color: #27ae60; }
+    .badge-brouillon { background: #f5f5f5; color: #7f8c8d; }
+    .badge-archive   { background: #fdecea; color: #e74c3c; }
+
+    .fiche-metrics { display: grid; grid-template-columns: repeat(3,1fr); padding: 14px 20px; gap: 8px; background: #fafafa; }
+    .metric { text-align: center; }
+    .metric-val { font-size: 1rem; font-weight: 700; color: #2c3e50; }
+    .metric-lbl { font-size: 0.72rem; color: #7f8c8d; margin-top: 2px; }
+
+    .fiche-footer { padding: 12px 20px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid #f0f0f0; }
+    .btn-action { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; }
+    .btn-view  { background: #fdecea; color: #c0392b; }
+    .btn-view:hover  { background: #c0392b; color: white; }
+    .btn-edit  { background: #e8f4fd; color: #3498db; }
+    .btn-edit:hover  { background: #3498db; color: white; }
+    .btn-del   { background: #fdecea; color: #e74c3c; }
+    .btn-del:hover   { background: #e74c3c; color: white; }
+
+    .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); grid-column: 1/-1; }
+    .empty-state i { font-size: 3rem; color: #fadbd8; margin-bottom: 15px; display: block; }
+</style>
+
+<div class="container-fluid py-4">
+
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-book-open mr-2"></i> Fiches Techniques</h2>
+            <p>Recettes standardisées avec coût de revient par portion calculé automatiquement.</p>
+        </div>
+        <div class="header-clock"><span class="time"></span><span class="date"></span></div>
+    </div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "" %}
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card red">
+            <div class="stat-icon red"><i class="fas fa-book-open"></i></div>
+            <div><div class="stat-value">{{ fiches.count }}</div><div class="stat-label">Fiches au total</div></div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div><div class="stat-value">{{ nb_actives|default:"0" }}</div><div class="stat-label">Actives</div></div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-icon orange"><i class="fas fa-pencil-alt"></i></div>
+            <div><div class="stat-value">{{ nb_brouillons|default:"0" }}</div><div class="stat-label">Brouillons</div></div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-icon blue"><i class="fas fa-tags"></i></div>
+            <div><div class="stat-value">{{ categories.count }}</div><div class="stat-label">Catégories</div></div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Rechercher une fiche..." oninput="filtrer()">
+        </div>
+        <select id="filter-cat" class="filter-select" onchange="filtrer()">
+            <option value="">Toutes les catégories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.nom }}">{{ cat.nom }}</option>
+            {% endfor %}
+        </select>
+        <select id="filter-statut" class="filter-select" onchange="filtrer()">
+            <option value="">Tous les statuts</option>
+            <option value="actif">Actives</option>
+            <option value="brouillon">Brouillons</option>
+        </select>
+        <a href="{% url 'cuisine:fiche_create' %}" class="btn-red">
+            <i class="fas fa-plus"></i> Nouvelle Fiche
+        </a>
+    </div>
+
+    <!-- Grille -->
+    <div class="fiches-grid" id="fiches-grid">
+        {% for fiche in fiches %}
+        <div class="fiche-card"
+             data-nom="{{ fiche.nom|lower }}"
+             data-cat="{{ fiche.categorie.nom|default:'' }}"
+             data-statut="{{ fiche.statut }}">
+            <div class="fiche-card-top">
+                <div class="fiche-ref">{{ fiche.reference|default:"FT-XXXX" }}</div>
+                <div class="fiche-nom">{{ fiche.nom }}</div>
+                {% if fiche.description %}
+                <div class="fiche-desc">{{ fiche.description|truncatechars:80 }}</div>
+                {% endif %}
+                <div class="fiche-badges">
+                    {% if fiche.categorie %}<span class="badge badge-cat">{{ fiche.categorie.nom }}</span>{% endif %}
+                    {% if fiche.statut == 'actif' %}<span class="badge badge-actif">Active</span>
+                    {% elif fiche.statut == 'brouillon' %}<span class="badge badge-brouillon">Brouillon</span>
+                    {% else %}<span class="badge badge-archive">Archivée</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="fiche-metrics">
+                <div class="metric">
+                    <div class="metric-val">{{ fiche.nb_portions|floatformat:0 }}</div>
+                    <div class="metric-lbl">Portions</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-val">{{ fiche.cout_par_portion|floatformat:0 }} F</div>
+                    <div class="metric-lbl">Coût/portion</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-val">{{ fiche.temps_preparation|add:fiche.temps_cuisson }} min</div>
+                    <div class="metric-lbl">Temps total</div>
+                </div>
+            </div>
+
+            <div class="fiche-footer">
+                <a href="{% url 'cuisine:fiche_detail' fiche.pk %}" class="btn-action btn-view" title="Voir la fiche"><i class="fas fa-eye"></i></a>
+                <a href="{% url 'cuisine:fiche_edit' fiche.pk %}" class="btn-action btn-edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
+                <a href="{% url 'cuisine:fiche_delete' fiche.pk %}" class="btn-action btn-del" title="Archiver"><i class="fas fa-archive"></i></a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <p>Aucune fiche technique créée.</p>
+            <a href="{% url 'cuisine:fiche_create' %}" class="btn-red" style="display:inline-flex;margin-top:10px;">
+                <i class="fas fa-plus"></i> Créer la première fiche
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function filtrer() {
+    const q      = document.getElementById('search-input').value.toLowerCase();
+    const cat    = document.getElementById('filter-cat').value;
+    const statut = document.getElementById('filter-statut').value;
+    document.querySelectorAll('.fiche-card').forEach(card => {
+        const ok = (!q || card.dataset.nom.includes(q))
+                && (!cat    || card.dataset.cat === cat)
+                && (!statut || card.dataset.statut === statut);
+        card.style.display = ok ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,282 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        color: white; padding: 28px 30px; border-radius: 18px;
+        margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25);
+        display: flex; justify-content: space-between; align-items: center;
+        position: relative; overflow: hidden;
+    }
+    .form-header::after { content: '🛒'; position: absolute; right: 20px; bottom: -20px; font-size: 100px; opacity: 0.08; pointer-events: none; }
+    .form-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .form-header p { margin: 4px 0 0; opacity: 0.85; }
+    .form-card { background: white; border-radius: 16px; box-shadow: 0 2px 15px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 20px; }
+    .form-section { padding: 24px 28px; border-bottom: 1px solid #f0f0f0; }
+    .section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #c0392b; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
+    label span.req { color: #e74c3c; }
+    input, select, textarea { padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e9ecef; background: #f8f9fa; font-size: 0.92rem; color: #2c3e50; transition: all 0.2s; width: 100%; box-sizing: border-box; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #c0392b; background: white; box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+    .hint { font-size: 0.78rem; color: #95a5a6; }
+
+    .lignes-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 40px; gap: 10px; padding: 10px 14px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #7f8c8d; }
+    .ligne-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 40px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; }
+    .ligne-row:last-child { border-bottom: none; }
+    .btn-add-ligne { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 10px; border: 2px dashed #c0392b; background: #fff5f5; color: #c0392b; font-weight: 600; cursor: pointer; font-size: 0.88rem; transition: all 0.2s; margin-top: 12px; }
+    .btn-add-ligne:hover { background: #fdecea; }
+    .btn-del-ligne { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fdecea; color: #e74c3c; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .btn-del-ligne:hover { background: #e74c3c; color: white; }
+    .total-row { background: #fff5f5; border-radius: 10px; padding: 12px 14px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 12px; }
+    .total-label { font-weight: 600; color: #7f8c8d; font-size: 0.9rem; }
+    .total-value { font-weight: 700; color: #c0392b; font-size: 1.2rem; }
+
+    .form-actions { padding: 20px 28px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid #f0f0f0; }
+    .form-actions-right { display: flex; gap: 10px; align-items: center; }
+    .btn-cancel { padding: 11px 24px; border-radius: 10px; border: 2px solid #e9ecef; background: white; font-weight: 600; cursor: pointer; color: #7f8c8d; text-decoration: none; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-save { padding: 11px 28px; border-radius: 10px; border: none; background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; font-weight: 700; cursor: pointer; font-size: 0.92rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(192,57,43,0.3); transition: all 0.2s; }
+    .btn-save:hover { transform: translateY(-2px); }
+
+    /* Boutons impression */
+    .btn-print { padding: 9px 18px; border-radius: 10px; border: 2px solid #2c3e50; background: white; color: #2c3e50; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s; }
+    .btn-print:hover { background: #2c3e50; color: white; }
+    .btn-pdf { padding: 9px 18px; border-radius: 10px; border: none; background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 3px 10px rgba(192,57,43,0.3); transition: all 0.2s; }
+    .btn-pdf:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(192,57,43,0.4); }
+    .print-actions { display: flex; gap: 10px; }
+
+    /* ===== IMPRESSION ===== */
+    @media print {
+        body > * { display: none !important; }
+        #printable-zone { display: block !important; position: fixed; top: 0; left: 0; width: 100%; padding: 20px; }
+        #printable-zone * { display: revert !important; visibility: visible; }
+        .print-actions, .btn-cancel, .btn-save, .btn-add-ligne, .btn-del-ligne,
+        .form-actions, .form-header, nav, .sidebar, .breadcrumb-bar { display: none !important; }
+        .print-header { display: flex !important; justify-content: space-between; align-items: flex-start; }
+        .print-doc-title { display: block !important; }
+        #signature-zone { display: block !important; }
+        .form-card { box-shadow: none !important; border: 1px solid #e0e0e0; }
+        input, select, textarea { border: 1px solid #ccc !important; background: white !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    }
+    .print-header { display: none; padding: 0 0 16px; border-bottom: 3px solid #c0392b; margin-bottom: 20px; }
+    .print-logo { font-size: 1.5rem; font-weight: 800; color: #c0392b; }
+    .print-logo small { display: block; font-size: 0.75rem; font-weight: 400; color: #7f8c8d; margin-top: 2px; }
+    .print-doc-ref { text-align: right; }
+    .print-doc-ref .ref { font-size: 1rem; font-weight: 700; color: #2c3e50; }
+    .print-doc-ref .date-print { font-size: 0.8rem; color: #7f8c8d; margin-top: 4px; }
+    .print-doc-title { display: none; text-align: center; font-size: 1.1rem; font-weight: 700; color: #c0392b; letter-spacing: 1px; text-transform: uppercase; margin: 12px 0; padding: 8px; border: 2px solid #c0392b; border-radius: 8px; }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="form-header">
+        <div>
+            <h2><i class="fas fa-shopping-cart mr-2"></i> {{ page_title }}</h2>
+            <p>Créez un bon de commande fournisseur pour la cuisine</p>
+        </div>
+    </div>
+
+    {% breadcrumb "Cuisine" "cuisine:index" "Commandes" "cuisine:stock_management" "Bon de Commande" "" %}
+
+    <div id="printable-zone">
+
+        <!-- En-tête impression uniquement -->
+        <div class="print-header">
+            <div>
+                <div class="print-logo">
+                    🏨 COMPLEXE BEHANIAN
+                    <small>Département Cuisine — Bon de Commande</small>
+                </div>
+            </div>
+            <div class="print-doc-ref">
+                <div class="ref">Brouillon — {% now "d/m/Y" %}</div>
+                <div class="date-print">Imprimé le {% now "d/m/Y à H:i" %}</div>
+            </div>
+        </div>
+        <div class="print-doc-title">BON DE COMMANDE FOURNISSEUR</div>
+
+        <form method="post" id="bc-form">
+            {% csrf_token %}
+            <div class="form-card">
+
+                <div class="form-section">
+                    <div class="section-title"><i class="fas fa-file-alt"></i> Informations générales</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Fournisseur</label>
+                            <select name="fournisseur" id="fournisseur-select">
+                                <option value="">— Sélectionner un fournisseur —</option>
+                                {% for f in fournisseurs %}
+                                <option value="{{ f.pk }}">{{ f.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Statut</label>
+                            <select name="statut">
+                                <option value="brouillon">Brouillon</option>
+                                <option value="confirme">Confirmé</option>
+                                <option value="envoye">Envoyé au fournisseur</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date commande <span class="req">*</span></label>
+                            <input type="date" name="date_commande" value="{% now 'Y-m-d' %}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date livraison prévue</label>
+                            <input type="date" name="date_livraison_prevue">
+                        </div>
+                        <div class="form-group full">
+                            <label>Notes / Instructions</label>
+                            <textarea name="notes" rows="2" placeholder="Instructions spéciales, conditions de livraison..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title"><i class="fas fa-list"></i> Articles commandés</div>
+                    <div class="lignes-header">
+                        <span>Ingrédient</span><span>Quantité</span>
+                        <span>Prix unitaire (FCFA)</span><span>Sous-total</span><span></span>
+                    </div>
+                    <div id="lignes-container">
+                        <div class="ligne-row">
+                            <select name="ingredient_id[]" class="ing-select" onchange="updateSousTotal(this)">
+                                <option value="">— Ingrédient —</option>
+                                {% for ing in ingredients %}
+                                <option value="{{ ing.pk }}" data-prix="{{ ing.prix_achat }}">{{ ing.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="quantite[]" class="qte-input" step="0.001" min="0" placeholder="0.000" oninput="updateSousTotal(this)">
+                            <input type="number" name="prix_unitaire[]" class="prix-input" step="0.01" min="0" placeholder="0.00" oninput="updateSousTotal(this)">
+                            <span class="sous-total" style="font-weight:700;color:#c0392b;padding:10px 0;">0 FCFA</span>
+                            <button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add-ligne" onclick="ajouterLigne()">
+                        <i class="fas fa-plus"></i> Ajouter un article
+                    </button>
+                    <div class="total-row">
+                        <span class="total-label">Total commande :</span>
+                        <span class="total-value" id="total-general">0 FCFA</span>
+                    </div>
+                </div>
+
+                <!-- Zone signature (impression uniquement) -->
+                <div class="form-section" id="signature-zone" style="display:none;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:10px;">
+                        <div style="text-align:center;"><div style="border-top:1px solid #ccc;margin-top:60px;padding-top:8px;font-size:0.8rem;color:#666;">Établi par</div></div>
+                        <div style="text-align:center;"><div style="border-top:1px solid #ccc;margin-top:60px;padding-top:8px;font-size:0.8rem;color:#666;">Validé par</div></div>
+                        <div style="text-align:center;"><div style="border-top:1px solid #ccc;margin-top:60px;padding-top:8px;font-size:0.8rem;color:#666;">Fournisseur (tampon)</div></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <!-- Boutons impression -->
+                <div class="print-actions">
+                    <button type="button" class="btn-print" onclick="window.print()">
+                        <i class="fas fa-print"></i> Imprimer
+                    </button>
+                    <button type="button" class="btn-pdf" id="btn-pdf-bc" onclick="exporterPDF('bc')">
+                        <i class="fas fa-file-pdf"></i> Télécharger PDF
+                    </button>
+                </div>
+                <div class="form-actions-right">
+                    <a href="{% url 'cuisine:stock_management' %}?tab=commandes" class="btn-cancel">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    <button type="submit" class="btn-save">
+                        <i class="fas fa-save"></i> Créer le Bon de Commande
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+const ingredients = {
+    {% for ing in ingredients %}
+    {{ ing.pk }}: { nom: "{{ ing.nom }}", prix: {{ ing.prix_achat|default:0 }} },
+    {% endfor %}
+};
+
+function updateSousTotal(el) {
+    const row = el.closest('.ligne-row');
+    const ingSelect = row.querySelector('.ing-select');
+    const qteInput  = row.querySelector('.qte-input');
+    const prixInput = row.querySelector('.prix-input');
+    const sousTotal = row.querySelector('.sous-total');
+    if (el === ingSelect && ingSelect.value) {
+        const ing = ingredients[ingSelect.value];
+        if (ing && ing.prix) prixInput.value = ing.prix;
+    }
+    const st = (parseFloat(qteInput.value)||0) * (parseFloat(prixInput.value)||0);
+    sousTotal.textContent = st.toLocaleString('fr-FR') + ' FCFA';
+    updateTotal();
+}
+
+function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('.sous-total').forEach(el => {
+        total += parseFloat(el.textContent.replace(/[^0-9.]/g, '')) || 0;
+    });
+    document.getElementById('total-general').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+}
+
+function ajouterLigne() {
+    const template = document.querySelector('.ligne-row').cloneNode(true);
+    template.querySelector('.ing-select').value = '';
+    template.querySelector('.qte-input').value = '';
+    template.querySelector('.prix-input').value = '';
+    template.querySelector('.sous-total').textContent = '0 FCFA';
+    template.querySelector('.ing-select').onchange = function() { updateSousTotal(this); };
+    template.querySelector('.qte-input').oninput = function() { updateSousTotal(this); };
+    template.querySelector('.prix-input').oninput = function() { updateSousTotal(this); };
+    template.querySelector('.btn-del-ligne').onclick = function() { supprimerLigne(this); };
+    document.getElementById('lignes-container').appendChild(template);
+}
+
+function supprimerLigne(btn) {
+    const rows = document.querySelectorAll('.ligne-row');
+    if (rows.length > 1) { btn.closest('.ligne-row').remove(); updateTotal(); }
+}
+
+function exporterPDF(type) {
+    const btn = document.getElementById('btn-pdf-' + type);
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+    btn.disabled = true;
+    document.getElementById('signature-zone').style.display = 'block';
+
+    const options = {
+        margin: [10,10,10,10],
+        filename: 'BonCommande_Behanian_' + new Date().toISOString().slice(0,10) + '.pdf',
+        image: { type: 'jpeg', quality: 0.97 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(options).from(document.getElementById('printable-zone')).save().then(() => {
+        btn.innerHTML = '<i class="fas fa-file-pdf"></i> Télécharger PDF';
+        btn.disabled = false;
+        document.getElementById('signature-zone').style.display = 'none';
+    });
+}
+
+window.addEventListener('beforeprint', () => {
+    document.getElementById('signature-zone').style.display = 'block';
+});
+window.addEventListener('afterprint', () => {
+    document.getElementById('signature-zone').style.display = 'none';
+});
+</script>
+{% endblock %}

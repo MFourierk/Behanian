@@ -1,0 +1,520 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% load humanize %}
+{% block title %}Rapport de Stock — BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+/* ===== LAYOUT GÉNÉRAL ===== */
+.rpt-header {
+    background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%);
+    color: white; padding: 28px 32px; border-radius: 18px;
+    margin-bottom: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; overflow: hidden;
+}
+.rpt-header::after {
+    content: '📊'; position: absolute; right: 24px; bottom: -14px;
+    font-size: 90px; opacity: 0.07; pointer-events: none;
+}
+.rpt-header h2 { font-size: 1.55rem; font-weight: 800; margin: 0; letter-spacing: -0.3px; }
+.rpt-header p  { margin: 5px 0 0; opacity: 0.75; font-size: 0.87rem; }
+
+/* ===== STATS CARDS ===== */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 16px 18px;
+}
+.stat-card .sc-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #7f8c8d; margin-bottom: 6px; }
+.stat-card .sc-value { font-size: 1.45rem; font-weight: 800; color: #2c3e50; line-height: 1.1; }
+.stat-card .sc-sub   { font-size: 0.75rem; color: #95a5a6; margin-top: 4px; }
+.stat-card.danger .sc-value { color: #e74c3c; }
+.stat-card.warning .sc-value { color: #e67e22; }
+.stat-card.success .sc-value { color: #27ae60; }
+
+/* ===== FILTRES ===== */
+.filtres-bar {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 18px 22px; margin-bottom: 20px;
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;
+}
+.filtre-group { display: flex; flex-direction: column; gap: 5px; }
+.filtre-group label { font-size: 0.75rem; font-weight: 700; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; }
+.filtre-group select,
+.filtre-group input[type=date] {
+    padding: 9px 13px; border: 1.5px solid #e9ecef; border-radius: 10px;
+    font-size: 0.88rem; color: #2c3e50; background: #f8f9fa;
+    min-width: 160px; transition: border-color 0.2s;
+}
+.filtre-group select:focus,
+.filtre-group input:focus { outline: none; border-color: #2c3e50; background: white; }
+.btn-appliquer {
+    padding: 9px 22px; border-radius: 10px; border: none;
+    background: #2c3e50; color: white; font-weight: 700;
+    font-size: 0.88rem; cursor: pointer; display: inline-flex;
+    align-items: center; gap: 8px; transition: all 0.2s; margin-bottom: 0;
+}
+.btn-appliquer:hover { background: #1a252f; }
+.filtres-actifs {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    padding-top: 10px; border-top: 1px solid #f0f0f0; margin-top: 6px; width: 100%;
+}
+.badge-filtre {
+    font-size: 0.75rem; padding: 4px 10px; border-radius: 20px;
+    background: #eaf4fb; color: #1a5276; font-weight: 600;
+    border: 1px solid #aed6f1;
+}
+
+/* ===== TABLE PAR FAMILLE ===== */
+.groupe-card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden; margin-bottom: 16px;
+}
+.groupe-header {
+    padding: 13px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+}
+.groupe-header:hover { background: #fafafa; }
+.groupe-header.cuisine { border-left: 4px solid #c0392b; }
+.groupe-header.cave    { border-left: 4px solid #1a5276; }
+.groupe-header-left { display: flex; align-items: center; gap: 12px; }
+.groupe-module-badge {
+    font-size: 0.68rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.badge-cuisine { background: #fdecea; color: #c0392b; }
+.badge-cave    { background: #eaf4fb; color: #1a5276; }
+.groupe-nom    { font-size: 0.95rem; font-weight: 700; color: #2c3e50; }
+.groupe-nb     { font-size: 0.8rem; color: #7f8c8d; }
+.groupe-header-right { display: flex; align-items: center; gap: 18px; }
+.groupe-valeur { font-size: 1rem; font-weight: 800; color: #2c3e50; }
+.groupe-alerts { display: flex; gap: 8px; }
+.alert-chip {
+    font-size: 0.72rem; padding: 2px 9px; border-radius: 20px; font-weight: 700;
+}
+.chip-rupture { background: #fdecea; color: #c0392b; }
+.chip-bas     { background: #fef9e7; color: #d68910; }
+.groupe-toggle { font-size: 0.8rem; color: #95a5a6; transition: transform 0.25s; }
+.groupe-toggle.open { transform: rotate(180deg); }
+
+/* Table articles */
+.groupe-table { overflow: hidden; max-height: 2000px; transition: max-height 0.3s ease; }
+.groupe-table.collapsed { max-height: 0; }
+table.articles-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+table.articles-table thead tr {
+    background: #f8f9fa; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #ebebeb;
+}
+table.articles-table th {
+    padding: 9px 14px; text-align: right; font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #7f8c8d;
+}
+table.articles-table th:first-child,
+table.articles-table th:nth-child(2) { text-align: left; }
+table.articles-table td { padding: 10px 14px; text-align: right; border-bottom: 1px solid #f5f5f5; color: #2c3e50; }
+table.articles-table td:first-child,
+table.articles-table td:nth-child(2) { text-align: left; }
+table.articles-table tr:last-child td { border-bottom: none; }
+table.articles-table tr.etat-rupture { background: #fff5f5; }
+table.articles-table tr.etat-bas     { background: #fffdf0; }
+table.articles-table tr:hover { background: #f8f9fa; }
+
+.ref-cell  { font-size: 0.75rem; color: #95a5a6; font-family: monospace; }
+.nom-cell  { font-weight: 600; }
+.qte-cell  { font-weight: 700; }
+.qte-cell.rupture { color: #e74c3c; }
+.qte-cell.bas     { color: #e67e22; }
+.valeur-cell { font-weight: 700; }
+
+.etat-badge {
+    display: inline-block; font-size: 0.7rem; padding: 3px 10px;
+    border-radius: 20px; font-weight: 700;
+}
+.etat-normal  { background: #eafaf1; color: #27ae60; }
+.etat-bas     { background: #fef9e7; color: #d68910; }
+.etat-rupture { background: #fdecea; color: #c0392b; }
+
+/* Pied de groupe */
+.groupe-footer {
+    padding: 10px 14px; background: #f8f9fa;
+    display: flex; justify-content: flex-end; gap: 24px;
+    border-top: 1px solid #ebebeb; font-size: 0.85rem;
+}
+.footer-label { color: #7f8c8d; }
+.footer-val   { font-weight: 700; color: #2c3e50; }
+
+/* ===== TOTAL GÉNÉRAL ===== */
+.total-general {
+    background: #2c3e50; color: white; border-radius: 14px;
+    padding: 18px 24px; display: flex; justify-content: space-between;
+    align-items: center; margin-top: 8px;
+}
+.tg-label  { font-size: 0.85rem; opacity: 0.75; }
+.tg-detail { display: flex; gap: 30px; margin-top: 4px; }
+.tg-item   { font-size: 0.8rem; opacity: 0.7; }
+.tg-value  { font-size: 1.5rem; font-weight: 900; }
+
+/* ===== BOUTONS ACTIONS ===== */
+.actions-bar {
+    display: flex; gap: 10px; justify-content: flex-end;
+    margin-bottom: 16px;
+}
+.btn-print {
+    padding: 9px 18px; border-radius: 10px; border: 2px solid #2c3e50;
+    background: white; color: #2c3e50; font-weight: 700;
+    font-size: 0.87rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s;
+}
+.btn-print:hover { background: #2c3e50; color: white; }
+.btn-pdf {
+    padding: 9px 18px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: white; font-weight: 700; font-size: 0.87rem;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+    box-shadow: 0 3px 10px rgba(192,57,43,0.3); transition: all 0.2s;
+}
+.btn-pdf:hover { transform: translateY(-1px); }
+
+/* ===== IMPRESSION ===== */
+@media print {
+    body > * { display: none !important; }
+    #printable-zone { display: block !important; position: fixed; top: 0; left: 0; width: 100%; }
+    #printable-zone * { display: revert !important; }
+    .actions-bar, .filtres-bar, .btn-print, .btn-pdf,
+    nav, .sidebar, .breadcrumb-bar, .groupe-toggle { display: none !important; }
+    .print-header    { display: flex !important; }
+    .print-footer-pg { display: block !important; }
+    .groupe-table.collapsed { max-height: 2000px !important; }
+    .groupe-card { box-shadow: none !important; border: 1px solid #e0e0e0; page-break-inside: avoid; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { margin: 15mm 12mm; }
+}
+
+/* En-tête impression uniquement */
+.print-header {
+    display: none; justify-content: space-between; align-items: flex-start;
+    padding-bottom: 14px; border-bottom: 3px solid #2c3e50; margin-bottom: 18px;
+}
+.print-logo       { font-size: 1.4rem; font-weight: 800; color: #2c3e50; }
+.print-logo small { display: block; font-size: 0.72rem; font-weight: 400; color: #7f8c8d; margin-top: 2px; }
+.print-doc-info   { text-align: right; font-size: 0.8rem; color: #7f8c8d; }
+.print-doc-info strong { display: block; font-size: 0.95rem; color: #2c3e50; margin-bottom: 2px; }
+.print-footer-pg  { display: none; text-align: center; font-size: 0.75rem; color: #95a5a6; margin-top: 20px; padding-top: 10px; border-top: 1px solid #e0e0e0; }
+
+/* Aucun résultat */
+.empty-state { text-align: center; padding: 50px 20px; color: #95a5a6; }
+.empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+</style>
+
+<div class="container-fluid py-4">
+
+    <!-- En-tête -->
+    <div class="rpt-header">
+        <div>
+            <h2><i class="fas fa-warehouse mr-2"></i> Rapport de Stock</h2>
+            <p>
+                {% if module_filtre == 'cuisine' %}Cuisine uniquement
+                {% elif module_filtre == 'cave' %}Cave uniquement
+                {% else %}Cuisine + Cave
+                {% endif %}
+                — État au {{ date_rapport }}
+            </p>
+        </div>
+        <div style="text-align:right;font-size:0.78rem;opacity:0.6;">
+            Généré le {{ generated_at|date:"d/m/Y à H:i" }}
+        </div>
+    </div>
+
+    {% if module_filtre == 'cuisine' %}
+    {% breadcrumb "Cuisine" "cuisine:index" "Rapport de Stock" "" %}
+    {% elif module_filtre == 'cave' %}
+    {% breadcrumb "Cave" "bar:dashboard" "Rapport de Stock" "" %}
+    {% else %}
+    {% breadcrumb "Tableau de bord" "dashboard:index" "Rapport de Stock" "" %}
+    {% endif %}
+
+    <div id="printable-zone">
+
+        <!-- En-tête impression -->
+        <div class="print-header">
+            <div>
+                <div class="print-logo">🏨 COMPLEXE BEHANIAN<small>Rapport de Stock — {{ generated_at|date:"d/m/Y à H:i" }}</small></div>
+            </div>
+            <div class="print-doc-info">
+                <strong>RAPPORT DE STOCK</strong>
+                Module :
+                {% if module_filtre == 'cuisine' %}Cuisine
+                {% elif module_filtre == 'cave' %}Cave
+                {% else %}Cuisine + Cave
+                {% endif %}
+                <br>Date rapport : {{ date_rapport }}
+                <br>{{ total_articles }} articles — {{ nb_rupture }} rupture(s)
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="sc-label">Valeur totale</div>
+                <div class="sc-value">{{ total_valeur|floatformat:0 }} F</div>
+                <div class="sc-sub">{{ total_articles }} article(s)</div>
+            </div>
+            {% if module_filtre == 'tous' %}
+            <div class="stat-card">
+                <div class="sc-label">Cuisine</div>
+                <div class="sc-value">{{ total_valeur_cuisine|floatformat:0 }} F</div>
+                <div class="sc-sub">Ingrédients</div>
+            </div>
+            <div class="stat-card">
+                <div class="sc-label">Cave</div>
+                <div class="sc-value">{{ total_valeur_cave|floatformat:0 }} F</div>
+                <div class="sc-sub">Boissons</div>
+            </div>
+            {% endif %}
+            <div class="stat-card success">
+                <div class="sc-label">En stock normal</div>
+                <div class="sc-value">{{ nb_normal }}</div>
+                <div class="sc-sub">article(s)</div>
+            </div>
+            <div class="stat-card warning">
+                <div class="sc-label">Stock bas</div>
+                <div class="sc-value">{{ nb_bas }}</div>
+                <div class="sc-sub">sous le seuil</div>
+            </div>
+            <div class="stat-card danger">
+                <div class="sc-label">Ruptures</div>
+                <div class="sc-value">{{ nb_rupture }}</div>
+                <div class="sc-sub">à commander</div>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <form method="get" class="filtres-bar" id="filtres-form">
+            <div class="filtre-group">
+                <label>Module</label>
+                <select name="module" onchange="majCategories()">
+                    <option value="tous"    {% if module_filtre == 'tous' %}selected{% endif %}>Cuisine + Cave</option>
+                    <option value="cuisine" {% if module_filtre == 'cuisine' %}selected{% endif %}>Cuisine uniquement</option>
+                    <option value="cave"    {% if module_filtre == 'cave' %}selected{% endif %}>Cave uniquement</option>
+                </select>
+            </div>
+            <div class="filtre-group">
+                <label>Famille / Catégorie</label>
+                <select name="categorie" id="select-categorie">
+                    <option value="">Toutes les familles</option>
+                    <optgroup label="— Cuisine —" id="optgroup-cuisine" {% if module_filtre == 'cave' %}style="display:none"{% endif %}>
+                        {% for cat in categories_cuisine %}
+                        <option value="{{ cat.pk }}" data-module="cuisine" {% if categorie_filtre == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.nom }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="— Cave —" id="optgroup-cave" {% if module_filtre == 'cuisine' %}style="display:none"{% endif %}>
+                        {% for cat in categories_cave %}
+                        <option value="{{ cat.pk }}" data-module="cave" {% if categorie_filtre == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.nom }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="filtre-group">
+                <label>Date du rapport</label>
+                <input type="date" name="date" value="{{ date_rapport }}">
+            </div>
+            <div class="filtre-group">
+                <label>Affichage</label>
+                <select name="etat">
+                    <option value="tous"    {% if etat_filtre == 'tous' %}selected{% endif %}>Tous les articles</option>
+                    <option value="bas"     {% if etat_filtre == 'bas' %}selected{% endif %}>Stock bas uniquement</option>
+                    <option value="rupture" {% if etat_filtre == 'rupture' %}selected{% endif %}>Ruptures uniquement</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-appliquer">
+                <i class="fas fa-filter"></i> Appliquer
+            </button>
+
+            <!-- Résumé des filtres actifs -->
+            <div class="filtres-actifs">
+                <span style="font-size:0.75rem;color:#7f8c8d;font-weight:600;">Filtres actifs :</span>
+                {% if module_filtre != 'tous' %}
+                <span class="badge-filtre">Module : {{ module_filtre|title }}</span>
+                {% endif %}
+                {% if etat_filtre != 'tous' %}
+                <span class="badge-filtre">État : {{ etat_filtre|title }}</span>
+                {% endif %}
+                {% if categorie_filtre %}
+                <span class="badge-filtre">Catégorie filtrée</span>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Boutons impression -->
+        <div class="actions-bar">
+            <button class="btn-print" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimer
+            </button>
+            <button class="btn-pdf" id="btn-pdf" onclick="exporterPDFStock()">
+                <i class="fas fa-file-pdf"></i> Télécharger PDF
+            </button>
+        </div>
+
+        <!-- Tableaux par famille -->
+        {% if groupes %}
+            {% for groupe in groupes %}
+            <div class="groupe-card">
+                <div class="groupe-header {{ groupe.module }}" onclick="toggleGroupe(this)">
+                    <div class="groupe-header-left">
+                        <span class="groupe-module-badge badge-{{ groupe.module }}">{{ groupe.module|title }}</span>
+                        <span class="groupe-nom">{{ groupe.categorie }}</span>
+                        <span class="groupe-nb">{{ groupe.articles|length }} article(s)</span>
+                    </div>
+                    <div class="groupe-header-right">
+                        <div class="groupe-alerts">
+                            {% if groupe.nb_rupture > 0 %}
+                            <span class="alert-chip chip-rupture">{{ groupe.nb_rupture }} rupture(s)</span>
+                            {% endif %}
+                            {% if groupe.nb_bas > 0 %}
+                            <span class="alert-chip chip-bas">{{ groupe.nb_bas }} bas</span>
+                            {% endif %}
+                        </div>
+                        <span class="groupe-valeur">{{ groupe.valeur|floatformat:0 }} F</span>
+                        <i class="fas fa-chevron-down groupe-toggle open"></i>
+                    </div>
+                </div>
+
+                <div class="groupe-table">
+                    <table class="articles-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">Réf.</th>
+                                <th style="text-align:left;">Désignation</th>
+                                <th>Quantité</th>
+                                <th>Unité</th>
+                                <th>CMUP / Px achat</th>
+                                <th>Valeur stock</th>
+                                <th>Seuil alerte</th>
+                                <th>État</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for art in groupe.articles %}
+                            <tr class="etat-{{ art.etat }}">
+                                <td class="ref-cell">{{ art.reference }}</td>
+                                <td class="nom-cell">{{ art.nom }}</td>
+                                <td class="qte-cell {{ art.etat }}">{{ art.quantite|floatformat:3 }}</td>
+                                <td style="color:#7f8c8d;">{{ art.unite }}</td>
+                                <td>{{ art.cmup|floatformat:2 }} F</td>
+                                <td class="valeur-cell">{{ art.valeur|floatformat:0 }} F</td>
+                                <td style="color:#95a5a6;">
+                                    {% if art.seuil > 0 %}{{ art.seuil|floatformat:3 }}{% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    <span class="etat-badge etat-{{ art.etat }}">
+                                        {% if art.etat == 'rupture' %}Rupture
+                                        {% elif art.etat == 'bas' %}Stock bas
+                                        {% else %}Normal{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="groupe-footer">
+                        <span class="footer-label">Sous-total {{ groupe.categorie }} :</span>
+                        <span class="footer-val">{{ groupe.valeur|floatformat:0 }} FCFA</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Total général -->
+            <div class="total-general">
+                <div>
+                    <div class="tg-label">Valeur totale du stock</div>
+                    <div class="tg-detail">
+                        {% if module_filtre == 'tous' %}
+                        <span class="tg-item">Cuisine : {{ total_valeur_cuisine|floatformat:0 }} F</span>
+                        <span class="tg-item">Cave : {{ total_valeur_cave|floatformat:0 }} F</span>
+                        {% endif %}
+                        <span class="tg-item">{{ total_articles }} articles au total</span>
+                    </div>
+                </div>
+                <div class="tg-value">{{ total_valeur|floatformat:0 }} FCFA</div>
+            </div>
+
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <p>Aucun article ne correspond aux filtres sélectionnés.</p>
+            </div>
+        {% endif %}
+
+        <!-- Pied de page impression -->
+        <div class="print-footer-pg">
+            Rapport généré le {{ generated_at|date:"d/m/Y à H:i" }} — Complexe Behanian — Document confidentiel
+        </div>
+
+    </div><!-- /printable-zone -->
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+// ===== Toggle groupes =====
+function toggleGroupe(header) {
+    const table  = header.nextElementSibling;
+    const toggle = header.querySelector('.groupe-toggle');
+    table.classList.toggle('collapsed');
+    toggle.classList.toggle('open');
+}
+
+// ===== Masquer catégories selon module =====
+function majCategories() {
+    const module = document.querySelector('select[name=module]').value;
+    const grpCuisine = document.getElementById('optgroup-cuisine');
+    const grpCave    = document.getElementById('optgroup-cave');
+    if (grpCuisine) grpCuisine.style.display = module === 'cave'    ? 'none' : '';
+    if (grpCave)    grpCave.style.display    = module === 'cuisine' ? 'none' : '';
+    document.getElementById('select-categorie').value = '';
+}
+
+// ===== Export PDF =====
+function exporterPDFStock() {
+    const btn = document.getElementById('btn-pdf');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+    btn.disabled = true;
+
+    // Déplier tous les groupes avant export
+    document.querySelectorAll('.groupe-table.collapsed').forEach(t => {
+        t.classList.remove('collapsed');
+    });
+
+    const module = document.querySelector('select[name=module]').value;
+    const date   = document.querySelector('input[name=date]').value;
+    const filename = 'RapportStock_Behanian_' + module + '_' + date + '.pdf';
+
+    const options = {
+        margin   : [12, 10, 12, 10],
+        filename : filename,
+        image    : { type: 'jpeg', quality: 0.97 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF    : { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css'] }
+    };
+
+    html2pdf().set(options).from(document.getElementById('printable-zone')).save().then(() => {
+        btn.innerHTML = '<i class="fas fa-file-pdf"></i> Télécharger PDF';
+        btn.disabled = false;
+    });
+}
+
+// Impression : déplier tous les groupes
+window.addEventListener('beforeprint', () => {
+    document.querySelectorAll('.groupe-table').forEach(t => t.classList.remove('collapsed'));
+});
+</script>
+{% endblock %}
