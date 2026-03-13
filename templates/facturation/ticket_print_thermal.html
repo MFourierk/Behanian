@@ -3,200 +3,256 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Ticket - {{ ticket.numero }}</title>
+    <title>Ticket {{ ticket.numero }}</title>
     <style>
+        @page { size: 80mm auto; margin: 3mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            margin: 0;
-            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
             background: #eee;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 20px;
             min-height: 90vh;
         }
         .ticket {
             width: 300px;
             background: white;
-            padding: 15px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
             position: relative;
             overflow: hidden;
         }
         .watermark {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 30px;
-            color: rgba(0, 0, 0, 0.1);
-            border: 2px solid rgba(0, 0, 0, 0.1);
-            padding: 10px;
-            z-index: 0;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-40deg);
+            font-size: 28px; font-weight: bold; text-transform: uppercase;
+            color: rgba(220,53,69,0.12);
+            border: 3px solid rgba(220,53,69,0.12);
+            padding: 8px 14px;
             pointer-events: none;
-            font-weight: bold;
-            text-transform: uppercase;
+            white-space: nowrap;
+            z-index: 0;
         }
-        .text-center { text-align: center; }
-        .bold { font-weight: bold; }
-        .mb-2 { margin-bottom: 10px; }
-        .border-bottom { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .item-name { flex: 1; text-align: left; }
-        .item-price { text-align: right; white-space: nowrap; }
-        
+        .center { text-align: center; }
+        .bold   { font-weight: bold; }
+        .sep-solid { border: none; border-top: 2px solid #000; margin: 6px 0; }
+        .sep-dash  { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+        .meta-row  { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; }
+        .meta-label { font-weight: bold; }
+
+        /* Table articles */
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        thead th {
+            font-size: 10px; padding: 3px 2px;
+            border-bottom: 1px solid #000; text-align: left;
+        }
+        thead th:nth-child(2) { text-align: center; }
+        thead th:nth-child(3) { text-align: right; }
+        tbody td { padding: 3px 2px; vertical-align: top; }
+        tbody td:nth-child(2) { text-align: center; white-space: nowrap; }
+        tbody td:nth-child(3) { text-align: right; white-space: nowrap; font-weight: bold; }
+
+        /* Totaux */
+        .total-row {
+            display: flex; justify-content: space-between;
+            align-items: baseline; padding: 5px 2px 3px;
+        }
+        .total-label { font-size: 13px; font-weight: bold; }
+        .total-val   { font-size: 16px; font-weight: bold; }
+        .paiement-row { display: flex; justify-content: space-between; padding: 2px; font-size: 11px; }
+        .footer { margin-top: 8px; font-size: 9px; text-align: center; line-height: 1.6; }
+
+        /* Boutons */
+        .no-print { text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        .btn-imprimer {
+            padding: 10px 24px; font-size: 15px; font-weight: bold;
+            background: #1a1225; color: #c9a84c;
+            border: 2px solid #c9a84c; border-radius: 8px; cursor: pointer;
+        }
+        .btn-imprimer:hover { background: #c9a84c; color: #1a1225; }
+        .btn-fermer {
+            padding: 10px 24px; font-size: 15px; font-weight: bold;
+            background: #6c757d; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+        }
         @media print {
             body { background: white; padding: 0; }
             .ticket { box-shadow: none; width: 100%; padding: 0; }
-            .no-print { display: none; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
 <body>
-    <div class="ticket">
-        {% if ticket.imprime and not is_original %}
-        <div class="watermark">DUPLICATA</div>
-        {% endif %}
-        
-        <div class="text-center mb-2">
-            <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-                <img src="{% static 'images/Logo.png' %}" alt="Logo" style="height: 50px;">
-            </div>
-            <h3 style="margin: 0; font-size: 16px;">COMPLEXE HÔTELIER BEHANIAN</h3>
-            <p style="margin: 2px 0; font-size: 11px; font-style: italic;">Votre confort, notre priorité</p>
-            
-            <p style="margin: 10px 0 0 0; font-size: 12px;">Yopougon Beago à 200m du Palais de justice</p>
-            <p style="margin: 0; font-size: 12px;">Tél: 07 58 29 11 10 / 01 43 09 76 16</p>
-        </div>
 
-        <div class="border-bottom">
-            <div class="row">
-                <span>Date:</span>
-                <span>{{ ticket.date_creation|date:"d/m/Y H:i" }}</span>
-            </div>
-            <div class="row">
-                <span>Ticket N°:</span>
-                <span>{{ ticket.numero }}</span>
-            </div>
-            <div class="row">
-                <span>Service:</span>
-                <span>{{ ticket.module|upper }}</span>
-            </div>
-            <div class="row">
-                <span>Serveur/Caissier:</span>
-                <span>{{ ticket.cree_par.get_full_name|default:ticket.cree_par.username }}</span>
-            </div>
-        </div>
-        
-        {% if ticket.client %}
-        <div class="border-bottom">
-            <!-- Client Info -->
-             <div class="row">
-                <span class="bold">Client:</span>
-                <span>{{ ticket.client.nom_complet }}</span>
-            </div>
-        </div>
-        {% endif %}
-        
-        <div class="border-bottom">
-            <div class="row">
-                <span class="bold">Mode Paiement:</span>
-                <span>{{ ticket.get_mode_paiement_display }}</span>
-            </div>
-        </div>
+<div class="ticket">
+    {% if ticket.est_duplicata %}
+    <div class="watermark">DUPLICATA</div>
+    {% endif %}
 
-        <div class="border-bottom">
-            <!-- Contenu dynamique (HTML généré par la vue) -->
-            {{ ticket.contenu|safe }}
-        </div>
-
-        <div class="mb-2">
-            <div class="row bold" style="font-size: 16px;">
-                <span>TOTAL</span>
-                <span>{{ ticket.montant_total|floatformat:0 }} F</span>
-            </div>
-            <div class="row">
-                <span>Payé:</span>
-                <span>{{ ticket.montant_paye|floatformat:0 }} F</span>
-            </div>
-            {% if ticket.montant_paye > ticket.montant_total %}
-            <div class="row">
-                <span>Monnaie:</span>
-                <span>{{ ticket.monnaie_rendue|floatformat:0 }} F</span>
-            </div>
-            {% endif %}
-            <!-- Supprimé car redondant avec l'affichage en haut -->
-        </div>
-
-        <div class="text-center" style="margin-top: 20px; font-size: 11px;">
-            <p>MERCI DE VOTRE VISITE</p>
-            <p class="bold">À BIENTÔT !</p>
-        </div>
+    <!-- EN-TÊTE -->
+    <div class="center">
+        <img src="{% static 'images/Logo.png' %}" alt="Logo"
+             style="width:55px; height:55px; object-fit:contain; margin-bottom:4px;"
+             onerror="this.style.display='none'">
+        <div style="font-size:13px; font-weight:bold; letter-spacing:1px;">COMPLEXE HÔTELIER BEHANIAN</div>
+        <div style="font-size:9px; font-style:italic; margin-top:2px;">Votre confort, notre priorité</div>
+        <div style="font-size:9px; margin-top:3px;">Yopougon Beago à 200m du Palais de justice</div>
+        <div style="font-size:9px;">Tél: 07 58 29 11 10 / 01 43 09 76 16</div>
     </div>
+    <hr class="sep-solid">
 
-    <div class="no-print text-center" style="margin-top: 20px;">
-        <button onclick="handlePrint()" style="padding: 10px 20px; font-size: 16px; background: #2c3e50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            <span style="font-size: 20px;">🖨️</span> IMPRIMER
-        </button>
-        <button onclick="handleClose()" style="padding: 10px 20px; font-size: 16px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
-            FERMER
-        </button>
+    <!-- META -->
+    <div class="meta-row">
+        <span class="meta-label">Date :</span>
+        <span>{{ ticket.date_creation|date:"d/m/Y H:i" }}</span>
     </div>
+    <div class="meta-row">
+        <span class="meta-label">Ticket N° :</span>
+        <span>{{ ticket.numero }}</span>
+    </div>
+    <div class="meta-row">
+        <span class="meta-label">Service :</span>
+        <span>{{ ticket.get_module_display }}</span>
+    </div>
+    {% if ticket.cree_par %}
+    <div class="meta-row">
+        <span class="meta-label">Caissier :</span>
+        <span>{{ ticket.cree_par.get_full_name|default:ticket.cree_par.username }}</span>
+    </div>
+    {% endif %}
+    <div class="meta-row">
+        <span class="meta-label">Règlement :</span>
+        <span>{{ ticket.get_mode_paiement_display }}</span>
+    </div>
+    {% if ticket.client %}
+    <div class="meta-row">
+        <span class="meta-label">Client :</span>
+        <span>{{ ticket.client.nom_complet }}</span>
+    </div>
+    {% endif %}
+    <hr class="sep-dash">
 
-    <script>
-        function handleClose() {
-            try {
-                window.close();
-            } catch(e) {
-                console.log("window.close() bloqué par le navigateur");
-            }
-            // Redirection de secours si window.close() échoue (ex: onglet unique)
-            if (!window.closed) {
-                window.history.back();
-            }
+    <!-- ARTICLES — parsés depuis ticket.contenu -->
+    <table>
+        <thead>
+            <tr>
+                <th>Article</th>
+                <th style="text-align:center;">Qté × P.U</th>
+                <th style="text-align:right;">Montant</th>
+            </tr>
+        </thead>
+        <tbody id="lignesBody">
+            <!-- Rempli par le JS ci-dessous -->
+        </tbody>
+    </table>
+    <hr class="sep-dash">
+
+    <!-- TOTAUX -->
+    <div class="total-row">
+        <span class="total-label">TOTAL</span>
+        <span class="total-val">{{ ticket.montant_total|floatformat:0 }} FCFA</span>
+    </div>
+    {% if ticket.montant_paye > ticket.montant_total %}
+    <hr class="sep-dash">
+    <div class="paiement-row">
+        <span>Reçu :</span>
+        <span>{{ ticket.montant_paye|floatformat:0 }} F</span>
+    </div>
+    <div class="paiement-row bold">
+        <span>Monnaie rendue :</span>
+        <span>{{ ticket.monnaie_rendue|floatformat:0 }} F</span>
+    </div>
+    {% endif %}
+    <hr class="sep-solid">
+
+    <!-- PIED DE PAGE -->
+    <div class="footer">
+        Merci de votre visite<br>
+        Conservez ce ticket pour tout litige
+        {% if ticket.est_duplicata %}
+        <br><strong>— DUPLICATA —</strong>
+        {% endif %}
+    </div>
+</div>
+
+<!-- BOUTONS -->
+<div class="no-print">
+    <button class="btn-imprimer" onclick="handlePrint()">🖨️ &nbsp; IMPRIMER</button>
+    <button class="btn-fermer"   onclick="handleClose()">FERMER</button>
+</div>
+
+<script>
+// Parser le contenu texte stocké en base et reconstruire le tableau articles
+(function() {
+    const contenu = "{{ ticket.contenu|escapejs }}";
+    const tbody   = document.getElementById('lignesBody');
+    if (!tbody || !contenu) return;
+
+    // Format stocké :
+    // "  Nom article x1  500 F" ou "  Nom x2  1 000 F"
+    // On cherche les lignes qui ressemblent à des articles : contiennent "x" + nombre + "F"
+    const lignes = contenu.split('\n');
+    let articlesHTML = '';
+
+    lignes.forEach(ligne => {
+        // Pattern : "  Nom article x{qty}  {montant} F"
+        const match = ligne.match(/^\s{2}(.+?)\s+x(\d+)\s+([\d\s,]+)\s*F\s*$/);
+        if (match) {
+            const nom     = match[1].trim();
+            const qty     = match[2];
+            const montant = match[3].trim();
+            // Essayer de retrouver le prix unitaire
+            const montantNum = parseInt(montant.replace(/[\s,]/g, ''));
+            const prixUnit   = qty > 0 ? Math.round(montantNum / parseInt(qty)).toLocaleString('fr-FR') : montant;
+            articlesHTML += `<tr>
+                <td style="max-width:110px; word-wrap:break-word;">${nom}</td>
+                <td>${qty} × ${prixUnit}</td>
+                <td>${montantNum.toLocaleString('fr-FR')} F</td>
+            </tr>`;
         }
+    });
 
-        function handlePrint() {
-            {% if ticket.module == 'hotel' and not ticket.imprime %}
-            // Logique spécifique Hôtel : Confirmer AVANT d'imprimer
-            if(confirm("Voulez-vous clôturer la transaction et libérer la chambre ?")) {
-                window.print();
-                
-                // Appel AJAX pour finaliser
-                fetch("{% url 'hotel:finalize_checkout' ticket.id %}")
-                .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text) });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if(data.status === 'success') {
-                        // Redirection vers la liste des tickets facturation
-                        try {
-                            if (window.opener && !window.opener.closed) {
-                                window.opener.location.href = "{% url 'facturation:ticket_list' %}";
-                                window.close();
-                            } else {
-                                window.location.href = "{% url 'facturation:ticket_list' %}";
-                            }
-                        } catch(e) {
-                            window.location.href = "{% url 'facturation:ticket_list' %}";
-                        }
+    if (articlesHTML) {
+        tbody.innerHTML = articlesHTML;
+    } else {
+        // Fallback : afficher le contenu brut si parsing échoue
+        tbody.innerHTML = `<tr><td colspan="3" style="white-space:pre-wrap; font-size:10px;">${contenu}</td></tr>`;
+    }
+})();
+
+function handleClose() {
+    try { window.close(); } catch(e) {}
+    if (!window.closed) { window.history.back(); }
+}
+
+function handlePrint() {
+    {% if ticket.module == 'hotel' and not ticket.imprime %}
+    if (confirm("Voulez-vous clôturer la transaction et libérer la chambre ?")) {
+        window.print();
+        fetch("{% url 'hotel:finalize_checkout' ticket.id %}")
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                try {
+                    if (window.opener && !window.opener.closed) {
+                        window.opener.location.href = "{% url 'facturation:ticket_list' %}";
+                        window.close();
                     } else {
-                        alert("Erreur: " + data.message);
+                        window.location.href = "{% url 'facturation:ticket_list' %}";
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("Une erreur est survenue lors de la communication avec le serveur: " + error.message);
-                });
-            }
-            {% else %}
-            window.print();
-            {% endif %}
-        }
-    </script>
+                } catch(e) { window.location.href = "{% url 'facturation:ticket_list' %}"; }
+            } else { alert("Erreur: " + data.message); }
+        })
+        .catch(e => alert("Erreur serveur: " + e.message));
+    }
+    {% else %}
+    window.print();
+    {% endif %}
+}
+</script>
 </body>
 </html>

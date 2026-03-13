@@ -1,9 +1,10 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 
 app_name = 'bar'
 
 urlpatterns = [
+    path('tpe/', views.bar_tpe, name='tpe'),
     path('', views.bar_dashboard, name='dashboard'),
     path('stock/', views.stock_management, name='stock_management'),
 
@@ -43,6 +44,7 @@ urlpatterns = [
     path('inventaire/<int:pk>/annuler/', views.inventaire_annuler, name='inventaire_annuler'),
 
     # Casses
+    path('api/vente/', views.api_vente_create, name='api_vente'),
     path('rapport/stock/', views.rapport_stock_cave, name='rapport_stock'),
     path('casses/', views.casse_list, name='casse_list'),
     path('casses/nouveau/', views.casse_create, name='casse_create'),
@@ -50,3 +52,5 @@ urlpatterns = [
     path('casses/<int:pk>/valider/', views.casse_valider, name='casse_valider'),
     path('casses/<int:pk>/annuler/', views.casse_annuler, name='casse_annuler'),
 ]
+
+

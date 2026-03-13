@@ -1,4 +1,4 @@
-from django.contrib.contenttypes.fields import GenericForeignKey
+﻿from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.contrib.auth.models import User
@@ -357,6 +357,7 @@ class Ticket(models.Model):
         ('restaurant', 'Restaurant'),
         ('caisse', 'Caisse'),
         ('piscine', 'Piscine'),
+        ('cave', 'Cave'),
         ('autre', 'Autre'),
     ]
     
@@ -377,6 +378,7 @@ class Ticket(models.Model):
         ('carte', 'Carte Bancaire'), # Alias pour compatibilité
         ('cheque', 'Chèque'),
         ('virement', 'Virement'),
+        ('cave', 'Cave'),
         ('autre', 'Autre'),
     ]
 

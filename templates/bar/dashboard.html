@@ -24,7 +24,7 @@
                     <div class="card-icon"><i class="fas fa-cash-register"></i></div>
                     <h4 class="card-title">Vente / TPE</h4>
                     <p class="card-text">Interface de vente rapide pour enregistrer les consommations et les commandes du bar.</p>
-                    <a href="#" class="btn btn-action primary mt-3">Lancer l'interface de vente</a>
+                    <a href="{% url 'bar:tpe' %}" class="btn btn-action primary mt-3">Lancer l'interface de vente</a>
                 </div>
             </div>
         </div>
@@ -60,3 +60,4 @@
 .sub-module-card .card-text  { font-size: 1rem; opacity: 0.8; }
 </style>
 {% endblock %}
+

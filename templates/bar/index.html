@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
 {% block title %}Cave — Interface de Vente{% endblock %}
 
 {% block extra_css %}
@@ -184,8 +185,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
 /* Espace + destination */
 .ticket-meta {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   margin-bottom: 10px;
+}
+/* Le 3ème élément (sélecteur serveur) prend toute la largeur */
+.ticket-meta select:last-child {
+  grid-column: 1 / -1;
 }
 .ticket-meta select, .ticket-meta input {
   padding: 8px 11px; border-radius: 10px;
@@ -200,6 +207,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 }
 .ticket-meta select option { background: var(--cave-deep); color: white; }
 .ticket-meta input::placeholder { color: rgba(255,255,255,0.35); }
+.caissier-info {
+  grid-column: 1 / -1;
+  padding: 7px 11px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(201,168,76,0.08);
+  color: rgba(255,255,255,0.6);
+  font-size: 0.8rem;
+  display: flex; align-items: center; gap: 7px;
+}
+.caissier-info i { color: var(--cave-gold); font-size: 0.75rem; }
+.caissier-info strong { color: var(--cave-gold); }
 
 /* Tickets en attente */
 .tickets-attente {
@@ -482,7 +500,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <span class="ticket-num" id="ticketNum">T-001</span>
       </div>
 
-      <!-- Destination + référence -->
+      <!-- Destination + référence + serveur + caissier -->
       <div class="ticket-meta">
         <select id="selectEspace" onchange="majTicketMeta()">
           <option value="">📍 Espace / Destination</option>
@@ -495,6 +513,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <option value="visite">👤 Visiteur</option>
         </select>
         <input type="text" id="inputRef" placeholder="Table / Chambre / Nom..." oninput="majTicketMeta()">
+        <select id="selectServeur" onchange="majTicketMeta()">
+          <option value="">🧑‍🍳 Serveur</option>
+          {% for user in serveurs %}
+          <option value="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</option>
+          {% endfor %}
+        </select>
+        <div class="caissier-info">
+          <i class="fas fa-user-tie"></i>
+          Caissier : <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        </div>
       </div>
 
       <!-- Tickets en attente -->
@@ -593,7 +621,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 // STATE
 // ============================================================
 let tickets = {
-  1: { id: 1, nom: 'T-001', espace: '', ref: '', lignes: [], paiement: 'especes' }
+  1: { id: 1, nom: 'T-001', espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' }
 };
 let ticketActifId = 1;
 let ticketCounter = 1;
@@ -709,8 +737,9 @@ function changerQty(index, delta) {
 // META TICKET
 // ============================================================
 function majTicketMeta() {
-  tickets[ticketActifId].espace = document.getElementById('selectEspace').value;
-  tickets[ticketActifId].ref    = document.getElementById('inputRef').value;
+  tickets[ticketActifId].espace  = document.getElementById('selectEspace').value;
+  tickets[ticketActifId].ref     = document.getElementById('inputRef').value;
+  tickets[ticketActifId].serveur = document.getElementById('selectServeur').value;
 }
 
 // ============================================================
@@ -718,20 +747,21 @@ function majTicketMeta() {
 // ============================================================
 function nouveauTicket() {
   ticketCounter++;
-  const nom = `T-${String(ticketCounter).padStart(3, '0')}`;
-  tickets[ticketCounter] = { id: ticketCounter, nom, espace: '', ref: '', lignes: [], paiement: 'especes' };
-  ticketActifId = ticketCounter;
+  const tid = ticketCounter; // capturer la valeur locale pour la closure
+  const nom = `T-${String(tid).padStart(3, '0')}`;
+  tickets[tid] = { id: tid, nom, espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' };
+  ticketActifId = tid;
 
   const container = document.getElementById('ticketsAttente');
   const btnNew    = container.querySelector('.btn-new-ticket');
   const btn       = document.createElement('button');
   btn.className   = 'ticket-attente-btn';
-  btn.dataset.tid = ticketCounter;
+  btn.dataset.tid = tid;
   btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${nom}`;
-  btn.onclick     = () => chargerTicket(ticketCounter);
+  btn.onclick     = () => chargerTicket(tid); // tid capturé correctement
   container.insertBefore(btn, btnNew);
 
-  chargerTicket(ticketCounter);
+  chargerTicket(tid);
   toast(`Nouveau ticket ${nom} créé`, 'info');
 }
 
@@ -742,8 +772,9 @@ function chargerTicket(tid) {
   });
   const t = tickets[tid];
   document.getElementById('ticketNum').textContent      = t.nom;
-  document.getElementById('selectEspace').value         = t.espace;
-  document.getElementById('inputRef').value             = t.ref;
+  document.getElementById('selectEspace').value  = t.espace;
+  document.getElementById('inputRef').value      = t.ref;
+  document.getElementById('selectServeur').value = t.serveur || '';
   // Remettre le bon mode de paiement
   modePaiement = t.paiement || 'especes';
   document.querySelectorAll('.pay-btn').forEach(b => {
@@ -755,6 +786,17 @@ function chargerTicket(tid) {
 function mettreEnAttente() {
   const t = tickets[ticketActifId];
   if (!t.lignes.length) { toast('Ticket vide — rien à mettre en attente', 'error'); return; }
+  // Sauvegarder l'état complet du ticket actif avant de switcher
+  t.espace  = document.getElementById('selectEspace').value;
+  t.ref     = document.getElementById('inputRef').value;
+  t.serveur = document.getElementById('selectServeur').value;
+  t.paiement = modePaiement;
+  // Mettre à jour le bouton avec le montant
+  const btnActif = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
+  if (btnActif) {
+    const total = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+    btnActif.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom} · ${formatF(total)}`;
+  }
   toast(`Ticket ${t.nom} mis en attente`, 'info');
   nouveauTicket();
 }
@@ -831,100 +873,229 @@ function setBillet(val, exact = false) {
   calcRendu();
 }
 
-function confirmerPaiement() {
+async function confirmerPaiement() {
   const t     = tickets[ticketActifId];
   const total = getTotal();
+  let montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
 
   if (modePaiement === 'especes' || modePaiement === 'mobile') {
-    const recu = parseFloat(document.getElementById('montantRecu').value) || 0;
-    if (recu < total) { toast('Montant reçu insuffisant', 'error'); return; }
+    if (montantRecu < total) { toast('Montant reçu insuffisant', 'error'); return; }
   }
 
-  fermerModal();
-  // TODO : appel AJAX Django pour créer la vente + décrementer stock + générer ticket
-  // fetch('/cave/api/vente/create/', { method:'POST', body: JSON.stringify({ ticket: t, paiement: modePaiement, total }), headers: {'Content-Type':'application/json','X-CSRFToken': getCookie('csrftoken')} })
+  // Désactiver le bouton pendant l'envoi
+  const btnConfirm = document.querySelector('.modal-btn-confirm');
+  btnConfirm.disabled = true;
+  btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...';
 
-  toast(`<i class="fas fa-check-circle mr-2"></i> Paiement ${modeLabels[modePaiement]} validé — ${formatF(total)}`, 'success');
+  try {
+    const payload = {
+      ticket_nom   : t.nom,
+      lignes       : t.lignes.map(l => ({ id: l.id, nom: l.nom, prix: l.prix, qty: l.qty })),
+      total        : total,
+      paiement     : modePaiement,
+      espace       : t.espace,
+      ref          : t.ref,
+      serveur      : t.serveur || '',
+      montant_recu : montantRecu,
+    };
 
-  // Imprimer le ticket thermique
-  setTimeout(() => imprimerTicket(t, total), 600);
+    const resp = await fetch("{% url 'bar:api_vente' %}", {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'X-CSRFToken'  : getCookie('csrftoken'),
+      },
+      body: JSON.stringify(payload),
+    });
 
-  // Supprimer le ticket actif et créer un nouveau
-  const oldId  = ticketActifId;
-  const oldNom = t.nom;
-  delete tickets[oldId];
-  document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
-  ticketCounter++;
-  const newNom = `T-${String(ticketCounter).padStart(3, '0')}`;
-  tickets[ticketCounter] = { id: ticketCounter, nom: newNom, espace: '', ref: '', lignes: [], paiement: 'especes' };
-  ticketActifId = ticketCounter;
+    const data = await resp.json();
 
-  const container = document.getElementById('ticketsAttente');
-  const btnNew    = container.querySelector('.btn-new-ticket');
-  const btn       = document.createElement('button');
-  btn.className   = 'ticket-attente-btn active';
-  btn.dataset.tid = ticketCounter;
-  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${newNom}`;
-  btn.onclick     = () => chargerTicket(ticketCounter);
-  container.insertBefore(btn, btnNew);
-  chargerTicket(ticketCounter);
+    if (!data.ok) {
+      toast(`Erreur : ${data.error}`, 'error');
+      btnConfirm.disabled = false;
+      btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer';
+      return;
+    }
+
+    fermerModal();
+    toast(`<i class="fas fa-check-circle mr-2"></i> Ticket ${data.ticket_numero} — ${formatF(data.total)} validé`, 'success');
+
+    // Alertes stock insuffisant
+    if (data.erreurs_stock && data.erreurs_stock.length) {
+      setTimeout(() => toast(`⚠️ Stock : ${data.erreurs_stock.join(' | ')}`, 'error'), 800);
+    }
+
+    // 1. Ouvrir la fenêtre d'impression EN PREMIER (avant tout changement d'état)
+    //    On passe une copie du ticket pour éviter qu'il soit effacé
+    const ticketSnapshot = JSON.parse(JSON.stringify(t));
+    imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu);
+
+    // 2. Seulement après : créer le nouveau ticket vide
+    setTimeout(() => {
+      const oldId = ticketActifId;
+      delete tickets[oldId];
+      document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+      ticketCounter++;
+      const newTid = ticketCounter; // capturer correctement
+      const newNom = `T-${String(newTid).padStart(3, '0')}`;
+      tickets[newTid] = { id: newTid, nom: newNom, espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' };
+      ticketActifId = newTid;
+      const container = document.getElementById('ticketsAttente');
+      const btnNew    = container.querySelector('.btn-new-ticket');
+      const btn       = document.createElement('button');
+      btn.className   = 'ticket-attente-btn active';
+      btn.dataset.tid = newTid;
+      btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${newNom}`;
+      btn.onclick     = () => chargerTicket(newTid); // newTid capturé
+      container.insertBefore(btn, btnNew);
+      chargerTicket(newTid);
+    }, 300);
+
+  } catch(err) {
+    toast(`Erreur réseau : ${err.message}`, 'error');
+    btnConfirm.disabled = false;
+    btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer';
+  }
 }
 
 // ============================================================
 // IMPRESSION TICKET THERMIQUE (80mm)
 // ============================================================
-function imprimerTicket(t, total) {
-  const espace = document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || '';
-  const ref    = t.ref || '—';
-  const date   = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  const lignes = t.lignes.map(l => `
-    <tr>
-      <td>${l.nom}</td>
-      <td style="text-align:center;">${l.qty}</td>
-      <td style="text-align:right;">${parseInt(l.prix * l.qty).toLocaleString()}</td>
-    </tr>`).join('');
+function imprimerTicket(t, total, ticketNumero, rendu) {
+  const selectEspace = document.getElementById('selectEspace');
+  const espaceLabel  = selectEspace.options[selectEspace.selectedIndex]?.text.replace(/^[^\s]+\s/, '') || '';
+  const ref          = t.ref || '';
+  const serveur      = t.serveur || document.getElementById('selectServeur')?.value || '—';
+  const operateur    = "{{ request.user.get_full_name|default:request.user.username }}";
+  // Infos complexe depuis la base (Configuration.load())
+  const nomComplexe  = "{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}";
+  const adresse      = "{{ config.adresse|default:'Yopougon Beago à 200m du Palais de justice' }}";
+  const telephone    = "{{ config.telephone|default:'07 58 29 11 10 / 01 43 09 76 16' }}";
+  const logoUrl      = "{% static 'images/Logo.png' %}";
+  const date         = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const numAffiche   = ticketNumero || t.nom;
+  const renduVal     = rendu || 0;
+  const montantRecuVal = parseInt(document.getElementById('montantRecu')?.value || total);
+
+  const lignesHTML = t.lignes.map(l => {
+    const montantLigne = parseInt(l.prix * l.qty).toLocaleString('fr-FR');
+    const prixUnit     = parseInt(l.prix).toLocaleString('fr-FR');
+    return `
+      <tr>
+        <td style="padding:3px 2px; max-width:110px; word-wrap:break-word;">${l.nom}</td>
+        <td style="padding:3px 4px; text-align:center; white-space:nowrap;">${l.qty} × ${prixUnit}</td>
+        <td style="padding:3px 2px; text-align:right; white-space:nowrap; font-weight:600;">${montantLigne} F</td>
+      </tr>`;
+  }).join('');
+
+  const showRendu = (modePaiement === 'especes' || modePaiement === 'mobile') && renduVal > 0;
 
   const html = `<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
-    <title>Ticket ${t.nom}</title>
+    <title>Ticket ${numAffiche}</title>
     <style>
-      @page { margin: 0; }
+      @page { size: 80mm auto; margin: 3mm; }
       * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family: 'Courier New', monospace; font-size: 11px; width: 72mm; padding: 4mm; }
-      .center { text-align: center; }
-      .bold   { font-weight: bold; }
-      .sep    { border-top: 1px dashed #000; margin: 4px 0; }
-      table   { width: 100%; border-collapse: collapse; }
-      th      { font-size: 10px; padding: 2px 0; border-bottom: 1px solid #000; }
-      td      { padding: 2px 0; vertical-align: top; }
-      .total  { font-size: 14px; font-weight: bold; text-align: right; padding-top: 4px; }
-      .footer { margin-top: 6px; font-size: 9px; text-align: center; }
+      body {
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        width: 74mm;
+        background: #fff;
+        color: #000;
+      }
+      .center  { text-align: center; }
+      .bold    { font-weight: bold; }
+      .right   { text-align: right; }
+      .sep-dash { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+      .sep-solid { border: none; border-top: 1px solid #000; margin: 5px 0; }
+      .header-title { font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+      .header-sub   { font-size: 9px; margin-top: 2px; }
+      .meta-row  { display: flex; justify-content: space-between; padding: 1px 0; }
+      .meta-label { font-weight: bold; }
+      table { width: 100%; border-collapse: collapse; }
+      thead tr th { font-size: 9px; padding: 3px 2px; border-bottom: 1px solid #000; text-align: left; }
+      thead tr th:nth-child(2) { text-align: center; }
+      thead tr th:nth-child(3) { text-align: right; }
+      .total-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 2px 2px; }
+      .total-label { font-size: 12px; font-weight: bold; }
+      .total-val   { font-size: 15px; font-weight: bold; }
+      .paiement-row { display: flex; justify-content: space-between; padding: 2px; font-size: 11px; }
+      .footer { margin-top: 8px; font-size: 9px; text-align: center; line-height: 1.5; }
+      /* Bouton imprime — ne s'imprime pas */
+      .no-print { text-align: center; padding: 14px; }
+      .btn-print {
+        background: #1a1225; color: #c9a84c;
+        border: 2px solid #c9a84c; border-radius: 8px;
+        padding: 10px 30px; font-size: 14px;
+        font-weight: bold; cursor: pointer; letter-spacing: 1px;
+      }
+      .btn-print:hover { background: #c9a84c; color: #1a1225; }
+      @media print { .no-print { display: none !important; } }
     </style>
-  </head><body>
-    <div class="center bold" style="font-size:13px;">COMPLEXE BEHANIAN</div>
-    <div class="center" style="font-size:9px;">Cave — Service des boissons</div>
-    <div class="sep"></div>
-    <div>Date : ${date}</div>
-    <div>Ticket N° : ${t.nom}</div>
-    <div>Espace : ${espace}</div>
-    <div>Réf : ${ref}</div>
-    <div>Règlement : ${modeLabels[modePaiement] || modePaiement}</div>
-    <div class="sep"></div>
+  </head>
+  <body>
+    <!-- BOUTON IMPRESSION — visible à l'écran, masqué à l'impression -->
+    <div class="no-print">
+      <button class="btn-print" onclick="window.print()">🖨️ &nbsp; Imprimer le ticket</button>
+    </div>
+
+    <!-- EN-TÊTE OFFICIEL (dynamique depuis Configuration) -->
+    <div class="center">
+      <img src="${logoUrl}" alt="Logo" style="width:60px; height:60px; object-fit:contain; margin-bottom:4px;" onerror="this.style.display='none'">
+      <div style="font-size:14px; font-weight:bold; letter-spacing:1px;">${nomComplexe}</div>
+      <div style="font-size:9px; font-style:italic; margin-top:2px;">Votre confort, notre priorité</div>
+      <div style="font-size:9px; margin-top:3px;">${adresse}</div>
+      <div style="font-size:9px;">Tél: ${telephone}</div>
+    </div>
+    <hr class="sep-solid">
+
+    <!-- META -->
+    <div class="meta-row"><span class="meta-label">Date :</span><span>${date}</span></div>
+    <div class="meta-row"><span class="meta-label">Ticket N° :</span><span>${numAffiche}</span></div>
+    <div class="meta-row"><span class="meta-label">Service :</span><span>${espaceLabel || 'Cave'}</span></div>
+    ${ref ? `<div class="meta-row"><span class="meta-label">Réf :</span><span>${ref}</span></div>` : ''}
+    <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
+    <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
+    <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabels[modePaiement] || modePaiement}</span></div>
+    <hr class="sep-dash">
+
+    <!-- ARTICLES -->
     <table>
-      <thead><tr><th style="text-align:left;">Article</th><th>Qté</th><th style="text-align:right;">Montant</th></tr></thead>
-      <tbody>${lignes}</tbody>
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th style="text-align:center;">Qté × P.U</th>
+          <th style="text-align:right;">Montant</th>
+        </tr>
+      </thead>
+      <tbody>${lignesHTML}</tbody>
     </table>
-    <div class="sep"></div>
-    <div class="total">TOTAL : ${parseInt(total).toLocaleString()} FCFA</div>
-    <div class="sep"></div>
-    <div class="footer">Merci de votre visite — Complexe Behanian<br>Conservez ce ticket pour tout litige</div>
+    <hr class="sep-dash">
+
+    <!-- TOTAUX -->
+    <div class="total-row">
+      <span class="total-label">TOTAL</span>
+      <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} FCFA</span>
+    </div>
+    ${showRendu ? `
+    <hr class="sep-dash">
+    <div class="paiement-row"><span>Reçu :</span><span>${montantRecuVal.toLocaleString('fr-FR')} F</span></div>
+    <div class="paiement-row bold"><span>Monnaie rendue :</span><span>${parseInt(renduVal).toLocaleString('fr-FR')} F</span></div>` : ''}
+    <hr class="sep-solid">
+
+    <!-- PIED DE PAGE -->
+    <div class="footer">
+      Merci de votre visite<br>
+      Conservez ce ticket pour tout litige
+    </div>
   </body></html>`;
 
-  const w = window.open('', '_blank', 'width=320,height=500');
+  // Ouvrir dans une nouvelle fenêtre — le caissier clique lui-même sur Imprimer
+  const w = window.open('', '_blank', 'width=360,height=620');
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(() => { w.print(); w.close(); }, 400);
+  // PAS d'impression automatique — le bouton dans la fenêtre laisse le choix
 }
 
 function getCookie(name) {

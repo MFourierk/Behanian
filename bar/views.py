@@ -1,5 +1,7 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -840,3 +842,160 @@ def rapport_stock_cave(request):
     request.GET = get
     from rapport.views import rapport_stock
     return rapport_stock(request)
+
+
+# ================================================================
+# REMPLACEMENT DE bar_tpe dans bar/views.py
+# ================================================================
+
+def bar_tpe(request):
+    from .models import BoissonBar, CategorieBar
+    from django.contrib.auth.models import User, Group
+    from dashboard.models import Configuration
+
+    boissons   = BoissonBar.objects.select_related('categorie').filter(
+        statut='actif', disponible=True
+    ).order_by('categorie__nom', 'nom')
+    categories = CategorieBar.objects.order_by('nom')
+
+    # Groupe exact en base : "Serveuse/Serveur" (id=5)
+    try:
+        groupe_serveurs = Group.objects.get(name='Serveuse/Serveur')
+        serveurs = User.objects.filter(
+            groups=groupe_serveurs,
+            is_active=True
+        ).order_by('first_name', 'last_name', 'username')
+    except Group.DoesNotExist:
+        serveurs = User.objects.none()
+
+    config = Configuration.load()
+
+    return render(request, 'bar/index.html', {
+        'boissons'   : boissons,
+        'categories' : categories,
+        'serveurs'   : serveurs,
+        'config'     : config,
+        'page_title' : 'Cave - Vente TPE',
+    })
+
+
+import json
+import json
+from decimal import Decimal
+
+@login_required
+@require_POST
+def api_vente_create(request):
+    """
+    API AJAX appelée depuis le TPE Cave.
+    POST JSON -> crée Ticket facturation + décrémente stock BoissonBar.
+    """
+    try:
+        data         = json.loads(request.body)
+        lignes       = data.get('lignes', [])
+        total        = Decimal(str(data.get('total', 0)))
+        paiement     = data.get('paiement', 'especes')
+        espace       = data.get('espace', '')
+        ref          = data.get('ref', '')
+        ticket_nom   = data.get('ticket_nom', 'T-???')
+        montant_recu = Decimal(str(data.get('montant_recu', total)))
+
+        if not lignes:
+            return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
+
+        # Map mode paiement TPE -> choix Ticket facturation
+        MODE_MAP = {
+            'especes': 'especes',
+            'carte'  : 'carte_bancaire',
+            'mobile' : 'mobile_money',
+            'chambre': 'autre',
+        }
+        mode_fact = MODE_MAP.get(paiement, 'especes')
+
+        ESPACE_LABELS = {
+            'restaurant'  : 'Restaurant',
+            'piscine'     : 'Piscine',
+            'evenementiel': 'Espace evenementiel',
+            'hotel'       : 'Hotel',
+            'comptoir'    : 'Bar comptoir',
+            'plage'       : 'Plage',
+            'visite'      : 'Visiteur',
+        }
+        espace_label = ESPACE_LABELS.get(espace, espace or 'Cave')
+        rendu        = max(Decimal('0'), montant_recu - total)
+
+        # Construire le contenu texte lisible du ticket
+        from django.utils import timezone as tz
+        date_str  = tz.now().strftime('%d/%m/%Y %H:%M')
+        lignes_txt = "\n".join(
+            f"  {l['nom']} x{l['qty']}  {int(Decimal(str(l['prix'])) * int(l['qty'])):,} F"
+            for l in lignes
+        )
+        contenu = (
+            f"COMPLEXE BEHANIAN - Cave\n"
+            f"Ticket  : {ticket_nom}\n"
+            f"Date    : {date_str}\n"
+            f"Espace  : {espace_label}\n"
+            f"Ref     : {ref or '-'}\n"
+            f"{'='*32}\n"
+            f"{lignes_txt}\n"
+            f"{'='*32}\n"
+            f"TOTAL   : {int(total):,} FCFA\n"
+            f"Reglement : {mode_fact}\n"
+        )
+        if paiement in ('especes', 'mobile') and rendu > 0:
+            contenu += f"Recu    : {int(montant_recu):,} F\n"
+            contenu += f"Rendu   : {int(rendu):,} F\n"
+
+        # Creer le Ticket dans facturation
+        from facturation.models import Ticket, generate_ticket_numero
+        ticket = Ticket.objects.create(
+            numero        = generate_ticket_numero(),
+            module        = 'cave',
+            montant_total = total,
+            mode_paiement = mode_fact,
+            montant_paye  = montant_recu,
+            contenu       = contenu,
+            cree_par      = request.user,
+            imprime       = True,
+            date_impression = tz.now(),
+        )
+
+        # Decrementer stock + tracer mouvements
+        erreurs_stock = []
+        for l in lignes:
+            try:
+                boisson = BoissonBar.objects.get(pk=int(l['id']))
+                qty     = int(l['qty'])
+                if boisson.quantite_stock < qty:
+                    erreurs_stock.append(
+                        f"{boisson.nom}: stock insuffisant ({boisson.quantite_stock} dispo, {qty} demande)"
+                    )
+                    # On continue quand même (vente enregistrée)
+                MouvementStockBar.objects.create(
+                    boisson        = boisson,
+                    type_mouvement = 'sortie',
+                    quantite       = qty,
+                    commentaire    = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -'),
+                    utilisateur    = request.user,
+                )
+            except BoissonBar.DoesNotExist:
+                erreurs_stock.append(f"Article id={l['id']} introuvable")
+
+        return JsonResponse({
+            'ok'            : True,
+            'ticket_id'     : ticket.pk,
+            'ticket_numero' : ticket.numero,
+            'total'         : int(total),
+            'rendu'         : int(rendu),
+            'erreurs_stock' : erreurs_stock,
+        })
+
+    except Exception as e:
+        import traceback
+        return JsonResponse({'ok': False, 'error': str(e), 'trace': traceback.format_exc()}, status=500)
+
+
+
+
+
