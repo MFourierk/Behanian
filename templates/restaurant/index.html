@@ -883,6 +883,11 @@ function filtrerArticles(type) {
 
 // ── VÉRIF TABLE ──
 function verifierTable() {
+  // Vérifier aussi dans le ticket actif
+  const t = tickets[ticketActifId];
+  if (!tableSelActif && t && t.tableId) {
+    tableSelActif = { id: t.tableId, numero: t.tableNum };
+  }
   if (!tableSelActif) {
     toast('⚠️ Sélectionnez d\'abord une table dans le Plan de salle', 'error');
     switchView(document.querySelector('.nav-tab[data-view="salle"]'));
