@@ -827,16 +827,15 @@ def restaurant_tpe(request):
 @login_required
 @require_POST
 def ajouter_boisson_commande(request):
-    """Ajoute une boisson de la Cave à une commande restaurant"""
+    """Ajoute une boisson de la Cave à une commande restaurant — décrémente stock BoissonBar"""
     try:
         from bar.models import BoissonBar, MouvementStockBar
-        data = json.loads(request.body)
+        data        = json.loads(request.body)
         table_id    = data.get('table_id')
         commande_id = data.get('commande_id')
         boisson_id  = data.get('boisson_id')
         client_nom  = data.get('client', '')
 
-        # Récupérer la boisson
         boisson = get_object_or_404(BoissonBar, id=boisson_id)
 
         if boisson.est_en_rupture:
@@ -852,41 +851,18 @@ def ajouter_boisson_commande(request):
             ).first()
             if not commande:
                 commande = Commande.objects.create(
-                    table=table,
-                    serveur=request.user,
-                    statut='en_preparation',
-                    nom_client=client_nom
+                    table=table, serveur=request.user,
+                    statut='en_preparation', nom_client=client_nom
                 )
                 table.statut = 'occupee'
                 table.save()
         else:
             return JsonResponse({'success': False, 'message': 'Table requise'})
 
-        # Récupérer ou créer le PlatMenu pour la boisson
-        # disponible=False pour qu'il n'apparaisse PAS dans le catalogue plats
-        cat_boissons, _ = CategorieMenu.objects.get_or_create(
-            nom="Boissons", defaults={'ordre': 100}
-        )
-        plat, created = PlatMenu.objects.get_or_create(
-            nom=boisson.nom,
-            categorie=cat_boissons,
-            defaults={
-                'prix': boisson.prix,
-                'description': boisson.description or '',
-                'temps_preparation': 0,
-                'disponible': False,  # Invisible dans le catalogue
-                'is_accompagnement': False,
-            }
-        )
-        # Mettre à jour prix et s'assurer qu'il reste invisible
-        if float(plat.prix) != float(boisson.prix) or plat.disponible:
-            plat.prix = boisson.prix
-            plat.disponible = False  # Toujours invisible
-            plat.save()
-
         with transaction.atomic():
+            # Chercher ligne existante pour cette boisson
             ligne = LigneCommande.objects.filter(
-                commande=commande, plat=plat, accompagnement=None
+                commande=commande, boisson=boisson, plat=None
             ).first()
 
             if ligne:
@@ -895,14 +871,16 @@ def ajouter_boisson_commande(request):
             else:
                 ligne = LigneCommande.objects.create(
                     commande=commande,
-                    plat=plat,
+                    plat=None,
+                    boisson=boisson,
                     accompagnement=None,
                     quantite=1,
-                    prix_unitaire=boisson.prix
+                    prix_unitaire=boisson.prix,
+                    nom_article=boisson.nom,
                 )
 
             # Décrémenter stock Cave
-            boisson.quantite_stock -= 1
+            boisson.quantite_stock = max(0, boisson.quantite_stock - 1)
             boisson.save()
             MouvementStockBar.objects.create(
                 boisson=boisson,
@@ -917,26 +895,25 @@ def ajouter_boisson_commande(request):
 
         # Retourner état complet
         items = []
-        for l in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            nom_affiche = l.plat.nom
-            if l.accompagnement:
-                nom_affiche += f' (+ {l.accompagnement.nom})'
+        for l in commande.lignes.all().order_by('id'):
+            nom = l.get_nom
             items.append({
-                'id': l.id,
-                'nom': nom_affiche,
-                'prix': float(l.prix_unitaire),
+                'id':       l.id,
+                'nom':      nom,
+                'prix':     float(l.prix_unitaire),
                 'quantite': l.quantite,
             })
 
         return JsonResponse({
-            'success': True,
+            'success':    True,
             'commande_id': commande.id,
-            'items': items,
-            'total': float(commande.total),
-            'client': commande.nom_client
+            'items':      items,
+            'total':      float(commande.total),
+            'client':     commande.nom_client
         })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)})
         return JsonResponse({'success': False, 'message': str(e)})

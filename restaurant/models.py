@@ -108,20 +108,36 @@ class Commande(models.Model):
 class LigneCommande(models.Model):
     """Lignes de commande (détails)"""
     commande = models.ForeignKey(Commande, on_delete=models.CASCADE, related_name='lignes', verbose_name="Commande")
-    plat = models.ForeignKey(PlatMenu, on_delete=models.CASCADE, verbose_name="Plat")
+    plat = models.ForeignKey(PlatMenu, on_delete=models.CASCADE, verbose_name="Plat", null=True, blank=True)
+    boisson = models.ForeignKey('bar.BoissonBar', on_delete=models.SET_NULL, null=True, blank=True, related_name='lignes_commande', verbose_name="Boisson")
     accompagnement = models.ForeignKey(PlatMenu, on_delete=models.SET_NULL, null=True, blank=True, related_name='lignes_accompagnement', verbose_name="Accompagnement")
     quantite = models.IntegerField(default=1, verbose_name="Quantité")
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
-    
+    nom_article = models.CharField(max_length=200, blank=True, default='', verbose_name="Nom article")
+
     class Meta:
         verbose_name = "Ligne de commande"
         verbose_name_plural = "Lignes de commande"
-    
+
     def __str__(self):
-        return f"{self.quantite}x {self.plat.nom}"
-    
+        nom = self.nom_article or (self.plat.nom if self.plat else (self.boisson.nom if self.boisson else '?'))
+        return f"{self.quantite}x {nom}"
+
     def get_total(self):
         return self.quantite * self.prix_unitaire
+
+    @property
+    def get_nom(self):
+        if self.nom_article:
+            return self.nom_article
+        if self.plat:
+            nom = self.plat.nom
+            if self.accompagnement:
+                nom += f' (+ {self.accompagnement.nom})'
+            return nom
+        if self.boisson:
+            return self.boisson.nom
+        return '?'
 
 class Reservation(models.Model):
     """Modèle pour les réservations de tables"""
