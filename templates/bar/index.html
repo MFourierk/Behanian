@@ -439,7 +439,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <div class="cat-header">
       <div class="cat-header-top">
         <h2>🍷 Cave &nbsp;<small style="font-family:'DM Sans';font-size:0.75rem;color:var(--cave-muted);font-weight:400;">Vente rapide</small></h2>
-        <span class="tpe-badge">TPE LIVE</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;">
+          <span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:var(--cave-gold);letter-spacing:1px;" id="caveClockTime">--:--:--</span>
+          <span style="font-size:10px;color:var(--cave-muted);text-transform:uppercase;letter-spacing:0.5px;" id="caveClockDate">---</span>
+        </div>
       </div>
       <div class="search-wrap">
         <i class="fas fa-search"></i>
@@ -1107,5 +1110,21 @@ function getCookie(name) {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') fermerModal();
 });
+
+// ─── HORLOGE CAVE ───
+function updateCaveClock() {
+  const now = new Date();
+  const jours = ['DIMANCHE','LUNDI','MARDI','MERCREDI','JEUDI','VENDREDI','SAMEDI'];
+  const mois = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
+  const h = String(now.getUTCHours()).padStart(2,'0');
+  const m = String(now.getUTCMinutes()).padStart(2,'0');
+  const s = String(now.getUTCSeconds()).padStart(2,'0');
+  const el_t = document.getElementById('caveClockTime');
+  const el_d = document.getElementById('caveClockDate');
+  if (el_t) el_t.textContent = h + ':' + m + ':' + s + ' GMT';
+  if (el_d) el_d.textContent = jours[now.getUTCDay()] + ' ' + now.getUTCDate() + ' ' + mois[now.getUTCMonth()] + ' ' + now.getUTCFullYear();
+}
+setInterval(updateCaveClock, 1000);
+updateCaveClock();
 </script>
 {% endblock %}

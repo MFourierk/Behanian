@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
@@ -746,3 +746,54 @@ def update_ligne_quantite(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
+
+@login_required
+def restaurant_tpe(request):
+    """Interface TPE Restaurant"""
+    from dashboard.models import Configuration
+    categories = CategorieMenu.objects.all()
+    plats = PlatMenu.objects.filter(disponible=True)
+    tables = Table.objects.all()
+    commandes_en_cours_list = Commande.objects.filter(
+        statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+    ).order_by('-date_modification').prefetch_related('lignes', 'table')
+    accompagnements = plats.filter(is_accompagnement=True)
+    config = Configuration.load()
+
+    # VÃ©rification stock
+    for plat in plats:
+        is_available, _ = check_stock_availability(plat, 1)
+        plat.en_stock = is_available
+        if hasattr(plat, 'fiche_technique'):
+            plat.stock_quantity = plat.fiche_technique.max_portions_possibles()
+        elif plat.categorie and any(x in plat.categorie.nom.lower() for x in ['boisson', 'biere', 'vin', 'alcool', 'jus', 'soda']):
+            try:
+                boisson = BoissonBar.objects.get(nom__iexact=plat.nom)
+                plat.stock_quantity = int(boisson.quantite_stock)
+            except:
+                plat.stock_quantity = 999
+        else:
+            try:
+                ing = Ingredient.objects.filter(nom__iexact=plat.nom).first()
+                plat.stock_quantity = int(ing.quantite_stock) if ing else 999
+            except:
+                plat.stock_quantity = 999
+
+    from django.contrib.auth.models import Group
+    try:
+        serveurs = Group.objects.get(id=5).user_set.all().order_by('first_name', 'username')
+    except:
+        serveurs = []
+    context = {
+        'categories': categories,
+        'plats': plats,
+        'tables': tables,
+        'accompagnements': accompagnements,
+        'commandes_en_cours': commandes_en_cours_list.count(),
+        'commandes_en_cours_list': commandes_en_cours_list,
+        'config': config,
+        'serveurs': serveurs,
+    }
+    return render(request, 'restaurant/index.html', context)
+
