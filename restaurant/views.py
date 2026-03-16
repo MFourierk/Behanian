@@ -874,7 +874,6 @@ def ajouter_boisson_commande(request):
                 'description': boisson.description or '',
                 'temps_preparation': 0,
                 'disponible': True,
-                'image': boisson.image,
             }
         )
         # Mettre à jour le prix si changé
