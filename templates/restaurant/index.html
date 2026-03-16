@@ -850,14 +850,19 @@ function selectionnerTable(tableId, tableNum, statut) {
   document.getElementById('tableSelbadge').style.display = 'flex';
   document.getElementById('tableSelLabel').textContent = 'Table ' + tableNum;
 
+  // Stocker dans le ticket actif
   const t = tickets[ticketActifId];
-  t.tableId = tableId; t.tableNum = tableNum;
+  t.tableId = tableId;
+  t.tableNum = tableNum;
   document.getElementById('ticketNum').textContent = 'Table ' + tableNum;
 
-  if (statut === 'occupee') chargerCommandeParTable(tableId);
-
+  if (statut === 'occupee') {
+    chargerCommandeParTable(tableId);
+    toast('📋 Table ' + tableNum + ' — commande en cours chargée', 'info');
+  } else {
+    toast('🪑 Table ' + tableNum + ' sélectionnée — ajoutez vos articles', 'success');
+  }
   switchView(document.querySelector('.nav-tab[data-view="plats"]'));
-  toast('🪑 Table ' + tableNum + ' sélectionnée', 'info');
 }
 
 // ── FILTRES ──
@@ -883,16 +888,18 @@ function filtrerArticles(type) {
 
 // ── VÉRIF TABLE ──
 function verifierTable() {
-  // Vérifier aussi dans le ticket actif
+  // Récupérer depuis le ticket actif si tableSelActif perdu
   const t = tickets[ticketActifId];
   if (!tableSelActif && t && t.tableId) {
     tableSelActif = { id: t.tableId, numero: t.tableNum };
   }
-  if (!tableSelActif) {
-    toast('⚠️ Sélectionnez d\'abord une table dans le Plan de salle', 'error');
+  if (!tableSelActif || !tableSelActif.id) {
+    toast('⚠️ Veuillez sélectionner une table avant d\'ajouter un article', 'error');
     switchView(document.querySelector('.nav-tab[data-view="salle"]'));
     return false;
   }
+  // Synchroniser le ticket avec tableSelActif
+  if (t) { t.tableId = tableSelActif.id; t.tableNum = tableSelActif.numero; }
   return true;
 }
 
@@ -956,7 +963,6 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
   majTicketMeta();
   const t = tickets[ticketActifId];
 
-  // Flash visuel
   const card = document.querySelector(`.article-card[data-id="${boissonId}"][data-type="boisson"]`);
   if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
 
@@ -976,9 +982,12 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
     t.commandeDbId = data.commande_id;
     t.lignes = data.items; t.total = data.total;
     renderTicket();
-    toast('🍷 ' + nom + ' ajouté', 'info');
+    toast('🍷 ' + nom + ' ajouté au ticket', 'success');
     majTableCard(t.tableId, 'occupee', t.total, t.client);
-  } catch(e) { toast('❌ Erreur réseau', 'error'); }
+  } catch(e) {
+    console.error('Erreur ajouterBoisson:', e);
+    toast('❌ Erreur réseau — réessayez', 'error');
+  }
 }
 
 // ── MODIFIER QTÉ ──
