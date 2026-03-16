@@ -338,7 +338,7 @@ def add_accompagnement_to_ligne(request):
         # Retour état
         items = []
         for l in commande.lignes.all().order_by('id'):
-            nom_affiche = l.plat.nom
+            nom_affiche = (l.get_nom if hasattr(l,"get_nom") else l.nom_article or (l.plat.nom if l.plat else (l.boisson.nom if hasattr(l,"boisson") and l.boisson else "?")))
             if l.accompagnement:
                 nom_affiche += f" (+ {l.accompagnement.nom})"
             items.append({
@@ -367,7 +367,7 @@ def recuperer_commande(request, commande_id):
         
         items = []
         for ligne in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            nom_affiche = ligne.plat.nom
+            nom_affiche = (ligne.get_nom if hasattr(ligne,"get_nom") else ligne.nom_article or (ligne.plat.nom if ligne.plat else (ligne.boisson.nom if hasattr(ligne,"boisson") and ligne.boisson else "?")))
             if ligne.accompagnement:
                 nom_affiche += f" (+ {ligne.accompagnement.nom})"
             items.append({
@@ -424,7 +424,7 @@ def supprimer_ligne_commande(request):
         
         items = []
         for l in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            nom_affiche = l.plat.nom
+            nom_affiche = (l.get_nom if hasattr(l,"get_nom") else l.nom_article or (l.plat.nom if l.plat else (l.boisson.nom if hasattr(l,"boisson") and l.boisson else "?")))
             if l.accompagnement:
                 nom_affiche += f" (+ {l.accompagnement.nom})"
             items.append({
@@ -630,18 +630,15 @@ def ajouter_item_commande(request):
             
         # 5. Retourner l'état complet de la commande pour rafraichissement
         items = []
-        for l in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            nom_affiche = l.plat.nom
-            if l.accompagnement:
+        for l in commande.lignes.all().select_related('plat', 'accompagnement', 'boisson').order_by('id'):
+            nom_affiche = l.get_nom if hasattr(l, 'get_nom') else (l.nom_article or (l.plat.nom if l.plat else '?'))
+            if l.plat and l.accompagnement:
                 nom_affiche += f" (+ {l.accompagnement.nom})"
-                
             items.append({
                 'id': l.id,
                 'nom': nom_affiche,
                 'prix': float(l.prix_unitaire),
                 'quantite': l.quantite,
-                'plat_id': l.plat.id,
-                'has_acc': bool(l.accompagnement)
             })
             
         return JsonResponse({
@@ -724,7 +721,7 @@ def update_ligne_quantite(request):
              # On re-check si la commande existe encore (normalement oui)
              cmd = Commande.objects.get(id=commande.id)
              for l in cmd.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-                nom_affiche = l.plat.nom
+                nom_affiche = (l.get_nom if hasattr(l,"get_nom") else l.nom_article or (l.plat.nom if l.plat else (l.boisson.nom if hasattr(l,"boisson") and l.boisson else "?")))
                 if l.accompagnement:
                     nom_affiche += f" (+ {l.accompagnement.nom})"
                 items.append({
@@ -800,11 +797,14 @@ def restaurant_tpe(request):
     for b in boissons_bar:
         b.stock_quantity = int(b.quantite_stock)
 
-    from django.contrib.auth.models import Group
+    from django.contrib.auth.models import Group, User as AuthUser
     try:
-        serveurs = Group.objects.get(id=5).user_set.all().order_by('first_name', 'username')
-    except:
-        serveurs = []
+        groupe_serveurs = Group.objects.get(name='Serveuse/Serveur')
+        serveurs = AuthUser.objects.filter(
+            groups=groupe_serveurs, is_active=True
+        ).order_by('first_name', 'last_name', 'username')
+    except Group.DoesNotExist:
+        serveurs = AuthUser.objects.none()
 
     context = {
         # Ancienne clé conservée pour compatibilité

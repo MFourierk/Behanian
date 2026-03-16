@@ -1286,7 +1286,7 @@ async function confirmerPaiement() {
 }
 
 // ── HORLOGE ──
-function updateClock() {
+function updateRestoClock() {
   const now = new Date();
   const jours = ['DIMANCHE','LUNDI','MARDI','MERCREDI','JEUDI','VENDREDI','SAMEDI'];
   const mois  = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
@@ -1298,7 +1298,7 @@ function updateClock() {
   if (et) et.textContent = h+':'+m+':'+s+' GMT';
   if (ed) ed.textContent = jours[now.getUTCDay()]+' '+now.getUTCDate()+' '+mois[now.getUTCMonth()]+' '+now.getUTCFullYear();
 }
-setInterval(updateClock, 1000); updateClock();
+setInterval(updateRestoClock, 1000); updateRestoClock();
 
 document.addEventListener('keydown', e => { if(e.key==='Escape') fermerModal(); });
 </script>
