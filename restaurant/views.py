@@ -862,23 +862,26 @@ def ajouter_boisson_commande(request):
         else:
             return JsonResponse({'success': False, 'message': 'Table requise'})
 
-        # Récupérer ou créer le PlatMenu correspondant à la boisson
+        # Récupérer ou créer le PlatMenu pour la boisson
+        # disponible=False pour qu'il n'apparaisse PAS dans le catalogue plats
         cat_boissons, _ = CategorieMenu.objects.get_or_create(
             nom="Boissons", defaults={'ordre': 100}
         )
-        plat, _ = PlatMenu.objects.get_or_create(
+        plat, created = PlatMenu.objects.get_or_create(
             nom=boisson.nom,
+            categorie=cat_boissons,
             defaults={
-                'categorie': cat_boissons,
                 'prix': boisson.prix,
                 'description': boisson.description or '',
                 'temps_preparation': 0,
-                'disponible': True,
+                'disponible': False,  # Invisible dans le catalogue
+                'is_accompagnement': False,
             }
         )
-        # Mettre à jour le prix si changé
-        if float(plat.prix) != float(boisson.prix):
+        # Mettre à jour prix et s'assurer qu'il reste invisible
+        if float(plat.prix) != float(boisson.prix) or plat.disponible:
             plat.prix = boisson.prix
+            plat.disponible = False  # Toujours invisible
             plat.save()
 
         with transaction.atomic():
