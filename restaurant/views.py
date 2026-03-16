@@ -752,27 +752,43 @@ def update_ligne_quantite(request):
 def restaurant_tpe(request):
     """Interface TPE Restaurant"""
     from dashboard.models import Configuration
-    categories = CategorieMenu.objects.all()
-    plats = PlatMenu.objects.filter(disponible=True)
+    from bar.models import CategorieBar
+
+    # ── Catégories CUISINE (exclure celles qui contiennent 'boisson') ──
+    mots_boisson = ['boisson', 'bière', 'biere', 'vin', 'alcool', 'soda', 'jus', 'soft', 'liqueur', 'spiritueux']
+    categories_cuisine = [
+        c for c in CategorieMenu.objects.all()
+        if not any(m in c.nom.lower() for m in mots_boisson)
+    ]
+
+    # ── Catégories BAR (Cave) ──
+    categories_bar = CategorieBar.objects.all().order_by('nom')
+
+    # ── Plats CUISINE uniquement (hors boissons) ──
+    ids_cat_cuisine = [c.id for c in categories_cuisine]
+    plats = PlatMenu.objects.filter(
+        disponible=True,
+        categorie__id__in=ids_cat_cuisine
+    ) if ids_cat_cuisine else PlatMenu.objects.filter(disponible=True)
+
+    # ── Boissons de la Cave ──
+    boissons_bar = BoissonBar.objects.filter(
+        disponible=True, statut='actif'
+    ).select_related('categorie').order_by('categorie__nom', 'nom')
+
     tables = Table.objects.all()
     commandes_en_cours_list = Commande.objects.filter(
         statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
     ).order_by('-date_modification').prefetch_related('lignes', 'table')
-    accompagnements = plats.filter(is_accompagnement=True)
+    accompagnements = PlatMenu.objects.filter(disponible=True, is_accompagnement=True)
     config = Configuration.load()
 
-    # VÃ©rification stock
+    # ── Vérification stock plats ──
     for plat in plats:
         is_available, _ = check_stock_availability(plat, 1)
         plat.en_stock = is_available
         if hasattr(plat, 'fiche_technique'):
             plat.stock_quantity = plat.fiche_technique.max_portions_possibles()
-        elif plat.categorie and any(x in plat.categorie.nom.lower() for x in ['boisson', 'biere', 'vin', 'alcool', 'jus', 'soda']):
-            try:
-                boisson = BoissonBar.objects.get(nom__iexact=plat.nom)
-                plat.stock_quantity = int(boisson.quantite_stock)
-            except:
-                plat.stock_quantity = 999
         else:
             try:
                 ing = Ingredient.objects.filter(nom__iexact=plat.nom).first()
@@ -780,14 +796,24 @@ def restaurant_tpe(request):
             except:
                 plat.stock_quantity = 999
 
+    # ── Vérification stock boissons ──
+    for b in boissons_bar:
+        b.stock_quantity = int(b.quantite_stock)
+
     from django.contrib.auth.models import Group
     try:
         serveurs = Group.objects.get(id=5).user_set.all().order_by('first_name', 'username')
     except:
         serveurs = []
+
     context = {
-        'categories': categories,
+        # Ancienne clé conservée pour compatibilité
+        'categories': CategorieMenu.objects.all(),
         'plats': plats,
+        # Nouvelles clés séparées
+        'categories_cuisine': categories_cuisine,
+        'categories_bar': categories_bar,
+        'boissons_bar': boissons_bar,
         'tables': tables,
         'accompagnements': accompagnements,
         'commandes_en_cours': commandes_en_cours_list.count(),
@@ -797,3 +823,118 @@ def restaurant_tpe(request):
     }
     return render(request, 'restaurant/index.html', context)
 
+
+@login_required
+@require_POST
+def ajouter_boisson_commande(request):
+    """Ajoute une boisson de la Cave à une commande restaurant"""
+    try:
+        from bar.models import BoissonBar, MouvementStockBar
+        data = json.loads(request.body)
+        table_id    = data.get('table_id')
+        commande_id = data.get('commande_id')
+        boisson_id  = data.get('boisson_id')
+        client_nom  = data.get('client', '')
+
+        # Récupérer la boisson
+        boisson = get_object_or_404(BoissonBar, id=boisson_id)
+
+        if boisson.est_en_rupture:
+            return JsonResponse({'success': False, 'message': f'{boisson.nom} est en rupture de stock'})
+
+        # Récupérer ou créer la commande
+        if commande_id:
+            commande = get_object_or_404(Commande, id=commande_id)
+        elif table_id:
+            table = get_object_or_404(Table, id=table_id)
+            commande = Commande.objects.filter(
+                table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+            ).first()
+            if not commande:
+                commande = Commande.objects.create(
+                    table=table,
+                    serveur=request.user,
+                    statut='en_preparation',
+                    nom_client=client_nom
+                )
+                table.statut = 'occupee'
+                table.save()
+        else:
+            return JsonResponse({'success': False, 'message': 'Table requise'})
+
+        # Récupérer ou créer le PlatMenu correspondant à la boisson
+        cat_boissons, _ = CategorieMenu.objects.get_or_create(
+            nom="Boissons", defaults={'ordre': 100}
+        )
+        plat, _ = PlatMenu.objects.get_or_create(
+            nom=boisson.nom,
+            defaults={
+                'categorie': cat_boissons,
+                'prix': boisson.prix,
+                'description': boisson.description or '',
+                'temps_preparation': 0,
+                'disponible': True,
+                'image': boisson.image,
+            }
+        )
+        # Mettre à jour le prix si changé
+        if float(plat.prix) != float(boisson.prix):
+            plat.prix = boisson.prix
+            plat.save()
+
+        with transaction.atomic():
+            ligne = LigneCommande.objects.filter(
+                commande=commande, plat=plat, accompagnement=None
+            ).first()
+
+            if ligne:
+                ligne.quantite += 1
+                ligne.save()
+            else:
+                ligne = LigneCommande.objects.create(
+                    commande=commande,
+                    plat=plat,
+                    accompagnement=None,
+                    quantite=1,
+                    prix_unitaire=boisson.prix
+                )
+
+            # Décrémenter stock Cave
+            boisson.quantite_stock -= 1
+            boisson.save()
+            MouvementStockBar.objects.create(
+                boisson=boisson,
+                type_mouvement='sortie',
+                quantite=1,
+                motif=f'Vente Restaurant #{commande.id}',
+                cree_par=request.user
+            )
+
+            commande.total = float(commande.total) + float(boisson.prix)
+            commande.save()
+
+        # Retourner état complet
+        items = []
+        for l in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
+            nom_affiche = l.plat.nom
+            if l.accompagnement:
+                nom_affiche += f' (+ {l.accompagnement.nom})'
+            items.append({
+                'id': l.id,
+                'nom': nom_affiche,
+                'prix': float(l.prix_unitaire),
+                'quantite': l.quantite,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'commande_id': commande.id,
+            'items': items,
+            'total': float(commande.total),
+            'client': commande.nom_client
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)})

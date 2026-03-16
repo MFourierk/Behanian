@@ -1,1028 +1,518 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% load static %}
+{% load static restaurant_extras %}
 {% block title %}Restaurant — Point de Vente{% endblock %}
 
 {% block extra_css %}
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════
-   VARIABLES & BASE
-═══════════════════════════════════════════ */
 :root {
-  --bg-deep:    #f0e8dc;
-  --bg-dark:    #f7f3ee;
-  --bg-card:    #ffffff;
-  --bg-hover:   #fdf0e0;
-  --gold:       #c9743a;
-  --gold-light: #d4854a;
-  --gold-dim:   #c9943a;
-  --cream:      #2c1f0e;
-  --cream-dim:  #7a5c3a;
-  --red-soft:   #c0392b;
-  --green-soft: #27ae60;
-  --blue-soft:  #2980b9;
-  --border:     rgba(201,116,58,0.25);
-  --border-dim: rgba(201,116,58,0.12);
-  --shadow:     0 2px 12px rgba(0,0,0,0.08);
-  --radius:     14px;
-  --font-serif: 'Playfair Display', serif;
-  --font-sans:  'DM Sans', sans-serif;
+  --cave-gold:    #c9a84c;
+  --cave-deep:    #1a1225;
+  --cave-purple:  #4a2d6b;
+  --cave-violet:  #7c3aed;
+  --cave-light:   #f4f1f9;
+  --cave-border:  #e8e2f0;
+  --cave-text:    #2d1f3d;
+  --cave-muted:   #8b7fa0;
+  --success:      #16a34a;
+  --danger:       #dc2626;
+  --warning:      #d97706;
+  --radius:       16px;
+  --shadow-sm:    0 2px 8px rgba(74,45,107,0.08);
+  --shadow-md:    0 8px 24px rgba(74,45,107,0.14);
+  --shadow-lg:    0 16px 48px rgba(74,45,107,0.18);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color: var(--cave-text); }
 
-#tpe-root {
-  font-family: var(--font-sans);
-  background: var(--bg-deep);
-  color: var(--cream);
-  height: calc(100vh - 70px);
+/* ===== LAYOUT TPE ===== */
+.tpe-wrap {
   display: grid;
-  grid-template-columns: 1fr 390px;
-  grid-template-rows: 1fr;
-  overflow: hidden;
-}
-
-
-/* ─── HORLOGE ─── */
-.tpe-clock {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.2;
-}
-.tpe-clock-time {
-  font-family: var(--font-serif);
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--gold);
-  letter-spacing: 1px;
-}
-.tpe-clock-date {
-  font-size: 10px;
-  color: var(--cream-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-/* ─── HEADER GAUCHE ─── */
-.tpe-left-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: #c9743a;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
-}
-.tpe-brand {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  color: #fff;
-  font-weight: 600;
-}
-.tpe-brand small {
-  display: block;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  color: rgba(255,255,255,0.75);
-  font-weight: 400;
-}
-.tpe-left-header .tpe-clock-time { color: #fff; }
-.tpe-left-header .tpe-clock-date { color: rgba(255,255,255,0.75); }
-.tpe-left-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 8px 12px;
-  background: #f0ebe3;
-  border-bottom: 1px solid var(--border-dim);
-}
-
-/* ═══════════════════════════════════════════
-   TOPBAR (masquée)
-═══════════════════════════════════════════ */
-.tpe-topbar {
-  display: none !important;
-  grid-column: 1 / -1;
-  background: #c9743a;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
+  grid-template-columns: 1fr 420px;
+  height: calc(100vh - 60px);
   gap: 0;
-  padding: 0 16px;
-}
-.topbar-brand {
-  font-family: var(--font-serif);
-  font-size: 1.2rem;
-  color: #fff;
-  padding-right: 20px;
-  border-right: 1px solid var(--border);
-  margin-right: 16px;
-  white-space: nowrap;
-}
-.topbar-tabs {
-  display: flex;
-  gap: 4px;
-  flex: 1;
-}
-.topbar-tab {
-  padding: 7px 18px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: rgba(255,255,255,0.75);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.topbar-tab.active {
-  background: rgba(255,255,255,0.95);
-  color: #c9743a;
-  border: 1px solid rgba(255,255,255,0.3);
-  font-weight: 600;
-}
-.topbar-tab:hover:not(.active) { background: rgba(255,255,255,0.15); color: #fff; }
-.tab-badge {
-  background: var(--gold);
-  color: var(--bg-deep);
-  border-radius: 10px;
-  padding: 1px 6px;
-  font-size: 10px;
-  font-weight: 700;
-}
-.topbar-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.topbar-caissier {
-  font-size: 12px;
-  color: rgba(255,255,255,0.85);
-}
-.topbar-caissier strong { color: #fff; font-weight: 700; }
-.btn-back {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.4);
-  background: transparent;
-  color: rgba(255,255,255,0.85);
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-.btn-back:hover { background: rgba(255,255,255,0.2); color: #fff; }
-
-/* ═══════════════════════════════════════════
-   PANNEAU GAUCHE — CATALOGUE / TABLES
-═══════════════════════════════════════════ */
-.tpe-left {
-  background: #f5f0e8;
-  border-right: none;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
-/* ─── SECTION VUES ─── */
-.view-panel { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+/* ===== PANNEAU GAUCHE ===== */
+.panel-catalogue {
+  display: flex; flex-direction: column;
+  background: white; overflow: hidden;
+  border-right: 1.5px solid var(--cave-border);
+}
+
+/* Header */
+.cat-header {
+  padding: 14px 22px 0;
+  background: white;
+  flex-shrink: 0;
+}
+.cat-header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cat-header-top h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem; color: var(--cave-deep);
+  display: flex; align-items: center; gap: 8px;
+}
+.cat-header-top .tpe-badge {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 4px 12px;
+  background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+  color: white; border-radius: 20px;
+}
+
+/* Recherche */
+.search-wrap { position: relative; margin-bottom: 12px; }
+.search-wrap input {
+  width: 100%; padding: 10px 16px 10px 40px;
+  border: 1.5px solid var(--cave-border); border-radius: 12px;
+  font-size: 0.88rem; font-family: 'DM Sans', sans-serif;
+  color: var(--cave-text); background: var(--cave-light);
+  transition: border-color 0.2s;
+}
+.search-wrap input:focus { outline: none; border-color: var(--cave-violet); background: white; }
+.search-wrap i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--cave-muted); font-size: 0.85rem; }
+
+/* ===== MENUS PRINCIPAUX (4 onglets) ===== */
+.nav-tabs-wrap {
+  display: flex; gap: 4px; padding: 0 0 12px;
+  border-bottom: 1.5px solid var(--cave-border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.nav-tabs-wrap::-webkit-scrollbar { display: none; }
+.nav-tab {
+  flex-shrink: 0; padding: 7px 16px;
+  border: 1.5px solid var(--cave-border); border-radius: 20px;
+  background: white; font-size: 0.8rem; font-weight: 600;
+  color: var(--cave-muted); cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-tab.active {
+  background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+  color: white; border-color: transparent;
+  box-shadow: 0 3px 10px rgba(124,58,237,0.30);
+}
+.nav-tab:hover:not(.active) { background: var(--cave-light); color: var(--cave-text); border-color: var(--cave-violet); }
+.nav-tab .badge {
+  background: rgba(255,255,255,0.3); color: white;
+  border-radius: 10px; padding: 1px 7px; font-size: 10px; font-weight: 800;
+}
+.nav-tab:not(.active) .badge {
+  background: var(--cave-violet); color: white;
+}
+
+/* Panneaux vues */
+.view-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
 .view-panel.active { display: flex; }
 
-/* ─── PLAN DE SALLE ─── */
+/* ===== SOUS-FILTRES PILLULES ===== */
+.sub-filters {
+  display: flex; gap: 7px; padding: 12px 22px 0;
+  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+}
+.sub-filters::-webkit-scrollbar { display: none; }
+.sub-btn {
+  flex-shrink: 0; padding: 5px 14px;
+  border: 1.5px solid var(--cave-border); border-radius: 20px;
+  background: white; font-size: 0.78rem; font-weight: 600;
+  color: var(--cave-muted); cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.sub-btn.active { background: var(--cave-purple); color: white; border-color: var(--cave-purple); }
+.sub-btn:hover:not(.active) { border-color: var(--cave-violet); color: var(--cave-text); }
+
+/* ===== GRILLE ARTICLES (plats & boissons) ===== */
+.articles-scroll {
+  flex: 1; overflow-y: auto; padding: 14px 22px 22px;
+  scrollbar-width: thin; scrollbar-color: var(--cave-border) transparent;
+}
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 14px;
+}
+
+/* Carte article */
+.article-card {
+  background: white; border-radius: var(--radius);
+  border: 1.5px solid var(--cave-border);
+  cursor: pointer; transition: all 0.22s;
+  overflow: hidden; position: relative;
+  box-shadow: var(--shadow-sm);
+}
+.article-card:hover {
+  transform: translateY(-3px); box-shadow: var(--shadow-md);
+  border-color: var(--cave-violet);
+}
+.article-card:active { transform: scale(0.97); }
+.article-card.rupture { opacity: 0.45; pointer-events: none; }
+
+.ac-img-wrap {
+  height: 110px; background: linear-gradient(135deg, #f0ebf8, #e8e0f5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; position: relative; overflow: hidden;
+}
+.ac-img-wrap img {
+  width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;
+}
+.ac-stock-badge {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; letter-spacing: 0.5px;
+}
+.ac-stock-badge.ok      { background: #dcfce7; color: #16a34a; }
+.ac-stock-badge.bas     { background: #fef9c3; color: #d97706; }
+.ac-stock-badge.rupture { background: #fee2e2; color: #dc2626; }
+
+.ac-body { padding: 10px 12px 12px; }
+.ac-nom  { font-size: 0.83rem; font-weight: 600; color: var(--cave-text); margin-bottom: 6px; line-height: 1.3; min-height: 34px; }
+.ac-footer { display: flex; justify-content: space-between; align-items: center; }
+.ac-prix { font-size: 1rem; font-weight: 700; color: var(--cave-violet); }
+.ac-unite { font-size: 0.7rem; color: var(--cave-muted); }
+.ac-add {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+  color: white; border: none; cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; box-shadow: 0 3px 8px rgba(124,58,237,0.35);
+}
+.ac-add:hover { transform: scale(1.12); }
+
+@keyframes flash-add {
+  0%   { box-shadow: 0 0 0 0 rgba(124,58,237,0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(124,58,237,0); }
+  100% { box-shadow: var(--shadow-sm); }
+}
+.article-card.added { animation: flash-add 0.4s ease; }
+
+/* ===== PLAN DE SALLE ===== */
 .salle-header {
-  padding: 12px 16px;
-  background: #f5f0e8;
-  border-bottom: 1px solid var(--border-dim);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  padding: 12px 22px;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0; border-bottom: 1px solid var(--cave-border);
 }
 .salle-search {
-  flex: 1;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 7px 12px;
-  color: var(--cream);
-  font-size: 13px;
-  font-family: var(--font-sans);
+  flex: 1; padding: 9px 14px;
+  border: 1.5px solid var(--cave-border); border-radius: 10px;
+  font-size: 0.85rem; color: var(--cave-text);
+  background: var(--cave-light); font-family: 'DM Sans', sans-serif;
 }
-.salle-search::placeholder { color: var(--cream-dim); }
-.salle-search:focus { outline: none; border-color: var(--gold-dim); }
-.salle-legend {
-  display: flex;
-  gap: 10px;
-  font-size: 11px;
-}
-.legend-dot {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--cream-dim);
-}
-.dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-}
-.dot.libre    { background: #2d7a4a; }
-.dot.occupee  { background: #a83232; }
+.salle-search:focus { outline: none; border-color: var(--cave-violet); background: white; }
+.salle-legend { display: flex; gap: 10px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+.legend-dot { display: flex; align-items: center; gap: 5px; color: var(--cave-muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.libre    { background: #16a34a; }
+.dot.occupee  { background: #dc2626; }
 .dot.reservee { background: #2a5a8a; }
 
 .salle-grid {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
+  flex: 1; overflow-y: auto; padding: 16px 22px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 12px;
-  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px; align-content: start;
 }
 .table-card {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 14px 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-  text-align: center;
+  background: white; border: 1.5px solid var(--cave-border);
+  border-radius: var(--radius); padding: 16px 12px;
+  cursor: pointer; transition: all 0.22s;
+  text-align: center; box-shadow: var(--shadow-sm);
 }
-.table-card:hover { background: #fdf0e0; border-color: var(--gold-dim); transform: translateY(-1px); }
-.table-card.selected { border-color: var(--gold); background: #fdf0e0; }
-.table-card.occupee  { border-color: #a83232; }
+.table-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--cave-violet); }
+.table-card.selected { border-color: var(--cave-gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.2); }
+.table-card.occupee  { border-color: #dc2626; }
 .table-card.reservee { border-color: #2a5a8a; }
-.table-card.libre    { border-color: var(--green-soft); }
+.table-card.libre    { border-color: #16a34a; }
 
 .table-numero {
-  font-family: var(--font-serif);
-  font-size: 1.6rem;
-  color: var(--gold-light);
-  margin-bottom: 4px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem; color: var(--cave-purple); margin-bottom: 4px;
 }
-.table-cap {
-  font-size: 12px;
-  color: var(--cream-dim);
-  margin-bottom: 6px;
-}
+.table-cap { font-size: 11px; color: var(--cave-muted); margin-bottom: 8px; }
 .table-statut-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: inline-block; padding: 3px 10px;
+  border-radius: 12px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
 }
-.badge-libre    { background: rgba(45,122,74,0.25); color: #6bcf96; }
-.badge-occupee  { background: rgba(168,50,50,0.25); color: #f08080; }
-.badge-reservee { background: rgba(42,90,138,0.25); color: #80aad4; }
-.table-total-en-cours {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--gold);
-  margin-top: 4px;
-}
-.table-client-nom {
-  font-size: 10px;
-  color: var(--cream-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.badge-libre    { background: #dcfce7; color: #15803d; }
+.badge-occupee  { background: #fee2e2; color: #b91c1c; }
+.badge-reservee { background: #dbeafe; color: #1d4ed8; }
+.table-total { font-size: 12px; font-weight: 700; color: var(--cave-violet); margin-top: 5px; }
+.table-client { font-size: 10px; color: var(--cave-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ─── CATALOGUE PLATS ─── */
-.catalogue-header {
-  padding: 12px 16px;
-  background: #f5f0e8;
-  border-bottom: 1px solid var(--border-dim);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.catalogue-search-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.catalogue-search {
-  flex: 1;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 7px 12px;
-  color: var(--cream);
-  font-size: 13px;
-  font-family: var(--font-sans);
-}
-.catalogue-search::placeholder { color: var(--cream-dim); }
-.catalogue-search:focus { outline: none; border-color: var(--gold-dim); }
-.cat-pills {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-.cat-pills::-webkit-scrollbar { height: 2px; }
-.cat-pill {
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--cream-dim);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: var(--font-sans);
-  transition: all 0.2s;
-}
-.cat-pill.active {
-  background: var(--gold);
-  color: var(--bg-deep);
-  border-color: var(--gold);
-  font-weight: 600;
-}
-.cat-pill:hover:not(.active) { border-color: var(--gold-dim); color: var(--cream); }
-
-.plats-grid {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  align-content: start;
-}
-.plat-card {
-  background: #ffffff;
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  overflow: hidden;
-  position: relative;
-}
-.plat-card:hover { border-color: var(--gold-dim); transform: translateY(-1px); box-shadow: var(--shadow); }
-.plat-card.added { animation: flashAdd 0.4s ease; }
-.plat-card.indisponible { opacity: 0.45; cursor: not-allowed; }
-@keyframes flashAdd {
-  0%   { border-color: var(--gold); box-shadow: 0 0 16px rgba(201,148,58,0.5); }
-  100% { border-color: var(--border-dim); box-shadow: none; }
-}
-.plat-img {
-  width: 100%;
-  aspect-ratio: 4/3;
-  object-fit: cover;
-  background: var(--bg-hover);
-}
-.plat-img-placeholder {
-  width: 100%;
-  aspect-ratio: 4/3;
-  background: #f0e8dc;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: var(--gold-dim);
-}
-.plat-body {
-  padding: 8px 10px;
-}
-.plat-nom {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--cream);
-  line-height: 1.3;
-  margin-bottom: 4px;
-}
-.plat-prix {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gold-light);
-}
-.plat-stock-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 9px;
-  font-weight: 700;
-}
-.stock-ok  { background: rgba(45,122,74,0.85); color: #90efb8; }
-.stock-low { background: rgba(180,120,0,0.85); color: #ffe080; }
-.stock-out { background: rgba(140,30,30,0.85); color: #ffaaaa; }
-.plat-temps {
-  font-size: 11px;
-  color: var(--cream-dim);
-  margin-top: 2px;
-}
-
-/* ═══════════════════════════════════════════
-   PANNEAU DROIT — COMMANDE EN COURS
-═══════════════════════════════════════════ */
-.tpe-right {
-  background: #1a1225;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  margin: 8px 8px 8px 0;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-}
-
-/* ─── EN-TÊTE COMMANDE ─── */
-.cmd-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(201,168,76,0.2);
-  background: #221630;
-}
-
-
-
-.cmd-infos {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.cmd-info-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.cmd-info-label {
-  font-size: 10px;
-  color: rgba(201,168,76,0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.cmd-select, .cmd-input {
-  background: #150f1e;
-  border: 1px solid rgba(201,168,76,0.25);
-  border-radius: 10px;
-  padding: 7px 10px;
-  color: #f0e6cc;
-  font-size: 12px;
-  font-family: var(--font-sans);
-  width: 100%;
-}
-.cmd-select:focus, .cmd-input:focus { outline: none; border-color: var(--gold-dim); }
-.cmd-caissier-row {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: rgba(201,168,76,0.7);
-  padding: 6px 10px;
-  background: #150f1e;
-  border-radius: 6px;
-  border: 1px solid var(--border-dim);
-}
-.cmd-caissier-row strong { color: var(--gold-light); }
-
-/* ─── LIGNES COMMANDE ─── */
-.cmd-lignes {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 10px;
-  background: #1a1225;
-}
-.cmd-lignes::-webkit-scrollbar { width: 3px; }
-.cmd-lignes::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
-.cmd-empty {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: rgba(201,168,76,0.4);
-  gap: 10px;
-}
-.cmd-empty-icon { font-size: 2.5rem; opacity: 0.5; }
-.cmd-empty-txt  { font-size: 13px; color: rgba(240,230,204,0.4); }
-
-.ligne-cmd {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 12px;
-  margin-bottom: 4px;
-  background: #221630;
-  border: 1px solid var(--border-dim);
-  transition: background 0.15s;
-}
-.ligne-cmd:hover { background: #2d1f3d; }
-.ligne-nom {
-  flex: 1;
-  font-size: 13px;
-  color: #f0e6cc;
-  line-height: 1.3;
-}
-.ligne-acc {
-  font-size: 10px;
-  color: var(--gold-dim);
-  font-style: italic;
-  margin-top: 2px;
-}
-.ligne-prix {
-  font-size: 13px;
-  font-weight: 600;
-  color: #c9a84c;
-  white-space: nowrap;
-}
-.qty-ctrl {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: #150f1e;
-  border-radius: 6px;
-  padding: 2px;
-  border: 1px solid var(--border-dim);
-}
-.qty-btn {
-  width: 22px; height: 22px;
-  border: none;
-  background: transparent;
-  color: #c9a84c;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  line-height: 1;
-}
-.qty-btn:hover { background: #2d1f3d; }
-.qty-val {
-  font-size: 13px;
-  font-weight: 600;
-  color: #f0e6cc;
-  min-width: 20px;
-  text-align: center;
-}
-.btn-del-ligne {
-  width: 24px; height: 24px;
-  border: none;
-  background: rgba(168,50,50,0.2);
-  color: #f08080;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-.btn-del-ligne:hover { background: rgba(168,50,50,0.4); }
-
-/* ─── ACC MODAL INLINE ─── */
-.acc-panel {
-  background: #150f1e;
-  border-top: 1px solid var(--border-dim);
-  padding: 8px 10px;
-  display: none;
-}
-.acc-panel.open { display: block; }
-.acc-panel-titre {
-  font-size: 11px;
-  color: rgba(201,168,76,0.7);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.acc-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.acc-pill {
-  padding: 4px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(201,168,76,0.3);
-  background: #221630;
-  color: var(--cream-dim);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: var(--font-sans);
-}
-.acc-pill:hover { border-color: #c9a84c; color: #f0e6cc; }
-.acc-pill.selected { background: #c9a84c; color: #1a1225; border-color: #c9a84c; font-weight: 600; }
-
-/* ─── PIED COMMANDE ─── */
-.cmd-footer {
-  padding: 12px 14px;
-  border-top: 1px solid rgba(201,168,76,0.2);
-  background: #221630;
-  border-radius: 0 0 16px 16px;
-}
-.cmd-sous-total {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: rgba(201,168,76,0.6);
-  margin-bottom: 3px;
-}
-.cmd-total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(201,168,76,0.15);
-}
-.cmd-total-label { font-size: 15px; font-weight: 600; color: #f0e6cc; }
-.cmd-total-val {
-  font-family: var(--font-serif);
-  font-size: 1.7rem;
-  color: #c9a84c;
-}
-.cmd-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.btn-attente {
-  padding: 11px;
-  border-radius: 10px;
-  border: 1px solid rgba(201,168,76,0.3);
-  background: transparent;
-  color: rgba(240,230,204,0.7);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: all 0.2s;
-}
-.btn-attente:hover { background: rgba(201,168,76,0.1); color: #f0e6cc; border-color: #c9a84c; }
-.btn-encaisser {
-  grid-column: 1 / -1;
-  padding: 13px;
-  border-radius: 10px;
-  border: none;
-  background: #c9a84c;
-  color: #1a1225;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.btn-encaisser:hover { background: #dfc06a; }
-.btn-encaisser:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ─── COMMANDES EN ATTENTE (tickets) ─── */
-.tickets-attente {
-  padding: 8px 10px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  border-top: none;
-  border-bottom: 1px solid rgba(201,168,76,0.15);
-  background: #150f1e;
-  border-radius: 16px 16px 0 0;
-  min-height: 40px;
-  align-items: center;
-}
-.ticket-badge {
-  padding: 5px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(201,168,76,0.3);
-  background: #221630;
-  color: rgba(240,230,204,0.6);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.ticket-badge.active { background: rgba(201,168,76,0.2); border-color: #c9a84c; color: #c9a84c; font-weight: 600; }
-.ticket-badge:hover:not(.active) { border-color: #c9a84c; color: #f0e6cc; }
-
-/* ═══════════════════════════════════════════
-   MODAL ENCAISSEMENT
-═══════════════════════════════════════════ */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.75);
-  z-index: 5000;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal-box {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  width: 420px;
-  max-width: 95vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  overflow: hidden;
-}
-.modal-head {
-  background: #faf6f0;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.modal-head h3 {
-  font-family: var(--font-serif);
-  font-size: 1.1rem;
-  color: var(--gold-light);
-}
-.modal-close-btn {
-  width: 30px; height: 30px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--cream-dim);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-.modal-close-btn:hover { background: var(--bg-hover); color: var(--cream); }
-.modal-body { padding: 20px; }
-.modal-total-display {
-  text-align: center;
-  padding: 16px;
-  background: #faf6f0;
-  border-radius: 10px;
-  margin-bottom: 16px;
-}
-.modal-total-display .mt-label { font-size: 12px; color: var(--cream-dim); margin-bottom: 4px; }
-.modal-total-display .mt-val {
-  font-family: var(--font-serif);
-  font-size: 2rem;
-  color: var(--gold-light);
-}
-.modal-total-display .mt-table {
-  font-size: 12px;
-  color: var(--cream-dim);
-  margin-top: 4px;
-}
-.pay-modes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.pay-mode-btn {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #f5f0e8;
-  color: var(--cream-dim);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.pay-mode-btn.selected { background: rgba(201,148,58,0.2); border-color: var(--gold); color: var(--gold-light); }
-.pay-mode-btn:hover:not(.selected) { border-color: var(--gold-dim); color: var(--cream); }
-.modal-field {
-  margin-bottom: 10px;
-}
-.modal-field label {
-  font-size: 11px;
-  color: var(--cream-dim);
-  display: block;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-.modal-input {
-  width: 100%;
-  background: #f5f0e8;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 9px 12px;
-  color: var(--cream);
-  font-size: 14px;
-  font-family: var(--font-sans);
-}
-.modal-input:focus { outline: none; border-color: var(--gold-dim); }
-.billets-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
-.billet-btn {
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: #f5f0e8;
-  color: var(--cream-dim);
-  font-size: 11px;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: all 0.15s;
-}
-.billet-btn:hover { border-color: var(--gold-dim); color: var(--gold-light); }
-.rendu-display {
-  background: rgba(45,122,74,0.15);
-  border: 1px solid rgba(45,122,74,0.3);
-  border-radius: 8px;
-  padding: 10px 14px;
-  display: none;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-.rendu-display.show { display: flex; }
-.rendu-display .rd-label { font-size: 12px; color: #6bcf96; }
-.rendu-display .rd-val { font-size: 1.2rem; font-weight: 700; color: #6bcf96; }
-.btn-confirm-paiement {
-  width: 100%;
-  margin-top: 14px;
-  padding: 13px;
-  border-radius: 8px;
-  border: none;
-  background: var(--gold);
-  color: var(--bg-deep);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.btn-confirm-paiement:hover { background: var(--gold-light); }
-.btn-confirm-paiement:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ─── COMMANDES EN COURS (onglet) ─── */
-.commandes-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
-}
+/* ===== EN COURS ===== */
+.commandes-list { flex: 1; overflow-y: auto; padding: 14px 22px; }
 .commande-row {
-  background: #ffffff;
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
+  background: white; border: 1.5px solid var(--cave-border);
+  border-radius: var(--radius); padding: 12px 14px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm);
+}
+.commande-row:hover { border-color: var(--cave-violet); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.cmd-row-table { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--cave-purple); min-width: 50px; text-align: center; }
+.cmd-row-info { flex: 1; }
+.cmd-row-client { font-size: 13px; font-weight: 600; color: var(--cave-text); }
+.cmd-row-items  { font-size: 11px; color: var(--cave-muted); margin-top: 2px; }
+.cmd-row-right  { text-align: right; }
+.cmd-row-total  { font-size: 14px; font-weight: 700; color: var(--cave-violet); }
+.cmd-row-temps  { font-size: 11px; color: var(--cave-muted); margin-top: 2px; }
+.statut-pill {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 10px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; margin-top: 4px;
+}
+.s-attente     { background: #fef3c7; color: #92400e; }
+.s-preparation { background: #dbeafe; color: #1e40af; }
+.s-prete       { background: #dcfce7; color: #15803d; }
+.s-servie      { background: #f3e8ff; color: #7e22ce; }
+.btn-row-encaisser {
+  padding: 6px 12px; border-radius: 8px;
+  border: 1.5px solid var(--cave-purple);
+  background: rgba(74,45,107,0.08); color: var(--cave-purple);
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap; transition: all 0.15s;
+}
+.btn-row-encaisser:hover { background: var(--cave-purple); color: white; }
+
+/* ===== PANNEAU DROIT — TICKET ===== */
+.panel-ticket {
+  display: flex; flex-direction: column;
+  background: var(--cave-deep); color: white; overflow: hidden;
+}
+
+.ticket-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.ticket-header-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.ticket-header-top h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem; color: var(--cave-gold);
+}
+.ticket-num { font-size: 0.72rem; color: rgba(255,255,255,0.45); font-weight: 600; letter-spacing: 1px; }
+
+.ticket-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.ticket-meta select:last-child { grid-column: 1 / -1; }
+.ticket-meta select, .ticket-meta input {
+  padding: 8px 11px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07); color: white;
+  font-size: 0.8rem; font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.2s;
+}
+.ticket-meta select:focus, .ticket-meta input:focus { outline: none; border-color: var(--cave-gold); background: rgba(255,255,255,0.11); }
+.ticket-meta select option { background: var(--cave-deep); color: white; }
+.ticket-meta input::placeholder { color: rgba(255,255,255,0.35); }
+.caissier-info {
+  grid-column: 1 / -1; padding: 7px 11px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(201,168,76,0.08); color: rgba(255,255,255,0.6);
+  font-size: 0.8rem; display: flex; align-items: center; gap: 7px;
+}
+.caissier-info strong { color: var(--cave-gold); }
+
+/* Table sélectionnée badge */
+.table-sel-badge {
+  grid-column: 1 / -1;
+  padding: 6px 11px; border-radius: 10px;
+  border: 1px solid rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.1); color: var(--cave-gold);
+  font-size: 0.8rem; font-weight: 700;
+  display: flex; align-items: center; gap: 7px;
+}
+
+.tickets-attente {
+  display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 4px;
+  scrollbar-width: none;
+}
+.tickets-attente::-webkit-scrollbar { display: none; }
+.ticket-attente-btn {
+  flex-shrink: 0; padding: 5px 12px;
+  background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35);
+  color: var(--cave-gold); border-radius: 20px; font-size: 0.72rem;
+  font-weight: 700; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px;
+}
+.ticket-attente-btn:hover { background: rgba(201,168,76,0.28); }
+.ticket-attente-btn.active { background: var(--cave-gold); color: var(--cave-deep); }
+.btn-new-ticket {
+  flex-shrink: 0; padding: 5px 12px;
+  background: rgba(255,255,255,0.07); border: 1.5px dashed rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.55); border-radius: 20px; font-size: 0.72rem;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-new-ticket:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
+
+.ticket-lines {
+  flex: 1; overflow-y: auto; padding: 14px 20px;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.ticket-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%;
+  color: rgba(255,255,255,0.2); text-align: center; gap: 10px;
+}
+.ticket-empty i { font-size: 2.5rem; }
+.ticket-empty p { font-size: 0.82rem; }
+
+.ticket-line {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  margin-bottom: 7px; transition: background 0.15s;
+}
+.ticket-line:hover { background: rgba(255,255,255,0.09); }
+.tl-nom  { flex: 1; font-size: 0.85rem; font-weight: 500; color: rgba(255,255,255,0.9); }
+.tl-ctrl { display: flex; align-items: center; gap: 6px; }
+.tl-qty-btn {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: rgba(255,255,255,0.1); border: none; color: white;
+  font-size: 0.9rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.tl-qty-btn:hover { background: rgba(255,255,255,0.2); }
+.tl-qty-btn.del:hover { background: rgba(220,38,38,0.4); }
+.tl-qty  { min-width: 22px; text-align: center; font-size: 0.88rem; font-weight: 700; color: white; }
+.tl-prix { font-size: 0.88rem; font-weight: 700; color: var(--cave-gold); min-width: 70px; text-align: right; }
+
+.ticket-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+.sous-total-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px;
+}
+.total-label { font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.7); }
+.total-value { font-size: 1.6rem; font-weight: 800; color: var(--cave-gold); letter-spacing: -0.5px; }
+
+.paiement-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-bottom: 12px; }
+.pay-btn {
+  padding: 9px 8px; border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.75);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+}
+.pay-btn:hover, .pay-btn.selected { background: rgba(201,168,76,0.2); border-color: var(--cave-gold); color: var(--cave-gold); }
+
+.btn-valider {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--cave-gold) 0%, #e8c56a 100%);
+  color: var(--cave-deep); border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 800; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s; box-shadow: 0 4px 16px rgba(201,168,76,0.4);
+}
+.btn-valider:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.5); }
+.btn-valider:disabled { opacity: 0.35; pointer-events: none; }
+
+.btn-attente {
+  width: 100%; padding: 9px; margin-bottom: 8px;
+  background: transparent; border: 1.5px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.55); border-radius: 10px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
   transition: all 0.2s;
 }
-.commande-row:hover { border-color: var(--gold-dim); background: #fdf0e0; }
-.commande-row.urgente { border-color: #a83232; }
-.cmd-row-table {
-  font-family: var(--font-serif);
-  font-size: 1.3rem;
-  color: var(--gold-light);
-  min-width: 50px;
-  text-align: center;
-}
-.cmd-row-info { flex: 1; }
-.cmd-row-client { font-size: 13px; font-weight: 500; color: var(--cream); }
-.cmd-row-items  { font-size: 11px; color: var(--cream-dim); margin-top: 2px; }
-.cmd-row-right  { text-align: right; }
-.cmd-row-total  { font-size: 14px; font-weight: 700; color: var(--gold-light); }
-.cmd-row-temps  { font-size: 11px; color: var(--cream-dim); margin-top: 2px; }
-.statut-pill {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-top: 4px;
-}
-.s-attente     { background: rgba(180,120,0,0.25); color: #ffe080; }
-.s-preparation { background: rgba(42,90,138,0.25); color: #80aad4; }
-.s-prete       { background: rgba(45,122,74,0.25); color: #6bcf96; }
-.s-servie      { background: rgba(100,50,150,0.25); color: #c4a0f0; }
-.btn-row-encaisser {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--gold-dim);
-  background: rgba(201,148,58,0.1);
-  color: var(--gold);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  white-space: nowrap;
-  transition: all 0.15s;
-}
-.btn-row-encaisser:hover { background: var(--gold); color: var(--bg-deep); }
+.btn-attente:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
 
-/* ─── TOAST ─── */
-.toast-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* Accompagnements panel */
+.acc-panel { background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.08); padding: 10px 20px; display: none; }
+.acc-panel.open { display: block; }
+.acc-panel-titre { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.acc-pills-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.acc-pill {
+  padding: 5px 12px; border-radius: 20px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7);
+  font-size: 11px; cursor: pointer; transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
 }
-.toast {
-  padding: 10px 16px;
-  border-radius: 8px;
-  background: #fff;
-  border: 1px solid var(--border);
-  color: var(--cream);
-  font-size: 13px;
-  font-family: var(--font-sans);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  animation: slideIn 0.3s ease, fadeOut 0.4s ease 2.8s forwards;
-  max-width: 320px;
-}
-.toast.success { border-color: rgba(45,122,74,0.6); color: #6bcf96; }
-.toast.error   { border-color: rgba(168,50,50,0.6); color: #f08080; }
-.toast.info    { border-color: var(--gold-dim); color: var(--gold-light); }
-@keyframes slideIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; pointer-events: none; } }
+.acc-pill:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
+.acc-pill.selected { background: var(--cave-gold); color: var(--cave-deep); border-color: var(--cave-gold); font-weight: 700; }
 
-/* scrollbars globaux */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+/* ===== MODAL PAIEMENT ===== */
+.modal-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(10,5,20,0.75); backdrop-filter: blur(6px); align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--cave-deep); border-radius: 24px; padding: 32px; width: 420px; max-width: 95vw; box-shadow: 0 40px 80px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); animation: modal-in 0.28s cubic-bezier(.34,1.56,.64,1); }
+@keyframes modal-in { from { transform: scale(0.88) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--cave-gold); margin-bottom: 4px; }
+.modal-subtitle { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+.modal-total { font-size: 2.5rem; font-weight: 800; color: white; text-align: center; margin-bottom: 20px; letter-spacing: -1px; }
+.modal-total span { font-size: 1rem; color: var(--cave-gold); margin-left: 6px; }
+.rendu-section { margin-bottom: 20px; }
+.rendu-section label { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block; font-weight: 600; letter-spacing: 0.5px; }
+.rendu-section input { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 12px; color: white; font-size: 1.2rem; font-weight: 700; font-family: 'DM Sans', sans-serif; text-align: center; transition: border-color 0.2s; }
+.rendu-section input:focus { outline: none; border-color: var(--cave-gold); }
+.rendu-display { text-align: center; margin-top: 10px; padding: 10px; background: rgba(22,163,74,0.15); border-radius: 10px; font-size: 1rem; font-weight: 700; color: #4ade80; display: none; }
+.rendu-display.show { display: block; }
+.billets-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 20px; }
+.billet-btn { padding: 7px; border-radius: 8px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+.billet-btn:hover { background: rgba(201,168,76,0.2); color: var(--cave-gold); border-color: var(--cave-gold); }
+.modal-actions { display: flex; gap: 10px; }
+.modal-btn-cancel { flex: 1; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.modal-btn-cancel:hover { background: rgba(220,38,38,0.2); color: #f87171; }
+.modal-btn-confirm { flex: 2; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, var(--cave-gold), #e8c56a); color: var(--cave-deep); border: none; font-size: 0.95rem; font-weight: 800; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.modal-btn-confirm:hover { transform: translateY(-1px); }
+
+/* ===== TOAST ===== */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column-reverse; gap: 8px; }
+.toast { padding: 12px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; color: white; box-shadow: var(--shadow-lg); min-width: 220px; animation: toast-in 0.3s ease; font-family: 'DM Sans', sans-serif; }
+@keyframes toast-in { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.toast.success { background: linear-gradient(135deg, #166534, #16a34a); }
+.toast.error   { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+.toast.info    { background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet)); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div id="tpe-root">
+<div class="tpe-wrap">
 
-  <!-- ═══ TOPBAR ═══ -->
-  <div class="tpe-topbar">
-    <div class="topbar-brand">🍽 Restaurant</div>
-    <div class="topbar-tabs">
-      <button class="topbar-tab active" onclick="switchTab('salle')" id="tab-salle">
-        Plan de salle
-      </button>
-      <button class="topbar-tab" onclick="switchTab('plats')" id="tab-plats">
-        Plats
-      </button>
-      <button class="topbar-tab" onclick="switchTab('boissons')" id="tab-boissons">
-        Boissons
-      </button>
-      <button class="topbar-tab" onclick="switchTab('commandes')" id="tab-commandes">
-        Commandes en cours
-        <span class="tab-badge" id="badge-commandes">{{ commandes_en_cours }}</span>
-      </button>
-    </div>
-    <div class="topbar-right">
-      <span class="topbar-caissier">Caissier : <strong>{{ request.user.get_full_name|default:request.user.username }}</strong></span>
-      <a href="{% url 'restaurant:index' %}" class="btn-back">← Tableau de bord</a>
-    </div>
-  </div>
-
-  <!-- ═══ PANNEAU GAUCHE ═══ -->
-  <div class="tpe-left">
-    <!-- HEADER GAUCHE -->
-    <div class="tpe-left-header">
-      <div class="tpe-brand">
-        🍽 Restaurant
-        <small>Prise de commande</small>
+  <!-- ========== PANNEAU GAUCHE ========== -->
+  <div class="panel-catalogue">
+    <div class="cat-header">
+      <div class="cat-header-top">
+        <h2>🍽 Restaurant
+          <small style="font-family:'DM Sans';font-size:0.75rem;color:var(--cave-muted);font-weight:400;">Prise de commande</small>
+        </h2>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;">
+          <span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:var(--cave-gold);letter-spacing:1px;" id="restoClockTime">--:--:--</span>
+          <span style="font-size:10px;color:var(--cave-muted);text-transform:uppercase;letter-spacing:0.5px;" id="restoClockDate">---</span>
+        </div>
       </div>
-      <div class="tpe-clock">
-        <div class="tpe-clock-time" id="clockTime">--:--:--</div>
-        <div class="tpe-clock-date" id="clockDate">---</div>
+
+      <!-- 4 onglets principaux -->
+      <div class="nav-tabs-wrap">
+        <button class="nav-tab active" data-view="salle" onclick="switchView(this)">
+          🪑 Plan de salle
+        </button>
+        <button class="nav-tab" data-view="plats" onclick="switchView(this)">
+          🍽 Plats
+        </button>
+        <button class="nav-tab" data-view="boissons" onclick="switchView(this)">
+          🍷 Boissons
+        </button>
+        <button class="nav-tab" data-view="encours" onclick="switchView(this)">
+          ⏱ En cours
+          <span class="badge" id="badge-encours">{{ commandes_en_cours }}</span>
+        </button>
       </div>
     </div>
-    <!-- TABS NAVIGATION -->
-    <div class="tpe-left-tabs">
-      <button class="topbar-tab active" onclick="switchTab('salle')" id="tab-salle">🪑 Plan de salle</button>
-      <button class="topbar-tab" onclick="switchTab('plats')" id="tab-plats">🍽 Plats</button>
-      <button class="topbar-tab" onclick="switchTab('boissons')" id="tab-boissons">🍷 Boissons</button>
-      <button class="topbar-tab" onclick="switchTab('commandes')" id="tab-commandes">
-        🕐 En cours <span class="commandes-badge" id="badgeCommandes">{{ commandes_en_cours }}</span>
-      </button>
-    </div>
 
-    <!-- VUE : PLAN DE SALLE -->
-    <div class="view-panel active" id="panel-salle">
+    <!-- ── VUE : PLAN DE SALLE ── -->
+    <div class="view-panel active" id="view-salle">
       <div class="salle-header">
         <input type="text" class="salle-search" placeholder="Rechercher une table…" oninput="filtrerTables(this.value)">
         <div class="salle-legend">
@@ -1037,312 +527,316 @@
              id="table-card-{{ table.id }}"
              data-id="{{ table.id }}"
              data-num="{{ table.numero }}"
-             data-cap="{{ table.capacite }}"
              data-statut="{{ table.statut }}"
              onclick="selectionnerTable({{ table.id }}, '{{ table.numero }}', '{{ table.statut }}')">
           <div class="table-numero">{{ table.numero }}</div>
           <div class="table-cap">{{ table.capacite }} pers.</div>
           <span class="table-statut-badge badge-{{ table.statut }}">
-            {% if table.statut == 'disponible' %}Libre{% elif table.statut == 'occupee' %}Occupée{% else %}Réservée{% endif %}
+            {% if table.statut == 'disponible' %}LIBRE{% elif table.statut == 'occupee' %}OCCUPÉE{% else %}RÉSERVÉE{% endif %}
           </span>
           {% for cmd in commandes_en_cours_list %}
             {% if cmd.table.id == table.id %}
-            <div class="table-total-en-cours">{{ cmd.total|floatformat:0 }} F</div>
-            {% if cmd.nom_client %}<div class="table-client-nom">{{ cmd.nom_client }}</div>{% endif %}
+            <div class="table-total">{{ cmd.total|floatformat:0 }} F</div>
+            {% if cmd.nom_client %}<div class="table-client">{{ cmd.nom_client }}</div>{% endif %}
             {% endif %}
           {% endfor %}
         </div>
         {% empty %}
-        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--cream-dim)">
-          Aucune table configurée — <a href="{% url 'parametres:table_create' %}" style="color:var(--gold)">Ajouter des tables</a>
+        <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
+          <i class="fas fa-chair" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
+          Aucune table configurée — <a href="{% url 'parametres:table_create' %}" style="color:var(--cave-violet)">Ajouter des tables</a>
         </div>
         {% endfor %}
       </div>
     </div>
 
-    <!-- VUE : PLATS CUISINE -->
-    <div class="view-panel" id="panel-plats">
-      <div class="catalogue-header">
-        <div class="catalogue-search-row">
-          <input type="text" class="catalogue-search" placeholder="Rechercher un plat…" oninput="filtrerPlats(this.value)" id="searchPlat">
-          <span style="font-size:12px;color:var(--cream-dim);white-space:nowrap;">{{ plats|length }} plats</span>
+    <!-- ── VUE : PLATS ── -->
+    <div class="view-panel" id="view-plats">
+      <div style="padding:12px 22px 0; flex-shrink:0;">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchPlats" placeholder="Rechercher un plat…" oninput="filtrerArticles('plats')">
         </div>
-        <div class="cat-pills" id="catPills">
-          <button class="cat-pill active" data-cat="tout" onclick="filtrerCategorie(this)">Tout</button>
-          <button class="cat-pill" data-cat="entree" onclick="filtrerCategorie(this)">Hors-d'œuvres / Entrées</button>
-          <button class="cat-pill" data-cat="principal" onclick="filtrerCategorie(this)">Plats principaux</button>
-          <button class="cat-pill" data-cat="accompagnement" onclick="filtrerCategorie(this)">Accompagnements</button>
-          <button class="cat-pill" data-cat="dessert" onclick="filtrerCategorie(this)">Desserts</button>
-          {% for cat in categories %}{% if cat.nom|lower not in "boissons,bière,biere,vin,alcool,jus,soda,soft drink,liqueur & apéritif,spiritueux & alcool distillé,spiritueux,apéritif,bière" and "boisson" not in cat.nom|lower and "biere" not in cat.nom|lower and "vin" not in cat.nom|lower and "soft" not in cat.nom|lower and "alcool" not in cat.nom|lower and "liqueur" not in cat.nom|lower and "spiritueux" not in cat.nom|lower %}<button class="cat-pill" data-cat="cat-{{ cat.id }}" onclick="filtrerCategorie(this)">{{ cat.nom }}</button>{% endif %}{% endfor %}
+        <div class="sub-filters" id="platsFilters">
+          <button class="sub-btn active" data-cat="tout" onclick="filtrerSousCategorie(this,'plats')">Tout</button>
+          {% for cat in categories_cuisine %}
+          <button class="sub-btn" data-cat="{{ cat.id }}" onclick="filtrerSousCategorie(this,'plats')">{{ cat.nom }}</button>
+          {% endfor %}
         </div>
       </div>
-      <div class="plats-grid" id="platsGrid">
-        {% for plat in plats %}
-        {% if not plat.is_accompagnement and not "boisson" in plat.categorie.nom|lower and not "biere" in plat.categorie.nom|lower and not "vin" in plat.categorie.nom|lower and not "soft" in plat.categorie.nom|lower and not "jus" in plat.categorie.nom|lower and not "alcool" in plat.categorie.nom|lower and not "liqueur" in plat.categorie.nom|lower and not "spiritueux" in plat.categorie.nom|lower %}
-        <div class="plat-card {% if not plat.en_stock %}indisponible{% endif %}"
-             data-id="{{ plat.id }}"
-             data-nom="{{ plat.nom|lower }}"
-             data-cat="{{ plat.categorie.id }}"
-             data-catnom="{{ plat.categorie.nom|lower }}"
-             onclick="ajouterPlat({{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix }}, {{ plat.en_stock|yesno:'true,false' }})">
-          {% if plat.image %}
-            <img src="{{ plat.image.url }}" alt="{{ plat.nom }}" class="plat-img" loading="lazy">
-          {% else %}
-            <div class="plat-img-placeholder">🍽</div>
-          {% endif %}
-          <div class="plat-body">
-            <div class="plat-nom">{{ plat.nom }}</div>
-            <div class="plat-prix">{{ plat.prix|floatformat:0 }} F</div>
-            <div class="plat-temps">⏱ {{ plat.temps_preparation }} min</div>
+      <div class="articles-scroll" style="margin-top:12px;">
+        <div class="articles-grid" id="platsGrid">
+          {% for plat in plats %}{% if not plat.is_accompagnement %}
+          <div class="article-card {% if not plat.en_stock %}rupture{% endif %}"
+               data-type="plat"
+               data-id="{{ plat.id }}"
+               data-nom="{{ plat.nom|lower }}"
+               data-cat="{{ plat.categorie.id }}"
+               onclick="ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">
+            <div class="ac-img-wrap">
+              {% if plat.image %}<img src="{{ plat.image.url }}" alt="{{ plat.nom }}">{% else %}🍽{% endif %}
+              <span class="ac-stock-badge {% if plat.stock_quantity > 5 %}ok{% elif plat.stock_quantity > 0 %}bas{% else %}rupture{% endif %}">
+                {% if plat.stock_quantity > 50 %}✓{% elif plat.stock_quantity > 0 %}{{ plat.stock_quantity }}{% else %}—{% endif %}
+              </span>
+            </div>
+            <div class="ac-body">
+              <div class="ac-nom">{{ plat.nom }}</div>
+              <div class="ac-footer">
+                <div>
+                  <div class="ac-prix">{{ plat.prix|floatformat:0 }} F</div>
+                  <div class="ac-unite">⏱ {{ plat.temps_preparation }} min</div>
+                </div>
+                <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">+</button>
+              </div>
+            </div>
           </div>
-          <span class="plat-stock-badge {% if plat.stock_quantity > 5 %}stock-ok{% elif plat.stock_quantity > 0 %}stock-low{% else %}stock-out{% endif %}">
-            {% if plat.stock_quantity > 50 %}✓{% elif plat.stock_quantity > 0 %}{{ plat.stock_quantity }}{% else %}—{% endif %}
-          </span>
-        </div>
-        {% endif %}
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- VUE : BOISSONS CAVE -->
-    <div class="view-panel" id="panel-boissons">
-      <div class="catalogue-header">
-        <div class="catalogue-search-row">
-          <input type="text" class="catalogue-search" placeholder="Rechercher une boisson…" oninput="filtrerBoissons(this.value)" id="searchBoisson">
-        </div>
-        <div class="cat-pills" id="catBoissonPills">
-          <button class="cat-pill active" data-cat="tout" onclick="filtrerCatBoisson(this)">Tout</button>
-          <button class="cat-pill" data-cat="bière" onclick="filtrerCatBoisson(this)">Bière</button>
-          <button class="cat-pill" data-cat="liqueur" onclick="filtrerCatBoisson(this)">Liqueur &amp; Apéritif</button>
-          <button class="cat-pill" data-cat="soft" onclick="filtrerCatBoisson(this)">Soft Drink</button>
-          <button class="cat-pill" data-cat="spiritueux" onclick="filtrerCatBoisson(this)">Spiritueux &amp; Alcool distillé</button>
-          <button class="cat-pill" data-cat="vin" onclick="filtrerCatBoisson(this)">Vin</button>
-        </div>
-      </div>
-      <div class="plats-grid" id="boissonsGrid">
-        {% for plat in plats %}
-        {% if plat.categorie and plat.categorie.nom|lower in "boissons,bière,biere,vin,alcool,jus,soda,soft drink,liqueur & apéritif,spiritueux & alcool distillé,spiritueux,apéritif" or "boisson" in plat.categorie.nom|lower or "biere" in plat.categorie.nom|lower or "vin" in plat.categorie.nom|lower or "soft" in plat.categorie.nom|lower or "jus" in plat.categorie.nom|lower or "alcool" in plat.categorie.nom|lower or "liqueur" in plat.categorie.nom|lower or "spiritueux" in plat.categorie.nom|lower %}
-        <div class="plat-card {% if not plat.en_stock %}indisponible{% endif %}"
-             data-id="{{ plat.id }}"
-             data-nom="{{ plat.nom|lower }}"
-             data-cat="{{ plat.categorie.nom }}"
-             onclick="ajouterPlat({{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix }}, {{ plat.en_stock|yesno:'true,false' }})">
-          {% if plat.image %}
-            <img src="{{ plat.image.url }}" alt="{{ plat.nom }}" class="plat-img" loading="lazy">
-          {% else %}
-            <div class="plat-img-placeholder">🍷</div>
-          {% endif %}
-          <div class="plat-body">
-            <div class="plat-nom">{{ plat.nom }}</div>
-            <div class="plat-prix">{{ plat.prix|floatformat:0 }} F</div>
+          {% endif %}{% endfor %}
+          {% if not plats %}
+          <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
+            <i class="fas fa-utensils" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
+            Aucun plat disponible
           </div>
-          <span class="plat-stock-badge {% if plat.stock_quantity > 5 %}stock-ok{% elif plat.stock_quantity > 0 %}stock-low{% else %}stock-out{% endif %}">
-            {% if plat.stock_quantity > 50 %}✓{% elif plat.stock_quantity > 0 %}{{ plat.stock_quantity }}{% else %}—{% endif %}
-          </span>
+          {% endif %}
         </div>
-        {% endif %}
-        {% endfor %}
       </div>
     </div>
 
-    <!-- VUE : COMMANDES EN COURS -->
-    <div class="view-panel" id="panel-commandes">
-      <div class="commandes-list" id="commandesList">
+    <!-- ── VUE : BOISSONS ── -->
+    <div class="view-panel" id="view-boissons">
+      <div style="padding:12px 22px 0; flex-shrink:0;">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchBoissons" placeholder="Rechercher une boisson…" oninput="filtrerArticles('boissons')">
+        </div>
+        <div class="sub-filters" id="boissonsFilters">
+          <button class="sub-btn active" data-cat="tout" onclick="filtrerSousCategorie(this,'boissons')">Tout</button>
+          {% for cat in categories_bar %}
+          <button class="sub-btn" data-cat="{{ cat.id }}" onclick="filtrerSousCategorie(this,'boissons')">{{ cat.nom }}</button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="articles-scroll" style="margin-top:12px;">
+        <div class="articles-grid" id="boissonsGrid">
+          {% for b in boissons_bar %}
+          <div class="article-card {% if b.est_en_rupture %}rupture{% endif %}"
+               data-type="boisson"
+               data-id="{{ b.id }}"
+               data-nom="{{ b.nom|lower }}"
+               data-cat="{{ b.categorie.id }}"
+               onclick="ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">
+            <div class="ac-img-wrap">
+              {% if b.image %}<img src="{{ b.image.url }}" alt="{{ b.nom }}">{% else %}🍷{% endif %}
+              <span class="ac-stock-badge {% if b.est_en_rupture %}rupture{% elif b.est_stock_bas %}bas{% else %}ok{% endif %}">
+                {% if b.est_en_rupture %}—{% else %}{{ b.stock_quantity }}{% endif %}
+              </span>
+            </div>
+            <div class="ac-body">
+              <div class="ac-nom">{{ b.nom }}</div>
+              <div class="ac-footer">
+                <div>
+                  <div class="ac-prix">{{ b.prix|floatformat:0 }} F</div>
+                  <div class="ac-unite">/ {{ b.unite_affichee }}</div>
+                </div>
+                <button class="ac-add" onclick="event.stopPropagation(); ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">+</button>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
+            <i class="fas fa-wine-bottle" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
+            Aucune boisson disponible
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VUE : EN COURS ── -->
+    <div class="view-panel" id="view-encours">
+      <div class="commandes-list">
         {% for cmd in commandes_en_cours_list %}
-        <div class="commande-row" data-cmd-id="{{ cmd.id }}" onclick="chargerCommande({{ cmd.id }})">
+        <div class="commande-row" onclick="chargerCommande({{ cmd.id }})">
           <div class="cmd-row-table">{{ cmd.table.numero|default:"—" }}</div>
           <div class="cmd-row-info">
-            <div class="cmd-row-client">{{ cmd.nom_client|default:"Client inconnu" }}</div>
+            <div class="cmd-row-client">{{ cmd.nom_client|default:"Client" }}</div>
             <div class="cmd-row-items">{{ cmd.lignes.count }} article{{ cmd.lignes.count|pluralize }}</div>
             <span class="statut-pill s-{{ cmd.statut }}">{{ cmd.get_statut_display }}</span>
           </div>
           <div class="cmd-row-right">
             <div class="cmd-row-total">{{ cmd.total|floatformat:0 }} F</div>
             <div class="cmd-row-temps">{{ cmd.date_creation|timesince }}</div>
-            <button class="btn-row-encaisser" onclick="event.stopPropagation(); ouvrirEncaissement({{ cmd.id }})">Encaisser</button>
+            <button class="btn-row-encaisser" onclick="event.stopPropagation(); ouvrirModalDepuisCmd({{ cmd.id }})">Encaisser</button>
           </div>
         </div>
         {% empty %}
-        <div style="text-align:center;padding:60px;color:var(--cream-dim)">Aucune commande en cours</div>
+        <div style="text-align:center;padding:60px;color:var(--cave-muted);">
+          <i class="fas fa-clock" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
+          Aucune commande en cours
+        </div>
         {% endfor %}
       </div>
     </div>
 
-  </div><!-- /tpe-left -->
+  </div><!-- /panel-catalogue -->
 
-  <!-- ═══ PANNEAU DROIT ═══ -->
-  <div class="tpe-right">
+  <!-- ========== PANNEAU DROIT — TICKET ========== -->
+  <div class="panel-ticket">
 
-    <!-- TICKETS EN ATTENTE -->
-    <div class="tickets-attente" id="ticketsAttente">
-      <span style="font-size:11px;color:rgba(201,168,76,0.6)">Tickets :</span>
-    </div>
+    <div class="ticket-header">
+      <div class="ticket-header-top">
+        <h3><i class="fas fa-receipt" style="font-size:0.9rem;margin-right:6px;"></i>Ticket en cours</h3>
+        <span class="ticket-num" id="ticketNum">T-001</span>
+      </div>
 
-    <!-- EN-TÊTE COMMANDE -->
-    <div class="cmd-header">
-      <div class="cmd-infos">
-        <div class="cmd-info-field">
-          <label class="cmd-info-label">Client / Nom</label>
-          <input type="text" class="cmd-input" id="inputClient" placeholder="Nom du client…" oninput="syncTicketActif()">
+      <div class="ticket-meta">
+        <div class="table-sel-badge" id="tableSelbadge" style="display:none;">
+          🪑 <span id="tableSelLabel">—</span>
         </div>
-        <div class="cmd-info-field">
-          <label class="cmd-info-label">Serveur</label>
-          <select class="cmd-select" id="selectServeur" onchange="syncTicketActif()">
-            <option value="">— Serveur —</option>
-            {% for u in serveurs %}
-            <option value="{{ u.get_full_name|default:u.username }}">{{ u.get_full_name|default:u.username }}</option>
-            {% endfor %}
-          </select>
+        <input type="text" id="inputClient" placeholder="👤 Nom du client…" oninput="majTicketMeta()">
+        <select id="selectServeur" onchange="majTicketMeta()">
+          <option value="">🧑‍🍳 Serveur</option>
+          {% for u in serveurs %}
+          <option value="{{ u.get_full_name|default:u.username }}">{{ u.get_full_name|default:u.username }}</option>
+          {% endfor %}
+        </select>
+        <div class="caissier-info">
+          <i class="fas fa-user-tie"></i>
+          Caissier : <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
         </div>
-        <div class="cmd-caissier-row">
-          👤 Caissier : <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-        </div>
+      </div>
+
+      <div class="tickets-attente" id="ticketsAttente">
+        <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
+          <i class="fas fa-circle" style="font-size:0.5rem;"></i> T-001
+        </button>
+        <button class="btn-new-ticket" onclick="nouveauTicket()">+ Nouveau</button>
       </div>
     </div>
 
-    <!-- LIGNES COMMANDE -->
-    <div class="cmd-lignes" id="cmdLignes">
-      <div class="cmd-empty" id="cmdEmpty">
-        <div class="cmd-empty-icon">🍽</div>
-        <div class="cmd-empty-txt">Sélectionnez une table puis ajoutez des plats</div>
+    <!-- Lignes -->
+    <div class="ticket-lines" id="ticketLines">
+      <div class="ticket-empty" id="ticketEmpty">
+        <i class="fas fa-utensils"></i>
+        <p>Ticket vide<br><small style="opacity:0.5;">Sélectionnez une table puis ajoutez des articles</small></p>
       </div>
+      <div id="lignesContainer"></div>
     </div>
 
-    <!-- PANNEAU ACCOMPAGNEMENTS -->
+    <!-- Accompagnements -->
     <div class="acc-panel" id="accPanel">
       <div class="acc-panel-titre">Choisir accompagnement</div>
-      <div class="acc-pills" id="accPills">
+      <div class="acc-pills-wrap" id="accPills">
         {% for acc in accompagnements %}
-        <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix }}"
-                onclick="selectionnerAcc(this)">
-          {{ acc.nom }} <span style="color:var(--gold-dim)">(+{{ acc.prix|floatformat:0 }}F)</span>
+        <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix }}" onclick="selectionnerAcc(this)">
+          {{ acc.nom }} <span style="color:rgba(255,255,255,0.4)">(+{{ acc.prix|floatformat:0 }}F)</span>
         </button>
         {% endfor %}
         <button class="acc-pill" data-acc-id="" onclick="selectionnerAcc(this)">Sans accompagnement</button>
       </div>
     </div>
 
-    <!-- PIED -->
-    <div class="cmd-footer">
-      <div class="cmd-sous-total">
+    <!-- Footer -->
+    <div class="ticket-footer">
+      <div class="sous-total-row">
         <span id="nbArticlesLabel">0 article(s)</span>
         <span id="sousTotal">0 F</span>
       </div>
-      <div class="cmd-total-row">
-        <span class="cmd-total-label">TOTAL À PAYER</span>
-        <span class="cmd-total-val" id="totalDisplay">0 F</span>
+      <div class="total-row">
+        <span class="total-label">TOTAL À PAYER</span>
+        <span class="total-value" id="totalDisplay">0 F</span>
       </div>
-      <div class="cmd-actions">
-        <button class="btn-attente" onclick="mettreEnAttente()">⏸ Mettre en attente</button>
-        <button class="btn-attente" onclick="annulerCommande()" style="color:#f08080;border-color:rgba(168,50,50,0.3)">✕ Annuler</button>
-        <button class="btn-encaisser" id="btnEncaisser" onclick="ouvrirModal()" disabled>
-          💳 Encaisser la commande
+
+      <div class="paiement-grid">
+        <button class="pay-btn selected" data-mode="especes" onclick="selectPaiement(this)">
+          <i class="fas fa-money-bill-wave"></i> Espèces
+        </button>
+        <button class="pay-btn" data-mode="carte" onclick="selectPaiement(this)">
+          <i class="fas fa-credit-card"></i> Carte / TPE
+        </button>
+        <button class="pay-btn" data-mode="mobile" onclick="selectPaiement(this)">
+          <i class="fas fa-mobile-alt"></i> Mobile Money
+        </button>
+        <button class="pay-btn" data-mode="chambre" onclick="selectPaiement(this)">
+          <i class="fas fa-bed"></i> Chambre
         </button>
       </div>
+
+      <button class="btn-attente" onclick="mettreEnAttente()">
+        <i class="fas fa-pause-circle"></i> Mettre en attente
+      </button>
+      <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
+        <i class="fas fa-check-circle"></i> Encaisser la commande
+      </button>
     </div>
+  </div>
 
-  </div><!-- /tpe-right -->
+</div><!-- /tpe-wrap -->
 
-</div><!-- /tpe-root -->
-
-<!-- ═══ MODAL ENCAISSEMENT ═══ -->
-<div class="modal-overlay" id="modalOverlay">
+<!-- ========== MODAL ========== -->
+<div class="modal-overlay" id="modalPaiement">
   <div class="modal-box">
-    <div class="modal-head">
-      <h3>Encaissement</h3>
-      <button class="modal-close-btn" onclick="fermerModal()">✕</button>
+    <div class="modal-title">Encaissement</div>
+    <div class="modal-subtitle" id="modalSubtitle">Restaurant — <span id="modalMode">Espèces</span></div>
+    <div class="modal-total" id="modalTotal">0 F <span>FCFA</span></div>
+    <div class="rendu-section" id="renduSection">
+      <label>MONTANT REÇU (FCFA)</label>
+      <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
+      <div class="rendu-display" id="renduDisplay">Rendu : <span id="renduVal">0</span> F</div>
     </div>
-    <div class="modal-body">
-      <div class="modal-total-display">
-        <div class="mt-label">Total à encaisser</div>
-        <div class="mt-val" id="modalTotal">0 F</div>
-        <div class="mt-table" id="modalTableInfo">—</div>
-      </div>
-
-      <div class="pay-modes" id="payModes">
-        <button class="pay-mode-btn selected" data-mode="especes" onclick="selectMode(this)">💵 Espèces</button>
-        <button class="pay-mode-btn" data-mode="carte" onclick="selectMode(this)">💳 Carte / TPE</button>
-        <button class="pay-mode-btn" data-mode="mobile" onclick="selectMode(this)">📱 Mobile Money</button>
-        <button class="pay-mode-btn" data-mode="chambre" onclick="selectMode(this)">🛏 Report Chambre</button>
-      </div>
-
-      <div id="sectionEspeces">
-        <div class="modal-field">
-          <label>Montant reçu (F)</label>
-          <input type="number" class="modal-input" id="montantRecu" placeholder="0" oninput="calculerRendu()">
-        </div>
-        <div class="billets-grid" id="billetsGrid">
-          <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
-          <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
-          <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
-          <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
-          <button class="billet-btn" onclick="setBillet(20000)">20 000</button>
-          <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
-        </div>
-        <div class="rendu-display" id="renduDisplay">
-          <span class="rd-label">Monnaie à rendre</span>
-          <span class="rd-val" id="renduVal">0 F</span>
-        </div>
-      </div>
-
-      <button class="btn-confirm-paiement" id="btnConfirm" onclick="confirmerPaiement()">
-        ✓ Confirmer & Imprimer
+    <div class="billets-grid" id="billetsGrid">
+      <button class="billet-btn" onclick="setBillet(500)">500</button>
+      <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
+      <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
+      <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
+      <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
+      <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
+      <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
+      <button class="billet-btn" onclick="setBillet(0,true)">Exact</button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
+      <button class="modal-btn-confirm" onclick="confirmerPaiement()">
+        <i class="fas fa-check"></i> Confirmer & Imprimer
       </button>
     </div>
   </div>
 </div>
 
-<!-- TOASTS -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ═══════════════════════════════════════════
-// ÉTAT GLOBAL
-// ═══════════════════════════════════════════
+
+<script>
 const CSRF = '{{ csrf_token }}';
-const caissierNom = '{{ request.user.get_full_name|default:request.user.username|escapejs }}';
+const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };
 
-// Serveurs (groupe 5)
-const serveurs = [
-  {% for u in serveurs %}"{{ u.get_full_name|default:u.username|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}
-];
+// ── STATE ──
+let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null } };
+let ticketActifId = 1;
+let ticketCounter = 1;
+let modePaiement  = 'especes';
+let tableSelActif = null;
+let pendingPlatData = null;
 
-// Populate serveur select (fallback si template tag absent)
-(function() {
-  const sel = document.getElementById('selectServeur');
-  if (sel.options.length <= 1) {
-    // Si le template tag get_serveurs n'existe pas, on ne plante pas
-  }
-})();
+// ── UTILITAIRES ──
+function toast(msg, type='info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`; t.innerHTML = msg; c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 2800);
+}
+function formatF(n) { return parseInt(n).toLocaleString('fr-FR') + ' F'; }
+function getCookie(name) { const v = document.cookie.match('(^|;) ?'+name+'=([^;]*)(;|$)'); return v?v[2]:null; }
 
-// Tickets multiples en RAM
-let tickets = {};
-let ticketCounter = 0;
-let ticketActifId = null;
-let modePaiement = 'especes';
-let commandeIdEnCours = null; // ID DB de la commande en cours
-let tableSelActif = null;     // { id, numero }
-let pendingPlatId = null;     // Plat en attente d'acc
-
-// ═══════════════════════════════════════════
-// ONGLETS TOPBAR
-// ═══════════════════════════════════════════
-function switchTab(tab) {
-  ['salle','plats','boissons','commandes'].forEach(t => {
-    const panel = document.getElementById('panel-' + t);
-    const tabEl = document.getElementById('tab-' + t);
-    if (panel) panel.classList.remove('active');
-    if (tabEl) tabEl.classList.remove('active');
-  });
-  const panel = document.getElementById('panel-' + tab);
-  const tabEl = document.getElementById('tab-' + tab);
-  if (panel) panel.classList.add('active');
-  if (tabEl) tabEl.classList.add('active');
+// ── NAVIGATION VUES ──
+function switchView(btn) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-' + btn.dataset.view).classList.add('active');
 }
 
-// ═══════════════════════════════════════════
-// PLAN DE SALLE
-// ═══════════════════════════════════════════
+// ── PLAN DE SALLE ──
 function filtrerTables(q) {
   q = q.toLowerCase();
   document.querySelectorAll('.table-card').forEach(c => {
@@ -1351,276 +845,275 @@ function filtrerTables(q) {
 }
 
 function selectionnerTable(tableId, tableNum, statut) {
-  // Mettre à jour visuellement
   document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('table-card-' + tableId)?.classList.add('selected');
-
   tableSelActif = { id: tableId, numero: tableNum };
-  document.getElementById('cmdTableBadge').textContent = 'Table ' + tableNum;
 
-  // Si table occupée avec commande → charger
-  if (statut === 'occupee') {
-    chargerCommandeParTable(tableId);
-  } else {
-    // Nouvelle commande vide pour cette table
-    nouveauTicketPourTable(tableId, tableNum);
-  }
+  document.getElementById('tableSelbadge').style.display = 'flex';
+  document.getElementById('tableSelLabel').textContent = 'Table ' + tableNum;
 
-  // Aller sur les plats par défaut
-  switchTab('plats');
-}
-
-// ═══════════════════════════════════════════
-// TICKETS EN ATTENTE
-// ═══════════════════════════════════════════
-function nouveauTicketPourTable(tableId, tableNum) {
-  ticketCounter++;
-  const tid = ticketCounter;
-  tickets[tid] = {
-    id: tid, tableId, tableNum,
-    client: '', serveur: '',
-    lignes: [], total: 0,
-    commandeDbId: null,
-    paiement: 'especes'
-  };
-  ajouterBoutonTicket(tid, 'Table ' + tableNum);
-  chargerTicket(tid);
-}
-
-function ajouterBoutonTicket(tid, label) {
-  const container = document.getElementById('ticketsAttente');
-  const btn = document.createElement('button');
-  btn.className = 'ticket-badge';
-  btn.dataset.tid = tid;
-  btn.textContent = label;
-  btn.onclick = () => chargerTicket(tid);
-  container.appendChild(btn);
-}
-
-function chargerTicket(tid) {
-  ticketActifId = tid;
-  document.querySelectorAll('.ticket-badge').forEach(b =>
-    b.classList.toggle('active', parseInt(b.dataset.tid) === tid)
-  );
-  const t = tickets[tid];
-  if (!t) return;
-
-  tableSelActif = { id: t.tableId, numero: t.tableNum };
-  commandeIdEnCours = t.commandeDbId;
-  document.getElementById('cmdTableBadge').textContent = 'Table ' + (t.tableNum || '—');
-  document.getElementById('inputClient').value = t.client || '';
-  document.getElementById('selectServeur').value = t.serveur || '';
-  modePaiement = t.paiement || 'especes';
-  renderTicket();
-}
-
-function syncTicketActif() {
-  if (!ticketActifId || !tickets[ticketActifId]) return;
   const t = tickets[ticketActifId];
-  t.client  = document.getElementById('inputClient').value;
-  t.serveur = document.getElementById('selectServeur').value;
+  t.tableId = tableId; t.tableNum = tableNum;
+  document.getElementById('ticketNum').textContent = 'Table ' + tableNum;
+
+  if (statut === 'occupee') chargerCommandeParTable(tableId);
+
+  switchView(document.querySelector('.nav-tab[data-view="plats"]'));
+  toast('🪑 Table ' + tableNum + ' sélectionnée', 'info');
 }
 
-// ═══════════════════════════════════════════
-// CATALOGUE — FILTRES
-// ═══════════════════════════════════════════
-function filtrerBoissons(q) {
-  q = (q || '').toLowerCase();
-  const cat = document.querySelector('#catBoissonPills .cat-pill.active')?.dataset.cat || 'tout';
-  document.querySelectorAll('#boissonsGrid .plat-card').forEach(c => {
-    const matchQ = c.dataset.nom.includes(q);
-    let matchC = cat === 'tout';
-    if (!matchC) {
-      const catnom = (c.dataset.catnom || '').toLowerCase();
-      if (cat === 'bière') matchC = catnom.includes('bière') || catnom.includes('biere') || catnom.includes('beer');
-      else if (cat === 'liqueur') matchC = catnom.includes('liqueur') || catnom.includes('apéritif') || catnom.includes('aperitif');
-      else if (cat === 'soft') matchC = catnom.includes('soft') || catnom.includes('soda') || catnom.includes('jus') || catnom.includes('boisson');
-      else if (cat === 'spiritueux') matchC = catnom.includes('spiritueux') || catnom.includes('alcool') || catnom.includes('distillé') || catnom.includes('whisky') || catnom.includes('rhum') || catnom.includes('vodka');
-      else if (cat === 'vin') matchC = catnom.includes('vin') || catnom.includes('champagne') || catnom.includes('rosé');
-      else matchC = catnom.includes(cat);
-    }
-    c.style.display = (matchQ && matchC) ? '' : 'none';
-  });
-}
-function filtrerCatBoisson(btn) {
-  document.querySelectorAll('#catBoissonPills .cat-pill').forEach(b => b.classList.remove('active'));
+// ── FILTRES ──
+function filtrerSousCategorie(btn, type) {
+  const filterId = type === 'plats' ? 'platsFilters' : 'boissonsFilters';
+  document.querySelectorAll('#' + filterId + ' .sub-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  filtrerBoissons(document.getElementById('searchBoisson')?.value || '');
+  filtrerArticles(type);
 }
 
-function filtrerCategorie(btn) {
-  document.querySelectorAll('#catPills .cat-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  filtrerPlats(document.getElementById('searchPlat').value);
-}
-function filtrerPlats(q) {
-  q = q.toLowerCase();
-  const cat = document.querySelector('.cat-pill.active')?.dataset.cat || 'tout';
-  document.querySelectorAll('#platsGrid .plat-card').forEach(c => {
-    const matchQ = c.dataset.nom.includes(q);
-    const catnom = (c.dataset.catnom || '').toLowerCase();
-    let matchC = cat === 'tout';
-    if (!matchC) {
-      if (cat === 'entree') matchC = catnom.includes('entrée') || catnom.includes('entree') || catnom.includes('hors') || catnom.includes('starter');
-      else if (cat === 'principal') matchC = catnom.includes('principal') || catnom.includes('plat') || catnom.includes('main');
-      else if (cat === 'accompagnement') matchC = catnom.includes('accompagnement') || c.dataset.cat === 'accompagnement';
-      else if (cat === 'dessert') matchC = catnom.includes('dessert') || catnom.includes('sucré') || catnom.includes('glace');
-      else matchC = c.dataset.cat === cat || catnom.includes(cat.replace('cat-',''));
-    }
-    c.style.display = (matchQ && matchC) ? '' : 'none';
+function filtrerArticles(type) {
+  const searchId = type === 'plats' ? 'searchPlats' : 'searchBoissons';
+  const filterId = type === 'plats' ? 'platsFilters' : 'boissonsFilters';
+  const gridId   = type === 'plats' ? 'platsGrid' : 'boissonsGrid';
+  const q   = document.getElementById(searchId).value.toLowerCase();
+  const cat = document.querySelector('#' + filterId + ' .sub-btn.active')?.dataset.cat || 'tout';
+  document.querySelectorAll('#' + gridId + ' .article-card').forEach(card => {
+    const matchQ = card.dataset.nom.includes(q);
+    const matchC = cat === 'tout' || card.dataset.cat === cat;
+    card.style.display = (matchQ && matchC) ? '' : 'none';
   });
 }
 
-// ═══════════════════════════════════════════
-// AJOUTER PLAT (avec gestion accompagnement)
-// ═══════════════════════════════════════════
-function ajouterPlat(platId, nom, prix, enStock) {
-  if (!enStock) { toast('Stock insuffisant pour ce plat', 'error'); return; }
+// ── VÉRIF TABLE ──
+function verifierTable() {
   if (!tableSelActif) {
-    toast('Sélectionnez d\'abord une table', 'error');
-    switchTab('salle');
-    return;
+    toast('⚠️ Sélectionnez d\'abord une table dans le Plan de salle', 'error');
+    switchView(document.querySelector('.nav-tab[data-view="salle"]'));
+    return false;
   }
+  return true;
+}
 
-  const acc = document.querySelectorAll('.acc-pill');
-  const hasAccOpts = Array.from(acc).some(a => a.dataset.accId);
-  if (hasAccOpts) {
-    pendingPlatId = { platId, nom, prix };
+// ── AJOUTER PLAT (cuisine) ──
+function ajouterArticle(type, id, nom, prix, categorie, enStock) {
+  if (!verifierTable()) return;
+  if (!enStock) { toast('❌ Stock insuffisant', 'error'); return; }
+
+  const accPills = document.querySelectorAll('#accPills .acc-pill[data-acc-id]');
+  if (accPills.length > 0) {
+    pendingPlatData = { type:'plat', id, nom, prix };
     document.getElementById('accPanel').classList.add('open');
     document.querySelectorAll('.acc-pill').forEach(p => p.classList.remove('selected'));
     return;
   }
-
-  // Pas d'accompagnements → ajouter directement
-  _envoyerPlat(platId, nom, prix, null, null, null);
+  _envoyerPlat(id, nom, prix, null);
 }
 
 function selectionnerAcc(btn) {
   document.querySelectorAll('.acc-pill').forEach(p => p.classList.remove('selected'));
   btn.classList.add('selected');
   document.getElementById('accPanel').classList.remove('open');
-
-  if (!pendingPlatId) return;
-  const { platId, nom, prix } = pendingPlatId;
-  const accId  = btn.dataset.accId  || null;
-  const accNom = btn.dataset.accNom || null;
-  const accPrix= parseFloat(btn.dataset.accPrix) || 0;
-  pendingPlatId = null;
-  _envoyerPlat(platId, nom, prix, accId, accNom, accPrix);
+  if (!pendingPlatData) return;
+  const { id, nom, prix } = pendingPlatData;
+  const accId = btn.dataset.accId || null;
+  pendingPlatData = null;
+  _envoyerPlat(id, nom, prix, accId);
 }
 
-async function _envoyerPlat(platId, nom, prix, accId, accNom, accPrix) {
-  syncTicketActif();
+async function _envoyerPlat(platId, nom, prix, accId) {
+  majTicketMeta();
   const t = tickets[ticketActifId];
-  if (!t) return;
-
-  const payload = {
-    table_id:          t.tableId,
-    commande_id:       t.commandeDbId,
-    plat_id:           platId,
-    nom:               nom,
-    accompagnement_id: accId || null,
-    client:            t.client,
-  };
-
   try {
     const r = await fetch("{% url 'restaurant:ajouter_item_commande' %}", {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        table_id: t.tableId, commande_id: t.commandeDbId,
+        plat_id: platId, nom: nom,
+        accompagnement_id: accId || null,
+        client: t.client,
+      })
     });
     const data = await r.json();
-    if (!data.success) { toast(data.message, 'error'); return; }
-
-    // Mise à jour état local
+    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
     t.commandeDbId = data.commande_id;
-    commandeIdEnCours = data.commande_id;
-    t.lignes = data.items;
-    t.total  = data.total;
-    if (data.client) t.client = data.client;
-
-    // Flash carte
-    const card = document.querySelector(`.plat-card[data-id="${platId}"]`);
+    t.lignes = data.items; t.total = data.total;
+    const card = document.querySelector(`.article-card[data-id="${platId}"]`);
     if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
-
     renderTicket();
-    toast(nom + (accNom ? ' + ' + accNom : '') + ' ajouté', 'info');
-
-    // Mettre à jour la table dans le plan de salle
+    toast('✅ ' + nom + ' ajouté', 'info');
     majTableCard(t.tableId, 'occupee', t.total, t.client);
-
-  } catch(e) { toast('Erreur réseau', 'error'); }
+  } catch(e) { toast('❌ Erreur réseau', 'error'); }
 }
 
-// ═══════════════════════════════════════════
-// MODIFIER QUANTITÉ
-// ═══════════════════════════════════════════
+// ── AJOUTER BOISSON (Cave) ──
+async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
+  if (!verifierTable()) return;
+  if (!enStock) { toast('❌ ' + nom + ' est en rupture de stock', 'error'); return; }
+
+  majTicketMeta();
+  const t = tickets[ticketActifId];
+
+  // Flash visuel
+  const card = document.querySelector(`.article-card[data-id="${boissonId}"][data-type="boisson"]`);
+  if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
+
+  try {
+    const r = await fetch("{% url 'restaurant:ajouter_boisson_commande' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        table_id: t.tableId,
+        commande_id: t.commandeDbId,
+        boisson_id: boissonId,
+        client: t.client,
+      })
+    });
+    const data = await r.json();
+    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
+    t.commandeDbId = data.commande_id;
+    t.lignes = data.items; t.total = data.total;
+    renderTicket();
+    toast('🍷 ' + nom + ' ajouté', 'info');
+    majTableCard(t.tableId, 'occupee', t.total, t.client);
+  } catch(e) { toast('❌ Erreur réseau', 'error'); }
+}
+
+// ── MODIFIER QTÉ ──
 async function modifierQty(ligneId, delta) {
   try {
     const r = await fetch("{% url 'restaurant:update_ligne_quantite' %}", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify({ ligne_id: ligneId, delta })
     });
     const data = await r.json();
-    if (!data.success) { toast(data.message, 'error'); return; }
+    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
     const t = tickets[ticketActifId];
     if (t) { t.lignes = data.items; t.total = data.total; }
     renderTicket();
-  } catch(e) { toast('Erreur réseau', 'error'); }
+  } catch(e) { toast('❌ Erreur réseau', 'error'); }
 }
 
-async function supprimerLigne(ligneId) {
-  try {
-    const r = await fetch("{% url 'restaurant:supprimer_ligne_commande' %}", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ ligne_id: ligneId })
-    });
-    const data = await r.json();
-    if (!data.success) { toast(data.message, 'error'); return; }
-    const t = tickets[ticketActifId];
-    if (t) { t.lignes = data.items; t.total = data.total; }
-    renderTicket();
-  } catch(e) { toast('Erreur réseau', 'error'); }
+// ── RENDER TICKET ──
+function renderTicket() {
+  const t = tickets[ticketActifId];
+  const container = document.getElementById('lignesContainer');
+  const empty = document.getElementById('ticketEmpty');
+
+  if (!t || !t.lignes.length) {
+    empty.style.display = 'flex'; container.innerHTML = '';
+    document.getElementById('nbArticlesLabel').textContent = '0 article(s)';
+    document.getElementById('sousTotal').textContent = '0 F';
+    document.getElementById('totalDisplay').textContent = '0 F';
+    document.getElementById('btnValider').disabled = true;
+    return;
+  }
+
+  empty.style.display = 'none';
+  let total = 0;
+  container.innerHTML = t.lignes.map(l => {
+    total += l.prix * l.quantite;
+    const parts = l.nom.split(' (+ ');
+    const nomPlat = parts[0];
+    const nomAcc  = parts[1] ? parts[1].replace(')','') : null;
+    return `<div class="ticket-line">
+      <div class="tl-nom">${nomPlat}${nomAcc ? `<br><small style="opacity:0.45;font-size:0.72rem;">+ ${nomAcc}</small>` : ''}</div>
+      <div class="tl-ctrl">
+        <button class="tl-qty-btn del" onclick="modifierQty(${l.id}, -1)">−</button>
+        <span class="tl-qty">${l.quantite}</span>
+        <button class="tl-qty-btn" onclick="modifierQty(${l.id}, 1)">+</button>
+      </div>
+      <div class="tl-prix">${formatF(l.prix * l.quantite)}</div>
+    </div>`;
+  }).join('');
+
+  const nb = t.lignes.reduce((s,l) => s + l.quantite, 0);
+  document.getElementById('nbArticlesLabel').textContent = `${nb} article(s)`;
+  document.getElementById('sousTotal').textContent = formatF(total);
+  document.getElementById('totalDisplay').textContent = formatF(total);
+  document.getElementById('btnValider').disabled = false;
+  t.total = total;
+
+  const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
+  if (btn) btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom}${total > 0 ? ' · ' + formatF(total) : ''}`;
 }
 
-// ═══════════════════════════════════════════
-// CHARGER COMMANDE EXISTANTE
-// ═══════════════════════════════════════════
+// ── TICKETS ──
+function majTicketMeta() {
+  const t = tickets[ticketActifId];
+  t.client  = document.getElementById('inputClient').value;
+  t.serveur = document.getElementById('selectServeur').value;
+}
+
+function nouveauTicket() {
+  ticketCounter++;
+  const tid = ticketCounter;
+  const nom = `T-${String(tid).padStart(3,'0')}`;
+  tickets[tid] = { id:tid, nom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+  ticketActifId = tid; tableSelActif = null;
+  document.getElementById('tableSelbadge').style.display = 'none';
+  document.getElementById('ticketNum').textContent = nom;
+  const container = document.getElementById('ticketsAttente');
+  const btnNew = container.querySelector('.btn-new-ticket');
+  const btn = document.createElement('button');
+  btn.className = 'ticket-attente-btn'; btn.dataset.tid = tid;
+  btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${nom}`;
+  btn.onclick = () => chargerTicket(tid);
+  container.insertBefore(btn, btnNew);
+  chargerTicket(tid);
+}
+
+function chargerTicket(tid) {
+  ticketActifId = tid;
+  document.querySelectorAll('.ticket-attente-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.tid) === tid));
+  const t = tickets[tid];
+  document.getElementById('ticketNum').textContent = t.tableNum ? 'Table ' + t.tableNum : t.nom;
+  document.getElementById('inputClient').value  = t.client  || '';
+  document.getElementById('selectServeur').value = t.serveur || '';
+  if (t.tableNum) {
+    document.getElementById('tableSelbadge').style.display = 'flex';
+    document.getElementById('tableSelLabel').textContent = 'Table ' + t.tableNum;
+    tableSelActif = { id: t.tableId, numero: t.tableNum };
+  } else {
+    document.getElementById('tableSelbadge').style.display = 'none';
+    tableSelActif = null;
+  }
+  modePaiement = t.paiement || 'especes';
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
+  renderTicket();
+}
+
+function mettreEnAttente() {
+  const t = tickets[ticketActifId];
+  if (!t.lignes.length) { toast('❌ Ticket vide', 'error'); return; }
+  majTicketMeta(); t.paiement = modePaiement;
+  const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
+  if (btn) btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom} · ${formatF(t.total||0)}`;
+  toast(`⏸ Ticket ${t.nom} mis en attente`, 'info');
+  nouveauTicket();
+}
+
+// ── CHARGER COMMANDE EXISTANTE ──
 async function chargerCommandeParTable(tableId) {
   try {
-    // Chercher commande active pour cette table dans la liste
-    const cmdRows = document.querySelectorAll('.commande-row');
-    // Essayer depuis le DOM d'abord
-    for (const row of cmdRows) {
-      const cmdId = row.dataset.cmdId;
+    const rows = document.querySelectorAll('.commande-row');
+    for (const row of rows) {
+      const match = row.getAttribute('onclick').match(/chargerCommande\((\d+)\)/);
+      if (!match) continue;
+      const cmdId = match[1];
       const r = await fetch(`{% url 'restaurant:recuperer_commande_details' 0 %}`.replace('0', cmdId));
       const data = await r.json();
       if (data.success && data.commande.table_id == tableId) {
-        // Créer ticket avec ces données
-        ticketCounter++;
-        const tid = ticketCounter;
-        tickets[tid] = {
-          id: tid, tableId,
-          tableNum: tableSelActif?.numero || tableId,
-          client: data.commande.client || '',
-          serveur: '',
-          lignes: data.commande.items,
-          total: data.commande.total,
-          commandeDbId: data.commande.id,
-          paiement: 'especes'
-        };
-        ajouterBoutonTicket(tid, 'Table ' + tickets[tid].tableNum);
-        chargerTicket(tid);
+        const t = tickets[ticketActifId];
+        t.commandeDbId = data.commande.id;
+        t.lignes = data.commande.items;
+        t.total  = data.commande.total;
+        if (data.commande.client) { t.client = data.commande.client; document.getElementById('inputClient').value = t.client; }
+        renderTicket();
+        toast('📋 Commande en cours chargée', 'info');
         return;
       }
     }
-    // Aucune commande trouvée → nouveau ticket vide
-    nouveauTicketPourTable(tableId, tableSelActif?.numero || '?');
-  } catch(e) {
-    nouveauTicketPourTable(tableId, tableSelActif?.numero || '?');
-  }
+  } catch(e) {}
 }
 
 async function chargerCommande(cmdId) {
@@ -1631,244 +1124,25 @@ async function chargerCommande(cmdId) {
     ticketCounter++;
     const tid = ticketCounter;
     tickets[tid] = {
-      id: tid,
-      tableId: data.commande.table_id,
-      tableNum: '?',
-      client: data.commande.client || '',
-      serveur: '',
-      lignes: data.commande.items,
-      total: data.commande.total,
-      commandeDbId: data.commande.id,
-      paiement: 'especes'
+      id:tid, nom:'#'+cmdId,
+      tableId:data.commande.table_id, tableNum:null,
+      client:data.commande.client||'', serveur:'',
+      lignes:data.commande.items, total:data.commande.total,
+      commandeDbId:data.commande.id, paiement:'especes'
     };
-    ajouterBoutonTicket(tid, '#' + cmdId);
+    const container = document.getElementById('ticketsAttente');
+    const btnNew = container.querySelector('.btn-new-ticket');
+    const btn = document.createElement('button');
+    btn.className = 'ticket-attente-btn'; btn.dataset.tid = tid;
+    btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> #${cmdId}`;
+    btn.onclick = () => chargerTicket(tid);
+    container.insertBefore(btn, btnNew);
     chargerTicket(tid);
-    switchTab('catalogue');
-  } catch(e) { toast('Erreur chargement', 'error'); }
+    switchView(document.querySelector('.nav-tab[data-view="plats"]'));
+  } catch(e) { toast('❌ Erreur chargement', 'error'); }
 }
 
-// ═══════════════════════════════════════════
-// RENDER TICKET (panneau droit)
-// ═══════════════════════════════════════════
-function renderTicket() {
-  const t = tickets[ticketActifId];
-  const container = document.getElementById('cmdLignes');
-  const empty = document.getElementById('cmdEmpty');
-
-  if (!t || !t.lignes.length) {
-    empty.style.display = 'flex';
-    container.innerHTML = '';
-    container.appendChild(empty);
-    document.getElementById('nbArticlesLabel').textContent = '0 article(s)';
-    document.getElementById('sousTotal').textContent = '0 F';
-    document.getElementById('totalDisplay').textContent = '0 F';
-    document.getElementById('btnEncaisser').disabled = true;
-    return;
-  }
-
-  empty.style.display = 'none';
-  let html = '';
-  let total = 0;
-
-  t.lignes.forEach(l => {
-    const sousTotal = l.prix * l.quantite;
-    total += sousTotal;
-    const parts = l.nom.split(' (+ ');
-    const nomPlat = parts[0];
-    const nomAcc  = parts[1] ? parts[1].replace(')', '') : null;
-
-    html += `
-    <div class="ligne-cmd" data-ligne-id="${l.id}">
-      <div style="flex:1;min-width:0;">
-        <div class="ligne-nom">${nomPlat}</div>
-        ${nomAcc ? `<div class="ligne-acc">+ ${nomAcc}</div>` : ''}
-      </div>
-      <div class="qty-ctrl">
-        <button class="qty-btn" onclick="modifierQty(${l.id}, -1)">−</button>
-        <span class="qty-val">${l.quantite}</span>
-        <button class="qty-btn" onclick="modifierQty(${l.id}, 1)">+</button>
-      </div>
-      <div class="ligne-prix">${formatF(sousTotal)}</div>
-      <button class="btn-del-ligne" onclick="supprimerLigne(${l.id})" title="Supprimer">✕</button>
-    </div>`;
-  });
-
-  container.innerHTML = html;
-
-  const nb = t.lignes.reduce((s, l) => s + l.quantite, 0);
-  document.getElementById('nbArticlesLabel').textContent = `${nb} article(s)`;
-  document.getElementById('sousTotal').textContent = formatF(total);
-  document.getElementById('totalDisplay').textContent = formatF(total);
-  document.getElementById('btnEncaisser').disabled = false;
-  t.total = total;
-
-  // MAJ badge ticket
-  const btn = document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`);
-  if (btn) btn.textContent = (t.tableNum ? 'Table ' + t.tableNum : '#' + ticketActifId) + ' · ' + formatF(total);
-}
-
-// ═══════════════════════════════════════════
-// METTRE EN ATTENTE
-// ═══════════════════════════════════════════
-function mettreEnAttente() {
-  const t = tickets[ticketActifId];
-  if (!t || !t.lignes.length) { toast('Ticket vide', 'error'); return; }
-  syncTicketActif();
-  t.paiement = modePaiement;
-
-  // Créer nouveau ticket vide
-  ticketCounter++;
-  const tid = ticketCounter;
-  tickets[tid] = { id: tid, tableId: null, tableNum: null, client: '', serveur: '', lignes: [], total: 0, commandeDbId: null, paiement: 'especes' };
-  ajouterBoutonTicket(tid, 'Nouveau');
-  chargerTicket(tid);
-  tableSelActif = null;
-  document.getElementById('cmdTableBadge').textContent = '— Sélectionner table —';
-  toast('Commande mise en attente', 'info');
-}
-
-async function annulerCommande() {
-  const t = tickets[ticketActifId];
-  if (!t || !t.commandeDbId) { toast('Aucune commande à annuler', 'error'); return; }
-  if (!confirm('Annuler cette commande et restaurer le stock ?')) return;
-  try {
-    const r = await fetch("{% url 'restaurant:annuler_commande' %}", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ commande_id: t.commandeDbId, motif: 'Annulation TPE' })
-    });
-    const data = await r.json();
-    if (data.success) {
-      toast('Commande annulée', 'success');
-      majTableCard(t.tableId, 'disponible', 0, '');
-      delete tickets[ticketActifId];
-      document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`)?.remove();
-      ticketActifId = null;
-      renderTicket();
-    } else { toast(data.message, 'error'); }
-  } catch(e) { toast('Erreur réseau', 'error'); }
-}
-
-// ═══════════════════════════════════════════
-// MODAL ENCAISSEMENT
-// ═══════════════════════════════════════════
-let encaissementCmdId = null;
-
-function ouvrirModal() {
-  const t = tickets[ticketActifId];
-  if (!t || !t.lignes.length) return;
-  encaissementCmdId = t.commandeDbId;
-  const total = t.total;
-  document.getElementById('modalTotal').textContent = formatF(total) + ' CFA';
-  document.getElementById('modalTableInfo').textContent = t.tableNum ? 'Table ' + t.tableNum : '';
-  document.getElementById('montantRecu').value = '';
-  document.getElementById('renduDisplay').classList.remove('show');
-  modePaiement = t.paiement || 'especes';
-  document.querySelectorAll('.pay-mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
-  toggleSectionEspeces(modePaiement === 'especes' || modePaiement === 'mobile');
-  document.getElementById('btnConfirm').disabled = false;
-  document.getElementById('btnConfirm').textContent = '✓ Confirmer & Imprimer';
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function ouvrirEncaissement(cmdId) {
-  // Depuis la liste commandes — charger d'abord
-  chargerCommande(cmdId).then(() => ouvrirModal());
-}
-
-function fermerModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-
-function selectMode(btn) {
-  modePaiement = btn.dataset.mode;
-  document.querySelectorAll('.pay-mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
-  toggleSectionEspeces(modePaiement === 'especes' || modePaiement === 'mobile');
-}
-function toggleSectionEspeces(show) {
-  document.getElementById('sectionEspeces').style.display = show ? 'block' : 'none';
-}
-function setBillet(val) {
-  document.getElementById('montantRecu').value = val;
-  calculerRendu();
-}
-function calculerRendu() {
-  const t = tickets[ticketActifId];
-  if (!t) return;
-  const recu = parseFloat(document.getElementById('montantRecu').value) || 0;
-  const total = t.total;
-  const rendu = recu - total;
-  const div = document.getElementById('renduDisplay');
-  if (recu >= total) {
-    document.getElementById('renduVal').textContent = formatF(rendu);
-    div.classList.add('show');
-  } else { div.classList.remove('show'); }
-}
-
-async function confirmerPaiement() {
-  const t = tickets[ticketActifId];
-  if (!t || !t.commandeDbId) { toast('Aucune commande à encaisser', 'error'); return; }
-
-  const montantRecu = parseFloat(document.getElementById('montantRecu').value) || t.total;
-  const total = t.total;
-
-  if ((modePaiement === 'especes' || modePaiement === 'mobile') && montantRecu < total) {
-    toast('Montant insuffisant', 'error'); return;
-  }
-
-  const btn = document.getElementById('btnConfirm');
-  btn.disabled = true;
-  btn.textContent = '⏳ Traitement…';
-
-  const payload = {
-    commande_id:    t.commandeDbId,
-    action:         'paiement',
-    mode_paiement:  modePaiement,
-    montant_encaisse: montantRecu,
-    client:         t.client || '',
-  };
-
-  try {
-    const r = await fetch("{% url 'restaurant:valider_commande' %}", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify(payload)
-    });
-    const data = await r.json();
-
-    if (!data.success) { toast('Erreur : ' + data.message, 'error'); btn.disabled = false; btn.textContent = '✓ Confirmer & Imprimer'; return; }
-
-    fermerModal();
-    toast('Commande encaissée avec succès', 'success');
-
-    // Imprimer ticket thermique
-    if (data.ticket_html) {
-      const w = window.open('', '_blank', 'width=400,height=700');
-      if (w) { w.document.write(data.ticket_html); w.document.close(); }
-    }
-
-    // MAJ plan salle
-    majTableCard(t.tableId, 'disponible', 0, '');
-
-    // Supprimer ticket
-    delete tickets[ticketActifId];
-    document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`)?.remove();
-    ticketActifId = null;
-    renderTicket();
-    document.getElementById('cmdTableBadge').textContent = '— Sélectionner table —';
-
-    // MAJ badge commandes
-    const badge = document.getElementById('badge-commandes');
-    badge.textContent = Math.max(0, parseInt(badge.textContent || '0') - 1);
-
-  } catch(e) { toast('Erreur réseau', 'error'); btn.disabled = false; btn.textContent = '✓ Confirmer & Imprimer'; }
-}
-
-// ═══════════════════════════════════════════
-// UTILITAIRES
-// ═══════════════════════════════════════════
-function formatF(n) {
-  return parseInt(n).toLocaleString('fr-FR') + ' F';
-}
-
+// ── MISE À JOUR CARTE TABLE ──
 function majTableCard(tableId, statut, total, clientNom) {
   const card = document.getElementById('table-card-' + tableId);
   if (!card) return;
@@ -1876,33 +1150,144 @@ function majTableCard(tableId, statut, total, clientNom) {
   const badge = card.querySelector('.table-statut-badge');
   if (badge) {
     badge.className = 'table-statut-badge badge-' + (statut === 'disponible' ? 'libre' : statut);
-    badge.textContent = statut === 'disponible' ? 'Libre' : statut === 'occupee' ? 'Occupée' : 'Réservée';
+    badge.textContent = statut === 'disponible' ? 'LIBRE' : statut === 'occupee' ? 'OCCUPÉE' : 'RÉSERVÉE';
   }
-  let totalEl = card.querySelector('.table-total-en-cours');
+  let totalEl = card.querySelector('.table-total');
   if (total > 0) {
-    if (!totalEl) { totalEl = document.createElement('div'); totalEl.className = 'table-total-en-cours'; card.appendChild(totalEl); }
+    if (!totalEl) { totalEl = document.createElement('div'); totalEl.className = 'table-total'; card.appendChild(totalEl); }
     totalEl.textContent = formatF(total);
   } else if (totalEl) totalEl.remove();
 }
 
-function toast(msg, type = 'info') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 3300);
+// ── PAIEMENT ──
+function selectPaiement(btn) {
+  modePaiement = btn.dataset.mode;
+  tickets[ticketActifId].paiement = modePaiement;
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
 }
 
-// ─── INIT : créer un ticket vide au démarrage ───
-(function init() {
-  ticketCounter++;
-  const tid = ticketCounter;
-  tickets[tid] = { id: tid, tableId: null, tableNum: null, client: '', serveur: '', lignes: [], total: 0, commandeDbId: null, paiement: 'especes' };
-  ticketActifId = tid;
-  ajouterBoutonTicket(tid, 'Nouveau');
-  document.querySelector(`.ticket-badge[data-tid="${tid}"]`).classList.add('active');
-  renderTicket();
-})();
+function getTotal() { return tickets[ticketActifId]?.lignes?.reduce((s,l) => s + l.prix * l.quantite, 0) || 0; }
+
+function ouvrirModalPaiement() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.lignes.length) { toast('❌ Ticket vide', 'error'); return; }
+  if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
+  const total = getTotal();
+  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+  document.getElementById('montantRecu').value = '';
+  document.getElementById('renduDisplay').classList.remove('show');
+  const hide = modePaiement === 'carte' || modePaiement === 'chambre';
+  document.getElementById('renduSection').style.display = hide ? 'none' : '';
+  document.getElementById('billetsGrid').style.display  = hide ? 'none' : '';
+  const ref = t.tableNum ? `Table ${t.tableNum}` : (t.client || '');
+  document.getElementById('modalSubtitle').innerHTML = `Restaurant${ref ? ' — ' + ref : ''} — <span id="modalMode">${modeLabels[modePaiement]}</span>`;
+  document.getElementById('modalPaiement').classList.add('open');
+}
+
+function ouvrirModalDepuisCmd(cmdId) { chargerCommande(cmdId).then(() => setTimeout(ouvrirModalPaiement, 300)); }
+function fermerModal() { document.getElementById('modalPaiement').classList.remove('open'); }
+
+function calcRendu() {
+  const total = getTotal();
+  const recu = parseFloat(document.getElementById('montantRecu').value) || 0;
+  const div = document.getElementById('renduDisplay');
+  if (recu >= total) {
+    div.classList.add('show'); div.style.background='rgba(22,163,74,0.15)'; div.style.color='#4ade80';
+    document.getElementById('renduVal').textContent = formatF(recu - total);
+  } else if (recu > 0) {
+    div.classList.add('show'); div.style.background='rgba(220,38,38,0.15)'; div.style.color='#f87171';
+    document.getElementById('renduVal').textContent = `Manque ${formatF(total - recu)}`;
+  } else { div.classList.remove('show'); }
+}
+
+function setBillet(val, exact=false) {
+  document.getElementById('montantRecu').value = exact ? getTotal() : val;
+  calcRendu();
+}
+
+async function confirmerPaiement() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); return; }
+  const total = getTotal();
+  let montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
+  if ((modePaiement==='especes'||modePaiement==='mobile') && montantRecu < total) {
+    toast('❌ Montant insuffisant', 'error'); return;
+  }
+
+  const btn = document.querySelector('.modal-btn-confirm');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…';
+
+  try {
+    const r = await fetch("{% url 'restaurant:valider_commande' %}", {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        commande_id: t.commandeDbId, action: 'paiement',
+        mode_paiement: modePaiement, montant_encaisse: montantRecu,
+        client: t.client || '',
+      })
+    });
+    const data = await r.json();
+    if (!data.success) {
+      toast('❌ ' + data.message, 'error');
+      btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';
+      return;
+    }
+
+    fermerModal();
+    toast(`✅ Commande encaissée — ${formatF(total)}`, 'success');
+
+    // Impression ticket thermique
+    if (data.ticket_html) {
+      const w = window.open('', '_blank', 'width=420,height=720');
+      if (w) { w.document.write(data.ticket_html); w.document.close(); w.focus(); }
+    }
+
+    majTableCard(t.tableId, 'disponible', 0, '');
+
+    // Supprimer ticket et créer nouveau
+    const oldId = ticketActifId;
+    delete tickets[oldId];
+    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+    ticketCounter++;
+    const newTid = ticketCounter;
+    const newNom = `T-${String(newTid).padStart(3,'0')}`;
+    tickets[newTid] = { id:newTid, nom:newNom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+    const container = document.getElementById('ticketsAttente');
+    const btnNew = container.querySelector('.btn-new-ticket');
+    const newBtn = document.createElement('button');
+    newBtn.className='ticket-attente-btn active'; newBtn.dataset.tid=newTid;
+    newBtn.innerHTML=`<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${newNom}`;
+    newBtn.onclick = () => chargerTicket(newTid);
+    container.insertBefore(newBtn, btnNew);
+    chargerTicket(newTid);
+    document.getElementById('tableSelbadge').style.display='none';
+    tableSelActif = null;
+
+    const badge = document.getElementById('badge-encours');
+    if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent||'0') - 1);
+
+  } catch(e) {
+    toast('❌ Erreur réseau', 'error');
+    btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';
+  }
+}
+
+// ── HORLOGE ──
+function updateClock() {
+  const now = new Date();
+  const jours = ['DIMANCHE','LUNDI','MARDI','MERCREDI','JEUDI','VENDREDI','SAMEDI'];
+  const mois  = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
+  const h = String(now.getUTCHours()).padStart(2,'0');
+  const m = String(now.getUTCMinutes()).padStart(2,'0');
+  const s = String(now.getUTCSeconds()).padStart(2,'0');
+  const et = document.getElementById('restoClockTime');
+  const ed = document.getElementById('restoClockDate');
+  if (et) et.textContent = h+':'+m+':'+s+' GMT';
+  if (ed) ed.textContent = jours[now.getUTCDay()]+' '+now.getUTCDate()+' '+mois[now.getUTCMonth()]+' '+now.getUTCFullYear();
+}
+setInterval(updateClock, 1000); updateClock();
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') fermerModal(); });
 </script>
 {% endblock %}
