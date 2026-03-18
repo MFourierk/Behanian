@@ -659,13 +659,7 @@ def checkout_reservation(request, reservation_id):
                 <span class="item-price">{montant_reste:,.0f} F</span>
             </div>
             """
-            
-        services_html += f"""
-        <div class="row bold" style="margin-top: 5px;">
-            <span class="item-name">Montant Versé (Ce jour)</span>
-            <span class="item-price">{montant_paye:,.0f} F</span>
-        </div>
-        """
+
         services_html += '</div>'
         
         contenu = services_html
