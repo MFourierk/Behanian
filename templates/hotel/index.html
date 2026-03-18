@@ -267,7 +267,7 @@
                 <div class="ch-actions">
                   <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
                   {% if chambre.statut == 'disponible' %}
-                  <button class="ch-btn primary" onclick="openModal('modalCheckinDirect')">Check-in</button>
+                  <button class="ch-btn primary" onclick="ouvrirCheckinDirect({{ chambre.id }}, '{{ chambre.numero }}')">Check-in</button>
                   {% elif chambre.statut == 'occupee' %}
                     {% for res in sejours_en_cours %}
                       {% if res.chambre.id == chambre.id %}
@@ -349,7 +349,7 @@
             <div class="check-section-new">
               <div class="check-section-head">
                 <h4>Arrivées · Check-in</h4>
-                <button class="btn-hotel primary sm" onclick="openModal('modalCheckinDirect')">
+                <button class="btn-hotel primary sm" onclick="ouvrirCheckinDirect(null, null)">
                   <i class="fas fa-bolt"></i> Direct
                 </button>
               </div>
@@ -538,6 +538,7 @@
 <div id="modalCheckinDirect" class="modal">
     <div class="modal-content" style="width: 600px; max-height: 90vh; overflow-y: auto;">
         <h3>⚡ Check-in Direct (Complet)</h3>
+        <div id="chambreSelectInfo" style="display:none;background:#dbeafe;color:#1e40af;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;margin-bottom:12px;border:1px solid #bfdbfe;"></div>
         <form id="formCheckinDirect" action="{% url 'hotel:checkin_direct' %}" method="POST">
             {% csrf_token %}
             
@@ -1096,66 +1097,28 @@
     }
 
     // ── INTERCEPTION AJAX des formulaires hôtel ──
-    // Tracker le bouton cliqué pour chaque formulaire
-    document.querySelectorAll('button[type="submit"]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const form = this.closest('form');
-            if (form) form._clickedBtn = this;
-        });
-    });
+    // Soumission normale des formulaires (pas d'AJAX)
 
-    function soumettreFormulaireHotel(formId, modalId) {
-        const form = document.getElementById(formId);
-        if (!form) return;
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const clickedBtn = form._clickedBtn || form.querySelector('button[type="submit"]');
-            if (clickedBtn) { clickedBtn.disabled = true; clickedBtn.dataset.label = clickedBtn.textContent; clickedBtn.textContent = 'Traitement…'; }
-            const formData = new FormData(form);
-            // Ajouter la valeur du bouton cliqué si absent
-            if (clickedBtn && clickedBtn.name && !formData.get(clickedBtn.name)) {
-                formData.set(clickedBtn.name, clickedBtn.value);
-            }
-            try {
-                const resp = await fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                // Vérifier que la réponse est bien du JSON
-                const contentType = resp.headers.get('content-type') || '';
-                if (!contentType.includes('application/json')) {
-                    // Le serveur a retourné une page HTML (redirect) — recharger
-                    window.location.reload();
-                    return;
+    // Ouvrir modal check-in direct avec chambre pré-sélectionnée
+    function ouvrirCheckinDirect(chambreId, chambreNum) {
+        openModal('modalCheckinDirect');
+        if (chambreId) {
+            setTimeout(() => {
+                const sel = document.querySelector('#modalCheckinDirect select[name="chambre_id"]');
+                if (sel) {
+                    sel.value = chambreId;
+                    // Déclencher le calcul du prix si présent
+                    sel.dispatchEvent(new Event('change'));
                 }
-                const data = await resp.json();
-                if (data.success) {
-                    if (modalId) closeModal(modalId);
-                    const successDiv = document.createElement('div');
-                    successDiv.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-width:360px';
-                    successDiv.textContent = '✓ ' + (data.message || 'Opération réussie');
-                    document.body.appendChild(successDiv);
-                    setTimeout(() => {
-                        successDiv.remove();
-                        window.location.href = data.redirect || '/hotel/?tab=checkinout';
-                    }, 1800);
-                } else {
-                    if (clickedBtn) { clickedBtn.disabled = false; clickedBtn.textContent = clickedBtn.dataset.label || 'Valider'; }
-                    afficherErreurHotel(data.error || 'Une erreur est survenue.');
+                // Afficher la chambre sélectionnée visuellement
+                const info = document.getElementById('chambreSelectInfo');
+                if (info) {
+                    info.textContent = 'Chambre N° ' + chambreNum + ' pré-sélectionnée';
+                    info.style.display = 'block';
                 }
-            } catch(err) {
-                if (clickedBtn) { clickedBtn.disabled = false; clickedBtn.textContent = clickedBtn.dataset.label || 'Valider'; }
-                console.error('Erreur:', err);
-                form.submit();
-            }
-        });
+            }, 100);
+        }
     }
-
-    // Attacher aux formulaires
-    soumettreFormulaireHotel('formCheckinDirect', 'modalCheckinDirect');
-    soumettreFormulaireHotel('formNouvelleReservation', 'modalNouvelleReservation');
-    soumettreFormulaireHotel('formCheckinReservation', 'modalCheckinReservation');
 
     // Tab Switching Logic
     document.querySelectorAll('.nav-tab-hotel').forEach(btn => {
