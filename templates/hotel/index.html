@@ -197,6 +197,22 @@
 .ch-btn.danger { background: #dc2626; color: white; border-color: #dc2626; }
 .ch-btn.danger:hover { background: #b91c1c; }
 
+/* ── MODAL COMMANDE CHAMBRE ── */
+.svc-pill { padding:6px 14px;border-radius:20px;border:1px solid #d4dce8;background:white;font-size:12px;font-weight:600;cursor:pointer;color:#5a6b7c;transition:all 0.15s; }
+.svc-pill.active,.svc-pill:hover { background:#2563eb;color:white;border-color:#2563eb; }
+.cat-pill { padding:4px 11px;border-radius:16px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:500;cursor:pointer;color:#5a6b7c;transition:all 0.15s; }
+.cat-pill.active { background:#eef1f5;color:#1a2535;border-color:#93c5fd; }
+.art-item { display:flex;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f3f7;transition:background 0.1s; }
+.art-item:last-child { border-bottom:none; }
+.art-item:hover { background:#f0f6ff; }
+.art-item.selected { background:#eff6ff;border-left:3px solid #2563eb; }
+.art-nom { font-size:13px;font-weight:500;color:#1a2535; }
+.art-cat { font-size:11px;color:#7a8b9c;margin-top:1px; }
+.art-prix { font-size:13px;font-weight:600;color:#2563eb; }
+.art-stock { font-size:11px;color:#7a8b9c;margin-top:1px; }
+.art-stock.low { color:#dc2626; }
+.art-item.hidden { display:none; }
+
 /* ── TABS CONTENT ── */
 .tab-content-hotel { display: none; }
 .tab-content-hotel.active { display: block; }
@@ -996,81 +1012,131 @@
 
 <!-- MODAL ADD SERVICE -->
 <div id="modalAddService" class="modal">
-    <div class="modal-content" style="width: 500px;">
-        <h3>🍹 Ajouter Service / Consommation</h3>
-        <p id="service-room-info" style="margin-bottom: 20px; color: #7f8c8d; font-style: italic;"></p>
-        
-        <form id="formAddService" action="" method="POST">
-            {% csrf_token %}
-            <div class="form-group">
-                <label>Type de Service</label>
-                <select name="type_service" id="service-type" class="form-control" onchange="toggleServiceFields()">
-                    <option value="bar">🍸 Bar (Boissons)</option>
-                    <option value="restaurant">🍽️ Restaurant (Plats)</option>
-                    <option value="espace">🎪 Espace Location</option>
-                    <option value="autre">⚙️ Autre</option>
-                </select>
-            </div>
+  <div class="modal-content" style="width:520px;padding:24px">
 
-            <!-- Bar Fields -->
-            <div id="field-bar" class="service-field">
-                <div class="form-group">
-                    <label>Boisson</label>
-                    <select name="boisson_id" class="form-control">
-                        {% for b in boissons %}
-                        <option value="{{ b.id }}">{{ b.nom }} - {{ b.prix|floatformat:0 }}F (Stock: {{ b.quantite_stock }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <!-- Resto Fields -->
-            <div id="field-restaurant" class="service-field" style="display:none;">
-                <div class="form-group">
-                    <label>Plat</label>
-                    <select name="plat_id" class="form-control">
-                        {% for p in plats %}
-                        <option value="{{ p.id }}">{{ p.nom }} - {{ p.prix|floatformat:0 }}F</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <!-- Espace Fields -->
-            <div id="field-espace" class="service-field" style="display:none;">
-                 <div class="form-group">
-                    <label>Espace</label>
-                    <select name="espace_id" class="form-control">
-                        {% for e in espaces %}
-                        <option value="{{ e.id }}">{{ e.nom }} - {{ e.prix_heure|floatformat:0 }}F/h</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-            
-             <!-- Autre Fields -->
-            <div id="field-autre" class="service-field" style="display:none;">
-                 <div class="form-group">
-                    <label>Description</label>
-                    <input type="text" name="description" class="form-control" placeholder="Ex: Blanchisserie, Taxi...">
-                </div>
-                 <div class="form-group">
-                    <label>Prix Unitaire (FCFA)</label>
-                    <input type="number" name="prix" class="form-control">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Quantité / Heures</label>
-                <input type="number" name="quantite" value="1" min="1" class="form-control">
-            </div>
-
-            <div class="modal-actions" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn-action primary" style="flex: 1;">Ajouter</button>
-                <button type="button" class="btn-action" style="flex: 1;" onclick="closeModal('modalAddService')">Annuler</button>
-            </div>
-        </form>
+    <!-- En-tête -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h3 style="font-size:16px;font-weight:600;color:#1a2535;margin:0">Commande en chambre</h3>
+      <button onclick="closeModal('modalAddService')" style="background:none;border:none;font-size:20px;color:#7a8b9c;cursor:pointer;line-height:1">×</button>
     </div>
+    <div id="service-room-info" style="font-size:13px;color:#2563eb;font-weight:500;margin-bottom:16px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe"></div>
+
+    <form id="formAddService" action="" method="POST">
+      {% csrf_token %}
+
+      <!-- TYPE PILLS -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input type="hidden" name="type_service" id="service-type-val" value="bar">
+        <button type="button" class="svc-pill active" data-type="bar" onclick="setServiceType('bar')">🍸 Boissons</button>
+        <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')">🍽️ Plats</button>
+        <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')">⚙️ Autre</button>
+      </div>
+
+      <!-- BOISSONS -->
+      <div id="field-bar" class="service-field">
+        <!-- Filtre catégorie -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="bar-cats">
+          <button type="button" class="cat-pill active" onclick="filtrerBoissons(this, '')">Tout</button>
+          {% regroup boissons by categorie.nom as boissons_by_cat %}
+          {% for cat in boissons_by_cat %}
+          <button type="button" class="cat-pill" onclick="filtrerBoissons(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
+          {% endfor %}
+        </div>
+        <!-- Recherche -->
+        <div style="position:relative;margin-bottom:10px">
+          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
+          <input type="text" id="bar-search" placeholder="Rechercher une boisson..." oninput="filtrerBoissons(null,null)"
+            style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
+        </div>
+        <!-- Liste articles -->
+        <div id="bar-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
+          <input type="hidden" name="boisson_id" id="bar-selected-id" value="">
+          {% for b in boissons %}
+          <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
+               data-prix="{{ b.prix|floatformat:0 }}" data-stock="{{ b.quantite_stock }}"
+               onclick="selectionnerArticle('bar', this)">
+            <div style="flex:1">
+              <div class="art-nom">{{ b.nom }}</div>
+              <div class="art-cat">{{ b.categorie.nom }}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div class="art-prix">{{ b.prix|floatformat:0 }} F</div>
+              <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div id="bar-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
+      </div>
+
+      <!-- PLATS -->
+      <div id="field-restaurant" class="service-field" style="display:none">
+        <!-- Filtre catégorie -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="resto-cats">
+          <button type="button" class="cat-pill active" onclick="filtrerPlats(this, '')">Tout</button>
+          {% regroup plats by categorie.nom as plats_by_cat %}
+          {% for cat in plats_by_cat %}
+          <button type="button" class="cat-pill" onclick="filtrerPlats(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
+          {% endfor %}
+        </div>
+        <!-- Recherche -->
+        <div style="position:relative;margin-bottom:10px">
+          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
+          <input type="text" id="resto-search" placeholder="Rechercher un plat..." oninput="filtrerPlats(null,null)"
+            style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
+        </div>
+        <div id="resto-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
+          <input type="hidden" name="plat_id" id="resto-selected-id" value="">
+          {% for p in plats %}
+          <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
+               data-prix="{{ p.prix|floatformat:0 }}"
+               onclick="selectionnerArticle('resto', this)">
+            <div style="flex:1">
+              <div class="art-nom">{{ p.nom }}</div>
+              <div class="art-cat">{{ p.categorie.nom }}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="art-prix">{{ p.prix|floatformat:0 }} F</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div id="resto-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
+      </div>
+
+      <!-- AUTRE -->
+      <div id="field-autre" class="service-field" style="display:none">
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" name="description" class="form-control" placeholder="Ex: Blanchisserie, Taxi, Room service…">
+        </div>
+        <div class="form-group">
+          <label>Prix Unitaire (FCFA)</label>
+          <input type="number" name="prix" class="form-control">
+        </div>
+      </div>
+
+      <!-- Quantité -->
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e8edf5">
+        <label style="font-size:13px;font-weight:600;color:#1a2535;white-space:nowrap;margin:0">Quantité</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <button type="button" onclick="changerQty(-1)" style="width:32px;height:32px;border-radius:8px;border:1px solid #d4dce8;background:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3d4f63">−</button>
+          <input type="number" name="quantite" id="svc-qty" value="1" min="1" style="width:52px;text-align:center;border:1px solid #d4dce8;border-radius:8px;padding:6px;font-size:14px;font-weight:600;color:#1a2535">
+          <button type="button" onclick="changerQty(1)" style="width:32px;height:32px;border-radius:8px;border:1px solid #d4dce8;background:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3d4f63">+</button>
+        </div>
+      </div>
+
+      <!-- Total estimé -->
+      <div id="svc-total-row" style="display:none;margin-top:8px;text-align:right;font-size:13px;color:#2563eb;font-weight:600"></div>
+
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button type="button" onclick="closeModal('modalAddService')" class="btn-hotel" style="flex:1">Annuler</button>
+        <button type="submit" class="btn-hotel primary" style="flex:2">
+          <i class="fas fa-plus"></i> Ajouter à la commande
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- MODAL CHECK-IN RESERVATION (COMPLETE) -->
@@ -1406,24 +1472,93 @@
         openModal('modalAddService');
     }
 
-    function toggleServiceFields() {
-        const type = document.getElementById('service-type').value;
+    function setServiceType(type) {
+        document.getElementById('service-type-val').value = type;
         document.querySelectorAll('.service-field').forEach(el => el.style.display = 'none');
-        
-        if (type === 'bar') document.getElementById('field-bar').style.display = 'block';
-        else if (type === 'restaurant') document.getElementById('field-restaurant').style.display = 'block';
-        else if (type === 'espace') document.getElementById('field-espace').style.display = 'block';
-        else if (type === 'autre') document.getElementById('field-autre').style.display = 'block';
+        document.getElementById('field-' + type).style.display = 'block';
+        document.querySelectorAll('.svc-pill').forEach(p => p.classList.remove('active'));
+        document.querySelector(`.svc-pill[data-type="${type}"]`).classList.add('active');
+        document.getElementById('svc-total-row').style.display = 'none';
     }
 
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
+    function filtrerBoissons(btn, cat) {
+        if (btn) {
+            document.querySelectorAll('#bar-cats .cat-pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            filtrerBoissons._cat = cat;
+        } else {
+            cat = filtrerBoissons._cat || '';
+        }
+        const search = (document.getElementById('bar-search').value || '').toLowerCase();
+        document.querySelectorAll('#bar-list .art-item').forEach(item => {
+            const nomOk = !search || item.querySelector('.art-nom').textContent.toLowerCase().includes(search);
+            const catOk = !cat || item.dataset.cat === cat;
+            item.classList.toggle('hidden', !(nomOk && catOk));
+        });
+    }
+    filtrerBoissons._cat = '';
+
+    function filtrerPlats(btn, cat) {
+        if (btn) {
+            document.querySelectorAll('#resto-cats .cat-pill').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            filtrerPlats._cat = cat;
+        } else {
+            cat = filtrerPlats._cat || '';
+        }
+        const search = (document.getElementById('resto-search').value || '').toLowerCase();
+        document.querySelectorAll('#resto-list .art-item').forEach(item => {
+            const nomOk = !search || item.querySelector('.art-nom').textContent.toLowerCase().includes(search);
+            const catOk = !cat || item.dataset.cat === cat;
+            item.classList.toggle('hidden', !(nomOk && catOk));
+        });
+    }
+    filtrerPlats._cat = '';
+
+    function selectionnerArticle(type, el) {
+        const list = type === 'bar' ? '#bar-list' : '#resto-list';
+        document.querySelectorAll(list + ' .art-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        const id = el.dataset.id;
+        const prix = parseFloat(el.dataset.prix) || 0;
+        const nom = el.querySelector('.art-nom').textContent;
+        if (type === 'bar') {
+            document.getElementById('bar-selected-id').value = id;
+            const info = document.getElementById('bar-selected-info');
+            info.style.display = 'block';
+            info.innerHTML = '✓ ' + nom + ' sélectionné';
+        } else {
+            document.getElementById('resto-selected-id').value = id;
+            const info = document.getElementById('resto-selected-info');
+            info.style.display = 'block';
+            info.innerHTML = '✓ ' + nom + ' sélectionné';
+        }
+        // Mettre à jour le total
+        majTotal(prix);
+    }
+
+    function majTotal(prix) {
+        const qty = parseInt(document.getElementById('svc-qty').value) || 1;
+        const total = prix * qty;
+        const row = document.getElementById('svc-total-row');
+        if (total > 0) {
+            row.style.display = 'block';
+            row.textContent = 'Total estimé : ' + total.toLocaleString('fr-FR') + ' F';
         }
     }
 
-    // Auto-calculate Price for Reservation & Check-in Direct
+    function changerQty(delta) {
+        const input = document.getElementById('svc-qty');
+        const val = Math.max(1, (parseInt(input.value) || 1) + delta);
+        input.value = val;
+        // Recalculer total
+        const selected = document.querySelector('#bar-list .art-item.selected, #resto-list .art-item.selected');
+        if (selected) majTotal(parseFloat(selected.dataset.prix) || 0);
+    }
+
+    function toggleServiceFields() {
+        const type = document.getElementById('service-type-val').value;
+        document.querySelectorAll('.service-field').forEach(el => el.style.display = 'none');
     function setupPriceCalculation(modalId) {
         const form = document.querySelector('#' + modalId + ' form');
         if (form) {
