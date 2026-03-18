@@ -141,6 +141,62 @@
 .empty-state i { font-size: 2rem; margin-bottom: 12px; display: block; }
 .empty-state p { font-size: 13px; }
 
+
+/* ── CARTES CHAMBRES REDESIGN ── */
+.chambres-grid-new { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 16px; padding: 20px; background: #eef1f5; }
+
+.ch-card { border: 1px solid #d4dce8; border-radius: 14px; overflow: hidden; background: #f8fafc; transition: all 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ch-card:hover { border-color: #93c5fd; box-shadow: 0 4px 16px rgba(37,99,235,0.1); transform: translateY(-2px); }
+.ch-card.ch-occupee { border-color: #fca5a5; }
+.ch-card.ch-occupee:hover { border-color: #f87171; box-shadow: 0 4px 16px rgba(220,38,38,0.1); }
+.ch-card.ch-reservee { border-color: #fcd34d; }
+.ch-card.ch-reservee:hover { border-color: #f59e0b; box-shadow: 0 4px 16px rgba(217,119,6,0.1); }
+
+.ch-img { height: 120px; position: relative; overflow: hidden; }
+.ch-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+.ch-card:hover .ch-img img { transform: scale(1.04); }
+.ch-img-placeholder { width:100%; height:100%; background: linear-gradient(135deg,#e4e9f0,#d0d9e8); display:flex; align-items:center; justify-content:center; font-size:2.5rem; opacity:0.4; }
+.ch-badge { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 3px 9px; border-radius: 20px; backdrop-filter: blur(4px); }
+.ch-badge.disponible  { background: rgba(220,252,231,0.95); color: #15803d; }
+.ch-badge.occupee     { background: rgba(254,226,226,0.95); color: #b91c1c; }
+.ch-badge.reservation { background: rgba(254,243,199,0.95); color: #92400e; }
+.ch-badge.maintenance { background: rgba(254,215,170,0.95); color: #9a3412; }
+
+.ch-num-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.55); color: white; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+
+.ch-body { padding: 12px 14px 14px; }
+
+.ch-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.ch-num { font-size: 15px; font-weight: 700; color: #1a2535; }
+.ch-etage { font-size: 11px; color: #7a8b9c; background: #e8edf5; padding: 2px 7px; border-radius: 10px; }
+
+.ch-type { font-size: 12px; color: #5a6b7c; margin-bottom: 8px; }
+
+.ch-client-block { background: #eef1f5; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; border-left: 3px solid #2563eb; }
+.ch-client-block.resa { border-left-color: #d97706; }
+.ch-client-name { font-size: 12px; font-weight: 600; color: #1a2535; }
+.ch-client-info { font-size: 11px; color: #5a6b7c; margin-top: 2px; }
+.ch-client-conso { font-size: 11px; color: #059669; margin-top: 3px; font-weight: 500; }
+
+.ch-amenities { display: flex; gap: 7px; color: #7a8b9c; font-size: 12px; margin-bottom: 10px; }
+
+.ch-price-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px solid #eef1f5; }
+.ch-price-row:last-child { border: none; }
+.ch-price-row span { color: #7a8b9c; }
+.ch-price-row strong { color: #1a2535; font-weight: 600; }
+
+/* Actions — grille compacte selon statut */
+.ch-actions { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.ch-actions-row { display: flex; gap: 6px; }
+.ch-btn { flex: 1; padding: 7px 10px; font-size: 11px; font-weight: 600; border-radius: 8px; border: 1px solid #d4dce8; background: white; cursor: pointer; color: #3d4f63; text-align: center; transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.ch-btn:hover { background: #eef1f5; border-color: #93c5fd; color: #1a2535; }
+.ch-btn.primary { background: #2563eb; color: white; border-color: #2563eb; }
+.ch-btn.primary:hover { background: #1d4ed8; }
+.ch-btn.success { background: #059669; color: white; border-color: #059669; }
+.ch-btn.success:hover { background: #047857; }
+.ch-btn.danger { background: #dc2626; color: white; border-color: #dc2626; }
+.ch-btn.danger:hover { background: #b91c1c; }
+
 /* ── TABS CONTENT ── */
 .tab-content-hotel { display: none; }
 .tab-content-hotel.active { display: block; }
@@ -226,69 +282,90 @@
         <div class="tab-content-hotel active" id="tab-chambres">
           <div class="chambres-grid-new">
             {% for chambre in chambres %}
-            <div class="ch-card">
+            <div class="ch-card {% if chambre.statut == 'occupee' %}ch-occupee{% elif chambre.statut == 'reservation' %}ch-reservee{% endif %}">
               <div class="ch-img">
+                <span class="ch-num-badge">{{ chambre.numero }}</span>
                 {% if chambre.image %}
                 <img src="{{ chambre.image.url }}" alt="Chambre {{ chambre.numero }}">
                 {% else %}
-                <span class="ch-img-placeholder">🛏️</span>
+                <div class="ch-img-placeholder">🛏️</div>
                 {% endif %}
                 <span class="ch-badge {{ chambre.statut }}">{{ chambre.get_statut_display }}</span>
               </div>
               <div class="ch-body">
-                <div class="ch-num">N° {{ chambre.numero }}</div>
-                <div class="ch-type">{{ chambre.get_type_chambre_display }} · Étage {{ chambre.etage }}</div>
-                {% if chambre.statut == 'occupee' %}
-                  {% for res in sejours_en_cours %}
-                    {% if res.chambre.id == chambre.id %}
-                    <div class="ch-client">{{ res.client.nom_complet }}</div>
-                    <div class="ch-price">Départ {{ res.date_depart|date:"d/m/Y" }}</div>
-                    {% endif %}
-                  {% endfor %}
-                {% elif chambre.statut == 'reservation' %}
-                  {% for res in arrivees_prevues %}
-                    {% if res.chambre.id == chambre.id %}
-                    <div class="ch-client">{{ res.client.nom_complet }}</div>
-                    <div class="ch-price">Arrivée {{ res.date_arrivee|date:"d/m/Y" }}</div>
-                    {% endif %}
-                  {% endfor %}
-                {% endif %}
-                <div class="ch-amenities">
-                  {% if chambre.wifi %}<i class="fas fa-wifi" title="WiFi"></i>{% endif %}
-                  {% if chambre.climatisation %}<i class="fas fa-snowflake" title="Climatisation"></i>{% endif %}
-                  {% if chambre.television %}<i class="fas fa-tv" title="TV"></i>{% endif %}
-                  {% if chambre.minibar %}<i class="fas fa-cocktail" title="Minibar"></i>{% endif %}
-                  {% if chambre.coffre_fort %}<i class="fas fa-lock" title="Coffre-fort"></i>{% endif %}
+                <div class="ch-header-row">
+                  <div class="ch-num">{{ chambre.get_type_chambre_display }}</div>
+                  <span class="ch-etage">Étage {{ chambre.etage }}</span>
                 </div>
-                <div class="ch-prices">
+                <div class="ch-type">
+                  {% if chambre.wifi %}<i class="fas fa-wifi" title="WiFi"></i> {% endif %}
+                  {% if chambre.climatisation %}<i class="fas fa-snowflake" title="Clim"></i> {% endif %}
+                  {% if chambre.television %}<i class="fas fa-tv" title="TV"></i> {% endif %}
+                  {% if chambre.minibar %}<i class="fas fa-cocktail" title="Minibar"></i> {% endif %}
+                  {% if chambre.coffre_fort %}<i class="fas fa-lock" title="Coffre"></i> {% endif %}
+                </div>
+
+                {% if chambre.statut == 'occupee' %}
+                  {% for res in sejours_en_cours %}{% if res.chambre.id == chambre.id %}
+                  <div class="ch-client-block">
+                    <div class="ch-client-name">{{ res.client.nom_complet }}</div>
+                    <div class="ch-client-info">Départ {{ res.date_depart|date:"d/m/Y" }}</div>
+                    {% if res.consommations.count > 0 %}
+                    <div class="ch-client-conso">{{ res.consommations.count }} conso · {{ res.get_montant_services|floatformat:0 }} F</div>
+                    {% endif %}
+                  </div>
+                  {% endif %}{% endfor %}
+                {% elif chambre.statut == 'reservation' %}
+                  {% for res in arrivees_prevues %}{% if res.chambre.id == chambre.id %}
+                  <div class="ch-client-block resa">
+                    <div class="ch-client-name">{{ res.client.nom_complet }}</div>
+                    <div class="ch-client-info">Arrivée {{ res.date_arrivee|date:"d/m/Y" }}</div>
+                  </div>
+                  {% endif %}{% endfor %}
+                {% else %}
+                <div class="ch-prices" style="margin-bottom:10px">
                   <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|floatformat:0 }} F</strong></div>
                   <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|floatformat:0 }} F</strong></div>
                 </div>
+                {% endif %}
+
                 <div class="ch-actions">
-                  <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
                   {% if chambre.statut == 'disponible' %}
-                  <button class="ch-btn primary" onclick="ouvrirCheckinDirect({{ chambre.id }}, '{{ chambre.numero }}')">Check-in</button>
+                  <div class="ch-actions-row">
+                    <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
+                    <button class="ch-btn primary" onclick="ouvrirCheckinDirect({{ chambre.id }}, '{{ chambre.numero }}')">
+                      <i class="fas fa-sign-in-alt"></i> Check-in
+                    </button>
+                  </div>
                   {% elif chambre.statut == 'occupee' %}
-                    {% for res in sejours_en_cours %}
-                      {% if res.chambre.id == chambre.id %}
-                      <button class="ch-btn" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">Commander</button>
-                      <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
-                      {% endif %}
-                    {% endfor %}
+                    {% for res in sejours_en_cours %}{% if res.chambre.id == chambre.id %}
+                    <button class="ch-btn success" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
+                      <i class="fas fa-utensils"></i> Commander
+                    </button>
+                    <button class="ch-btn danger" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">
+                      <i class="fas fa-sign-out-alt"></i> Check-out
+                    </button>
+                    {% endif %}{% endfor %}
                   {% elif chambre.statut == 'reservation' %}
-                    {% for res in arrivees_prevues %}
-                      {% if res.chambre.id == chambre.id %}
-                      <button class="ch-btn primary" onclick="openCheckinReservationModal({'id':'{{ res.id }}','nom':'{{ res.client.nom|escapejs }}','prenom':'{{ res.client.prenom|escapejs }}','telephone':'{{ res.client.telephone|escapejs }}','email':'{{ res.client.email|default_if_none:''|escapejs }}','date_naissance':'{{ res.client.date_naissance|date:'Y-m-d'|default_if_none:'' }}','nationalite':'{{ res.client.nationalite|default_if_none:''|escapejs }}','piece_identite':'{{ res.client.piece_identite|default_if_none:''|escapejs }}','numero_piece':'{{ res.client.numero_piece|default_if_none:''|escapejs }}','chambre_id':{{ res.chambre.id }},'chambre_num':'{{ res.chambre.numero }}','date_arrivee':'{{ res.date_arrivee|date:'Y-m-d' }}','date_depart':'{{ res.date_depart|date:'Y-m-d' }}','prix_total':{{ res.prix_total }},'avance':{{ res.avance }},'mode_paiement':'{{ res.mode_paiement }}','commentaire':'{{ res.commentaire|default_if_none:''|escapejs }}','nombre_adultes':{{ res.nombre_adultes }},'nombre_enfants':{{ res.nombre_enfants }},'provenance':'{{ res.provenance|default_if_none:''|escapejs }}','destination':'{{ res.destination|default_if_none:''|escapejs }}','res_id':{{ res.id }}})">Check-in</button>
-                      {% endif %}
-                    {% endfor %}
+                    {% for res in arrivees_prevues %}{% if res.chambre.id == chambre.id %}
+                    <div class="ch-actions-row">
+                      <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
+                      <button class="ch-btn primary" onclick="openCheckinReservationModal({'id':'{{ res.id }}','nom':'{{ res.client.nom|escapejs }}','prenom':'{{ res.client.prenom|escapejs }}','telephone':'{{ res.client.telephone|escapejs }}','email':'{{ res.client.email|default_if_none:''|escapejs }}','date_naissance':'{{ res.client.date_naissance|date:'Y-m-d'|default_if_none:'' }}','nationalite':'{{ res.client.nationalite|default_if_none:''|escapejs }}','piece_identite':'{{ res.client.piece_identite|default_if_none:''|escapejs }}','numero_piece':'{{ res.client.numero_piece|default_if_none:''|escapejs }}','chambre_id':{{ res.chambre.id }},'chambre_num':'{{ res.chambre.numero }}','date_arrivee':'{{ res.date_arrivee|date:'Y-m-d' }}','date_depart':'{{ res.date_depart|date:'Y-m-d' }}','prix_total':{{ res.prix_total }},'avance':{{ res.avance }},'mode_paiement':'{{ res.mode_paiement }}','commentaire':'{{ res.commentaire|default_if_none:''|escapejs }}','nombre_adultes':{{ res.nombre_adultes }},'nombre_enfants':{{ res.nombre_enfants }},'provenance':'{{ res.provenance|default_if_none:''|escapejs }}','destination':'{{ res.destination|default_if_none:''|escapejs }}','res_id':{{ res.id }}})">
+                        <i class="fas fa-sign-in-alt"></i> Check-in
+                      </button>
+                    </div>
+                    {% endif %}{% endfor %}
+                  {% elif chambre.statut == 'maintenance' %}
+                  <div class="ch-actions-row">
+                    <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn" style="width:100%">Voir détails</a>
+                  </div>
                   {% endif %}
                 </div>
               </div>
             </div>
             {% empty %}
             <div class="empty-state" style="grid-column:1/-1">
-              <i class="fas fa-bed"></i>
-              <p>Aucune chambre configurée.</p>
+              <i class="fas fa-bed"></i><p>Aucune chambre configurée.</p>
             </div>
             {% endfor %}
           </div>
