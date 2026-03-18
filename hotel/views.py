@@ -310,14 +310,23 @@ def checkin_direct(request):
         
         # 1. Validation Statut Actuel
         if chambre.statut == 'maintenance':
-             messages.error(request, f"La chambre {chambre.numero} est en maintenance.")
-             return redirect(reverse('hotel:index') + '?tab=checkinout')
+            msg = f"La chambre {chambre.numero} est en maintenance et indisponible."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
         elif chambre.statut == 'occupee':
-             messages.error(request, f"La chambre {chambre.numero} est actuellement occupée.")
-             return redirect(reverse('hotel:index') + '?tab=checkinout')
-        elif chambre.statut != 'disponible':
-             messages.error(request, f"La chambre {chambre.numero} n'est pas disponible (Statut: {chambre.get_statut_display()}).")
-             return redirect(reverse('hotel:index') + '?tab=checkinout')
+            msg = f"La chambre {chambre.numero} est actuellement occupée. Sélectionnez une autre chambre."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
+        elif chambre.statut not in ['disponible', 'reservation']:
+            msg = f"La chambre {chambre.numero} n'est pas disponible (Statut: {chambre.get_statut_display()})."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
 
         # Préparation des dates pour vérification chevauchement
         today = timezone.now().date()
@@ -341,10 +350,12 @@ def checkin_direct(request):
 
         if overlapping.exists():
             if overlapping.filter(statut='en_cours').exists():
-                msg = f"La chambre {chambre.numero} est occupée durant cette période."
+                msg = f"La chambre {chambre.numero} est occupée durant cette période. Choisissez d'autres dates ou une autre chambre."
             else:
-                 msg = f"La chambre {chambre.numero} est déjà réservée durant cette période."
-            
+                o = overlapping.first()
+                msg = f"La chambre {chambre.numero} est déjà réservée du {o.date_arrivee.strftime('%d/%m/%Y')} au {o.date_depart.strftime('%d/%m/%Y')}. Choisissez d'autres dates."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
@@ -373,11 +384,11 @@ def checkin_direct(request):
         chambre.save()
         
         messages.success(request, f"Check-in direct effectué pour {client.nom_complet}.")
-        
-        # Redirection vers impression formulaire si demandé
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            redirect_url = f"/hotel/checkin/print/{reservation.id}/" if request.POST.get('action') == 'print_form' else reverse('hotel:index') + '?tab=checkinout'
+            return JsonResponse({'success': True, 'redirect': redirect_url, 'message': f"Check-in effectué pour {client.nom_complet} — Chambre {chambre.numero}"})
         if request.POST.get('action') == 'print_form':
             return redirect('hotel:print_checkin_form', reservation_id=reservation.id)
-            
         return redirect(reverse('hotel:index') + '?tab=checkinout')
         
     return redirect('hotel:index')
@@ -418,8 +429,17 @@ def reservation_create(request):
             
         chambre = get_object_or_404(Chambre, id=chambre_id)
         if chambre.statut == 'maintenance':
-             messages.error(request, "Cette chambre est en maintenance.")
-             return redirect('hotel:index')
+            msg = f"La chambre {chambre.numero} est en maintenance. Choisissez une autre chambre."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect('hotel:index')
+        elif chambre.statut == 'occupee':
+            msg = f"La chambre {chambre.numero} est actuellement occupée. Choisissez une autre chambre."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect('hotel:index')
 
         # Validation Disponibilité (Chevauchement)
         # On vérifie s'il existe une réservation pour cette chambre qui chevauche la période demandée
@@ -433,9 +453,12 @@ def reservation_create(request):
         
         if overlapping.exists():
             if overlapping.filter(statut='en_cours').exists():
-                 msg = "Cette chambre est occupée pour cette période."
+                msg = f"La chambre {chambre.numero} est occupée pour cette période. Choisissez d'autres dates ou une autre chambre."
             else:
-                 msg = "Cette chambre est déjà réservée pour cette période."
+                o = overlapping.first()
+                msg = f"La chambre {chambre.numero} est déjà réservée du {o.date_arrivee.strftime('%d/%m/%Y')} au {o.date_depart.strftime('%d/%m/%Y')}. Choisissez d'autres dates."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
             return redirect('hotel:index')
 
@@ -482,6 +505,8 @@ def reservation_create(request):
         # (géré par l'auto-correction dans hotel_index)
         
         messages.success(request, "Réservation enregistrée avec succès.")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'redirect': reverse('hotel:index') + '?tab=reservations', 'message': f"Réservation confirmée pour {client.nom_complet} — Chambre {chambre.numero} du {d_arrivee.strftime('%d/%m/%Y')} au {d_depart.strftime('%d/%m/%Y')}"})
         return redirect('hotel:index')
         
     return redirect('hotel:index')
