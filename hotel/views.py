@@ -680,8 +680,8 @@ def checkout_reservation(request, reservation_id):
             if operateur:
                 mode_paiement = operateur
 
-        # Réceptionniste (auto depuis compte connecté) et Serveur (sélectionné)
-        receptionniste_nom = request.user.get_full_name() or request.user.username
+        # Réceptionniste (depuis le champ readonly du formulaire) et Serveur
+        receptionniste_nom = request.POST.get('serveur', '').strip() or request.user.get_full_name() or request.user.username
         serveur_nom = request.POST.get('serveur_resto', '').strip()
         if not serveur_nom:
             messages.error(request, "Veuillez sélectionner un serveur/serveuse avant de valider le check-out.")

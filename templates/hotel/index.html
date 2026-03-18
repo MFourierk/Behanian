@@ -358,7 +358,7 @@
                     <button class="ch-btn success" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
                       <i class="fas fa-utensils"></i> Commander
                     </button>
-                    <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">
+                    <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }})">
                       <i class="fas fa-sign-out-alt"></i> Check-out
                     </button>
                     {% endif %}{% endfor %}
@@ -475,7 +475,7 @@
                     <div class="check-name">{{ res.client.nom_complet }}</div>
                     <div class="check-detail">Ch. {{ res.chambre.numero }} · Départ {{ res.date_depart|date:"d/m/Y" }}</div>
                   </div>
-                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }})">Check-out</button>
                 </div>
                 {% endfor %}
               {% else %}
@@ -505,7 +505,7 @@
                   </div>
                   <div style="display:flex;flex-direction:column;gap:5px">
                     <button class="check-btn-action" style="background:#059669;border-color:#059669;font-size:11px;padding:5px 10px" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">+ Commander</button>
-                    <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                    <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }})">Check-out</button>
                   </div>
                 </div>
                 {% endfor %}
@@ -969,7 +969,10 @@
                 <input type="text" name="serveur" id="checkoutReceptionniste" class="form-control"
                        value="{{ request.user.get_full_name|default:request.user.username }}"
                        readonly style="background:#f0f6ff;color:#2563eb;font-weight:500;cursor:not-allowed">
-                <div style="font-size:11px;color:#7a8b9c;margin-top:4px">Renseigné automatiquement selon le compte connecté</div>
+                <div style="font-size:11px;color:#7a8b9c;margin-top:4px">
+                  Connecté en tant que : <strong>{{ request.user.username }}</strong>
+                  — Pour changer, modifiez votre profil (Prénom + Nom)
+                </div>
             </div>
 
             <div class="form-group">
@@ -1458,33 +1461,27 @@
         }
     }
 
-    function openCheckoutModal(resId, clientName, amountDue, roomPrice, servicesPrice) {
-        document.getElementById('checkout-client-name').textContent = `Client : ${clientName}`;
-        
-        // Helper to parse localized numbers (remove spaces, etc.)
+    function openCheckoutModal(resId, clientName, roomVal, serviceVal, avance) {
+        document.getElementById('checkout-client-name').textContent = 'Client : ' + clientName;
+
         const parseAmount = (val) => {
             if (typeof val === 'number') return val;
             if (!val) return 0;
-            // Remove spaces (including non-breaking) and convert comma to dot
-            const clean = String(val).replace(/\s/g, '').replace(/,/g, '.'); 
-            // In case of &nbsp; which might not be caught by \s in some browsers (though \s usually catches it)
-            // better to be safe: remove all non-numeric/dot/minus
-            const safer = clean.replace(/[^\d.-]/g, '');
-            return parseFloat(safer) || 0;
+            return parseFloat(String(val).replace(/\s/g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '')) || 0;
         };
 
-        const roomVal = parseAmount(roomPrice);
-        const serviceVal = parseAmount(servicesPrice);
-        const totalVal = parseAmount(amountDue);
+        const room     = parseAmount(roomVal);
+        const services = parseAmount(serviceVal);
+        const avanceV  = parseAmount(avance);
+        const totalGeneral = room + services;
+        const resteAPayer  = Math.max(0, totalGeneral - avanceV);
 
-        // Update Breakdown
         const fmt = (v) => v.toLocaleString('fr-FR') + ' F';
-        
-        document.getElementById('breakdown-room').textContent = fmt(roomVal);
-        document.getElementById('breakdown-services').textContent = fmt(serviceVal);
-        document.getElementById('breakdown-total').textContent = fmt(totalVal);
-        
-        document.getElementById('montantEncaisse').value = totalVal; // Default to full amount
+
+        document.getElementById('breakdown-room').textContent     = fmt(room);
+        document.getElementById('breakdown-services').textContent = fmt(services);
+        document.getElementById('breakdown-total').textContent    = fmt(resteAPayer);
+        document.getElementById('montantEncaisse').value          = resteAPayer;
         
         // Update Form Action
         const form = document.getElementById('formCheckout');
