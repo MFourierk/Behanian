@@ -1101,6 +1101,8 @@
         if (!form) return;
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.textContent = 'Traitement…'; }
             const formData = new FormData(form);
             try {
                 const resp = await fetch(form.action, {
@@ -1108,23 +1110,33 @@
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
+                // Vérifier que la réponse est bien du JSON
+                const contentType = resp.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    // Le serveur a retourné une page HTML (redirect) — recharger
+                    window.location.reload();
+                    return;
+                }
                 const data = await resp.json();
                 if (data.success) {
                     if (modalId) closeModal(modalId);
-                    // Afficher succès puis recharger
                     const successDiv = document.createElement('div');
-                    successDiv.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0;box-shadow:0 4px 12px rgba(0,0,0,0.1)';
+                    successDiv.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-width:360px';
                     successDiv.textContent = '✓ ' + (data.message || 'Opération réussie');
                     document.body.appendChild(successDiv);
                     setTimeout(() => {
                         successDiv.remove();
-                        window.location.href = data.redirect || window.location.href;
-                    }, 1500);
+                        window.location.href = data.redirect || '/hotel/?tab=checkinout';
+                    }, 1800);
                 } else {
+                    if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Valider'; }
                     afficherErreurHotel(data.error || 'Une erreur est survenue.');
                 }
             } catch(err) {
-                afficherErreurHotel('Erreur de connexion. Veuillez réessayer.');
+                if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Valider'; }
+                console.error('Erreur:', err);
+                // En cas d'erreur réseau vraie, soumettre normalement
+                form.submit();
             }
         });
     }

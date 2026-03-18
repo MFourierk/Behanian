@@ -257,7 +257,10 @@ def checkin_direct(request):
         destination = request.POST.get('destination')
 
         if not all([nom, chambre_id, date_depart]):
-            messages.error(request, "Veuillez remplir tous les champs obligatoires.")
+            msg = "Veuillez remplir tous les champs obligatoires (Nom, Chambre, Date de départ)."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
             return redirect('hotel:index')
             
         # Création ou Récupération Client
@@ -333,12 +336,18 @@ def checkin_direct(request):
         try:
             date_depart_obj = timezone.datetime.strptime(date_depart, '%Y-%m-%d').date()
         except ValueError:
-            messages.error(request, "Format de date invalide.")
+            msg = "Format de date invalide. Utilisez le format JJ/MM/AAAA."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
             return redirect(reverse('hotel:index') + '?tab=checkinout')
             
         if date_depart_obj <= today:
-             messages.error(request, "La date de départ doit être ultérieure à aujourd'hui.")
-             return redirect(reverse('hotel:index') + '?tab=checkinout')
+            msg = "La date de départ doit être ultérieure à aujourd'hui."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
 
         # 2. Validation Chevauchement Réservations Futures
         overlapping = Reservation.objects.filter(
@@ -416,7 +425,10 @@ def reservation_create(request):
              required_fields.append(nom)
              
         if not all(required_fields):
-            messages.error(request, "Veuillez remplir les champs obligatoires (Client, Chambre, Dates).")
+            msg = "Veuillez remplir les champs obligatoires (Client, Chambre, Dates)."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
             return redirect('hotel:index')
             
         # Validation Dates
@@ -424,7 +436,10 @@ def reservation_create(request):
         d_depart = timezone.datetime.strptime(date_depart, '%Y-%m-%d').date()
         
         if d_arrivee >= d_depart:
-            messages.error(request, "La date de départ doit être après la date d'arrivée.")
+            msg = "La date de départ doit être après la date d'arrivée."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
             return redirect('hotel:index')
             
         chambre = get_object_or_404(Chambre, id=chambre_id)
