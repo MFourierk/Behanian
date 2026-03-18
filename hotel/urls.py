@@ -5,6 +5,7 @@ app_name = 'hotel'
 
 urlpatterns = [
     path('', views.hotel_index, name='index'),
+    path('api/revenus/', views.api_revenus, name='api_revenus'),
     path('chambre/<int:chambre_id>/', views.chambre_detail, name='chambre_detail'),
     path('checkin/<int:reservation_id>/', views.checkin_reservation, name='checkin_reservation'),
     path('checkin/direct/', views.checkin_direct, name='checkin_direct'),

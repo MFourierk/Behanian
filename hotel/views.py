@@ -14,6 +14,24 @@ from django.urls import reverse
 from django.http import JsonResponse
 
 @login_required
+def api_revenus(request):
+    """API JSON — revenus du jour en temps réel"""
+    from facturation.models import Ticket
+    from django.utils import timezone as tz
+    aujourd_hui = tz.now().date()
+    tickets = Ticket.objects.filter(date_creation__date=aujourd_hui)
+    chambres   = tickets.filter(module='hotel').aggregate(s=Sum('montant_total'))['s'] or 0
+    restaurant = tickets.filter(module='restaurant').aggregate(s=Sum('montant_total'))['s'] or 0
+    cave       = tickets.filter(module='bar').aggregate(s=Sum('montant_total'))['s'] or 0
+    return JsonResponse({
+        'chambres':   int(chambres),
+        'restaurant': int(restaurant),
+        'cave':       int(cave),
+        'total':      int(chambres + restaurant + cave),
+    })
+
+
+@login_required
 def hotel_index(request):
     """Vue principale de gestion de l'hôtel"""
     

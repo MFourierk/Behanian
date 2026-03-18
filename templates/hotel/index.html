@@ -494,10 +494,10 @@
         <div class="panel">
           <div class="panel-head"><h3>Revenus du jour</h3></div>
           <div class="rev-block">
-            <div class="rev-row"><span class="rev-lbl">Chambres</span><span class="rev-v">{{ "—" }} F</span></div>
-            <div class="rev-row"><span class="rev-lbl">Restaurant</span><span class="rev-v">{{ "—" }} F</span></div>
-            <div class="rev-row"><span class="rev-lbl">Cave</span><span class="rev-v">{{ "—" }} F</span></div>
-            <div class="rev-row rev-tot"><span class="rev-lbl">Total</span><span class="rev-v">{{ "—" }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Chambres</span><span class="rev-v" id="rev-chambres">{{ revenus_chambres|floatformat:0 }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Restaurant</span><span class="rev-v" id="rev-restaurant">{{ revenus_restaurant|floatformat:0 }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Cave</span><span class="rev-v" id="rev-cave">{{ revenus_cave|floatformat:0 }} F</span></div>
+            <div class="rev-row rev-tot"><span class="rev-lbl">Total</span><span class="rev-v" id="rev-total">{{ revenus_total|floatformat:0 }} F</span></div>
           </div>
         </div>
 
@@ -1097,6 +1097,33 @@
     }
 
     // ── INTERCEPTION AJAX des formulaires hôtel ──
+    // ── REVENUS EN TEMPS RÉEL ──
+    function formatF(n) {
+        return parseInt(n).toLocaleString('fr-FR') + ' F';
+    }
+
+    function rafraichirRevenus() {
+        fetch('/hotel/api/revenus/')
+            .then(r => r.json())
+            .then(data => {
+                const ids = {
+                    'rev-chambres':   data.chambres,
+                    'rev-restaurant': data.restaurant,
+                    'rev-cave':       data.cave,
+                    'rev-total':      data.total,
+                };
+                for (const [id, val] of Object.entries(ids)) {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = formatF(val);
+                }
+            })
+            .catch(() => {});
+    }
+
+    // Rafraîchir immédiatement puis toutes les 30 secondes
+    rafraichirRevenus();
+    setInterval(rafraichirRevenus, 30000);
+
     // Soumission normale des formulaires (pas d'AJAX)
 
     // Ouvrir modal check-in direct avec chambre pré-sélectionnée
