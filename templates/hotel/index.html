@@ -494,10 +494,14 @@
         <div class="panel">
           <div class="panel-head"><h3>Revenus du jour</h3></div>
           <div class="rev-block">
-            <div class="rev-row"><span class="rev-lbl">Chambres</span><span class="rev-v" id="rev-chambres">{{ revenus_chambres|floatformat:0 }} F</span></div>
-            <div class="rev-row"><span class="rev-lbl">Restaurant</span><span class="rev-v" id="rev-restaurant">{{ revenus_restaurant|floatformat:0 }} F</span></div>
-            <div class="rev-row"><span class="rev-lbl">Cave</span><span class="rev-v" id="rev-cave">{{ revenus_cave|floatformat:0 }} F</span></div>
-            <div class="rev-row rev-tot"><span class="rev-lbl">Total</span><span class="rev-v" id="rev-total">{{ revenus_total|floatformat:0 }} F</span></div>
+            <div class="rev-row">
+              <span class="rev-lbl">Check-outs aujourd'hui</span>
+              <span class="rev-v" id="rev-count" style="font-size:11px;color:#7a8b9c">—</span>
+            </div>
+            <div class="rev-row rev-tot">
+              <span class="rev-lbl">Total chambres</span>
+              <span class="rev-v" id="rev-chambres">{{ revenus_chambres|floatformat:0 }} F</span>
+            </div>
           </div>
         </div>
 
@@ -859,6 +863,16 @@
             </div>
             
             <div class="form-group">
+                <label style="font-weight:600;color:#1a2535">Réceptionniste / Caissier <span style="color:#dc2626">*</span></label>
+                <select name="serveur" id="checkoutServeur" class="form-control" required>
+                    <option value="">— Sélectionner —</option>
+                    {% for s in serveurs %}
+                    <option value="{{ s.get_full_name|default:s.username }}">{{ s.get_full_name|default:s.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Montant Encaissé (FCFA)</label>
                 <input type="number" name="montant_encaisse" id="montantEncaisse" class="form-control" required>
             </div>
@@ -1106,16 +1120,10 @@
         fetch('/hotel/api/revenus/')
             .then(r => r.json())
             .then(data => {
-                const ids = {
-                    'rev-chambres':   data.chambres,
-                    'rev-restaurant': data.restaurant,
-                    'rev-cave':       data.cave,
-                    'rev-total':      data.total,
-                };
-                for (const [id, val] of Object.entries(ids)) {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = formatF(val);
-                }
+                const el = document.getElementById('rev-chambres');
+                if (el) el.textContent = formatF(data.chambres);
+                const elCount = document.getElementById('rev-count');
+                if (elCount) elCount.textContent = data.count + ' séjour' + (data.count > 1 ? 's' : '');
             })
             .catch(() => {});
     }

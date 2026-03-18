@@ -15,19 +15,19 @@ from django.http import JsonResponse
 
 @login_required
 def api_revenus(request):
-    """API JSON — revenus du jour en temps réel"""
-    from facturation.models import Ticket
+    """API JSON — revenus chambres du jour (reservations terminées aujourd'hui)"""
     from django.utils import timezone as tz
     aujourd_hui = tz.now().date()
-    tickets = Ticket.objects.filter(date_creation__date=aujourd_hui)
-    chambres   = tickets.filter(module='hotel').aggregate(s=Sum('montant_total'))['s'] or 0
-    restaurant = tickets.filter(module='restaurant').aggregate(s=Sum('montant_total'))['s'] or 0
-    cave       = tickets.filter(module='bar').aggregate(s=Sum('montant_total'))['s'] or 0
+    # Réservations terminées aujourd'hui (check-out effectué)
+    reservations_terminees = Reservation.objects.filter(
+        statut='terminee',
+        date_modification__date=aujourd_hui
+    )
+    total = sum(r.get_total_general() for r in reservations_terminees)
     return JsonResponse({
-        'chambres':   int(chambres),
-        'restaurant': int(restaurant),
-        'cave':       int(cave),
-        'total':      int(chambres + restaurant + cave),
+        'chambres': int(total),
+        'total':    int(total),
+        'count':    reservations_terminees.count(),
     })
 
 
@@ -103,15 +103,15 @@ def hotel_index(request):
     plats = PlatMenu.objects.filter(disponible=True).order_by('categorie__ordre', 'nom')
     espaces = EspaceEvenementiel.objects.filter(statut='disponible').order_by('nom')
 
-    # ── Revenus du jour ──
-    from facturation.models import Ticket
+    # ── Revenus chambres du jour (check-outs effectués) ──
     from django.utils import timezone as tz
     aujourd_hui = tz.now().date()
-    tickets_jour = Ticket.objects.filter(date_creation__date=aujourd_hui)
-    revenus_chambres   = tickets_jour.filter(module='hotel').aggregate(s=Sum('montant_total'))['s'] or 0
-    revenus_restaurant = tickets_jour.filter(module='restaurant').aggregate(s=Sum('montant_total'))['s'] or 0
-    revenus_cave       = tickets_jour.filter(module='bar').aggregate(s=Sum('montant_total'))['s'] or 0
-    revenus_total      = revenus_chambres + revenus_restaurant + revenus_cave
+    res_terminees_jour = Reservation.objects.filter(
+        statut='terminee',
+        date_modification__date=aujourd_hui
+    )
+    revenus_chambres = sum(r.get_total_general() for r in res_terminees_jour)
+    revenus_total    = revenus_chambres
 
     # ── Activité récente ──
     activite_recente = []
@@ -150,11 +150,10 @@ def hotel_index(request):
         'boissons': boissons,
         'plats': plats,
         'espaces': espaces,
-        'revenus_chambres': revenus_chambres,
-        'revenus_restaurant': revenus_restaurant,
-        'revenus_cave': revenus_cave,
-        'revenus_total': revenus_total,
+        'revenus_chambres': int(revenus_chambres),
+        'revenus_total': int(revenus_total),
         'activite_recente': activite_recente,
+        'serveurs': __import__('django.contrib.auth.models', fromlist=['User']).User.objects.filter(is_active=True).order_by('first_name', 'last_name'),
     }
     
     return render(request, 'hotel/index.html', context)
@@ -667,24 +666,30 @@ def checkout_reservation(request, reservation_id):
         
         mode_paiement = request.POST.get('mode_paiement', 'especes')
         if mode_paiement == 'mobile_money':
-            # Si Mobile Money générique sélectionné, essayer de prendre l'opérateur spécifique
             operateur = request.POST.get('operateur_momo')
             if operateur:
                 mode_paiement = operateur
-        
+
+        # Serveur/caissier obligatoire
+        serveur_nom = request.POST.get('serveur', '').strip()
+        if not serveur_nom:
+            messages.error(request, "Veuillez sélectionner un réceptionniste/caissier avant de valider le check-out.")
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
+
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(),
             module='hotel',
             objet_id=reservation.id,
-            client=f_client, # Utilisation du client Facturation
+            client=f_client,
             montant_total=reservation.get_total_general(),
-            montant_paye=montant_paye + reservation.avance, # Total payé (avance + solde)
+            montant_paye=montant_paye + reservation.avance,
             mode_paiement=mode_paiement,
             cree_par=request.user,
             contenu=contenu
         )
-        
+
         messages.success(request, "Paiement enregistré. Veuillez imprimer le ticket pour clôturer le séjour.")
+        request.session[f'ticket_{ticket.id}_serveur'] = serveur_nom
         return redirect('hotel:ticket_print', ticket_id=ticket.id)
         
     return redirect(reverse('hotel:index') + '?tab=historique')
@@ -693,8 +698,8 @@ def checkout_reservation(request, reservation_id):
 def ticket_print(request, ticket_id):
     """Afficher le ticket pour impression"""
     ticket = get_object_or_404(Ticket, id=ticket_id)
-    # Utiliser le template générique thermique
-    return render(request, 'facturation/ticket_print_thermal.html', {'ticket': ticket})
+    serveur = request.session.get(f'ticket_{ticket_id}_serveur', '')
+    return render(request, 'facturation/ticket_print_thermal.html', {'ticket': ticket, 'serveur': serveur})
 
 @login_required
 @transaction.atomic
