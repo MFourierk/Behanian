@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.urls import reverse
 from django.http import JsonResponse
 
@@ -85,6 +85,34 @@ def hotel_index(request):
     plats = PlatMenu.objects.filter(disponible=True).order_by('categorie__ordre', 'nom')
     espaces = EspaceEvenementiel.objects.filter(statut='disponible').order_by('nom')
 
+    # ── Revenus du jour ──
+    from facturation.models import Ticket
+    from django.utils import timezone as tz
+    aujourd_hui = tz.now().date()
+    tickets_jour = Ticket.objects.filter(date_creation__date=aujourd_hui)
+    revenus_chambres   = tickets_jour.filter(module='hotel').aggregate(s=Sum('montant_total'))['s'] or 0
+    revenus_restaurant = tickets_jour.filter(module='restaurant').aggregate(s=Sum('montant_total'))['s'] or 0
+    revenus_cave       = tickets_jour.filter(module='bar').aggregate(s=Sum('montant_total'))['s'] or 0
+    revenus_total      = revenus_chambres + revenus_restaurant + revenus_cave
+
+    # ── Activité récente ──
+    activite_recente = []
+    for res in Reservation.objects.filter(
+        statut__in=['en_cours', 'terminee']
+    ).order_by('-date_modification')[:8]:
+        if res.statut == 'en_cours':
+            activite_recente.append({
+                'type': 'checkin',
+                'heure': res.date_modification.strftime('%H:%M'),
+                'texte': f"Check-in {res.client.nom_complet} — ch. {res.chambre.numero}"
+            })
+        else:
+            activite_recente.append({
+                'type': 'checkout',
+                'heure': res.date_modification.strftime('%H:%M'),
+                'texte': f"Check-out {res.client.nom_complet} — ch. {res.chambre.numero}"
+            })
+
     context = {
         'total_chambres': total_chambres,
         'chambres_disponibles': chambres_disponibles,
@@ -104,6 +132,11 @@ def hotel_index(request):
         'boissons': boissons,
         'plats': plats,
         'espaces': espaces,
+        'revenus_chambres': revenus_chambres,
+        'revenus_restaurant': revenus_restaurant,
+        'revenus_cave': revenus_cave,
+        'revenus_total': revenus_total,
+        'activite_recente': activite_recente,
     }
     
     return render(request, 'hotel/index.html', context)
