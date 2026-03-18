@@ -1029,6 +1029,7 @@
         <input type="hidden" name="type_service" id="service-type-val" value="bar">
         <button type="button" class="svc-pill active" data-type="bar" onclick="setServiceType('bar')">🍸 Boissons</button>
         <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')">🍽️ Plats</button>
+        <button type="button" class="svc-pill" data-type="espace" onclick="setServiceType('espace')">🎪 Espaces</button>
         <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')">⚙️ Autre</button>
       </div>
 
@@ -1102,6 +1103,31 @@
           {% endfor %}
         </div>
         <div id="resto-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
+      </div>
+
+      <!-- ESPACE LOCATION -->
+      <div id="field-espace" class="service-field" style="display:none">
+        {% if espaces %}
+        <div id="espace-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
+          <input type="hidden" name="espace_id" id="espace-selected-id" value="">
+          {% for e in espaces %}
+          <div class="art-item" data-id="{{ e.id }}" data-prix="{{ e.prix_heure|floatformat:0 }}"
+               onclick="selectionnerEspace(this)">
+            <div style="flex:1">
+              <div class="art-nom">{{ e.nom }}</div>
+              <div class="art-cat">{{ e.get_type_display|default:"Espace" }} · {{ e.capacite }} pers.</div>
+            </div>
+            <div style="text-align:right">
+              <div class="art-prix">{{ e.prix_heure|floatformat:0 }} F/h</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div id="espace-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
+        <div style="margin-top:8px;font-size:11px;color:#7a8b9c">La quantité correspond au nombre d'heures de location.</div>
+        {% else %}
+        <div style="text-align:center;padding:30px;color:#b0b8c1;font-size:13px">Aucun espace disponible actuellement.</div>
+        {% endif %}
       </div>
 
       <!-- AUTRE -->
@@ -1474,6 +1500,8 @@
         document.getElementById('bar-selected-info').style.display = 'none';
         document.getElementById('resto-selected-id').value = '';
         document.getElementById('resto-selected-info').style.display = 'none';
+        const espaceSel = document.getElementById('espace-selected-id');
+        if (espaceSel) { espaceSel.value = ''; document.getElementById('espace-selected-info').style.display = 'none'; }
         document.getElementById('bar-search').value = '';
         document.getElementById('resto-search').value = '';
         document.querySelectorAll('.art-item').forEach(i => { i.classList.remove('selected','hidden'); });
@@ -1526,6 +1554,16 @@
         });
     }
     filtrerPlats._cat = '';
+
+    function selectionnerEspace(el) {
+        document.querySelectorAll('#espace-list .art-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('espace-selected-id').value = el.dataset.id;
+        const info = document.getElementById('espace-selected-info');
+        info.style.display = 'block';
+        info.innerHTML = '✓ ' + el.querySelector('.art-nom').textContent + ' sélectionné';
+        majTotal(parseFloat(el.dataset.prix) || 0);
+    }
 
     function selectionnerArticle(type, el) {
         const list = type === 'bar' ? '#bar-list' : '#resto-list';
