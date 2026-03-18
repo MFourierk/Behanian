@@ -1574,6 +1574,8 @@
         const panel = document.getElementById('field-' + type);
         if (panel) panel.style.display = 'block';
     }
+
+    function setupPriceCalculation(modalId) {
         const form = document.querySelector('#' + modalId + ' form');
         if (form) {
             const chambreSelect = form.querySelector('select[name="chambre_id"]');
