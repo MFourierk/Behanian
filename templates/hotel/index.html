@@ -1462,13 +1462,25 @@
     }
 
     function openServiceModal(resId, clientName, roomNum) {
-        document.getElementById('service-room-info').textContent = `Client: ${clientName} - Chambre: ${roomNum}`;
-        
+        document.getElementById('service-room-info').textContent = 'Client : ' + clientName + '  —  Chambre ' + roomNum;
         const form = document.getElementById('formAddService');
         const urlTemplate = "{% url 'hotel:ajouter_consommation' 0 %}";
         form.action = urlTemplate.replace('0', resId);
-        
-        toggleServiceFields(); // Reset fields
+        // Reset complet
+        setServiceType('bar');
+        document.getElementById('svc-qty').value = 1;
+        document.getElementById('svc-total-row').style.display = 'none';
+        document.getElementById('bar-selected-id').value = '';
+        document.getElementById('bar-selected-info').style.display = 'none';
+        document.getElementById('resto-selected-id').value = '';
+        document.getElementById('resto-selected-info').style.display = 'none';
+        document.getElementById('bar-search').value = '';
+        document.getElementById('resto-search').value = '';
+        document.querySelectorAll('.art-item').forEach(i => { i.classList.remove('selected','hidden'); });
+        filtrerBoissons._cat = ''; filtrerPlats._cat = '';
+        document.querySelectorAll('#bar-cats .cat-pill, #resto-cats .cat-pill').forEach(p => p.classList.remove('active'));
+        const firstCats = document.querySelectorAll('#bar-cats .cat-pill, #resto-cats .cat-pill');
+        if (firstCats[0]) firstCats[0].classList.add('active');
         openModal('modalAddService');
     }
 
@@ -1559,7 +1571,9 @@
     function toggleServiceFields() {
         const type = document.getElementById('service-type-val').value;
         document.querySelectorAll('.service-field').forEach(el => el.style.display = 'none');
-    function setupPriceCalculation(modalId) {
+        const panel = document.getElementById('field-' + type);
+        if (panel) panel.style.display = 'block';
+    }
         const form = document.querySelector('#' + modalId + ' form');
         if (form) {
             const chambreSelect = form.querySelector('select[name="chambre_id"]');
