@@ -358,7 +358,7 @@
                     <button class="ch-btn success" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
                       <i class="fas fa-utensils"></i> Commander
                     </button>
-                    <button class="ch-btn danger" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">
+                    <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">
                       <i class="fas fa-sign-out-alt"></i> Check-out
                     </button>
                     {% endif %}{% endfor %}
