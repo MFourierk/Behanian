@@ -203,12 +203,12 @@ def checkin_reservation(request, reservation_id):
         chambre.statut = 'occupee'
         chambre.save()
         
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            redirect_url = f"/hotel/checkin/print/{reservation.id}/" if request.POST.get('action') == 'print_form' else reverse('hotel:index') + '?tab=checkinout'
+            return JsonResponse({'success': True, 'redirect': redirect_url, 'message': f"Check-in effectué pour {client.nom_complet} — Chambre {chambre.numero}"})
         messages.success(request, f"Check-in effectué pour {client.nom_complet}. Chambre {chambre.numero}.")
-        
-        # Redirection vers impression formulaire si demandé
         if request.POST.get('action') == 'print_form':
             return redirect('hotel:print_checkin_form', reservation_id=reservation.id)
-            
         return redirect(reverse('hotel:index') + '?tab=checkinout')
     
     # Comportement GET standard (fallback ou lien direct)
@@ -391,11 +391,13 @@ def checkin_direct(request):
         # Mise à jour Chambre
         chambre.statut = 'occupee'
         chambre.save()
-        
-        messages.success(request, f"Check-in direct effectué pour {client.nom_complet}.")
+
+        # Réponse AJAX
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             redirect_url = f"/hotel/checkin/print/{reservation.id}/" if request.POST.get('action') == 'print_form' else reverse('hotel:index') + '?tab=checkinout'
             return JsonResponse({'success': True, 'redirect': redirect_url, 'message': f"Check-in effectué pour {client.nom_complet} — Chambre {chambre.numero}"})
+
+        messages.success(request, f"Check-in direct effectué pour {client.nom_complet}.")
         if request.POST.get('action') == 'print_form':
             return redirect('hotel:print_checkin_form', reservation_id=reservation.id)
         return redirect(reverse('hotel:index') + '?tab=checkinout')
@@ -519,9 +521,9 @@ def reservation_create(request):
         # La chambre reste 'disponible' jusqu'au check-in, sauf si c'est pour aujourd'hui
         # (géré par l'auto-correction dans hotel_index)
         
-        messages.success(request, "Réservation enregistrée avec succès.")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': True, 'redirect': reverse('hotel:index') + '?tab=reservations', 'message': f"Réservation confirmée pour {client.nom_complet} — Chambre {chambre.numero} du {d_arrivee.strftime('%d/%m/%Y')} au {d_depart.strftime('%d/%m/%Y')}"})
+        messages.success(request, "Réservation enregistrée avec succès.")
         return redirect('hotel:index')
         
     return redirect('hotel:index')
