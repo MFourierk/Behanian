@@ -965,10 +965,18 @@
             </div>
             
             <div class="form-group">
-                <label style="font-weight:600;color:#1a2535">Réceptionniste / Caissier <span style="color:#dc2626">*</span></label>
-                <select name="serveur" id="checkoutServeur" class="form-control" required>
+                <label style="font-weight:600;color:#1a2535">Réceptionniste <span style="color:#dc2626">*</span></label>
+                <input type="text" name="serveur" id="checkoutReceptionniste" class="form-control"
+                       value="{{ request.user.get_full_name|default:request.user.username }}"
+                       readonly style="background:#f0f6ff;color:#2563eb;font-weight:500;cursor:not-allowed">
+                <div style="font-size:11px;color:#7a8b9c;margin-top:4px">Renseigné automatiquement selon le compte connecté</div>
+            </div>
+
+            <div class="form-group">
+                <label style="font-weight:600;color:#1a2535">Serveur / Serveuse <span style="color:#dc2626">*</span></label>
+                <select name="serveur_resto" id="checkoutServeur" class="form-control" required>
                     <option value="">— Sélectionner —</option>
-                    {% for s in serveurs %}
+                    {% for s in serveurs_restaurant %}
                     <option value="{{ s.get_full_name|default:s.username }}">{{ s.get_full_name|default:s.username }}</option>
                     {% endfor %}
                 </select>

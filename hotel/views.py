@@ -131,6 +131,15 @@ def hotel_index(request):
                 'texte': f"Check-out {res.client.nom_complet} — ch. {res.chambre.numero}"
             })
 
+    # Réceptionnistes et serveurs
+    from django.contrib.auth.models import User as AuthUser, Group
+    receptionnistes = AuthUser.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    try:
+        grp_serveurs = Group.objects.get(name='Serveuse/Serveur')
+        serveurs_restaurant = AuthUser.objects.filter(groups=grp_serveurs, is_active=True).order_by('first_name', 'last_name')
+    except Group.DoesNotExist:
+        serveurs_restaurant = AuthUser.objects.none()
+
     context = {
         'total_chambres': total_chambres,
         'chambres_disponibles': chambres_disponibles,
@@ -153,7 +162,8 @@ def hotel_index(request):
         'revenus_chambres': int(revenus_chambres),
         'revenus_total': int(revenus_total),
         'activite_recente': activite_recente,
-        'serveurs': __import__('django.contrib.auth.models', fromlist=['User']).User.objects.filter(is_active=True).order_by('first_name', 'last_name'),
+        'receptionnistes': receptionnistes,
+        'serveurs_restaurant': serveurs_restaurant,
     }
     
     return render(request, 'hotel/index.html', context)
@@ -670,10 +680,11 @@ def checkout_reservation(request, reservation_id):
             if operateur:
                 mode_paiement = operateur
 
-        # Serveur/caissier obligatoire
-        serveur_nom = request.POST.get('serveur', '').strip()
+        # Réceptionniste (auto depuis compte connecté) et Serveur (sélectionné)
+        receptionniste_nom = request.user.get_full_name() or request.user.username
+        serveur_nom = request.POST.get('serveur_resto', '').strip()
         if not serveur_nom:
-            messages.error(request, "Veuillez sélectionner un réceptionniste/caissier avant de valider le check-out.")
+            messages.error(request, "Veuillez sélectionner un serveur/serveuse avant de valider le check-out.")
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
         ticket = Ticket.objects.create(
@@ -690,6 +701,7 @@ def checkout_reservation(request, reservation_id):
 
         messages.success(request, "Paiement enregistré. Veuillez imprimer le ticket pour clôturer le séjour.")
         request.session[f'ticket_{ticket.id}_serveur'] = serveur_nom
+        request.session[f'ticket_{ticket.id}_receptionniste'] = receptionniste_nom
         return redirect('hotel:ticket_print', ticket_id=ticket.id)
         
     return redirect(reverse('hotel:index') + '?tab=historique')
@@ -699,7 +711,12 @@ def ticket_print(request, ticket_id):
     """Afficher le ticket pour impression"""
     ticket = get_object_or_404(Ticket, id=ticket_id)
     serveur = request.session.get(f'ticket_{ticket_id}_serveur', '')
-    return render(request, 'facturation/ticket_print_thermal.html', {'ticket': ticket, 'serveur': serveur})
+    receptionniste = request.session.get(f'ticket_{ticket_id}_receptionniste', '')
+    return render(request, 'facturation/ticket_print_thermal.html', {
+        'ticket': ticket,
+        'serveur': serveur,
+        'receptionniste': receptionniste,
+    })
 
 @login_required
 @transaction.atomic
