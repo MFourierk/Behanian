@@ -1,3 +1,4 @@
+from utils.permissions import require_module_access
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -44,7 +45,7 @@ def get_logo_path():
     dev_path = os.path.join(settings.BASE_DIR, 'static', 'images', filename)
     return dev_path
 
-@login_required
+@require_module_access('facturation')
 def index(request):
     """Vue principale du module facturation"""
     recent_factures = Facture.objects.all()[:5]

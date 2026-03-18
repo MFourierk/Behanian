@@ -1,9 +1,10 @@
+from utils.permissions import require_module_access
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import TableBoite, Evenement, EntreeBoite, ConsommationBoite
 from django.utils import timezone
 
-@login_required
+@require_module_access('boite_nuit')
 def boite_nuit_index(request):
     """Vue principale de la boîte de nuit"""
     

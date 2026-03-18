@@ -1,0 +1,525 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Hôtel - BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── LAYOUT ── */
+.hotel-body { background: #f5f7fa; padding: 20px 0 40px; }
+
+/* ── KPI CARDS ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
+.kpi-card { background: white; border: 1px solid #e8edf3; border-radius: 12px; padding: 16px 18px; border-top: 3px solid #e8edf3; }
+.kpi-card.total { border-top-color: #2563eb; }
+.kpi-card.dispo { border-top-color: #16a34a; }
+.kpi-card.occup { border-top-color: #dc2626; }
+.kpi-card.resa  { border-top-color: #d97706; }
+.kpi-card.maint { border-top-color: #f97316; }
+.kpi-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.7px; color: #8a96a3; margin-bottom: 8px; }
+.kpi-val { font-size: 30px; font-weight: 500; color: #1e2d3d; line-height: 1; }
+.kpi-sub { font-size: 11px; color: #b0b8c1; margin-top: 5px; }
+
+/* ── MAIN GRID ── */
+.main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+
+/* ── PANEL ── */
+.panel { background: white; border: 1px solid #e8edf3; border-radius: 12px; overflow: hidden; }
+.panel-head { padding: 14px 18px; border-bottom: 1px solid #f0f3f7; display: flex; align-items: center; justify-content: space-between; }
+.panel-head h3 { font-size: 14px; font-weight: 500; color: #1e2d3d; }
+.panel-head-right { font-size: 11px; color: #b0b8c1; }
+
+/* ── NAV TABS ── */
+.nav-tabs-hotel { display: flex; gap: 4px; padding: 12px 16px; border-bottom: 1px solid #f0f3f7; background: #fafbfc; }
+.nav-tab-hotel { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #6b7a8d; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.nav-tab-hotel.active { background: #2563eb; color: white; border-color: #2563eb; }
+.nav-tab-hotel:not(.active):hover { background: #f0f3f7; color: #1e2d3d; }
+
+/* ── CHAMBRES GRID ── */
+.chambres-grid-new { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 14px; padding: 16px; }
+.ch-card { border: 1px solid #e8edf3; border-radius: 10px; overflow: hidden; cursor: pointer; transition: all 0.15s; }
+.ch-card:hover { border-color: #2563eb; box-shadow: 0 2px 12px rgba(37,99,235,0.12); transform: translateY(-1px); }
+
+.ch-img { height: 100px; background: #f0f3f7; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.ch-img img { width: 100%; height: 100%; object-fit: cover; }
+.ch-img-placeholder { font-size: 2rem; opacity: 0.2; }
+.ch-badge { position: absolute; top: 7px; right: 7px; font-size: 9px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 8px; border-radius: 20px; }
+.ch-badge.disponible  { background: #dcfce7; color: #15803d; }
+.ch-badge.occupee     { background: #fee2e2; color: #b91c1c; }
+.ch-badge.reservation { background: #fef3c7; color: #92400e; }
+.ch-badge.maintenance { background: #fed7aa; color: #9a3412; }
+
+.ch-body { padding: 11px 13px; }
+.ch-num { font-size: 14px; font-weight: 500; color: #1e2d3d; }
+.ch-type { font-size: 11px; color: #8a96a3; margin-top: 2px; }
+.ch-client { font-size: 11px; color: #2563eb; margin-top: 5px; font-weight: 500; }
+.ch-price { font-size: 11px; color: #6b7a8d; margin-top: 3px; }
+.ch-amenities { display: flex; gap: 8px; margin-top: 8px; color: #9ca3af; font-size: 12px; }
+.ch-prices { margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f3f7; }
+.ch-price-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; }
+.ch-price-row span { color: #8a96a3; }
+.ch-price-row strong { color: #1e2d3d; font-weight: 500; }
+.ch-actions { display: flex; gap: 6px; margin-top: 10px; }
+.ch-btn { flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 500; border-radius: 6px; border: 1px solid #e0e5eb; background: white; cursor: pointer; color: #6b7a8d; text-align: center; transition: all 0.15s; }
+.ch-btn:hover { background: #f5f7fa; }
+.ch-btn.primary { background: #2563eb; color: white; border-color: #2563eb; }
+.ch-btn.primary:hover { background: #1d4ed8; }
+
+/* ── RESERVATIONS TABLE ── */
+.table-new { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table-new th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; color: #8a96a3; border-bottom: 1px solid #f0f3f7; background: #fafbfc; }
+.table-new td { padding: 12px 16px; border-bottom: 1px solid #f5f7fa; color: #1e2d3d; vertical-align: middle; }
+.table-new tr:last-child td { border-bottom: none; }
+.table-new tr:hover td { background: #f8fafc; }
+
+/* ── CHECKIN/OUT CARDS ── */
+.check-layout-new { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; }
+.check-section-new { border: 1px solid #e8edf3; border-radius: 10px; overflow: hidden; }
+.check-section-head { padding: 12px 16px; background: #fafbfc; border-bottom: 1px solid #f0f3f7; display: flex; align-items: center; justify-content: space-between; }
+.check-section-head h4 { font-size: 13px; font-weight: 500; color: #1e2d3d; }
+.check-card-new { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f5f7fa; transition: background 0.15s; }
+.check-card-new:last-child { border-bottom: none; }
+.check-card-new:hover { background: #f8fafc; }
+.check-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+.av-in  { background: #dcfce7; color: #15803d; }
+.av-out { background: #fee2e2; color: #b91c1c; }
+.check-info { flex: 1; min-width: 0; }
+.check-name { font-size: 13px; font-weight: 500; color: #1e2d3d; }
+.check-detail { font-size: 11px; color: #8a96a3; margin-top: 2px; }
+.check-btn-action { padding: 6px 14px; font-size: 11px; font-weight: 500; border-radius: 6px; border: 1px solid #2563eb; background: #2563eb; color: white; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+.check-btn-action:hover { background: #1d4ed8; }
+
+/* ── HISTORIQUE TABLE ── */
+.historique-wrap { padding: 16px; }
+
+/* ── RIGHT PANEL ── */
+.right-panel { display: flex; flex-direction: column; gap: 14px; }
+
+.today-list { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.today-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #f0f3f7; }
+.today-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.today-info { flex: 1; min-width: 0; }
+.today-name { font-size: 12px; font-weight: 500; color: #1e2d3d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-det { font-size: 11px; color: #8a96a3; margin-top: 1px; }
+.today-h { font-size: 11px; font-weight: 500; color: #2563eb; white-space: nowrap; }
+
+.rev-block { padding: 14px 16px; }
+.rev-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #f5f7fa; }
+.rev-row:last-child { border: none; padding-top: 10px; margin-top: 4px; }
+.rev-lbl { font-size: 12px; color: #8a96a3; }
+.rev-v { font-size: 13px; font-weight: 500; color: #1e2d3d; }
+.rev-tot .rev-lbl { font-size: 13px; font-weight: 500; color: #1e2d3d; }
+.rev-tot .rev-v { font-size: 15px; font-weight: 500; color: #2563eb; }
+
+.act-list { padding: 10px 14px; display: flex; flex-direction: column; }
+.act-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7a8d; padding: 7px 0; border-bottom: 1px solid #f5f7fa; }
+.act-item:last-child { border: none; }
+.act-d { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.act-d.di { background: #16a34a; }
+.act-d.do { background: #dc2626; }
+.act-d.dr { background: #d97706; }
+.act-t { color: #b0b8c1; min-width: 38px; font-size: 11px; }
+
+/* ── BADGES STATUTS ── */
+.statut-pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.4px; }
+.statut-pill.en_attente  { background: #fef3c7; color: #92400e; }
+.statut-pill.confirmee   { background: #dbeafe; color: #1e40af; }
+.statut-pill.en_cours    { background: #fee2e2; color: #b91c1c; }
+.statut-pill.terminee    { background: #f0f3f7; color: #6b7a8d; }
+.statut-pill.annulee     { background: #f0f3f7; color: #9ca3af; }
+
+/* ── BTN ACTIONS ── */
+.btn-hotel { padding: 7px 16px; font-size: 12px; font-weight: 500; border-radius: 8px; border: 1px solid #e0e5eb; background: white; cursor: pointer; color: #6b7a8d; transition: all 0.15s; }
+.btn-hotel:hover { background: #f5f7fa; }
+.btn-hotel.primary { background: #2563eb; color: white; border-color: #2563eb; }
+.btn-hotel.primary:hover { background: #1d4ed8; }
+.btn-hotel.sm { padding: 5px 12px; font-size: 11px; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 50px 20px; color: #b0b8c1; }
+.empty-state i { font-size: 2rem; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 13px; }
+
+/* ── TABS CONTENT ── */
+.tab-content-hotel { display: none; }
+.tab-content-hotel.active { display: block; }
+
+/* ── MODAL ── */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+.modal-content { background: white; padding: 30px; border-radius: 16px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 13px; color: #1e2d3d; }
+.form-control { width: 100%; padding: 9px 12px; border: 1px solid #e0e5eb; border-radius: 8px; font-size: 13px; color: #1e2d3d; background: white; }
+.form-control:focus { outline: none; border-color: #2563eb; }
+
+@media (max-width: 1100px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .right-panel { display: grid; grid-template-columns: 1fr 1fr; }
+  .kpi-grid { grid-template-columns: repeat(3,1fr); }
+}
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .check-layout-new { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hotel-body">
+  <div class="container-fluid">
+
+    <!-- ENTÊTE ORIGINALE CONSERVÉE -->
+    <div class="header-glam hotel-watermark">
+      <div class="header-content">
+        <h2>Gestion Hôtel</h2>
+        <p class="mb-0 opacity-75">Chambres, Réservations et Séjours</p>
+      </div>
+      <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card total">
+        <div class="kpi-label">Total chambres</div>
+        <div class="kpi-val">{{ total_chambres }}</div>
+        <div class="kpi-sub">toutes catégories</div>
+      </div>
+      <div class="kpi-card dispo">
+        <div class="kpi-label">Disponibles</div>
+        <div class="kpi-val">{{ chambres_disponibles }}</div>
+        <div class="kpi-sub">prêtes à louer</div>
+      </div>
+      <div class="kpi-card occup">
+        <div class="kpi-label">Occupées</div>
+        <div class="kpi-val">{{ chambres_occupees }}</div>
+        <div class="kpi-sub">séjours en cours</div>
+      </div>
+      <div class="kpi-card resa">
+        <div class="kpi-label">Réservées</div>
+        <div class="kpi-val">{{ chambres_reservees }}</div>
+        <div class="kpi-sub">arrivée prévue</div>
+      </div>
+      <div class="kpi-card maint">
+        <div class="kpi-label">Maintenance</div>
+        <div class="kpi-val">{{ chambres_maintenance }}</div>
+        <div class="kpi-sub">hors service</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- PANNEAU PRINCIPAL -->
+      <div class="panel">
+        <div class="nav-tabs-hotel">
+          <div class="nav-tab-hotel active" data-tab="chambres">🛏 Chambres</div>
+          <div class="nav-tab-hotel" data-tab="reservations">📅 Réservations</div>
+          <div class="nav-tab-hotel" data-tab="checkinout">🔑 Check-in / out</div>
+          <div class="nav-tab-hotel" data-tab="historique">📜 Historique</div>
+        </div>
+
+        <!-- TAB CHAMBRES -->
+        <div class="tab-content-hotel active" id="tab-chambres">
+          <div class="chambres-grid-new">
+            {% for chambre in chambres %}
+            <div class="ch-card">
+              <div class="ch-img">
+                {% if chambre.image %}
+                <img src="{{ chambre.image.url }}" alt="Chambre {{ chambre.numero }}">
+                {% else %}
+                <span class="ch-img-placeholder">🛏️</span>
+                {% endif %}
+                <span class="ch-badge {{ chambre.statut }}">{{ chambre.get_statut_display }}</span>
+              </div>
+              <div class="ch-body">
+                <div class="ch-num">N° {{ chambre.numero }}</div>
+                <div class="ch-type">{{ chambre.get_type_chambre_display }} · Étage {{ chambre.etage }}</div>
+                {% if chambre.statut == 'occupee' %}
+                  {% for res in reservations_en_cours %}
+                    {% if res.chambre.id == chambre.id %}
+                    <div class="ch-client">{{ res.client.nom_complet }}</div>
+                    <div class="ch-price">Départ {{ res.date_depart|date:"d/m/Y" }}</div>
+                    {% endif %}
+                  {% endfor %}
+                {% elif chambre.statut == 'reservation' %}
+                  {% for res in arrivees_prevues %}
+                    {% if res.chambre.id == chambre.id %}
+                    <div class="ch-client">{{ res.client.nom_complet }}</div>
+                    <div class="ch-price">Arrivée {{ res.date_arrivee|date:"d/m/Y" }}</div>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+                <div class="ch-amenities">
+                  {% if chambre.wifi %}<i class="fas fa-wifi" title="WiFi"></i>{% endif %}
+                  {% if chambre.climatisation %}<i class="fas fa-snowflake" title="Climatisation"></i>{% endif %}
+                  {% if chambre.television %}<i class="fas fa-tv" title="TV"></i>{% endif %}
+                  {% if chambre.minibar %}<i class="fas fa-cocktail" title="Minibar"></i>{% endif %}
+                  {% if chambre.coffre_fort %}<i class="fas fa-lock" title="Coffre-fort"></i>{% endif %}
+                </div>
+                <div class="ch-prices">
+                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|floatformat:0 }} F</strong></div>
+                  <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|floatformat:0 }} F</strong></div>
+                </div>
+                <div class="ch-actions">
+                  <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
+                  {% if chambre.statut == 'disponible' %}
+                  <button class="ch-btn primary" onclick="openModal('modalCheckinDirect')">Check-in</button>
+                  {% elif chambre.statut == 'occupee' %}
+                    {% for res in reservations_en_cours %}
+                      {% if res.chambre.id == chambre.id %}
+                      <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                      {% endif %}
+                    {% endfor %}
+                  {% elif chambre.statut == 'reservation' %}
+                    {% for res in arrivees_prevues %}
+                      {% if res.chambre.id == chambre.id %}
+                      <button class="ch-btn primary" onclick="openCheckinReservationModal({'id':'{{ res.id }}','nom':'{{ res.client.nom|escapejs }}','prenom':'{{ res.client.prenom|escapejs }}','telephone':'{{ res.client.telephone|escapejs }}','email':'{{ res.client.email|default_if_none:''|escapejs }}','date_naissance':'{{ res.client.date_naissance|date:'Y-m-d'|default_if_none:'' }}','nationalite':'{{ res.client.nationalite|default_if_none:''|escapejs }}','piece_identite':'{{ res.client.piece_identite|default_if_none:''|escapejs }}','numero_piece':'{{ res.client.numero_piece|default_if_none:''|escapejs }}','chambre_id':{{ res.chambre.id }},'chambre_num':'{{ res.chambre.numero }}','date_arrivee':'{{ res.date_arrivee|date:'Y-m-d' }}','date_depart':'{{ res.date_depart|date:'Y-m-d' }}','prix_total':{{ res.prix_total }},'avance':{{ res.avance }},'mode_paiement':'{{ res.mode_paiement }}','commentaire':'{{ res.commentaire|default_if_none:''|escapejs }}','nombre_adultes':{{ res.nombre_adultes }},'nombre_enfants':{{ res.nombre_enfants }},'provenance':'{{ res.provenance|default_if_none:''|escapejs }}','destination':'{{ res.destination|default_if_none:''|escapejs }}','res_id':{{ res.id }}})">Check-in</button>
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <div class="empty-state" style="grid-column:1/-1">
+              <i class="fas fa-bed"></i>
+              <p>Aucune chambre configurée.</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- TAB RESERVATIONS -->
+        <div class="tab-content-hotel" id="tab-reservations">
+          <div style="padding:16px;display:flex;justify-content:flex-end;border-bottom:1px solid #f0f3f7">
+            <button class="btn-hotel primary" onclick="openModal('modalNouvelleReservation')">
+              <i class="fas fa-plus"></i> Nouvelle réservation
+            </button>
+          </div>
+          {% if reservations_futures %}
+          <div style="overflow-x:auto">
+            <table class="table-new">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Chambre</th>
+                  <th>Arrivée</th>
+                  <th>Départ</th>
+                  <th>Statut</th>
+                  <th>Total</th>
+                  <th>Avance</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for res in reservations_futures %}
+                <tr>
+                  <td><strong>{{ res.client.nom_complet }}</strong></td>
+                  <td>{{ res.chambre.numero }}</td>
+                  <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
+                  <td>{{ res.date_depart|date:"d/m/Y" }}</td>
+                  <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
+                  <td>{{ res.prix_total|floatformat:0 }} F</td>
+                  <td>{{ res.avance|floatformat:0 }} F</td>
+                  <td>
+                    <a href="{% url 'hotel:print_checkin_form' res.id %}" target="_blank" class="btn-hotel sm" title="Imprimer">
+                      <i class="fas fa-print"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="fas fa-calendar-times"></i>
+            <p>Aucune réservation en attente.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- TAB CHECK-IN / OUT -->
+        <div class="tab-content-hotel" id="tab-checkinout">
+          <div class="check-layout-new">
+            <div class="check-section-new">
+              <div class="check-section-head">
+                <h4>Arrivées · Check-in</h4>
+                <button class="btn-hotel primary sm" onclick="openModal('modalCheckinDirect')">
+                  <i class="fas fa-bolt"></i> Direct
+                </button>
+              </div>
+              {% if arrivees_prevues %}
+                {% for res in arrivees_prevues %}
+                <div class="check-card-new">
+                  <div class="check-avatar av-in">IN</div>
+                  <div class="check-info">
+                    <div class="check-name">{{ res.client.nom_complet }}</div>
+                    <div class="check-detail">Ch. {{ res.chambre.numero }} · {{ res.date_arrivee|date:"d/m" }} → {{ res.date_depart|date:"d/m" }}</div>
+                  </div>
+                  <button class="check-btn-action" onclick="openCheckinReservationModal({'id':'{{ res.id }}','nom':'{{ res.client.nom|escapejs }}','prenom':'{{ res.client.prenom|escapejs }}','telephone':'{{ res.client.telephone|escapejs }}','email':'{{ res.client.email|default_if_none:''|escapejs }}','date_naissance':'{{ res.client.date_naissance|date:'Y-m-d'|default_if_none:'' }}','nationalite':'{{ res.client.nationalite|default_if_none:''|escapejs }}','piece_identite':'{{ res.client.piece_identite|default_if_none:''|escapejs }}','numero_piece':'{{ res.client.numero_piece|default_if_none:''|escapejs }}','chambre_id':{{ res.chambre.id }},'chambre_num':'{{ res.chambre.numero }}','date_arrivee':'{{ res.date_arrivee|date:'Y-m-d' }}','date_depart':'{{ res.date_depart|date:'Y-m-d' }}','prix_total':{{ res.prix_total }},'avance':{{ res.avance }},'mode_paiement':'{{ res.mode_paiement }}','commentaire':'{{ res.commentaire|default_if_none:''|escapejs }}','nombre_adultes':{{ res.nombre_adultes }},'nombre_enfants':{{ res.nombre_enfants }},'provenance':'{{ res.provenance|default_if_none:''|escapejs }}','destination':'{{ res.destination|default_if_none:''|escapejs }}','res_id':{{ res.id }}})">Check-in</button>
+                </div>
+                {% endfor %}
+              {% else %}
+              <div class="empty-state"><i class="fas fa-check-circle"></i><p>Aucune arrivée prévue.</p></div>
+              {% endif %}
+            </div>
+
+            <div class="check-section-new">
+              <div class="check-section-head">
+                <h4>Départs · Check-out</h4>
+              </div>
+              {% if departs_prevus %}
+                {% for res in departs_prevus %}
+                <div class="check-card-new">
+                  <div class="check-avatar av-out">OUT</div>
+                  <div class="check-info">
+                    <div class="check-name">{{ res.client.nom_complet }}</div>
+                    <div class="check-detail">Ch. {{ res.chambre.numero }} · Départ {{ res.date_depart|date:"d/m/Y" }}</div>
+                  </div>
+                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                </div>
+                {% endfor %}
+              {% else %}
+              <div class="empty-state"><i class="fas fa-door-open"></i><p>Aucun départ prévu.</p></div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Séjours en cours -->
+          <div style="padding:0 16px 16px">
+            <div class="check-section-new">
+              <div class="check-section-head">
+                <h4>Séjours en cours</h4>
+              </div>
+              {% if reservations_en_cours %}
+                {% for res in reservations_en_cours %}
+                <div class="check-card-new">
+                  <div class="check-avatar" style="background:#e0e7ff;color:#3730a3">{{ res.chambre.numero }}</div>
+                  <div class="check-info">
+                    <div class="check-name">{{ res.client.nom_complet }}</div>
+                    <div class="check-detail">Ch. {{ res.chambre.numero }} · {{ res.date_arrivee|date:"d/m" }} → {{ res.date_depart|date:"d/m/Y" }}</div>
+                  </div>
+                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                </div>
+                {% endfor %}
+              {% else %}
+              <div class="empty-state"><i class="fas fa-bed"></i><p>Aucun séjour en cours.</p></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB HISTORIQUE -->
+        <div class="tab-content-hotel" id="tab-historique">
+          <div class="historique-wrap">
+            {% if reservations_terminees %}
+            <table class="table-new">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Chambre</th>
+                  <th>Arrivée</th>
+                  <th>Départ</th>
+                  <th>Total</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for res in reservations_terminees %}
+                <tr>
+                  <td>{{ res.client.nom_complet }}</td>
+                  <td>{{ res.chambre.numero }}</td>
+                  <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
+                  <td>{{ res.date_depart|date:"d/m/Y" }}</td>
+                  <td>{{ res.prix_total|floatformat:0 }} F</td>
+                  <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state"><i class="fas fa-history"></i><p>Aucun historique disponible.</p></div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div><!-- /panel -->
+
+      <!-- PANNEAU DROIT -->
+      <div class="right-panel">
+
+        <!-- Aujourd'hui -->
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Aujourd'hui</h3>
+            <span class="panel-head-right" id="hotelDateShort"></span>
+          </div>
+          <div class="today-list">
+            {% if arrivees_prevues %}
+              {% for res in arrivees_prevues %}
+              <div class="today-item">
+                <div class="today-av av-in">IN</div>
+                <div class="today-info">
+                  <div class="today-name">{{ res.client.nom_complet }}</div>
+                  <div class="today-det">Arrivée · Ch. {{ res.chambre.numero }}</div>
+                </div>
+                <div class="today-h">{{ res.date_arrivee|date:"d/m" }}</div>
+              </div>
+              {% endfor %}
+            {% endif %}
+            {% if departs_prevus %}
+              {% for res in departs_prevus %}
+              <div class="today-item">
+                <div class="today-av av-out">OUT</div>
+                <div class="today-info">
+                  <div class="today-name">{{ res.client.nom_complet }}</div>
+                  <div class="today-det">Départ · Ch. {{ res.chambre.numero }}</div>
+                </div>
+                <div class="today-h">{{ res.date_depart|date:"d/m" }}</div>
+              </div>
+              {% endfor %}
+            {% endif %}
+            {% if not arrivees_prevues and not departs_prevus %}
+            <div style="text-align:center;padding:20px;color:#b0b8c1;font-size:12px">Aucun mouvement aujourd'hui</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Revenus -->
+        <div class="panel">
+          <div class="panel-head"><h3>Revenus du jour</h3></div>
+          <div class="rev-block">
+            <div class="rev-row"><span class="rev-lbl">Chambres</span><span class="rev-v">{{ revenus_chambres|floatformat:0|default:"0" }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Restaurant</span><span class="rev-v">{{ revenus_restaurant|floatformat:0|default:"0" }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Cave</span><span class="rev-v">{{ revenus_cave|floatformat:0|default:"0" }} F</span></div>
+            <div class="rev-row rev-tot"><span class="rev-lbl">Total</span><span class="rev-v">{{ revenus_total|floatformat:0|default:"0" }} F</span></div>
+          </div>
+        </div>
+
+        <!-- Activité -->
+        <div class="panel">
+          <div class="panel-head"><h3>Activité récente</h3></div>
+          <div class="act-list">
+            {% if activite_recente %}
+              {% for act in activite_recente %}
+              <div class="act-item">
+                <div class="act-d {% if act.type == 'checkin' %}di{% elif act.type == 'checkout' %}do{% else %}dr{% endif %}"></div>
+                <span class="act-t">{{ act.heure }}</span>
+                <span>{{ act.texte }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+            <div style="padding:16px;text-align:center;color:#b0b8c1;font-size:12px">Aucune activité récente</div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div><!-- /right-panel -->
+    </div><!-- /main-grid -->
+  </div><!-- /container -->
+</div><!-- /hotel-body -->

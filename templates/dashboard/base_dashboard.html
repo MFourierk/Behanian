@@ -711,49 +711,67 @@
                 <span class="nav-item-icon">📊</span>
                 <span class="nav-text">Dashboard</span>
             </a>
+            {% if 'hotel' in accessible_modules %}
             <a href="{% url 'hotel:index' %}" class="nav-item {% if request.resolver_match.app_name == 'hotel' %}active{% endif %}">
                 <span class="nav-item-icon">🏨</span>
                 <span class="nav-text">Hôtel</span>
             </a>
+            {% endif %}
+            {% if 'restaurant' in accessible_modules %}
             <a href="{% url 'restaurant:index' %}" class="nav-item {% if request.resolver_match.app_name == 'restaurant' %}active{% endif %}">
                 <span class="nav-item-icon">🍽️</span>
                 <span class="nav-text">Restaurant</span>
             </a>
+            {% endif %}
+            {% if 'cuisine' in accessible_modules %}
             <a href="{% url 'cuisine:index' %}" class="nav-item {% if request.resolver_match.app_name == 'cuisine' %}active{% endif %}">
                 <span class="nav-item-icon">👨‍🍳</span>
                 <span class="nav-text">Cuisine</span>
             </a>
+            {% endif %}
+            {% if 'bar' in accessible_modules %}
             <a href="{% url 'bar:dashboard' %}" class="nav-item {% if request.resolver_match.app_name == 'bar' %}active{% endif %}">
                 <span class="nav-item-icon">🍷</span>
                 <span class="nav-text">Cave</span>
             </a>
+            {% endif %}
+            {% if 'piscine' in accessible_modules %}
             <a href="{% url 'piscine:index' %}" class="nav-item {% if request.resolver_match.app_name == 'piscine' %}active{% endif %}">
                 <span class="nav-item-icon">🏊</span>
                 <span class="nav-text">Piscine</span>
             </a>
+            {% endif %}
+            {% if 'espaces' in accessible_modules %}
             <a href="{% url 'espaces_evenementiels:index' %}" class="nav-item {% if request.resolver_match.app_name == 'espaces_evenementiels' %}active{% endif %}">
                 <span class="nav-item-icon">📅</span>
                 <span class="nav-text">Espaces Location</span>
             </a>
+            {% endif %}
+            {% if 'facturation' in accessible_modules %}
             <a href="{% url 'facturation:index' %}" class="nav-item {% if request.resolver_match.app_name == 'facturation' %}active{% endif %}">
                 <span class="nav-item-icon">🧾</span>
                 <span class="nav-text">Facturation</span>
             </a>
+            {% endif %}
+            {% if 'caisse' in accessible_modules %}
             <a href="{% url 'caisse:index' %}" class="nav-item {% if request.resolver_match.app_name == 'caisse' %}active{% endif %}">
                 <span class="nav-item-icon">💰</span>
                 <span class="nav-text">Caisse</span>
             </a>
+            {% endif %}
+            {% if 'parametres' in accessible_modules %}
             <a href="{% url 'parametres:parametres_index' %}" class="nav-item {% if request.resolver_match.app_name == 'parametres' or 'parametres' in request.path %}active{% endif %}">
                 <span class="nav-item-icon">⚙️</span>
                 <span class="nav-text">Paramétrage</span>
             </a>
+            {% endif %}
         </nav>
 
         <div class="user-section">
             <div class="user-avatar">{{ user.username|first|upper }}</div>
             <div class="user-info">
-                <h4>{{ user.username }}</h4>
-                <p>Administrateur</p>
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p>{{ user_role }}</p>
             </div>
             <a href="{% url 'logout' %}" class="logout-btn" title="Se déconnecter">↗️</a>
         </div>

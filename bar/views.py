@@ -1,4 +1,5 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+from utils.permissions import require_module_access
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -16,7 +17,7 @@ from .models import (
 from cuisine.models import Fournisseur
 
 
-@login_required
+@require_module_access('bar')
 def bar_dashboard(request):
     context = {'page_title': 'Tableau de Bord - Cave'}
     return render(request, 'bar/dashboard.html', context)

@@ -1,3 +1,4 @@
+from utils.permissions import require_module_access
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -31,7 +32,7 @@ from .models import (
 # TABLEAU DE BORD CUISINE
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def index(request):
     ingredients = Ingredient.objects.filter(statut=True)
 

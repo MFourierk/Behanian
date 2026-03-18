@@ -1,10 +1,11 @@
+from utils.permissions import require_module_access
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .models import CaisseSession
 from django.contrib import messages
 from django.utils import timezone
 
-@login_required
+@require_module_access('caisse')
 def index(request):
     if request.method == 'POST':
         # Logique pour ouvrir la caisse

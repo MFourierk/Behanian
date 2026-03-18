@@ -81,6 +81,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'utils.context_processors.user_permissions_context',
                 # 'dashboard.context_processors.complexe_details',
                 # 'parametres.context_processors.coordonnees_context',
             ],

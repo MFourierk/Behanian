@@ -1,3 +1,4 @@
+from utils.permissions import require_module_access
 from .models import Chambre, Client, Reservation, Consommation
 from facturation.models import Ticket, generate_ticket_numero
 from decimal import Decimal
@@ -31,7 +32,7 @@ def api_revenus(request):
     })
 
 
-@login_required
+@require_module_access('hotel')
 def hotel_index(request):
     """Vue principale de gestion de l'hôtel"""
     

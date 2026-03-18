@@ -1,4 +1,5 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
+from utils.permissions import require_module_access
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
@@ -18,7 +19,7 @@ from cuisine.utils import check_stock_availability, process_stock_movement
 from cuisine.models import Ingredient
 from .views_extension import create_reservation, update_reservation_status
 
-@login_required
+@require_module_access('restaurant')
 def restaurant_index(request):
     """Vue principale du restaurant"""
     
@@ -762,7 +763,7 @@ def update_ligne_quantite(request):
         return JsonResponse({'success': False, 'message': str(e)})
 
 
-@login_required
+@require_module_access('restaurant')
 def restaurant_tpe(request):
     """Interface TPE Restaurant"""
     from dashboard.models import Configuration

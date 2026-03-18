@@ -1,8 +1,9 @@
+from utils.permissions import require_module_access
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import EspaceEvenementiel, ReservationEspace
 
-@login_required
+@require_module_access('espaces')
 def espaces_index(request):
     """Vue principale des espaces événementiels"""
     
