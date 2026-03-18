@@ -271,6 +271,7 @@
                   {% elif chambre.statut == 'occupee' %}
                     {% for res in sejours_en_cours %}
                       {% if res.chambre.id == chambre.id %}
+                      <button class="ch-btn" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">Commander</button>
                       <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
                       {% endif %}
                     {% endfor %}
@@ -403,8 +404,16 @@
                   <div class="check-info">
                     <div class="check-name">{{ res.client.nom_complet }}</div>
                     <div class="check-detail">Ch. {{ res.chambre.numero }} · {{ res.date_arrivee|date:"d/m" }} → {{ res.date_depart|date:"d/m/Y" }}</div>
+                    {% if res.consommations.count > 0 %}
+                    <div style="font-size:11px;color:#2563eb;margin-top:3px">
+                      {{ res.consommations.count }} consommation{{ res.consommations.count|pluralize }} · {{ res.get_montant_services|floatformat:0 }} F
+                    </div>
+                    {% endif %}
                   </div>
-                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                  <div style="display:flex;flex-direction:column;gap:5px">
+                    <button class="check-btn-action" style="background:#059669;border-color:#059669;font-size:11px;padding:5px 10px" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">+ Commander</button>
+                    <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.prix_total }}, {{ res.avance }})">Check-out</button>
+                  </div>
                 </div>
                 {% endfor %}
               {% else %}
