@@ -1096,14 +1096,26 @@
     }
 
     // ── INTERCEPTION AJAX des formulaires hôtel ──
+    // Tracker le bouton cliqué pour chaque formulaire
+    document.querySelectorAll('button[type="submit"]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const form = this.closest('form');
+            if (form) form._clickedBtn = this;
+        });
+    });
+
     function soumettreFormulaireHotel(formId, modalId) {
         const form = document.getElementById(formId);
         if (!form) return;
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const btn = form.querySelector('button[type="submit"]');
-            if (btn) { btn.disabled = true; btn.textContent = 'Traitement…'; }
+            const clickedBtn = form._clickedBtn || form.querySelector('button[type="submit"]');
+            if (clickedBtn) { clickedBtn.disabled = true; clickedBtn.dataset.label = clickedBtn.textContent; clickedBtn.textContent = 'Traitement…'; }
             const formData = new FormData(form);
+            // Ajouter la valeur du bouton cliqué si absent
+            if (clickedBtn && clickedBtn.name && !formData.get(clickedBtn.name)) {
+                formData.set(clickedBtn.name, clickedBtn.value);
+            }
             try {
                 const resp = await fetch(form.action, {
                     method: 'POST',
@@ -1129,13 +1141,12 @@
                         window.location.href = data.redirect || '/hotel/?tab=checkinout';
                     }, 1800);
                 } else {
-                    if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Valider'; }
+                    if (clickedBtn) { clickedBtn.disabled = false; clickedBtn.textContent = clickedBtn.dataset.label || 'Valider'; }
                     afficherErreurHotel(data.error || 'Une erreur est survenue.');
                 }
             } catch(err) {
-                if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Valider'; }
+                if (clickedBtn) { clickedBtn.disabled = false; clickedBtn.textContent = clickedBtn.dataset.label || 'Valider'; }
                 console.error('Erreur:', err);
-                // En cas d'erreur réseau vraie, soumettre normalement
                 form.submit();
             }
         });
