@@ -1,11 +1,10 @@
-﻿from django.urls import path
+from django.urls import path
 from . import views
 
 app_name = 'restaurant'
 
 urlpatterns = [
-    path('', views.restaurant_index, name='index'),
-    path('tpe/', views.restaurant_tpe, name='tpe'),
+    path('', views.restaurant_tpe, name='index'),
     path('valider-commande/', views.valider_commande, name='valider_commande'),
     path('annuler-commande/', views.annuler_commande, name='annuler_commande'),
     path('recuperer-commande/<int:commande_id>/', views.recuperer_commande, name='recuperer_commande_details'),

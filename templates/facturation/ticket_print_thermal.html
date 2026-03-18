@@ -124,6 +124,17 @@
         <span>{{ ticket.cree_par.get_full_name|default:ticket.cree_par.username }}</span>
     </div>
     {% endif %}
+    {% if ticket.serveur %}
+    <div class="meta-row">
+        <span class="meta-label">Serveur :</span>
+        <span>{{ ticket.serveur }}</span>
+    </div>
+    {% elif serveur %}
+    <div class="meta-row">
+        <span class="meta-label">Serveur :</span>
+        <span>{{ serveur }}</span>
+    </div>
+    {% endif %}
     <div class="meta-row">
         <span class="meta-label">Règlement :</span>
         <span>{{ ticket.get_mode_paiement_display }}</span>
@@ -136,7 +147,17 @@
     {% endif %}
     <hr class="sep-dash">
 
-    <!-- ARTICLES — parsés depuis ticket.contenu -->
+    <!-- ARTICLES -->
+    <table>
+        <thead>
+            <tr>
+                <th style="text-align:left;">Article</th>
+                <th style="text-align:center;">Qté</th>
+                <th style="text-align:right;">Montant</th>
+            </tr>
+        </thead>
+        <tbody id="lignesBody"></tbody>
+    </table>
     <table>
         <thead>
             <tr>
@@ -156,7 +177,7 @@
         <span class="total-label">TOTAL</span>
         <span class="total-val">{{ ticket.montant_total|floatformat:0 }} FCFA</span>
     </div>
-    {% if ticket.montant_paye > ticket.montant_total %}
+    {% if ticket.montant_paye and ticket.mode_paiement != 'carte_bancaire' %}
     <hr class="sep-dash">
     <div class="paiement-row">
         <span>Reçu :</span>
@@ -186,41 +207,43 @@
 </div>
 
 <script>
-// Parser le contenu texte stocké en base et reconstruire le tableau articles
+// Parser le contenu HTML stocké en base pour reconstruire le tableau articles
 (function() {
-    const contenu = "{{ ticket.contenu|escapejs }}";
-    const tbody   = document.getElementById('lignesBody');
-    if (!tbody || !contenu) return;
+    const tbody = document.getElementById('lignesBody');
+    if (!tbody) return;
 
-    // Format stocké :
-    // "  Nom article x1  500 F" ou "  Nom x2  1 000 F"
-    // On cherche les lignes qui ressemblent à des articles : contiennent "x" + nombre + "F"
-    const lignes = contenu.split('\n');
-    let articlesHTML = '';
+    // Le contenu est du HTML avec des div.row contenant item-name et item-price
+    const contenu = `{{ ticket.contenu|safe }}`;
+    const parser  = new DOMParser();
+    const doc     = parser.parseFromString('<div>' + contenu + '</div>', 'text/html');
+    const rows    = doc.querySelectorAll('.row');
 
-    lignes.forEach(ligne => {
-        // Pattern : "  Nom article x{qty}  {montant} F"
-        const match = ligne.match(/^\s{2}(.+?)\s+x(\d+)\s+([\d\s,]+)\s*F\s*$/);
-        if (match) {
-            const nom     = match[1].trim();
-            const qty     = match[2];
-            const montant = match[3].trim();
-            // Essayer de retrouver le prix unitaire
-            const montantNum = parseInt(montant.replace(/[\s,]/g, ''));
-            const prixUnit   = qty > 0 ? Math.round(montantNum / parseInt(qty)).toLocaleString('fr-FR') : montant;
-            articlesHTML += `<tr>
-                <td style="max-width:110px; word-wrap:break-word;">${nom}</td>
-                <td>${qty} × ${prixUnit}</td>
-                <td>${montantNum.toLocaleString('fr-FR')} F</td>
-            </tr>`;
-        }
+    let html = '';
+    rows.forEach(row => {
+        const nameEl  = row.querySelector('.item-name');
+        const priceEl = row.querySelector('.item-price');
+        if (!nameEl || !priceEl) return;
+
+        const fullName = nameEl.textContent.trim();
+        const montant  = priceEl.textContent.trim();
+
+        // Extraire qty du nom : "Article x2" → nom="Article", qty=2
+        const qtyMatch = fullName.match(/^(.+?)\s+x(\d+)$/);
+        const nom = qtyMatch ? qtyMatch[1] : fullName;
+        const qty = qtyMatch ? qtyMatch[2] : '1';
+
+        html += `<tr>
+            <td style="max-width:130px;word-wrap:break-word;">${nom}</td>
+            <td style="text-align:center;">${qty}</td>
+            <td style="text-align:right;font-weight:bold;">${montant}</td>
+        </tr>`;
     });
 
-    if (articlesHTML) {
-        tbody.innerHTML = articlesHTML;
+    if (html) {
+        tbody.innerHTML = html;
     } else {
-        // Fallback : afficher le contenu brut si parsing échoue
-        tbody.innerHTML = `<tr><td colspan="3" style="white-space:pre-wrap; font-size:10px;">${contenu}</td></tr>`;
+        // Fallback si parsing échoue
+        tbody.innerHTML = `<tr><td colspan="3" style="font-size:10px;white-space:pre-wrap;">${contenu.replace(/<[^>]+>/g,'').trim()}</td></tr>`;
     }
 })();
 

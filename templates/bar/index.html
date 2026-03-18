@@ -881,6 +881,19 @@ async function confirmerPaiement() {
   const total = getTotal();
   let montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
 
+  // Vérifier serveur obligatoire
+  const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
+  if (!serveurVal) {
+    toast('👤 Sélectionnez un serveur avant d\'encaisser la commande', 'error');
+    fermerModal();
+    // Surligner le champ serveur
+    const sel = document.getElementById('selectServeur');
+    sel.style.border = '2px solid #c9a84c';
+    sel.style.background = 'rgba(201,168,76,0.15)';
+    setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
+    return;
+  }
+
   if (modePaiement === 'especes' || modePaiement === 'mobile') {
     if (montantRecu < total) { toast('Montant reçu insuffisant', 'error'); return; }
   }

@@ -134,9 +134,12 @@ def valider_commande(request):
             commande.save()
 
         if action == 'paiement':
-            # Vérifier si total > 0
             if commande.total <= 0:
                  return JsonResponse({'success': False, 'message': 'Le total est nul.'})
+
+            serveur_nom = data.get('serveur', '')
+            if not serveur_nom:
+                return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un serveur avant de valider.'})
 
             with transaction.atomic():
                 commande.statut = 'payee'
@@ -151,10 +154,9 @@ def valider_commande(request):
                 
                 all_items_objs = LigneCommande.objects.filter(commande=commande)
                 
-                # Génération du contenu HTML pour le Ticket (pour réimpression thermique)
+                # Génération du contenu HTML pour le Ticket
                 services_html = ""
-                
-                # Ajout du Client si présent (Style Check-out)
+
                 if client_name:
                     services_html += f"""
                     <div class="border-bottom" style="margin-bottom: 10px;">
@@ -164,13 +166,20 @@ def valider_commande(request):
                         </div>
                     </div>
                     """
-                
+
                 for li in all_items_objs:
                     total_line = li.prix_unitaire * li.quantite
-                    nom_display = li.plat.nom
-                    if li.accompagnement:
-                        nom_display += f" + {li.accompagnement.nom}"
-                        
+                    if li.plat:
+                        nom_display = li.plat.nom
+                        if li.accompagnement:
+                            nom_display += f" + {li.accompagnement.nom}"
+                    elif hasattr(li, 'boisson') and li.boisson:
+                        nom_display = li.boisson.nom
+                    elif li.nom_article:
+                        nom_display = li.nom_article
+                    else:
+                        nom_display = "Article"
+
                     services_html += f"""
                     <div class="row">
                         <span class="item-name">{nom_display} x{li.quantite}</span>
@@ -178,23 +187,24 @@ def valider_commande(request):
                     </div>
                     """
 
-                # Création du Ticket en base
+                # Création du Ticket
                 ticket = Ticket.objects.create(
                     numero=numero_ticket,
                     module='restaurant',
                     montant_total=commande.total,
-                    client=None, 
+                    client=None,
                     contenu=services_html,
                     objet_id=commande.id,
                     montant_paye=montant_encaisse,
-            mode_paiement=data.get('mode_paiement', 'especes'),
-            cree_par=request.user,
-                    imprime=True # Marqué comme imprimé pour apparaître dans la liste facturation
+                    mode_paiement=data.get('mode_paiement', 'especes'),
+                    cree_par=request.user,
+                    imprime=True
                 )
-                
-                # Rendu du ticket au format thermique universel
+
+                # Rendu ticket thermique avec serveur
                 ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
-                    'ticket': ticket,
+                    'ticket':  ticket,
+                    'serveur': serveur_nom,
                     'is_original': True
                 })
                 
@@ -364,29 +374,36 @@ def recuperer_commande(request, commande_id):
     """Récupère les détails d'une commande en cours"""
     try:
         commande = Commande.objects.get(id=commande_id)
-        
         items = []
-        for ligne in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            nom_affiche = (ligne.get_nom if hasattr(ligne,"get_nom") else ligne.nom_article or (ligne.plat.nom if ligne.plat else (ligne.boisson.nom if hasattr(ligne,"boisson") and ligne.boisson else "?")))
-            if ligne.accompagnement:
-                nom_affiche += f" (+ {ligne.accompagnement.nom})"
+        for ligne in commande.lignes.all().select_related('plat', 'accompagnement', 'boisson').order_by('id'):
+            if hasattr(ligne, 'get_nom'):
+                nom_affiche = ligne.get_nom
+            elif ligne.nom_article:
+                nom_affiche = ligne.nom_article
+            elif ligne.plat:
+                nom_affiche = ligne.plat.nom
+                if ligne.accompagnement:
+                    nom_affiche += f" (+ {ligne.accompagnement.nom})"
+            elif hasattr(ligne, 'boisson') and ligne.boisson:
+                nom_affiche = ligne.boisson.nom
+            else:
+                nom_affiche = "Article"
+
             items.append({
-                'id': ligne.id, # IMPORTANT: Ajout ID pour pouvoir supprimer
-                'nom': nom_affiche,
-                'prix': float(ligne.prix_unitaire),
+                'id':       ligne.id,
+                'nom':      nom_affiche,
+                'prix':     float(ligne.prix_unitaire),
                 'quantite': ligne.quantite,
-                'plat_id': ligne.plat.id,
-                'has_acc': bool(ligne.accompagnement)
             })
-            
+
         return JsonResponse({
             'success': True,
             'commande': {
-                'id': commande.id,
+                'id':       commande.id,
                 'table_id': commande.table.id if commande.table else None,
-                'client': commande.nom_client,
-                'items': items,
-                'total': float(commande.total)
+                'client':   commande.nom_client,
+                'items':    items,
+                'total':    float(commande.total)
             }
         })
     except Commande.DoesNotExist:
@@ -886,8 +903,8 @@ def ajouter_boisson_commande(request):
                 boisson=boisson,
                 type_mouvement='sortie',
                 quantite=1,
-                motif=f'Vente Restaurant #{commande.id}',
-                cree_par=request.user
+                commentaire=f'Vente Restaurant #{commande.id}',
+                utilisateur=request.user
             )
 
             commande.total = float(commande.total) + float(boisson.prix)
@@ -915,5 +932,4 @@ def ajouter_boisson_commande(request):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return JsonResponse({'success': False, 'message': str(e)})
         return JsonResponse({'success': False, 'message': str(e)})

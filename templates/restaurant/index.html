@@ -469,6 +469,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
 /* ===== TOAST ===== */
 .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column-reverse; gap: 8px; }
+.alerte-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99998; align-items:center; justify-content:center; }
+.alerte-overlay.open { display:flex; }
+.alerte-box { background:white; border-radius:16px; padding:32px 28px; max-width:380px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:modal-in 0.25s ease; }
+.alerte-icon { font-size:2.5rem; margin-bottom:12px; }
+.alerte-msg { font-size:1rem; font-weight:600; color:#2d1f3d; margin-bottom:20px; line-height:1.5; }
+.alerte-btn { padding:12px 32px; background:linear-gradient(135deg,#4a2d6b,#7c3aed); color:white; border:none; border-radius:10px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.alerte-btn:hover { opacity:0.9; }
 .toast { padding: 12px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; color: white; box-shadow: var(--shadow-lg); min-width: 220px; animation: toast-in 0.3s ease; font-family: 'DM Sans', sans-serif; }
 @keyframes toast-in { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 .toast.success { background: linear-gradient(135deg, #166534, #16a34a); }
@@ -503,10 +510,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         </button>
         <button class="nav-tab" data-view="boissons" onclick="switchView(this)">
           🍷 Boissons
-        </button>
-        <button class="nav-tab" data-view="encours" onclick="switchView(this)">
-          ⏱ En cours
-          <span class="badge" id="badge-encours">{{ commandes_en_cours }}</span>
         </button>
       </div>
     </div>
@@ -651,32 +654,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
     </div>
 
-    <!-- ── VUE : EN COURS ── -->
-    <div class="view-panel" id="view-encours">
-      <div class="commandes-list">
-        {% for cmd in commandes_en_cours_list %}
-        <div class="commande-row" onclick="chargerCommande({{ cmd.id }})">
-          <div class="cmd-row-table">{{ cmd.table.numero|default:"—" }}</div>
-          <div class="cmd-row-info">
-            <div class="cmd-row-client">{{ cmd.nom_client|default:"Client" }}</div>
-            <div class="cmd-row-items">{{ cmd.lignes.count }} article{{ cmd.lignes.count|pluralize }}</div>
-            <span class="statut-pill s-{{ cmd.statut }}">{{ cmd.get_statut_display }}</span>
-          </div>
-          <div class="cmd-row-right">
-            <div class="cmd-row-total">{{ cmd.total|floatformat:0 }} F</div>
-            <div class="cmd-row-temps">{{ cmd.date_creation|timesince }}</div>
-            <button class="btn-row-encaisser" onclick="event.stopPropagation(); ouvrirModalDepuisCmd({{ cmd.id }})">Encaisser</button>
-          </div>
-        </div>
-        {% empty %}
-        <div style="text-align:center;padding:60px;color:var(--cave-muted);">
-          <i class="fas fa-clock" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
-          Aucune commande en cours
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-
   </div><!-- /panel-catalogue -->
 
   <!-- ========== PANNEAU DROIT — TICKET ========== -->
@@ -802,6 +779,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   </div>
 </div>
 
+<!-- ALERTE MODALE -->
+<div class="alerte-overlay" id="alerteOverlay">
+  <div class="alerte-box">
+    <div class="alerte-icon">⚠️</div>
+    <div class="alerte-msg" id="alerteTexte"></div>
+    <button class="alerte-btn" id="alerteBtnOk">OK, compris</button>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -824,6 +810,20 @@ function toast(msg, type='info') {
   setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 2800);
 }
 function formatF(n) { return parseInt(n).toLocaleString('fr-FR') + ' F'; }
+
+// ── ALERTE CENTRALE (plus visible que toast) ──
+function afficherAlerte(msg, callback) {
+  const overlay = document.getElementById('alerteOverlay');
+  const text    = document.getElementById('alerteTexte');
+  if (!overlay || !text) { toast(msg, 'error'); if(callback) setTimeout(callback, 500); return; }
+  text.innerHTML = msg;
+  overlay.classList.add('open');
+  const btnOk = document.getElementById('alerteBtnOk');
+  btnOk.onclick = () => {
+    overlay.classList.remove('open');
+    if (callback) callback();
+  };
+}
 function getCookie(name) { const v = document.cookie.match('(^|;) ?'+name+'=([^;]*)(;|$)'); return v?v[2]:null; }
 
 // ── NAVIGATION VUES ──
@@ -894,8 +894,9 @@ function verifierTable() {
     tableSelActif = { id: t.tableId, numero: t.tableNum };
   }
   if (!tableSelActif || !tableSelActif.id) {
-    toast('⚠️ Veuillez sélectionner une table avant d\'ajouter un article', 'error');
-    switchView(document.querySelector('.nav-tab[data-view="salle"]'));
+    afficherAlerte('🪑 Sélectionnez d\'abord une table pour démarrer une commande', () => {
+      switchView(document.querySelector('.nav-tab[data-view="salle"]'));
+    });
     return false;
   }
   // Synchroniser le ticket avec tableSelActif
@@ -1185,6 +1186,18 @@ function ouvrirModalPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) { toast('❌ Ticket vide', 'error'); return; }
   if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
+  // Vérifier serveur obligatoire
+  const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
+  if (!serveurVal) {
+    toast('👤 Sélectionnez un serveur avant d\'encaisser la commande', 'error');
+    // Surligner le champ serveur
+    const sel = document.getElementById('selectServeur');
+    sel.style.border = '2px solid #dc2626';
+    sel.style.background = 'rgba(220,38,38,0.15)';
+    setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
+    return;
+  }
+  t.serveur = serveurVal;
   const total = getTotal();
   document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
   document.getElementById('montantRecu').value = '';
@@ -1198,7 +1211,12 @@ function ouvrirModalPaiement() {
 }
 
 function ouvrirModalDepuisCmd(cmdId) { chargerCommande(cmdId).then(() => setTimeout(ouvrirModalPaiement, 300)); }
-function fermerModal() { document.getElementById('modalPaiement').classList.remove('open'); }
+function fermerModal() {
+  document.getElementById('modalPaiement').classList.remove('open');
+  // Restaurer le bouton confirmer pour la prochaine ouverture
+  const btn = document.querySelector('.modal-btn-confirm');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmer & Imprimer'; }
+}
 
 function calcRendu() {
   const total = getTotal();
@@ -1237,6 +1255,7 @@ async function confirmerPaiement() {
         commande_id: t.commandeDbId, action: 'paiement',
         mode_paiement: modePaiement, montant_encaisse: montantRecu,
         client: t.client || '',
+        serveur: t.serveur || document.getElementById('selectServeur').value || '',
       })
     });
     const data = await r.json();
@@ -1301,5 +1320,30 @@ function updateRestoClock() {
 setInterval(updateRestoClock, 1000); updateRestoClock();
 
 document.addEventListener('keydown', e => { if(e.key==='Escape') fermerModal(); });
+
+// ── INIT : au démarrage, charger les commandes en cours (comme la Cave) ──
+document.addEventListener('DOMContentLoaded', async function() {
+  {% for cmd in commandes_en_cours_list %}{% if cmd.table %}
+  (async () => {
+    try {
+      const r = await fetch('{% url "restaurant:recuperer_commande_details" 0 %}'.replace('/0/', '/{{ cmd.id }}/'));
+      const data = await r.json();
+      if (!data.success) return;
+      ticketCounter++;
+      const tid = ticketCounter;
+      const label = 'Table {{ cmd.table.numero|escapejs }}';
+      tickets[tid] = { id: tid, nom: label, tableId: {{ cmd.table.id }}, tableNum: '{{ cmd.table.numero|escapejs }}', client: data.commande.client || '', serveur: '', lignes: data.commande.items, total: data.commande.total, commandeDbId: {{ cmd.id }}, paiement: 'especes' };
+      const container = document.getElementById('ticketsAttente');
+      const btnNew = container.querySelector('.btn-new-ticket');
+      const btn = document.createElement('button');
+      btn.className = 'ticket-attente-btn';
+      btn.dataset.tid = tid;
+      btn.innerHTML = '<i class="fas fa-circle" style="font-size:0.5rem;"></i> ' + label + ' · ' + formatF(data.commande.total);
+      btn.onclick = () => chargerTicket(tid);
+      container.insertBefore(btn, btnNew);
+    } catch(e) {}
+  })();
+  {% endif %}{% endfor %}
+});
 </script>
 {% endblock %}

@@ -476,11 +476,8 @@ def ticket_detail(request, pk):
 @login_required
 def ticket_reprint(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
-    
-    # Marquer le ticket comme duplicata avant de générer le PDF
-    # ticket.mark_as_duplicata() # Désactivé selon demande utilisateur
-    
-    # Utiliser le format thermique pour tous les tickets
+    # Marquer comme duplicata
+    ticket.mark_as_duplicata()
     return redirect('facturation:ticket_print_thermal', pk=ticket.pk)
 
 @login_required
