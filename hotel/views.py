@@ -242,16 +242,19 @@ def checkin_direct(request):
         # Infos complètes (ajoutées)
         date_naissance = request.POST.get('date_naissance')
         nationalite = request.POST.get('nationalite')
-        adresse = request.POST.get('adresse')
-        ville = request.POST.get('ville')
-        pays = request.POST.get('pays')
-        email = request.POST.get('email')
-        piece_identite = request.POST.get('piece_identite')
-        numero_piece = request.POST.get('numero_piece')
-        nombre_adultes = request.POST.get('nombre_adultes', 1)
-        nombre_enfants = request.POST.get('nombre_enfants', 0)
-        provenance = request.POST.get('provenance')
-        destination = request.POST.get('destination')
+        adresse = request.POST.get('adresse', '').strip() or None
+        ville = request.POST.get('ville', '').strip() or None
+        pays = request.POST.get('pays', '').strip() or None
+        email = request.POST.get('email', '').strip() or None
+        piece_identite = request.POST.get('piece_identite', '').strip() or None
+        numero_piece = request.POST.get('numero_piece', '').strip() or None
+        nombre_adultes = request.POST.get('nombre_adultes', 1) or 1
+        nombre_enfants = request.POST.get('nombre_enfants', 0) or 0
+        provenance = request.POST.get('provenance', '').strip() or None
+        destination = request.POST.get('destination', '').strip() or None
+
+        # Nettoyage des champs date — éviter les valeurs vides
+        date_naissance = (date_naissance or '').strip() or None
 
         if not all([nom, chambre_id, date_depart]):
             msg = "Veuillez remplir tous les champs obligatoires (Nom, Chambre, Date de départ)."
