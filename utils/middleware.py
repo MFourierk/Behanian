@@ -2,7 +2,6 @@
 Middleware de securite — neutralise is_staff, redirige vers home par groupe
 """
 from django.shortcuts import redirect
-from django.contrib import messages
 from django.urls import reverse, NoReverseMatch
 
 
@@ -48,9 +47,8 @@ class StrictGroupAccessMiddleware:
             if user.is_staff:
                 user.is_staff = False
 
-            # Bloquer /admin/
-            if request.path.startswith('/admin/'):
-                messages.error(request, "Accès administration refusé.")
+            # Bloquer /admin/ — pas de messages.error ici (MessageMiddleware pas encore chargé)
+            if request.path.startswith('/admin/') and not user.is_superuser:
                 return redirect('dashboard:index')
 
             # Vérifier que le chemin est autorisé pour le groupe
