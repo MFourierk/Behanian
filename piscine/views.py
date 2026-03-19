@@ -98,7 +98,6 @@ def enregistrer_entree(request):
             type_client=type_client,
             nb_adultes=nb_adultes,
             nb_enfants=nb_enfants,
-            nombre_personnes=nb_adultes + nb_enfants,
             prix_total=prix_total,
             enregistre_par=request.user,
         )
@@ -198,8 +197,9 @@ def encaisser_sortie(request, acces_id):
         acces.save()
 
         # Générer contenu ticket
+        nb_total = acces.nb_adultes + acces.nb_enfants
         contenu = f"""
-        <div class="row"><span class="item-name">Entrée piscine x{acces.nombre_personnes}</span>
+        <div class="row"><span class="item-name">Entrée piscine x{nb_total}</span>
         <span class="item-price">{int(acces.prix_total):,} F</span></div>
         """
         for c in acces.consommations.all():

@@ -426,7 +426,6 @@ function updatePrix(){
 async function validerEntree(){
   const nom=document.getElementById('entreeNom').value.trim();
   const type=document.getElementById('entreeType').value;
-  const nb=parseInt(document.getElementById('entreeNb').value)||1;
   if(!nom){alert('Veuillez saisir le nom du client.');return;}
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
