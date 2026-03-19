@@ -133,7 +133,7 @@
                 {% if not a.date_sortie %}
                 <div style="display:flex;gap:4px">
                   <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
-                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.prix_total }})"><i class="fas fa-sign-out-alt"></i></button>
+                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.prix_total|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
                 {% endif %}
               </td>
@@ -166,7 +166,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
-              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.prix_total }})">Sortie</button>
+              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.prix_total|floatformat:0 }})">Sortie</button>
             </div>
           </div>
           {% endfor %}
@@ -412,8 +412,8 @@ function updatePrix(){
     row.style.background='#f0fdf4';row.style.color='#15803d';row.style.borderColor='#bbf7d0';
     row.textContent='🏨 Résident hôtel — Entrée gratuite (adultes et enfants)';
   } else {
-    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire }}{% else %}0{% endif %};
-    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire }}{% else %}0{% endif %};
+    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
     const total=ta*na+te*ne;
     let detail='';
     if(na>0)detail+=`${na} adulte${na>1?'s':''} × ${ta.toLocaleString('fr-FR')} F`;
