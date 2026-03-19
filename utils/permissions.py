@@ -16,12 +16,16 @@ GROUPE_SERVEUR          = 'Serveuse/Serveur'
 
 # Modules accessibles par groupe
 ACCESS_MAP = {
-    GROUPE_MANAGER_GENERAL: ['*'],           # Tout
+    GROUPE_MANAGER_GENERAL: ['*'],
     GROUPE_MANAGER_CUISINE: ['cuisine'],
     GROUPE_RECEPTIONNISTE:  ['hotel'],
-    GROUPE_CAISSIER:        ['restaurant', 'bar', 'piscine'],
-    GROUPE_SERVEUR:         [],               # Aucun
+    GROUPE_CAISSIER:        ['restaurant', 'bar', 'piscine', 'espaces', 'caisse'],
+    GROUPE_SERVEUR:         [],
 }
+
+# Modules nécessitant le superuser ou Manager Général uniquement
+ADMIN_ONLY_MODULES = ['parametres']
+MANAGER_ONLY_MODULES = ['facturation', 'caisse']
 
 def get_user_groups(user):
     """Retourne les noms de groupes de l'utilisateur."""
@@ -60,7 +64,7 @@ def require_module_access(module):
 
 def get_accessible_modules(user):
     """Retourne la liste des modules accessibles pour affichage sidebar."""
-    if user.is_superuser or user.is_staff:
+    if user.is_superuser:
         return ['dashboard', 'hotel', 'restaurant', 'bar', 'cuisine',
                 'piscine', 'boite_nuit', 'espaces', 'caisse', 'facturation',
                 'parametres', 'users']

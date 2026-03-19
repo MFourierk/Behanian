@@ -135,7 +135,7 @@ configurer_groupe('Réceptionniste', receptionniste_perms,
 
 # ══════════════════════════════════════════════════════════════
 # 4. CAISSIER / CAISSIÈRE
-# Restaurant, Cave (Bar), Piscine — facturation uniquement
+# Restaurant, Cave, Piscine, Espaces — facturation + caisse
 # Pas d'accès administratif ni structurel
 # ══════════════════════════════════════════════════════════════
 caissier_perms = []
