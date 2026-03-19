@@ -23,6 +23,11 @@ ACCESS_MAP = {
     GROUPE_CAISSIER:           ['restaurant', 'bar', 'piscine', 'espaces'],
     GROUPE_CAISSIER_PRINCIPAL: ['caisse'],
     GROUPE_SERVEUR:            [],
+    # Alias sans accents (compatibilite script Windows)
+    'Manager General(e)':      ['*'],
+    'Receptionniste':          ['hotel'],
+    'Caissiere / Caissier':    ['restaurant', 'bar', 'piscine', 'espaces'],
+    'Caissier(ere) Principal(e)': ['caisse'],
 }
 
 
