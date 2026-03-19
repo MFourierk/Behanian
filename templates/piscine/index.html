@@ -246,63 +246,65 @@
 
 <!-- MODAL COMMANDE -->
 <div class="modal-ov" id="modalCommande">
-  <div class="modal-box">
+  <div class="modal-box" style="width:520px">
     <div class="modal-head"><h3>Commander — <span id="cmdNom"></span></h3><button class="close-btn" onclick="fermerModal('modalCommande')">×</button></div>
     <input type="hidden" id="cmdAccesId">
 
-    <!-- Tabs -->
-    <div style="display:flex;gap:6px;margin-bottom:14px">
-      <button class="btn-p btn-primary" id="tabBoisson" onclick="setTab('boisson')">🍸 Boissons</button>
-      <button class="btn-p btn-outline" id="tabPlat" onclick="setTab('plat')">🍽️ Plats</button>
-    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <!-- Colonne gauche : catalogue -->
+      <div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="btn-p btn-primary" id="tabBoisson" onclick="setTab('boisson')" style="flex:1;font-size:11px">🍸 Boissons</button>
+          <button class="btn-p btn-outline" id="tabPlat" onclick="setTab('plat')" style="flex:1;font-size:11px">🍽️ Plats</button>
+        </div>
 
-    <div id="sectionBoisson">
-      <div class="cat-pills" id="catsBoissonPills">
-        <button class="cat-pill active" onclick="filtrerB(this,'')">Tout</button>
-        {% for cat in cats_bar %}<button class="cat-pill" onclick="filtrerB(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
+        <div id="sectionBoisson">
+          <div class="cat-pills" id="catsBoissonPills" style="margin-bottom:6px">
+            <button class="cat-pill active" onclick="filtrerB(this,'')">Tout</button>
+            {% for cat in cats_bar %}<button class="cat-pill" onclick="filtrerB(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
+          </div>
+          <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
+          <div class="art-list" id="listBoisson" style="max-height:240px">
+            {% for b in boissons %}
+            <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+              <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
+              <div style="text-align:right"><div class="art-prix">{{ b.prix|floatformat:0 }} F</div><div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div></div>
+            </div>{% endfor %}
+          </div>
+        </div>
+
+        <div id="sectionPlat" style="display:none">
+          <div class="cat-pills" id="catsPlatPills" style="margin-bottom:6px">
+            <button class="cat-pill active" onclick="filtrerP(this,'')">Tout</button>
+            {% for cat in cats_resto %}<button class="cat-pill" onclick="filtrerP(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
+          </div>
+          <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
+          <div class="art-list" id="listPlat" style="max-height:240px">
+            {% for p in plats %}
+            <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+              <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
+              <div><div class="art-prix">{{ p.prix|floatformat:0 }} F</div></div>
+            </div>{% endfor %}
+          </div>
+        </div>
       </div>
-      <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
-      <div class="art-list" id="listBoisson">
-        <input type="hidden" id="boissonSelId">
-        {% for b in boissons %}
-        <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix }}" onclick="selArt('boisson',this)">
-          <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
-          <div style="text-align:right"><div class="art-prix">{{ b.prix|floatformat:0 }} F</div><div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">{{ b.quantite_stock }}</div></div>
-        </div>{% endfor %}
+
+      <!-- Colonne droite : panier -->
+      <div style="display:flex;flex-direction:column">
+        <div style="font-size:12px;font-weight:600;color:#3d4f63;margin-bottom:8px">🛒 Panier</div>
+        <div id="panierListe" style="flex:1;min-height:200px;max-height:280px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px;background:#f8fafc">
+          <div id="panierVide" style="padding:30px;text-align:center;color:#b0b8c1;font-size:12px">Cliquez sur un article pour l'ajouter</div>
+        </div>
+        <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:#3d4f63">Total</span>
+          <span id="panierTotal" style="font-size:14px;font-weight:700;color:#2563eb">0 F</span>
+        </div>
       </div>
     </div>
-
-    <div id="sectionPlat" style="display:none">
-      <div class="cat-pills" id="catsPlatPills">
-        <button class="cat-pill active" onclick="filtrerP(this,'')">Tout</button>
-        {% for cat in cats_resto %}<button class="cat-pill" onclick="filtrerP(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
-      </div>
-      <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
-      <div class="art-list" id="listPlat">
-        <input type="hidden" id="platSelId">
-        {% for p in plats %}
-        <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix }}" onclick="selArt('plat',this)">
-          <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
-          <div><div class="art-prix">{{ p.prix|floatformat:0 }} F</div></div>
-        </div>{% endfor %}
-      </div>
-    </div>
-
-    <div id="artSelInfo" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;font-weight:500;color:#15803d"></div>
-
-    <div class="qty-row">
-      <span style="font-size:13px;font-weight:600;color:#1a2535">Quantité</span>
-      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-        <button class="qty-btn" onclick="changeQty(-1)">−</button>
-        <input type="number" id="cmdQty" value="1" min="1" style="width:50px;text-align:center;border:1px solid #d4dce8;border-radius:6px;padding:5px">
-        <button class="qty-btn" onclick="changeQty(1)">+</button>
-      </div>
-    </div>
-    <div id="cmdTotalRow" style="display:none;text-align:right;font-size:13px;font-weight:600;color:#2563eb;margin-top:6px"></div>
 
     <div style="display:flex;gap:8px;margin-top:14px">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalCommande')">Fermer</button>
-      <button class="btn-p btn-success" style="flex:2" onclick="validerCommande()"><i class="fas fa-plus"></i> Ajouter</button>
+      <button class="btn-p btn-success" style="flex:2" onclick="validerCommande()"><i class="fas fa-check"></i> Envoyer la commande</button>
     </div>
   </div>
 </div>
@@ -436,6 +438,9 @@ async function validerEntree(){
   else alert(d.error||'Erreur');
 }
 
+// ── Panier ──
+let panier = []; // [{type, id, nom, prix, qty}]
+
 function setTab(tab){
   tabActif=tab;
   document.getElementById('sectionBoisson').style.display=tab==='boisson'?'block':'none';
@@ -447,75 +452,113 @@ function setTab(tab){
 function ouvrirCommande(id, nom){
   document.getElementById('cmdAccesId').value=id;
   document.getElementById('cmdNom').textContent=nom;
-  document.getElementById('cmdQty').value=1;
-  document.getElementById('artSelInfo').style.display='none';
-  document.getElementById('cmdTotalRow').style.display='none';
-  artSelType=null;artSelPrix=0;
-  document.querySelectorAll('.art-item').forEach(i=>i.classList.remove('selected'));
+  panier=[];
+  renderPanier();
+  filtrerB._cat=''; filtrerP._cat='';
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#catsBoissonPills .cat-pill').forEach((p,i)=>{if(i===0)p.classList.add('active');});
+  document.querySelectorAll('#catsPlatPills .cat-pill').forEach((p,i)=>{if(i===0)p.classList.add('active');});
   setTab('boisson');
   document.getElementById('modalCommande').classList.add('open');
 }
 
 function filtrerB(btn,cat){
-  if(btn){document.querySelectorAll('#catsBoissonPills .cat-pill').forEach(p=>p.classList.remove('active'));btn.classList.add('active');filtrerB._cat=cat;}
-  else cat=filtrerB._cat;
+  if(btn){document.querySelectorAll('#catsBoissonPills .cat-pill').forEach(p=>p.classList.remove('active'));btn.classList.add('active');filtrerB._cat=cat||'';}
+  const c=filtrerB._cat||'';
   const s=(document.getElementById('searchBoisson').value||'').toLowerCase();
   document.querySelectorAll('#listBoisson .art-item').forEach(i=>{
-    const ok=(!s||i.querySelector('.art-nom').textContent.toLowerCase().includes(s))&&(!cat||i.dataset.cat===cat);
+    const ok=(!s||i.dataset.nom.toLowerCase().includes(s))&&(!c||i.dataset.cat===c);
     i.style.display=ok?'flex':'none';
   });
 }
 
 function filtrerP(btn,cat){
-  if(btn){document.querySelectorAll('#catsPlatPills .cat-pill').forEach(p=>p.classList.remove('active'));btn.classList.add('active');filtrerP._cat=cat;}
-  else cat=filtrerP._cat;
+  if(btn){document.querySelectorAll('#catsPlatPills .cat-pill').forEach(p=>p.classList.remove('active'));btn.classList.add('active');filtrerP._cat=cat||'';}
+  const c=filtrerP._cat||'';
   const s=(document.getElementById('searchPlat').value||'').toLowerCase();
   document.querySelectorAll('#listPlat .art-item').forEach(i=>{
-    const ok=(!s||i.querySelector('.art-nom').textContent.toLowerCase().includes(s))&&(!cat||i.dataset.cat===cat);
+    const ok=(!s||i.dataset.nom.toLowerCase().includes(s))&&(!c||i.dataset.cat===c);
     i.style.display=ok?'flex':'none';
   });
 }
 
-function selArt(type,el){
-  document.querySelectorAll('.art-item').forEach(i=>i.classList.remove('selected'));
-  el.classList.add('selected');
-  artSelType=type;artSelPrix=parseFloat(el.dataset.prix)||0;
-  const nom=el.querySelector('.art-nom').textContent;
-  const info=document.getElementById('artSelInfo');
-  info.style.display='block';info.textContent='✓ '+nom+' sélectionné';
-  majTotalCmd();
+function ajouterAuPanier(el){
+  const type=el.dataset.type;
+  const id=el.dataset.id;
+  const nom=el.dataset.nom;
+  const prix=parseInt(el.dataset.prix)||0;
+  // Si déjà dans panier, incrémenter
+  const exist=panier.find(x=>x.type===type&&x.id===id);
+  if(exist){ exist.qty++; }
+  else { panier.push({type,id,nom,prix,qty:1}); }
+  renderPanier();
+  // Flash de confirmation sur l'item
+  el.style.background='#dcfce7';
+  setTimeout(()=>el.style.background='',400);
 }
 
-function changeQty(d){
-  const i=document.getElementById('cmdQty');
-  i.value=Math.max(1,(parseInt(i.value)||1)+d);
-  majTotalCmd();
+function renderPanier(){
+  const liste=document.getElementById('panierListe');
+  const vide=document.getElementById('panierVide');
+  if(panier.length===0){
+    liste.innerHTML='';
+    liste.appendChild(vide);
+    vide.style.display='block';
+    document.getElementById('panierTotal').textContent='0 F';
+    return;
+  }
+  vide.style.display='none';
+  let html='';
+  let total=0;
+  panier.forEach((item,idx)=>{
+    const st=item.prix*item.qty;
+    total+=st;
+    html+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #f0f3f7">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600;color:#1a2535">${item.nom}</div>
+        <div style="font-size:11px;color:#7a8b9c">${item.prix.toLocaleString('fr-FR')} F/u</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button onclick="chgQtyPanier(${idx},-1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:12px">−</button>
+        <span style="font-size:13px;font-weight:600;min-width:20px;text-align:center">${item.qty}</span>
+        <button onclick="chgQtyPanier(${idx},1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:12px">+</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#2563eb;min-width:60px;text-align:right">${st.toLocaleString('fr-FR')} F</div>
+      <button onclick="supprimerPanier(${idx})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:0 2px">×</button>
+    </div>`;
+  });
+  liste.innerHTML=html;
+  document.getElementById('panierTotal').textContent=total.toLocaleString('fr-FR')+' F';
 }
 
-function majTotalCmd(){
-  const qty=parseInt(document.getElementById('cmdQty').value)||1;
-  const row=document.getElementById('cmdTotalRow');
-  if(artSelPrix>0){row.style.display='block';row.textContent='Total : '+(artSelPrix*qty).toLocaleString('fr-FR')+' F';}
+function chgQtyPanier(idx,d){
+  panier[idx].qty=Math.max(1,panier[idx].qty+d);
+  renderPanier();
+}
+
+function supprimerPanier(idx){
+  panier.splice(idx,1);
+  renderPanier();
 }
 
 async function validerCommande(){
-  if(!artSelType){alert('Sélectionnez un article.');return;}
+  if(panier.length===0){alert('Le panier est vide.');return;}
   const id=document.getElementById('cmdAccesId').value;
-  const artId=artSelType==='boisson'?document.querySelector('#listBoisson .art-item.selected')?.dataset.id:document.querySelector('#listPlat .art-item.selected')?.dataset.id;
-  const qty=parseInt(document.getElementById('cmdQty').value)||1;
-  const r=await fetch(`{% url "piscine:consommation" 0 %}`.replace('/0/','/'+id+'/'),{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({type:artSelType,id:artId,quantite:qty})});
-  const d=await r.json();
-  if(d.success){
-    artSelType=null;artSelPrix=0;
-    document.querySelectorAll('.art-item').forEach(i=>i.classList.remove('selected'));
-    document.getElementById('artSelInfo').style.display='none';
-    document.getElementById('cmdTotalRow').style.display='none';
-    document.getElementById('cmdQty').value=1;
-    // Toast
-    const t=document.createElement('div');
-    t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0';
-    t.textContent='✓ '+d.message;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
-  } else alert(d.error||'Erreur');
+  const url=`{% url "piscine:consommation" 0 %}`.replace('/0/','/'+id+'/');
+  let erreurs=[];
+  for(const item of panier){
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({type:item.type,id:item.id,quantite:item.qty})});
+    const d=await r.json();
+    if(!d.success) erreurs.push(item.nom+': '+d.error);
+  }
+  if(erreurs.length){ alert('Erreurs:\n'+erreurs.join('\n')); }
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0';
+  toast.textContent=`✓ ${panier.length} article(s) ajouté(s)`;
+  document.body.appendChild(toast);setTimeout(()=>toast.remove(),2500);
+  fermerModal('modalCommande');
+  setTimeout(()=>location.reload(),600);
 }
 
 async function ouvrirSortie(id,nom,prixEntree){
