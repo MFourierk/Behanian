@@ -61,14 +61,15 @@
     </div>
 </div>
 
-<!-- STATS -->
+<!-- STATS — filtrées selon le rôle -->
 <div class="stats-grid">
     <div class="stat-card green">
         <div class="stat-icon">💵</div>
         <div class="stat-label">Chiffre d'affaires du jour</div>
-        <div class="stat-value">{{ chiffre_affaires }} FCFA</div>
-        <div class="stat-variation">↗ {{ variation }} vs hier</div>
+        <div class="stat-value">{{ chiffre_affaires|floatformat:0 }} FCFA</div>
+        <div class="stat-variation">Mes modules uniquement</div>
     </div>
+    {% if 'hotel' in accessible_modules %}
     <div class="stat-card orange">
         <div class="stat-icon">🛏️</div>
         <div class="stat-label">Taux d'occupation</div>
@@ -80,15 +81,19 @@
         <div class="stat-label">Réservations actives</div>
         <div class="stat-value">{{ reservations_actives }}</div>
     </div>
+    {% endif %}
+    {% if 'cuisine' in accessible_modules %}
     <div class="stat-card red">
         <div class="stat-icon">⚠️</div>
         <div class="stat-label">Alertes stock</div>
         <div class="stat-value">{{ alertes_stock }}</div>
         <div class="stat-detail">Articles en rupture</div>
     </div>
+    {% endif %}
 </div>
 
-<!-- CHARTS -->
+<!-- CHARTS — managers uniquement -->
+{% if user.is_superuser or 'facturation' in accessible_modules %}
 <div class="charts-grid">
     <div class="chart-card">
         <div class="chart-title">Évolution des revenus</div>
@@ -99,41 +104,56 @@
         <div class="chart-placeholder">Graphique circulaire</div>
     </div>
 </div>
+{% endif %}
 
-<!-- SERVICES -->
+<!-- SERVICES — filtrés selon le rôle -->
 <div class="services-section">
     <div class="services-grid">
-        <a class="service-card hotel"       href="{% url 'hotel:index' %}">
+        {% if 'hotel' in accessible_modules %}
+        <a class="service-card hotel" href="{% url 'hotel:index' %}">
             <div class="service-icon">🏨</div><div class="service-name">Hôtel</div>
         </a>
-        <a class="service-card restaurant"  href="{% url 'restaurant:index' %}">
+        {% endif %}
+        {% if 'restaurant' in accessible_modules %}
+        <a class="service-card restaurant" href="{% url 'restaurant:index' %}">
             <div class="service-icon">🍽️</div><div class="service-name">Restaurant</div>
         </a>
-        <a class="service-card cuisine"     href="{% url 'cuisine:index' %}">
+        {% endif %}
+        {% if 'cuisine' in accessible_modules %}
+        <a class="service-card cuisine" href="{% url 'cuisine:index' %}">
             <div class="service-icon">👨‍🍳</div><div class="service-name">Cuisine</div>
         </a>
-        <a class="service-card cave"        href="{% url 'bar:dashboard' %}">
+        {% endif %}
+        {% if 'bar' in accessible_modules %}
+        <a class="service-card cave" href="{% url 'bar:dashboard' %}">
             <div class="service-icon">🍷</div><div class="service-name">Cave</div>
         </a>
-        <a class="service-card piscine"     href="{% url 'piscine:index' %}">
+        {% endif %}
+        {% if 'piscine' in accessible_modules %}
+        <a class="service-card piscine" href="{% url 'piscine:index' %}">
             <div class="service-icon">🏊</div><div class="service-name">Piscine</div>
         </a>
-        <a class="service-card events"      href="{% url 'espaces_evenementiels:index' %}">
+        {% endif %}
+        {% if 'espaces' in accessible_modules %}
+        <a class="service-card events" href="{% url 'espaces_evenementiels:index' %}">
             <div class="service-icon">📅</div><div class="service-name">Événements</div>
         </a>
+        {% endif %}
+        {% if 'facturation' in accessible_modules %}
         <a class="service-card facturation" href="{% url 'facturation:index' %}">
             <div class="service-icon">💳</div><div class="service-name">Facturation</div>
         </a>
-        <a class="service-card caisse"      href="{% url 'caisse:index' %}">
+        {% endif %}
+        {% if 'caisse' in accessible_modules %}
+        <a class="service-card caisse" href="{% url 'caisse:index' %}">
             <div class="service-icon">💰</div><div class="service-name">Caisse</div>
         </a>
-        <a class="service-card params"      href="{% url 'parametres:parametres_index' %}">
+        {% endif %}
+        {% if 'parametres' in accessible_modules %}
+        <a class="service-card params" href="{% url 'parametres:parametres_index' %}">
             <div class="service-icon">⚙️</div><div class="service-name">Paramètres</div>
         </a>
-        <!-- NOUVEAU — Rapport de Stock -->
-        <a class="service-card rapport"     href="{% url 'rapport:stock' %}">
-            <div class="service-icon">📊</div><div class="service-name">Rapport Stock</div>
-        </a>
+        {% endif %}
     </div>
 </div>
 
