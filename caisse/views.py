@@ -1,4 +1,4 @@
-from utils.permissions import require_module_access, GROUPE_MANAGER_GENERAL
+from utils.permissions import require_module_access, require_manager, GROUPE_MANAGER_GENERAL, GROUPE_CAISSIER_PRINCIPAL
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -98,3 +98,61 @@ def index(request):
         'sessions_histo': sessions_histo,
     }
     return render(request, 'caisse/index.html', context)
+
+
+@require_manager
+def suivi_caisse(request):
+    """Suivi de caisse — réservé Manager Général."""
+    from datetime import timedelta, date as dt
+    from django.db.models import Sum
+    from facturation.models import Ticket
+
+    # Période : 30 derniers jours
+    today = timezone.now().date()
+    debut = today - timedelta(days=29)
+
+    # Stats par jour
+    from django.db.models.functions import TruncDate
+    stats_jours = (
+        Ticket.objects
+        .filter(date_creation__date__range=[debut, today])
+        .annotate(jour=TruncDate('date_creation'))
+        .values('jour')
+        .annotate(total=Sum('montant_total'), nb=Sum('id') * 0 + 1)
+        .order_by('jour')
+    )
+
+    # Stats par module sur la période
+    stats_modules = {}
+    for mod in ['hotel','restaurant','bar','piscine']:
+        t = Ticket.objects.filter(
+            date_creation__date__range=[debut, today],
+            module=mod
+        ).aggregate(s=Sum('montant_total'))['s'] or 0
+        stats_modules[mod] = int(t)
+
+    # Stats par mode de paiement
+    modes = ['especes','mobile_money','carte_bancaire','virement']
+    stats_modes = {}
+    for mode in modes:
+        t = Ticket.objects.filter(
+            date_creation__date__range=[debut, today],
+            mode_paiement__in=[mode, 'orange_money', 'wave', 'moov_money', 'mtn_money'] if mode == 'mobile_money' else [mode]
+        ).aggregate(s=Sum('montant_total'))['s'] or 0
+        stats_modes[mode] = int(t)
+
+    # Sessions caisse
+    sessions = CaisseSession.objects.filter(
+        opened_at__date__range=[debut, today]
+    ).select_related('user').order_by('-opened_at')
+
+    context = {
+        'today': today,
+        'debut': debut,
+        'stats_jours': list(stats_jours),
+        'stats_modules': stats_modules,
+        'stats_modes': stats_modes,
+        'sessions': sessions,
+        'total_periode': sum(stats_modules.values()),
+    }
+    return render(request, 'caisse/suivi.html', context)

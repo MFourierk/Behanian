@@ -1,0 +1,91 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Suivi de Caisse — BEHANIAN{% endblock %}
+{% block extra_css %}
+<style>
+.body-suivi{background:#eef1f5;padding:20px 0 40px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#f8fafc;border:1px solid #d4dce8;border-radius:12px;padding:16px 18px;border-top:3px solid #2563eb}
+.kpi.vert{border-top-color:#16a34a}.kpi.orange{border-top-color:#d97706}.kpi.violet{border-top-color:#7c3aed}
+.klbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:#5a6b7c;margin-bottom:8px}
+.kval{font-size:22px;font-weight:700;color:#1a2535}
+.ksub{font-size:11px;color:#7a8b9c;margin-top:4px}
+.panel{background:#f8fafc;border:1px solid #d4dce8;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 18px;border-bottom:1px solid #dde3ec;background:#f2f5f9;display:flex;align-items:center;justify-content:space-between}
+.ph h3{font-size:14px;font-weight:600;color:#1a2535}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stat-row{padding:10px 18px;border-bottom:1px solid #dde3ec;display:flex;justify-content:space-between;align-items:center}
+.stat-row:last-child{border:none}
+.slbl{font-size:12px;color:#5a6b7c;font-weight:500}
+.sval{font-size:13px;font-weight:700;color:#1a2535}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 16px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #dde3ec;background:#eef1f5;text-align:left}
+.tbl td{padding:10px 16px;border-bottom:1px solid #dde3ec;color:#1a2535;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:#e8edf5}
+</style>
+{% endblock %}
+{% block content %}
+<div class="body-suivi"><div class="container-fluid">
+  <div class="header-glam caisse-watermark">
+    <div class="header-content"><h2>Suivi de Caisse</h2><p class="mb-0 opacity-75">Période : {{ debut|date:"d/m/Y" }} → {{ today|date:"d/m/Y" }}</p></div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+
+  <div style="margin-bottom:16px">
+    <a href="{% url 'caisse:index' %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#f8fafc;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#3d4f63;text-decoration:none">
+      ← Retour Caisse
+    </a>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi vert"><div class="klbl">Total 30 jours</div><div class="kval">{{ total_periode|floatformat:0 }} F</div><div class="ksub">Tous modules confondus</div></div>
+    <div class="kpi"><div class="klbl">Hôtel</div><div class="kval">{{ stats_modules.hotel|floatformat:0 }} F</div><div class="ksub">Hébergement & services</div></div>
+    <div class="kpi orange"><div class="klbl">Resto + Cave</div><div class="kval">{{ stats_modules.restaurant|floatformat:0 }} F</div><div class="ksub">+ {{ stats_modules.bar|floatformat:0 }} F Cave</div></div>
+    <div class="kpi violet"><div class="klbl">Piscine</div><div class="kval">{{ stats_modules.piscine|floatformat:0 }} F</div><div class="ksub">Accès & consommations</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="ph"><h3>Répartition par module</h3></div>
+      <div class="stat-row"><span class="slbl">🏨 Hôtel</span><span class="sval">{{ stats_modules.hotel|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">🍽️ Restaurant</span><span class="sval">{{ stats_modules.restaurant|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">🍷 Cave</span><span class="sval">{{ stats_modules.bar|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">🏊 Piscine</span><span class="sval">{{ stats_modules.piscine|floatformat:0 }} F</span></div>
+      <div class="stat-row" style="border-top:2px solid #dde3ec"><span class="slbl" style="font-weight:700;color:#1a2535">Total</span><span class="sval" style="color:#2563eb;font-size:15px">{{ total_periode|floatformat:0 }} F</span></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h3>Répartition par mode de paiement</h3></div>
+      <div class="stat-row"><span class="slbl">💵 Espèces</span><span class="sval">{{ stats_modes.especes|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">📱 Mobile Money</span><span class="sval">{{ stats_modes.mobile_money|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">💳 Carte Bancaire</span><span class="sval">{{ stats_modes.carte_bancaire|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">🏦 Virement</span><span class="sval">{{ stats_modes.virement|floatformat:0 }} F</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h3>Sessions de caisse — 30 jours</h3><span style="font-size:11px;color:#7a8b9c">{{ sessions.count }} session(s)</span></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Caissier</th><th>Ouverture</th><th>Clôture</th><th>Durée</th><th>Statut</th></tr></thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td style="font-weight:600">{{ s.user.get_full_name|default:s.user.username }}</td>
+            <td>{{ s.opened_at|date:"d/m/Y H:i" }}</td>
+            <td>{% if s.closed_at %}{{ s.closed_at|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+            <td>{% if s.closed_at %}{{ s.opened_at|timesince:s.closed_at }}{% else %}En cours{% endif %}</td>
+            <td>
+              <span style="padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;{% if s.is_open %}background:#dcfce7;color:#15803d{% else %}background:#f1f5f9;color:#64748b{% endif %}">
+                {% if s.is_open %}Active{% else %}Clôturée{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;padding:30px;color:#b0b8c1">Aucune session</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

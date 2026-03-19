@@ -49,6 +49,14 @@
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
+  {% if is_manager %}
+  <div style="text-align:right;margin-bottom:10px">
+    <a href="{% url 'caisse:suivi' %}" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;background:#2563eb;color:white;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none">
+      <i class="fas fa-chart-line"></i> Suivi de caisse (30 jours)
+    </a>
+  </div>
+  {% endif %}
+
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
     {% if session_active %}
     <div class="sbanner banner-open" style="margin:0;flex:1">

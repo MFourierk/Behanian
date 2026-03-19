@@ -23,7 +23,7 @@ def bar_dashboard(request):
     return render(request, 'bar/dashboard.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def stock_management(request):
     boissons = BoissonBar.objects.filter(statut='actif')
 
@@ -145,7 +145,7 @@ def stock_management(request):
 
 # ===== ARTICLES =====
 
-@login_required
+@require_module_access('bar')
 def articles_list(request):
     articles = BoissonBar.objects.exclude(statut='supprime')
     categories = CategorieBar.objects.all()
@@ -170,7 +170,7 @@ def articles_list(request):
     return render(request, 'bar/articles_list.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def article_create(request):
     categories = CategorieBar.objects.all()
     unites = UniteVente.objects.all()
@@ -200,7 +200,7 @@ def article_create(request):
     return render(request, 'bar/article_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def article_edit(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     categories = CategorieBar.objects.all()
@@ -229,7 +229,7 @@ def article_edit(request, pk):
     return render(request, 'bar/article_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def article_delete(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     if request.method == 'POST':
@@ -241,7 +241,7 @@ def article_delete(request, pk):
     return render(request, 'bar/article_confirm_delete.html', {'article': article})
 
 
-@login_required
+@require_module_access('bar')
 def article_dupliquer(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     article.pk = None
@@ -252,7 +252,7 @@ def article_dupliquer(request, pk):
     return redirect('bar:article_edit', pk=article.pk)
 
 
-@login_required
+@require_module_access('bar')
 def article_sommeil(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     if article.statut == 'actif':
@@ -268,12 +268,12 @@ def article_sommeil(request, pk):
 
 # ===== BONS DE COMMANDE =====
 
-@login_required
+@require_module_access('bar')
 def bon_commande_list(request):
     return redirect('/bar/stock/?tab=commandes')
 
 
-@login_required
+@require_module_access('bar')
 def bon_commande_create(request):
     type_commande = request.GET.get('type', 'achat')
     fournisseurs = Fournisseur.objects.all()
@@ -324,7 +324,7 @@ def bon_commande_create(request):
     return render(request, 'bar/bon_commande_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def bon_commande_detail(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
     lignes = bon.lignes.select_related('article').all()
@@ -336,7 +336,7 @@ def bon_commande_detail(request, pk):
     return render(request, 'bar/bon_commande_detail.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def bon_commande_edit(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
     fournisseurs = Fournisseur.objects.all()
@@ -384,7 +384,7 @@ def bon_commande_edit(request, pk):
     return render(request, 'bar/bon_commande_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def bon_commande_annuler(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
     if request.method == 'POST':
@@ -394,7 +394,7 @@ def bon_commande_annuler(request, pk):
     return redirect('/bar/stock/?tab=commandes')
 
 
-@login_required
+@require_module_access('bar')
 def bon_commande_changer_statut(request, pk):
     """AJAX : changer le statut d'un bon"""
     if request.method == 'POST':
@@ -408,7 +408,7 @@ def bon_commande_changer_statut(request, pk):
     return JsonResponse({'success': False}, status=400)
 
 
-@login_required
+@require_module_access('bar')
 def get_article_prix(request, pk):
     """AJAX : récupérer le prix d'achat d'un article"""
     article = get_object_or_404(BoissonBar, pk=pk)
@@ -422,12 +422,12 @@ def get_article_prix(request, pk):
 
 # ===== BONS DE RÉCEPTION =====
 
-@login_required
+@require_module_access('bar')
 def bon_reception_list(request):
     return redirect('/bar/stock/?tab=reception')
 
 
-@login_required
+@require_module_access('bar')
 def bon_reception_create(request):
     fournisseurs = Fournisseur.objects.all()
     articles = BoissonBar.objects.exclude(statut='supprime')
@@ -490,7 +490,7 @@ def bon_reception_create(request):
     return render(request, 'bar/bon_reception_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def bon_reception_detail(request, pk):
     br = get_object_or_404(BonReceptionBar, pk=pk)
     lignes = br.lignes.select_related('article').all()
@@ -502,7 +502,7 @@ def bon_reception_detail(request, pk):
     return render(request, 'bar/bon_reception_detail.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def bon_reception_valider(request, pk):
     """Valider un bon de réception → mise à jour stock + CMUP"""
     br = get_object_or_404(BonReceptionBar, pk=pk)
@@ -559,7 +559,7 @@ def _valider_reception(br, user):
     br.save()
 
 
-@login_required
+@require_module_access('bar')
 def bon_reception_annuler(request, pk):
     br = get_object_or_404(BonReceptionBar, pk=pk)
     if request.method == 'POST':
@@ -572,7 +572,7 @@ def bon_reception_annuler(request, pk):
     return redirect('/bar/stock/?tab=reception')
 
 
-@login_required
+@require_module_access('bar')
 def get_bon_commande_lignes(request, pk):
     """AJAX : récupérer les lignes d'un bon de commande pour pré-remplir la réception"""
     bc = get_object_or_404(BonCommandeBar, pk=pk)
@@ -596,7 +596,7 @@ def get_bon_commande_lignes(request, pk):
 
 # ===== MOUVEMENTS ENTRÉES / SORTIES =====
 
-@login_required
+@require_module_access('bar')
 def mouvement_create(request):
     """Créer un mouvement manuel depuis le modal"""
     if request.method == 'POST':
@@ -630,12 +630,12 @@ def mouvement_create(request):
 
 # ===== INVENTAIRE =====
 
-@login_required
+@require_module_access('bar')
 def inventaire_list(request):
     return redirect('/bar/stock/?tab=inventaire')
 
 
-@login_required
+@require_module_access('bar')
 def inventaire_create(request):
     """Créer un nouvel inventaire avec toutes les boissons actives"""
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
@@ -680,7 +680,7 @@ def inventaire_create(request):
     return render(request, 'bar/inventaire_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     lignes = inv.lignes.select_related('article').order_by('article__categorie__nom', 'article__nom')
@@ -695,7 +695,7 @@ def inventaire_detail(request, pk):
     return render(request, 'bar/inventaire_detail.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     if request.method == 'POST' and inv.statut in ['brouillon', 'en_cours']:
@@ -728,7 +728,7 @@ def _valider_inventaire(inv, user):
     inv.save()
 
 
-@login_required
+@require_module_access('bar')
 def inventaire_annuler(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     if request.method == 'POST' and inv.statut != 'valide':
@@ -740,12 +740,12 @@ def inventaire_annuler(request, pk):
 
 # ===== GESTION DES CASSES =====
 
-@login_required
+@require_module_access('bar')
 def casse_list(request):
     return redirect('/bar/stock/?tab=casses')
 
 
-@login_required
+@require_module_access('bar')
 def casse_create(request):
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
 
@@ -790,7 +790,7 @@ def casse_create(request):
     return render(request, 'bar/casse_form.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def casse_detail(request, pk):
     casse = get_object_or_404(CasseBar, pk=pk)
     lignes = casse.lignes.select_related('article').all()
@@ -802,7 +802,7 @@ def casse_detail(request, pk):
     return render(request, 'bar/casse_detail.html', context)
 
 
-@login_required
+@require_module_access('bar')
 def casse_valider(request, pk):
     casse = get_object_or_404(CasseBar, pk=pk)
     if request.method == 'POST' and casse.statut == 'declare':
@@ -827,7 +827,7 @@ def _valider_casse(casse, user):
     casse.save()
 
 
-@login_required
+@require_module_access('bar')
 def casse_annuler(request, pk):
     casse = get_object_or_404(CasseBar, pk=pk)
     if request.method == 'POST' and casse.statut == 'declare':
@@ -884,7 +884,7 @@ import json
 import json
 from decimal import Decimal
 
-@login_required
+@require_module_access('bar')
 @require_POST
 def api_vente_create(request):
     """

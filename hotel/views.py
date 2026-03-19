@@ -14,7 +14,7 @@ from django.db.models import Q, Sum
 from django.urls import reverse
 from django.http import JsonResponse
 
-@login_required
+@require_module_access('hotel')
 def api_revenus(request):
     """API JSON — revenus chambres du jour (reservations terminées aujourd'hui)"""
     from django.utils import timezone as tz
@@ -169,14 +169,14 @@ def hotel_index(request):
     
     return render(request, 'hotel/index.html', context)
 
-@login_required
+@require_module_access('hotel')
 def chambre_detail(request, chambre_id):
     """Détails d'une chambre"""
     chambre = get_object_or_404(Chambre, id=chambre_id)
     context = {'chambre': chambre}
     return render(request, 'hotel/chambre_detail.html', context)
 
-@login_required
+@require_module_access('hotel')
 @transaction.atomic
 def checkin_reservation(request, reservation_id):
     """Effectuer le check-in d'une réservation existante avec mise à jour des infos client"""
@@ -252,7 +252,7 @@ def checkin_reservation(request, reservation_id):
     messages.success(request, f"Check-in effectué pour {reservation.client.nom_complet}.")
     return redirect(reverse('hotel:index') + '?tab=checkinout')
 
-@login_required
+@require_module_access('hotel')
 @transaction.atomic
 def checkin_direct(request):
     """Créer un client, une réservation et faire le check-in directement"""
@@ -427,7 +427,7 @@ def checkin_direct(request):
         
     return redirect('hotel:index')
 
-@login_required
+@require_module_access('hotel')
 @transaction.atomic
 def reservation_create(request):
     """Créer une nouvelle réservation"""
@@ -549,7 +549,7 @@ def reservation_create(request):
         
     return redirect('hotel:index')
 
-@login_required
+@require_module_access('hotel')
 def print_checkin_form(request, reservation_id):
     """Afficher la fiche de police pour impression"""
     reservation = get_object_or_404(Reservation, id=reservation_id)
@@ -557,7 +557,7 @@ def print_checkin_form(request, reservation_id):
 
 from facturation.models import Ticket, Client as FacturationClient
 
-@login_required
+@require_module_access('hotel')
 @transaction.atomic
 def checkout_reservation(request, reservation_id):
     """Effectuer le check-out d'une réservation avec facturation des services"""
@@ -701,7 +701,7 @@ def checkout_reservation(request, reservation_id):
         
     return redirect(reverse('hotel:index') + '?tab=historique')
 
-@login_required
+@require_module_access('hotel')
 def ticket_print(request, ticket_id):
     """Afficher le ticket pour impression"""
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -713,7 +713,7 @@ def ticket_print(request, ticket_id):
         'receptionniste': receptionniste,
     })
 
-@login_required
+@require_module_access('hotel')
 @transaction.atomic
 def finalize_checkout(request, ticket_id):
     """Finaliser le check-out (libérer la chambre) après impression"""
@@ -762,7 +762,7 @@ def finalize_checkout(request, ticket_id):
         return JsonResponse({'status': 'error', 'message': f'Erreur serveur: {str(e)}'}, status=500)
 
 
-@login_required
+@require_module_access('hotel')
 @transaction.atomic
 def ajouter_consommation(request, reservation_id):
     """Ajouter un service/consommation à une réservation"""

@@ -63,12 +63,12 @@ def index(request):
     }
     return render(request, 'facturation/index.html', context)
 
-@login_required
+@require_module_access('facturation')
 def facture_list(request):
     factures = Facture.objects.all()
     return render(request, 'facturation/facture_list.html', {'factures': factures})
 
-@login_required
+@require_module_access('facturation')
 def facture_create(request):
     if request.method == 'POST':
         try:
@@ -156,13 +156,13 @@ def facture_create(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-@login_required
+@require_module_access('facturation')
 def facture_detail(request, pk):
     facture = get_object_or_404(Facture, pk=pk)
     lignes = facture.lignes.select_related('article__service').order_by('article__service__nom', 'id')
     return render(request, 'facturation/facture_detail.html', {'facture': facture, 'lignes': lignes})
 
-@login_required
+@require_module_access('facturation')
 def facture_pdf(request, pk):
     facture = get_object_or_404(Facture, pk=pk)
     lignes = facture.lignes.select_related('article__service').order_by('article__service__nom', 'id')
@@ -185,12 +185,12 @@ def facture_pdf(request, pk):
     response['Content-Disposition'] = f'inline; filename="facture_{facture.numero}.pdf"'
     return response
 
-@login_required
+@require_module_access('facturation')
 def proforma_list(request):
     proformas = Proforma.objects.all()
     return render(request, 'facturation/proforma_list.html', {'proformas': proformas})
 
-@login_required
+@require_module_access('facturation')
 def proforma_create(request):
     if request.method == 'POST':
         try:
@@ -274,12 +274,12 @@ def proforma_create(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-@login_required
+@require_module_access('facturation')
 def proforma_detail(request, pk):
     proforma = get_object_or_404(Proforma, pk=pk)
     return render(request, 'facturation/proforma_detail.html', {'proforma': proforma})
 
-@login_required
+@require_module_access('facturation')
 def proforma_pdf(request, pk):
     proforma = get_object_or_404(Proforma, pk=pk)
 
@@ -300,12 +300,12 @@ def proforma_pdf(request, pk):
     response['Content-Disposition'] = f'inline; filename="proforma_{proforma.numero}.pdf"'
     return response
 
-@login_required
+@require_module_access('facturation')
 def avoir_list(request):
     avoirs = Avoir.objects.all()
     return render(request, 'facturation/avoir_list.html', {'avoirs': avoirs})
 
-@login_required
+@require_module_access('facturation')
 def avoir_create(request):
     if request.method == 'POST':
         try:
@@ -385,13 +385,13 @@ def avoir_create(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-@login_required
+@require_module_access('facturation')
 def avoir_detail(request, pk):
     avoir = get_object_or_404(Avoir, pk=pk)
     lignes = avoir.lignes.select_related('article__service').order_by('article__service__nom', 'id')
     return render(request, 'facturation/avoir_detail.html', {'avoir': avoir, 'lignes': lignes})
 
-@login_required
+@require_module_access('facturation')
 def avoir_pdf(request, pk):
     avoir = get_object_or_404(Avoir, pk=pk)
     lignes = avoir.lignes.select_related('article__service').order_by('article__service__nom', 'id')
@@ -422,7 +422,7 @@ def avoir_pdf(request, pk):
     response['Content-Disposition'] = f'inline; filename="avoir_{avoir.numero}.pdf"'
     return response
 
-@login_required
+@require_module_access('facturation')
 def ticket_list(request):
     today = timezone.now().date()
     
@@ -469,25 +469,25 @@ def ticket_list(request):
     }
     return render(request, 'facturation/ticket_list.html', context)
 
-@login_required
+@require_module_access('facturation')
 def ticket_detail(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     return render(request, 'facturation/ticket_detail.html', {'ticket': ticket})
 
-@login_required
+@require_module_access('facturation')
 def ticket_reprint(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     # Marquer comme duplicata
     ticket.mark_as_duplicata()
     return redirect('facturation:ticket_print_thermal', pk=ticket.pk)
 
-@login_required
+@require_module_access('facturation')
 def ticket_print_thermal(request, pk):
     """Afficher le ticket en format thermique (HTML)"""
     ticket = get_object_or_404(Ticket, pk=pk)
     return render(request, 'facturation/ticket_print_thermal.html', {'ticket': ticket})
 
-@login_required
+@require_module_access('facturation')
 def ticket_pdf(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
 
@@ -508,7 +508,7 @@ def ticket_pdf(request, pk):
     response['Content-Disposition'] = f'inline; filename="ticket_{ticket.numero}.pdf"'
     return response
 
-@login_required
+@require_module_access('facturation')
 def create_avoir_from_ticket(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     
@@ -566,7 +566,7 @@ def create_avoir_from_ticket(request, pk):
         return redirect('facturation:ticket_detail', pk=pk)
 
 # API endpoints
-@login_required
+@require_module_access('facturation')
 def get_articles_by_service(request, service_id):
     try:
         service = Service.objects.get(id=service_id)
@@ -642,7 +642,7 @@ def get_articles_by_service(request, service_id):
     except Service.DoesNotExist:
         return JsonResponse({'articles': []}, status=404)
 
-@login_required
+@require_module_access('facturation')
 def client_detail_api(request, client_id):
     client = get_object_or_404(Client, pk=client_id)
     data = {
@@ -654,7 +654,7 @@ def client_detail_api(request, client_id):
     }
     return JsonResponse(data)
 
-@login_required
+@require_module_access('facturation')
 def create_document(request, doc_type):
     if doc_type == 'facture':
         return facture_create(request)
@@ -664,7 +664,7 @@ def create_document(request, doc_type):
         return avoir_create(request)
     return JsonResponse({'success': False, 'error': 'Type de document invalide'})
 
-@login_required
+@require_module_access('facturation')
 def get_document_details(request, doc_type, pk):
     try:
         if doc_type == 'proforma':

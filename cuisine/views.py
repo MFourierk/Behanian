@@ -59,7 +59,7 @@ def index(request):
 # STOCK MANAGEMENT (page principale avec onglets)
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def stock_management(request):
     ingredients = Ingredient.objects.select_related('categorie', 'unite_stock').filter(statut=True)
 
@@ -135,7 +135,7 @@ def stock_management(request):
 # INGRÉDIENTS
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def ingredient_list(request):
     ingredients = Ingredient.objects.select_related('categorie', 'unite_stock').filter(statut=True)
     q = request.GET.get('q', '')
@@ -153,7 +153,7 @@ def ingredient_list(request):
     return render(request, 'cuisine/ingredient_list.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def ingredient_create(request):
     categories = CategorieIngredient.objects.all()
     unites     = UniteIngredient.objects.all()
@@ -185,7 +185,7 @@ def ingredient_create(request):
     return render(request, 'cuisine/ingredient_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def ingredient_edit(request, pk):
     ing        = get_object_or_404(Ingredient, pk=pk)
     categories = CategorieIngredient.objects.all()
@@ -217,7 +217,7 @@ def ingredient_edit(request, pk):
     return render(request, 'cuisine/ingredient_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def ingredient_delete(request, pk):
     ing = get_object_or_404(Ingredient, pk=pk)
     if request.method == 'POST':
@@ -232,7 +232,7 @@ def ingredient_delete(request, pk):
 # MOUVEMENTS DE STOCK
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def mouvement_create(request):
     if request.method == 'POST':
         ing_id  = request.POST.get('ingredient')
@@ -255,12 +255,12 @@ def mouvement_create(request):
 # BONS DE COMMANDE CUISINE
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def bon_commande_list(request):
     return redirect('/cuisine/stock/?tab=commandes')
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_commande_create(request):
     fournisseurs = Fournisseur.objects.filter(actif=True)
     ingredients  = Ingredient.objects.filter(statut=True)
@@ -298,7 +298,7 @@ def bon_commande_create(request):
     return render(request, 'cuisine/bon_commande_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_commande_detail(request, pk):
     bon   = get_object_or_404(BonCommandeCuisine, pk=pk)
     lignes = bon.lignes.select_related('ingredient').all()
@@ -307,7 +307,7 @@ def bon_commande_detail(request, pk):
     })
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_commande_annuler(request, pk):
     bon = get_object_or_404(BonCommandeCuisine, pk=pk)
     if request.method == 'POST':
@@ -321,12 +321,12 @@ def bon_commande_annuler(request, pk):
 # BONS DE RÉCEPTION CUISINE
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def bon_reception_list(request):
     return redirect('/cuisine/stock/?tab=receptions')
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_reception_create(request):
     fournisseurs = Fournisseur.objects.filter(actif=True)
     bons_cmd     = BonCommandeCuisine.objects.filter(statut__in=['confirme', 'envoye', 'partiel'])
@@ -372,7 +372,7 @@ def bon_reception_create(request):
     return render(request, 'cuisine/bon_reception_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_reception_detail(request, pk):
     br     = get_object_or_404(BonReceptionCuisine, pk=pk)
     lignes = br.lignes.select_related('ingredient').all()
@@ -381,7 +381,7 @@ def bon_reception_detail(request, pk):
     })
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_reception_valider(request, pk):
     br = get_object_or_404(BonReceptionCuisine, pk=pk)
     if request.method == 'POST':
@@ -393,7 +393,7 @@ def bon_reception_valider(request, pk):
     return redirect('/cuisine/stock/?tab=receptions')
 
 
-@login_required
+@require_module_access('cuisine')
 def bon_reception_annuler(request, pk):
     br = get_object_or_404(BonReceptionCuisine, pk=pk)
     if request.method == 'POST':
@@ -407,7 +407,7 @@ def bon_reception_annuler(request, pk):
 # FICHES TECHNIQUES
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def fiche_list(request):
     fiches = FicheTechnique.objects.select_related('categorie').exclude(statut='archive')
     q = request.GET.get('q', '')
@@ -425,7 +425,7 @@ def fiche_list(request):
     return render(request, 'cuisine/fiche_list.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def fiche_create(request):
     categories   = CategoriePlat.objects.all()
     ingredients  = Ingredient.objects.filter(statut=True).select_related('unite_recette')
@@ -464,7 +464,7 @@ def fiche_create(request):
     return render(request, 'cuisine/fiche_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def fiche_edit(request, pk):
     fiche        = get_object_or_404(FicheTechnique, pk=pk)
     categories   = CategoriePlat.objects.all()
@@ -504,7 +504,7 @@ def fiche_edit(request, pk):
     return render(request, 'cuisine/fiche_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def fiche_detail(request, pk):
     fiche  = get_object_or_404(FicheTechnique, pk=pk)
     lignes = fiche.lignes.select_related('ingredient__unite_recette').all()
@@ -513,7 +513,7 @@ def fiche_detail(request, pk):
     })
 
 
-@login_required
+@require_module_access('cuisine')
 def fiche_delete(request, pk):
     fiche = get_object_or_404(FicheTechnique, pk=pk)
     if request.method == 'POST':
@@ -529,7 +529,7 @@ def fiche_delete(request, pk):
 # PLATS / CARTE
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def plat_list(request):
     plats = Plat.objects.select_related('categorie', 'fiche_technique').exclude(statut='archive')
     q   = request.GET.get('q', '')
@@ -547,7 +547,7 @@ def plat_list(request):
     return render(request, 'cuisine/plat_list.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def plat_create(request):
     categories = CategoriePlat.objects.all()
     fiches     = FicheTechnique.objects.filter(statut='actif').exclude(plat__isnull=False)
@@ -573,7 +573,7 @@ def plat_create(request):
     return render(request, 'cuisine/plat_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def plat_edit(request, pk):
     plat       = get_object_or_404(Plat, pk=pk)
     categories = CategoriePlat.objects.all()
@@ -599,7 +599,7 @@ def plat_edit(request, pk):
     return render(request, 'cuisine/plat_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def plat_delete(request, pk):
     plat = get_object_or_404(Plat, pk=pk)
     if request.method == 'POST':
@@ -614,7 +614,7 @@ def plat_delete(request, pk):
 # FOURNISSEURS
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def fournisseur_list(request):
     fournisseurs = Fournisseur.objects.filter(actif=True)
     q = request.GET.get('q', '')
@@ -628,7 +628,7 @@ def fournisseur_list(request):
     return render(request, 'cuisine/fournisseur_list.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def fournisseur_create(request):
     if request.method == 'POST':
         f = Fournisseur(
@@ -648,7 +648,7 @@ def fournisseur_create(request):
     return render(request, 'cuisine/fournisseur_form.html', {'page_title': 'Nouveau Fournisseur', 'mode': 'create'})
 
 
-@login_required
+@require_module_access('cuisine')
 def fournisseur_edit(request, pk):
     f = get_object_or_404(Fournisseur, pk=pk)
     if request.method == 'POST':
@@ -669,7 +669,7 @@ def fournisseur_edit(request, pk):
     })
 
 
-@login_required
+@require_module_access('cuisine')
 def fournisseur_delete(request, pk):
     f = get_object_or_404(Fournisseur, pk=pk)
     if request.method == 'POST':
@@ -684,7 +684,7 @@ def fournisseur_delete(request, pk):
 # INVENTAIRE
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def inventaire_create(request):
     ingredients = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock')
     if request.method == 'POST':
@@ -718,7 +718,7 @@ def inventaire_create(request):
     return render(request, 'cuisine/inventaire_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
     if request.method == 'POST':
@@ -734,7 +734,7 @@ def inventaire_valider(request, pk):
 # CASSES
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def casse_create(request):
     ingredients = Ingredient.objects.filter(statut=True)
     if request.method == 'POST':
@@ -765,7 +765,7 @@ def casse_create(request):
     return render(request, 'cuisine/casse_form.html', context)
 
 
-@login_required
+@require_module_access('cuisine')
 def casse_valider(request, pk):
     casse = get_object_or_404(CasseCuisine, pk=pk)
     if request.method == 'POST':
@@ -781,7 +781,7 @@ def casse_valider(request, pk):
 # AJAX HELPERS
 # ==============================================================================
 
-@login_required
+@require_module_access('cuisine')
 def get_ingredient_prix(request, pk):
     ing = get_object_or_404(Ingredient, pk=pk)
     return JsonResponse({
@@ -793,7 +793,7 @@ def get_ingredient_prix(request, pk):
     })
 
 
-@login_required
+@require_module_access('cuisine')
 def get_bc_lignes(request, pk):
     """AJAX : lignes d'un BC pour pré-remplir un bon de réception"""
     bon    = get_object_or_404(BonCommandeCuisine, pk=pk)

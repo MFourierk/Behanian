@@ -113,7 +113,7 @@ def restaurant_index(request):
     
     return render(request, 'restaurant/index.html', context)
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def valider_commande(request):
     """Valide une commande (Paiement uniquement maintenant, l'ajout se fait en temps réel)"""
@@ -222,7 +222,7 @@ def valider_commande(request):
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def annuler_commande(request):
     """Annule une commande complète et restaure le stock"""
@@ -272,7 +272,7 @@ def annuler_commande(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def add_accompagnement_to_ligne(request):
     """Ajoute ou modifie l'accompagnement d'une ligne existante"""
@@ -370,7 +370,7 @@ def add_accompagnement_to_ligne(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 def recuperer_commande(request, commande_id):
     """Récupère les détails d'une commande en cours"""
     try:
@@ -410,7 +410,7 @@ def recuperer_commande(request, commande_id):
     except Commande.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Commande introuvable'})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def supprimer_ligne_commande(request):
     """Supprime une ligne de commande et restaure le stock"""
@@ -463,7 +463,7 @@ def supprimer_ligne_commande(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def create_reservation(request):
     """Crée une nouvelle réservation"""
@@ -505,7 +505,7 @@ def create_reservation(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def update_reservation_status(request):
     """Met à jour le statut d'une réservation"""
@@ -555,7 +555,7 @@ def update_reservation_status(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def ajouter_item_commande(request):
     """Ajoute un item à la commande en temps réel (crée/incrémente ligne + déstocke)"""
@@ -670,7 +670,7 @@ def ajouter_item_commande(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def update_ligne_quantite(request):
     """Met à jour la quantité (+1 ou -1) avec gestion stock"""
@@ -842,7 +842,7 @@ def restaurant_tpe(request):
     return render(request, 'restaurant/index.html', context)
 
 
-@login_required
+@require_module_access('restaurant')
 @require_POST
 def ajouter_boisson_commande(request):
     """Ajoute une boisson de la Cave à une commande restaurant — décrémente stock BoissonBar"""
