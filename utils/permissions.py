@@ -35,7 +35,8 @@ def user_has_access(user, module):
     """Vérifie si l'utilisateur peut accéder à un module."""
     if not user.is_authenticated:
         return False
-    if user.is_superuser:          # Seul le super admin a tout
+    # Seul le superuser a un accès global — is_staff ne donne AUCUN accès supplémentaire
+    if user.is_superuser:
         return True
     groups = get_user_groups(user)
     for g in groups:
@@ -75,6 +76,7 @@ def require_manager(view_func):
 
 def get_accessible_modules(user):
     """Retourne la liste des modules accessibles pour la sidebar."""
+    # is_staff seul ne donne AUCUN accès module — uniquement superuser
     if user.is_superuser:
         return ['dashboard', 'hotel', 'restaurant', 'bar', 'cuisine',
                 'piscine', 'boite_nuit', 'espaces', 'caisse', 'facturation',
