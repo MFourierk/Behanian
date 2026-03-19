@@ -372,7 +372,8 @@ function ouvrirModalTarif(){ document.getElementById('modalTarif').classList.add
 
 function ouvrirEntree(type){
   document.getElementById('entreeNom').value='';
-  document.getElementById('entreeNb').value=1;
+  document.getElementById('entreeAdultes').value=1;
+  document.getElementById('entreeEnfants').value=0;
   document.getElementById('entreeType').value=type;
   setType(type);
   document.getElementById('modalEntree').classList.add('open');
@@ -380,7 +381,8 @@ function ouvrirEntree(type){
 
 function ouvrirEntreeResident(nom, chambre){
   document.getElementById('entreeNom').value=nom;
-  document.getElementById('entreeNb').value=1;
+  document.getElementById('entreeAdultes').value=1;
+  document.getElementById('entreeEnfants').value=0;
   document.getElementById('entreeType').value='heberge';
   setType('heberge');
   document.getElementById('modalEntree').classList.add('open');
