@@ -24,8 +24,8 @@ def piscine_index(request):
     ).aggregate(s=Sum('prix_total'))['s'] or 0
 
     # Tarifs
-    tarif_v_adulte = TarifPiscine.objects.filter(type_client='visiteur', type_tarif='adulte').first()
-    tarif_v_enfant = TarifPiscine.objects.filter(type_client='visiteur', type_tarif='enfant').first()
+    tarif_v_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
+    tarif_v_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
 
     # Résidents hôtel actuellement en séjour
     from hotel.models import Reservation as HotelReservation
@@ -83,8 +83,8 @@ def enregistrer_entree(request):
         if type_client == 'heberge':
             prix_total = Decimal('0')
         else:
-            t_adulte = TarifPiscine.objects.filter(type_client='visiteur', type_tarif='adulte').first()
-            t_enfant = TarifPiscine.objects.filter(type_client='visiteur', type_tarif='enfant').first()
+            t_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
+            t_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
             if not t_adulte:
                 return JsonResponse({'success': False, 'error': 'Tarif adulte non configuré.'})
             prix_adulte = t_adulte.prix_unitaire * nb_adultes
@@ -245,19 +245,19 @@ def configurer_tarifs(request):
         prix_enfant = Decimal(str(data.get('enfant', 0)))
 
         TarifPiscine.objects.update_or_create(
-            type_client='visiteur', type_tarif='adulte',
+            type_tarif='adulte_visiteur',
             defaults={'prix_unitaire': prix_adulte}
         )
         TarifPiscine.objects.update_or_create(
-            type_client='visiteur', type_tarif='enfant',
+            type_tarif='enfant_visiteur',
             defaults={'prix_unitaire': prix_enfant}
         )
         TarifPiscine.objects.update_or_create(
-            type_client='heberge', type_tarif='adulte',
+            type_tarif='adulte_heberge',
             defaults={'prix_unitaire': Decimal('0')}
         )
         TarifPiscine.objects.update_or_create(
-            type_client='heberge', type_tarif='enfant',
+            type_tarif='enfant_heberge',
             defaults={'prix_unitaire': Decimal('0')}
         )
         return JsonResponse({'success': True, 'message': 'Tarifs mis à jour'})

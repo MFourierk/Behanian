@@ -207,7 +207,7 @@
     <div class="type-pills" id="typePills">
       <div class="type-pill active visiteur" onclick="setType('visiteur')">
         <span class="pill-icon">🧑</span><span class="pill-label">Visiteur</span>
-        <span class="pill-price">{% if tarif_visiteur %}{{ tarif_visiteur.prix_unitaire|floatformat:0 }} F/pers{% else %}Tarif non défini{% endif %}</span>
+        <span class="pill-price">{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }} F{% else %}Non défini{% endif %}</span>
       </div>
       <div class="type-pill heberge" onclick="setType('heberge')">
         <span class="pill-icon">🏨</span><span class="pill-label">Résident hôtel</span><span class="pill-price">Gratuit</span>
