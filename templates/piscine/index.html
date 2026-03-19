@@ -86,7 +86,7 @@
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
-  {% if not tarif_visiteur %}
+  {% if not tarif_v_adulte %}
   <div class="tarif-banner">
     <span>⚠️ Tarif visiteur non configuré — les entrées payantes seront bloquées.</span>
     <button class="btn-p btn-primary" onclick="ouvrirModalTarif()"><i class="fas fa-cog"></i> Configurer</button>
@@ -106,7 +106,7 @@
   <div style="display:flex;gap:10px;margin-bottom:20px">
     <button class="btn-p btn-primary" onclick="ouvrirEntree('visiteur')"><i class="fas fa-user-plus"></i> Entrée Visiteur</button>
     <button class="btn-p btn-success" onclick="ouvrirEntree('heberge')"><i class="fas fa-hotel"></i> Résident Hôtel (gratuit)</button>
-    <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto"><i class="fas fa-cog"></i> Tarifs : {% if tarif_visiteur %}{{ tarif_visiteur.prix_unitaire|floatformat:0 }} F/pers{% else %}Non configuré{% endif %}</button>
+    <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto"><i class="fas fa-cog"></i> Tarifs : {% if tarif_v_adulte %}Adulte {{ tarif_v_adulte.prix_unitaire|floatformat:0 }} F | Enfant {% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }} F{% else %}—{% endif %}{% else %}Non configuré{% endif %}</button>
   </div>
 
   <div class="main-grid">
@@ -218,12 +218,22 @@
       <label>Nom du client <span style="color:#dc2626">*</span></label>
       <input type="text" id="entreeNom" placeholder="Nom et prénom">
     </div>
-    <div class="form-row">
-      <label>Nombre de personnes</label>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button type="button" class="qty-btn" onclick="changeNb(-1)">−</button>
-        <input type="number" id="entreeNb" value="1" min="1" style="width:60px;text-align:center">
-        <button type="button" class="qty-btn" onclick="changeNb(1)">+</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row">
+        <label>Adultes</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" class="qty-btn" onclick="changeNb('adulte',-1)">−</button>
+          <input type="number" id="entreeAdultes" value="1" min="0" style="width:52px;text-align:center;border:1px solid #d4dce8;border-radius:6px;padding:6px" oninput="updatePrix()">
+          <button type="button" class="qty-btn" onclick="changeNb('adulte',1)">+</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Enfants</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" class="qty-btn" onclick="changeNb('enfant',-1)">−</button>
+          <input type="number" id="entreeEnfants" value="0" min="0" style="width:52px;text-align:center;border:1px solid #d4dce8;border-radius:6px;padding:6px" oninput="updatePrix()">
+          <button type="button" class="qty-btn" onclick="changeNb('enfant',1)">+</button>
+        </div>
       </div>
     </div>
     <div id="entreePrixRow" style="padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:13px;font-weight:600;color:#15803d;margin-bottom:14px"></div>
@@ -330,12 +340,18 @@
 <div class="modal-ov" id="modalTarif">
   <div class="modal-box" style="width:360px">
     <div class="modal-head"><h3>Tarifs piscine</h3><button class="close-btn" onclick="fermerModal('modalTarif')">×</button></div>
-    <div class="form-row">
-      <label>Prix visiteur (par personne, FCFA)</label>
-      <input type="number" id="tarifVisiteur" value="{% if tarif_visiteur %}{{ tarif_visiteur.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 5000">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row">
+        <label>Adulte visiteur (FCFA)</label>
+        <input type="number" id="tarifAdulte" value="{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 5000">
+      </div>
+      <div class="form-row">
+        <label>Enfant visiteur (FCFA)</label>
+        <input type="number" id="tarifEnfant" value="{% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 2500">
+      </div>
     </div>
     <div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#15803d;margin-bottom:14px">
-      🏨 Résidents hôtel : <strong>Gratuit</strong> (automatique)
+      🏨 Résidents hôtel (adultes &amp; enfants) : <strong>Gratuit</strong>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalTarif')">Annuler</button>
@@ -377,24 +393,31 @@ function setType(type){
   updatePrix();
 }
 
-function changeNb(d){
-  const i=document.getElementById('entreeNb');
-  i.value=Math.max(1,(parseInt(i.value)||1)+d);
+function changeNb(cat,d){
+  const id=cat==='adulte'?'entreeAdultes':'entreeEnfants';
+  const i=document.getElementById(id);
+  i.value=Math.max(0,(parseInt(i.value)||0)+d);
+  if(cat==='adulte'&&parseInt(i.value)<1&&document.getElementById('entreeType').value==='visiteur')i.value=1;
   updatePrix();
 }
 
 function updatePrix(){
   const type=document.getElementById('entreeType').value;
-  const nb=parseInt(document.getElementById('entreeNb').value)||1;
+  const na=parseInt(document.getElementById('entreeAdultes').value)||0;
+  const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
   const row=document.getElementById('entreePrixRow');
   if(type==='heberge'){
     row.style.background='#f0fdf4';row.style.color='#15803d';row.style.borderColor='#bbf7d0';
-    row.textContent='🏨 Résident hôtel — Entrée gratuite';
+    row.textContent='🏨 Résident hôtel — Entrée gratuite (adultes et enfants)';
   } else {
-    const tarif = {% if tarif_visiteur %}{{ tarif_visiteur.prix_unitaire }}{% else %}0{% endif %};
-    const total = tarif*nb;
+    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire }}{% else %}0{% endif %};
+    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire }}{% else %}0{% endif %};
+    const total=ta*na+te*ne;
+    let detail='';
+    if(na>0)detail+=`${na} adulte${na>1?'s':''} × ${ta.toLocaleString('fr-FR')} F`;
+    if(ne>0)detail+=(detail?' + ':'')+`${ne} enfant${ne>1?'s':''} × ${te.toLocaleString('fr-FR')} F`;
     row.style.background='#eff6ff';row.style.color='#2563eb';row.style.borderColor='#bfdbfe';
-    row.textContent=`Visiteur — ${nb} pers. × ${tarif.toLocaleString('fr-FR')} F = ${total.toLocaleString('fr-FR')} F`;
+    row.textContent=`${detail} = ${total.toLocaleString('fr-FR')} F`;
   }
 }
 
@@ -403,7 +426,10 @@ async function validerEntree(){
   const type=document.getElementById('entreeType').value;
   const nb=parseInt(document.getElementById('entreeNb').value)||1;
   if(!nom){alert('Veuillez saisir le nom du client.');return;}
-  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nombre_personnes:nb})});
+  const na=parseInt(document.getElementById('entreeAdultes').value)||0;
+  const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
+  if(type!=='heberge'&&na<1){alert('Au moins 1 adulte requis.');return;}
+  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne})});
   const d=await r.json();
   if(d.success){fermerModal('modalEntree');location.reload();}
   else alert(d.error||'Erreur');
@@ -536,9 +562,10 @@ async function validerSortie(){
 }
 
 async function sauvegarderTarif(){
-  const v=parseFloat(document.getElementById('tarifVisiteur').value)||0;
-  if(!v){alert('Veuillez saisir un tarif.');return;}
-  const r=await fetch('{% url "piscine:tarifs" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({visiteur:v})});
+  const a=parseFloat(document.getElementById('tarifAdulte').value)||0;
+  const e=parseFloat(document.getElementById('tarifEnfant').value)||0;
+  if(!a){alert('Veuillez saisir le tarif adulte.');return;}
+  const r=await fetch('{% url "piscine:tarifs" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({adulte:a,enfant:e})});
   const d=await r.json();
   if(d.success){fermerModal('modalTarif');location.reload();}
   else alert(d.error);
