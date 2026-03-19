@@ -16,19 +16,19 @@ GROUPE_CAISSIER_PRINCIPAL = 'Caissier(ère) Principal(e)'
 GROUPE_SERVEUR            = 'Serveuse/Serveur'
 
 # Modules accessibles par groupe
-ACCESS_MAP = {
-    GROUPE_MANAGER_GENERAL:    ['*'],
-    GROUPE_MANAGER_CUISINE:    ['cuisine'],
-    GROUPE_RECEPTIONNISTE:     ['hotel'],
-    GROUPE_CAISSIER:           ['restaurant', 'bar', 'piscine', 'espaces'],
-    GROUPE_CAISSIER_PRINCIPAL: ['caisse'],
-    GROUPE_SERVEUR:            [],
-    # Alias sans accents (compatibilite script Windows)
-    'Manager General(e)':      ['*'],
-    'Receptionniste':          ['hotel'],
-    'Caissiere / Caissier':    ['restaurant', 'bar', 'piscine', 'espaces'],
-    'Caissier(ere) Principal(e)': ['caisse'],
-}
+# Tous les noms de groupes possibles (avec/sans accents)
+ACCESS_MAP = {}
+_RULES = [
+    (['Manager Général(e)', 'Manager General(e)'],        ['*']),
+    (['Manager Cuisine'],                                  ['cuisine']),
+    (['Réceptionniste', 'Receptionniste'],                 ['hotel']),
+    (['Caissière / Caissier', 'Caissiere / Caissier'],    ['restaurant', 'bar', 'piscine', 'espaces']),
+    (['Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)'], ['caisse']),
+    (['Serveuse/Serveur'],                                 []),
+]
+for _names, _modules in _RULES:
+    for _n in _names:
+        ACCESS_MAP[_n] = _modules
 
 
 def get_user_groups(user):

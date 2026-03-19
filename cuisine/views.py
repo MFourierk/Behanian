@@ -807,6 +807,7 @@ def get_bc_lignes(request, pk):
         })
     return JsonResponse({'lignes': lignes, 'fournisseur_id': bon.fournisseur_id or ''})
 
+@require_module_access('cuisine')
 def rapport_stock_cuisine(request):
     get = request.GET.copy()
     if 'module' not in get:

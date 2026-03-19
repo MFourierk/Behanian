@@ -836,6 +836,7 @@ def casse_annuler(request, pk):
         messages.warning(request, f"Déclaration {casse.numero} annulée.")
     return redirect('/bar/stock/?tab=casses')
 
+@require_module_access('bar')
 def rapport_stock_cave(request):
     get = request.GET.copy()
     if 'module' not in get:
@@ -849,6 +850,7 @@ def rapport_stock_cave(request):
 # REMPLACEMENT DE bar_tpe dans bar/views.py
 # ================================================================
 
+@require_module_access('bar')
 def bar_tpe(request):
     from .models import BoissonBar, CategorieBar
     from django.contrib.auth.models import User, Group
