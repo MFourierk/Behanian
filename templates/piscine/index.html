@@ -399,7 +399,7 @@ function changeNb(cat,d){
   const id=cat==='adulte'?'entreeAdultes':'entreeEnfants';
   const i=document.getElementById(id);
   i.value=Math.max(0,(parseInt(i.value)||0)+d);
-  if(cat==='adulte'&&parseInt(i.value)<1&&document.getElementById('entreeType').value==='visiteur')i.value=1;
+  // Minimum 0 pour chaque catégorie
   updatePrix();
 }
 
@@ -430,7 +430,7 @@ async function validerEntree(){
   if(!nom){alert('Veuillez saisir le nom du client.');return;}
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
-  if(type!=='heberge'&&na<1){alert('Au moins 1 adulte requis.');return;}
+  if(type!=='heberge'&&na<1&&ne<1){alert('Veuillez indiquer au moins 1 personne.');return;}
   const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne})});
   const d=await r.json();
   if(d.success){fermerModal('modalEntree');location.reload();}

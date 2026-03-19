@@ -73,8 +73,10 @@ def enregistrer_entree(request):
         data = json.loads(request.body)
         type_client  = data.get('type_client', 'visiteur')
         nom_client   = data.get('nom_client', '').strip()
-        nb_adultes   = int(data.get('nb_adultes', 1))
+        nb_adultes   = int(data.get('nb_adultes', 0))
         nb_enfants   = int(data.get('nb_enfants', 0))
+        if type_client != 'heberge' and nb_adultes < 1 and nb_enfants < 1:
+            return JsonResponse({'success': False, 'error': 'Veuillez indiquer au moins 1 personne.'})
 
         if not nom_client:
             return JsonResponse({'success': False, 'error': 'Nom du client requis'})
@@ -87,7 +89,7 @@ def enregistrer_entree(request):
             t_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
             if not t_adulte:
                 return JsonResponse({'success': False, 'error': 'Tarif adulte non configuré.'})
-            prix_adulte = t_adulte.prix_unitaire * nb_adultes
+            prix_adulte = (t_adulte.prix_unitaire * nb_adultes) if nb_adultes else Decimal('0')
             prix_enfant = (t_enfant.prix_unitaire * nb_enfants) if t_enfant and nb_enfants else Decimal('0')
             prix_total  = prix_adulte + prix_enfant
 
