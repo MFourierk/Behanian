@@ -1,4 +1,20 @@
 from utils.permissions import require_module_access
+from functools import wraps
+from django.shortcuts import redirect as _redirect
+from django.contrib import messages as _messages
+
+def require_bar_gestion(view_func):
+    """Réservé Manager Général et Manager Cuisine — pas les caissiers."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from utils.permissions import get_user_groups
+        groups = get_user_groups(request.user)
+        caissier_groups = ['Caissière / Caissier', 'Caissiere / Caissier']
+        if any(g in caissier_groups for g in groups):
+            _messages.error(request, "Accès refusé — cette section est réservée à la gestion.")
+            return _redirect('bar:tpe')
+        return view_func(request, *args, **kwargs)
+    return wrapper
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -19,11 +35,19 @@ from cuisine.models import Fournisseur
 
 @require_module_access('bar')
 def bar_dashboard(request):
+    # Les caissiers vont directement au TPE — pas besoin du dashboard
+    from utils.permissions import get_user_groups
+    groups = get_user_groups(request.user)
+    caissier_groups = ['Caissière / Caissier', 'Caissiere / Caissier']
+    if any(g in caissier_groups for g in groups):
+        from django.shortcuts import redirect
+        return redirect('bar:tpe')
     context = {'page_title': 'Tableau de Bord - Cave'}
     return render(request, 'bar/dashboard.html', context)
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def stock_management(request):
     boissons = BoissonBar.objects.filter(statut='actif')
 
@@ -146,6 +170,7 @@ def stock_management(request):
 # ===== ARTICLES =====
 
 @require_module_access('bar')
+@require_bar_gestion
 def articles_list(request):
     articles = BoissonBar.objects.exclude(statut='supprime')
     categories = CategorieBar.objects.all()
@@ -171,6 +196,7 @@ def articles_list(request):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def article_create(request):
     categories = CategorieBar.objects.all()
     unites = UniteVente.objects.all()
@@ -201,6 +227,7 @@ def article_create(request):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def article_edit(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     categories = CategorieBar.objects.all()
@@ -230,6 +257,7 @@ def article_edit(request, pk):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def article_delete(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     if request.method == 'POST':
@@ -242,6 +270,7 @@ def article_delete(request, pk):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def article_dupliquer(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     article.pk = None
@@ -253,6 +282,7 @@ def article_dupliquer(request, pk):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def article_sommeil(request, pk):
     article = get_object_or_404(BoissonBar, pk=pk)
     if article.statut == 'actif':
@@ -269,11 +299,13 @@ def article_sommeil(request, pk):
 # ===== BONS DE COMMANDE =====
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_commande_list(request):
     return redirect('/bar/stock/?tab=commandes')
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_commande_create(request):
     type_commande = request.GET.get('type', 'achat')
     fournisseurs = Fournisseur.objects.all()
@@ -325,6 +357,7 @@ def bon_commande_create(request):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_commande_detail(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
     lignes = bon.lignes.select_related('article').all()
@@ -337,6 +370,7 @@ def bon_commande_detail(request, pk):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_commande_edit(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
     fournisseurs = Fournisseur.objects.all()
@@ -423,11 +457,13 @@ def get_article_prix(request, pk):
 # ===== BONS DE RÉCEPTION =====
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_reception_list(request):
     return redirect('/bar/stock/?tab=reception')
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_reception_create(request):
     fournisseurs = Fournisseur.objects.all()
     articles = BoissonBar.objects.exclude(statut='supprime')
@@ -491,6 +527,7 @@ def bon_reception_create(request):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def bon_reception_detail(request, pk):
     br = get_object_or_404(BonReceptionBar, pk=pk)
     lignes = br.lignes.select_related('article').all()
@@ -631,11 +668,13 @@ def mouvement_create(request):
 # ===== INVENTAIRE =====
 
 @require_module_access('bar')
+@require_bar_gestion
 def inventaire_list(request):
     return redirect('/bar/stock/?tab=inventaire')
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def inventaire_create(request):
     """Créer un nouvel inventaire avec toutes les boissons actives"""
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
@@ -681,6 +720,7 @@ def inventaire_create(request):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     lignes = inv.lignes.select_related('article').order_by('article__categorie__nom', 'article__nom')
@@ -741,11 +781,13 @@ def inventaire_annuler(request, pk):
 # ===== GESTION DES CASSES =====
 
 @require_module_access('bar')
+@require_bar_gestion
 def casse_list(request):
     return redirect('/bar/stock/?tab=casses')
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def casse_create(request):
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
 
@@ -791,6 +833,7 @@ def casse_create(request):
 
 
 @require_module_access('bar')
+@require_bar_gestion
 def casse_detail(request, pk):
     casse = get_object_or_404(CasseBar, pk=pk)
     lignes = casse.lignes.select_related('article').all()
@@ -837,6 +880,7 @@ def casse_annuler(request, pk):
     return redirect('/bar/stock/?tab=casses')
 
 @require_module_access('bar')
+@require_bar_gestion
 def rapport_stock_cave(request):
     get = request.GET.copy()
     if 'module' not in get:
