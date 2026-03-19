@@ -97,3 +97,60 @@ def get_accessible_modules(user):
         else:
             modules.update(allowed)
     return list(modules)
+
+
+# ── Décorateurs de restriction intra-module ──────────────────
+
+def _is_caissier(user):
+    g = get_user_groups(user)
+    return any(x in g for x in ['Caissière / Caissier','Caissiere / Caissier'])
+
+def _is_receptionniste(user):
+    g = get_user_groups(user)
+    return 'Réceptionniste' in g or 'Receptionniste' in g
+
+def _is_manager_cuisine(user):
+    g = get_user_groups(user)
+    return 'Manager Cuisine' in g
+
+def _is_manager_general(user):
+    g = get_user_groups(user)
+    return user.is_superuser or 'Manager Général(e)' in g or 'Manager General(e)' in g
+
+
+def require_gestion_access(module):
+    """Bloque les caissiers et réceptionnistes des pages de gestion/admin."""
+    from functools import wraps
+    from django.shortcuts import redirect
+    from django.contrib import messages
+
+    # URLs de repli par module
+    fallback = {
+        'bar':        'bar:tpe',
+        'restaurant': 'restaurant:index',
+        'hotel':      'hotel:index',
+        'cuisine':    'cuisine:index',
+        'piscine':    'piscine:index',
+        'caisse':     'caisse:index',
+        'facturation':'facturation:index',
+    }
+
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            user = request.user
+            # Caissiers — accès TPE uniquement
+            if _is_caissier(user):
+                messages.error(request, "Accès refusé — section réservée à la gestion.")
+                return redirect(fallback.get(module, 'dashboard:index'))
+            # Réceptionnistes — hotel uniquement, pas d'admin structurel
+            if _is_receptionniste(user) and module != 'hotel':
+                messages.error(request, "Accès refusé.")
+                return redirect('hotel:index')
+            # Manager Cuisine — cuisine uniquement
+            if _is_manager_cuisine(user) and module not in ['cuisine']:
+                messages.error(request, "Accès refusé.")
+                return redirect('cuisine:index')
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator

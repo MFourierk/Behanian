@@ -26,8 +26,27 @@ def user_permissions_context(request):
     elif groups:
         role = role_map.get(groups[0], groups[0])
 
+    # Page d'accueil selon le groupe
+    home_map = {
+        'Manager Général(e)':      'dashboard:index',
+        'Manager General(e)':      'dashboard:index',
+        'Manager Cuisine':         'cuisine:index',
+        'Réceptionniste':          'hotel:index',
+        'Receptionniste':          'hotel:index',
+        'Caissière / Caissier':    'bar:tpe',
+        'Caissiere / Caissier':    'bar:tpe',
+        'Caissier(ère) Principal(e)': 'caisse:index',
+        'Caissier(ere) Principal(e)': 'caisse:index',
+    }
+    home_url = 'dashboard:index'
+    for g in groups:
+        if g in home_map:
+            home_url = home_map[g]
+            break
+
     return {
         'accessible_modules': modules,
         'user_role':          role,
         'user_groups':        groups,
+        'user_home_url':      home_url,
     }

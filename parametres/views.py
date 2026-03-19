@@ -1,3 +1,4 @@
+from utils.permissions import require_module_access, require_manager
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -12,7 +13,7 @@ from bar.models import BoissonBar, CategorieBar, TableBar
 
 from django.http import HttpResponse
 
-@login_required
+@require_manager
 def parametres_index(request):
     return render(request, 'parametres/index.html')
 
