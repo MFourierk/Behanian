@@ -26,14 +26,14 @@ ALLOWED_PATHS = {
     'Manager Cuisine':            ['/cuisine/'],
     'Réceptionniste':             ['/hotel/'],
     'Receptionniste':             ['/hotel/'],
-    'Caissière / Caissier':       ['/bar/', '/restaurant/', '/piscine/', '/espaces/'],
-    'Caissiere / Caissier':       ['/bar/', '/restaurant/', '/piscine/', '/espaces/'],
+    'Caissière / Caissier':       ['/bar/', '/restaurant/', '/piscine/', '/espaces-evenementiels/'],
+    'Caissiere / Caissier':       ['/bar/', '/restaurant/', '/piscine/', '/espaces-evenementiels/'],
     'Caissier(ère) Principal(e)': ['/caisse/'],
     'Caissier(ere) Principal(e)': ['/caisse/'],
     'Serveuse/Serveur':           [],
 }
 
-ALWAYS_ALLOWED = ['/login', '/logout', '/static/', '/media/', '/dashboard/']
+ALWAYS_ALLOWED = ['/users/', '/static/', '/media/', '/dashboard/', '/admin/']
 
 
 class StrictGroupAccessMiddleware:
