@@ -576,7 +576,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <!-- Badge chambre liée -->
       <div id="chambre-liee-badge" style="display:none;padding:7px 12px;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.4);border-radius:8px;font-size:12px;font-weight:600;color:#60a5fa;display:flex;align-items:center;gap:6px;cursor:pointer" onclick="ouvrirModalLierChambre()">
         <i class="fas fa-bed"></i> <span id="chambre-liee-nom">Ch. ---</span>
-        <span onclick="event.stopPropagation();delierchambre()" style="margin-left:4px;opacity:.7;font-size:11px">✕</span>
+        <span onclick="event.stopPropagation();delierChambre()" style="margin-left:4px;opacity:.7;font-size:11px">✕</span>
       </div>
       <button class="btn-attente" id="btnLierChambre" onclick="ouvrirModalLierChambre()" title="Associer ce ticket à une chambre hôtel">
         <i class="fas fa-bed"></i> Lier chambre
@@ -1191,5 +1191,44 @@ function updateCaveClock() {
 }
 setInterval(updateCaveClock, 1000);
 updateCaveClock();
+
+// ── Lier chambre ──
+function ouvrirModalLierChambre(){
+  document.getElementById('modalLierChambre').classList.add('open');
+  if(chambreLieeId){
+    const sel=document.getElementById('selectChambreLier');
+    for(let i=0;i<sel.options.length;i++){if(sel.options[i].value==chambreLieeId){sel.selectedIndex=i;break;}}
+  }
+}
+
+function fermerModalLierChambre(){
+  document.getElementById('modalLierChambre').classList.remove('open');
+}
+
+function confirmerLierChambre(){
+  const sel=document.getElementById('selectChambreLier');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt.value){ toast('Sélectionnez une chambre','error'); return; }
+  chambreLieeId=opt.value;
+  chambreLieeNom=opt.text;
+  document.getElementById('chambre-liee-badge').style.display='flex';
+  document.getElementById('chambre-liee-nom').textContent=opt.text;
+  document.getElementById('btnLierChambre').style.display='none';
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.pay-btn[data-mode="chambre"]').classList.add('active');
+  modePaiement='chambre';
+  fermerModalLierChambre();
+  toast('Commande liée à '+opt.text,'success');
+}
+
+function delierChambre(){
+  chambreLieeId=null;
+  chambreLieeNom=null;
+  document.getElementById('chambre-liee-badge').style.display='none';
+  document.getElementById('btnLierChambre').style.display='';
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.pay-btn[data-mode="especes"]').classList.add('active');
+  modePaiement='especes';
+}
 </script>
 {% endblock %}
