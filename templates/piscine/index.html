@@ -263,6 +263,7 @@
       <div style="display:flex;gap:8px;margin-bottom:12px;position:sticky;top:0;background:white;padding:10px 0;z-index:1;border-bottom:1px solid #f0f3f7">
         <button class="btn-p btn-primary" id="tabBoisson" onclick="setTab('boisson')" style="flex:1">🍸 Boissons</button>
         <button class="btn-p btn-outline" id="tabPlat" onclick="setTab('plat')" style="flex:1">🍽️ Plats</button>
+        <button class="btn-p btn-outline" id="tabEnCours" onclick="setTab('encours')" style="flex:1">✏️ En cours</button>
       </div>
 
       <div id="sectionBoisson">
@@ -297,6 +298,14 @@
             <div style="text-align:right;flex-shrink:0"><div class="art-prix">{{ p.prix|floatformat:0 }} F</div></div>
             <div class="art-add-btn">＋</div>
           </div>{% endfor %}
+        </div>
+      </div>
+
+      <!-- Section En cours -->
+      <div id="sectionEnCours" style="display:none">
+        <div style="font-size:12px;color:#5a6b7c;margin-bottom:10px">Modifiez ou supprimez les articles déjà commandés.</div>
+        <div id="enCoursList">
+          <div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Chargement...</div>
         </div>
       </div>
     </div>
@@ -460,8 +469,62 @@ function setTab(tab){
   tabActif=tab;
   document.getElementById('sectionBoisson').style.display=tab==='boisson'?'block':'none';
   document.getElementById('sectionPlat').style.display=tab==='plat'?'block':'none';
+  document.getElementById('sectionEnCours').style.display=tab==='encours'?'block':'none';
   document.getElementById('tabBoisson').className='btn-p '+(tab==='boisson'?'btn-primary':'btn-outline');
   document.getElementById('tabPlat').className='btn-p '+(tab==='plat'?'btn-primary':'btn-outline');
+  document.getElementById('tabEnCours').className='btn-p '+(tab==='encours'?'btn-primary':'btn-outline');
+  if(tab==='encours') chargerEnCours();
+}
+
+async function chargerEnCours(){
+  const id = document.getElementById('cmdAccesId').value;
+  const r = await fetch(`{% url "piscine:acces_detail" 0 %}`.replace('/0/','/'+id+'/'));
+  const d = await r.json();
+  const liste = document.getElementById('enCoursList');
+  if(!d.consommations||d.consommations.length===0){
+    liste.innerHTML='<div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Aucune consommation enregistrée</div>';
+    return;
+  }
+  let html='';
+  d.consommations.forEach(c=>{
+    html+=`<div id="enCours_${c.id}" style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #dde3ec;border-radius:10px;margin-bottom:8px;background:white">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:#1a2535">${c.produit}</div>
+        <div style="font-size:11px;color:#7a8b9c">${c.prix.toLocaleString('fr-FR')} F/u</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button onclick="modifConso(${c.id},-1)" style="width:26px;height:26px;border-radius:6px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:14px">−</button>
+        <span id="qty_${c.id}" style="font-size:14px;font-weight:700;min-width:24px;text-align:center">${c.quantite}</span>
+        <button onclick="modifConso(${c.id},1)" style="width:26px;height:26px;border-radius:6px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:14px">+</button>
+      </div>
+      <div id="total_${c.id}" style="font-size:12px;font-weight:700;color:#2563eb;min-width:65px;text-align:right">${c.total.toLocaleString('fr-FR')} F</div>
+      <button onclick="suppConso(${c.id})" style="background:#fee2e2;border:none;color:#dc2626;cursor:pointer;font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px">Retirer</button>
+    </div>`;
+  });
+  liste.innerHTML=html;
+}
+
+async function modifConso(id, delta){
+  const qtyEl=document.getElementById('qty_'+id);
+  const nouvelleQty=Math.max(1,parseInt(qtyEl.textContent)+delta);
+  const r=await fetch('{% url "piscine:modifier_conso" 0 %}'.replace('/0/','/'+id+'/'),{
+    method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({quantite:nouvelleQty})
+  });
+  const d=await r.json();
+  if(d.success){ chargerEnCours(); }
+  else alert(d.error||'Erreur');
+}
+
+async function suppConso(id){
+  if(!confirm('Retirer cet article ?')) return;
+  const r=await fetch('{% url "piscine:supprimer_conso" 0 %}'.replace('/0/','/'+id+'/'),{
+    method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({})
+  });
+  const d=await r.json();
+  if(d.success){ chargerEnCours(); }
+  else alert(d.error||'Erreur');
 }
 
 function ouvrirCommande(id, nom){

@@ -272,7 +272,7 @@ def api_acces_detail(request, acces_id):
     """Détails d'un accès avec ses consommations."""
     acces = get_object_or_404(AccesPiscine, id=acces_id)
     consommations = [
-        {'produit': c.produit, 'quantite': c.quantite,
+        {'id': c.id, 'produit': c.produit, 'quantite': c.quantite,
          'prix': float(c.prix_unitaire), 'total': float(c.get_total())}
         for c in acces.consommations.all()
     ]
@@ -289,3 +289,84 @@ def api_acces_detail(request, acces_id):
         'total_conso': float(total_conso),
         'total': float(acces.prix_total + total_conso),
     })
+
+
+@require_module_access('piscine')
+@require_POST
+def modifier_consommation(request, conso_id):
+    """Modifier la quantité d'une consommation existante."""
+    try:
+        from .models import ConsommationPiscine
+        conso = get_object_or_404(ConsommationPiscine, id=conso_id)
+        # Vérifier que l'accès n'est pas encore clôturé
+        if conso.acces.date_sortie:
+            return JsonResponse({'success': False, 'error': 'Accès déjà clôturé.'})
+        data = json.loads(request.body)
+        nouvelle_qty = int(data.get('quantite', 1))
+        if nouvelle_qty < 1:
+            return JsonResponse({'success': False, 'error': 'Quantité invalide.'})
+
+        # Ajuster le stock bar si c'est une boisson
+        from bar.models import BoissonBar, MouvementStockBar
+        try:
+            boisson = BoissonBar.objects.get(nom=conso.produit)
+            diff = nouvelle_qty - conso.quantite
+            if diff > 0 and boisson.quantite_stock < diff:
+                return JsonResponse({'success': False, 'error': f'Stock insuffisant ({boisson.quantite_stock} disponible).'})
+            boisson.quantite_stock = max(0, boisson.quantite_stock - diff)
+            boisson.save()
+            if diff != 0:
+                MouvementStockBar.objects.create(
+                    boisson=boisson, type_mouvement='sortie' if diff > 0 else 'entree',
+                    quantite=abs(diff), commentaire=f'Modif piscine #{conso.acces.id}',
+                    utilisateur=request.user
+                )
+        except BoissonBar.DoesNotExist:
+            pass  # Plat, pas de stock à gérer
+
+        conso.quantite = nouvelle_qty
+        conso.save()
+        total_conso = sum(c.get_total() for c in conso.acces.consommations.all())
+        return JsonResponse({
+            'success': True,
+            'message': f'Quantité mise à jour : {conso.produit} x{nouvelle_qty}',
+            'total_consommations': float(total_conso),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('piscine')
+@require_POST
+def supprimer_consommation(request, conso_id):
+    """Supprimer une consommation et remettre le stock."""
+    try:
+        from .models import ConsommationPiscine
+        conso = get_object_or_404(ConsommationPiscine, id=conso_id)
+        if conso.acces.date_sortie:
+            return JsonResponse({'success': False, 'error': 'Accès déjà clôturé.'})
+
+        # Remettre le stock bar
+        from bar.models import BoissonBar, MouvementStockBar
+        try:
+            boisson = BoissonBar.objects.get(nom=conso.produit)
+            boisson.quantite_stock += conso.quantite
+            boisson.save()
+            MouvementStockBar.objects.create(
+                boisson=boisson, type_mouvement='entree',
+                quantite=conso.quantite, commentaire=f'Retour piscine #{conso.acces.id}',
+                utilisateur=request.user
+            )
+        except BoissonBar.DoesNotExist:
+            pass
+
+        acces = conso.acces
+        conso.delete()
+        total_conso = sum(c.get_total() for c in acces.consommations.all())
+        return JsonResponse({
+            'success': True,
+            'message': 'Article retiré',
+            'total_consommations': float(total_conso),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
