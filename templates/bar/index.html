@@ -590,6 +590,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <div class="modal-subtitle" id="modalSubtitle">Cave Behanian — <span id="modalMode">Espèces</span></div>
     <div class="modal-total" id="modalTotal">0 F <span>FCFA</span></div>
 
+    <!-- Sélecteur chambre (mode Report Chambre) -->
+    <div id="chambreSection" style="display:none;margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:8px">Chambre du client</label>
+      <select id="selectChambreBar" style="width:100%;padding:10px 14px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px">
+        <option value="">— Sélectionner une chambre —</option>
+        {% for res in chambres_occupees %}
+        <option value="{{ res.id }}">Ch. {{ res.chambre.numero }} — {{ res.client.nom_complet }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
     <div class="rendu-section" id="renduSection">
       <label>MONTANT REÇU (FCFA)</label>
       <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
@@ -838,6 +849,9 @@ function ouvrirModalPaiement() {
   } else {
     rendu.style.display = ''; billets.style.display = '';
   }
+  // Sélecteur chambre
+  const chambreSection = document.getElementById('chambreSection');
+  if (chambreSection) chambreSection.style.display = modePaiement === 'chambre' ? 'block' : 'none';
 
   const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
   const ref    = t.ref ? ` (${t.ref})` : '';
@@ -895,7 +909,11 @@ async function confirmerPaiement() {
   }
 
   if (modePaiement === 'especes' || modePaiement === 'mobile') {
-    if (montantRecu < total) { toast('Montant reçu insuffisant', 'error'); return; }
+    if (modePaiement === 'chambre') {
+      const chambre = document.getElementById('selectChambreBar')?.value;
+      if (!chambre) { toast('Veuillez sélectionner la chambre du client', 'error'); return; }
+    }
+    if (modePaiement !== 'chambre' && montantRecu < total) { toast('Montant reçu insuffisant', 'error'); return; }
   }
 
   // Désactiver le bouton pendant l'envoi
@@ -912,7 +930,8 @@ async function confirmerPaiement() {
       espace       : t.espace,
       ref          : t.ref,
       serveur      : t.serveur || '',
-      montant_recu : montantRecu,
+      montant_recu   : montantRecu,
+      reservation_id : modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : '',
     };
 
     const resp = await fetch("{% url 'bar:api_vente' %}", {

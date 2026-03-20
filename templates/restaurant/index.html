@@ -755,6 +755,17 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <div class="modal-title">Encaissement</div>
     <div class="modal-subtitle" id="modalSubtitle">Restaurant — <span id="modalMode">Espèces</span></div>
     <div class="modal-total" id="modalTotal">0 F <span>FCFA</span></div>
+    <!-- Report Chambre -->
+    <div id="chambreSection" style="display:none;margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:8px">Chambre du client</label>
+      <select id="selectChambreResto" style="width:100%;padding:10px 14px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px">
+        <option value="">— Sélectionner une chambre —</option>
+        {% for res in chambres_occupees %}
+        <option value="{{ res.id }}">Ch. {{ res.chambre.numero }} — {{ res.client.nom_complet }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
     <div class="rendu-section" id="renduSection">
       <label>MONTANT REÇU (FCFA)</label>
       <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
@@ -1203,6 +1214,8 @@ function ouvrirModalPaiement() {
   document.getElementById('montantRecu').value = '';
   document.getElementById('renduDisplay').classList.remove('show');
   const hide = modePaiement === 'carte' || modePaiement === 'chambre';
+  const chambreSection = document.getElementById('chambreSection');
+  if (chambreSection) chambreSection.style.display = modePaiement === 'chambre' ? 'block' : 'none';
   document.getElementById('renduSection').style.display = hide ? 'none' : '';
   document.getElementById('billetsGrid').style.display  = hide ? 'none' : '';
   const ref = t.tableNum ? `Table ${t.tableNum}` : (t.client || '');
@@ -1244,6 +1257,11 @@ async function confirmerPaiement() {
   if ((modePaiement==='especes'||modePaiement==='mobile') && montantRecu < total) {
     toast('❌ Montant insuffisant', 'error'); return;
   }
+  // Chambre obligatoire en mode report
+  const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
+  if (modePaiement === 'chambre' && !reservation_hotel_id) {
+    toast('❌ Veuillez sélectionner la chambre du client', 'error'); return;
+  }
 
   const btn = document.querySelector('.modal-btn-confirm');
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…';
@@ -1256,6 +1274,7 @@ async function confirmerPaiement() {
         mode_paiement: modePaiement, montant_encaisse: montantRecu,
         client: t.client || '',
         serveur: t.serveur || document.getElementById('selectServeur').value || '',
+        reservation_hotel_id: reservation_hotel_id,
       })
     });
     const data = await r.json();

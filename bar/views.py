@@ -917,12 +917,19 @@ def bar_tpe(request):
 
     config = Configuration.load()
 
+    # Chambres occupées pour le mode "Report Chambre"
+    from hotel.models import Reservation as HotelReservation
+    chambres_occupees = HotelReservation.objects.filter(
+        statut='en_cours'
+    ).select_related('client', 'chambre').order_by('chambre__numero')
+
     return render(request, 'bar/index.html', {
-        'boissons'   : boissons,
-        'categories' : categories,
-        'serveurs'   : serveurs,
-        'config'     : config,
-        'page_title' : 'Cave - Vente TPE',
+        'boissons'         : boissons,
+        'categories'       : categories,
+        'serveurs'         : serveurs,
+        'config'           : config,
+        'page_title'       : 'Cave - Vente TPE',
+        'chambres_occupees': chambres_occupees,
     })
 
 
@@ -1007,6 +1014,30 @@ def api_vente_create(request):
             imprime       = True,
             date_impression = tz.now(),
         )
+
+        # Si mode chambre : lier les articles à la réservation hôtel
+        reservation_id = data.get('reservation_id')
+        if paiement == 'chambre' and reservation_id:
+            try:
+                from hotel.models import Reservation as HotelRes, Consommation as HotelConso
+                reservation = HotelRes.objects.get(id=reservation_id, statut='en_cours')
+                for l in lignes:
+                    boisson_obj = None
+                    try:
+                        from .models import BoissonBar
+                        boisson_obj = BoissonBar.objects.get(pk=int(l['id']))
+                    except Exception:
+                        pass
+                    HotelConso.objects.create(
+                        reservation=reservation,
+                        type_service='bar',
+                        boisson=boisson_obj,
+                        nom=f"[Cave] {l['nom']}",
+                        quantite=int(l['qty']),
+                        prix_unitaire=Decimal(str(l['prix'])),
+                    )
+            except Exception as e:
+                pass  # Ne pas bloquer la vente si erreur liaison
 
         # Decrementer stock + tracer mouvements
         erreurs_stock = []

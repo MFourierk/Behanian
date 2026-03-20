@@ -202,6 +202,26 @@ def valider_commande(request):
                     imprime=True
                 )
 
+                # Si mode chambre : lier les articles à la réservation hôtel
+                reservation_hotel_id = data.get('reservation_hotel_id')
+                mode_paiement_val = data.get('mode_paiement', 'especes')
+                if mode_paiement_val == 'chambre' and reservation_hotel_id:
+                    try:
+                        from hotel.models import Reservation as HotelRes, Consommation as HotelConso
+                        hotel_res = HotelRes.objects.get(id=reservation_hotel_id, statut='en_cours')
+                        for li in all_items_objs:
+                            nom_li = li.plat.nom if li.plat else (li.boisson.nom if hasattr(li,'boisson') and li.boisson else li.nom_article or 'Article')
+                            HotelConso.objects.create(
+                                reservation=hotel_res,
+                                type_service='restaurant',
+                                plat=li.plat if li.plat else None,
+                                nom=f'[Restaurant] {nom_li}',
+                                quantite=li.quantite,
+                                prix_unitaire=li.prix_unitaire,
+                            )
+                    except Exception:
+                        pass
+
                 # Rendu ticket thermique avec serveur
                 ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
                     'ticket':  ticket,
@@ -824,11 +844,15 @@ def restaurant_tpe(request):
     except Group.DoesNotExist:
         serveurs = AuthUser.objects.none()
 
+    # Chambres occupées pour report chambre
+    from hotel.models import Reservation as HotelReservation
+    chambres_occupees = HotelReservation.objects.filter(
+        statut='en_cours'
+    ).select_related('client', 'chambre').order_by('chambre__numero')
+
     context = {
-        # Ancienne clé conservée pour compatibilité
         'categories': CategorieMenu.objects.all(),
         'plats': plats,
-        # Nouvelles clés séparées
         'categories_cuisine': categories_cuisine,
         'categories_bar': categories_bar,
         'boissons_bar': boissons_bar,
@@ -838,6 +862,7 @@ def restaurant_tpe(request):
         'commandes_en_cours_list': commandes_en_cours_list,
         'config': config,
         'serveurs': serveurs,
+        'chambres_occupees': chambres_occupees,
     }
     return render(request, 'restaurant/index.html', context)
 
