@@ -142,7 +142,8 @@ class Reservation(models.Model):
         return f"Réservation {self.id} - {self.chambre.numero} - {self.client.get_nom_complet()}"
     
     def get_montant_restant(self):
-        return self.prix_total - self.avance
+        """Reste à payer = hébergement + tous les services - avance"""
+        return self.get_total_general() - self.avance
 
     def get_prix_reel(self):
         """
