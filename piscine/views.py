@@ -162,10 +162,11 @@ def ajouter_consommation(request, acces_id):
                 utilisateur=request.user
             )
             # Lier à la réservation hôtel si résident
-            if acces.reservation_hotel:
+            reservation_hotel = getattr(acces, 'reservation_hotel', None)
+            if reservation_hotel:
                 from hotel.models import Consommation as HotelConso
                 HotelConso.objects.create(
-                    reservation=acces.reservation_hotel,
+                    reservation=reservation_hotel,
                     type_service='piscine',
                     boisson=boisson,
                     nom=f'[Piscine] {boisson.nom}',
@@ -185,10 +186,11 @@ def ajouter_consommation(request, acces_id):
                 prix_unitaire=plat.prix,
             )
             # Lier à la réservation hôtel si résident
-            if acces.reservation_hotel:
+            reservation_hotel = getattr(acces, 'reservation_hotel', None)
+            if reservation_hotel:
                 from hotel.models import Consommation as HotelConso
                 HotelConso.objects.create(
-                    reservation=acces.reservation_hotel,
+                    reservation=reservation_hotel,
                     type_service='piscine',
                     plat=plat,
                     nom=f'[Piscine] {plat.nom}',
