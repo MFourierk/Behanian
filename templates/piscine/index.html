@@ -189,7 +189,7 @@
             <div class="acces-det">Ch. {{ res.chambre.numero }} · Départ {{ res.date_depart|date:"d/m" }}</div>
           </div>
           <button class="btn-p btn-success" style="padding:5px 10px;font-size:11px"
-            onclick="ouvrirEntreeResident('{{ res.id }}', '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
+            onclick="ouvrirEntreeResident('{{ res.id }}', '{{ res.client.nom_complet }}', '{{ res.chambre.numero }}')">
             <i class="fas fa-swimming-pool"></i>
           </button>
         </div>
@@ -223,7 +223,7 @@
       <select id="entreeChambre" class="form-control" onchange="selectionnerResident()">
         <option value="">— Sélectionner une chambre —</option>
         {% for res in residents %}
-        <option value="{{ res.id }}" data-nom="{{ res.client.nom_complet|escapejs }}" data-chambre="{{ res.chambre.numero }}">
+        <option value="{{ res.id }}" data-nom="{{ res.client.nom_complet }}" data-chambre="{{ res.chambre.numero }}">
           Ch. {{ res.chambre.numero }} — {{ res.client.nom_complet }}
         </option>
         {% endfor %}

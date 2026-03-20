@@ -5,7 +5,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('hotel', '0002_add_piscine_type_consommation'),
+        ('hotel', '0001_initial'),
         ('piscine', '0003_alter_accespiscine_options_and_more'),
     ]
 
@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.SET_NULL,
                 related_name='acces_piscine',
                 to='hotel.reservation',
-                verbose_name='Réservation hôtel liée'
+                verbose_name='Reservation hotel liee'
             ),
         ),
     ]

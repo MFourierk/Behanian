@@ -103,15 +103,21 @@ def enregistrer_entree(request):
             except HotelReservation.DoesNotExist:
                 pass
 
-        acces = AccesPiscine.objects.create(
+        create_kwargs = dict(
             nom_client=nom_client,
             type_client=type_client,
-            nb_adultes=nb_adultes,
-            nb_enfants=nb_enfants,
             prix_total=prix_total,
-            reservation_hotel=reservation_hotel,
             enregistre_par=request.user,
         )
+        # Champs ajoutés par migration — présents seulement si migrate a tourné
+        from django.db import connection
+        cols = [r[1] for r in connection.cursor().execute('PRAGMA table_info(piscine_accespiscine)').fetchall()]
+        if 'nb_adultes' in cols:
+            create_kwargs['nb_adultes'] = nb_adultes
+            create_kwargs['nb_enfants'] = nb_enfants
+        if 'reservation_hotel_id' in cols:
+            create_kwargs['reservation_hotel'] = reservation_hotel
+        acces = AccesPiscine.objects.create(**create_kwargs)
 
         return JsonResponse({
             'success': True,
