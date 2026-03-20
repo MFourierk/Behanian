@@ -41,8 +41,8 @@ class Command(BaseCommand):
 
             # Chercher la reservation de ce client
             cursor.execute(
-                "SELECT r.id, ch.numero FROM hotel_reservation r JOIN hotel_chambre ch ON r.chambre_id=ch.id WHERE r.client_id=? AND r.statut IN ('en_cours','terminee') ORDER BY r.date_arrivee DESC LIMIT 1",
-                [client_id]
+                "SELECT r.id, ch.numero FROM hotel_reservation r JOIN hotel_chambre ch ON r.chambre_id=ch.id WHERE r.client_id=? AND (r.statut=? OR r.statut=?) ORDER BY r.date_arrivee DESC LIMIT 1",
+                [client_id, 'en_cours', 'terminee']
             )
             res = cursor.fetchone()
             if not res:
