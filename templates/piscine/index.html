@@ -489,6 +489,10 @@ async function validerEntree(){
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
   if(type!=='heberge'&&na<1&&ne<1){alert('Veuillez indiquer au moins 1 personne.');return;}
+  if(type==='heberge'){
+    const resId=document.getElementById('entreeReservationId').value;
+    if(!resId){alert('Veuillez sélectionner la chambre du résident.');return;}
+  }
   const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value})});
   const d=await r.json();
   if(d.success){fermerModal('modalEntree');location.reload();}
