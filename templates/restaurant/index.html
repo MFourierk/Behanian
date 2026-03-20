@@ -788,7 +788,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <div class="modal-title">Ajouté à la chambre</div>
     <div class="modal-subtitle" id="confirmChambreMsg"></div>
     <div id="confirmChambreDetail" style="margin:16px 0;padding:12px;background:rgba(37,99,235,0.1);border-radius:8px;font-size:13px;color:#60a5fa;text-align:left"></div>
-    <button class="modal-btn-confirm" onclick="document.getElementById('modalConfirmChambre').classList.remove('open')" style="width:100%">OK</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="modal-btn-cancel" style="flex:1" onclick="document.getElementById('modalConfirmChambre').classList.remove('open')">OK</button>
+      <button class="modal-btn-confirm" style="flex:1" onclick="imprimerRecuChambre(chambreLieeNom||document.getElementById('confirmChambreMsg').textContent, document.getElementById('confirmChambreDetail').innerHTML, document.getElementById('confirmChambreDetail').querySelector('strong')?.textContent||'')">
+        <i class="fas fa-print"></i> Reçu
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1262,30 +1267,22 @@ function ouvrirModalPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) { toast('❌ Ticket vide', 'error'); return; }
   if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
-  // Vérifier serveur obligatoire
   const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
   if (!serveurVal) {
-    toast('👤 Sélectionnez un serveur avant d\'encaisser la commande', 'error');
-    // Surligner le champ serveur
+    toast('👤 Sélectionnez un serveur avant d\'encaisser', 'error');
     const sel = document.getElementById('selectServeur');
-    sel.style.border = '2px solid #dc2626';
-    sel.style.background = 'rgba(220,38,38,0.15)';
+    sel.style.border = '2px solid #dc2626'; sel.style.background = 'rgba(220,38,38,0.15)';
     setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
     return;
   }
   t.serveur = serveurVal;
   const total = getTotal();
-  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
-  document.getElementById('montantRecu').value = '';
-  document.getElementById('renduDisplay').classList.remove('show');
-  const hide = modePaiement === 'carte' || modePaiement === 'chambre';
-  const chambreSection = document.getElementById('chambreSection');
-  if (chambreSection) chambreSection.style.display = modePaiement === 'chambre' ? 'block' : 'none';
-  document.getElementById('renduSection').style.display = hide ? 'none' : '';
-  document.getElementById('billetsGrid').style.display  = hide ? 'none' : '';
-  const ref = t.tableNum ? `Table ${t.tableNum}` : (t.client || '');
-  document.getElementById('modalSubtitle').innerHTML = `Restaurant${ref ? ' — ' + ref : ''} — <span id="modalMode">${modeLabels[modePaiement]}</span>`;
-  document.getElementById('modalPaiement').classList.add('open');
+  if (chambreLieeId) {
+    document.getElementById('choixChambreSubtitle').textContent = 'Client : ' + chambreLieeNom + ' — Total : ' + formatF(total);
+    document.getElementById('modalChoixChambre').classList.add('open');
+    return;
+  }
+  _ouvrirModalPaiementNormal();
 }
 
 function ouvrirModalDepuisCmd(cmdId) { chargerCommande(cmdId).then(() => setTimeout(ouvrirModalPaiement, 300)); }
@@ -1515,5 +1512,36 @@ function delierChambre(){
   document.querySelector('.pay-btn[data-mode="especes"]')?.classList.add('active');
   modePaiement='especes';
 }
+
+function imprimerRecuChambre(chambreNom, detail, total) {
+  const now = new Date();
+  const date = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    body{font-family:'Courier New',monospace;font-size:12px;width:280px;margin:0 auto;padding:10px}
+    .center{text-align:center}.bold{font-weight:bold}.sep{border-top:1px dashed #000;margin:8px 0}
+    .row{display:flex;justify-content:space-between;margin:3px 0}
+  </style></head><body>
+  <div class="center bold" style="font-size:14px">COMPLEXE BEHANIAN</div>
+  <div class="center" style="font-size:11px">Yopougon Beago</div>
+  <div class="center" style="font-size:11px">07 58 29 11 10</div>
+  <div class="sep"></div>
+  <div class="center bold">BON DE DEPOT</div>
+  <div class="center" style="font-size:11px;font-style:italic">Mise sur compte chambre</div>
+  <div class="sep"></div>
+  <div class="row"><span>Date</span><span>${date}</span></div>
+  <div class="row"><span>Chambre</span><span>${chambreNom}</span></div>
+  <div class="sep"></div>
+  ${detail.replace(/<br>/g,'<br/>').replace(/<strong>/g,'<span class="bold">').replace(/<\/strong>/g,'</span>')}
+  <div class="sep"></div>
+  <div class="row bold"><span>TOTAL DEPOSE</span><span>${total}</span></div>
+  <div class="sep"></div>
+  <div class="center" style="font-size:10px">Règlement au check-out</div>
+  <div class="center" style="font-size:10px">Merci de votre visite</div>
+  </body></html>`;
+  const w = window.open('','_blank','width=350,height=500');
+  if(w){ w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(),300); }
+}
+
 </script>
 {% endblock %}
