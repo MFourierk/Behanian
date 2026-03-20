@@ -1037,6 +1037,7 @@
     <div id="service-room-info" style="font-size:13px;color:#2563eb;font-weight:500;margin-bottom:16px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe"></div>
 
     <form id="formAddService" action="" method="POST">
+      <input type="hidden" id="service-res-id" value="">
       {% csrf_token %}
 
       <!-- TYPE PILLS -->
@@ -1517,6 +1518,7 @@
 
     function openServiceModal(resId, clientName, roomNum) {
         document.getElementById('service-room-info').textContent = 'Client : ' + clientName + '  —  Chambre ' + roomNum;
+        document.getElementById('service-res-id').value = resId;
         const form = document.getElementById('formAddService');
         const urlTemplate = "{% url 'hotel:ajouter_consommation' 0 %}";
         form.action = urlTemplate.replace('0', resId);
@@ -1561,7 +1563,7 @@
     let hotelEnCoursResId = null;
 
     function chargerHotelEnCours() {
-        const resId = document.getElementById('formAddService').action.match(/\d+/)?.[0];
+        const resId = document.getElementById('service-res-id').value;
         if (!resId) return;
         hotelEnCoursResId = resId;
         fetch(`/hotel/api/consommations/${resId}/`)
