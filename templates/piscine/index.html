@@ -45,6 +45,9 @@
 .art-prix{font-size:13px;font-weight:600;color:#2563eb;white-space:nowrap}
 .art-stock{font-size:11px;color:#7a8b9c}
 .art-stock.low{color:#dc2626}
+.art-add-btn{width:26px;height:26px;border-radius:50%;background:#2563eb;color:white;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-left:8px;transition:transform .1s}
+.art-item:hover .art-add-btn{transform:scale(1.15)}
+.art-item.in-panier{background:#f0fdf4;border-left:3px solid #16a34a}
 .cat-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .cat-pill{padding:3px 10px;border-radius:14px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:500;cursor:pointer;color:#5a6b7c}
 .cat-pill.active{background:#eef1f5;border-color:#93c5fd;color:#1a2535}
@@ -246,63 +249,75 @@
 
 <!-- MODAL COMMANDE -->
 <div class="modal-ov" id="modalCommande">
-  <div class="modal-box" style="width:520px">
-    <div class="modal-head"><h3>Commander — <span id="cmdNom"></span></h3><button class="close-btn" onclick="fermerModal('modalCommande')">×</button></div>
+  <div class="modal-box" style="width:500px;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <!-- Header fixe -->
+    <div class="modal-head" style="padding:16px 20px;flex-shrink:0">
+      <h3>Commander — <span id="cmdNom"></span></h3>
+      <button class="close-btn" onclick="fermerModal('modalCommande')">×</button>
+    </div>
     <input type="hidden" id="cmdAccesId">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <!-- Colonne gauche : catalogue -->
-      <div>
-        <div style="display:flex;gap:6px;margin-bottom:10px">
-          <button class="btn-p btn-primary" id="tabBoisson" onclick="setTab('boisson')" style="flex:1;font-size:11px">🍸 Boissons</button>
-          <button class="btn-p btn-outline" id="tabPlat" onclick="setTab('plat')" style="flex:1;font-size:11px">🍽️ Plats</button>
-        </div>
+    <!-- Catalogue scrollable -->
+    <div style="flex:1;overflow-y:auto;padding:0 20px;min-height:0">
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;position:sticky;top:0;background:white;padding:10px 0;z-index:1;border-bottom:1px solid #f0f3f7">
+        <button class="btn-p btn-primary" id="tabBoisson" onclick="setTab('boisson')" style="flex:1">🍸 Boissons</button>
+        <button class="btn-p btn-outline" id="tabPlat" onclick="setTab('plat')" style="flex:1">🍽️ Plats</button>
+      </div>
 
-        <div id="sectionBoisson">
-          <div class="cat-pills" id="catsBoissonPills" style="margin-bottom:6px">
-            <button class="cat-pill active" onclick="filtrerB(this,'')">Tout</button>
-            {% for cat in cats_bar %}<button class="cat-pill" onclick="filtrerB(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
-          </div>
-          <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
-          <div class="art-list" id="listBoisson" style="max-height:240px">
-            {% for b in boissons %}
-            <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
-              <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
-              <div style="text-align:right"><div class="art-prix">{{ b.prix|floatformat:0 }} F</div><div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div></div>
-            </div>{% endfor %}
-          </div>
+      <div id="sectionBoisson">
+        <div class="cat-pills" id="catsBoissonPills">
+          <button class="cat-pill active" onclick="filtrerB(this,'')">Tout</button>
+          {% for cat in cats_bar %}<button class="cat-pill" onclick="filtrerB(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
         </div>
-
-        <div id="sectionPlat" style="display:none">
-          <div class="cat-pills" id="catsPlatPills" style="margin-bottom:6px">
-            <button class="cat-pill active" onclick="filtrerP(this,'')">Tout</button>
-            {% for cat in cats_resto %}<button class="cat-pill" onclick="filtrerP(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
-          </div>
-          <div class="search-wrap"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
-          <div class="art-list" id="listPlat" style="max-height:240px">
-            {% for p in plats %}
-            <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
-              <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
-              <div><div class="art-prix">{{ p.prix|floatformat:0 }} F</div></div>
-            </div>{% endfor %}
-          </div>
+        <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
+        <div id="listBoisson">
+          {% for b in boissons %}
+          <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+            <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
+            <div style="text-align:right;flex-shrink:0">
+              <div class="art-prix">{{ b.prix|floatformat:0 }} F</div>
+              <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
+            </div>
+            <div class="art-add-btn">＋</div>
+          </div>{% endfor %}
         </div>
       </div>
 
-      <!-- Colonne droite : panier -->
-      <div style="display:flex;flex-direction:column">
-        <div style="font-size:12px;font-weight:600;color:#3d4f63;margin-bottom:8px">🛒 Panier</div>
-        <div id="panierListe" style="flex:1;min-height:200px;max-height:280px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px;background:#f8fafc">
-          <div id="panierVide" style="padding:30px;text-align:center;color:#b0b8c1;font-size:12px">Cliquez sur un article pour l'ajouter</div>
+      <div id="sectionPlat" style="display:none">
+        <div class="cat-pills" id="catsPlatPills">
+          <button class="cat-pill active" onclick="filtrerP(this,'')">Tout</button>
+          {% for cat in cats_resto %}<button class="cat-pill" onclick="filtrerP(this,'{{ cat.nom|escapejs }}')">{{ cat.nom }}</button>{% endfor %}
         </div>
-        <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;font-weight:600;color:#3d4f63">Total</span>
-          <span id="panierTotal" style="font-size:14px;font-weight:700;color:#2563eb">0 F</span>
+        <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
+        <div id="listPlat">
+          {% for p in plats %}
+          <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+            <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
+            <div style="text-align:right;flex-shrink:0"><div class="art-prix">{{ p.prix|floatformat:0 }} F</div></div>
+            <div class="art-add-btn">＋</div>
+          </div>{% endfor %}
         </div>
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:14px">
+    <!-- Panier fixe en bas -->
+    <div style="flex-shrink:0;border-top:2px solid #e8edf5;background:#f8fafc;padding:12px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700;color:#3d4f63">🛒 Panier <span id="panierCount" style="background:#2563eb;color:white;padding:1px 7px;border-radius:10px;font-size:10px">0</span></span>
+        <button onclick="viderPanier()" style="font-size:11px;color:#dc2626;background:none;border:none;cursor:pointer;display:none" id="btnViderPanier">Vider</button>
+      </div>
+      <div id="panierListe" style="max-height:160px;overflow-y:auto">
+        <div id="panierVide" style="text-align:center;color:#b0b8c1;font-size:12px;padding:10px">Aucun article sélectionné</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid #dde3ec">
+        <span style="font-size:13px;font-weight:700;color:#1a2535">Total</span>
+        <span id="panierTotal" style="font-size:16px;font-weight:700;color:#2563eb">0 F</span>
+      </div>
+    </div>
+
+    <!-- Boutons fixe en bas -->
+    <div style="flex-shrink:0;display:flex;gap:8px;padding:12px 20px;border-top:1px solid #e8edf5;background:white">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalCommande')">Fermer</button>
       <button class="btn-p btn-success" style="flex:2" onclick="validerCommande()"><i class="fas fa-check"></i> Envoyer la commande</button>
     </div>
@@ -500,35 +515,54 @@ function ajouterAuPanier(el){
 function renderPanier(){
   const liste=document.getElementById('panierListe');
   const vide=document.getElementById('panierVide');
+  const count=document.getElementById('panierCount');
+  const btnVider=document.getElementById('btnViderPanier');
+
+  // Mettre à jour les indicateurs visuels sur les articles
+  document.querySelectorAll('.art-item').forEach(el=>{
+    const inP=panier.find(x=>x.type===el.dataset.type&&x.id===el.dataset.id);
+    el.classList.toggle('in-panier', !!inP);
+    const btn=el.querySelector('.art-add-btn');
+    if(btn) btn.textContent=inP?'×'+inP.qty:'＋';
+  });
+
+  count.textContent=panier.length;
+  btnVider.style.display=panier.length?'block':'none';
+
   if(panier.length===0){
     liste.innerHTML='';
-    liste.appendChild(vide);
-    vide.style.display='block';
+    const v=document.getElementById('panierVide')||document.createElement('div');
+    v.id='panierVide';v.style.cssText='text-align:center;color:#b0b8c1;font-size:12px;padding:10px';
+    v.textContent='Aucun article sélectionné';
+    liste.appendChild(v);
     document.getElementById('panierTotal').textContent='0 F';
     return;
   }
-  vide.style.display='none';
-  let html='';
-  let total=0;
+
+  let html='';let total=0;
   panier.forEach((item,idx)=>{
-    const st=item.prix*item.qty;
-    total+=st;
-    html+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #f0f3f7">
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:600;color:#1a2535">${item.nom}</div>
-        <div style="font-size:11px;color:#7a8b9c">${item.prix.toLocaleString('fr-FR')} F/u</div>
+    const st=item.prix*item.qty;total+=st;
+    html+=`<div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid #f0f3f7;background:white;border-radius:6px;margin-bottom:4px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:#1a2535;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.nom}</div>
+        <div style="font-size:10px;color:#7a8b9c">${item.prix.toLocaleString('fr-FR')} F/u</div>
       </div>
-      <div style="display:flex;align-items:center;gap:4px">
-        <button onclick="chgQtyPanier(${idx},-1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:12px">−</button>
-        <span style="font-size:13px;font-weight:600;min-width:20px;text-align:center">${item.qty}</span>
-        <button onclick="chgQtyPanier(${idx},1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:12px">+</button>
+      <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        <button onclick="chgQtyPanier(${idx},-1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px;line-height:1">−</button>
+        <span style="font-size:13px;font-weight:700;min-width:22px;text-align:center">${item.qty}</span>
+        <button onclick="chgQtyPanier(${idx},1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px;line-height:1">+</button>
       </div>
-      <div style="font-size:12px;font-weight:700;color:#2563eb;min-width:60px;text-align:right">${st.toLocaleString('fr-FR')} F</div>
-      <button onclick="supprimerPanier(${idx})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:0 2px">×</button>
+      <div style="font-size:12px;font-weight:700;color:#2563eb;min-width:58px;text-align:right;flex-shrink:0">${st.toLocaleString('fr-FR')} F</div>
+      <button onclick="supprimerPanier(${idx})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:0 2px;flex-shrink:0;line-height:1">×</button>
     </div>`;
   });
   liste.innerHTML=html;
   document.getElementById('panierTotal').textContent=total.toLocaleString('fr-FR')+' F';
+}
+
+function viderPanier(){
+  panier=[];
+  renderPanier();
 }
 
 function chgQtyPanier(idx,d){
