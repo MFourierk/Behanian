@@ -189,6 +189,7 @@ class Consommation(models.Model):
         ('bar', 'Bar'),
         ('restaurant', 'Restaurant'),
         ('espace', 'Espace Location'),
+        ('piscine', 'Piscine'),
         ('autre', 'Autre Service'),
     ]
     

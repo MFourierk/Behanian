@@ -189,7 +189,7 @@
             <div class="acces-det">Ch. {{ res.chambre.numero }} · Départ {{ res.date_depart|date:"d/m" }}</div>
           </div>
           <button class="btn-p btn-success" style="padding:5px 10px;font-size:11px"
-            onclick="ouvrirEntreeResident('{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
+            onclick="ouvrirEntreeResident('{{ res.id }}', '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
             <i class="fas fa-swimming-pool"></i>
           </button>
         </div>
@@ -206,6 +206,7 @@
   <div class="modal-box">
     <div class="modal-head"><h3 id="entreeTitle">Nouvelle entrée</h3><button class="close-btn" onclick="fermerModal('modalEntree')">×</button></div>
     <input type="hidden" id="entreeType" value="visiteur">
+    <input type="hidden" id="entreeReservationId" value="">
 
     <div class="type-pills" id="typePills">
       <div class="type-pill active visiteur" onclick="setType('visiteur')">
@@ -217,6 +218,17 @@
       </div>
     </div>
 
+    <div id="rowChambre" style="display:none;margin-bottom:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:#3d4f63;margin-bottom:5px">Chambre <span style="color:#dc2626">*</span></label>
+      <select id="entreeChambre" class="form-control" onchange="selectionnerResident()">
+        <option value="">— Sélectionner une chambre —</option>
+        {% for res in residents %}
+        <option value="{{ res.id }}" data-nom="{{ res.client.nom_complet|escapejs }}" data-chambre="{{ res.chambre.numero }}">
+          Ch. {{ res.chambre.numero }} — {{ res.client.nom_complet }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
     <div class="form-row">
       <label>Nom du client <span style="color:#dc2626">*</span></label>
       <input type="text" id="entreeNom" placeholder="Nom et prénom">
@@ -405,20 +417,41 @@ function ouvrirEntree(type){
   document.getElementById('modalEntree').classList.add('open');
 }
 
-function ouvrirEntreeResident(nom, chambre){
-  document.getElementById('entreeNom').value=nom;
+function ouvrirEntreeResident(resId, nom, chambre){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
-  document.getElementById('entreeType').value='heberge';
   setType('heberge');
+  // Présélectionner la chambre
+  const sel=document.getElementById('entreeChambre');
+  for(let i=0;i<sel.options.length;i++){
+    if(sel.options[i].value==resId){
+      sel.selectedIndex=i;
+      break;
+    }
+  }
+  document.getElementById('entreeNom').value=nom;
+  document.getElementById('entreeReservationId').value=resId;
   document.getElementById('modalEntree').classList.add('open');
 }
 
 function setType(type){
   document.getElementById('entreeType').value=type;
+  document.getElementById('entreeReservationId').value='';
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.type-pill.'+type).classList.add('active');
+  // Afficher sélecteur chambre pour les résidents
+  document.getElementById('rowChambre').style.display=type==='heberge'?'block':'none';
+  if(type!=='heberge') document.getElementById('entreeChambre').value='';
   updatePrix();
+}
+
+function selectionnerResident(){
+  const sel=document.getElementById('entreeChambre');
+  const opt=sel.options[sel.selectedIndex];
+  if(opt.value){
+    document.getElementById('entreeNom').value=opt.dataset.nom;
+    document.getElementById('entreeReservationId').value=opt.value;
+  }
 }
 
 function changeNb(cat,d){
@@ -456,7 +489,7 @@ async function validerEntree(){
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
   if(type!=='heberge'&&na<1&&ne<1){alert('Veuillez indiquer au moins 1 personne.');return;}
-  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne})});
+  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value})});
   const d=await r.json();
   if(d.success){fermerModal('modalEntree');location.reload();}
   else alert(d.error||'Erreur');

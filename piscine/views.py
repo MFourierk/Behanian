@@ -93,12 +93,23 @@ def enregistrer_entree(request):
             prix_enfant = (t_enfant.prix_unitaire * nb_enfants) if t_enfant and nb_enfants else Decimal('0')
             prix_total  = prix_adulte + prix_enfant
 
+        # Lier à la réservation hôtel si résident
+        reservation_hotel = None
+        reservation_id = data.get('reservation_id')
+        if type_client == 'heberge' and reservation_id:
+            from hotel.models import Reservation as HotelReservation
+            try:
+                reservation_hotel = HotelReservation.objects.get(id=reservation_id, statut='en_cours')
+            except HotelReservation.DoesNotExist:
+                pass
+
         acces = AccesPiscine.objects.create(
             nom_client=nom_client,
             type_client=type_client,
             nb_adultes=nb_adultes,
             nb_enfants=nb_enfants,
             prix_total=prix_total,
+            reservation_hotel=reservation_hotel,
             enregistre_par=request.user,
         )
 
@@ -144,6 +155,17 @@ def ajouter_consommation(request, acces_id):
                 quantite=quantite, commentaire=f'Piscine #{acces.id}',
                 utilisateur=request.user
             )
+            # Lier à la réservation hôtel si résident
+            if acces.reservation_hotel:
+                from hotel.models import Consommation as HotelConso
+                HotelConso.objects.create(
+                    reservation=acces.reservation_hotel,
+                    type_service='piscine',
+                    boisson=boisson,
+                    nom=f'[Piscine] {boisson.nom}',
+                    quantite=quantite,
+                    prix_unitaire=boisson.prix,
+                )
             nom = boisson.nom
             prix = float(boisson.prix)
 
@@ -156,6 +178,17 @@ def ajouter_consommation(request, acces_id):
                 quantite=quantite,
                 prix_unitaire=plat.prix,
             )
+            # Lier à la réservation hôtel si résident
+            if acces.reservation_hotel:
+                from hotel.models import Consommation as HotelConso
+                HotelConso.objects.create(
+                    reservation=acces.reservation_hotel,
+                    type_service='piscine',
+                    plat=plat,
+                    nom=f'[Piscine] {plat.nom}',
+                    quantite=quantite,
+                    prix_unitaire=plat.prix,
+                )
             nom = plat.nom
             prix = float(plat.prix)
         else:
