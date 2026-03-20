@@ -205,6 +205,7 @@ def valider_commande(request):
                 # Si mode chambre : lier les articles à la réservation hôtel
                 reservation_hotel_id = data.get('reservation_hotel_id')
                 mode_paiement_val = data.get('mode_paiement', 'especes')
+                sur_chambre = data.get('sur_chambre', False)
                 if mode_paiement_val == 'chambre' and reservation_hotel_id:
                     try:
                         from hotel.models import Reservation as HotelRes, Consommation as HotelConso

@@ -1001,6 +1001,43 @@ def api_vente_create(request):
             contenu += f"Recu    : {int(montant_recu):,} F\n"
             contenu += f"Rendu   : {int(rendu):,} F\n"
 
+        # Si sur_chambre=True → lier sans créer de ticket facturation séparé
+        sur_chambre = data.get('sur_chambre', False)
+        reservation_id = data.get('reservation_id')
+
+        if sur_chambre and reservation_id and paiement == 'chambre':
+            try:
+                from hotel.models import Reservation as HotelRes, Consommation as HotelConso
+                reservation = HotelRes.objects.get(id=reservation_id, statut='en_cours')
+                for l in lignes:
+                    boisson_obj = None
+                    try:
+                        boisson_obj = BoissonBar.objects.get(pk=int(l['id']))
+                    except Exception:
+                        pass
+                    HotelConso.objects.create(
+                        reservation=reservation,
+                        type_service='bar',
+                        boisson=boisson_obj,
+                        nom=f"[Cave] {l['nom']}",
+                        quantite=int(l['qty']),
+                        prix_unitaire=Decimal(str(l['prix'])),
+                    )
+                    # Décrémenter stock quand même
+                    if boisson_obj:
+                        qty = int(l['qty'])
+                        boisson_obj.quantite_stock = max(0, boisson_obj.quantite_stock - qty)
+                        boisson_obj.save()
+                        MouvementStockBar.objects.create(
+                            boisson=boisson_obj, type_mouvement='sortie',
+                            quantite=qty, commentaire=f'Cave → Chambre {reservation.chambre.numero}',
+                            utilisateur=request.user
+                        )
+                # Retourner succès sans ticket
+                return JsonResponse({'ok': True, 'ticket_numero': 'CHAMBRE', 'total': float(total), 'erreurs_stock': []})
+            except Exception as e:
+                return JsonResponse({'ok': False, 'error': str(e)})
+
         # Creer le Ticket dans facturation
         from facturation.models import Ticket, generate_ticket_numero
         ticket = Ticket.objects.create(

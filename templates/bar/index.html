@@ -591,6 +591,44 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   </div>
 </div>
 
+<!-- ========== MODAL CHOIX CHAMBRE/PAIEMENT ========== -->
+<div class="modal-overlay" id="modalChoixChambre">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-title">Mode de règlement</div>
+    <div class="modal-subtitle" id="choixChambreSubtitle">Client lié à Ch. ---</div>
+    <div style="margin:20px 0;display:flex;flex-direction:column;gap:12px">
+      <button onclick="mettreOnChambre()" style="padding:16px;border-radius:12px;border:1px solid rgba(37,99,235,0.4);background:rgba(37,99,235,0.1);color:#60a5fa;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <i class="fas fa-bed" style="font-size:18px"></i>
+        <div style="text-align:left">
+          <div>Mettre sur la chambre</div>
+          <div style="font-size:11px;opacity:.7;font-weight:400">Réglé au checkout — aucun ticket émis</div>
+        </div>
+      </button>
+      <button onclick="payerMaintenant()" style="padding:16px;border-radius:12px;border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#c9a84c;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <i class="fas fa-money-bill-wave" style="font-size:18px"></i>
+        <div style="text-align:left">
+          <div>Payer maintenant</div>
+          <div style="font-size:11px;opacity:.7;font-weight:400">Ticket émis — non ajouté à la chambre</div>
+        </div>
+      </button>
+    </div>
+    <button class="modal-btn-cancel" onclick="document.getElementById('modalChoixChambre').classList.remove('open')" style="width:100%">Annuler</button>
+  </div>
+</div>
+
+<!-- ========== MODAL CONFIRMATION CHAMBRE ========== -->
+<div class="modal-overlay" id="modalConfirmChambre">
+  <div class="modal-box" style="max-width:340px;text-align:center">
+    <div style="font-size:3rem;margin-bottom:12px">✅</div>
+    <div class="modal-title">Ajouté à la chambre</div>
+    <div class="modal-subtitle" id="confirmChambreMsg">Articles ajoutés à la note</div>
+    <div id="confirmChambreDetail" style="margin:16px 0;padding:12px;background:rgba(37,99,235,0.1);border-radius:8px;font-size:13px;color:#60a5fa;text-align:left"></div>
+    <button class="modal-btn-confirm" onclick="document.getElementById('modalConfirmChambre').classList.remove('open')" style="width:100%">
+      OK
+    </button>
+  </div>
+</div>
+
 <!-- ========== MODAL LIER CHAMBRE ========== -->
 <div class="modal-overlay" id="modalLierChambre">
   <div class="modal-box" style="max-width:360px">
@@ -921,6 +959,78 @@ function setBillet(val, exact = false) {
   if (exact) { document.getElementById('montantRecu').value = getTotal(); }
   else       { document.getElementById('montantRecu').value = val; }
   calcRendu();
+}
+
+
+
+function _ouvrirModalPaiementNormal() {
+  const t = tickets[ticketActifId];
+  const total = getTotal();
+  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+  document.getElementById('modalMode').textContent = modeLabels[modePaiement] || modePaiement;
+  document.getElementById('montantRecu').value = '';
+  document.getElementById('renduDisplay').classList.remove('show');
+  const rendu = document.getElementById('renduSection');
+  const billets = document.getElementById('billetsGrid');
+  if (modePaiement === 'carte' || modePaiement === 'chambre') {
+    rendu.style.display = 'none'; billets.style.display = 'none';
+  } else {
+    rendu.style.display = ''; billets.style.display = '';
+  }
+  const chambreSection = document.getElementById('chambreSection');
+  if (chambreSection) chambreSection.style.display = modePaiement === 'chambre' ? 'block' : 'none';
+  const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
+  const ref = t.ref ? ` (${t.ref})` : '';
+  document.getElementById('modalSubtitle').innerHTML = `Cave Behanian${espace}${ref} — <span id="modalMode">${modeLabels[modePaiement]}</span>`;
+  document.getElementById('modalPaiement').classList.add('open');
+}
+
+async function mettreOnChambre() {
+  document.getElementById('modalChoixChambre').classList.remove('open');
+  const t = tickets[ticketActifId];
+  const total = getTotal();
+  const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
+  if (!serveurVal) { toast('Sélectionnez un serveur', 'error'); return; }
+
+  const btn = document.querySelectorAll('#modalChoixChambre button')[0];
+  try {
+    const payload = {
+      ticket_nom: t.nom, lignes: t.lignes.map(l=>({id:l.id,nom:l.nom,prix:l.prix,qty:l.qty})),
+      total, paiement: 'chambre', espace: t.espace, ref: t.ref,
+      serveur: serveurVal, montant_recu: 0, reservation_id: chambreLieeId,
+      sur_chambre: true,
+    };
+    const resp = await fetch("{% url 'bar:api_vente' %}", {
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (!data.ok) { toast('Erreur : '+data.error, 'error'); return; }
+
+    // Afficher confirmation
+    let detail = t.lignes.map(l=>`${l.nom} x${l.qty} — ${formatF(l.prix*l.qty)}`).join('<br>');
+    detail += `<br><strong>Total : ${formatF(total)}</strong>`;
+    document.getElementById('confirmChambreMsg').textContent = 'Ajouté à la note de ' + chambreLieeNom;
+    document.getElementById('confirmChambreDetail').innerHTML = detail;
+    document.getElementById('modalConfirmChambre').classList.add('open');
+
+    // Reset ticket
+    delierChambre();
+    supprimerTicket(ticketActifId);
+    creerNouveauTicket();
+  } catch(e) { toast('Erreur réseau', 'error'); }
+}
+
+function payerMaintenant() {
+  document.getElementById('modalChoixChambre').classList.remove('open');
+  // Délier la chambre pour ce ticket uniquement — pas de liaison
+  const savedId = chambreLieeId;
+  const savedNom = chambreLieeNom;
+  chambreLieeId = null;
+  _ouvrirModalPaiementNormal();
+  // Restaurer le badge après ouverture (le client reste lié pour les prochains tickets)
+  chambreLieeId = savedId;
+  chambreLieeNom = savedNom;
 }
 
 async function confirmerPaiement() {
