@@ -573,11 +573,44 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         </button>
       </div>
 
+      <!-- Badge chambre liée -->
+      <div id="chambre-liee-badge" style="display:none;padding:7px 12px;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.4);border-radius:8px;font-size:12px;font-weight:600;color:#60a5fa;display:flex;align-items:center;gap:6px;cursor:pointer" onclick="ouvrirModalLierChambre()">
+        <i class="fas fa-bed"></i> <span id="chambre-liee-nom">Ch. ---</span>
+        <span onclick="event.stopPropagation();delierchambre()" style="margin-left:4px;opacity:.7;font-size:11px">✕</span>
+      </div>
+      <button class="btn-attente" id="btnLierChambre" onclick="ouvrirModalLierChambre()" title="Associer ce ticket à une chambre hôtel">
+        <i class="fas fa-bed"></i> Lier chambre
+      </button>
       <button class="btn-attente" onclick="mettreEnAttente()">
         <i class="fas fa-pause-circle"></i> Mettre en attente
       </button>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Valider le paiement
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL LIER CHAMBRE ========== -->
+<div class="modal-overlay" id="modalLierChambre">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-title">Lier à une chambre</div>
+    <div class="modal-subtitle">Les articles seront ajoutés à la note de la chambre</div>
+    <div style="margin:20px 0">
+      <label style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:8px">Chambre occupée</label>
+      <select id="selectChambreLier" style="width:100%;padding:10px 14px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px">
+        <option value="">— Sélectionner —</option>
+        {% for res in chambres_occupees %}
+        <option value="{{ res.id }}" data-nom="{{ res.client.nom_complet }}" data-chambre="{{ res.chambre.numero }}">
+          Ch. {{ res.chambre.numero }} — {{ res.client.nom_complet }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="modal-btn-cancel" onclick="fermerModalLierChambre()">Annuler</button>
+      <button class="modal-btn-confirm" onclick="confirmerLierChambre()">
+        <i class="fas fa-link"></i> Lier
       </button>
     </div>
   </div>
@@ -931,7 +964,7 @@ async function confirmerPaiement() {
       ref          : t.ref,
       serveur      : t.serveur || '',
       montant_recu   : montantRecu,
-      reservation_id : modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : '',
+      reservation_id : chambreLieeId || (modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : ''),
     };
 
     const resp = await fetch("{% url 'bar:api_vente' %}", {
