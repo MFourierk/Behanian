@@ -358,7 +358,7 @@
                     <button class="ch-btn success" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
                       <i class="fas fa-utensils"></i> Commander
                     </button>
-                    <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }})">
+                    <button class="ch-btn primary" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }}, {{ res.get_montant_piscine|default:0 }})">
                       <i class="fas fa-sign-out-alt"></i> Check-out
                     </button>
                     {% endif %}{% endfor %}
@@ -475,7 +475,7 @@
                     <div class="check-name">{{ res.client.nom_complet }}</div>
                     <div class="check-detail">Ch. {{ res.chambre.numero }} · Départ {{ res.date_depart|date:"d/m/Y" }}</div>
                   </div>
-                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }})">Check-out</button>
+                  <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }}, {{ res.get_montant_piscine|default:0 }})">Check-out</button>
                 </div>
                 {% endfor %}
               {% else %}
@@ -505,7 +505,7 @@
                   </div>
                   <div style="display:flex;flex-direction:column;gap:5px">
                     <button class="check-btn-action" style="background:#059669;border-color:#059669;font-size:11px;padding:5px 10px" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">+ Commander</button>
-                    <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }})">Check-out</button>
+                    <button class="check-btn-action" onclick="openCheckoutModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', {{ res.get_prix_reel }}, {{ res.get_montant_services }}, {{ res.avance }}, {{ res.get_montant_piscine|default:0 }})">Check-out</button>
                   </div>
                 </div>
                 {% endfor %}
@@ -953,14 +953,18 @@
                     <span>Hébergement (réel) :</span>
                     <span id="breakdown-room">0 F</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span>Services :</span>
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+                    <span>Services chambre :</span>
                     <span id="breakdown-services">0 F</span>
                 </div>
-                <hr style="margin: 10px 0; border-color: #ddd;">
-                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em;">
+                <div id="breakdown-piscine-row" style="display:flex;justify-content:space-between;margin-bottom:5px;color:#0369a1;font-size:13px">
+                    <span>🏊 Piscine :</span>
+                    <span id="breakdown-piscine">0 F</span>
+                </div>
+                <hr style="margin:10px 0;border-color:#ddd">
+                <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:1.1em">
                     <span>Reste à payer :</span>
-                    <span id="breakdown-total" style="color: #e74c3c;">0 F</span>
+                    <span id="breakdown-total" style="color:#e74c3c">0 F</span>
                 </div>
             </div>
             
@@ -1042,6 +1046,7 @@
         <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')">🍽️ Plats</button>
         <button type="button" class="svc-pill" data-type="espace" onclick="setServiceType('espace')">🎪 Espaces</button>
         <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')">⚙️ Autre</button>
+        <button type="button" class="svc-pill" data-type="encours" onclick="setServiceType('encours')" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">📋 En cours</button>
       </div>
 
       <!-- BOISSONS -->
@@ -1150,6 +1155,18 @@
         <div class="form-group">
           <label>Prix Unitaire (FCFA)</label>
           <input type="number" name="prix" class="form-control">
+        </div>
+      </div>
+
+      <!-- EN COURS -->
+      <div id="field-encours" class="service-field" style="display:none">
+        <div style="font-size:12px;color:#5a6b7c;margin-bottom:8px">Dépenses actuelles du client — modifiables avant le check-out.</div>
+        <div id="hotel-encours-list" style="max-height:260px;overflow-y:auto">
+          <div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Chargement...</div>
+        </div>
+        <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between">
+          <span style="font-size:12px;font-weight:600;color:#3d4f63">Total consommations</span>
+          <span id="hotel-encours-total" style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
         </div>
       </div>
 
@@ -1461,7 +1478,7 @@
         }
     }
 
-    function openCheckoutModal(resId, clientName, roomVal, serviceVal, avance) {
+    function openCheckoutModal(resId, clientName, roomVal, serviceVal, avance, piscineVal) {
         document.getElementById('checkout-client-name').textContent = 'Client : ' + clientName;
 
         const parseAmount = (val) => {
@@ -1472,14 +1489,20 @@
 
         const room     = parseAmount(roomVal);
         const services = parseAmount(serviceVal);
+        const piscine  = parseAmount(piscineVal || 0);
         const avanceV  = parseAmount(avance);
+        // Services hors piscine
+        const servicesHorsPiscine = services - piscine;
         const totalGeneral = room + services;
         const resteAPayer  = Math.max(0, totalGeneral - avanceV);
 
         const fmt = (v) => v.toLocaleString('fr-FR') + ' F';
 
         document.getElementById('breakdown-room').textContent     = fmt(room);
-        document.getElementById('breakdown-services').textContent = fmt(services);
+        document.getElementById('breakdown-services').textContent = fmt(servicesHorsPiscine);
+        document.getElementById('breakdown-piscine').textContent  = fmt(piscine);
+        // Masquer ligne piscine si 0
+        document.getElementById('breakdown-piscine-row').style.display = piscine > 0 ? 'flex' : 'none';
         document.getElementById('breakdown-total').textContent    = fmt(resteAPayer);
         document.getElementById('montantEncaisse').value          = resteAPayer;
         
@@ -1524,6 +1547,78 @@
         document.querySelectorAll('.svc-pill').forEach(p => p.classList.remove('active'));
         document.querySelector(`.svc-pill[data-type="${type}"]`).classList.add('active');
         document.getElementById('svc-total-row').style.display = 'none';
+        // Masquer bouton Ajouter sur l'onglet En cours
+        const btnAjouter = document.querySelector('#modalAddService button[type="submit"]');
+        const qtySection = document.getElementById('svc-qty')?.closest('div[style*="display:flex"]');
+        if (type === 'encours') {
+            if (btnAjouter) btnAjouter.style.display = 'none';
+            chargerHotelEnCours();
+        } else {
+            if (btnAjouter) btnAjouter.style.display = '';
+        }
+    }
+
+    let hotelEnCoursResId = null;
+
+    function chargerHotelEnCours() {
+        const resId = document.getElementById('formAddService').action.match(/\d+/)?.[0];
+        if (!resId) return;
+        hotelEnCoursResId = resId;
+        fetch(`/hotel/api/consommations/${resId}/`)
+            .then(r => r.json())
+            .then(d => {
+                const liste = document.getElementById('hotel-encours-list');
+                if (!d.consommations || d.consommations.length === 0) {
+                    liste.innerHTML = '<div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Aucune consommation</div>';
+                    document.getElementById('hotel-encours-total').textContent = '0 F';
+                    return;
+                }
+                let html = ''; let total = 0;
+                d.consommations.forEach(c => {
+                    total += c.total;
+                    const typeIcon = c.type === 'piscine' ? '🏊' : c.type === 'bar' ? '🍸' : c.type === 'restaurant' ? '🍽️' : c.type === 'espace' ? '🎪' : '⚙️';
+                    html += `<div id="hc_${c.id}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #dde3ec;border-radius:8px;margin-bottom:6px;background:white">
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:12px;font-weight:600;color:#1a2535">${typeIcon} ${c.nom}</div>
+                            <div style="font-size:10px;color:#7a8b9c">${c.prix.toLocaleString('fr-FR')} F/u · ${c.type_label}</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:3px">
+                            <button onclick="modifHotelConso(${c.id},-1)" style="width:24px;height:24px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px">−</button>
+                            <span id="hqty_${c.id}" style="font-size:13px;font-weight:700;min-width:22px;text-align:center">${c.quantite}</span>
+                            <button onclick="modifHotelConso(${c.id},1)" style="width:24px;height:24px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px">+</button>
+                        </div>
+                        <div id="htot_${c.id}" style="font-size:12px;font-weight:700;color:#2563eb;min-width:60px;text-align:right">${c.total.toLocaleString('fr-FR')} F</div>
+                        <button onclick="suppHotelConso(${c.id})" style="background:#fee2e2;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-weight:600;padding:3px 7px;border-radius:5px">×</button>
+                    </div>`;
+                });
+                liste.innerHTML = html;
+                document.getElementById('hotel-encours-total').textContent = total.toLocaleString('fr-FR') + ' F';
+            });
+    }
+
+    async function modifHotelConso(id, delta) {
+        const qtyEl = document.getElementById('hqty_' + id);
+        const newQty = Math.max(1, parseInt(qtyEl.textContent) + delta);
+        const r = await fetch(`/hotel/api/consommation/${id}/modifier/`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+            body: JSON.stringify({quantite: newQty})
+        });
+        const d = await r.json();
+        if (d.success) chargerHotelEnCours();
+        else alert(d.error || 'Erreur');
+    }
+
+    async function suppHotelConso(id) {
+        if (!confirm('Retirer cette consommation ?')) return;
+        const r = await fetch(`/hotel/api/consommation/${id}/supprimer/`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+            body: JSON.stringify({})
+        });
+        const d = await r.json();
+        if (d.success) chargerHotelEnCours();
+        else alert(d.error || 'Erreur');
     }
 
     function filtrerBoissons(btn, cat) {

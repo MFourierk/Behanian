@@ -175,6 +175,14 @@ class Reservation(models.Model):
         """Calcule le total des services/consommations"""
         return sum(c.total for c in self.consommations.all())
 
+    def get_montant_piscine(self):
+        """Total des consommations piscine uniquement"""
+        return sum(c.total for c in self.consommations.filter(type_service='piscine'))
+
+    def get_montant_services_hors_piscine(self):
+        """Services hors piscine"""
+        return sum(c.total for c in self.consommations.exclude(type_service='piscine'))
+
     def get_total_general(self):
         """Prix hébergement + Services"""
         return self.get_prix_reel() + self.get_montant_services()

@@ -1,3 +1,4 @@
+import json
 from utils.permissions import require_module_access
 from .models import Chambre, Client, Reservation, Consommation
 from facturation.models import Ticket, generate_ticket_numero
@@ -13,6 +14,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.urls import reverse
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 @require_module_access('hotel')
 def api_revenus(request):
@@ -810,3 +812,53 @@ def ajouter_consommation(request, reservation_id):
             messages.error(request, f"Erreur lors de l'ajout du service: {str(e)}")
         
     return redirect(f"{reverse('hotel:index')}?tab=checkinout")
+
+
+@require_module_access('hotel')
+def api_consommations_reservation(request, reservation_id):
+    """Liste toutes les consommations d'une réservation pour l'onglet En cours."""
+    from .models import Reservation, Consommation
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    data = []
+    for c in reservation.consommations.all().order_by('-date_ajout'):
+        data.append({
+            'id': c.id,
+            'nom': c.nom,
+            'type': c.type_service,
+            'type_label': c.get_type_service_display(),
+            'quantite': c.quantite,
+            'prix': float(c.prix_unitaire),
+            'total': float(c.total),
+        })
+    return JsonResponse({'consommations': data})
+
+
+@require_module_access('hotel')
+@require_POST
+def api_modifier_consommation(request, conso_id):
+    """Modifier la quantité d'une consommation hôtel."""
+    from .models import Consommation
+    try:
+        conso = get_object_or_404(Consommation, id=conso_id)
+        data = json.loads(request.body)
+        new_qty = int(data.get('quantite', 1))
+        if new_qty < 1:
+            return JsonResponse({'success': False, 'error': 'Quantité invalide'})
+        conso.quantite = new_qty
+        conso.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('hotel')
+@require_POST
+def api_supprimer_consommation(request, conso_id):
+    """Supprimer une consommation hôtel."""
+    from .models import Consommation
+    try:
+        conso = get_object_or_404(Consommation, id=conso_id)
+        conso.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

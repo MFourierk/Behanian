@@ -15,4 +15,7 @@ urlpatterns = [
     path('checkout/finalize/<int:ticket_id>/', views.finalize_checkout, name='finalize_checkout'),
     path('consommation/add/<int:reservation_id>/', views.ajouter_consommation, name='ajouter_consommation'),
     path('ticket/<int:ticket_id>/print/', views.ticket_print, name='ticket_print'),
+    path('api/consommations/<int:reservation_id>/', views.api_consommations_reservation, name='api_consommations'),
+    path('api/consommation/<int:conso_id>/modifier/', views.api_modifier_consommation, name='api_modifier_conso'),
+    path('api/consommation/<int:conso_id>/supprimer/', views.api_supprimer_consommation, name='api_supprimer_conso'),
 ]
