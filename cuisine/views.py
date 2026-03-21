@@ -679,9 +679,23 @@ def _sync_plat_to_restaurant(plat):
             plat_resto.prix        = plat.prix_vente
             plat_resto.disponible  = plat.statut == 'disponible'
             plat_resto.description = plat.description_carte
-        # Synchroniser la photo
-        if plat.image and not plat_resto.image:
-            plat_resto.image = plat.image
+        # Synchroniser la photo (convertir en JPEG RGB si nécessaire)
+        if plat.image:
+            try:
+                from PIL import Image as PILImage
+                from io import BytesIO
+                from django.core.files.base import ContentFile
+                plat.image.open('rb')
+                img = PILImage.open(plat.image)
+                img = img.convert('RGB')
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG', quality=88)
+                buffer.seek(0)
+                img_name = plat.nom.replace(' ', '_') + '.jpg'
+                plat_resto.image.save(img_name, ContentFile(buffer.read()), save=False)
+                plat.image.close()
+            except Exception:
+                pass
         plat_resto.save()
     except Exception as e:
         pass  # Ne pas bloquer la sauvegarde si la synchro échoue
@@ -754,12 +768,12 @@ def plat_edit(request, pk):
 def sync_plats_restaurant(request):
     """Synchronise tous les plats cuisine vers le restaurant."""
     from cuisine.models import Plat
-    plats = Plat.objects.exclude(statut='archive')
+    plats = Plat.objects.exclude(statut='archive').select_related('categorie','fiche_technique')
     count = 0
     for plat in plats:
         _sync_plat_to_restaurant(plat)
         count += 1
-    messages.success(request, f"{count} plat(s) synchronisé(s) avec le restaurant.")
+    messages.success(request, f"{count} plat(s) synchronisé(s) avec le menu restaurant.")
     return redirect('/cuisine/plats/')
 
 @require_module_access('cuisine')
