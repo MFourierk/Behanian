@@ -362,11 +362,31 @@ def bon_reception_create(request):
         else:
             messages.success(request, f"Réception {br.numero} enregistrée en brouillon.")
         return redirect('/cuisine/stock/?tab=receptions')
+    import json
+    ing_data = {
+        str(ing.pk): {
+            'nom':   ing.nom,
+            'unite': ing.unite_stock.abreviation if ing.unite_stock else '-',
+            'cmup':  float(ing.cmup or 0),
+            'stock': float(ing.quantite_stock or 0),
+        }
+        for ing in ingredients
+    }
+    bc_data = {
+        str(bc.pk): {
+            'numero':          bc.numero,
+            'fournisseur':     bc.fournisseur.nom if bc.fournisseur else '-',
+            'fournisseur_id':  str(bc.fournisseur_id or ''),
+        }
+        for bc in bons_cmd
+    }
     context = {
         'page_title':    'Nouvelle Réception — Cuisine',
         'fournisseurs':  fournisseurs,
         'bons_cmd':      bons_cmd,
         'ingredients':   ingredients,
+        'ing_data_json': json.dumps(ing_data, ensure_ascii=False),
+        'bc_data_json':  json.dumps(bc_data, ensure_ascii=False),
         'mode':          'create',
     }
     return render(request, 'cuisine/bon_reception_form.html', context)

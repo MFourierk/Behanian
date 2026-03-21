@@ -364,8 +364,8 @@ input:focus, select:focus, textarea:focus {
                                 <option value="">— Sélectionner —</option>
                                 {% for ing in ingredients %}
                                 <option value="{{ ing.pk }}"
-                                    data-unite="{{ ing.unite_stock.abreviation|default:'—' }}"
-                                    data-cmup="{{ ing.cmup|default:0 }}">
+                                    data-unite="-"
+                                    data-cmup="0">
                                     {{ ing.nom }}
                                 </option>
                                 {% endfor %}
@@ -451,25 +451,8 @@ input:focus, select:focus, textarea:focus {
 </div>
 
 <script>
-const ingData = {
-    {% for ing in ingredients %}
-    "{{ ing.pk }}": {
-        nom   : "{{ ing.nom|escapejs }}",
-        unite : "{{ ing.unite_stock.abreviation|default:'-'|escapejs }}",
-        cmup  : {% if ing.cmup %}{{ ing.cmup }}{% else %}0{% endif %},
-        stock : {{ ing.quantite_stock }}
-    },
-    {% endfor %}
-};
-const bcData = {
-    {% for bc in bons_cmd %}
-    "{{ bc.pk }}": {
-        numero         : "{{ bc.numero }}",
-        fournisseur    : "{{ bc.fournisseur.nom|default:'—'|escapejs }}",
-        fournisseur_id : "{{ bc.fournisseur_id|default:'' }}"
-    },
-    {% endfor %}
-};
+const ingData = {{ ing_data_json|safe }};
+const bcData = {{ bc_data_json|safe }};
 
 let rowCounter = 1;
 
