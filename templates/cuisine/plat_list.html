@@ -150,6 +150,9 @@
         <a href="{% url 'cuisine:plat_create' %}" class="btn-red">
             <i class="fas fa-plus"></i> Nouveau Plat
         </a>
+        <a href="{% url 'cuisine:sync_plats_restaurant' %}" class="btn-red" style="background:#1a2535;color:#c9a84c;margin-left:8px" onclick="return confirm('Synchroniser tous les plats avec le restaurant ?')">
+            <i class="fas fa-sync"></i> Sync Restaurant
+        </a>
     </div>
 
     <!-- Plats par catégorie -->

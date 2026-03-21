@@ -21,9 +21,7 @@
         <a href="{% url 'cuisine:fournisseur_list' %}" class="btn-add-glam">
             <i class="fas fa-truck mr-2"></i> Fournisseurs
         </a>
-        <a href="{% url 'cuisine:fiche_list' %}" class="btn-add-glam">
-            <i class="fas fa-book-open mr-2"></i> Fiches techniques
-        </a>
+
         <a href="{% url 'cuisine:plat_list' %}" class="btn-add-glam">
             <i class="fas fa-utensils mr-2"></i> Plats / Carte
         </a>
@@ -163,10 +161,7 @@
                     <i class="fas fa-file-alt"></i>
                     <span>Bon de commande</span>
                 </a>
-                <a href="{% url 'cuisine:fiche_create' %}" class="quick-action">
-                    <i class="fas fa-book"></i>
-                    <span>Nouvelle fiche</span>
-                </a>
+                
                 <a href="{% url 'cuisine:inventaire_create' %}" class="quick-action">
                     <i class="fas fa-clipboard-list"></i>
                     <span>Inventaire</span>
