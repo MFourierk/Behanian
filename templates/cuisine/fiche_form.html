@@ -224,6 +224,9 @@
     </form>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
 // Données ingrédients pour JS
 const INGREDIENTS = {{ ing_data_json|safe }};
