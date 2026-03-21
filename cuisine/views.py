@@ -600,6 +600,41 @@ def plat_list(request):
     return render(request, 'cuisine/plat_list.html', context)
 
 
+
+def _sync_plat_to_restaurant(plat):
+    """Crée ou met à jour le PlatMenu correspondant dans le restaurant."""
+    try:
+        from restaurant.models import PlatMenu, CategorieMenu
+        # Trouver ou créer la catégorie restaurant correspondante
+        cat_nom = plat.categorie.nom if plat.categorie else 'Plats'
+        cat_resto, _ = CategorieMenu.objects.get_or_create(
+            nom=cat_nom,
+            defaults={'ordre': 1}
+        )
+        # Trouver ou créer le PlatMenu
+        plat_resto, created = PlatMenu.objects.get_or_create(
+            nom=plat.nom,
+            defaults={
+                'categorie':         cat_resto,
+                'prix':              plat.prix_vente,
+                'temps_preparation': 15,
+                'disponible':        plat.statut == 'disponible',
+                'description':       plat.description_carte,
+            }
+        )
+        if not created:
+            # Mettre à jour si existe déjà
+            plat_resto.categorie   = cat_resto
+            plat_resto.prix        = plat.prix_vente
+            plat_resto.disponible  = plat.statut == 'disponible'
+            plat_resto.description = plat.description_carte
+        # Synchroniser la photo
+        if plat.image and not plat_resto.image:
+            plat_resto.image = plat.image
+        plat_resto.save()
+    except Exception as e:
+        pass  # Ne pas bloquer la sauvegarde si la synchro échoue
+
 @require_module_access('cuisine')
 def plat_create(request):
     categories = CategoriePlat.objects.all()
@@ -614,8 +649,12 @@ def plat_create(request):
             statut=request.POST.get('statut', 'disponible'),
             ordre_carte=request.POST.get('ordre_carte') or 0,
         )
+        if request.FILES.get('image'):
+            plat.image = request.FILES['image']
         plat.save()
-        messages.success(request, f"Plat '{plat.nom}' créé.")
+        # Synchroniser avec le restaurant
+        _sync_plat_to_restaurant(plat)
+        messages.success(request, f"Plat '{plat.nom}' créé et ajouté au menu restaurant.")
         return redirect('/cuisine/plats/')
     context = {
         'page_title': 'Nouveau Plat',
@@ -639,8 +678,14 @@ def plat_edit(request, pk):
         plat.prix_vente          = request.POST.get('prix_vente') or 0
         plat.statut              = request.POST.get('statut', 'disponible')
         plat.ordre_carte         = request.POST.get('ordre_carte') or 0
+        if request.FILES.get('image'):
+            plat.image = request.FILES['image']
+        elif request.POST.get('image-clear'):
+            plat.image = None
         plat.save()
-        messages.success(request, f"Plat '{plat.nom}' modifié.")
+        # Synchroniser avec le restaurant
+        _sync_plat_to_restaurant(plat)
+        messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé avec le restaurant.")
         return redirect('/cuisine/plats/')
     context = {
         'page_title': f'Modifier : {plat.nom}',
@@ -651,6 +696,19 @@ def plat_edit(request, pk):
     }
     return render(request, 'cuisine/plat_form.html', context)
 
+
+
+@require_module_access('cuisine')
+def sync_plats_restaurant(request):
+    """Synchronise tous les plats cuisine vers le restaurant."""
+    from cuisine.models import Plat
+    plats = Plat.objects.exclude(statut='archive')
+    count = 0
+    for plat in plats:
+        _sync_plat_to_restaurant(plat)
+        count += 1
+    messages.success(request, f"{count} plat(s) synchronisé(s) avec le restaurant.")
+    return redirect('/cuisine/plats/')
 
 @require_module_access('cuisine')
 def plat_delete(request, pk):

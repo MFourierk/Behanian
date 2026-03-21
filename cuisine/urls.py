@@ -46,6 +46,7 @@ urlpatterns = [
     path('plats/nouveau/', views.plat_create, name='plat_create'),
     path('plats/<int:pk>/modifier/', views.plat_edit, name='plat_edit'),
     path('plats/<int:pk>/supprimer/', views.plat_delete, name='plat_delete'),
+    path('plats/sync-restaurant/', views.sync_plats_restaurant, name='sync_plats_restaurant'),
 
     # Fournisseurs
     path('fournisseurs/', views.fournisseur_list, name='fournisseur_list'),
