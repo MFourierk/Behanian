@@ -624,8 +624,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <div class="modal-subtitle" id="confirmChambreMsg">Articles ajoutés à la note</div>
     <div id="confirmChambreDetail" style="margin:16px 0;padding:12px;background:rgba(37,99,235,0.1);border-radius:8px;font-size:13px;color:#60a5fa;text-align:left"></div>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="modal-btn-cancel" style="flex:1" onclick="document.getElementById('modalConfirmChambre').classList.remove('open')">OK</button>
-      <button class="modal-btn-confirm" style="flex:1" onclick="imprimerRecuChambre(chambreLieeNom||document.getElementById('confirmChambreMsg').textContent, document.getElementById('confirmChambreDetail').innerHTML, document.getElementById('confirmChambreDetail').querySelector('strong')?.textContent||'')">
+      <button class="modal-btn-cancel" style="flex:1" onclick="fermerConfirmChambre()">OK</button>
+      <button class="modal-btn-confirm" style="flex:1" onclick="imprimerRecuChambre(window._lastChambreNom||'', window._lastChambreDetail||'', window._lastChambreTotal||'')">
         <i class="fas fa-print"></i> Reçu
       </button>
     </div>
@@ -1001,21 +1001,25 @@ async function mettreOnChambre() {
     document.getElementById('confirmChambreDetail').innerHTML = detail;
     document.getElementById('modalConfirmChambre').classList.add('open');
 
-    // Reset ticket
+    // Sauvegarder pour impression avant de délier
+    window._lastChambreNom = chambreLieeNom;
+    window._lastChambreDetail = detail;
+    window._lastChambreTotal = formatF(total);
+    // Reset ticket et liaison
     delierChambre();
-    supprimerTicket(ticketActifId);
-    creerNouveauTicket();
+    nouveauTicket();
   } catch(e) { toast('Erreur réseau', 'error'); }
 }
 
 function payerMaintenant() {
   document.getElementById('modalChoixChambre').classList.remove('open');
-  // Délier la chambre pour ce ticket uniquement — pas de liaison
+  // Payer sans lier à la chambre - délier temporairement pour ce ticket
   const savedId = chambreLieeId;
   const savedNom = chambreLieeNom;
   chambreLieeId = null;
+  chambreLieeNom = null;
   _ouvrirModalPaiementNormal();
-  // Restaurer le badge après ouverture (le client reste lié pour les prochains tickets)
+  // Restaurer le badge (client toujours lié pour prochains tickets)
   chambreLieeId = savedId;
   chambreLieeNom = savedNom;
 }
@@ -1358,5 +1362,12 @@ function imprimerRecuChambre(chambreNom, detail, total) {
   if(w){ w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(),300); }
 }
 
+
+function fermerConfirmChambre() {
+  document.getElementById('modalConfirmChambre').classList.remove('open');
+  window._lastChambreNom = null;
+  window._lastChambreDetail = null;
+  window._lastChambreTotal = null;
+}
 </script>
 {% endblock %}
