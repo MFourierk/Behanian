@@ -1,6 +1,9 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
-{% block title %}{{ page_title }} - Cuisine BEHANIAN<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 // ===== IMPRESSION / PDF =====
 function exporterPDFReception() {
@@ -452,9 +455,9 @@ const ingData = {
     {% for ing in ingredients %}
     "{{ ing.pk }}": {
         nom   : "{{ ing.nom|escapejs }}",
-        unite : "{{ ing.unite_stock.abreviation|default:'—' }}",
-        cmup  : {{ ing.cmup|default:0 }},
-        stock : {{ ing.quantite_stock }}
+        unite : "{{ ing.unite_stock.abreviation|default:'-'|escapejs }}",
+        cmup  : {{ ing.cmup|default:0|floatformat:2 }},
+        stock : {{ ing.quantite_stock|floatformat:3 }}
     },
     {% endfor %}
 };
