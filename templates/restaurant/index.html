@@ -575,7 +575,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                data-id="{{ plat.id }}"
                data-nom="{{ plat.nom|lower }}"
                data-cat="{{ plat.categorie.id }}"
-               onclick="ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">
+               onclick="ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix|stringformat:'g' }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">
             <div class="ac-img-wrap">
               {% if plat.image %}<img src="{{ plat.image.url }}" alt="{{ plat.nom }}">{% else %}🍽{% endif %}
               <span class="ac-stock-badge {% if plat.stock_quantity > 5 %}ok{% elif plat.stock_quantity > 0 %}bas{% else %}rupture{% endif %}">
@@ -589,7 +589,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                   <div class="ac-prix">{{ plat.prix|floatformat:0 }} F</div>
                   <div class="ac-unite">⏱ {{ plat.temps_preparation }} min</div>
                 </div>
-                <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">+</button>
+                <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix|stringformat:'g' }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">+</button>
               </div>
             </div>
           </div>
@@ -626,7 +626,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                data-id="{{ b.id }}"
                data-nom="{{ b.nom|lower }}"
                data-cat="{{ b.categorie.id }}"
-               onclick="ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">
+               onclick="ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">
             <div class="ac-img-wrap">
               {% if b.image %}<img src="{{ b.image.url }}" alt="{{ b.nom }}">{% else %}🍷{% endif %}
               <span class="ac-stock-badge {% if b.est_en_rupture %}rupture{% elif b.est_stock_bas %}bas{% else %}ok{% endif %}">
@@ -640,7 +640,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                   <div class="ac-prix">{{ b.prix|floatformat:0 }} F</div>
                   <div class="ac-unite">/ {{ b.unite_affichee }}</div>
                 </div>
-                <button class="ac-add" onclick="event.stopPropagation(); ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">+</button>
+                <button class="ac-add" onclick="event.stopPropagation(); ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">+</button>
               </div>
             </div>
           </div>
@@ -704,7 +704,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <div class="acc-panel-titre">Choisir accompagnement</div>
       <div class="acc-pills-wrap" id="accPills">
         {% for acc in accompagnements %}
-        <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix }}" onclick="selectionnerAcc(this)">
+        <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix|stringformat:'g' }}" onclick="selectionnerAcc(this)">
           {{ acc.nom }} <span style="color:rgba(255,255,255,0.4)">(+{{ acc.prix|floatformat:0 }}F)</span>
         </button>
         {% endfor %}

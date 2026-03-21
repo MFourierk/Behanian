@@ -462,7 +462,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <div class="boisson-card {% if b.est_en_rupture %}rupture{% endif %}"
              data-cat="{{ b.categorie.nom|lower }}"
              data-nom="{{ b.nom|lower }}"
-             onclick="ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}')">
+             onclick="ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">
           <div class="bc-img-wrap">
             {% if b.image %}
             <img src="{{ b.image.url }}" alt="{{ b.nom }}">
@@ -480,7 +480,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                 <div class="bc-prix">{{ b.prix|floatformat:0 }} F</div>
                 <div class="bc-unite">/ {{ b.unite_affichee }}</div>
               </div>
-              <button class="bc-add" onclick="event.stopPropagation(); ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix }}, '{{ b.unite_affichee|escapejs }}')">+</button>
+              <button class="bc-add" onclick="event.stopPropagation(); ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">+</button>
             </div>
           </div>
         </div>
