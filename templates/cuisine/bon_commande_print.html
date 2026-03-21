@@ -1,0 +1,76 @@
+{% extends 'print_base.html' %}
+{% block doc_title %}{{ bon.numero }}{% endblock %}
+
+{% block doc_content %}
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Bon de Commande — Cuisine</div>
+    <div class="doc-title-sub">Département Cuisine · Achats &amp; Approvisionnement</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-{{ bon.statut }}">{{ bon.get_statut_display }}</span>
+    <span class="doc-ref">{{ bon.numero }}</span>
+  </div>
+</div>
+
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations de la commande</div>
+    <div class="meta-row"><span class="meta-lbl">N° Commande</span><span class="meta-val">{{ bon.numero }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date</span><span class="meta-val">{{ bon.date_commande|date:"d/m/Y" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Fournisseur</span><span class="meta-val">{{ bon.fournisseur.nom|default:"Non spécifié" }}</span></div>
+    {% if bon.date_livraison_prevue %}<div class="meta-row"><span class="meta-lbl">Livraison prévue</span><span class="meta-val">{{ bon.date_livraison_prevue|date:"d/m/Y" }}</span></div>{% endif %}
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Traçabilité</div>
+    <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ bon.cree_par.get_full_name|default:bon.cree_par.username }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date création</span><span class="meta-val">{{ bon.date_creation|date:"d/m/Y H:i" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb articles</span><span class="meta-val">{{ lignes.count }} ligne(s)</span></div>
+    {% if bon.notes %}<div class="meta-row"><span class="meta-lbl">Notes</span><span class="meta-val">{{ bon.notes }}</span></div>{% endif %}
+  </div>
+</div>
+
+<div class="content-section">
+  <div class="section-title">Articles commandés</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Ingrédient</th>
+        <th style="width:80px">Unité</th>
+        <th class="r" style="width:100px">Qté commandée</th>
+        <th class="r" style="width:110px">Prix U. estimé (FCFA)</th>
+        <th class="r" style="width:120px">Total estimé (FCFA)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in lignes %}
+      <tr>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td class="bold">{{ l.ingredient.nom }}</td>
+        <td>{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
+        <td class="r">{{ l.quantite_commandee|floatformat:3 }}</td>
+        <td class="r">{{ l.prix_unitaire_estime|default:0|floatformat:0 }}</td>
+        <td class="r bold">{{ l.total_ligne|floatformat:0 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4"></td>
+        <td class="total-label">Total estimé</td>
+        <td class="total-val">{{ bon.total|floatformat:0 }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Demandeur</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Cuisine</div><div class="sig-hint">Validation</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Approbation &amp; Cachet</div></div>
+</div>
+{% endblock %}
+{% block doc_footer_right %}Bon de commande · {{ bon.numero }} · {{ bon.date_commande|date:"d/m/Y" }}{% endblock %}

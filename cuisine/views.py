@@ -308,6 +308,15 @@ def bon_commande_detail(request, pk):
 
 
 @require_module_access('cuisine')
+def bon_commande_print(request, pk):
+    bon    = get_object_or_404(BonCommandeCuisine, pk=pk)
+    lignes = bon.lignes.select_related('ingredient').all()
+    return render(request, 'cuisine/bon_commande_print.html', {
+        'bon': bon, 'lignes': lignes
+    })
+
+
+@require_module_access('cuisine')
 def bon_commande_annuler(request, pk):
     bon = get_object_or_404(BonCommandeCuisine, pk=pk)
     if request.method == 'POST':
@@ -836,6 +845,18 @@ def get_bc_lignes(request, pk):
             'prix_unitaire':   float(l.prix_unitaire),
         })
     return JsonResponse({'lignes': lignes, 'fournisseur_id': bon.fournisseur_id or ''})
+
+@require_module_access('cuisine')
+def etat_stock_print(request):
+    from .models import Ingredient
+    ingredients = Ingredient.objects.filter(statut=True).select_related('categorie','unite_stock').order_by('categorie__nom','nom')
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+    total_valeur = sum(float(i.cmup or 0) * float(i.quantite_stock or 0) for i in ingredients)
+    return render(request, 'cuisine/etat_stock_print.html', {
+        'ingredients': ingredients,
+        'total_valeur': total_valeur,
+    })
+
 
 @require_module_access('cuisine')
 def rapport_stock_cuisine(request):

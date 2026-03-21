@@ -1,0 +1,147 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block doc_title %}Document{% endblock %} — Behanian</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; color:#1a1a2e; background:#f0f4f8; }
+.page { width:210mm; min-height:297mm; margin:0 auto; background:white; }
+
+/* Bandes décoratives */
+.band-top { background:linear-gradient(90deg,#1a2535 0%,#2d3f55 60%,#1a2535 100%); height:8px; }
+.band-gold { background:linear-gradient(90deg,#c9a84c,#e8c96d,#c9a84c); height:3px; }
+
+/* En-tête */
+.doc-header { display:flex; justify-content:space-between; align-items:center; padding:18px 30px 14px; border-bottom:1px solid #e0e6ed; }
+.logo-zone img { height:75px; width:auto; }
+.company-block { text-align:right; }
+.company-name { font-size:17px; font-weight:800; color:#1a2535; letter-spacing:.3px; }
+.company-name span { color:#c9a84c; }
+.company-tagline { font-size:9.5px; color:#7a8b9c; font-style:italic; margin:2px 0 5px; }
+.company-coords { font-size:10px; color:#4a5568; line-height:1.7; }
+.company-coords strong { color:#1a2535; }
+
+/* Bandeau titre document */
+.doc-title-band { background:#f8f9fb; border-top:1px solid #e0e6ed; border-bottom:1px solid #e0e6ed; padding:12px 30px; display:flex; justify-content:space-between; align-items:center; }
+.doc-title-text { font-size:15px; font-weight:800; color:#1a2535; text-transform:uppercase; letter-spacing:.8px; }
+.doc-title-sub  { font-size:9.5px; color:#7a8b9c; margin-top:2px; }
+.doc-title-right { display:flex; align-items:center; gap:10px; }
+
+/* Badges */
+.badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.badge-brouillon { background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+.badge-valide    { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+.badge-annule    { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+.badge-confirme  { background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; }
+.badge-envoye    { background:#ede9fe; color:#6d28d9; border:1px solid #c4b5fd; }
+.badge-partiel   { background:#fce7f3; color:#9d174d; border:1px solid #f9a8d4; }
+.badge-paye      { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+.doc-ref { font-size:13px; font-weight:700; color:#c0392b; background:#fdf2f2; border:1px solid #f5c6c6; padding:5px 14px; border-radius:20px; }
+
+/* Grille meta */
+.meta-grid { display:grid; padding:14px 30px; gap:12px; }
+.meta-grid.cols-2 { grid-template-columns:1fr 1fr; }
+.meta-grid.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+.meta-box { background:#f8f9fb; border:1px solid #e0e6ed; border-radius:8px; padding:12px 15px; }
+.meta-box-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#8a9ab0; padding-bottom:6px; margin-bottom:8px; border-bottom:1px solid #e8ecf0; }
+.meta-row { display:flex; gap:6px; margin-bottom:4px; align-items:baseline; }
+.meta-lbl { font-size:10px; color:#6b7a8d; min-width:105px; flex-shrink:0; }
+.meta-val { font-size:11px; font-weight:600; color:#1a2535; }
+
+/* Section contenu */
+.content-section { padding:0 30px 14px; }
+.section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#4a5568; margin-bottom:8px; }
+
+/* Tableau */
+.doc-table { width:100%; border-collapse:collapse; }
+.doc-table thead { background:#1a2535; }
+.doc-table thead th { padding:9px 12px; font-size:9.5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:#c9a84c; text-align:left; }
+.doc-table thead th.r { text-align:right; }
+.doc-table thead th.c { text-align:center; }
+.doc-table tbody tr:nth-child(even) { background:#f8f9fb; }
+.doc-table tbody td { padding:9px 12px; font-size:11px; color:#1a2535; border-bottom:1px solid #edf0f5; vertical-align:middle; }
+.doc-table tbody td.r { text-align:right; }
+.doc-table tbody td.c { text-align:center; }
+.doc-table tbody td.bold { font-weight:700; }
+.doc-table tbody td.muted { color:#8a9ab0; }
+.doc-table tfoot td { padding:10px 12px; font-weight:700; background:#f2f5f9; border-top:2px solid #dde3ec; }
+.doc-table tfoot td.total-label { text-align:right; text-transform:uppercase; font-size:11px; letter-spacing:.4px; color:#4a5568; }
+.doc-table tfoot td.total-val   { text-align:right; font-size:14px; color:#c0392b; background:#fdf2f2; }
+
+/* Notes */
+.notes-box { margin:0 30px 14px; padding:11px 14px; background:#fffbf0; border:1px solid #f6e49e; border-radius:7px; }
+.notes-box strong { font-size:9px; text-transform:uppercase; letter-spacing:.6px; color:#92400e; display:block; margin-bottom:4px; }
+
+/* Signatures */
+.signatures { display:grid; gap:30px; margin:18px 30px 0; padding-top:14px; }
+.signatures.cols-2 { grid-template-columns:1fr 1fr; }
+.signatures.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+.sig-box { text-align:center; }
+.sig-line { border-top:1px solid #1a2535; padding-top:6px; margin-top:36px; font-size:10px; color:#1a2535; font-weight:600; }
+.sig-hint { font-size:9px; color:#8a9ab0; margin-top:2px; }
+
+/* Footer */
+.doc-footer { margin-top:22px; padding:11px 30px; background:#1a2535; display:flex; justify-content:space-between; align-items:center; }
+.doc-footer span { font-size:9px; color:#8a9ab0; }
+.doc-footer strong { color:#c9a84c; }
+
+/* Boutons écran */
+.btn-zone { text-align:center; padding:18px; background:#eef1f5; border-top:1px solid #dde3ec; }
+.btn-doc { display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0 5px; text-decoration:none; }
+.btn-doc-print { background:#1a2535; color:#c9a84c; }
+.btn-doc-close { background:#6b7a8d; color:white; }
+
+/* Impression */
+@media print {
+  body { background:white; }
+  .no-print { display:none !important; }
+  .btn-zone { display:none !important; }
+  .page { margin:0; width:100%; }
+  @page { margin:10mm; size:A4; }
+}
+</style>
+{% block extra_style %}{% endblock %}
+</head>
+<body>
+<div class="page">
+  <div class="band-top"></div>
+  <div class="band-gold"></div>
+
+  <!-- EN-TÊTE FIXE -->
+  <div class="doc-header">
+    <div class="logo-zone">
+      <img src="{% static 'images/Logo.png' %}" alt="Logo Behanian">
+    </div>
+    <div class="company-block">
+      <div class="company-name">COMPLEXE HÔTELIER <span>BEHANIAN</span></div>
+      <div class="company-tagline">Votre confort, notre priorité</div>
+      <div class="company-coords">
+        Yopougon Beago, à 200m du Palais de Justice<br>
+        <strong>Tél :</strong> 07 58 29 11 10 / 01 43 09 76 16
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENU SPÉCIFIQUE -->
+  {% block doc_content %}{% endblock %}
+
+  <!-- FOOTER FIXE -->
+  <div class="doc-footer">
+    <span><strong>COMPLEXE HÔTELIER BEHANIAN</strong> · Yopougon Beago · Côte d'Ivoire</span>
+    <span>{% block doc_footer_right %}{% endblock %}</span>
+  </div>
+</div>
+
+<!-- BOUTONS ÉCRAN -->
+<div class="btn-zone no-print">
+  {% block doc_actions %}
+  <button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+  <button onclick="window.close()" class="btn-doc btn-doc-close">✕ Fermer</button>
+  {% endblock %}
+</div>
+
+</body>
+</html>

@@ -24,6 +24,7 @@ urlpatterns = [
     path('commandes/nouveau/', views.bon_commande_create, name='bon_commande_create'),
     path('commandes/<int:pk>/', views.bon_commande_detail, name='bon_commande_detail'),
     path('commandes/<int:pk>/annuler/', views.bon_commande_annuler, name='bon_commande_annuler'),
+    path('commandes/<int:pk>/print/', views.bon_commande_print, name='bon_commande_print'),
 
     # Bons de réception
     path('receptions/', views.bon_reception_list, name='bon_reception_list'),
@@ -62,6 +63,7 @@ urlpatterns = [
 
     # AJAX
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
+    path('etat-stock/print/', views.etat_stock_print, name='etat_stock_print'),
     path('api/ingredient/<int:pk>/prix/', views.get_ingredient_prix, name='get_ingredient_prix'),
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('api/commande/<int:pk>/lignes/', views.get_bc_lignes, name='get_bc_lignes'),
