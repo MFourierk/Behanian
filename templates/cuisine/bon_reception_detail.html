@@ -66,9 +66,9 @@
     <a href="{% url 'cuisine:bon_reception_list' %}" class="btn-p btn-back">
       <i class="fas fa-arrow-left"></i> Retour
     </a>
-    <button onclick="window.print()" class="btn-p btn-print">
-      <i class="fas fa-print"></i> Imprimer
-    </button>
+    <a href="{% url 'cuisine:bon_reception_print' br.id %}" target="_blank" class="btn-p btn-print">
+      <i class="fas fa-print"></i> Imprimer / PDF
+    </a>
     {% if br.statut == 'brouillon' %}
     <form method="post" action="{% url 'cuisine:bon_reception_valider' br.id %}" style="margin:0">
       {% csrf_token %}

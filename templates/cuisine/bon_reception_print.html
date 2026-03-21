@@ -3,93 +3,259 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bon de Réception {{ br.numero }}</title>
 <style>
-  body { font-family: 'Courier New', monospace; font-size: 12px; margin: 20px; color: #000; }
-  .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px; }
-  .header h1 { font-size: 16px; margin: 0 0 4px; }
-  .header h2 { font-size: 13px; margin: 0; font-weight: normal; }
-  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; font-size: 11px; }
-  .meta-row { display: flex; gap: 6px; }
-  .meta-label { font-weight: bold; min-width: 110px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-  th { background: #f0f0f0; border: 1px solid #999; padding: 6px 8px; text-align: left; font-size: 11px; }
-  td { border: 1px solid #ccc; padding: 5px 8px; font-size: 11px; }
-  .right { text-align: right; }
-  .total-row td { font-weight: bold; background: #f8f8f8; }
-  .statut { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; }
-  .statut-valide { background: #d4edda; color: #155724; }
-  .statut-brouillon { background: #fff3cd; color: #856404; }
-  .statut-annule { background: #f8d7da; color: #721c24; }
-  .footer { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .signature-box { border-top: 1px solid #000; padding-top: 6px; font-size: 11px; text-align: center; }
-  @media print { body { margin: 10px; } button { display: none; } }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1a1a2e; background: white; }
+
+  .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 0; background: white; }
+
+  /* ── HEADER BANDE HAUT ── */
+  .header-band { background: linear-gradient(135deg, #1a2535 0%, #2d3f55 100%); height: 8px; width: 100%; }
+  .header-accent { background: #c9a84c; height: 3px; width: 100%; }
+
+  /* ── HEADER CONTENU ── */
+  .header-content { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 30px 16px; border-bottom: 1px solid #e8ecf0; }
+  .logo-zone img { height: 80px; width: auto; object-fit: contain; }
+  .company-info { text-align: right; }
+  .company-name { font-size: 18px; font-weight: 800; color: #1a2535; letter-spacing: .5px; line-height: 1.2; }
+  .company-name span { color: #c9a84c; }
+  .company-tagline { font-size: 10px; color: #6b7a8d; font-style: italic; margin: 2px 0 6px; }
+  .company-coords { font-size: 10px; color: #4a5568; line-height: 1.7; }
+  .company-coords strong { color: #1a2535; }
+
+  /* ── TITRE DOCUMENT ── */
+  .doc-title-zone { background: #f8f9fb; border-bottom: 1px solid #e0e6ed; padding: 14px 30px; display: flex; justify-content: space-between; align-items: center; }
+  .doc-title { font-size: 16px; font-weight: 700; color: #1a2535; text-transform: uppercase; letter-spacing: 1px; }
+  .doc-number { font-size: 13px; font-weight: 700; color: #c0392b; background: #fdf2f2; border: 1px solid #f5c6c6; padding: 5px 14px; border-radius: 20px; }
+
+  /* ── BADGE STATUT ── */
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .badge-brouillon { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .badge-valide    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .badge-annule    { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+  /* ── SECTION META ── */
+  .meta-section { padding: 16px 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .meta-box { background: #f8f9fb; border: 1px solid #e0e6ed; border-radius: 8px; padding: 12px 16px; }
+  .meta-box-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #8a9ab0; margin-bottom: 8px; border-bottom: 1px solid #e8ecf0; padding-bottom: 5px; }
+  .meta-row { display: flex; gap: 8px; margin-bottom: 4px; align-items: baseline; }
+  .meta-label { font-size: 10px; color: #6b7a8d; min-width: 100px; flex-shrink: 0; }
+  .meta-val { font-size: 11px; font-weight: 600; color: #1a2535; }
+
+  /* ── TABLEAU ARTICLES ── */
+  .articles-section { padding: 0 30px; }
+  .articles-section h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #4a5568; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: #1a2535; }
+  thead th { padding: 9px 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: #c9a84c; text-align: left; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f8f9fb; }
+  tbody tr:hover { background: #eef2f7; }
+  tbody td { padding: 9px 12px; font-size: 11px; color: #1a2535; border-bottom: 1px solid #e8ecf0; }
+  tbody td.right { text-align: right; }
+  tbody td.num { color: #8a9ab0; width: 30px; }
+  tbody td.ingr { font-weight: 600; }
+  tbody td.total-cell { font-weight: 700; color: #1a2535; }
+  .tfoot-row td { padding: 11px 12px; font-weight: 700; font-size: 12px; }
+  .tfoot-label { text-align: right; text-transform: uppercase; letter-spacing: .5px; color: #4a5568; }
+  .tfoot-total { text-align: right; font-size: 14px; color: #c0392b; background: #fdf2f2; }
+
+  /* ── NOTES ── */
+  .notes-section { margin: 14px 30px; padding: 12px 14px; background: #fffbf0; border: 1px solid #f6e49e; border-radius: 8px; font-size: 11px; }
+  .notes-section strong { color: #92400e; display: block; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; }
+
+  /* ── SIGNATURES ── */
+  .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; margin: 20px 30px 0; padding-top: 16px; }
+  .sig-box { text-align: center; }
+  .sig-line { border-top: 1px solid #1a2535; padding-top: 6px; margin-top: 40px; font-size: 10px; color: #4a5568; font-weight: 600; }
+  .sig-label { font-size: 9px; color: #8a9ab0; margin-top: 2px; }
+
+  /* ── FOOTER ── */
+  .footer { margin-top: 30px; padding: 12px 30px; background: #1a2535; display: flex; justify-content: space-between; align-items: center; }
+  .footer-text { font-size: 9px; color: #8a9ab0; }
+  .footer-text strong { color: #c9a84c; }
+
+  /* ── PRINT ── */
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    .page { margin: 0; padding: 0; }
+    @page { margin: 0; size: A4; }
+  }
+
+  /* ── BOUTONS (écran uniquement) ── */
+  .btn-zone { text-align: center; padding: 20px; background: #f0f4f8; border-top: 1px solid #dde3ec; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 0 6px; text-decoration: none; }
+  .btn-print { background: #1a2535; color: #c9a84c; }
+  .btn-close { background: #6b7a8d; color: white; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>COMPLEXE HÔTELIER BEHANIAN</h1>
-  <h2>BON DE RÉCEPTION — CUISINE</h2>
-</div>
+<div class="page">
+  <div class="header-band"></div>
+  <div class="header-accent"></div>
 
-<div class="meta">
-  <div>
-    <div class="meta-row"><span class="meta-label">N° Réception :</span><strong>{{ br.numero }}</strong></div>
-    <div class="meta-row"><span class="meta-label">Date :</span>{{ br.date_reception|date:"d/m/Y" }}</div>
-    <div class="meta-row"><span class="meta-label">Fournisseur :</span>{{ br.fournisseur.nom|default:"—" }}</div>
-    {% if br.bon_commande %}<div class="meta-row"><span class="meta-label">Bon commande :</span>{{ br.bon_commande.numero }}</div>{% endif %}
-  </div>
-  <div>
-    <div class="meta-row"><span class="meta-label">Statut :</span>
-      <span class="statut statut-{{ br.statut }}">{{ br.get_statut_display }}</span>
+  <!-- EN-TÊTE -->
+  <div class="header-content">
+    <div class="logo-zone">
+      <img src="{% static 'images/Logo.png' %}" alt="Logo Behanian">
     </div>
-    <div class="meta-row"><span class="meta-label">Enregistré par :</span>{{ br.cree_par.get_full_name|default:br.cree_par.username }}</div>
-    {% if br.date_validation %}<div class="meta-row"><span class="meta-label">Validé le :</span>{{ br.date_validation|date:"d/m/Y H:i" }}</div>{% endif %}
+    <div class="company-info">
+      <div class="company-name">COMPLEXE HÔTELIER <span>BEHANIAN</span></div>
+      <div class="company-tagline">Votre confort, notre priorité</div>
+      <div class="company-coords">
+        Yopougon Beago, à 200m du Palais de Justice<br>
+        <strong>Tél :</strong> 07 58 29 11 10 / 01 43 09 76 16
+      </div>
+    </div>
   </div>
+
+  <!-- TITRE DOCUMENT -->
+  <div class="doc-title-zone">
+    <div>
+      <div class="doc-title">Bon de Réception — Cuisine</div>
+      <div style="font-size:10px;color:#6b7a8d;margin-top:3px">Département Cuisine · Approvisionnement</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="badge badge-{{ br.statut }}">{{ br.get_statut_display }}</span>
+      <span class="doc-number">{{ br.numero }}</span>
+    </div>
+  </div>
+
+  <!-- INFORMATIONS -->
+  <div class="meta-section">
+    <div class="meta-box">
+      <div class="meta-box-title">Informations du bon</div>
+      <div class="meta-row">
+        <span class="meta-label">N° Réception</span>
+        <span class="meta-val">{{ br.numero }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Date de réception</span>
+        <span class="meta-val">{{ br.date_reception|date:"d/m/Y" }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Fournisseur</span>
+        <span class="meta-val">{{ br.fournisseur.nom|default:"Non spécifié" }}</span>
+      </div>
+      {% if br.bon_commande %}
+      <div class="meta-row">
+        <span class="meta-label">Bon de commande</span>
+        <span class="meta-val">{{ br.bon_commande.numero }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="meta-box">
+      <div class="meta-box-title">Validation & Traçabilité</div>
+      <div class="meta-row">
+        <span class="meta-label">Créé par</span>
+        <span class="meta-val">{{ br.cree_par.get_full_name|default:br.cree_par.username }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Date création</span>
+        <span class="meta-val">{{ br.date_creation|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% if br.statut == 'valide' %}
+      <div class="meta-row">
+        <span class="meta-label">Validé par</span>
+        <span class="meta-val">{{ br.valide_par.get_full_name|default:br.valide_par.username }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Date validation</span>
+        <span class="meta-val">{{ br.date_validation|date:"d/m/Y H:i" }}</span>
+      </div>
+      {% endif %}
+      <div class="meta-row">
+        <span class="meta-label">Nombre articles</span>
+        <span class="meta-val">{{ lignes.count }} ligne(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLEAU ARTICLES -->
+  <div class="articles-section">
+    <h3>Détail des articles reçus</h3>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px">#</th>
+          <th>Désignation / Ingrédient</th>
+          <th style="width:80px">Unité</th>
+          <th class="right" style="width:90px">Qté reçue</th>
+          <th class="right" style="width:110px">Prix U. (FCFA)</th>
+          <th class="right" style="width:120px">Total (FCFA)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in lignes %}
+        <tr>
+          <td class="num">{{ forloop.counter }}</td>
+          <td class="ingr">{{ l.ingredient.nom }}</td>
+          <td>{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
+          <td class="right">{{ l.quantite_recue|floatformat:3 }}</td>
+          <td class="right">{{ l.prix_unitaire|floatformat:0 }}</td>
+          <td class="right total-cell">{{ l.total_ligne|floatformat:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article enregistré</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="tfoot-row">
+          <td colspan="4"></td>
+          <td class="tfoot-label">TOTAL RÉCEPTION</td>
+          <td class="tfoot-total">{{ br.total|floatformat:0 }} FCFA</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  {% if br.notes %}
+  <div class="notes-section">
+    <strong>Observations / Écarts</strong>
+    {{ br.notes }}
+  </div>
+  {% endif %}
+
+  <!-- SIGNATURES -->
+  <div class="signatures">
+    <div class="sig-box">
+      <div class="sig-line">Réceptionné par</div>
+      <div class="sig-label">Nom & Signature</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-line">Responsable Cuisine</div>
+      <div class="sig-label">Nom & Signature</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-line">Direction</div>
+      <div class="sig-label">Visa & Cachet</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer" style="margin-top:20px">
+    <div class="footer-text">
+      <strong>COMPLEXE HÔTELIER BEHANIAN</strong> · Yopougon Beago · Côte d'Ivoire
+    </div>
+    <div class="footer-text" style="text-align:right">
+      Document généré le {{ br.date_creation|date:"d/m/Y" }} · Réf : {{ br.numero }}
+    </div>
+  </div>
+
 </div>
 
-<table>
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Ingrédient</th>
-      <th>Unité</th>
-      <th class="right">Qté reçue</th>
-      <th class="right">Prix U. (FCFA)</th>
-      <th class="right">Total (FCFA)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for l in lignes %}
-    <tr>
-      <td>{{ forloop.counter }}</td>
-      <td>{{ l.ingredient.nom }}</td>
-      <td>{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
-      <td class="right">{{ l.quantite_recue|floatformat:3 }}</td>
-      <td class="right">{{ l.prix_unitaire|floatformat:0 }}</td>
-      <td class="right">{{ l.total|floatformat:0 }}</td>
-    </tr>
-    {% endfor %}
-    <tr class="total-row">
-      <td colspan="5" class="right">TOTAL RÉCEPTION</td>
-      <td class="right">{{ br.montant_total|floatformat:0 }} FCFA</td>
-    </tr>
-  </tbody>
-</table>
-
-{% if br.notes %}
-<p style="font-size:11px"><strong>Notes :</strong> {{ br.notes }}</p>
-{% endif %}
-
-<div class="footer">
-  <div class="signature-box">Réceptionné par<br><br><br>______________________</div>
-  <div class="signature-box">Responsable cuisine<br><br><br>______________________</div>
-</div>
-
-<div style="text-align:center;margin-top:20px">
-  <button onclick="window.print()" style="padding:8px 20px;cursor:pointer;background:#c0392b;color:white;border:none;border-radius:6px;font-size:13px">🖨️ Imprimer</button>
-  <button onclick="window.close()" style="padding:8px 20px;cursor:pointer;background:#666;color:white;border:none;border-radius:6px;font-size:13px;margin-left:8px">Fermer</button>
+<!-- BOUTONS ÉCRAN -->
+<div class="btn-zone no-print">
+  <button onclick="window.print()" class="btn btn-print">
+    🖨️ Imprimer / Enregistrer PDF
+  </button>
+  <button onclick="window.close()" class="btn btn-close">
+    ✕ Fermer
+  </button>
 </div>
 
 </body>
