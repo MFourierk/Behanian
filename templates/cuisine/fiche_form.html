@@ -160,12 +160,12 @@
                             </thead>
                             <tbody id="lignes-body">
                                 {% for ligne in lignes %}
-                                <tr class="ligne-row" data-cmup="{{ ligne.ingredient.cmup|default:'0' }}">
+                                <tr class="ligne-row" data-cmup="0">
                                     <td>
                                         <select name="ingredient_id[]" class="ing-select" onchange="updateUnite(this); recalcCouts()">
                                             <option value="">— Choisir —</option>
                                             {% for ing in ingredients %}
-                                            <option value="{{ ing.pk }}" data-unite="{{ ing.unite_recette.symbole|default:'' }}" data-cmup="{{ ing.cmup|floatformat:2 }}" {% if ing.pk == ligne.ingredient.pk %}selected{% endif %}>{{ ing.nom }}</option>
+                                            <option value="{{ ing.pk }}" data-unite="{{ ing.unite_recette.symbole|default:'' }}" data-cmup="0" {% if ing.pk == ligne.ingredient.pk %}selected{% endif %}>{{ ing.nom }}</option>
                                             {% endfor %}
                                         </select>
                                     </td>
@@ -226,11 +226,7 @@
 
 <script>
 // Données ingrédients pour JS
-const INGREDIENTS = {
-    {% for ing in ingredients %}
-    "{{ ing.pk }}": { nom: "{{ ing.nom }}", unite: "{{ ing.unite_recette.symbole|default:'' }}", cmup: {{ ing.cmup|floatformat:4|default:"0" }} },
-    {% endfor %}
-};
+const INGREDIENTS = {{ ing_data_json|safe }};
 
 function updateUnite(sel) {
     const ing = INGREDIENTS[sel.value];

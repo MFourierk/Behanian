@@ -464,6 +464,18 @@ def fiche_list(request):
     return render(request, 'cuisine/fiche_list.html', context)
 
 
+
+def _ing_data_json_fiche(ingredients):
+    import json
+    return json.dumps({
+        str(ing.pk): {
+            'nom':   ing.nom,
+            'unite': ing.unite_recette.abreviation if ing.unite_recette else '',
+            'cmup':  float(ing.cmup or 0),
+        }
+        for ing in ingredients
+    }, ensure_ascii=False)
+
 @require_module_access('cuisine')
 def fiche_create(request):
     categories   = CategoriePlat.objects.all()
@@ -495,10 +507,11 @@ def fiche_create(request):
         messages.success(request, f"Fiche technique '{fiche.nom}' créée.")
         return redirect('/cuisine/fiches/')
     context = {
-        'page_title':  'Nouvelle Fiche Technique',
-        'categories':  categories,
-        'ingredients': ingredients,
-        'mode':        'create',
+        'page_title':    'Nouvelle Fiche Technique',
+        'categories':    categories,
+        'ingredients':   ingredients,
+        'ing_data_json': _ing_data_json_fiche(ingredients),
+        'mode':          'create',
     }
     return render(request, 'cuisine/fiche_form.html', context)
 
@@ -533,12 +546,13 @@ def fiche_edit(request, pk):
         messages.success(request, f"Fiche technique '{fiche.nom}' modifiée.")
         return redirect('/cuisine/fiches/')
     context = {
-        'page_title':  f'Modifier : {fiche.nom}',
-        'fiche':       fiche,
-        'lignes':      fiche.lignes.select_related('ingredient').all(),
-        'categories':  categories,
-        'ingredients': ingredients,
-        'mode':        'edit',
+        'page_title':    f'Modifier : {fiche.nom}',
+        'fiche':         fiche,
+        'lignes':        fiche.lignes.select_related('ingredient').all(),
+        'categories':    categories,
+        'ingredients':   ingredients,
+        'ing_data_json': _ing_data_json_fiche(ingredients),
+        'mode':          'edit',
     }
     return render(request, 'cuisine/fiche_form.html', context)
 
