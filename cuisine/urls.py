@@ -31,6 +31,7 @@ urlpatterns = [
     path('receptions/<int:pk>/', views.bon_reception_detail, name='bon_reception_detail'),
     path('receptions/<int:pk>/valider/', views.bon_reception_valider, name='bon_reception_valider'),
     path('receptions/<int:pk>/annuler/', views.bon_reception_annuler, name='bon_reception_annuler'),
+    path('receptions/<int:pk>/print/', views.bon_reception_print, name='bon_reception_print'),
 
     # Fiches techniques
     path('fiches/', views.fiche_list, name='fiche_list'),

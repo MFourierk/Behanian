@@ -399,6 +399,16 @@ def bon_reception_detail(request, pk):
     return render(request, 'cuisine/bon_reception_detail.html', {
         'page_title': f'Réception {br.numero}', 'br': br, 'lignes': lignes
     })
+@require_module_access('cuisine')
+def bon_reception_print(request, pk):
+    """Version imprimable du bon de réception."""
+    br     = get_object_or_404(BonReceptionCuisine, pk=pk)
+    lignes = br.lignes.select_related('ingredient').all()
+    return render(request, 'cuisine/bon_reception_print.html', {
+        'br': br, 'lignes': lignes
+    })
+
+
 
 
 @require_module_access('cuisine')
