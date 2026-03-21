@@ -456,8 +456,8 @@ const ingData = {
     "{{ ing.pk }}": {
         nom   : "{{ ing.nom|escapejs }}",
         unite : "{{ ing.unite_stock.abreviation|default:'-'|escapejs }}",
-        cmup  : {{ ing.cmup|default:0|floatformat:2 }},
-        stock : {{ ing.quantite_stock|floatformat:3 }}
+        cmup  : {% if ing.cmup %}{{ ing.cmup }}{% else %}0{% endif %},
+        stock : {{ ing.quantite_stock }}
     },
     {% endfor %}
 };
