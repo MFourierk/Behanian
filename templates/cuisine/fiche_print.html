@@ -1,0 +1,85 @@
+{% extends 'print_base.html' %}
+{% block doc_title %}Fiche Technique — {{ fiche.nom }}{% endblock %}
+
+{% block doc_content %}
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Fiche Technique — Cuisine</div>
+    <div class="doc-title-sub">{{ fiche.nom }} · {{ fiche.reference }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-{{ fiche.statut }}">{{ fiche.get_statut_display }}</span>
+    <span class="doc-ref">{{ fiche.reference }}</span>
+  </div>
+</div>
+
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations</div>
+    <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val">{{ fiche.nom }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Catégorie</span><span class="meta-val">{{ fiche.categorie.nom|default:"—" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb portions</span><span class="meta-val">{{ fiche.nb_portions }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Temps prépa</span><span class="meta-val">{{ fiche.temps_preparation }} min</span></div>
+    <div class="meta-row"><span class="meta-lbl">Temps cuisson</span><span class="meta-val">{{ fiche.temps_cuisson }} min</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Coûts & Marge</div>
+    <div class="meta-row"><span class="meta-lbl">Coût total recette</span><span class="meta-val">{{ fiche.cout_total|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Coût par portion</span><span class="meta-val">{{ fiche.cout_par_portion|floatformat:0 }} FCFA</span></div>
+    {% if fiche.plat %}
+    <div class="meta-row"><span class="meta-lbl">Prix de vente</span><span class="meta-val">{{ fiche.plat.prix_vente|floatformat:0 }} FCFA</span></div>
+    {% endif %}
+    <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ fiche.cree_par.get_full_name|default:fiche.cree_par.username }}</span></div>
+  </div>
+</div>
+
+<div class="content-section">
+  <div class="section-title">Composition — Ingrédients</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Ingrédient</th>
+        <th style="width:80px">Unité</th>
+        <th class="r" style="width:90px">Quantité</th>
+        <th class="r" style="width:100px">CMUP (FCFA)</th>
+        <th class="r" style="width:110px">Coût ligne (FCFA)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in lignes %}
+      <tr>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td class="bold">{{ l.ingredient.nom }}</td>
+        <td>{{ l.ingredient.unite_recette.abreviation|default:"—" }}</td>
+        <td class="r">{{ l.quantite|floatformat:3 }}</td>
+        <td class="r">{{ l.ingredient.cmup|floatformat:0 }}</td>
+        <td class="r bold">{{ l.cout_ligne|floatformat:0 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4"></td>
+        <td class="total-label">Coût total</td>
+        <td class="total-val">{{ fiche.cout_total|floatformat:0 }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+{% if fiche.description %}
+<div class="notes-box" style="margin-top:10px">
+  <strong>Méthode de préparation</strong>
+  {{ fiche.description }}
+</div>
+{% endif %}
+
+<div class="signatures cols-2" style="margin-top:16px">
+  <div class="sig-box"><div class="sig-line">Chef de cuisine</div><div class="sig-hint">Validation technique</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Approbation</div></div>
+</div>
+{% endblock %}
+{% block doc_footer_right %}Fiche Technique · {{ fiche.reference }} · {{ fiche.date_creation|date:"d/m/Y" }}{% endblock %}

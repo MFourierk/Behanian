@@ -1,0 +1,148 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}{{ fiche.nom }} — Fiche Technique{% endblock %}
+
+{% block extra_css %}
+<style>
+.fd-body{background:#eef1f5;padding:20px 0 40px}
+.fd-header{background:linear-gradient(135deg,#c0392b,#e74c3c);color:white;padding:24px 28px;border-radius:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.fd-header h2{font-size:1.4rem;font-weight:700;margin:0}
+.fd-header p{margin:4px 0 0;opacity:.85;font-size:.88rem}
+.fd-grid{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+.fd-card{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);overflow:hidden;margin-bottom:14px}
+.fd-card-head{padding:13px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.fd-card-head h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#c0392b;margin:0}
+.fd-card-body{padding:16px 18px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+.meta-row:last-child{border:none}
+.meta-lbl{color:#6b7a8d;font-weight:500}
+.meta-val{font-weight:700;color:#1a2535}
+.ing-table{width:100%;border-collapse:collapse;font-size:12px}
+.ing-table th{padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7a8b9c;border-bottom:1px solid #e2e8f0;text-align:left}
+.ing-table th.r{text-align:right}
+.ing-table td{padding:9px 12px;border-bottom:1px solid #f5f5f5;color:#1a2535}
+.ing-table td.r{text-align:right;font-weight:600}
+.ing-table tr:last-child td{border:none}
+.cout-box{background:linear-gradient(135deg,#1a2535,#2d3f55);border-radius:10px;padding:14px 16px;color:white}
+.cout-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px}
+.cout-row:last-child{margin-bottom:0;border-top:1px solid rgba(255,255,255,.15);padding-top:8px;margin-top:6px}
+.cout-lbl{color:#9ab0c8}
+.cout-val{font-weight:700;color:#c9a84c}
+.badge-statut{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700}
+.s-actif{background:#dcfce7;color:#15803d}.s-brouillon{background:#fef3c7;color:#92400e}.s-archive{background:#fee2e2;color:#b91c1c}
+.btn-act{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn-edit{background:#1a2535;color:#c9a84c}.btn-print{background:#f0f4f8;color:#4a5568;border:1px solid #dde3ec}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fd-body"><div class="container-fluid">
+
+  <div class="fd-header">
+    <div>
+      <h2>{{ fiche.nom }}</h2>
+      <p>{{ fiche.reference }} · <span class="badge-statut s-{{ fiche.statut }}">{{ fiche.get_statut_display }}</span></p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="{% url 'cuisine:plat_edit' fiche.plat.pk %}" class="btn-act btn-edit"><i class="fas fa-edit"></i> Modifier le plat</a>
+      <a href="{% url 'cuisine:fiche_print' fiche.pk %}" target="_blank" class="btn-act btn-print"><i class="fas fa-print"></i> Imprimer</a>
+    </div>
+  </div>
+
+  <div class="fd-grid">
+    <div>
+      <!-- Ingrédients -->
+      <div class="fd-card">
+        <div class="fd-card-head">
+          <h3>🥬 Composition</h3>
+          <span style="font-size:10px;color:#8a9ab0">{{ fiche.nb_portions }} portion(s)</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="ing-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Ingrédient</th><th>Unité</th>
+                <th class="r">Quantité</th><th class="r">CMUP (F)</th><th class="r">Coût ligne</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lignes %}
+              <tr>
+                <td style="color:#8a9ab0">{{ forloop.counter }}</td>
+                <td style="font-weight:600">{{ l.ingredient.nom }}</td>
+                <td>{{ l.ingredient.unite_recette.abreviation|default:"—" }}</td>
+                <td class="r">{{ l.quantite|floatformat:3 }}</td>
+                <td class="r" style="color:#6b7a8d">{{ l.ingredient.cmup|floatformat:0 }}</td>
+                <td class="r" style="color:#c0392b">{{ l.cout_ligne|floatformat:0 }} F</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8f9fb">
+                <td colspan="4"></td>
+                <td style="text-align:right;font-weight:700;font-size:11px;padding:10px 12px">TOTAL</td>
+                <td style="text-align:right;font-weight:700;color:#c0392b;padding:10px 12px">{{ fiche.cout_total|floatformat:0 }} F</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      {% if fiche.description %}
+      <div class="fd-card">
+        <div class="fd-card-head"><h3>📋 Méthode de préparation</h3></div>
+        <div class="fd-card-body" style="font-size:13px;line-height:1.7;white-space:pre-line">{{ fiche.description }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div>
+      <!-- Info -->
+      <div class="fd-card">
+        <div class="fd-card-head"><h3>ℹ️ Informations</h3></div>
+        <div class="fd-card-body">
+          <div class="meta-row"><span class="meta-lbl">Référence</span><span class="meta-val">{{ fiche.reference }}</span></div>
+          <div class="meta-row"><span class="meta-lbl">Catégorie</span><span class="meta-val">{{ fiche.categorie.nom|default:"—" }}</span></div>
+          <div class="meta-row"><span class="meta-lbl">Temps prépa</span><span class="meta-val">{{ fiche.temps_preparation }} min</span></div>
+          <div class="meta-row"><span class="meta-lbl">Temps cuisson</span><span class="meta-val">{{ fiche.temps_cuisson }} min</span></div>
+          <div class="meta-row"><span class="meta-lbl">Nb portions</span><span class="meta-val">{{ fiche.nb_portions }}</span></div>
+          <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ fiche.cree_par.get_full_name|default:fiche.cree_par.username }}</span></div>
+          <div class="meta-row"><span class="meta-lbl">Plat lié</span><span class="meta-val">{{ fiche.plat.nom|default:"—" }}</span></div>
+        </div>
+      </div>
+      <!-- Coûts -->
+      <div class="fd-card">
+        <div class="fd-card-head"><h3>💰 Coûts & Marge</h3></div>
+        <div class="fd-card-body">
+          <div class="cout-box">
+            <div class="cout-row"><span class="cout-lbl">Coût total recette</span><span class="cout-val">{{ fiche.cout_total|floatformat:0 }} F</span></div>
+            <div class="cout-row"><span class="cout-lbl">Coût par portion</span><span class="cout-val">{{ fiche.cout_par_portion|floatformat:0 }} F</span></div>
+            {% if fiche.plat %}
+            <div class="cout-row"><span class="cout-lbl">Prix de vente</span><span class="cout-val">{{ fiche.plat.prix_vente|floatformat:0 }} F</span></div>
+            <div class="cout-row"><span class="cout-lbl">Marge brute</span>
+              <span class="cout-val" style="font-size:16px">
+                {% if fiche.plat.prix_vente and fiche.cout_par_portion %}
+                  {% widthratio fiche.cout_par_portion fiche.plat.prix_vente 100 as pct_cout %}
+                  {{ 100|add:"-"|add:pct_cout }}%
+                {% else %}—{% endif %}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Photo -->
+      {% if fiche.plat.image %}
+      <div class="fd-card">
+        <div class="fd-card-head"><h3>📷 Photo</h3></div>
+        <div style="padding:10px">
+          <img src="{{ fiche.plat.image.url }}" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:16/9">
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div></div>
+{% endblock %}

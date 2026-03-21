@@ -567,6 +567,13 @@ def fiche_detail(request, pk):
 
 
 @require_module_access('cuisine')
+def fiche_print(request, pk):
+    fiche  = get_object_or_404(FicheTechnique, pk=pk)
+    lignes = fiche.lignes.select_related('ingredient__unite_recette').all()
+    return render(request, 'cuisine/fiche_print.html', {'fiche': fiche, 'lignes': lignes})
+
+
+@require_module_access('cuisine')
 def fiche_delete(request, pk):
     fiche = get_object_or_404(FicheTechnique, pk=pk)
     if request.method == 'POST':
@@ -599,6 +606,50 @@ def plat_list(request):
     }
     return render(request, 'cuisine/plat_list.html', context)
 
+
+
+def _save_fiche_from_plat(request, plat):
+    """Crée ou met à jour la FicheTechnique liée au plat depuis le formulaire."""
+    ing_ids  = request.POST.getlist('ingredient_id[]')
+    quantites = request.POST.getlist('quantite[]')
+
+    # Créer ou récupérer la fiche liée
+    if plat.fiche_technique:
+        fiche = plat.fiche_technique
+    else:
+        fiche = FicheTechnique(
+            nom=plat.nom,
+            cree_par=request.user,
+        )
+
+    fiche.nom                = plat.nom
+    fiche.nb_portions        = request.POST.get('nb_portions') or 1
+    fiche.temps_preparation  = request.POST.get('temps_preparation') or 15
+    fiche.temps_cuisson      = request.POST.get('temps_cuisson') or 0
+    fiche.description        = request.POST.get('description_technique', '')
+    fiche.statut             = 'actif'
+    if plat.categorie:
+        from cuisine.models import CategoriePlat
+        fiche.categorie = plat.categorie
+    fiche.save()
+
+    # Lier la fiche au plat
+    if not plat.fiche_technique:
+        plat.fiche_technique = fiche
+        plat.save(update_fields=['fiche_technique'])
+
+    # Recréer les lignes
+    fiche.lignes.all().delete()
+    for ing_id, qte in zip(ing_ids, quantites):
+        if ing_id and qte:
+            try:
+                LigneFicheTechnique.objects.create(
+                    fiche=fiche,
+                    ingredient_id=int(ing_id),
+                    quantite=float(qte),
+                )
+            except Exception:
+                pass
 
 
 def _sync_plat_to_restaurant(plat):
@@ -637,30 +688,31 @@ def _sync_plat_to_restaurant(plat):
 
 @require_module_access('cuisine')
 def plat_create(request):
-    categories = CategoriePlat.objects.all()
-    fiches     = FicheTechnique.objects.filter(statut='actif').exclude(plat__isnull=False)
+    categories   = CategoriePlat.objects.all()
+    ingredients  = Ingredient.objects.filter(statut=True).select_related('unite_recette')
     if request.method == 'POST':
         plat = Plat(
             nom=request.POST.get('nom'),
             categorie_id=request.POST.get('categorie') or None,
             description_carte=request.POST.get('description_carte', ''),
-            fiche_technique_id=request.POST.get('fiche_technique') or None,
             prix_vente=request.POST.get('prix_vente') or 0,
             statut=request.POST.get('statut', 'disponible'),
-            ordre_carte=request.POST.get('ordre_carte') or 0,
         )
         if request.FILES.get('image'):
             plat.image = request.FILES['image']
         plat.save()
-        # Synchroniser avec le restaurant
+        _save_fiche_from_plat(request, plat)
         _sync_plat_to_restaurant(plat)
-        messages.success(request, f"Plat '{plat.nom}' créé et ajouté au menu restaurant.")
+        messages.success(request, f"Plat '{plat.nom}' créé avec sa fiche technique.")
         return redirect('/cuisine/plats/')
+    import json
+    ing_data = _ing_data_json_fiche(ingredients)
     context = {
-        'page_title': 'Nouveau Plat',
-        'categories': categories,
-        'fiches':     fiches,
-        'mode':       'create',
+        'page_title':    'Nouveau Plat',
+        'categories':    categories,
+        'ingredients':   ingredients,
+        'ing_data_json': ing_data,
+        'mode':          'create',
     }
     return render(request, 'cuisine/plat_form.html', context)
 

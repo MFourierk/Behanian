@@ -40,6 +40,7 @@ urlpatterns = [
     path('fiches/<int:pk>/', views.fiche_detail, name='fiche_detail'),
     path('fiches/<int:pk>/modifier/', views.fiche_edit, name='fiche_edit'),
     path('fiches/<int:pk>/supprimer/', views.fiche_delete, name='fiche_delete'),
+    path('fiches/<int:pk>/print/', views.fiche_print, name='fiche_print'),
 
     # Plats / Carte
     path('plats/', views.plat_list, name='plat_list'),
