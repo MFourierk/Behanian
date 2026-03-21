@@ -1363,15 +1363,18 @@ async function mettreOnChambre() {
 
 function payerMaintenant() {
   document.getElementById('modalChoixChambre').classList.remove('open');
-  // Payer sans lier à la chambre - délier temporairement pour ce ticket
+  // Délier complètement pour ce ticket — le badge reste mais chambreLieeId = null
+  // pour que confirmerPaiement ne redirige pas vers chambre
   const savedId = chambreLieeId;
   const savedNom = chambreLieeNom;
   chambreLieeId = null;
   chambreLieeNom = null;
   _ouvrirModalPaiementNormal();
-  // Restaurer le badge (client toujours lié pour prochains tickets)
-  chambreLieeId = savedId;
-  chambreLieeNom = savedNom;
+  // Restaurer APRÈS que la modal est ouverte — au prochain tick JS
+  setTimeout(() => {
+    chambreLieeId = savedId;
+    chambreLieeNom = savedNom;
+  }, 100);
 }
 
 async function confirmerPaiement() {
