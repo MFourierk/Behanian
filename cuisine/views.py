@@ -679,6 +679,9 @@ def _sync_plat_to_restaurant(plat):
             plat_resto.prix        = plat.prix_vente
             plat_resto.disponible  = plat.statut == 'disponible'
             plat_resto.description = plat.description_carte
+        # is_accompagnement stocké dans le contexte de l'appel
+        if hasattr(plat, '_is_accompagnement'):
+            plat_resto.is_accompagnement = plat._is_accompagnement
         # Synchroniser la photo (convertir en JPEG RGB si nécessaire)
         if plat.image:
             try:
@@ -716,6 +719,7 @@ def plat_create(request):
             plat.image = request.FILES['image']
         plat.save()
         _save_fiche_from_plat(request, plat)
+        plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
         _sync_plat_to_restaurant(plat)
         messages.success(request, f"Plat '{plat.nom}' créé avec sa fiche technique.")
         return redirect('/cuisine/plats/')

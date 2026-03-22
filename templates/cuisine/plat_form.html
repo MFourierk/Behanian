@@ -128,6 +128,13 @@ textarea.fc{resize:vertical;min-height:70px}
                   <option value="archive" {% if plat.statut == 'archive' %}selected{% endif %}>📦 Archivé</option>
                 </select>
               </div>
+              <div class="fg" style="grid-column:1/-1">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600">
+                  <input type="checkbox" name="is_accompagnement" value="1" {% if is_accompagnement %}checked{% endif %} style="width:18px;height:18px;accent-color:#c0392b;cursor:pointer">
+                  <span>C'est un <strong>accompagnement / garniture</strong></span>
+                  <span style="font-size:10px;font-weight:400;color:#8a9ab0">(s'affiche comme choix optionnel sur les commandes restaurant)</span>
+                </label>
+              </div>
               <div class="fg">
                 <label>Méthode de préparation</label>
                 <textarea name="description_technique" class="fc" style="min-height:60px" placeholder="Étapes de préparation (usage interne)...">{{ plat.fiche_technique.description|default:'' }}</textarea>
