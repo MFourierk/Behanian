@@ -172,7 +172,7 @@ textarea.fc{resize:vertical;min-height:70px}
                         {% endfor %}
                       </select>
                     </td>
-                    <td><input type="number" name="quantite[]" class="ing-qty" value="{{ l.quantite }}" step="0.01" min="0" oninput="platUpdateCout()"></td>
+                    <td><input type="number" name="quantite[]" class="ing-qty" value="{{ l.quantite|stringformat:'g' }}" step="0.01" min="0" oninput="platUpdateCout()"></td>
                     <td><span class="unit-badge">{{ l.ingredient.unite_recette.abreviation|default:'—' }}</span></td>
                     <td style="text-align:right;font-weight:600;font-size:11px" class="cout-cell">—</td>
                     <td><button type="button" class="btn-del-ing" onclick="this.closest('tr').remove();platUpdateCout()">✕</button></td>
