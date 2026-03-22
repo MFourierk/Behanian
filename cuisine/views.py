@@ -736,35 +736,7 @@ def plat_create(request):
 
 
 @require_module_access('cuisine')
-def plat_edit(request, pk):
-    plat       = get_object_or_404(Plat, pk=pk)
-    categories = CategoriePlat.objects.all()
-    fiches     = FicheTechnique.objects.filter(statut='actif')
-    if request.method == 'POST':
-        plat.nom                 = request.POST.get('nom')
-        plat.categorie_id        = request.POST.get('categorie') or None
-        plat.description_carte   = request.POST.get('description_carte', '')
-        plat.fiche_technique_id  = request.POST.get('fiche_technique') or None
-        plat.prix_vente          = request.POST.get('prix_vente') or 0
-        plat.statut              = request.POST.get('statut', 'disponible')
-        plat.ordre_carte         = request.POST.get('ordre_carte') or 0
-        if request.FILES.get('image'):
-            plat.image = request.FILES['image']
-        elif request.POST.get('image-clear'):
-            plat.image = None
-        plat.save()
-        # Synchroniser avec le restaurant
-        _sync_plat_to_restaurant(plat)
-        messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé avec le restaurant.")
-        return redirect('/cuisine/plats/')
-    context = {
-        'page_title': f'Modifier : {plat.nom}',
-        'plat':       plat,
-        'categories': categories,
-        'fiches':     fiches,
-        'mode':       'edit',
-    }
-    return render(request, 'cuisine/plat_form.html', context)
+
 
 
 
@@ -779,6 +751,42 @@ def sync_plats_restaurant(request):
         count += 1
     messages.success(request, f"{count} plat(s) synchronisé(s) avec le menu restaurant.")
     return redirect('/cuisine/plats/')
+
+
+@require_module_access('cuisine')
+def plat_edit(request, pk):
+    plat        = get_object_or_404(Plat, pk=pk)
+    categories  = CategoriePlat.objects.all()
+    ingredients = Ingredient.objects.filter(statut=True).select_related('unite_recette')
+    if request.method == 'POST':
+        plat.nom               = request.POST.get('nom')
+        plat.categorie_id      = request.POST.get('categorie') or None
+        plat.description_carte = request.POST.get('description_carte', '')
+        plat.prix_vente        = request.POST.get('prix_vente') or 0
+        plat.statut            = request.POST.get('statut', 'disponible')
+        if request.FILES.get('image'):
+            plat.image = request.FILES['image']
+        elif request.POST.get('image-clear'):
+            plat.image = None
+        plat.save()
+        _save_fiche_from_plat(request, plat)
+        plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
+        _sync_plat_to_restaurant(plat)
+        messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé.")
+        return redirect('/cuisine/plats/')
+    from restaurant.models import PlatMenu
+    plat_menu = PlatMenu.objects.filter(nom=plat.nom).first()
+    ing_data = _ing_data_json_fiche(ingredients)
+    context = {
+        'page_title':         f'Modifier : {plat.nom}',
+        'plat':               plat,
+        'categories':         categories,
+        'ingredients':        ingredients,
+        'ing_data_json':      ing_data,
+        'is_accompagnement':  plat_menu.is_accompagnement if plat_menu else False,
+        'mode':               'edit',
+    }
+    return render(request, 'cuisine/plat_form.html', context)
 
 @require_module_access('cuisine')
 def plat_delete(request, pk):
