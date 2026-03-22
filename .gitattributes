@@ -1,0 +1,2 @@
+# La DB locale gagne toujours lors des merges
+db.sqlite3 merge=ours
