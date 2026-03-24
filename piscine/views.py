@@ -174,7 +174,7 @@ def ajouter_consommation(request, acces_id):
                     reservation=reservation_hotel,
                     type_service='piscine',
                     boisson=boisson,
-                    nom=f'[Piscine] {boisson.nom}',
+                    nom=f'[Piscine#{acces.id}] {boisson.nom}',
                     quantite=quantite,
                     prix_unitaire=boisson.prix,
                 )
@@ -198,7 +198,7 @@ def ajouter_consommation(request, acces_id):
                     reservation=reservation_hotel,
                     type_service='piscine',
                     plat=plat,
-                    nom=f'[Piscine] {plat.nom}',
+                    nom=f'[Piscine#{acces.id}] {plat.nom}',
                     quantite=quantite,
                     prix_unitaire=plat.prix,
                 )
@@ -271,7 +271,17 @@ def encaisser_sortie(request, acces_id):
                 'message': f'Ajouté à la chambre {reservation.chambre.numero}'
             })
 
-        # Mode PAIEMENT DIRECT : créer ticket facturation
+        # Mode PAIEMENT DIRECT : retirer les consos de la note chambre si hébergé
+        if acces.reservation_hotel:
+            from hotel.models import Consommation as HotelConso
+            # Supprimer uniquement les consos de CET accès (identifiées par [Piscine#ID])
+            HotelConso.objects.filter(
+                reservation=acces.reservation_hotel,
+                type_service='piscine',
+                nom__startswith=f'[Piscine#{acces.id}]'
+            ).delete()
+
+        # Créer ticket facturation
         contenu = f'<div class="row"><span class="item-name">Entrée piscine x{nb_total}</span><span class="item-price">{int(acces.prix_total):,} F</span></div>'
         for c in acces.consommations.all():
             contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
