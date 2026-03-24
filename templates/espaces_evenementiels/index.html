@@ -12,36 +12,39 @@
 .klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7a8b9c;margin-bottom:6px}
 .kval{font-size:26px;font-weight:700;color:#1a2535;line-height:1}
 .ksub{font-size:11px;color:#7a8b9c;margin-top:4px}
-/* Actions rapides */
-.quick-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-.btn-action{padding:10px 18px;border-radius:10px;border:none;cursor:pointer;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:all .15s;text-decoration:none}
-.btn-primary{background:#2563eb;color:white}.btn-primary:hover{background:#1d4ed8}
-.btn-gold{background:#c9a84c;color:#1a2535}.btn-gold:hover{background:#b8963e}
-.btn-success{background:#16a34a;color:white}.btn-success:hover{background:#15803d}
-.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}.btn-outline:hover{background:#f0f3f7}
-/* Layout */
-.main-grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
-.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden}
-.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
-.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
-/* Espace cards */
-.esp-card{padding:16px 20px;border-bottom:1px solid #f0f3f7;display:flex;gap:14px;align-items:flex-start;transition:background .12s}
-.esp-card:last-child{border-bottom:none}.esp-card:hover{background:#f5f8ff}
-.esp-img{width:72px;height:58px;border-radius:10px;object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #d4dce8;background:#eef1f5}
-.esp-nom{font-size:14px;font-weight:700;color:#1a2535}
-.esp-meta{font-size:11px;color:#7a8b9c;margin-top:2px}
+/* Onglets */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:white;border-radius:12px;padding:5px;border:1px solid #d4dce8;width:fit-content}
+.tab{padding:9px 22px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;color:#7a8b9c;background:transparent;transition:all .15s;display:flex;align-items:center;gap:7px}
+.tab.active{background:#1a2535;color:#c9a84c;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.tab-content{display:none}.tab-content.active{display:block}
+/* Cartes espaces */
+.esp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.esp-card{background:white;border-radius:14px;border:1px solid #d4dce8;overflow:hidden;transition:all .15s}
+.esp-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
+.esp-card-img{width:100%;height:160px;object-fit:cover;background:linear-gradient(135deg,#1a2535,#2d3f55);display:flex;align-items:center;justify-content:center;font-size:52px}
+.esp-card-body{padding:16px}
+.esp-card-nom{font-size:15px;font-weight:700;color:#1a2535;margin-bottom:4px}
+.esp-card-meta{font-size:11px;color:#7a8b9c;margin-bottom:10px}
+.esp-card-prix{font-size:18px;font-weight:700;color:#2563eb;margin-bottom:10px}
+.esp-equip{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
 .equip-tag{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;background:#f0f3f7;color:#3d4f63}
 /* Badges */
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .b-disponible{background:#dcfce7;color:#15803d}.b-reservee{background:#fef3c7;color:#d97706}.b-occupee{background:#fee2e2;color:#dc2626}
 .b-particulier{background:#dbeafe;color:#1e40af}.b-heberge{background:#f0fdf4;color:#15803d}.b-entreprise{background:#f3e8ff;color:#7c3aed}
 .b-confirmee{background:#dbeafe;color:#1e40af}.b-en_cours{background:#fef3c7;color:#d97706}.b-terminee{background:#f1f5f9;color:#64748b}
-/* Table */
+/* Table réservations */
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
 .tbl{width:100%;border-collapse:collapse;font-size:12px}
 .tbl th{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #d4dce8;background:#f8fafc;text-align:left}
 .tbl td{padding:12px 14px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#f5f8ff}
 .btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.btn-primary{background:#2563eb;color:white}.btn-success{background:#16a34a;color:white}
+.btn-gold{background:#c9a84c;color:#1a2535;font-weight:700}
+.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
 /* Modal */
 .modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.6);z-index:9000;align-items:center;justify-content:center}
 .modal-ov.open{display:flex}
@@ -51,7 +54,7 @@
 .close-btn{background:none;border:none;font-size:22px;color:#7a8b9c;cursor:pointer}
 .form-row{margin-bottom:13px}
 .form-row label{display:block;font-size:11px;font-weight:600;color:#3d4f63;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box;transition:border-color .12s}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box}
 .form-row input:focus,.form-row select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .type-pills{display:flex;gap:8px;margin-bottom:16px}
 .type-pill{flex:1;padding:12px;border-radius:10px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s}
@@ -60,12 +63,10 @@
 .type-pill .pill-label{font-size:11px;font-weight:700;color:#1a2535}
 .res-card{padding:10px 14px;border-radius:9px;border:1px solid #d4dce8;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;gap:10px;transition:all .12s}
 .res-card:hover{border-color:#2563eb;background:#eff6ff}.res-card.selected{border-color:#16a34a;background:#f0fdf4}
-/* Prix estimé */
 .prix-box{background:linear-gradient(135deg,#1a2535,#2d3f55);border-radius:12px;padding:16px;margin:14px 0;color:white;text-align:center}
 .prix-box .lbl{font-size:10px;opacity:.5;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
 .prix-box .amt{font-size:30px;font-weight:700;color:#c9a84c}
 .prix-box .sub{font-size:11px;opacity:.5;margin-top:3px}
-/* Encaissement */
 .enc-total{background:#1a2535;border-radius:14px;padding:20px;text-align:center;margin-bottom:16px}
 .enc-total .lbl{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
 .enc-total .amt{font-size:34px;font-weight:700;color:#c9a84c}
@@ -76,7 +77,7 @@
 {% block content %}
 <div class="esp-body"><div class="container-fluid">
 
-  <!-- HEADER — norme commune -->
+  <!-- HEADER norme commune -->
   <div class="header-glam events-watermark">
     <div class="header-content">
       <h2 style="font-size:1.6rem;font-weight:700;margin:0">Espaces Location</h2>
@@ -96,134 +97,122 @@
     <div class="kpi k-rouge"><div class="klbl">Recette mois</div><div class="kval">{{ recette_mois|floatformat:0 }} F</div><div class="ksub">ce mois-ci</div></div>
   </div>
 
-  <!-- ACTIONS RAPIDES -->
-  <div class="quick-actions">
-    <button class="btn-action btn-gold" onclick="ouvrirModalReservation()">
+  <!-- Action principale -->
+  <div style="margin-bottom:20px">
+    <button class="btn-p btn-gold" style="padding:11px 20px;font-size:13px" onclick="ouvrirModalReservation()">
       <i class="fas fa-calendar-plus"></i> Nouvelle réservation
     </button>
-    <a href="{% url 'parametres:espace_list' %}" class="btn-action btn-outline">
-      <i class="fas fa-cog"></i> Gérer les espaces
-    </a>
-    <a href="{% url 'parametres:espace_create' %}" class="btn-action btn-outline">
-      <i class="fas fa-plus"></i> Ajouter un espace
-    </a>
   </div>
 
-  {% if not espaces %}
-  <div style="background:white;border-radius:14px;padding:50px;text-align:center;border:2px dashed #d4dce8">
-    <div style="font-size:52px;margin-bottom:14px">🏛️</div>
-    <h3 style="color:#1a2535;margin:0 0 8px">Aucun espace configuré</h3>
-    <p style="color:#7a8b9c;margin:0 0 20px">Créez vos espaces de location dans les paramètres.</p>
-    <a href="{% url 'parametres:espace_create' %}" class="btn-action btn-gold"><i class="fas fa-plus"></i> Créer un espace</a>
+  <!-- ONGLETS -->
+  <div class="tabs">
+    <button class="tab active" id="tab-espaces" onclick="setTab('espaces',this)">
+      <i class="fas fa-building"></i> Espaces
+    </button>
+    <button class="tab" id="tab-reservations" onclick="setTab('reservations',this)">
+      <i class="fas fa-calendar-check"></i> Réservations
+      {% if reservations_actives.count > 0 %}
+      <span style="background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ reservations_actives.count }}</span>
+      {% endif %}
+    </button>
   </div>
-  {% else %}
-  <div class="main-grid">
-    <div>
-      <!-- Espaces -->
-      <div class="panel" style="margin-bottom:16px">
-        <div class="ph"><h3>🏛️ Nos Espaces</h3><span style="font-size:11px;color:#7a8b9c">{{ espaces.count }} espace(s)</span></div>
-        {% for espace in espaces %}
-        <div class="esp-card">
-          {% if espace.image %}
-          <img src="{{ espace.image.url }}" alt="{{ espace.nom }}" class="esp-img">
-          {% else %}
-          <div class="esp-img">🏛️</div>
-          {% endif %}
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <span class="esp-nom">{{ espace.nom }}</span>
-              <span class="badge b-{{ espace.statut }}">{{ espace.get_statut_display }}</span>
-            </div>
-            <div class="esp-meta">{{ espace.get_type_espace_display }} · {{ espace.capacite }} pers.{% if espace.superficie %} · {{ espace.superficie|floatformat:0 }} m²{% endif %}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
-              {% if espace.wifi %}<span class="equip-tag">📶 WiFi</span>{% endif %}
-              {% if espace.climatisation %}<span class="equip-tag">❄️ Clim</span>{% endif %}
-              {% if espace.projecteur %}<span class="equip-tag">📽️ Projecteur</span>{% endif %}
-              {% if espace.sonorisation %}<span class="equip-tag">🔊 Sono</span>{% endif %}
-              {% if espace.parking %}<span class="equip-tag">🅿️ Parking</span>{% endif %}
-              {% if espace.decoration %}<span class="equip-tag">🎀 Déco</span>{% endif %}
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:15px;font-weight:700;color:#2563eb">{{ espace.prix_jour|floatformat:0 }} F/j</div>
-            <button class="btn-p btn-primary" style="margin-top:8px" onclick="ouvrirModalReservation({{ espace.id }})">
-              <i class="fas fa-calendar-plus"></i> Réserver
-            </button>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
 
-      <!-- Réservations actives -->
-      <div class="panel">
-        <div class="ph"><h3>📋 Réservations actives</h3><span style="font-size:11px;color:#7a8b9c">{{ reservations_actives.count }}</span></div>
-        {% if reservations_actives %}
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead><tr><th>Client</th><th>Espace</th><th>Événement</th><th>Dates</th><th>Total</th><th>Statut</th><th></th></tr></thead>
-            <tbody>
-            {% for res in reservations_actives %}
-            <tr>
-              <td>
-                <div style="font-weight:600">{{ res.nom_client }}</div>
-                <span class="badge b-{{ res.type_client }}">{{ res.get_type_client_display }}</span>
-                {% if res.reservation_hotel %}<span style="font-size:10px;color:#7a8b9c"> · Ch.{{ res.reservation_hotel.chambre.numero }}</span>{% endif %}
-              </td>
-              <td style="font-weight:600">{{ res.espace.nom }}</td>
-              <td>{{ res.type_evenement }}</td>
-              <td style="font-size:11px;white-space:nowrap">
-                {{ res.date_debut|date:"d/m/Y" }}<br>
-                <span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>
-              </td>
-              <td>
-                <div style="font-weight:700;color:#2563eb">{{ res.montant_net|floatformat:0 }} F</div>
-                {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F remise</div>{% endif %}
-                {% if res.avance > 0 %}<div style="font-size:10px;color:#7a8b9c">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
-                {% if res.get_montant_restant > 0 %}<div style="font-size:10px;color:#dc2626;font-weight:600">reste: {{ res.get_montant_restant|floatformat:0 }} F</div>{% endif %}
-              </td>
-              <td><span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span></td>
-              <td>
-                <button class="btn-p btn-success"
-                  onclick="ouvrirEncaissement({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}',{{ res.montant_net|stringformat:'g' }},{{ res.avance|stringformat:'g' }},{% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %},'{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
-                  <i class="fas fa-cash-register"></i> Encaisser
-                </button>
-              </td>
-            </tr>
-            {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <!-- ONGLET ESPACES -->
+  <div class="tab-content active" id="content-espaces">
+    {% if not espaces %}
+    <div style="background:white;border-radius:14px;padding:50px;text-align:center;border:2px dashed #d4dce8">
+      <div style="font-size:52px;margin-bottom:14px">🏛️</div>
+      <h3 style="color:#1a2535;margin:0 0 8px">Aucun espace configuré</h3>
+      <p style="color:#7a8b9c;margin:0">Ajoutez vos espaces dans <strong>Paramètres → Espaces</strong>.</p>
+    </div>
+    {% else %}
+    <div class="esp-grid">
+      {% for espace in espaces %}
+      <div class="esp-card">
+        {% if espace.image %}
+        <img src="{{ espace.image.url }}" alt="{{ espace.nom }}" class="esp-card-img" style="display:block">
         {% else %}
-        <div style="padding:30px;text-align:center;color:#7a8b9c;font-size:13px">Aucune réservation active</div>
+        <div class="esp-card-img">🏛️</div>
         {% endif %}
-      </div>
-    </div>
-
-    <!-- Colonne droite -->
-    <div>
-      <div class="panel">
-        <div class="ph"><h3>🏨 Résidents en séjour</h3></div>
-        <div style="padding:12px">
-          {% if residents %}
-          {% for r in residents %}
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:9px;background:#f0fdf4;border:1px solid #bbf7d0;margin-bottom:7px">
-            <div>
-              <div style="font-size:12px;font-weight:700;color:#1a2535">{{ r.client.nom_complet }}</div>
-              <div style="font-size:10px;color:#7a8b9c">Ch. {{ r.chambre.numero }} · départ {{ r.date_depart|date:"d/m" }}</div>
-            </div>
-            <button class="btn-p btn-primary" style="font-size:10px;padding:5px 9px" onclick="ouvrirModalReservation(null,{{ r.id }},'{{ r.client.nom_complet|escapejs }}','{{ r.chambre.numero }}')">
-              <i class="fas fa-calendar-plus"></i>
-            </button>
+        <div class="esp-card-body">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+            <div class="esp-card-nom">{{ espace.nom }}</div>
+            <span class="badge b-{{ espace.statut }}">{{ espace.get_statut_display }}</span>
           </div>
-          {% endfor %}
-          {% else %}
-          <div style="text-align:center;color:#7a8b9c;font-size:12px;padding:20px">Aucun résident en cours</div>
+          <div class="esp-card-meta">{{ espace.get_type_espace_display }} · {{ espace.capacite }} pers.{% if espace.superficie %} · {{ espace.superficie|floatformat:0 }} m²{% endif %}</div>
+          <div class="esp-card-prix">{{ espace.prix_jour|floatformat:0 }} F <span style="font-size:12px;font-weight:400;color:#7a8b9c">/ jour</span></div>
+          {% if espace.description %}
+          <div style="font-size:11px;color:#5a6b7c;margin-bottom:10px;line-height:1.5">{{ espace.description|truncatechars:80 }}</div>
           {% endif %}
+          <div class="esp-equip">
+            {% if espace.wifi %}<span class="equip-tag">📶 WiFi</span>{% endif %}
+            {% if espace.climatisation %}<span class="equip-tag">❄️ Clim</span>{% endif %}
+            {% if espace.projecteur %}<span class="equip-tag">📽️ Projecteur</span>{% endif %}
+            {% if espace.sonorisation %}<span class="equip-tag">🔊 Sono</span>{% endif %}
+            {% if espace.parking %}<span class="equip-tag">🅿️ Parking</span>{% endif %}
+            {% if espace.decoration %}<span class="equip-tag">🎀 Déco</span>{% endif %}
+            {% if espace.eclairage %}<span class="equip-tag">💡 Éclairage</span>{% endif %}
+            {% if espace.tentes %}<span class="equip-tag">⛺ Tentes</span>{% endif %}
+          </div>
+          <button class="btn-p btn-primary" style="width:100%;justify-content:center;padding:9px" onclick="ouvrirModalReservation({{ espace.id }})">
+            <i class="fas fa-calendar-plus"></i> Réserver cet espace
+          </button>
         </div>
       </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ONGLET RÉSERVATIONS -->
+  <div class="tab-content" id="content-reservations">
+    <div class="panel">
+      <div class="ph">
+        <h3>📋 Réservations actives</h3>
+        <span style="font-size:11px;color:#7a8b9c">{{ reservations_actives.count }} en cours</span>
+      </div>
+      {% if reservations_actives %}
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Client</th><th>Espace</th><th>Événement</th><th>Dates</th><th>Total</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+          {% for res in reservations_actives %}
+          <tr>
+            <td>
+              <div style="font-weight:600">{{ res.nom_client }}</div>
+              <span class="badge b-{{ res.type_client }}">{{ res.get_type_client_display }}</span>
+              {% if res.reservation_hotel %}<span style="font-size:10px;color:#7a8b9c"> · Ch.{{ res.reservation_hotel.chambre.numero }}</span>{% endif %}
+            </td>
+            <td style="font-weight:600">{{ res.espace.nom }}</td>
+            <td>{{ res.type_evenement }}</td>
+            <td style="font-size:11px;white-space:nowrap">
+              {{ res.date_debut|date:"d/m/Y" }}<br>
+              <span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>
+            </td>
+            <td>
+              <div style="font-weight:700;color:#2563eb">{{ res.montant_net|floatformat:0 }} F</div>
+              {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F remise</div>{% endif %}
+              {% if res.avance > 0 %}<div style="font-size:10px;color:#7a8b9c">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
+              {% if res.get_montant_restant > 0 %}<div style="font-size:10px;color:#dc2626;font-weight:600">reste: {{ res.get_montant_restant|floatformat:0 }} F</div>{% endif %}
+            </td>
+            <td><span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span></td>
+            <td>
+              <button class="btn-p btn-success"
+                onclick="ouvrirEncaissement({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}',{{ res.montant_net|stringformat:'g' }},{{ res.avance|stringformat:'g' }},{% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %},'{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
+                <i class="fas fa-cash-register"></i> Encaisser
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="padding:40px;text-align:center;color:#7a8b9c;font-size:13px">Aucune réservation active</div>
+      {% endif %}
     </div>
   </div>
-  {% endif %}
+
 </div></div>
 
 <!-- MODAL RÉSERVATION -->
@@ -243,8 +232,6 @@
     </div>
     <input type="hidden" id="resTypeClient" value="particulier">
     <input type="hidden" id="resReservationHotelId" value="">
-
-    <!-- Résidents -->
     <div id="rowResident" style="display:none;margin-bottom:14px">
       <label style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Chambre du résident</label>
       {% for r in residents %}
@@ -257,8 +244,6 @@
       </div>
       {% empty %}<div style="color:#7a8b9c;font-size:12px;text-align:center;padding:12px">Aucun résident en cours</div>{% endfor %}
     </div>
-
-    <!-- Espace -->
     <div class="form-row">
       <label>Espace *</label>
       <select id="resEspaceId" onchange="calculerPrix()">
@@ -270,41 +255,32 @@
         {% endfor %}
       </select>
     </div>
-
-    <!-- Infos client -->
     <div id="rowClientInfo">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-row"><label>Nom du client *</label><input type="text" id="resNomClient" placeholder="Nom complet"></div>
         <div class="form-row"><label>Téléphone</label><input type="text" id="resTelephone" placeholder="00 00 00 00"></div>
       </div>
     </div>
-
     <div class="form-row"><label>Type d'événement *</label><input type="text" id="resTypeEvenement" placeholder="Conférence, mariage, anniversaire…"></div>
-
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label>Date début *</label><input type="date" id="resDateDebut" onchange="calculerPrix()"></div>
       <div class="form-row"><label>Date fin *</label><input type="date" id="resDateFin" onchange="calculerPrix()"></div>
     </div>
-
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="form-row"><label>Nb personnes</label><input type="number" id="resNbPersonnes" value="1" min="1"></div>
       <div class="form-row"><label>Remise (FCFA)</label><input type="number" id="resRemise" value="0" min="0" onchange="calculerPrix()"></div>
       <div class="form-row"><label>Avance (FCFA)</label><input type="number" id="resAvance" value="0" min="0"></div>
     </div>
-
     <div class="form-row"><label>Commentaire</label><textarea id="resCommentaire" rows="2" style="resize:vertical"></textarea></div>
-
-    <!-- Prix estimé -->
     <div class="prix-box" id="prixEstimate" style="display:none">
       <div class="lbl">Prix estimé</div>
       <div class="amt" id="prixEstimateVal">0 F</div>
       <div class="sub" id="prixEstimateSub"></div>
     </div>
-
     <div style="display:flex;gap:10px">
       <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalReservation')">Annuler</button>
       <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerReservation()">
-        <i class="fas fa-check"></i> Confirmer la réservation
+        <i class="fas fa-check"></i> Confirmer
       </button>
     </div>
   </div>
@@ -318,7 +294,6 @@
       <button class="close-btn" onclick="fermerModal('modalEncaissement')">×</button>
     </div>
     <input type="hidden" id="encResId">
-    <input type="hidden" id="encResHotelId">
     <div class="enc-total">
       <div class="lbl">Reste à payer</div>
       <div class="amt" id="encMontant">0 F</div>
@@ -338,13 +313,13 @@
         <input type="number" id="encMontantRecu" placeholder="Saisir montant" oninput="calcRendu()">
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-          <button onclick="encSetMontant(1000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">1 000</button>
-        <button onclick="encSetMontant(2000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">2 000</button>
-        <button onclick="encSetMontant(5000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">5 000</button>
-        <button onclick="encSetMontant(10000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">10 000</button>
-        <button onclick="encSetMontant(25000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">25 000</button>
-        <button onclick="encSetMontant(50000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">50 000</button>
-        <button onclick="encSetMontant(100000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">100 000</button>
+        <button onclick="encSetMontant(1000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">1 000</button>
+        <button onclick="encSetMontant(2000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">2 000</button>
+        <button onclick="encSetMontant(5000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">5 000</button>
+        <button onclick="encSetMontant(10000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">10 000</button>
+        <button onclick="encSetMontant(25000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">25 000</button>
+        <button onclick="encSetMontant(50000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">50 000</button>
+        <button onclick="encSetMontant(100000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">100 000</button>
         <button onclick="encSetExact()" style="padding:5px 11px;border-radius:7px;border:1px solid #c9a84c;background:rgba(201,168,76,.1);font-size:11px;font-weight:600;cursor:pointer;color:#b45309">Exact</button>
       </div>
       <div id="encRendu" style="display:none;margin-bottom:12px;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600"></div>
@@ -372,7 +347,15 @@ function toast(msg,type='info'){
   t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
 
-function ouvrirModalReservation(espaceId=null,resHotelId=null,nomClient=null,chambre=null){
+// Onglets
+function setTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('content-'+name).classList.add('active');
+}
+
+function ouvrirModalReservation(espaceId=null,resHotelId=null){
   ['resNomClient','resTelephone','resTypeEvenement','resDateDebut','resDateFin','resCommentaire'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('resNbPersonnes').value=1;
   document.getElementById('resRemise').value=0;
@@ -422,10 +405,9 @@ function calculerPrix(){
   const remise=parseFloat(document.getElementById('resRemise').value)||0;
   if(!prixJ||!debut||!fin){document.getElementById('prixEstimate').style.display='none';return;}
   const dt1=new Date(debut),dt2=new Date(fin);
-  if(dt2<=dt1){document.getElementById('prixEstimate').style.display='none';return;}
-  const jours=Math.ceil((dt2-dt1)/86400000);
-  const total=jours*prixJ;
-  const net=total-remise;
+  if(dt2<dt1){document.getElementById('prixEstimate').style.display='none';return;}
+  const jours=Math.max(1,Math.ceil((dt2-dt1)/86400000)+1);
+  const total=jours*prixJ; const net=total-remise;
   document.getElementById('prixEstimate').style.display='';
   document.getElementById('prixEstimateVal').textContent=fmt(net);
   document.getElementById('prixEstimateSub').textContent=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}${remise>0?' — remise '+fmt(remise):''}`;
@@ -446,29 +428,29 @@ async function confirmerReservation(){
   const resHotelId=document.getElementById('resReservationHotelId').value;
   if(!espaceId){toast('❌ Veuillez sélectionner un espace','error');return;}
   if(!nomClient){toast('❌ Nom du client requis','error');return;}
-  if(!typeEvenement){toast('❌ Type d\'événement requis','error');return;}
+  if(!typeEvenement){toast("❌ Type d'événement requis",'error');return;}
   if(!dateDebut||!dateFin){toast('❌ Dates requises','error');return;}
-  // Convertir date seule → datetime pour l'API
-  const dtDebut=dateDebut+'T00:00:00';
-  const dtFin=dateFin+'T23:59:59';
   try{
     const r=await fetch("{% url 'espaces_evenementiels:api_reserver' %}",{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,
-        telephone,type_evenement:typeEvenement,date_debut:dtDebut,date_fin:dtFin,
+        telephone,type_evenement:typeEvenement,
+        date_debut:dateDebut+'T00:00:00',date_fin:dateFin+'T23:59:59',
         nombre_personnes:nbPersonnes,remise,avance,commentaire,
         reservation_hotel_id:resHotelId||null})
     });
     const d=await r.json();
-    if(d.success){fermerModal('modalReservation');toast('✅ '+d.message,'success');setTimeout(()=>location.reload(),800);}
-    else toast('❌ '+d.error,'error');
+    if(d.success){
+      fermerModal('modalReservation');
+      toast('✅ '+d.message,'success');
+      setTimeout(()=>location.reload(),800);
+    } else toast('❌ '+d.error,'error');
   }catch(e){toast('❌ Erreur réseau','error');}
 }
 
 function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotelId,chambreNum){
   const restant=montantNet-avance;_encTotal=restant;
   document.getElementById('encResId').value=resId;
-  document.getElementById('encResHotelId').value=resHotelId||'';
   document.getElementById('encMontant').textContent=fmt(restant);
   document.getElementById('encSub').textContent=`${nomClient} — ${espaceNom}${avance>0?' (avance déduite: '+fmt(avance)+')':''}`;
   document.getElementById('encMontantRecu').value='';
@@ -486,9 +468,7 @@ function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotel
   ouvrirModal('modalEncaissement');
 }
 
-function encModeChange(sel){
-  document.getElementById('encRecuRow').style.display=sel.value==='chambre'?'none':'';
-}
+function encModeChange(sel){document.getElementById('encRecuRow').style.display=sel.value==='chambre'?'none':'';}
 function encSetMontant(v){document.getElementById('encMontantRecu').value=v;calcRendu();}
 function encSetExact(){document.getElementById('encMontantRecu').value=_encTotal;calcRendu();}
 function calcRendu(){
@@ -522,7 +502,8 @@ async function validerEncaissement(){
         const w=window.open('','_blank','width=420,height=720');
         if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}
       }
-      toast('✅ Encaissement effectué','success');setTimeout(()=>location.reload(),800);
+      toast('✅ Encaissement effectué','success');
+      setTimeout(()=>location.reload(),800);
     } else toast('❌ '+(d.error||'Erreur'),'error');
   }catch(e){toast('❌ Erreur réseau','error');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';}
