@@ -749,9 +749,9 @@ async function piscineMettreEnChambre() {
 }
 
 async function piscinePayerMaintenant() {
-  // Afficher la section montant reçu
-  const sortieRecuRow = document.getElementById('sortieRecu').closest('.form-row');
-  if (sortieRecuRow) sortieRecuRow.style.display = '';
+  // Réafficher mode paiement + montant reçu
+  const allFormRows = document.querySelectorAll('#modalSortie .form-row');
+  allFormRows.forEach(row => row.style.display = '');
   document.getElementById('piscine-sortie-btns-heberge').style.display = 'none';
   document.getElementById('piscine-sortie-btns-visiteur').style.display = 'flex';
 }
@@ -775,9 +775,10 @@ async function ouvrirSortie(id,nom,prixEntree){
   const isHeberge = d.is_heberge || false;
   document.getElementById('piscine-sortie-btns-heberge').style.display = isHeberge ? 'flex' : 'none';
   document.getElementById('piscine-sortie-btns-visiteur').style.display = isHeberge ? 'none' : 'flex';
-  // Masquer saisie montant pour hébergé (sera choisi après)
-  const sortieRecuRow = document.getElementById('sortieRecu').closest('.form-row');
-  if (sortieRecuRow) sortieRecuRow.style.display = isHeberge ? 'none' : '';
+  // Pour hébergé : masquer mode paiement + montant reçu (choix fait après)
+  const allFormRows = document.querySelectorAll('#modalSortie .form-row');
+  allFormRows.forEach(row => row.style.display = isHeberge ? 'none' : '');
+  document.getElementById('sortieRendu').style.display = 'none';
   document.getElementById('modalSortie').classList.add('open');
 }
 

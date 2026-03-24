@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Sum, F
+from django.db import models as db_models
 from .models import AccesPiscine, TarifPiscine, ConsommationPiscine
 from decimal import Decimal
 import json
@@ -19,9 +20,14 @@ def piscine_index(request):
     entrees_jour   = AccesPiscine.objects.filter(date_entree__date=today).count()
     visiteurs      = acces_actifs.filter(type_client='visiteur').count()
     heberges       = acces_actifs.filter(type_client='heberge').count()
-    recette_jour   = AccesPiscine.objects.filter(
-        date_entree__date=today
-    ).aggregate(s=Sum('prix_total'))['s'] or 0
+    # Recette = entrées payantes + toutes les consommations du jour
+    from piscine.models import ConsommationPiscine
+    acces_jour = AccesPiscine.objects.filter(date_entree__date=today)
+    recette_entrees = acces_jour.aggregate(s=Sum('prix_total'))['s'] or 0
+    recette_consos  = ConsommationPiscine.objects.filter(
+        acces__date_entree__date=today
+    ).aggregate(s=Sum(F('quantite') * F('prix_unitaire')))['s'] or 0
+    recette_jour = recette_entrees + recette_consos
 
     # Tarifs
     tarif_v_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
