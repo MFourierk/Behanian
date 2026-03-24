@@ -308,9 +308,13 @@ class EspaceListView(ListView):
 class EspaceCreateView(CreateView):
     model = EspaceEvenementiel
     template_name = 'parametres/espace_form.html'
-    fields = ['nom', 'capacite', 'prix', 'statut', 'description', 'image']
+    fields = ['nom', 'type_espace', 'capacite', 'prix_heure', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
     success_url = reverse_lazy('parametres:espace_list')
     
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        return form
+
     def form_valid(self, form):
         messages.success(self.request, "Espace créé avec succès.")
         return super().form_valid(form)
@@ -319,7 +323,7 @@ class EspaceCreateView(CreateView):
 class EspaceUpdateView(UpdateView):
     model = EspaceEvenementiel
     template_name = 'parametres/espace_form.html'
-    fields = ['nom', 'capacite', 'prix', 'statut', 'description', 'image']
+    fields = ['nom', 'type_espace', 'capacite', 'prix_heure', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
     success_url = reverse_lazy('parametres:espace_list')
     
     def form_valid(self, form):

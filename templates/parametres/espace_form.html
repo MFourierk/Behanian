@@ -131,7 +131,7 @@
                     <h2>{% if object %}Modifier l'Espace{% else %}Nouvel Espace{% endif %}</h2>
                 </div>
                 <div class="form-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         <div class="modern-form-group">
@@ -159,7 +159,7 @@
 
                         <div class="modern-form-group">
                             <label class="modern-label" for="{{ form.description.id_for_label }}">Description</label>
-                            {% render_field form.description class="modern-control modern-textarea" placeholder="Détails sur l'espace..." rows="4" %}
+                            {% render_field form.description class="modern-control modern-textarea" placeholder="Description, équipements..." rows="4" %}
                         </div>
 
                         <div class="modern-form-group">
