@@ -187,7 +187,13 @@
             <td>{{ res.type_evenement }}</td>
             <td style="font-size:11px;white-space:nowrap">
               {{ res.date_debut|date:"d/m/Y" }}<br>
+              {% if res.type_duree == 'journee' %}
               <span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>
+              {% elif res.type_duree == 'demi_matin' %}
+              <span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">🌅 8h–13h</span>
+              {% else %}
+              <span style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">🌇 14h–18h</span>
+              {% endif %}
             </td>
             <td>
               <div style="font-weight:700;color:#2563eb">{{ res.montant_net|floatformat:0 }} F</div>
@@ -249,8 +255,8 @@
       <select id="resEspaceId" onchange="calculerPrix()">
         <option value="">— Choisir un espace —</option>
         {% for e in espaces %}
-        <option value="{{ e.id }}" data-prix="{{ e.prix_jour|stringformat:'g' }}" data-capacite="{{ e.capacite }}">
-          {{ e.nom }} — {{ e.prix_jour|floatformat:0 }} F/j ({{ e.capacite }} pers.)
+        <option value="{{ e.id }}" data-prix="{{ e.prix_jour|stringformat:'g' }}" data-prixdemi="{{ e.prix_demi_journee|stringformat:'g' }}" data-capacite="{{ e.capacite }}">
+          {{ e.nom }} — {{ e.prix_jour|floatformat:0 }} F/j · {% if e.prix_demi_journee %}{{ e.prix_demi_journee|floatformat:0 }} F/½j{% else %}demi: {{ e.prix_jour|floatformat:0 }}×65%{% endif %} ({{ e.capacite }} pers.)
         </option>
         {% endfor %}
       </select>
@@ -262,9 +268,32 @@
       </div>
     </div>
     <div class="form-row"><label>Type d'événement *</label><input type="text" id="resTypeEvenement" placeholder="Conférence, mariage, anniversaire…"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+    <div class="form-row">
+      <label>Durée *</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
+        <div class="duree-pill active" data-duree="journee" onclick="setDuree('journee',this)" style="padding:10px;border-radius:9px;border:2px solid #2563eb;background:#eff6ff;cursor:pointer;text-align:center;transition:all .15s">
+          <div style="font-size:18px">📅</div>
+          <div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Journée</div>
+          <div style="font-size:10px;color:#7a8b9c">8h–18h</div>
+        </div>
+        <div class="duree-pill" data-duree="demi_matin" onclick="setDuree('demi_matin',this)" style="padding:10px;border-radius:9px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s">
+          <div style="font-size:18px">🌅</div>
+          <div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Demi-matin</div>
+          <div style="font-size:10px;color:#7a8b9c">8h–13h</div>
+        </div>
+        <div class="duree-pill" data-duree="demi_aprem" onclick="setDuree('demi_aprem',this)" style="padding:10px;border-radius:9px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s">
+          <div style="font-size:18px">🌇</div>
+          <div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Demi-après-midi</div>
+          <div style="font-size:10px;color:#7a8b9c">14h–18h</div>
+        </div>
+      </div>
+      <input type="hidden" id="resTypeDuree" value="journee">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="rowDates">
       <div class="form-row"><label>Date début *</label><input type="date" id="resDateDebut" onchange="calculerPrix()"></div>
-      <div class="form-row"><label>Date fin *</label><input type="date" id="resDateFin" onchange="calculerPrix()"></div>
+      <div class="form-row" id="rowDateFin"><label>Date fin *</label><input type="date" id="resDateFin" onchange="calculerPrix()"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="form-row"><label>Nb personnes</label><input type="number" id="resNbPersonnes" value="1" min="1"></div>
@@ -396,21 +425,45 @@ function selectionnerResident(card){
   document.getElementById('resNomClient').value=card.dataset.resNom;
 }
 
+function setDuree(type, el) {
+  document.querySelectorAll('.duree-pill').forEach(p => {
+    p.style.borderColor = '#d4dce8'; p.style.background = 'white';
+  });
+  el.style.borderColor = '#2563eb'; el.style.background = '#eff6ff';
+  document.getElementById('resTypeDuree').value = type;
+  // Masquer date fin pour demi-journée
+  const rowFin = document.getElementById('rowDateFin');
+  rowFin.style.display = type === 'journee' ? '' : 'none';
+  calculerPrix();
+}
+
 function calculerPrix(){
   const sel=document.getElementById('resEspaceId');
   const opt=sel.options[sel.selectedIndex];
   const prixJ=parseFloat(opt?.dataset?.prix||0);
+  const prixDemi=parseFloat(opt?.dataset?.prixdemi||0) || prixJ*0.65;
   const debut=document.getElementById('resDateDebut').value;
   const fin=document.getElementById('resDateFin').value;
+  const type=document.getElementById('resTypeDuree').value;
   const remise=parseFloat(document.getElementById('resRemise').value)||0;
-  if(!prixJ||!debut||!fin){document.getElementById('prixEstimate').style.display='none';return;}
-  const dt1=new Date(debut),dt2=new Date(fin);
-  if(dt2<dt1){document.getElementById('prixEstimate').style.display='none';return;}
-  const jours=Math.max(1,Math.ceil((dt2-dt1)/86400000)+1);
-  const total=jours*prixJ; const net=total-remise;
+  if(!prixJ||!debut){document.getElementById('prixEstimate').style.display='none';return;}
+
+  let total=0, label='';
+  if(type==='journee'){
+    if(!fin){document.getElementById('prixEstimate').style.display='none';return;}
+    const dt1=new Date(debut),dt2=new Date(fin);
+    if(dt2<dt1){document.getElementById('prixEstimate').style.display='none';return;}
+    const jours=Math.max(1,Math.ceil((dt2-dt1)/86400000)+1);
+    total=jours*prixJ;
+    label=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}`;
+  } else {
+    total=prixDemi;
+    label=type==='demi_matin'?'Demi-journée matin (8h–13h)':'Demi-journée après-midi (14h–18h)';
+  }
+  const net=total-remise;
   document.getElementById('prixEstimate').style.display='';
   document.getElementById('prixEstimateVal').textContent=fmt(net);
-  document.getElementById('prixEstimateSub').textContent=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}${remise>0?' — remise '+fmt(remise):''}`;
+  document.getElementById('prixEstimateSub').textContent=label+(remise>0?' — remise '+fmt(remise):'');
 }
 
 async function confirmerReservation(){
@@ -435,6 +488,7 @@ async function confirmerReservation(){
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,
         telephone,type_evenement:typeEvenement,
+        type_duree:document.getElementById('resTypeDuree').value,
         date_debut:dateDebut+'T00:00:00',date_fin:dateFin+'T23:59:59',
         nombre_personnes:nbPersonnes,remise,avance,commentaire,
         reservation_hotel_id:resHotelId||null})

@@ -56,27 +56,49 @@ def api_reserver(request):
         type_client = data.get('type_client', 'particulier')
         telephone = data.get('telephone', '').strip()
         type_evenement = data.get('type_evenement', '').strip()
-        date_debut = data.get('date_debut')
-        date_fin = data.get('date_fin')
+        type_duree = data.get('type_duree', 'journee')
+        date_str = data.get('date_debut')  # Une seule date pour demi-journée ou date début
+        date_fin_str = data.get('date_fin')
         nombre_personnes = int(data.get('nombre_personnes', 1))
         remise = Decimal(str(data.get('remise', 0)))
         avance = Decimal(str(data.get('avance', 0)))
         commentaire = data.get('commentaire', '')
         reservation_hotel_id = data.get('reservation_hotel_id')
 
-        if not all([espace_id, nom_client, date_debut, date_fin]):
+        if not all([espace_id, nom_client, date_str]):
             return JsonResponse({'success': False, 'error': 'Champs requis manquants'})
 
         espace = get_object_or_404(EspaceEvenementiel, id=espace_id)
 
         from django.utils.dateparse import parse_datetime
-        dt_debut = parse_datetime(date_debut)
-        dt_fin = parse_datetime(date_fin)
-        if not dt_debut or not dt_fin or dt_fin <= dt_debut:
-            return JsonResponse({'success': False, 'error': 'Dates invalides'})
+        from datetime import datetime, time
 
-        # Vérifier chevauchement avec réservations existantes
-        # Un chevauchement existe si : debut_existant < dt_fin ET fin_existant > dt_debut
+        # Calculer dt_debut et dt_fin selon type_duree
+        date_base_str = date_str.split('T')[0]  # extraire YYYY-MM-DD
+        
+        if type_duree == 'journee':
+            # date_debut → date_fin (plusieurs jours possibles)
+            dt_debut = parse_datetime(date_str) or parse_datetime(date_base_str + 'T00:00:00')
+            dt_fin = parse_datetime(date_fin_str) if date_fin_str else parse_datetime(date_base_str + 'T23:59:59')
+            if not dt_debut or not dt_fin or dt_fin <= dt_debut:
+                return JsonResponse({'success': False, 'error': 'Dates invalides'})
+            jours = max(1, (dt_fin.date() - dt_debut.date()).days + 1)
+            prix_total = Decimal(str(jours)) * espace.prix_jour
+
+        elif type_duree == 'demi_matin':
+            dt_debut = parse_datetime(date_base_str + 'T08:00:00')
+            dt_fin   = parse_datetime(date_base_str + 'T13:00:00')
+            prix_total = espace.prix_demi_journee or (espace.prix_jour * Decimal('0.65'))
+
+        elif type_duree == 'demi_aprem':
+            dt_debut = parse_datetime(date_base_str + 'T14:00:00')
+            dt_fin   = parse_datetime(date_base_str + 'T18:00:00')
+            prix_total = espace.prix_demi_journee or (espace.prix_jour * Decimal('0.65'))
+
+        else:
+            return JsonResponse({'success': False, 'error': 'Type de durée invalide'})
+
+        # Vérifier chevauchement
         chevauchements = ReservationEspace.objects.filter(
             espace_id=espace_id,
             statut__in=['confirmee', 'en_cours'],
@@ -85,19 +107,15 @@ def api_reserver(request):
         )
         if chevauchements.exists():
             res_conflict = chevauchements.first()
+            duree_label = dict(ReservationEspace.TYPE_DUREE).get(res_conflict.type_duree, '')
             return JsonResponse({
                 'success': False,
                 'error': (
-                    f"Cet espace est déjà réservé du "
-                    f"{res_conflict.date_debut.strftime('%d/%m/%Y')} au "
-                    f"{res_conflict.date_fin.strftime('%d/%m/%Y')} "
-                    f"par {res_conflict.nom_client} ({res_conflict.type_evenement})."
+                    f"Cet espace est déjà réservé le "
+                    f"{res_conflict.date_debut.strftime('%d/%m/%Y')} "
+                    f"({duree_label}) par {res_conflict.nom_client}."
                 )
             })
-
-        # Calculer prix total
-        duree_h = (dt_fin - dt_debut).total_seconds() / 86400
-        prix_total = Decimal(str(round(duree_h, 2))) * espace.prix_jour
 
         reservation_hotel = None
         if type_client == 'heberge' and reservation_hotel_id:
@@ -114,6 +132,7 @@ def api_reserver(request):
             type_client=type_client,
             telephone=telephone,
             type_evenement=type_evenement,
+            type_duree=type_duree,
             date_debut=dt_debut,
             date_fin=dt_fin,
             nombre_personnes=nombre_personnes,
@@ -180,7 +199,8 @@ def api_encaisser(request, reservation_id):
             })
 
         # Mode PAIEMENT DIRECT
-        contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({res.duree_jours}h)</span><span class="item-price">{int(montant_net):,} F</span></div>'
+        duree_label = dict(ReservationEspace.TYPE_DUREE).get(res.type_duree, '')
+        contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({duree_label})</span><span class="item-price">{int(montant_net):,} F</span></div>'
         if res.avance > 0:
             contenu += f'<div class="row"><span class="item-name">Avance déjà perçue</span><span class="item-price">-{int(res.avance):,} F</span></div>'
 

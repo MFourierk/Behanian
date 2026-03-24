@@ -93,6 +93,10 @@
             <input type="number" name="prix_jour" class="fc" value="{{ form.prix_jour.value|default:'' }}" placeholder="Ex : 150000" min="0">
           </div>
           <div class="fc-group">
+            <label class="fc-label">Prix demi-journée (FCFA)</label>
+            <input type="number" name="prix_demi_journee" class="fc" value="{{ form.prix_demi_journee.value|default:'' }}" placeholder="Laisser vide = 65% du prix jour" min="0">
+          </div>
+          <div class="fc-group">
             <label class="fc-label">Superficie (m²)</label>
             <input type="number" name="superficie" class="fc" value="{{ form.superficie.value|default:'' }}" placeholder="Ex : 200" min="0" step="0.1">
           </div>

@@ -315,7 +315,7 @@ EQUIP_LIST = [
 class EspaceCreateView(CreateView):
     model = EspaceEvenementiel
     template_name = 'parametres/espace_form.html'
-    fields = ['nom', 'type_espace', 'capacite', 'prix_jour', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
+    fields = ['nom', 'type_espace', 'capacite', 'prix_jour', 'prix_demi_journee', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
     success_url = reverse_lazy('parametres:espace_list')
 
     def get_context_data(self, **kwargs):
@@ -331,7 +331,7 @@ class EspaceCreateView(CreateView):
 class EspaceUpdateView(UpdateView):
     model = EspaceEvenementiel
     template_name = 'parametres/espace_form.html'
-    fields = ['nom', 'type_espace', 'capacite', 'prix_jour', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
+    fields = ['nom', 'type_espace', 'capacite', 'prix_jour', 'prix_demi_journee', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
     success_url = reverse_lazy('parametres:espace_list')
 
     def get_context_data(self, **kwargs):

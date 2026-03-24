@@ -21,6 +21,7 @@ class EspaceEvenementiel(models.Model):
     type_espace = models.CharField(max_length=50, choices=TYPE_ESPACE, verbose_name="Type")
     capacite = models.IntegerField(verbose_name="Capacité (personnes)")
     prix_jour = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix par jour (FCFA)", default=0)
+    prix_demi_journee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix demi-journée (FCFA)", default=0, blank=True)
     superficie = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Superficie (m²)")
     
     # Équipements
@@ -87,6 +88,14 @@ class ReservationEspace(models.Model):
     telephone = models.CharField(max_length=20, verbose_name="Téléphone")
     email = models.EmailField(blank=True, null=True, verbose_name="Email")
     
+    # Durée
+    TYPE_DUREE = [
+        ('journee', 'Journée complète'),
+        ('demi_matin', 'Demi-journée matin (8h-13h)'),
+        ('demi_aprem', 'Demi-journée après-midi (14h-18h)'),
+    ]
+    type_duree = models.CharField(max_length=20, choices=TYPE_DUREE, default='journee', verbose_name="Type de durée")
+
     # Détails réservation
     type_evenement = models.CharField(max_length=100, verbose_name="Type d'événement")
     date_debut = models.DateTimeField(verbose_name="Date et heure de début")
