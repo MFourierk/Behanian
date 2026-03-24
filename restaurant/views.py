@@ -135,8 +135,13 @@ def valider_commande(request):
             commande.save()
 
         if action == 'paiement':
+            # Calculer le total depuis les lignes (le champ total DB peut être 0)
+            total_lignes = sum(l.get_total() for l in commande.lignes.all())
+            if total_lignes > 0:
+                commande.total = total_lignes
+                commande.save(update_fields=['total'])
             if commande.total <= 0:
-                 return JsonResponse({'success': False, 'message': 'Le total est nul.'})
+                return JsonResponse({'success': False, 'message': 'Le total est nul.'})
 
             serveur_nom = data.get('serveur', '')
             if not serveur_nom:

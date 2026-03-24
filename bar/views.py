@@ -1061,7 +1061,6 @@ def api_vente_create(request):
                 for l in lignes:
                     boisson_obj = None
                     try:
-                        from .models import BoissonBar
                         boisson_obj = BoissonBar.objects.get(pk=int(l['id']))
                     except Exception:
                         pass
