@@ -76,8 +76,8 @@ def api_reserver(request):
             return JsonResponse({'success': False, 'error': 'Dates invalides'})
 
         # Calculer prix total
-        duree_h = (dt_fin - dt_debut).total_seconds() / 3600
-        prix_total = Decimal(str(round(duree_h, 2))) * espace.prix_heure
+        duree_h = (dt_fin - dt_debut).total_seconds() / 86400
+        prix_total = Decimal(str(round(duree_h, 2))) * espace.prix_jour
 
         reservation_hotel = None
         if type_client == 'heberge' and reservation_hotel_id:
@@ -148,7 +148,7 @@ def api_encaisser(request, reservation_id):
             res.statut = 'terminee'
             res.save()
             lignes = [
-                {'nom': f'{res.espace.nom} ({res.duree_heures}h)', 'total': float(montant_net)},
+                {'nom': f'{res.espace.nom} ({res.duree_jours}h)', 'total': float(montant_net)},
             ]
             if res.avance > 0:
                 lignes.append({'nom': 'Avance déjà perçue', 'total': -float(res.avance)})
@@ -160,7 +160,7 @@ def api_encaisser(request, reservation_id):
             })
 
         # Mode PAIEMENT DIRECT
-        contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({res.duree_heures}h)</span><span class="item-price">{int(montant_net):,} F</span></div>'
+        contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({res.duree_jours}h)</span><span class="item-price">{int(montant_net):,} F</span></div>'
         if res.avance > 0:
             contenu += f'<div class="row"><span class="item-name">Avance déjà perçue</span><span class="item-price">-{int(res.avance):,} F</span></div>'
 
@@ -196,7 +196,7 @@ def api_espace_detail(request, espace_id):
         'nom': espace.nom,
         'type': espace.get_type_espace_display(),
         'capacite': espace.capacite,
-        'prix_heure': float(espace.prix_heure),
+        'prix_heure': float(espace.prix_jour),
         'equipements': [e for e, v in {
             'Projecteur': espace.projecteur, 'WiFi': espace.wifi,
             'Clim': espace.climatisation, 'Sono': espace.sonorisation,

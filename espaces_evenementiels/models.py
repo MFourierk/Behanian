@@ -20,7 +20,7 @@ class EspaceEvenementiel(models.Model):
     nom = models.CharField(max_length=100, verbose_name="Nom de l'espace")
     type_espace = models.CharField(max_length=50, choices=TYPE_ESPACE, verbose_name="Type")
     capacite = models.IntegerField(verbose_name="Capacité (personnes)")
-    prix_heure = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix par heure (FCFA)")
+    prix_jour = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix par jour (FCFA)", default=0)
     superficie = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Superficie (m²)")
     
     # Équipements
@@ -105,10 +105,10 @@ class ReservationEspace(models.Model):
         return f"{self.nom_client} - {self.espace.nom} - {self.date_debut.strftime('%d/%m/%Y')}"
     
     @property
-    def duree_heures(self):
+    def duree_jours(self):
         if self.date_debut and self.date_fin:
             delta = self.date_fin - self.date_debut
-            return round(delta.total_seconds() / 3600, 1)
+            return round(delta.total_seconds() / 86400, 1)
         return 0
 
     @property

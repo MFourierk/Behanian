@@ -1,185 +1,169 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load widget_tweaks %}
+{% block title %}{% if object %}Modifier{% else %}Ajouter{% endif %} un Espace — BEHANIAN{% endblock %}
 
-{% block title %}
-    {% if object %}Modifier{% else %}Ajouter{% endif %} un Espace
+{% block extra_css %}
+<style>
+.form-page{background:#eef1f5;padding:30px 0 60px;min-height:100vh}
+.form-card{background:white;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.07);overflow:hidden;max-width:760px;margin:0 auto}
+.form-header{background:linear-gradient(135deg,#1a2535 0%,#2d3f55 100%);padding:28px 32px;color:white}
+.form-header h2{margin:0;font-size:20px;font-weight:700}
+.form-header p{margin:6px 0 0;font-size:13px;opacity:.6}
+.form-body{padding:32px}
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#5a6b7c;margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid #e8edf5}
+.section-title:first-child{margin-top:0}
+.fc-group{margin-bottom:16px}
+.fc-label{display:block;font-size:12px;font-weight:600;color:#3d4f63;margin-bottom:5px}
+.fc{width:100%;padding:10px 13px;border:1px solid #d4dce8;border-radius:9px;font-size:13px;color:#1a2535;box-sizing:border-box;transition:border-color .15s}
+.fc:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.fc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fc-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+/* Équipements checkboxes */
+.equip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
+.equip-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:9px;border:1px solid #d4dce8;cursor:pointer;transition:all .15s;background:white}
+.equip-item:hover{border-color:#2563eb;background:#f0f6ff}
+.equip-item input[type=checkbox]{width:16px;height:16px;accent-color:#2563eb;cursor:pointer;flex-shrink:0}
+.equip-item label{font-size:12px;font-weight:500;color:#3d4f63;cursor:pointer;margin:0}
+/* Photo upload */
+.photo-zone{border:2px dashed #d4dce8;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .15s;background:#f8fafc;position:relative}
+.photo-zone:hover{border-color:#2563eb;background:#f0f6ff}
+.photo-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.photo-preview{display:none;margin-top:12px}
+.photo-preview img{width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid #d4dce8}
+/* Boutons */
+.btn-submit{background:linear-gradient(135deg,#16a34a,#15803d);color:white;border:none;padding:13px 32px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .15s}
+.btn-submit:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(22,163,74,.3)}
+.btn-cancel{background:#f1f5f9;color:#3d4f63;border:none;padding:13px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn-cancel:hover{background:#e2e8f0}
+</style>
 {% endblock %}
 
 {% block content %}
-<style>
-    .form-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        overflow: hidden;
-        background: white;
-    }
+<div class="form-page"><div class="container" style="max-width:800px">
 
-    .form-header {
-        background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
-        padding: 30px;
-        color: white;
-        text-align: center;
-    }
-
-    .form-header h2 {
-        font-weight: 700;
-        margin: 0;
-        font-size: 1.6rem;
-    }
-
-    .form-body {
-        padding: 40px;
-    }
-
-    .modern-form-group {
-        margin-bottom: 25px;
-    }
-
-    .modern-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #7f8c8d;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: block;
-    }
-
-    .modern-control {
-        border: 2px solid #ecf0f1;
-        border-radius: 12px;
-        padding: 12px 15px;
-        font-size: 1rem;
-        transition: all 0.3s;
-        width: 100%;
-        color: #2c3e50;
-    }
-
-    .modern-control:focus {
-        border-color: #16a085;
-        box-shadow: 0 0 0 4px rgba(22, 160, 133, 0.1);
-        outline: none;
-    }
-
-    .modern-textarea {
-        min-height: 100px;
-        resize: vertical;
-    }
-
-    .btn-submit-glam {
-        background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
-        color: white;
-        border: none;
-        padding: 15px 30px;
-        border-radius: 12px;
-        font-weight: 600;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        transition: all 0.3s;
-        width: 100%;
-        box-shadow: 0 4px 15px rgba(22, 160, 133, 0.3);
-    }
-
-    .btn-submit-glam:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(22, 160, 133, 0.4);
-        color: white;
-    }
-
-    .btn-cancel {
-        color: #95a5a6;
-        text-decoration: none;
-        font-weight: 600;
-        display: inline-block;
-        margin-top: 20px;
-        transition: color 0.3s;
-    }
-
-    .btn-cancel:hover {
-        color: #7f8c8d;
-    }
-    
-    .checkbox-wrapper {
-        display: flex;
-        align-items: center;
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 12px;
-        border: 2px solid #ecf0f1;
-    }
-    
-    .checkbox-wrapper input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
-        margin-right: 15px;
-        accent-color: #16a085;
-    }
-    
-    .checkbox-label {
-        margin-bottom: 0;
-        color: #2c3e50;
-        font-weight: 600;
-    }
-</style>
-
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="form-card">
-                <div class="form-header">
-                    <h2>{% if object %}Modifier l'Espace{% else %}Nouvel Espace{% endif %}</h2>
-                </div>
-                <div class="form-body">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <div class="modern-form-group">
-                            <label class="modern-label" for="{{ form.nom.id_for_label }}">Nom de l'Espace</label>
-                            {% render_field form.nom class="modern-control" placeholder="Ex: Salle de Conférence" %}
-                            {% if form.nom.errors %}
-                                <div class="text-danger small mt-1">{{ form.nom.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="modern-form-group">
-                                    <label class="modern-label" for="{{ form.capacite.id_for_label }}">Capacité</label>
-                                    {% render_field form.capacite class="modern-control" placeholder="Ex: 100" %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="modern-form-group">
-                                    <label class="modern-label" for="{{ form.prix_location.id_for_label }}">Prix Location</label>
-                                    {% render_field form.prix_location class="modern-control" placeholder="Ex: 50000" %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modern-form-group">
-                            <label class="modern-label" for="{{ form.description.id_for_label }}">Description</label>
-                            {% render_field form.description class="modern-control modern-textarea" placeholder="Description, équipements..." rows="4" %}
-                        </div>
-
-                        <div class="modern-form-group">
-                            <div class="checkbox-wrapper">
-                                {% render_field form.disponible %}
-                                <label class="checkbox-label" for="{{ form.disponible.id_for_label }}">Espace actuellement disponible</label>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn-submit-glam">
-                            {% if object %}Enregistrer{% else %}Créer l'Espace{% endif %}
-                        </button>
-                        
-                        <div class="text-center">
-                            <a href="{% url 'parametres:espace_list' %}" class="btn-cancel">Annuler</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+  <div class="form-card">
+    <div class="form-header">
+      <h2>{% if object %}✏️ Modifier l'espace{% else %}🏛️ Nouvel espace{% endif %}</h2>
+      <p>{% if object %}Modifiez les informations de l'espace{{ object.nom }}{% else %}Renseignez les informations pour créer un nouvel espace{% endif %}</p>
     </div>
-</div>
+
+    <div class="form-body">
+      {% if form.errors %}
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#dc2626">
+        {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="section-title">Informations générales</div>
+        <div class="fc-group">
+          <label class="fc-label">Nom de l'espace *</label>
+          <input type="text" name="nom" class="fc" value="{{ form.nom.value|default:'' }}" placeholder="Ex : Salle Prestige, Jardin Événements...">
+        </div>
+        <div class="fc-grid">
+          <div class="fc-group">
+            <label class="fc-label">Type d'espace *</label>
+            <select name="type_espace" class="fc">
+              {% for val, label in form.fields.type_espace.choices %}
+              <option value="{{ val }}" {% if form.type_espace.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="fc-group">
+            <label class="fc-label">Statut</label>
+            <select name="statut" class="fc">
+              {% for val, label in form.fields.statut.choices %}
+              <option value="{{ val }}" {% if form.statut.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="section-title">Capacité &amp; Tarif</div>
+        <div class="fc-grid-3">
+          <div class="fc-group">
+            <label class="fc-label">Capacité (personnes) *</label>
+            <input type="number" name="capacite" class="fc" value="{{ form.capacite.value|default:'' }}" placeholder="Ex : 100" min="1">
+          </div>
+          <div class="fc-group">
+            <label class="fc-label">Prix par jour (FCFA) *</label>
+            <input type="number" name="prix_jour" class="fc" value="{{ form.prix_jour.value|default:'' }}" placeholder="Ex : 150000" min="0">
+          </div>
+          <div class="fc-group">
+            <label class="fc-label">Superficie (m²)</label>
+            <input type="number" name="superficie" class="fc" value="{{ form.superficie.value|default:'' }}" placeholder="Ex : 200" min="0" step="0.1">
+          </div>
+        </div>
+
+        <div class="section-title">Photo de l'espace</div>
+        <div class="photo-zone" onclick="document.getElementById('id_image').click()">
+          <input type="file" id="id_image" name="image" accept="image/*" onchange="previewPhoto(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div id="photoPlaceholder">
+            <div style="font-size:36px;margin-bottom:8px">📷</div>
+            <div style="font-size:13px;font-weight:600;color:#3d4f63">Cliquer pour ajouter une photo</div>
+            <div style="font-size:11px;color:#7a8b9c;margin-top:4px">JPG, PNG — max 5 Mo</div>
+          </div>
+          <div class="photo-preview" id="photoPreview">
+            <img id="photoPreviewImg" src="#" alt="Aperçu">
+            <div style="font-size:11px;color:#16a34a;margin-top:6px;font-weight:600">✅ Photo sélectionnée</div>
+          </div>
+        </div>
+        {% if object.image %}
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+          <img src="{{ object.image.url }}" style="width:80px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #d4dce8">
+          <div style="font-size:12px;color:#5a6b7c">Photo actuelle — sélectionnez une nouvelle pour la remplacer</div>
+        </div>
+        {% endif %}
+
+        <div class="section-title">Équipements disponibles</div>
+        <div class="equip-grid">
+          {% for equip, label, icon in equip_list %}
+          <div class="equip-item">
+            <input type="checkbox" id="id_{{ equip }}" name="{{ equip }}">
+            <label for="id_{{ equip }}">{{ icon }} {{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="section-title">Description</div>
+        <div class="fc-group">
+          <textarea name="description" class="fc" rows="3" placeholder="Décrivez l'espace, ses atouts, son ambiance...">{{ form.description.value|default:'' }}</textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:28px;justify-content:flex-end">
+          <a href="{% url 'parametres:espace_list' %}" class="btn-cancel"><i class="fas fa-arrow-left"></i> Annuler</a>
+          <button type="submit" class="btn-submit"><i class="fas fa-save"></i> {% if object %}Enregistrer{% else %}Créer l'espace{% endif %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div></div>
+
+<script>
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('photoPreviewImg').src = e.target.result;
+      document.getElementById('photoPlaceholder').style.display = 'none';
+      document.getElementById('photoPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+// Cocher les équipements actuels si modification
+{% if object %}
+{% if object.wifi %}document.getElementById('id_wifi').checked = true;{% endif %}
+{% if object.climatisation %}document.getElementById('id_climatisation').checked = true;{% endif %}
+{% if object.projecteur %}document.getElementById('id_projecteur').checked = true;{% endif %}
+{% if object.sonorisation %}document.getElementById('id_sonorisation').checked = true;{% endif %}
+{% if object.decoration %}document.getElementById('id_decoration').checked = true;{% endif %}
+{% if object.eclairage %}document.getElementById('id_eclairage').checked = true;{% endif %}
+{% if object.tentes %}document.getElementById('id_tentes').checked = true;{% endif %}
+{% if object.parking %}document.getElementById('id_parking').checked = true;{% endif %}
+{% endif %}
+</script>
 {% endblock %}

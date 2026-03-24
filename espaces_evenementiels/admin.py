@@ -3,7 +3,7 @@ from .models import EspaceEvenementiel, ReservationEspace
 
 @admin.register(EspaceEvenementiel)
 class EspaceEvenementielAdmin(admin.ModelAdmin):
-    list_display = ['nom', 'type_espace', 'capacite', 'prix_heure', 'statut']
+    list_display = ['nom', 'type_espace', 'capacite', 'prix_jour', 'statut']
     list_filter = ['type_espace', 'statut']
     search_fields = ['nom']
 

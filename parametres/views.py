@@ -304,16 +304,24 @@ class EspaceListView(ListView):
     template_name = 'parametres/espace_list.html'
     context_object_name = 'espaces'
 
+EQUIP_LIST = [
+    ('wifi','WiFi','📶'),('climatisation','Climatisation','❄️'),
+    ('projecteur','Projecteur','📽️'),('sonorisation','Sonorisation','🔊'),
+    ('decoration','Décoration','🎀'),('eclairage','Éclairage','💡'),
+    ('tentes','Tentes','⛺'),('parking','Parking','🅿️'),
+]
+
 @method_decorator(login_required, name='dispatch')
 class EspaceCreateView(CreateView):
     model = EspaceEvenementiel
     template_name = 'parametres/espace_form.html'
-    fields = ['nom', 'type_espace', 'capacite', 'prix_heure', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
+    fields = ['nom', 'type_espace', 'capacite', 'prix_jour', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
     success_url = reverse_lazy('parametres:espace_list')
-    
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        return form
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['equip_list'] = EQUIP_LIST
+        return ctx
 
     def form_valid(self, form):
         messages.success(self.request, "Espace créé avec succès.")
@@ -323,9 +331,14 @@ class EspaceCreateView(CreateView):
 class EspaceUpdateView(UpdateView):
     model = EspaceEvenementiel
     template_name = 'parametres/espace_form.html'
-    fields = ['nom', 'type_espace', 'capacite', 'prix_heure', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
+    fields = ['nom', 'type_espace', 'capacite', 'prix_jour', 'superficie', 'description', 'image', 'projecteur', 'wifi', 'climatisation', 'sonorisation', 'decoration', 'eclairage', 'tentes', 'parking', 'statut']
     success_url = reverse_lazy('parametres:espace_list')
-    
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['equip_list'] = EQUIP_LIST
+        return ctx
+
     def form_valid(self, form):
         messages.success(self.request, "Espace modifié avec succès.")
         return super().form_valid(form)
