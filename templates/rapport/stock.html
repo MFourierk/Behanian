@@ -355,7 +355,7 @@ table.articles-table tr:hover { background: #f8f9fa; }
 
         <!-- Boutons impression -->
         <div class="actions-bar">
-            <button class="btn-print" onclick="window.print()">
+            <button class="btn-print" onclick="ouvrirImpressionStock()">
                 <i class="fas fa-print"></i> Imprimer
             </button>
             <button class="btn-pdf" id="btn-pdf" onclick="exporterPDFStock()">
@@ -516,5 +516,9 @@ function exporterPDFStock() {
 window.addEventListener('beforeprint', () => {
     document.querySelectorAll('.groupe-table').forEach(t => t.classList.remove('collapsed'));
 });
+
+function ouvrirImpressionStock() {
+    window.open("{% url 'cuisine:etat_stock_print' %}", '_blank', 'width=900,height=700');
+}
 </script>
 {% endblock %}
