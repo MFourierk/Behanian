@@ -137,7 +137,7 @@
         <div class="esp-card-body">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
             <div class="esp-card-nom">{{ espace.nom }}</div>
-            <span class="badge b-{{ espace.statut }}">{{ espace.get_statut_display }}</span>
+            <span class="badge b-{{ espace.statut_reel }}">{{ espace.get_statut_reel_display }}</span>
           </div>
           <div class="esp-card-meta">{{ espace.get_type_espace_display }} · {{ espace.capacite }} pers.{% if espace.superficie %} · {{ espace.superficie|floatformat:0 }} m²{% endif %}</div>
           <div class="esp-card-prix">{{ espace.prix_jour|floatformat:0 }} F <span style="font-size:12px;font-weight:400;color:#7a8b9c">/ jour</span></div>

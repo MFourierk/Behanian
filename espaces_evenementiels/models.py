@@ -44,6 +44,21 @@ class EspaceEvenementiel(models.Model):
         verbose_name_plural = "Espaces Location"
         ordering = ['nom']
     
+    @property
+    def statut_reel(self):
+        """Statut calculé dynamiquement selon les réservations actives."""
+        from django.utils import timezone
+        now = timezone.now()
+        qs = self.reservationespace_set.filter(statut__in=['confirmee','en_cours'])
+        if qs.filter(date_debut__lte=now, date_fin__gte=now).exists():
+            return 'occupee'
+        if qs.filter(date_debut__gt=now).exists():
+            return 'reservee'
+        return 'disponible'
+
+    def get_statut_reel_display(self):
+        return {'disponible':'Disponible','reservee':'Réservée','occupee':'Occupée'}.get(self.statut_reel,'')
+
     def __str__(self):
         return f"{self.nom} - {self.capacite} pers."
 

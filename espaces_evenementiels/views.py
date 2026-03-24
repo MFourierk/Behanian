@@ -20,9 +20,9 @@ def espaces_index(request):
         statut__in=['confirmee', 'en_cours']
     ).select_related('espace', 'creee_par', 'reservation_hotel__client', 'reservation_hotel__chambre').order_by('-date_debut')
 
-    # Stats
+    # Stats — statut_reel calculé dynamiquement
     total_espaces = espaces.count()
-    espaces_dispo = espaces.filter(statut='disponible').count()
+    espaces_dispo = sum(1 for e in espaces if e.statut_reel == 'disponible')
     reservations_jour = ReservationEspace.objects.filter(date_debut__date=today).count()
     recette_mois = ReservationEspace.objects.filter(
         statut__in=['terminee', 'en_cours', 'confirmee'],
