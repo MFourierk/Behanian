@@ -504,6 +504,11 @@ let panier = []; // [{type, id, nom, prix, qty}]
 
 function setTab(tab){
   tabActif=tab;
+  // Remettre le total panier à 0 quand on quitte En cours
+  if(tab !== 'encours') {
+    const totalPanier = panier.reduce((s,i) => s + i.prix * i.qty, 0);
+    document.getElementById('panierTotal').textContent = totalPanier.toLocaleString('fr-FR') + ' F';
+  }
   document.getElementById('sectionBoisson').style.display=tab==='boisson'?'block':'none';
   document.getElementById('sectionPlat').style.display=tab==='plat'?'block':'none';
   document.getElementById('sectionEnCours').style.display=tab==='encours'?'block':'none';
@@ -539,6 +544,9 @@ async function chargerEnCours(){
     </div>`;
   });
   liste.innerHTML=html;
+  // Mettre à jour le total affiché avec la somme des consos en cours
+  const totalEnCours = d.consommations.reduce((s, c) => s + c.total, 0);
+  document.getElementById('panierTotal').textContent = totalEnCours.toLocaleString('fr-FR') + ' F';
 }
 
 async function modifConso(id, delta){
