@@ -75,6 +75,26 @@ def api_reserver(request):
         if not dt_debut or not dt_fin or dt_fin <= dt_debut:
             return JsonResponse({'success': False, 'error': 'Dates invalides'})
 
+        # Vérifier chevauchement avec réservations existantes
+        # Un chevauchement existe si : debut_existant < dt_fin ET fin_existant > dt_debut
+        chevauchements = ReservationEspace.objects.filter(
+            espace_id=espace_id,
+            statut__in=['confirmee', 'en_cours'],
+            date_debut__lt=dt_fin,
+            date_fin__gt=dt_debut,
+        )
+        if chevauchements.exists():
+            res_conflict = chevauchements.first()
+            return JsonResponse({
+                'success': False,
+                'error': (
+                    f"Cet espace est déjà réservé du "
+                    f"{res_conflict.date_debut.strftime('%d/%m/%Y')} au "
+                    f"{res_conflict.date_fin.strftime('%d/%m/%Y')} "
+                    f"par {res_conflict.nom_client} ({res_conflict.type_evenement})."
+                )
+            })
+
         # Calculer prix total
         duree_h = (dt_fin - dt_debut).total_seconds() / 86400
         prix_total = Decimal(str(round(duree_h, 2))) * espace.prix_jour
