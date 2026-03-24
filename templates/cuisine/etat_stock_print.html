@@ -1,65 +1,101 @@
 {% extends 'print_base.html' %}
 {% load static %}
-{% block doc_title %}État du Stock Cuisine{% endblock %}
+{% block doc_title %}État du Stock — Cuisine{% endblock %}
 
 {% block doc_content %}
+
+<!-- TITRE -->
 <div class="doc-title-band">
   <div>
     <div class="doc-title-text">État du Stock — Cuisine</div>
-    <div class="doc-title-sub">Inventaire valorisé au {% now "d/m/Y H:i" %}</div>
+    <div class="doc-title-sub">Département Cuisine · Inventaire valorisé</div>
   </div>
   <div class="doc-title-right">
     <span class="doc-ref">{{ ingredients.count }} article(s)</span>
   </div>
 </div>
 
-<div class="content-section" style="padding-top:14px">
+<!-- META -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations du rapport</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb articles actifs</span><span class="meta-val">{{ ingredients.count }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Valorisation du stock</div>
+    <div class="meta-row"><span class="meta-lbl">Valeur totale stock</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ total_valeur|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Méthode de valorisation</span><span class="meta-val">CMUP</span></div>
+    <div class="meta-row"><span class="meta-lbl">Établissement</span><span class="meta-val">Complexe Hôtelier Behanian</span></div>
+  </div>
+</div>
+
+<!-- TABLEAU STOCK -->
+<div class="content-section">
+  <div class="section-title">Détail du stock par ingrédient</div>
   <table class="doc-table">
     <thead>
       <tr>
         <th style="width:30px">#</th>
         <th>Ingrédient</th>
         <th style="width:100px">Catégorie</th>
-        <th style="width:70px">Unité</th>
-        <th class="r" style="width:100px">Stock actuel</th>
-        <th class="r" style="width:100px">Seuil alerte</th>
+        <th style="width:60px">Unité</th>
+        <th class="r" style="width:90px">Stock actuel</th>
+        <th class="r" style="width:85px">Seuil alerte</th>
         <th class="r" style="width:90px">CMUP (FCFA)</th>
         <th class="r" style="width:110px">Valeur (FCFA)</th>
+        <th style="width:60px;text-align:center">Statut</th>
       </tr>
     </thead>
     <tbody>
       {% for ing in ingredients %}
-      <tr {% if ing.quantite_stock <= ing.seuil_alerte and ing.seuil_alerte > 0 %}style="background:#fff8f0"{% endif %}>
+      <tr {% if ing.quantite_stock <= 0 %}style="background:#fff5f5"{% elif ing.quantite_stock <= ing.seuil_alerte and ing.seuil_alerte > 0 %}style="background:#fffbeb"{% endif %}>
         <td class="muted">{{ forloop.counter }}</td>
         <td class="bold">{{ ing.nom }}</td>
         <td style="font-size:10px;color:#6b7a8d">{{ ing.categorie.nom|default:"—" }}</td>
         <td>{{ ing.unite_stock.abreviation|default:"—" }}</td>
-        <td class="r {% if ing.quantite_stock <= 0 %}bold" style="color:#c0392b{% elif ing.quantite_stock <= ing.seuil_alerte and ing.seuil_alerte > 0 %}bold" style="color:#d97706{% else %}"{% endif %}">{{ ing.quantite_stock|floatformat:3 }}</td>
+        <td class="r {% if ing.quantite_stock <= 0 %}bold{% endif %}" style="{% if ing.quantite_stock <= 0 %}color:#c0392b{% elif ing.quantite_stock <= ing.seuil_alerte and ing.seuil_alerte > 0 %}color:#d97706{% endif %}">
+          {{ ing.quantite_stock|floatformat:3 }}
+        </td>
         <td class="r" style="color:#8a9ab0">{{ ing.seuil_alerte|floatformat:3 }}</td>
         <td class="r">{{ ing.cmup|floatformat:0 }}</td>
-        <td class="r bold">{% widthratio ing.quantite_stock 1 1 as qs %}{{ ing.valeur_stock|floatformat:0 }}</td>
+        <td class="r bold">{{ ing.valeur_stock|floatformat:0 }}</td>
+        <td style="text-align:center;font-size:9px">
+          {% if ing.quantite_stock <= 0 %}
+          <span style="background:#fee2e2;color:#dc2626;padding:2px 5px;border-radius:4px;font-weight:700">Rupture</span>
+          {% elif ing.quantite_stock <= ing.seuil_alerte and ing.seuil_alerte > 0 %}
+          <span style="background:#fef3c7;color:#d97706;padding:2px 5px;border-radius:4px;font-weight:700">Alerte</span>
+          {% else %}
+          <span style="background:#dcfce7;color:#16a34a;padding:2px 5px;border-radius:4px;font-weight:700">OK</span>
+          {% endif %}
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="8" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
+      <tr><td colspan="9" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient actif</td></tr>
       {% endfor %}
     </tbody>
     <tfoot>
       <tr>
         <td colspan="6"></td>
         <td class="total-label">Valeur totale stock</td>
-        <td class="total-val">{{ total_valeur|floatformat:0 }} FCFA</td>
+        <td class="total-val" colspan="2">{{ total_valeur|floatformat:0 }} FCFA</td>
       </tr>
     </tfoot>
   </table>
 </div>
 
-<div style="margin:10px 30px;font-size:9px;color:#8a9ab0">
-  🟠 Ligne en orange = stock sous le seuil d'alerte &nbsp;|&nbsp; 🔴 Valeur en rouge = rupture de stock
+<div style="margin:8px 30px;font-size:9px;color:#8a9ab0">
+  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil d'alerte &nbsp;|&nbsp;
+  <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#dc2626">Rupture</span> Stock épuisé
 </div>
 
-<div class="signatures cols-2" style="margin-top:14px">
-  <div class="sig-box"><div class="sig-line">Responsable Cuisine</div><div class="sig-hint">Signature &amp; Date</div></div>
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Cuisine</div><div class="sig-hint">Nom &amp; Signature</div></div>
   <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
 </div>
+
 {% endblock %}
 {% block doc_footer_right %}État du stock · Cuisine Behanian · {% now "d/m/Y H:i" %}{% endblock %}
