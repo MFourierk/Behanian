@@ -916,8 +916,8 @@ function ouvrirModalPaiement() {
   if (!serveurVal) {
     toast('👤 Sélectionnez un serveur avant d\'encaisser', 'error');
     const sel = document.getElementById('selectServeur');
-    sel.style.border = '2px solid #c9a84c';
-    sel.style.background = 'rgba(201,168,76,0.15)';
+    sel.style.border = '2px solid #dc2626';
+    sel.style.background = 'rgba(220,38,38,0.15)';
     setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
     return;
   }
@@ -1054,8 +1054,8 @@ async function confirmerPaiement() {
     fermerModal();
     // Surligner le champ serveur
     const sel = document.getElementById('selectServeur');
-    sel.style.border = '2px solid #c9a84c';
-    sel.style.background = 'rgba(201,168,76,0.15)';
+    sel.style.border = '2px solid #dc2626';
+    sel.style.background = 'rgba(220,38,38,0.15)';
     setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
     return;
   }
