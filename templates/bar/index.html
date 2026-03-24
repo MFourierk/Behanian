@@ -910,6 +910,19 @@ const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile 
 function ouvrirModalPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) { toast('Ticket vide', 'error'); return; }
+
+  // Serveur obligatoire — facteur bloquant
+  const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
+  if (!serveurVal) {
+    toast('👤 Sélectionnez un serveur avant d\'encaisser', 'error');
+    const sel = document.getElementById('selectServeur');
+    sel.style.border = '2px solid #c9a84c';
+    sel.style.background = 'rgba(201,168,76,0.15)';
+    setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
+    return;
+  }
+  t.serveur = serveurVal;
+
   const total = getTotal();
   // Si chambre liée → proposer le choix
   if (chambreLieeId) {
