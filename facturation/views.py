@@ -709,3 +709,7 @@ def get_document_details(request, doc_type, pk):
         return JsonResponse({'success': True, 'document': data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+def receipt_depot(request):
+    """Page de reçu de dépôt universel (chambre)."""
+    return render(request, 'receipt_depot.html')

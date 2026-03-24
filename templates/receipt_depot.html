@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Reçu de dépôt</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Courier New',monospace; font-size:12px; background:white; }
+  .page { width:280px; margin:0 auto; padding:12px; }
+  .center { text-align:center; }
+  .bold { font-weight:bold; }
+  .sep { border-top:1px dashed #000; margin:8px 0; }
+  .row { display:flex; justify-content:space-between; margin:3px 0; }
+  .badge { display:inline-block; background:#1a2535; color:#c9a84c; padding:2px 10px; border-radius:4px; font-size:11px; font-weight:bold; margin:4px 0; }
+  @media print { .no-print { display:none; } @page { margin:0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="center bold" style="font-size:14px">COMPLEXE HÔTELIER BEHANIAN</div>
+  <div class="center" style="font-size:10px">Yopougon Beago · 07 58 29 11 10</div>
+  <div class="sep"></div>
+  <div class="center"><span class="badge">BON DE DÉPÔT</span></div>
+  <div class="center" style="font-size:10px;color:#555;font-style:italic">Mise sur compte chambre</div>
+  <div class="sep"></div>
+  <div class="row"><span>Date</span><span id="r-date"></span></div>
+  <div class="row"><span>Module</span><span id="r-module"></span></div>
+  <div class="row"><span>Chambre</span><span id="r-chambre"></span></div>
+  <div class="sep"></div>
+  <div id="r-lignes"></div>
+  <div class="sep"></div>
+  <div class="row bold"><span>TOTAL DÉPOSÉ</span><span id="r-total"></span></div>
+  <div class="sep"></div>
+  <div class="center" style="font-size:10px">Règlement au check-out</div>
+  <div class="center" style="font-size:10px">Merci de votre visite !</div>
+</div>
+<div class="no-print" style="text-align:center;margin-top:16px;display:flex;gap:8px;justify-content:center">
+  <button id="btn-imprimer" onclick="window.print()" style="padding:10px 24px;background:#1a2535;color:#c9a84c;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">🖨️ Imprimer</button>
+  <button onclick="window.close()" style="padding:10px 24px;background:#6b7a8d;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer">Fermer</button>
+</div>
+<script>
+  const p = new URLSearchParams(window.location.search);
+  document.getElementById('r-date').textContent = new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('r-module').textContent = p.get('module') || '—';
+  document.getElementById('r-chambre').textContent = p.get('chambre') || '—';
+  document.getElementById('r-total').textContent = parseFloat(p.get('total')||0).toLocaleString('fr-FR') + ' FCFA';
+  const lignes = JSON.parse(decodeURIComponent(p.get('lignes')||'[]'));
+  document.getElementById('r-lignes').innerHTML = lignes.map(l =>
+    `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span>${l.nom}</span><span>${parseFloat(l.total).toLocaleString('fr-FR')} F</span></div>`
+  ).join('');
+  // Auto-imprimer si demandé
+  if(p.get('auto') === '1') { setTimeout(() => window.print(), 400); }
+</script>
+</body>
+</html>

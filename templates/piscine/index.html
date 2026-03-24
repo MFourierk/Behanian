@@ -102,7 +102,7 @@
     <div class="kpi vert"><div class="klbl">Présents</div><div class="kval">{{ actuellement }}</div><div class="ksub">actuellement</div></div>
     <div class="kpi orange"><div class="klbl">Visiteurs</div><div class="kval">{{ visiteurs }}</div><div class="ksub">payants</div></div>
     <div class="kpi violet"><div class="klbl">Résidents</div><div class="kval">{{ heberges }}</div><div class="ksub">gratuit hôtel</div></div>
-    <div class="kpi rouge"><div class="klbl">Recette</div><div class="kval">{{ recette_jour|floatformat:0 }} F</div><div class="ksub">entrées seules</div></div>
+    <div class="kpi rouge"><div class="klbl">Recette</div><div class="kval">{{ recette_jour|floatformat:0 }} F</div><div class="ksub">entrées + consos</div></div>
   </div>
 
   <!-- Actions rapides -->
@@ -355,18 +355,18 @@
 
     <div class="form-row">
       <label>Mode de paiement</label>
-      <select id="sortieMode">
+      <select id="sortieMode" onchange="piscineModeChange(this)">
         <option value="especes">Espèces</option>
         <option value="mobile_money">Mobile Money</option>
         <option value="carte_bancaire">Carte Bancaire</option>
+        <option value="chambre" id="sortieOptChambre" style="display:none">🏨 Mettre en chambre</option>
       </select>
     </div>
-    <div class="form-row">
+    <div class="form-row" id="sortieRecuRow">
       <label>Montant reçu (FCFA)</label>
       <input type="number" id="sortieRecu" placeholder="0">
     </div>
     <div id="sortieRendu" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
-
     <div style="display:flex;gap:8px">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalSortie')">Annuler</button>
       <button class="btn-p btn-primary" style="flex:2" onclick="validerSortie()"><i class="fas fa-sign-out-alt"></i> Encaisser & Sortir</button>
@@ -703,6 +703,46 @@ async function validerCommande(){
   setTimeout(()=>location.reload(),600);
 }
 
+// ═══ FONCTIONS UNIVERSELLES PAIEMENT PISCINE ═══
+function piscineModeChange(sel) {
+  const isChambre = sel.value === 'chambre';
+  const recuRow = document.getElementById('sortieRecuRow');
+  if (recuRow) recuRow.style.display = isChambre ? 'none' : '';
+  document.getElementById('sortieRendu').style.display = 'none';
+}
+
+let _piscineAccesData = null; // Données de l'accès en cours de sortie
+
+function piscineOuvrirRecuDepot(chambreNom, module, lignes, total) {
+  const params = new URLSearchParams({
+    module: module,
+    chambre: chambreNom,
+    lignes: JSON.stringify(lignes),
+    total: total,
+  });
+  const w = window.open('/facturation/receipt/depot/?' + params.toString(), '_blank', 'width=380,height=580');
+  if (w) w.focus();
+}
+
+async function piscineMettreEnChambre() {
+  const id = document.getElementById('sortieAccesId').value;
+  const r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/', '/' + id + '/'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ mode_paiement: 'chambre', montant_recu: 0, sur_chambre: true })
+  });
+  const d = await r.json();
+  if (!d.success) { alert(d.error || 'Erreur'); return; }
+  fermerModal('modalSortie');
+  // Afficher reçu de dépôt avec choix impression
+  piscineOuvrirRecuDepot(d.chambre_nom, 'Piscine', d.lignes, d.total);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0';
+  t.textContent = '✓ ' + d.message;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+  setTimeout(() => location.reload(), 600);
+}
+
 async function ouvrirSortie(id,nom,prixEntree){
   document.getElementById('sortieAccesId').value=id;
   document.getElementById('sortieNom').textContent=nom;
@@ -718,6 +758,18 @@ async function ouvrirSortie(id,nom,prixEntree){
   html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:8px;padding-top:8px;font-weight:700;color:#1a2535"><span>Total</span><span style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
   det.innerHTML=html;
   document.getElementById('sortieRecu').value=d.total;
+  // Afficher boutons selon type client
+  const isHeberge = d.is_heberge || false;
+  document.getElementById('piscine-sortie-btns-heberge').style.display = isHeberge ? 'flex' : 'none';
+  document.getElementById('piscine-sortie-btns-visiteur').style.display = isHeberge ? 'none' : 'flex';
+  // Afficher/masquer option "Mettre en chambre" selon type client
+  const optChambre = document.getElementById('sortieOptChambre');
+  if (optChambre) optChambre.style.display = isHeberge ? '' : 'none';
+  // Réinitialiser mode
+  const sel = document.getElementById('sortieMode');
+  sel.value = isHeberge ? 'chambre' : 'especes';
+  piscineModeChange(sel);
+  document.getElementById('sortieRendu').style.display = 'none';
   document.getElementById('modalSortie').classList.add('open');
 }
 
@@ -738,11 +790,15 @@ async function validerSortie(){
   const id=document.getElementById('sortieAccesId').value;
   const mode=document.getElementById('sortieMode').value;
   const recu=parseFloat(document.getElementById('sortieRecu').value)||0;
-  const r=await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({mode_paiement:mode,montant_recu:recu})});
+  const surChambre = mode === 'chambre';
+  const r=await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({mode_paiement:mode,montant_recu:surChambre?0:recu,sur_chambre:surChambre})});
   const d=await r.json();
   if(d.success){
     fermerModal('modalSortie');
-    if(d.ticket_html){const w=window.open('','_blank','width=420,height=720');if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}}
+    if(surChambre){
+      // Ouvrir reçu de dépôt
+      piscineOuvrirRecuDepot(d.chambre_nom,'Piscine',d.lignes,d.total);
+    } else if(d.ticket_html){const w=window.open('','_blank','width=420,height=720');if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}}
     setTimeout(()=>location.reload(),800);
   } else alert(d.error||'Erreur');
 }
