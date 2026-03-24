@@ -1,81 +1,94 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% block title %}Espaces Location — BEHANIAN{% endblock %}
+
 {% block extra_css %}
 <style>
-:root{--gold:#c9a84c;--dark:#1a2535;--mid:#2d3f55;--light:#eef1f5;--border:#d4dce8;--text:#3d4f63;--muted:#7a8b9c}
-.esp-body{background:var(--light);padding:20px 0 40px;min-height:100vh}
-.esp-header{background:linear-gradient(135deg,#1a2535 0%,#2d3f55 60%,#1a3a2a 100%);border-radius:16px;padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
-.esp-header::before{content:'🏛️';position:absolute;right:30px;top:50%;transform:translateY(-50%);font-size:80px;opacity:.08}
-.esp-header h2{font-size:22px;font-weight:700;color:white;margin:0}
-.esp-header p{font-size:12px;color:rgba(255,255,255,.6);margin:4px 0 0}
-.btn-gold{background:var(--gold);color:#1a2535;border:none;padding:9px 18px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;text-decoration:none}
-.btn-gold:hover{background:#b8963e;transform:translateY(-1px);color:#1a2535}
+.esp-body{background:#eef1f5;padding:20px 0 40px;min-height:100vh}
+/* KPIs */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:white;border:1px solid var(--border);border-radius:12px;padding:16px;border-left:4px solid var(--border)}
-.kpi.k-bleu{border-left-color:#2563eb}.kpi.k-vert{border-left-color:#16a34a}.kpi.k-or{border-left-color:var(--gold)}.kpi.k-rouge{border-left-color:#dc2626}
-.klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px}
-.kval{font-size:26px;font-weight:700;color:var(--dark);line-height:1}
-.ksub{font-size:11px;color:var(--muted);margin-top:4px}
-.main-grid{display:grid;grid-template-columns:1fr 340px;gap:16px}
-.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.ph{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
-.ph h3{font-size:13px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.5px}
+.kpi{background:white;border:1px solid #d4dce8;border-radius:12px;padding:16px;border-left:4px solid #d4dce8}
+.kpi.k-bleu{border-left-color:#2563eb}.kpi.k-vert{border-left-color:#16a34a}
+.kpi.k-or{border-left-color:#c9a84c}.kpi.k-rouge{border-left-color:#dc2626}
+.klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7a8b9c;margin-bottom:6px}
+.kval{font-size:26px;font-weight:700;color:#1a2535;line-height:1}
+.ksub{font-size:11px;color:#7a8b9c;margin-top:4px}
+/* Actions rapides */
+.quick-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.btn-action{padding:10px 18px;border-radius:10px;border:none;cursor:pointer;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:all .15s;text-decoration:none}
+.btn-primary{background:#2563eb;color:white}.btn-primary:hover{background:#1d4ed8}
+.btn-gold{background:#c9a84c;color:#1a2535}.btn-gold:hover{background:#b8963e}
+.btn-success{background:#16a34a;color:white}.btn-success:hover{background:#15803d}
+.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}.btn-outline:hover{background:#f0f3f7}
+/* Layout */
+.main-grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+/* Espace cards */
 .esp-card{padding:16px 20px;border-bottom:1px solid #f0f3f7;display:flex;gap:14px;align-items:flex-start;transition:background .12s}
-.esp-card:last-child{border-bottom:none}
-.esp-card:hover{background:#f5f8ff}
-.esp-img{width:64px;height:54px;border-radius:10px;object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border);background:var(--light)}
-.esp-nom{font-size:13px;font-weight:700;color:var(--dark)}
-.esp-meta{font-size:11px;color:var(--muted);margin-top:2px}
-.esp-equip{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.equip-tag{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;background:#f0f3f7;color:var(--text)}
+.esp-card:last-child{border-bottom:none}.esp-card:hover{background:#f5f8ff}
+.esp-img{width:72px;height:58px;border-radius:10px;object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #d4dce8;background:#eef1f5}
+.esp-nom{font-size:14px;font-weight:700;color:#1a2535}
+.esp-meta{font-size:11px;color:#7a8b9c;margin-top:2px}
+.equip-tag{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;background:#f0f3f7;color:#3d4f63}
+/* Badges */
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .b-disponible{background:#dcfce7;color:#15803d}.b-reservee{background:#fef3c7;color:#d97706}.b-occupee{background:#fee2e2;color:#dc2626}
 .b-particulier{background:#dbeafe;color:#1e40af}.b-heberge{background:#f0fdf4;color:#15803d}.b-entreprise{background:#f3e8ff;color:#7c3aed}
 .b-confirmee{background:#dbeafe;color:#1e40af}.b-en_cours{background:#fef3c7;color:#d97706}.b-terminee{background:#f1f5f9;color:#64748b}
+/* Table */
 .tbl{width:100%;border-collapse:collapse;font-size:12px}
-.tbl th{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
-.tbl td{padding:12px 14px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl th{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #d4dce8;background:#f8fafc;text-align:left}
+.tbl td{padding:12px 14px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#f5f8ff}
-.btn-p{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all .12s}
-.btn-primary{background:#2563eb;color:white}.btn-success{background:#16a34a;color:white}.btn-outline{background:white;color:var(--text);border:1px solid var(--border)}
-.form-row{margin-bottom:12px}
-.form-row label{display:block;font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);box-sizing:border-box}
-.form-row input:focus,.form-row select:focus{outline:none;border-color:#2563eb}
-.type-pills{display:flex;gap:8px;margin-bottom:14px}
-.type-pill{flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:white;cursor:pointer;text-align:center;transition:all .15s}
+.btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+/* Modal */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.6);z-index:9000;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal-box{background:white;border-radius:18px;padding:26px;width:540px;max-width:96%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-head h3{font-size:15px;font-weight:700;color:#1a2535;margin:0}
+.close-btn{background:none;border:none;font-size:22px;color:#7a8b9c;cursor:pointer}
+.form-row{margin-bottom:13px}
+.form-row label{display:block;font-size:11px;font-weight:600;color:#3d4f63;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box;transition:border-color .12s}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.type-pills{display:flex;gap:8px;margin-bottom:16px}
+.type-pill{flex:1;padding:12px;border-radius:10px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s}
 .type-pill.active.particulier{border-color:#2563eb;background:#eff6ff}.type-pill.active.heberge{border-color:#16a34a;background:#f0fdf4}
 .type-pill .pill-icon{font-size:1.3rem;display:block;margin-bottom:3px}
-.type-pill .pill-label{font-size:11px;font-weight:700;color:var(--dark)}
-.res-card{padding:10px 14px;border-radius:9px;border:1px solid var(--border);cursor:pointer;margin-bottom:6px;display:flex;align-items:center;gap:10px;transition:all .12s}
+.type-pill .pill-label{font-size:11px;font-weight:700;color:#1a2535}
+.res-card{padding:10px 14px;border-radius:9px;border:1px solid #d4dce8;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;gap:10px;transition:all .12s}
 .res-card:hover{border-color:#2563eb;background:#eff6ff}.res-card.selected{border-color:#16a34a;background:#f0fdf4}
-.prix-estimate{background:linear-gradient(135deg,#1a2535,#2d3f55);border-radius:12px;padding:16px;color:white;margin-bottom:14px}
-.prix-estimate .label{font-size:10px;opacity:.6;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
-.prix-estimate .amount{font-size:28px;font-weight:700;color:var(--gold)}
-.modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:9000;align-items:center;justify-content:center}
-.modal-ov.open{display:flex}
-.modal-box{background:white;border-radius:18px;padding:26px;width:520px;max-width:96%;max-height:92vh;overflow-y:auto}
-.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.modal-head h3{font-size:15px;font-weight:700;color:var(--dark);margin:0}
-.close-btn{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1}
-.enc-total{background:var(--dark);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px}
-.enc-total .label{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
-.enc-total .montant{font-size:36px;font-weight:700;color:var(--gold)}
-.enc-total .sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}
+/* Prix estimé */
+.prix-box{background:linear-gradient(135deg,#1a2535,#2d3f55);border-radius:12px;padding:16px;margin:14px 0;color:white;text-align:center}
+.prix-box .lbl{font-size:10px;opacity:.5;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.prix-box .amt{font-size:30px;font-weight:700;color:#c9a84c}
+.prix-box .sub{font-size:11px;opacity:.5;margin-top:3px}
+/* Encaissement */
+.enc-total{background:#1a2535;border-radius:14px;padding:20px;text-align:center;margin-bottom:16px}
+.enc-total .lbl{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.enc-total .amt{font-size:34px;font-weight:700;color:#c9a84c}
+.enc-total .sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="esp-body"><div class="container-fluid">
 
-  <div class="esp-header">
-    <div>
-      <h2>🏛️ Espaces de Location</h2>
-      <p>Salles, jardins, terrasses &amp; espaces événementiels</p>
+  <!-- HEADER — norme commune -->
+  <div class="header-glam events-watermark">
+    <div class="header-content">
+      <h2 style="font-size:1.6rem;font-weight:700;margin:0">Espaces Location</h2>
+      <p class="mb-0 opacity-75">Salles, jardins, terrasses &amp; espaces événementiels</p>
     </div>
-    <span style="color:rgba(255,255,255,.4);font-size:12px;position:relative;z-index:1">{{ espaces.count }} espace{{ espaces.count|pluralize }}</span>
+    <div class="header-clock">
+      <span class="time">--:-- GMT</span>
+      <span class="date">Chargement...</span>
+    </div>
   </div>
 
+  <!-- KPIs -->
   <div class="kpi-grid">
     <div class="kpi k-bleu"><div class="klbl">Espaces</div><div class="kval">{{ total_espaces }}</div><div class="ksub">{{ espaces_dispo }} disponible(s)</div></div>
     <div class="kpi k-vert"><div class="klbl">Réservations actives</div><div class="kval">{{ reservations_actives.count }}</div><div class="ksub">confirmées / en cours</div></div>
@@ -83,19 +96,32 @@
     <div class="kpi k-rouge"><div class="klbl">Recette mois</div><div class="kval">{{ recette_mois|floatformat:0 }} F</div><div class="ksub">ce mois-ci</div></div>
   </div>
 
+  <!-- ACTIONS RAPIDES -->
+  <div class="quick-actions">
+    <button class="btn-action btn-gold" onclick="ouvrirModalReservation()">
+      <i class="fas fa-calendar-plus"></i> Nouvelle réservation
+    </button>
+    <a href="{% url 'parametres:espace_list' %}" class="btn-action btn-outline">
+      <i class="fas fa-cog"></i> Gérer les espaces
+    </a>
+    <a href="{% url 'parametres:espace_create' %}" class="btn-action btn-outline">
+      <i class="fas fa-plus"></i> Ajouter un espace
+    </a>
+  </div>
+
   {% if not espaces %}
-  <div style="background:white;border-radius:14px;padding:50px;text-align:center;border:2px dashed var(--border)">
+  <div style="background:white;border-radius:14px;padding:50px;text-align:center;border:2px dashed #d4dce8">
     <div style="font-size:52px;margin-bottom:14px">🏛️</div>
-    <h3 style="color:var(--dark);margin:0 0 8px">Aucun espace configuré</h3>
-    <p style="color:var(--muted);margin:0 0 20px">Créez vos espaces de location dans les paramètres.</p>
-    <a href="{% url 'parametres:espace_create' %}" class="btn-gold"><i class="fas fa-plus"></i> Créer un espace</a>
+    <h3 style="color:#1a2535;margin:0 0 8px">Aucun espace configuré</h3>
+    <p style="color:#7a8b9c;margin:0 0 20px">Créez vos espaces de location dans les paramètres.</p>
+    <a href="{% url 'parametres:espace_create' %}" class="btn-action btn-gold"><i class="fas fa-plus"></i> Créer un espace</a>
   </div>
   {% else %}
   <div class="main-grid">
     <div>
       <!-- Espaces -->
       <div class="panel" style="margin-bottom:16px">
-        <div class="ph"><h3>🏛️ Nos Espaces</h3><span style="font-size:11px;color:var(--muted)">{{ espaces.count }} espace(s)</span></div>
+        <div class="ph"><h3>🏛️ Nos Espaces</h3><span style="font-size:11px;color:#7a8b9c">{{ espaces.count }} espace(s)</span></div>
         {% for espace in espaces %}
         <div class="esp-card">
           {% if espace.image %}
@@ -104,12 +130,12 @@
           <div class="esp-img">🏛️</div>
           {% endif %}
           <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <span class="esp-nom">{{ espace.nom }}</span>
               <span class="badge b-{{ espace.statut }}">{{ espace.get_statut_display }}</span>
             </div>
             <div class="esp-meta">{{ espace.get_type_espace_display }} · {{ espace.capacite }} pers.{% if espace.superficie %} · {{ espace.superficie|floatformat:0 }} m²{% endif %}</div>
-            <div class="esp-equip">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
               {% if espace.wifi %}<span class="equip-tag">📶 WiFi</span>{% endif %}
               {% if espace.climatisation %}<span class="equip-tag">❄️ Clim</span>{% endif %}
               {% if espace.projecteur %}<span class="equip-tag">📽️ Projecteur</span>{% endif %}
@@ -119,8 +145,8 @@
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:700;color:#2563eb">{{ espace.prix_jour|floatformat:0 }} F/j</div>
-            <button class="btn-gold" style="font-size:10px;padding:5px 10px;margin-top:6px" onclick="ouvrirModalReservation({{ espace.id }})">
+            <div style="font-size:15px;font-weight:700;color:#2563eb">{{ espace.prix_jour|floatformat:0 }} F/j</div>
+            <button class="btn-p btn-primary" style="margin-top:8px" onclick="ouvrirModalReservation({{ espace.id }})">
               <i class="fas fa-calendar-plus"></i> Réserver
             </button>
           </div>
@@ -130,31 +156,35 @@
 
       <!-- Réservations actives -->
       <div class="panel">
-        <div class="ph"><h3>📋 Réservations actives</h3><span style="font-size:11px;color:var(--muted)">{{ reservations_actives.count }}</span></div>
+        <div class="ph"><h3>📋 Réservations actives</h3><span style="font-size:11px;color:#7a8b9c">{{ reservations_actives.count }}</span></div>
         {% if reservations_actives %}
         <div style="overflow-x:auto">
           <table class="tbl">
-            <thead><tr><th>Client</th><th>Espace</th><th>Événement</th><th>Date</th><th>Total</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Client</th><th>Espace</th><th>Événement</th><th>Dates</th><th>Total</th><th>Statut</th><th></th></tr></thead>
             <tbody>
             {% for res in reservations_actives %}
             <tr>
               <td>
                 <div style="font-weight:600">{{ res.nom_client }}</div>
                 <span class="badge b-{{ res.type_client }}">{{ res.get_type_client_display }}</span>
-                {% if res.reservation_hotel %}<span style="font-size:10px;color:var(--muted)"> · Ch.{{ res.reservation_hotel.chambre.numero }}</span>{% endif %}
+                {% if res.reservation_hotel %}<span style="font-size:10px;color:#7a8b9c"> · Ch.{{ res.reservation_hotel.chambre.numero }}</span>{% endif %}
               </td>
               <td style="font-weight:600">{{ res.espace.nom }}</td>
               <td>{{ res.type_evenement }}</td>
-              <td style="white-space:nowrap;font-size:11px">{{ res.date_debut|date:"d/m H:i" }}<br>→ {{ res.date_fin|date:"d/m H:i" }}</td>
+              <td style="font-size:11px;white-space:nowrap">
+                {{ res.date_debut|date:"d/m/Y" }}<br>
+                <span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>
+              </td>
               <td>
                 <div style="font-weight:700;color:#2563eb">{{ res.montant_net|floatformat:0 }} F</div>
-                {% if res.avance > 0 %}<div style="font-size:10px;color:var(--muted)">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
-                {% if res.get_montant_restant > 0 %}<div style="font-size:10px;color:#dc2626">reste: {{ res.get_montant_restant|floatformat:0 }} F</div>{% endif %}
+                {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F remise</div>{% endif %}
+                {% if res.avance > 0 %}<div style="font-size:10px;color:#7a8b9c">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
+                {% if res.get_montant_restant > 0 %}<div style="font-size:10px;color:#dc2626;font-weight:600">reste: {{ res.get_montant_restant|floatformat:0 }} F</div>{% endif %}
               </td>
               <td><span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span></td>
               <td>
-                <button class="btn-p btn-success" style="font-size:11px;padding:5px 10px"
-                  onclick="ouvrirEncaissement({{ res.id }}, '{{ res.nom_client|escapejs }}', '{{ res.espace.nom|escapejs }}', {{ res.montant_net|stringformat:'g' }}, {{ res.avance|stringformat:'g' }}, {% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %}, '{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
+                <button class="btn-p btn-success"
+                  onclick="ouvrirEncaissement({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}',{{ res.montant_net|stringformat:'g' }},{{ res.avance|stringformat:'g' }},{% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %},'{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
                   <i class="fas fa-cash-register"></i> Encaisser
                 </button>
               </td>
@@ -164,7 +194,7 @@
           </table>
         </div>
         {% else %}
-        <div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Aucune réservation active</div>
+        <div style="padding:30px;text-align:center;color:#7a8b9c;font-size:13px">Aucune réservation active</div>
         {% endif %}
       </div>
     </div>
@@ -176,18 +206,18 @@
         <div style="padding:12px">
           {% if residents %}
           {% for r in residents %}
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:9px;background:#f0fdf4;border:1px solid #bbf7d0;margin-bottom:7px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:9px;background:#f0fdf4;border:1px solid #bbf7d0;margin-bottom:7px">
             <div>
-              <div style="font-size:12px;font-weight:700;color:var(--dark)">{{ r.client.nom_complet }}</div>
-              <div style="font-size:10px;color:var(--muted)">Ch. {{ r.chambre.numero }} · départ {{ r.date_depart|date:"d/m" }}</div>
+              <div style="font-size:12px;font-weight:700;color:#1a2535">{{ r.client.nom_complet }}</div>
+              <div style="font-size:10px;color:#7a8b9c">Ch. {{ r.chambre.numero }} · départ {{ r.date_depart|date:"d/m" }}</div>
             </div>
-            <button class="btn-gold" style="font-size:10px;padding:4px 10px" onclick="ouvrirModalReservation(null, {{ r.id }}, '{{ r.client.nom_complet|escapejs }}', '{{ r.chambre.numero }}')">
+            <button class="btn-p btn-primary" style="font-size:10px;padding:5px 9px" onclick="ouvrirModalReservation(null,{{ r.id }},'{{ r.client.nom_complet|escapejs }}','{{ r.chambre.numero }}')">
               <i class="fas fa-calendar-plus"></i>
             </button>
           </div>
           {% endfor %}
           {% else %}
-          <div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Aucun résident en cours</div>
+          <div style="text-align:center;color:#7a8b9c;font-size:12px;padding:20px">Aucun résident en cours</div>
           {% endif %}
         </div>
       </div>
@@ -200,7 +230,7 @@
 <div class="modal-ov" id="modalReservation">
   <div class="modal-box">
     <div class="modal-head">
-      <h3><i class="fas fa-calendar-plus" style="color:var(--gold);margin-right:8px"></i>Nouvelle réservation</h3>
+      <h3><i class="fas fa-calendar-plus" style="color:#c9a84c;margin-right:8px"></i>Nouvelle réservation</h3>
       <button class="close-btn" onclick="fermerModal('modalReservation')">×</button>
     </div>
     <div class="type-pills">
@@ -213,20 +243,24 @@
     </div>
     <input type="hidden" id="resTypeClient" value="particulier">
     <input type="hidden" id="resReservationHotelId" value="">
+
+    <!-- Résidents -->
     <div id="rowResident" style="display:none;margin-bottom:14px">
-      <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:block">Chambre du résident</label>
+      <label style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Chambre du résident</label>
       {% for r in residents %}
       <div class="res-card" data-res-id="{{ r.id }}" data-res-nom="{{ r.client.nom_complet }}" onclick="selectionnerResident(this)">
-        <span style="font-size:20px">🏨</span>
+        <span style="font-size:18px">🏨</span>
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--dark)">{{ r.client.nom_complet }}</div>
-          <div style="font-size:11px;color:var(--muted)">Ch. {{ r.chambre.numero }} · départ {{ r.date_depart|date:"d/m/Y" }}</div>
+          <div style="font-size:12px;font-weight:700;color:#1a2535">{{ r.client.nom_complet }}</div>
+          <div style="font-size:11px;color:#7a8b9c">Ch. {{ r.chambre.numero }} · départ {{ r.date_depart|date:"d/m/Y" }}</div>
         </div>
       </div>
-      {% empty %}<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Aucun résident en cours</div>{% endfor %}
+      {% empty %}<div style="color:#7a8b9c;font-size:12px;text-align:center;padding:12px">Aucun résident en cours</div>{% endfor %}
     </div>
+
+    <!-- Espace -->
     <div class="form-row">
-      <label>Espace</label>
+      <label>Espace *</label>
       <select id="resEspaceId" onchange="calculerPrix()">
         <option value="">— Choisir un espace —</option>
         {% for e in espaces %}
@@ -236,47 +270,58 @@
         {% endfor %}
       </select>
     </div>
+
+    <!-- Infos client -->
     <div id="rowClientInfo">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="form-row"><label>Nom du client</label><input type="text" id="resNomClient" placeholder="Nom complet"></div>
+        <div class="form-row"><label>Nom du client *</label><input type="text" id="resNomClient" placeholder="Nom complet"></div>
         <div class="form-row"><label>Téléphone</label><input type="text" id="resTelephone" placeholder="00 00 00 00"></div>
       </div>
     </div>
-    <div class="form-row"><label>Type d'événement</label><input type="text" id="resTypeEvenement" placeholder="Conférence, mariage, anniversaire…"></div>
+
+    <div class="form-row"><label>Type d'événement *</label><input type="text" id="resTypeEvenement" placeholder="Conférence, mariage, anniversaire…"></div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label>Date &amp; heure début</label><input type="datetime-local" id="resDateDebut" onchange="calculerPrix()"></div>
-      <div class="form-row"><label>Date &amp; heure fin</label><input type="datetime-local" id="resDateFin" onchange="calculerPrix()"></div>
+      <div class="form-row"><label>Date début *</label><input type="date" id="resDateDebut" onchange="calculerPrix()"></div>
+      <div class="form-row"><label>Date fin *</label><input type="date" id="resDateFin" onchange="calculerPrix()"></div>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="form-row"><label>Nb personnes</label><input type="number" id="resNbPersonnes" value="1" min="1"></div>
-      <div class="form-row"><label>Remise (F)</label><input type="number" id="resRemise" value="0" min="0" onchange="calculerPrix()"></div>
-      <div class="form-row"><label>Avance (F)</label><input type="number" id="resAvance" value="0" min="0"></div>
+      <div class="form-row"><label>Remise (FCFA)</label><input type="number" id="resRemise" value="0" min="0" onchange="calculerPrix()"></div>
+      <div class="form-row"><label>Avance (FCFA)</label><input type="number" id="resAvance" value="0" min="0"></div>
     </div>
-    <div class="form-row"><label>Commentaire</label><textarea id="resCommentaire" rows="2" placeholder="Notes…" style="resize:vertical"></textarea></div>
-    <div class="prix-estimate" id="prixEstimate" style="display:none">
-      <div class="label">Prix estimé</div>
-      <div class="amount" id="prixEstimateVal">0 F</div>
+
+    <div class="form-row"><label>Commentaire</label><textarea id="resCommentaire" rows="2" style="resize:vertical"></textarea></div>
+
+    <!-- Prix estimé -->
+    <div class="prix-box" id="prixEstimate" style="display:none">
+      <div class="lbl">Prix estimé</div>
+      <div class="amt" id="prixEstimateVal">0 F</div>
       <div class="sub" id="prixEstimateSub"></div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalReservation')">Annuler</button>
-      <button class="btn-p btn-success" style="flex:2" onclick="confirmerReservation()"><i class="fas fa-check"></i> Confirmer</button>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalReservation')">Annuler</button>
+      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerReservation()">
+        <i class="fas fa-check"></i> Confirmer la réservation
+      </button>
     </div>
   </div>
 </div>
 
 <!-- MODAL ENCAISSEMENT -->
 <div class="modal-ov" id="modalEncaissement">
-  <div class="modal-box" style="width:440px">
+  <div class="modal-box" style="width:420px">
     <div class="modal-head">
-      <h3><i class="fas fa-cash-register" style="color:var(--gold);margin-right:8px"></i>Encaissement</h3>
+      <h3><i class="fas fa-cash-register" style="color:#c9a84c;margin-right:8px"></i>Encaissement</h3>
       <button class="close-btn" onclick="fermerModal('modalEncaissement')">×</button>
     </div>
     <input type="hidden" id="encResId">
     <input type="hidden" id="encResHotelId">
     <div class="enc-total">
-      <div class="label">Reste à payer</div>
-      <div class="montant" id="encMontant">0 F</div>
+      <div class="lbl">Reste à payer</div>
+      <div class="amt" id="encMontant">0 F</div>
       <div class="sub" id="encSub"></div>
     </div>
     <div class="form-row">
@@ -293,38 +338,41 @@
         <input type="number" id="encMontantRecu" placeholder="Saisir montant" oninput="calcRendu()">
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-        <button onclick="encSetMontant(1000)" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:white;font-size:11px;font-weight:600;cursor:pointer">1 000</button>
-        <button onclick="encSetMontant(2000)" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:white;font-size:11px;font-weight:600;cursor:pointer">2 000</button>
-        <button onclick="encSetMontant(5000)" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:white;font-size:11px;font-weight:600;cursor:pointer">5 000</button>
-        <button onclick="encSetMontant(10000)" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:white;font-size:11px;font-weight:600;cursor:pointer">10 000</button>
-        <button onclick="encSetMontant(25000)" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:white;font-size:11px;font-weight:600;cursor:pointer">25 000</button>
-        <button onclick="encSetMontant(50000)" style="padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:white;font-size:11px;font-weight:600;cursor:pointer">50 000</button>
-        <button onclick="encSetExact()" style="padding:6px 12px;border-radius:7px;border:1px solid var(--gold);background:rgba(201,168,76,.1);font-size:11px;font-weight:600;cursor:pointer;color:#b45309">Exact</button>
+          <button onclick="encSetMontant(1000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">1 000</button>
+        <button onclick="encSetMontant(2000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">2 000</button>
+        <button onclick="encSetMontant(5000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">5 000</button>
+        <button onclick="encSetMontant(10000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">10 000</button>
+        <button onclick="encSetMontant(25000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">25 000</button>
+        <button onclick="encSetMontant(50000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">50 000</button>
+        <button onclick="encSetMontant(100000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer;color:#1a2535">100 000</button>
+        <button onclick="encSetExact()" style="padding:5px 11px;border-radius:7px;border:1px solid #c9a84c;background:rgba(201,168,76,.1);font-size:11px;font-weight:600;cursor:pointer;color:#b45309">Exact</button>
       </div>
       <div id="encRendu" style="display:none;margin-bottom:12px;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600"></div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalEncaissement')">Annuler</button>
-      <button class="btn-p btn-success" style="flex:2" id="btnEncaisser" onclick="validerEncaissement()"><i class="fas fa-check"></i> Confirmer &amp; Imprimer</button>
+      <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalEncaissement')">Annuler</button>
+      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" id="btnEncaisser" onclick="validerEncaissement()">
+        <i class="fas fa-check"></i> Confirmer &amp; Imprimer
+      </button>
     </div>
   </div>
 </div>
 
 <script>
-const CSRF = '{{ csrf_token }}';
-let _encTotal = 0;
+const CSRF='{{ csrf_token }}';
+let _encTotal=0;
 
-function fermerModal(id){ document.getElementById(id).classList.remove('open'); }
-function ouvrirModal(id){ document.getElementById(id).classList.add('open'); }
-function fmt(n){ return parseFloat(n).toLocaleString('fr-FR') + ' F'; }
-function toast(msg, type='info'){
-  const colors = {success:'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0',error:'background:#fee2e2;color:#dc2626;border:1px solid #fecaca',info:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
-  const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500`;
-  t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+function fermerModal(id){document.getElementById(id).classList.remove('open');}
+function ouvrirModal(id){document.getElementById(id).classList.add('open');}
+function fmt(n){return parseFloat(n).toLocaleString('fr-FR')+' F';}
+function toast(msg,type='info'){
+  const colors={success:'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0',error:'background:#fee2e2;color:#dc2626;border:1px solid #fecaca',info:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500`;
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
 }
 
-function ouvrirModalReservation(espaceId=null, resHotelId=null, nomClient=null, chambre=null){
+function ouvrirModalReservation(espaceId=null,resHotelId=null,nomClient=null,chambre=null){
   ['resNomClient','resTelephone','resTypeEvenement','resDateDebut','resDateFin','resCommentaire'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('resNbPersonnes').value=1;
   document.getElementById('resRemise').value=0;
@@ -334,24 +382,24 @@ function ouvrirModalReservation(espaceId=null, resHotelId=null, nomClient=null, 
   document.querySelectorAll('.res-card').forEach(c=>c.classList.remove('selected'));
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
   if(resHotelId){
-    setTypeClient('heberge', document.querySelector('.type-pill.heberge'));
-    const card = document.querySelector(`.res-card[data-res-id="${resHotelId}"]`);
-    if(card) selectionnerResident(card);
+    setTypeClient('heberge',document.querySelector('.type-pill.heberge'));
+    const card=document.querySelector(`.res-card[data-res-id="${resHotelId}"]`);
+    if(card)selectionnerResident(card);
   } else {
     document.querySelector('.type-pill.particulier').classList.add('active');
     document.getElementById('rowResident').style.display='none';
     document.getElementById('rowClientInfo').style.display='';
   }
-  if(espaceId) document.getElementById('resEspaceId').value=espaceId;
+  if(espaceId)document.getElementById('resEspaceId').value=espaceId;
   else document.getElementById('resEspaceId').value='';
   ouvrirModal('modalReservation');
 }
 
-function setTypeClient(type, el){
+function setTypeClient(type,el){
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('resTypeClient').value=type;
-  const isH = type==='heberge';
+  const isH=type==='heberge';
   document.getElementById('rowResident').style.display=isH?'':'none';
   document.getElementById('rowClientInfo').style.display=isH?'none':'';
   document.getElementById('resReservationHotelId').value='';
@@ -368,18 +416,19 @@ function selectionnerResident(card){
 function calculerPrix(){
   const sel=document.getElementById('resEspaceId');
   const opt=sel.options[sel.selectedIndex];
-  const prixH=parseFloat(opt?.dataset?.prix||0);
+  const prixJ=parseFloat(opt?.dataset?.prix||0);
   const debut=document.getElementById('resDateDebut').value;
   const fin=document.getElementById('resDateFin').value;
   const remise=parseFloat(document.getElementById('resRemise').value)||0;
-  if(!prixH||!debut||!fin){document.getElementById('prixEstimate').style.display='none';return;}
+  if(!prixJ||!debut||!fin){document.getElementById('prixEstimate').style.display='none';return;}
   const dt1=new Date(debut),dt2=new Date(fin);
   if(dt2<=dt1){document.getElementById('prixEstimate').style.display='none';return;}
-  const h=(dt2-dt1)/86400000;
-  const total=h*prixH; const net=total-remise;
+  const jours=Math.ceil((dt2-dt1)/86400000);
+  const total=jours*prixJ;
+  const net=total-remise;
   document.getElementById('prixEstimate').style.display='';
   document.getElementById('prixEstimateVal').textContent=fmt(net);
-  document.getElementById('prixEstimateSub').textContent=`${h.toFixed(1)}j × ${fmt(prixH)}${remise>0?' — remise '+fmt(remise):''}`;
+  document.getElementById('prixEstimateSub').textContent=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}${remise>0?' — remise '+fmt(remise):''}`;
 }
 
 async function confirmerReservation(){
@@ -399,10 +448,16 @@ async function confirmerReservation(){
   if(!nomClient){toast('❌ Nom du client requis','error');return;}
   if(!typeEvenement){toast('❌ Type d\'événement requis','error');return;}
   if(!dateDebut||!dateFin){toast('❌ Dates requises','error');return;}
+  // Convertir date seule → datetime pour l'API
+  const dtDebut=dateDebut+'T00:00:00';
+  const dtFin=dateFin+'T23:59:59';
   try{
     const r=await fetch("{% url 'espaces_evenementiels:api_reserver' %}",{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,telephone,type_evenement:typeEvenement,date_debut:dateDebut,date_fin:dateFin,nombre_personnes:nbPersonnes,remise,avance,commentaire,reservation_hotel_id:resHotelId||null})
+      body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,
+        telephone,type_evenement:typeEvenement,date_debut:dtDebut,date_fin:dtFin,
+        nombre_personnes:nbPersonnes,remise,avance,commentaire,
+        reservation_hotel_id:resHotelId||null})
     });
     const d=await r.json();
     if(d.success){fermerModal('modalReservation');toast('✅ '+d.message,'success');setTimeout(()=>location.reload(),800);}
@@ -411,7 +466,7 @@ async function confirmerReservation(){
 }
 
 function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotelId,chambreNum){
-  const restant=montantNet-avance; _encTotal=restant;
+  const restant=montantNet-avance;_encTotal=restant;
   document.getElementById('encResId').value=resId;
   document.getElementById('encResHotelId').value=resHotelId||'';
   document.getElementById('encMontant').textContent=fmt(restant);
@@ -432,21 +487,17 @@ function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotel
 }
 
 function encModeChange(sel){
-  const isChambre=sel.value==='chambre';
-  document.getElementById('encRecuRow').style.display=isChambre?'none':'';
+  document.getElementById('encRecuRow').style.display=sel.value==='chambre'?'none':'';
 }
-
 function encSetMontant(v){document.getElementById('encMontantRecu').value=v;calcRendu();}
 function encSetExact(){document.getElementById('encMontantRecu').value=_encTotal;calcRendu();}
-
 function calcRendu(){
   const recu=parseFloat(document.getElementById('encMontantRecu').value)||0;
   const el=document.getElementById('encRendu');
-  if(recu>=_encTotal){el.style.display='block';el.style.cssText='display:block;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;margin-bottom:12px';el.textContent='Monnaie à rendre : '+fmt(recu-_encTotal);}
-  else if(recu>0){el.style.display='block';el.style.cssText='display:block;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;margin-bottom:12px';el.textContent='Manque : '+fmt(_encTotal-recu);}
+  if(recu>=_encTotal){el.style.cssText='display:block;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;margin-bottom:12px';el.textContent='Monnaie à rendre : '+fmt(recu-_encTotal);}
+  else if(recu>0){el.style.cssText='display:block;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;margin-bottom:12px';el.textContent='Manque : '+fmt(_encTotal-recu);}
   else el.style.display='none';
 }
-
 async function validerEncaissement(){
   const resId=document.getElementById('encResId').value;
   const mode=document.getElementById('encMode').value;
@@ -471,8 +522,7 @@ async function validerEncaissement(){
         const w=window.open('','_blank','width=420,height=720');
         if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}
       }
-      toast('✅ Encaissement effectué','success');
-      setTimeout(()=>location.reload(),800);
+      toast('✅ Encaissement effectué','success');setTimeout(()=>location.reload(),800);
     } else toast('❌ '+(d.error||'Erreur'),'error');
   }catch(e){toast('❌ Erreur réseau','error');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';}
