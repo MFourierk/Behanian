@@ -66,6 +66,7 @@ urlpatterns = [
     # AJAX
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('etat-stock/print/', views.etat_stock_print, name='etat_stock_print'),
+    path('etat-stock/excel/', views.etat_stock_excel, name='etat_stock_excel'),
     path('api/ingredient/<int:pk>/prix/', views.get_ingredient_prix, name='get_ingredient_prix'),
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('api/commande/<int:pk>/lignes/', views.get_bc_lignes, name='get_bc_lignes'),

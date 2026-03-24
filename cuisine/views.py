@@ -1008,6 +1008,113 @@ def etat_stock_print(request):
     })
 
 
+def etat_stock_excel(request):
+    """Export Excel du stock cuisine."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+    from .models import Ingredient
+    from django.utils import timezone
+
+    ingredients = Ingredient.objects.filter(statut=True).select_related('categorie','unite_stock').order_by('categorie__nom','nom')
+    total_valeur = sum(float(i.cmup or 0) * float(i.quantite_stock or 0) for i in ingredients)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "État du Stock"
+
+    # Styles
+    header_fill = PatternFill("solid", fgColor="1a2535")
+    header_font = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    title_font  = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bold_font   = Font(name='Calibri', bold=True, size=10)
+    normal_font = Font(name='Calibri', size=10)
+    ok_fill     = PatternFill("solid", fgColor="dcfce7")
+    alerte_fill = PatternFill("solid", fgColor="fef3c7")
+    rupture_fill= PatternFill("solid", fgColor="fee2e2")
+    thin = Side(border_style="thin", color="d4dce8")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+    right  = Alignment(horizontal='right',  vertical='center')
+
+    # Titre
+    ws.merge_cells('A1:I1')
+    ws['A1'] = f"ÉTAT DU STOCK — CUISINE BEHANIAN"
+    ws['A1'].font = title_font
+    ws['A1'].alignment = center
+
+    ws.merge_cells('A2:I2')
+    ws['A2'] = f"Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')} — {ingredients.count()} article(s)"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = center
+
+    ws.append([])
+
+    # En-têtes
+    headers = ['#', 'Ingrédient', 'Catégorie', 'Unité', 'Stock actuel', 'Seuil alerte', 'CMUP (FCFA)', 'Valeur stock (FCFA)', 'État']
+    ws.append(headers)
+    row_h = ws.max_row
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=row_h, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+
+    # Données
+    for i, ing in enumerate(ingredients, 1):
+        val = float(ing.cmup or 0) * float(ing.quantite_stock or 0)
+        if ing.quantite_stock <= 0:
+            etat = 'Rupture'; fill = rupture_fill
+        elif ing.seuil_alerte and ing.quantite_stock <= ing.seuil_alerte:
+            etat = 'Alerte'; fill = alerte_fill
+        else:
+            etat = 'Normal'; fill = ok_fill
+
+        row = [
+            i,
+            ing.nom,
+            ing.categorie.nom if ing.categorie else '—',
+            ing.unite_stock.abreviation if ing.unite_stock else '—',
+            float(ing.quantite_stock or 0),
+            float(ing.seuil_alerte or 0),
+            float(ing.cmup or 0),
+            round(val, 0),
+            etat,
+        ]
+        ws.append(row)
+        r = ws.max_row
+        for col in range(1, 10):
+            cell = ws.cell(row=r, column=col)
+            cell.font = bold_font if col in (2, 8) else normal_font
+            cell.border = border
+            cell.alignment = right if col in (5,6,7,8) else (center if col in (1,4,9) else Alignment(vertical='center'))
+            if col == 9:
+                cell.fill = fill
+                cell.font = Font(name='Calibri', bold=True, size=10,
+                    color='15803d' if etat=='Normal' else ('d97706' if etat=='Alerte' else 'dc2626'))
+
+    # Total
+    ws.append([])
+    r = ws.max_row + 1
+    ws.cell(row=r, column=7, value='VALEUR TOTALE').font = Font(bold=True, size=11)
+    ws.cell(row=r, column=8, value=round(total_valeur, 0)).font = Font(bold=True, size=11, color='16a34a')
+    ws.cell(row=r, column=8).number_format = '#,##0'
+
+    # Largeurs colonnes
+    for col, w in enumerate([5, 28, 16, 10, 13, 13, 13, 18, 10], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    # Réponse HTTP
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    from django.utils import timezone as tz
+    fname = f"Stock_Cuisine_{tz.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    wb.save(response)
+    return response
+
+
 @require_module_access('cuisine')
 def rapport_stock_cuisine(request):
     get = request.GET.copy()

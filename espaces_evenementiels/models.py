@@ -1,4 +1,6 @@
 from django.db import models
+from io import BytesIO
+from django.core.files.base import ContentFile
 from django.contrib.auth.models import User
 
 class EspaceEvenementiel(models.Model):
@@ -45,6 +47,23 @@ class EspaceEvenementiel(models.Model):
         verbose_name_plural = "Espaces Location"
         ordering = ['nom']
     
+    def save(self, *args, **kwargs):
+        # Compression image à la sauvegarde (évite double import)
+        if self.image and hasattr(self.image, 'file'):
+            try:
+                from PIL import Image as PILImage
+                img = PILImage.open(self.image)
+                img = img.convert('RGB')
+                img.thumbnail((1200, 800), PILImage.Resampling.LANCZOS)
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG', quality=88)
+                buffer.seek(0)
+                fname = self.nom.replace(' ', '_') if self.nom else 'espace'
+                self.image.save(f"{fname}.jpg", ContentFile(buffer.read()), save=False)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
+
     @property
     def statut_reel(self):
         """Statut calculé dynamiquement selon les réservations actives."""

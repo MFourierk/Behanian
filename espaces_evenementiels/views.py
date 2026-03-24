@@ -24,9 +24,15 @@ def espaces_index(request):
     total_espaces = espaces.count()
     espaces_dispo = sum(1 for e in espaces if e.statut_reel == 'disponible')
     reservations_jour = ReservationEspace.objects.filter(date_debut__date=today).count()
+    # Recette mois : toutes réservations confirmées/terminées qui COMMENCENT ce mois
+    # ou qui couvrent ce mois (date_fin >= 1er du mois et date_debut <= dernier jour)
+    from django.utils.timezone import make_aware
+    from datetime import datetime
+    debut_mois = make_aware(datetime(today.year, today.month, 1))
     recette_mois = ReservationEspace.objects.filter(
         statut__in=['terminee', 'en_cours', 'confirmee'],
-        date_debut__month=today.month, date_debut__year=today.year
+        date_debut__year=today.year,
+        date_debut__month=today.month,
     ).aggregate(s=Sum(F('prix_total') - F('remise')))['s'] or 0
 
     # Résidents hôtel pour lier
