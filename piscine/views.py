@@ -225,52 +225,69 @@ def encaisser_sortie(request, acces_id):
         data  = json.loads(request.body)
         mode_paiement = data.get('mode_paiement', 'especes')
         montant_recu  = Decimal(str(data.get('montant_recu', 0)))
+        sur_chambre   = data.get('sur_chambre', False)
 
         # Total = entrée + consommations
         total_conso = sum(c.get_total() for c in acces.consommations.all())
         total       = acces.prix_total + total_conso
 
-        if montant_recu < total and acces.type_client == 'visiteur':
+        # Validation montant seulement si paiement direct visiteur
+        if not sur_chambre and montant_recu < total and acces.type_client == 'visiteur':
             return JsonResponse({'success': False, 'error': f'Montant insuffisant. Total : {int(total)} F'})
 
         # Marquer sortie
         acces.date_sortie = timezone.now()
         acces.save()
 
-        # Générer contenu ticket
         nb_total = acces.nb_adultes + acces.nb_enfants
-        contenu = f"""
-        <div class="row"><span class="item-name">Entrée piscine x{nb_total}</span>
-        <span class="item-price">{int(acces.prix_total):,} F</span></div>
-        """
+
+        # Mode CHAMBRE : ajouter les consos à la réservation hôtel sans créer ticket séparé
+        if sur_chambre and acces.reservation_hotel:
+            reservation = acces.reservation_hotel
+            from hotel.models import Consommation as HotelConso
+            # Ajouter entrée si payante (hébergé gratuit donc prix_total=0)
+            if acces.prix_total > 0:
+                HotelConso.objects.create(
+                    reservation=reservation, type_service='piscine',
+                    nom=f'[Piscine] Entrée x{nb_total}',
+                    quantite=1, prix_unitaire=acces.prix_total,
+                )
+            # Les consos sont déjà sur la chambre via ajouter_consommation
+            # Générer reçu de dépôt
+            lignes = [{'nom': f'Entrée piscine x{nb_total}', 'total': float(acces.prix_total)}]
+            for c in acces.consommations.all():
+                lignes.append({'nom': f'{c.produit} x{c.quantite}', 'total': float(c.get_total())})
+            return JsonResponse({
+                'success': True,
+                'sur_chambre': True,
+                'chambre_nom': f'Ch. {reservation.chambre.numero} — {reservation.client.nom_complet}',
+                'lignes': lignes,
+                'total': float(total),
+                'message': f'Ajouté à la chambre {reservation.chambre.numero}'
+            })
+
+        # Mode PAIEMENT DIRECT : créer ticket facturation
+        contenu = f'<div class="row"><span class="item-name">Entrée piscine x{nb_total}</span><span class="item-price">{int(acces.prix_total):,} F</span></div>'
         for c in acces.consommations.all():
-            contenu += f"""
-        <div class="row"><span class="item-name">{c.produit} x{c.quantite}</span>
-        <span class="item-price">{int(c.get_total()):,} F</span></div>
-            """
+            contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
 
-        # Créer ticket
         ticket = Ticket.objects.create(
-            numero=generate_ticket_numero(),
-            module='piscine',
-            montant_total=total,
-            montant_paye=montant_recu,
-            mode_paiement=mode_paiement,
-            cree_par=request.user,
-            contenu=contenu,
-            imprime=True,
+            numero=generate_ticket_numero(), module='piscine',
+            montant_total=total, montant_paye=montant_recu,
+            mode_paiement=mode_paiement, cree_par=request.user,
+            contenu=contenu, imprime=True,
         )
-
         from django.template.loader import render_to_string
         ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
             'ticket': ticket,
             'serveur': request.user.get_full_name() or request.user.username,
         })
-
         return JsonResponse({
             'success': True,
+            'sur_chambre': False,
             'ticket_html': ticket_html,
             'total': float(total),
+            'rendu': float(max(Decimal('0'), montant_recu - total)),
             'message': f'Sortie enregistrée — {acces.nom_client}'
         })
     except Exception as e:
@@ -329,6 +346,12 @@ def api_acces_detail(request, acces_id):
         'consommations': consommations,
         'total_conso': float(total_conso),
         'total': float(acces.prix_total + total_conso),
+        'is_heberge': acces.type_client == 'heberge',
+        'reservation_hotel_id': acces.reservation_hotel_id,
+        'chambre_nom': (
+            f'Ch. {acces.reservation_hotel.chambre.numero} — {acces.reservation_hotel.client.nom_complet}'
+            if acces.reservation_hotel else None
+        ),
     })
 
 

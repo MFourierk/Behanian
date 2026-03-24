@@ -367,7 +367,19 @@
     </div>
     <div id="sortieRendu" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
 
-    <div style="display:flex;gap:8px">
+    <!-- Boutons selon type client -->
+    <div id="piscine-sortie-btns-heberge" style="display:none;flex-direction:column;gap:8px">
+      <button onclick="piscineMettreEnChambre()" style="padding:14px;border-radius:10px;border:1px solid rgba(37,99,235,0.4);background:rgba(37,99,235,0.1);color:#2563eb;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <i class="fas fa-bed" style="font-size:16px"></i>
+        <div style="text-align:left"><div>Mettre sur la chambre</div><div style="font-size:10px;opacity:.7;font-weight:400">Consos réglées au checkout · reçu de dépôt</div></div>
+      </button>
+      <button onclick="piscinePayerMaintenant()" style="padding:14px;border-radius:10px;border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#b45309;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <i class="fas fa-money-bill-wave" style="font-size:16px"></i>
+        <div style="text-align:left"><div>Payer maintenant</div><div style="font-size:10px;opacity:.7;font-weight:400">Ticket émis · non ajouté à la chambre</div></div>
+      </button>
+      <button class="btn-p btn-outline" style="width:100%" onclick="fermerModal('modalSortie')">Annuler</button>
+    </div>
+    <div id="piscine-sortie-btns-visiteur" style="display:flex;gap:8px">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalSortie')">Annuler</button>
       <button class="btn-p btn-primary" style="flex:2" onclick="validerSortie()"><i class="fas fa-sign-out-alt"></i> Encaisser & Sortir</button>
     </div>
@@ -703,6 +715,47 @@ async function validerCommande(){
   setTimeout(()=>location.reload(),600);
 }
 
+// ═══ FONCTIONS UNIVERSELLES PAIEMENT PISCINE ═══
+let _piscineAccesData = null; // Données de l'accès en cours de sortie
+
+function piscineOuvrirRecuDepot(chambreNom, module, lignes, total) {
+  const params = new URLSearchParams({
+    module: module,
+    chambre: chambreNom,
+    lignes: JSON.stringify(lignes),
+    total: total,
+  });
+  const w = window.open('/facturation/receipt/depot/?' + params.toString(), '_blank', 'width=380,height=580');
+  if (w) w.focus();
+}
+
+async function piscineMettreEnChambre() {
+  const id = document.getElementById('sortieAccesId').value;
+  const r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/', '/' + id + '/'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ mode_paiement: 'chambre', montant_recu: 0, sur_chambre: true })
+  });
+  const d = await r.json();
+  if (!d.success) { alert(d.error || 'Erreur'); return; }
+  fermerModal('modalSortie');
+  // Afficher reçu de dépôt avec choix impression
+  piscineOuvrirRecuDepot(d.chambre_nom, 'Piscine', d.lignes, d.total);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0';
+  t.textContent = '✓ ' + d.message;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+  setTimeout(() => location.reload(), 600);
+}
+
+async function piscinePayerMaintenant() {
+  // Afficher la section montant reçu
+  const sortieRecuRow = document.getElementById('sortieRecu').closest('.form-row');
+  if (sortieRecuRow) sortieRecuRow.style.display = '';
+  document.getElementById('piscine-sortie-btns-heberge').style.display = 'none';
+  document.getElementById('piscine-sortie-btns-visiteur').style.display = 'flex';
+}
+
 async function ouvrirSortie(id,nom,prixEntree){
   document.getElementById('sortieAccesId').value=id;
   document.getElementById('sortieNom').textContent=nom;
@@ -718,6 +771,13 @@ async function ouvrirSortie(id,nom,prixEntree){
   html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:8px;padding-top:8px;font-weight:700;color:#1a2535"><span>Total</span><span style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
   det.innerHTML=html;
   document.getElementById('sortieRecu').value=d.total;
+  // Afficher boutons selon type client
+  const isHeberge = d.is_heberge || false;
+  document.getElementById('piscine-sortie-btns-heberge').style.display = isHeberge ? 'flex' : 'none';
+  document.getElementById('piscine-sortie-btns-visiteur').style.display = isHeberge ? 'none' : 'flex';
+  // Masquer saisie montant pour hébergé (sera choisi après)
+  const sortieRecuRow = document.getElementById('sortieRecu').closest('.form-row');
+  if (sortieRecuRow) sortieRecuRow.style.display = isHeberge ? 'none' : '';
   document.getElementById('modalSortie').classList.add('open');
 }
 
