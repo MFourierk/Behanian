@@ -359,7 +359,7 @@
         <option value="especes">Espèces</option>
         <option value="mobile_money">Mobile Money</option>
         <option value="carte_bancaire">Carte Bancaire</option>
-        <option value="chambre" id="sortieOptChambre" style="display:none">🏨 Mettre en chambre</option>
+
       </select>
     </div>
     <div class="form-row" id="sortieRecuRow">
@@ -762,11 +762,17 @@ async function ouvrirSortie(id,nom,prixEntree){
   const isHeberge = d.is_heberge || false;
   document.getElementById('piscine-sortie-btns-heberge').style.display = isHeberge ? 'flex' : 'none';
   document.getElementById('piscine-sortie-btns-visiteur').style.display = isHeberge ? 'none' : 'flex';
-  // Afficher/masquer option "Mettre en chambre" selon type client
-  const optChambre = document.getElementById('sortieOptChambre');
-  if (optChambre) optChambre.style.display = isHeberge ? '' : 'none';
-  // Réinitialiser mode
+  // Ajouter/retirer option "Mettre en chambre" selon type client
   const sel = document.getElementById('sortieMode');
+  const existOpt = document.getElementById('sortieOptChambre');
+  if (isHeberge && !existOpt) {
+    const opt = document.createElement('option');
+    opt.value = 'chambre'; opt.id = 'sortieOptChambre';
+    opt.textContent = '🏨 Mettre en chambre';
+    sel.appendChild(opt);
+  } else if (!isHeberge && existOpt) {
+    existOpt.remove();
+  }
   sel.value = isHeberge ? 'chambre' : 'especes';
   piscineModeChange(sel);
   document.getElementById('sortieRendu').style.display = 'none';

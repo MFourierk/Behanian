@@ -21,7 +21,6 @@ def piscine_index(request):
     visiteurs      = acces_actifs.filter(type_client='visiteur').count()
     heberges       = acces_actifs.filter(type_client='heberge').count()
     # Recette = entrées payantes + toutes les consommations du jour
-    from piscine.models import ConsommationPiscine
     acces_jour = AccesPiscine.objects.filter(date_entree__date=today)
     recette_entrees = acces_jour.aggregate(s=Sum('prix_total'))['s'] or 0
     recette_consos  = ConsommationPiscine.objects.filter(
