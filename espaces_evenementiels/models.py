@@ -23,7 +23,7 @@ class EspaceEvenementiel(models.Model):
     type_espace = models.CharField(max_length=50, choices=TYPE_ESPACE, verbose_name="Type")
     capacite = models.IntegerField(verbose_name="Capacité (personnes)")
     prix_jour = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix par jour (FCFA)", default=0)
-    prix_demi_journee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix demi-journée (FCFA)", default=0, blank=True)
+    prix_demi_journee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix demi-journée (FCFA)", default=0, blank=True, null=True)
     superficie = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Superficie (m²)")
     
     # Équipements

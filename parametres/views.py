@@ -340,6 +340,10 @@ class EspaceUpdateView(UpdateView):
         return ctx
 
     def form_valid(self, form):
+        obj = form.save(commit=False)
+        if not obj.prix_demi_journee:
+            obj.prix_demi_journee = 0
+        obj.save()
         messages.success(self.request, "Espace modifié avec succès.")
         return super().form_valid(form)
 
