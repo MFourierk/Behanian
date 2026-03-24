@@ -26,6 +26,15 @@ class AccesPiscine(models.Model):
     def nombre_personnes(self):
         return self.nb_adultes + self.nb_enfants
 
+    @property
+    def total_consommations(self):
+        return sum(c.quantite * c.prix_unitaire for c in self.consommations.all())
+
+    @property
+    def total_general(self):
+        """Prix entrée + consommations"""
+        return self.prix_total + self.total_consommations
+
     class Meta:
         verbose_name = "Accès piscine"
         ordering = ['-date_entree']

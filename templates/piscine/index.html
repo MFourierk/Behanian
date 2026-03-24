@@ -129,14 +129,14 @@
               <td><span class="badge {% if a.type_client == 'visiteur' %}b-visiteur{% else %}b-heberge{% endif %}">{{ a.get_type_client_display }}</span></td>
               <td>{{ a.nombre_personnes }}</td>
               <td>{{ a.prix_total|floatformat:0 }} F</td>
-              <td>{% with t=0 %}{{ a.consommations.count }} article(s){% endwith %}</td>
-              <td style="font-weight:700;color:#2563eb">{{ a.prix_total|floatformat:0 }} F</td>
+              <td>{{ a.consommations.count }} art. — {{ a.total_consommations|floatformat:0 }} F</td>
+              <td style="font-weight:700;color:#2563eb">{{ a.total_general|floatformat:0 }} F</td>
               <td>{% if a.date_sortie %}<span class="badge" style="background:#f1f5f9;color:#64748b">Sorti</span>{% else %}<span class="badge" style="background:#dcfce7;color:#15803d">Présent</span>{% endif %}</td>
               <td>
                 {% if not a.date_sortie %}
                 <div style="display:flex;gap:4px">
                   <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
-                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.prix_total|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
+                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
                 {% endif %}
               </td>
@@ -169,7 +169,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
-              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.prix_total|floatformat:0 }})">Sortie</button>
+              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})">Sortie</button>
             </div>
           </div>
           {% endfor %}
