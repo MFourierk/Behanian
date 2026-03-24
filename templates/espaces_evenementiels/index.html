@@ -477,6 +477,7 @@ async function confirmerReservation(){
   const typeEvenement=document.getElementById('resTypeEvenement').value.trim();
   const dateDebut=document.getElementById('resDateDebut').value;
   const dateFin=document.getElementById('resDateFin').value;
+  const typeDuree=document.getElementById('resTypeDuree').value;
   const nbPersonnes=document.getElementById('resNbPersonnes').value;
   const remise=document.getElementById('resRemise').value||0;
   const avance=document.getElementById('resAvance').value||0;
@@ -485,7 +486,9 @@ async function confirmerReservation(){
   if(!espaceId){toast('❌ Veuillez sélectionner un espace','error');return;}
   if(!nomClient){toast('❌ Nom du client requis','error');return;}
   if(!typeEvenement){toast("❌ Type d'événement requis",'error');return;}
-  if(!dateDebut||!dateFin){toast('❌ Dates requises','error');return;}
+  if(!dateDebut){toast('❌ Date de début requise','error');return;}
+  // Pour journée : date fin obligatoire. Pour demi-journée : date fin calculée automatiquement
+  if(typeDuree==='journee'&&!dateFin){toast('❌ Date de fin requise pour une journée','error');return;}
   try{
     const r=await fetch("{% url 'espaces_evenementiels:api_reserver' %}",{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
