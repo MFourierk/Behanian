@@ -133,7 +133,8 @@ class Facture(models.Model):
 
 class LigneFacture(models.Model):
     facture = models.ForeignKey(Facture, on_delete=models.CASCADE, related_name='lignes')
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True, blank=True)
+    designation = models.CharField(max_length=200, blank=True, verbose_name='Désignation')
     description = models.TextField(blank=True)
     quantite = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
@@ -143,7 +144,8 @@ class LigneFacture(models.Model):
         ordering = ['id']
     
     def __str__(self):
-        return f"{self.article.nom} - {self.quantite} x {self.prix_unitaire}"
+        nom = self.designation or (self.article.nom if self.article else 'Ligne')
+        return f"{nom} - {self.quantite} x {self.prix_unitaire}"
     
     @property
     def montant_ht(self):
@@ -235,7 +237,8 @@ class Proforma(models.Model):
 
 class LigneProforma(models.Model):
     proforma = models.ForeignKey(Proforma, on_delete=models.CASCADE, related_name='lignes')
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True, blank=True)
+    designation = models.CharField(max_length=200, blank=True, verbose_name='Désignation')
     description = models.TextField(blank=True)
     quantite = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
@@ -245,7 +248,8 @@ class LigneProforma(models.Model):
         ordering = ['id']
     
     def __str__(self):
-        return f"{self.article.nom} - {self.quantite} x {self.prix_unitaire}"
+        nom = self.designation or (self.article.nom if self.article else 'Ligne')
+        return f"{nom} - {self.quantite} x {self.prix_unitaire}"
     
     @property
     def montant_ht(self):
@@ -325,7 +329,8 @@ class Avoir(models.Model):
 
 class LigneAvoir(models.Model):
     avoir = models.ForeignKey(Avoir, on_delete=models.CASCADE, related_name='lignes')
-    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True, blank=True)
+    designation = models.CharField(max_length=200, blank=True, verbose_name='Désignation')
     description = models.TextField(blank=True)
     quantite = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
@@ -335,7 +340,8 @@ class LigneAvoir(models.Model):
         ordering = ['id']
     
     def __str__(self):
-        return f"{self.article.nom} - {self.quantite} x {self.prix_unitaire}"
+        nom = self.designation or (self.article.nom if self.article else 'Ligne')
+        return f"{nom} - {self.quantite} x {self.prix_unitaire}"
     
     @property
     def montant_ht(self):

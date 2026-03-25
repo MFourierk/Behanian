@@ -712,7 +712,87 @@ def create_document(request, doc_type):
         return proforma_create(request)
     elif doc_type == 'avoir':
         return avoir_create(request)
+    elif doc_type == 'facture_from_ticket':
+        return facture_from_ticket(request)
     return JsonResponse({'success': False, 'error': 'Type de document invalide'})
+
+
+def facture_from_ticket(request):
+    """Convertir un ticket en facture."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+    try:
+        data = json.loads(request.body)
+        ticket_id  = data.get('ticket_id')
+        client_name = data.get('client_name', '').strip()
+        client_phone = data.get('client_phone', '').strip()
+        date_echeance = data.get('date_echeance') or None
+        notes = data.get('notes', '').strip()
+
+        if not ticket_id or not client_name:
+            return JsonResponse({'success': False, 'error': 'Champs requis manquants'})
+
+        ticket = get_object_or_404(Ticket, id=ticket_id)
+
+        # Créer ou récupérer le client
+        client, _ = Client.objects.get_or_create(
+            nom=client_name,
+            defaults={'telephone': client_phone}
+        )
+        if client_phone and not client.telephone:
+            client.telephone = client_phone
+            client.save()
+
+        # Générer numéro facture
+        from django.utils import timezone as tz
+        annee = tz.now().year
+        last = Facture.objects.filter(numero__startswith=f'FAC-{annee}-').order_by('numero').last()
+        seq = int(last.numero.split('-')[-1]) + 1 if last else 1
+        numero = f'FAC-{annee}-{seq:04d}'
+
+        # Créer la facture
+        from datetime import date, timedelta
+        echeance = None
+        if date_echeance:
+            from django.utils.dateparse import parse_date
+            echeance = parse_date(date_echeance)
+
+        facture = Facture.objects.create(
+            numero=numero,
+            client=client,
+            date_facturation=date.today(),
+            date_echeance=echeance or (date.today() + timedelta(days=30)),
+            statut='envoyee',
+            sous_total=ticket.montant_total,
+            remise=0,
+            taux_tva=0,
+            montant_tva=0,
+            total=ticket.montant_total,
+            montant_paye=0,
+            notes=f"Converti depuis ticket {ticket.numero}" + (f" — {notes}" if notes else ""),
+            cree_par=request.user,
+        )
+
+        # Créer une ligne facture avec le contenu du ticket
+        # Créer la ligne de facture sans article (facture libre depuis ticket)
+        LigneFacture.objects.create(
+            facture=facture,
+            article=None,
+            designation=f"{ticket.get_module_display()} — {ticket.numero}",
+            description=ticket.contenu[:200] if ticket.contenu else '',
+            quantite=1,
+            prix_unitaire=ticket.montant_total,
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Facture {numero} créée',
+            'facture_id': facture.id,
+            'detail_url': f'/facturation/factures/{facture.id}/',
+        })
+    except Exception as e:
+        import traceback
+        return JsonResponse({'success': False, 'error': str(e)})
 
 @require_module_access('facturation')
 def get_document_details(request, doc_type, pk):
