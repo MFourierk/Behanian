@@ -1,0 +1,107 @@
+{% extends 'print_base.html' %}
+{% block doc_title %}{{ res.numero }} — Contrat Location{% endblock %}
+
+{% block doc_content %}
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Contrat de Location d'Espace</div>
+    <div class="doc-title-sub">Complexe Hôtelier Behanian · Espaces Événementiels</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-confirmee">{{ res.get_statut_display }}</span>
+    <span class="doc-ref">{{ res.numero }}</span>
+  </div>
+</div>
+
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations Client</div>
+    <div class="meta-row"><span class="meta-lbl">Nom / Raison sociale</span><span class="meta-val bold">{{ res.nom_client }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Type</span><span class="meta-val">{{ res.get_type_client_display }}</span></div>
+    {% if res.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ res.telephone }}</span></div>{% endif %}
+    {% if res.reservation_hotel %}<div class="meta-row"><span class="meta-lbl">Chambre hôtel</span><span class="meta-val">Ch. {{ res.reservation_hotel.chambre.numero }}</span></div>{% endif %}
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Informations Réservation</div>
+    <div class="meta-row"><span class="meta-lbl">N° Contrat</span><span class="meta-val bold">{{ res.numero }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date d'émission</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Type d'événement</span><span class="meta-val">{{ res.type_evenement }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb personnes</span><span class="meta-val">{{ res.nombre_personnes }}</span></div>
+  </div>
+</div>
+
+<div class="content-section">
+  <div class="section-title">Détails de la Location</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Espace loué</th>
+        <th>Type / Capacité</th>
+        <th>Durée</th>
+        <th>Date(s)</th>
+        <th class="r">Tarif</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="bold">{{ res.espace.nom }}</td>
+        <td>{{ res.espace.get_type_espace_display }} · {{ res.espace.capacite }} pers.</td>
+        <td>
+          {% if res.type_duree == 'journee' %}Journée complète
+          {% elif res.type_duree == 'demi_matin' %}Demi-journée matin (8h–13h)
+          {% else %}Demi-journée après-midi (14h–18h){% endif %}
+        </td>
+        <td>
+          {{ res.date_debut|date:"d/m/Y" }}
+          {% if res.type_duree == 'journee' %} → {{ res.date_fin|date:"d/m/Y" }}{% endif %}
+        </td>
+        <td class="r bold">{{ res.prix_total|floatformat:0 }} FCFA</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      {% if res.remise > 0 %}
+      <tr><td colspan="3"></td><td class="total-label" style="color:#16a34a">Remise accordée</td><td class="total-val" style="color:#16a34a">- {{ res.remise|floatformat:0 }} FCFA</td></tr>
+      {% endif %}
+      <tr><td colspan="3"></td><td class="total-label">Montant net</td><td class="total-val">{{ res.montant_net|floatformat:0 }} FCFA</td></tr>
+      {% if res.avance > 0 %}
+      <tr><td colspan="3"></td><td class="total-label" style="color:#2563eb">Avance versée</td><td class="total-val" style="color:#2563eb">{{ res.avance|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td class="total-label" style="color:#dc2626">Solde restant</td><td class="total-val" style="color:#dc2626">{{ res.get_montant_restant|floatformat:0 }} FCFA</td></tr>
+      {% endif %}
+    </tfoot>
+  </table>
+</div>
+
+{% if res.espace.description %}
+<div class="notes-box"><strong>Équipements inclus</strong> — {{ res.espace.description }}</div>
+{% endif %}
+
+{% if res.commentaire %}
+<div class="notes-box"><strong>Observations</strong> — {{ res.commentaire }}</div>
+{% endif %}
+
+<div class="content-section" style="margin-top:16px">
+  <div class="section-title">Conditions générales</div>
+  <div style="font-size:9px;color:#6b7a8d;line-height:1.6;columns:2;column-gap:20px">
+    <p><strong>1. Réservation :</strong> La réservation n'est définitive qu'après versement de l'avance et signature du présent contrat.</p>
+    <p><strong>2. Annulation :</strong> Toute annulation doit être notifiée par écrit. L'avance versée reste acquise en cas d'annulation moins de 48h avant l'événement.</p>
+    <p><strong>3. Responsabilité :</strong> Le locataire est responsable des dommages causés à l'espace et aux équipements pendant la durée de la location.</p>
+    <p><strong>4. Paiement :</strong> Le solde doit être réglé au plus tard le jour de l'événement avant l'accès à l'espace.</p>
+    <p><strong>5. Capacité :</strong> Le nombre de personnes ne doit pas dépasser la capacité maximale indiquée sur ce contrat.</p>
+    <p><strong>6. Horaires :</strong> L'accès à l'espace est limité aux horaires convenus. Tout dépassement fera l'objet d'une facturation supplémentaire.</p>
+  </div>
+</div>
+
+<div class="signatures cols-2" style="margin-top:16px">
+  <div class="sig-box">
+    <div class="sig-line">Le Client</div>
+    <div class="sig-hint">Nom, Signature &amp; Date</div>
+    <div style="margin-top:6px;font-size:10px;color:#6b7a8d">Lu et approuvé</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line">Complexe Behanian</div>
+    <div class="sig-hint">Signature &amp; Cachet</div>
+    <div style="margin-top:6px;font-size:10px;color:#6b7a8d">Pour la Direction</div>
+  </div>
+</div>
+{% endblock %}
+{% block doc_footer_right %}{{ res.numero }} · Contrat Location · Behanian · {% now "d/m/Y" %}{% endblock %}

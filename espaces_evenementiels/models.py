@@ -124,8 +124,10 @@ class ReservationEspace(models.Model):
     # Tarification
     prix_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total (FCFA)")
     remise = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Remise (FCFA)")
+    numero = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="N° Réservation")
     avance = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Avance payée (FCFA)")
     mode_paiement = models.CharField(max_length=30, blank=True, null=True, verbose_name="Mode de paiement")
+    motif_annulation = models.TextField(blank=True, null=True, verbose_name="Motif d'annulation")
     
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
     commentaire = models.TextField(blank=True, null=True, verbose_name="Commentaire")
@@ -145,9 +147,25 @@ class ReservationEspace(models.Model):
         verbose_name_plural = "Réservations"
         ordering = ['-date_debut']
     
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            from django.utils import timezone
+            annee = timezone.now().year
+            last = ReservationEspace.objects.filter(
+                numero__startswith=f'ESP-{annee}-'
+            ).order_by('numero').last()
+            seq = 1
+            if last and last.numero:
+                try:
+                    seq = int(last.numero.split('-')[-1]) + 1
+                except Exception:
+                    pass
+            self.numero = f"ESP-{annee}-{seq:04d}"
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.nom_client} - {self.espace.nom} - {self.date_debut.strftime('%d/%m/%Y')}"
-    
+
     @property
     def duree_jours(self):
         if self.date_debut and self.date_fin:

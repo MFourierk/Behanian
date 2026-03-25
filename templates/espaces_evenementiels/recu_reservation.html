@@ -1,0 +1,97 @@
+{% extends 'print_base.html' %}
+{% block doc_title %}Reçu {{ res.numero }}{% endblock %}
+
+{% block doc_content %}
+<!-- TITRE -->
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Confirmation de Réservation</div>
+    <div class="doc-title-sub">Département Espaces &amp; Événements</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-{{ res.statut }}">{{ res.get_statut_display }}</span>
+    <span class="doc-ref">{{ res.numero }}</span>
+  </div>
+</div>
+
+<!-- META -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations client</div>
+    <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val bold">{{ res.nom_client }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Type</span><span class="meta-val">{{ res.get_type_client_display }}</span></div>
+    {% if res.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ res.telephone }}</span></div>{% endif %}
+    {% if res.reservation_hotel %}<div class="meta-row"><span class="meta-lbl">Chambre</span><span class="meta-val">{{ res.reservation_hotel.chambre.numero }}</span></div>{% endif %}
+    <div class="meta-row"><span class="meta-lbl">Type d'événement</span><span class="meta-val">{{ res.type_evenement }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb personnes</span><span class="meta-val">{{ res.nombre_personnes }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Détails de la réservation</div>
+    <div class="meta-row"><span class="meta-lbl">Espace</span><span class="meta-val bold">{{ res.espace.nom }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Durée</span><span class="meta-val">{{ duree_label }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date début</span><span class="meta-val">{{ res.date_debut|date:"d/m/Y" }}</span></div>
+    {% if res.type_duree == 'journee' %}<div class="meta-row"><span class="meta-lbl">Date fin</span><span class="meta-val">{{ res.date_fin|date:"d/m/Y" }}</span></div>{% endif %}
+    <div class="meta-row"><span class="meta-lbl">Réservé le</span><span class="meta-val">{{ res.date_creation|date:"d/m/Y à H:i" }}</span></div>
+    {% if res.creee_par %}<div class="meta-row"><span class="meta-lbl">Par</span><span class="meta-val">{{ res.creee_par.get_full_name|default:res.creee_par.username }}</span></div>{% endif %}
+  </div>
+</div>
+
+<!-- FACTURATION -->
+<div class="content-section">
+  <div class="section-title">Détail financier</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Désignation</th>
+        <th class="r" style="width:140px">Montant (FCFA)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="bold">{{ res.espace.nom }} — {{ res.type_evenement }} ({{ duree_label }})</td>
+        <td class="r">{{ res.prix_total|floatformat:0 }}</td>
+      </tr>
+      {% if res.remise > 0 %}
+      <tr>
+        <td style="color:#16a34a">Remise accordée</td>
+        <td class="r" style="color:#16a34a">- {{ res.remise|floatformat:0 }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label">Montant net à payer</td>
+        <td class="total-val">{{ res.montant_net|floatformat:0 }} FCFA</td>
+      </tr>
+      {% if res.avance > 0 %}
+      <tr>
+        <td style="text-align:right;font-size:10px;color:#6b7a8d">Avance versée</td>
+        <td class="r" style="font-size:10px;color:#6b7a8d">{{ res.avance|floatformat:0 }} FCFA</td>
+      </tr>
+      <tr>
+        <td style="text-align:right;font-weight:700;color:#dc2626">Reste à payer</td>
+        <td class="r bold" style="color:#dc2626">{{ res.get_montant_restant|floatformat:0 }} FCFA</td>
+      </tr>
+      {% endif %}
+    </tfoot>
+  </table>
+</div>
+
+{% if res.commentaire %}
+<div class="notes-box"><strong>Commentaire</strong> {{ res.commentaire }}</div>
+{% endif %}
+
+<!-- CONDITIONS -->
+<div style="margin:10px 0;padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:9px;color:#6b7a8d;border:1px solid #e8edf5">
+  <strong>Conditions :</strong> Ce document confirme la réservation de l'espace. Toute annulation doit être signalée à la réception. Le complexe se réserve le droit d'annuler en cas de force majeure.
+</div>
+
+<!-- SIGNATURES -->
+<div class="signatures cols-2">
+  <div class="sig-box"><div class="sig-line">Client</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Espaces</div><div class="sig-hint">Signature &amp; Cachet</div></div>
+</div>
+
+<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
+{% endblock %}
+{% block doc_footer_right %}Réservation {{ res.numero }} · {{ res.date_creation|date:"d/m/Y" }}{% endblock %}

@@ -268,3 +268,106 @@ def api_espace_detail(request, espace_id):
         'description': espace.description or '',
         'image': espace.image.url if espace.image else None,
     })
+
+
+@login_required
+def contrat_print(request, pk):
+    res = get_object_or_404(ReservationEspace, id=pk)
+    return render(request, 'espaces_evenementiels/contrat_print.html', {'res': res})
+
+
+@login_required
+@require_POST
+def api_annuler(request, pk):
+    import json
+    res = get_object_or_404(ReservationEspace, id=pk)
+    if res.statut == 'terminee':
+        return JsonResponse({'success': False, 'error': 'Réservation déjà terminée'})
+    data = json.loads(request.body)
+    motif = data.get('motif', '').strip()
+    if not motif:
+        return JsonResponse({'success': False, 'error': 'Motif requis'})
+    res.statut = 'annulee'
+    res.motif_annulation = motif
+    res.save()
+    return JsonResponse({'success': True, 'message': f'Réservation {res.numero} annulée'})
+
+
+@login_required
+def api_calendrier(request):
+    from django.utils.timezone import make_aware
+    from datetime import datetime
+    espace_id = request.GET.get('espace_id')
+    qs = ReservationEspace.objects.filter(
+        statut__in=['confirmee', 'en_cours', 'terminee']
+    ).select_related('espace')
+    if espace_id:
+        qs = qs.filter(espace_id=espace_id)
+
+    couleurs = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#7c3aed', '#0891b2']
+    espaces_list = list(EspaceEvenementiel.objects.values_list('id', flat=True))
+
+    events = []
+    for r in qs:
+        idx = espaces_list.index(r.espace_id) % len(couleurs) if r.espace_id in espaces_list else 0
+        couleur = '#64748b' if r.statut == 'terminee' else couleurs[idx]
+        duree_label = {'journee': 'Journée', 'demi_matin': 'Matin', 'demi_aprem': 'Après-midi'}.get(r.type_duree, '')
+        events.append({
+            'id': r.id,
+            'title': r.nom_client,
+            'subtitle': f"{r.espace.nom} · {duree_label}",
+            'start': r.date_debut.strftime('%Y-%m-%d'),
+            'end': r.date_fin.strftime('%Y-%m-%d'),
+            'color': couleur,
+            'espace': r.espace.nom,
+            'espace_id': r.espace_id,
+            'client': r.nom_client,
+            'evenement': r.type_evenement,
+            'type_duree': r.type_duree,
+            'duree_label': duree_label,
+            'statut': r.statut,
+            'montant': float(r.montant_net),
+            'numero': r.numero or '',
+        })
+
+    return JsonResponse({
+        'events': events,
+        'espaces': list(EspaceEvenementiel.objects.values('id', 'nom'))
+    })
+
+
+def api_annuler(request, reservation_id):
+    """Annuler une réservation avec motif."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+    try:
+        data = json.loads(request.body)
+        motif = data.get('motif', '').strip()
+        if not motif:
+            return JsonResponse({'success': False, 'error': 'Motif requis'})
+        res = get_object_or_404(ReservationEspace, id=reservation_id)
+        if res.statut in ['terminee', 'annulee']:
+            return JsonResponse({'success': False, 'error': 'Réservation déjà clôturée'})
+        res.statut = 'annulee'
+        res.commentaire = f"ANNULÉ — {motif}" + (f"\n{res.commentaire}" if res.commentaire else "")
+        res.save()
+        return JsonResponse({'success': True, 'message': 'Réservation annulée'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def recu_reservation(request, reservation_id):
+    """Reçu de confirmation de réservation imprimable."""
+    res = get_object_or_404(ReservationEspace, id=reservation_id)
+    try:
+        from parametres.models import Coordonnees
+        complexe = Coordonnees.objects.first()
+    except Exception:
+        complexe = None
+    duree_labels = {'journee': 'Journée complète (8h–18h)', 'demi_matin': 'Demi-journée matin (8h–13h)', 'demi_aprem': 'Demi-journée après-midi (14h–18h)'}
+    return render(request, 'espaces_evenementiels/recu_reservation.html', {
+        'res': res,
+        'complexe': complexe,
+        'duree_label': duree_labels.get(res.type_duree, ''),
+    })
+

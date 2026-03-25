@@ -4,36 +4,30 @@
 {% block extra_css %}
 <style>
 .esp-body{background:#eef1f5;padding:20px 0 40px}
-/* KPIs */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .kpi{background:white;border:1px solid #d4dce8;border-radius:12px;padding:16px;border-left:4px solid #d4dce8}
-.kpi.k-bleu{border-left-color:#2563eb}.kpi.k-vert{border-left-color:#16a34a}
-.kpi.k-or{border-left-color:#c9a84c}.kpi.k-rouge{border-left-color:#dc2626}
+.kpi.k-bleu{border-left-color:#2563eb}.kpi.k-vert{border-left-color:#16a34a}.kpi.k-or{border-left-color:#c9a84c}.kpi.k-rouge{border-left-color:#dc2626}
 .klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7a8b9c;margin-bottom:6px}
 .kval{font-size:26px;font-weight:700;color:#1a2535;line-height:1}
 .ksub{font-size:11px;color:#7a8b9c;margin-top:4px}
-/* Onglets */
 .tabs{display:flex;gap:4px;margin-bottom:12px;background:white;border-radius:12px;padding:5px;border:1px solid #d4dce8;width:fit-content}
 .tab{padding:9px 22px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;color:#7a8b9c;background:transparent;transition:all .15s;display:flex;align-items:center;gap:7px}
 .tab.active{background:#1a2535;color:#c9a84c;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .tab-content{display:none}.tab-content.active{display:block}
-/* Cartes espaces */
+/* Espaces cards */
 .esp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .esp-card{background:white;border-radius:14px;border:1px solid #d4dce8;overflow:hidden;transition:all .15s}
 .esp-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
 .esp-card-img{width:100%;height:160px;object-fit:cover;background:linear-gradient(135deg,#1a2535,#2d3f55);display:flex;align-items:center;justify-content:center;font-size:52px}
 .esp-card-body{padding:16px}
-.esp-card-nom{font-size:15px;font-weight:700;color:#1a2535;margin-bottom:4px}
-.esp-card-meta{font-size:11px;color:#7a8b9c;margin-bottom:10px}
-.esp-card-prix{font-size:18px;font-weight:700;color:#2563eb;margin-bottom:10px}
 .esp-equip{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
 .equip-tag{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;background:#f0f3f7;color:#3d4f63}
 /* Badges */
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .b-disponible{background:#dcfce7;color:#15803d}.b-reservee{background:#fef3c7;color:#d97706}.b-occupee{background:#fee2e2;color:#dc2626}
 .b-particulier{background:#dbeafe;color:#1e40af}.b-heberge{background:#f0fdf4;color:#15803d}.b-entreprise{background:#f3e8ff;color:#7c3aed}
-.b-confirmee{background:#dbeafe;color:#1e40af}.b-en_cours{background:#fef3c7;color:#d97706}.b-terminee{background:#f1f5f9;color:#64748b}
-/* Table réservations */
+.b-confirmee{background:#dbeafe;color:#1e40af}.b-en_cours{background:#fef3c7;color:#d97706}.b-terminee{background:#f1f5f9;color:#64748b}.b-annulee{background:#fee2e2;color:#dc2626}
+/* Panels */
 .panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden}
 .ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
 .ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
@@ -41,10 +35,29 @@
 .tbl th{padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #d4dce8;background:#f8fafc;text-align:left}
 .tbl td{padding:12px 14px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#f5f8ff}
-.btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;transition:all .12s}
 .btn-primary{background:#2563eb;color:white}.btn-success{background:#16a34a;color:white}
-.btn-gold{background:#c9a84c;color:#1a2535;font-weight:700}
+.btn-gold{background:#c9a84c;color:#1a2535;font-weight:700}.btn-danger{background:#dc2626;color:white}
 .btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-primary:hover{background:#1d4ed8}.btn-success:hover{background:#15803d}.btn-danger:hover{background:#b91c1c}
+/* Calendrier */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-nav{display:flex;align-items:center;gap:10px}
+.cal-title{font-size:16px;font-weight:700;color:#1a2535}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day-name{text-align:center;font-size:10px;font-weight:700;color:#7a8b9c;text-transform:uppercase;padding:6px 0}
+.cal-day{min-height:80px;background:white;border:1px solid #e8edf5;border-radius:8px;padding:5px;cursor:pointer;transition:background .1s;position:relative}
+.cal-day:hover{background:#f5f8ff}
+.cal-day.today{border-color:#2563eb;background:#eff6ff}
+.cal-day.other-month{background:#f8fafc;opacity:.5}
+.cal-day-num{font-size:11px;font-weight:700;color:#3d4f63;margin-bottom:3px}
+.cal-event{font-size:9px;font-weight:600;padding:2px 5px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:white}
+.cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#3d4f63}
+.cal-legend-dot{width:10px;height:10px;border-radius:50%}
+/* Filtre historique */
+.filter-bar{display:flex;gap:10px;padding:14px 20px;border-bottom:1px solid #d4dce8;background:#f8fafc;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{padding:7px 10px;border:1px solid #d4dce8;border-radius:8px;font-size:12px;color:#1a2535;background:white}
 /* Modal */
 .modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.6);z-index:9000;align-items:center;justify-content:center}
 .modal-ov.open{display:flex}
@@ -77,16 +90,13 @@
 {% block content %}
 <div class="esp-body"><div class="container-fluid">
 
-  <!-- HEADER norme commune -->
+  <!-- HEADER -->
   <div class="header-glam events-watermark">
     <div class="header-content">
       <h2 style="font-size:1.6rem;font-weight:700;margin:0">Espaces Location</h2>
       <p class="mb-0 opacity-75">Salles, jardins, terrasses &amp; espaces événementiels</p>
     </div>
-    <div class="header-clock">
-      <span class="time">--:-- GMT</span>
-      <span class="date">Chargement...</span>
-    </div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
   <!-- KPIs -->
@@ -97,8 +107,8 @@
     <div class="kpi k-rouge"><div class="klbl">Recette mois</div><div class="kval">{{ recette_mois|floatformat:0 }} F</div><div class="ksub">ce mois-ci</div></div>
   </div>
 
-  <!-- Action principale -->
-  <div style="margin-bottom:20px">
+  <!-- ACTION -->
+  <div style="margin-bottom:12px">
     <button class="btn-p btn-gold" style="padding:11px 20px;font-size:13px" onclick="ouvrirModalReservation()">
       <i class="fas fa-calendar-plus"></i> Nouvelle réservation
     </button>
@@ -106,20 +116,15 @@
 
   <!-- ONGLETS -->
   <div class="tabs">
-    <button class="tab active" id="tab-espaces" onclick="setTab('espaces',this)">
-      <i class="fas fa-building"></i> Espaces
-    </button>
+    <button class="tab active" id="tab-espaces" onclick="setTab('espaces',this)"><i class="fas fa-building"></i> Espaces</button>
+    <button class="tab" id="tab-calendrier" onclick="setTab('calendrier',this);initCalendrier()"><i class="fas fa-calendar-alt"></i> Calendrier</button>
     <button class="tab" id="tab-reservations" onclick="setTab('reservations',this)">
       <i class="fas fa-calendar-check"></i> Réservations
-      {% if reservations_actives.count > 0 %}
-      <span style="background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ reservations_actives.count }}</span>
-      {% endif %}
+      {% if reservations_actives.count > 0 %}<span style="background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ reservations_actives.count }}</span>{% endif %}
     </button>
     <button class="tab" id="tab-historique" onclick="setTab('historique',this)">
       <i class="fas fa-history"></i> Historique
-      {% if historique.count > 0 %}
-      <span style="background:#64748b;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ historique.count }}</span>
-      {% endif %}
+      {% if historique.count > 0 %}<span style="background:#64748b;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ historique.count }}</span>{% endif %}
     </button>
   </div>
 
@@ -135,21 +140,16 @@
     <div class="esp-grid">
       {% for espace in espaces %}
       <div class="esp-card">
-        {% if espace.image %}
-        <img src="{{ espace.image.url }}" alt="{{ espace.nom }}" class="esp-card-img" style="display:block">
-        {% else %}
-        <div class="esp-card-img">🏛️</div>
-        {% endif %}
+        {% if espace.image %}<img src="{{ espace.image.url }}" alt="{{ espace.nom }}" class="esp-card-img" style="display:block">
+        {% else %}<div class="esp-card-img">🏛️</div>{% endif %}
         <div class="esp-card-body">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-            <div class="esp-card-nom">{{ espace.nom }}</div>
+            <div style="font-size:15px;font-weight:700;color:#1a2535">{{ espace.nom }}</div>
             <span class="badge b-{{ espace.statut_reel }}">{{ espace.get_statut_reel_display }}</span>
           </div>
-          <div class="esp-card-meta">{{ espace.get_type_espace_display }} · {{ espace.capacite }} pers.{% if espace.superficie %} · {{ espace.superficie|floatformat:0 }} m²{% endif %}</div>
-          <div class="esp-card-prix">{{ espace.prix_jour|floatformat:0 }} F <span style="font-size:12px;font-weight:400;color:#7a8b9c">/ jour</span></div>
-          {% if espace.description %}
-          <div style="font-size:11px;color:#5a6b7c;margin-bottom:10px;line-height:1.5">{{ espace.description|truncatechars:80 }}</div>
-          {% endif %}
+          <div style="font-size:11px;color:#7a8b9c;margin-bottom:6px">{{ espace.get_type_espace_display }} · {{ espace.capacite }} pers.{% if espace.superficie %} · {{ espace.superficie|floatformat:0 }} m²{% endif %}</div>
+          <div style="font-size:18px;font-weight:700;color:#2563eb;margin-bottom:8px">{{ espace.prix_jour|floatformat:0 }} F <span style="font-size:11px;font-weight:400;color:#7a8b9c">/ jour</span></div>
+          {% if espace.description %}<div style="font-size:11px;color:#5a6b7c;margin-bottom:10px;line-height:1.5">{{ espace.description|truncatechars:80 }}</div>{% endif %}
           <div class="esp-equip">
             {% if espace.wifi %}<span class="equip-tag">📶 WiFi</span>{% endif %}
             {% if espace.climatisation %}<span class="equip-tag">❄️ Clim</span>{% endif %}
@@ -170,20 +170,42 @@
     {% endif %}
   </div>
 
+  <!-- ONGLET CALENDRIER -->
+  <div class="tab-content" id="content-calendrier">
+    <div class="panel">
+      <div class="ph">
+        <h3>📅 Calendrier des réservations</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="calFiltreEspace" onchange="renderCalendrier()" style="padding:5px 10px;border:1px solid #d4dce8;border-radius:7px;font-size:12px">
+            <option value="">Tous les espaces</option>
+            {% for e in espaces %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="padding:16px">
+        <div class="cal-header">
+          <button class="btn-p btn-outline" onclick="changerMois(-1)"><i class="fas fa-chevron-left"></i></button>
+          <span class="cal-title" id="calTitre">—</span>
+          <button class="btn-p btn-outline" onclick="changerMois(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend" id="calLegende"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ONGLET RÉSERVATIONS -->
   <div class="tab-content" id="content-reservations">
     <div class="panel">
-      <div class="ph">
-        <h3>📋 Réservations actives</h3>
-        <span style="font-size:11px;color:#7a8b9c">{{ reservations_actives.count }} en cours</span>
-      </div>
+      <div class="ph"><h3>📋 Réservations actives</h3><span style="font-size:11px;color:#7a8b9c">{{ reservations_actives.count }} en cours</span></div>
       {% if reservations_actives %}
       <div style="overflow-x:auto">
         <table class="tbl">
-          <thead><tr><th>Client</th><th>Espace</th><th>Événement</th><th>Dates</th><th>Total</th><th>Statut</th><th></th></tr></thead>
+          <thead><tr><th>Réf.</th><th>Client</th><th>Espace</th><th>Événement</th><th>Durée</th><th>Dates</th><th>Total</th><th>Statut</th><th></th></tr></thead>
           <tbody>
           {% for res in reservations_actives %}
           <tr>
+            <td style="font-size:10px;color:#7a8b9c;font-weight:600">{{ res.numero }}</td>
             <td>
               <div style="font-weight:600">{{ res.nom_client }}</div>
               <span class="badge b-{{ res.type_client }}">{{ res.get_type_client_display }}</span>
@@ -191,28 +213,26 @@
             </td>
             <td style="font-weight:600">{{ res.espace.nom }}</td>
             <td>{{ res.type_evenement }}</td>
-            <td style="font-size:11px;white-space:nowrap">
-              {{ res.date_debut|date:"d/m/Y" }}<br>
-              {% if res.type_duree == 'journee' %}
-              <span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>
-              {% elif res.type_duree == 'demi_matin' %}
-              <span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">🌅 8h–13h</span>
-              {% else %}
-              <span style="background:#fef3c7;color:#d97706;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600">🌇 14h–18h</span>
-              {% endif %}
+            <td>
+              {% if res.type_duree == 'journee' %}<span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">📅 Journée</span>
+              {% elif res.type_duree == 'demi_matin' %}<span style="background:#fef3c7;color:#d97706;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌅 Matin</span>
+              {% else %}<span style="background:#fde8d8;color:#c2410c;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌇 Après-midi</span>{% endif %}
             </td>
+            <td style="font-size:11px;white-space:nowrap">{{ res.date_debut|date:"d/m/Y" }}{% if res.type_duree == 'journee' %}<br><span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>{% endif %}</td>
             <td>
               <div style="font-weight:700;color:#2563eb">{{ res.montant_net|floatformat:0 }} F</div>
-              {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F remise</div>{% endif %}
-              {% if res.avance > 0 %}<div style="font-size:10px;color:#7a8b9c">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
+              {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F</div>{% endif %}
               {% if res.get_montant_restant > 0 %}<div style="font-size:10px;color:#dc2626;font-weight:600">reste: {{ res.get_montant_restant|floatformat:0 }} F</div>{% endif %}
             </td>
             <td><span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span></td>
             <td>
-              <button class="btn-p btn-success"
-                onclick="ouvrirEncaissement({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}',{{ res.montant_net|stringformat:'g' }},{{ res.avance|stringformat:'g' }},{% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %},'{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
-                <i class="fas fa-cash-register"></i> Encaisser
-              </button>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <button class="btn-p btn-success" onclick="ouvrirEncaissement({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}',{{ res.montant_net|stringformat:'g' }},{{ res.avance|stringformat:'g' }},{% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %},'{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
+                  <i class="fas fa-cash-register"></i>
+                </button>
+                <button class="btn-p btn-outline" title="Imprimer reçu" onclick="imprimerRecu({{ res.id }})"><i class="fas fa-print"></i></button>
+                <button class="btn-p btn-danger" title="Annuler" onclick="ouvrirAnnulation({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}')"><i class="fas fa-times"></i></button>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -225,102 +245,71 @@
     </div>
   </div>
 
-</div></div>
-
-<!-- ONGLET HISTORIQUE -->
+  <!-- ONGLET HISTORIQUE -->
   <div class="tab-content" id="content-historique">
-
-    <!-- Stats historique -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-      <div class="kpi k-bleu">
-        <div class="klbl">Total réservations</div>
-        <div class="kval">{{ total_reservations }}</div>
-        <div class="ksub">depuis l'ouverture</div>
-      </div>
-      <div class="kpi k-vert">
-        <div class="klbl">Terminées</div>
-        <div class="kval">{{ historique|length }}</div>
-        <div class="ksub">réservations clôturées</div>
-      </div>
-      <div class="kpi k-or">
-        <div class="klbl">Recette totale</div>
-        <div class="kval">{{ recette_totale|floatformat:0 }} F</div>
-        <div class="ksub">toutes périodes</div>
-      </div>
+      <div class="kpi k-bleu"><div class="klbl">Total réservations</div><div class="kval">{{ total_reservations }}</div><div class="ksub">depuis l'ouverture</div></div>
+      <div class="kpi k-vert"><div class="klbl">Terminées</div><div class="kval">{{ historique|length }}</div><div class="ksub">réservations clôturées</div></div>
+      <div class="kpi k-or"><div class="klbl">Recette totale</div><div class="kval">{{ recette_totale|floatformat:0 }} F</div><div class="ksub">toutes périodes</div></div>
     </div>
-
     <div class="panel">
-      <div class="ph">
-        <h3>📋 Historique des réservations</h3>
-        <span style="font-size:11px;color:#7a8b9c">{{ historique|length }} entrée(s)</span>
+      <div class="filter-bar">
+        <select id="filtreEspace" onchange="filtrerHistorique()">
+          <option value="">Tous les espaces</option>
+          {% for e in espaces %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}
+        </select>
+        <select id="filtreStatut" onchange="filtrerHistorique()">
+          <option value="">Tous statuts</option>
+          <option value="terminee">Terminée</option>
+          <option value="annulee">Annulée</option>
+        </select>
+        <input type="month" id="filtreMois" onchange="filtrerHistorique()" style="padding:6px 10px">
+        <input type="text" id="filtreClient" placeholder="Rechercher client…" oninput="filtrerHistorique()" style="padding:6px 10px;width:160px">
+        <button class="btn-p btn-outline" onclick="resetFiltres()"><i class="fas fa-times"></i> Effacer</button>
       </div>
-      {% if historique %}
       <div style="overflow-x:auto">
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>Client</th>
-              <th>Espace</th>
-              <th>Événement</th>
-              <th>Durée</th>
-              <th>Dates</th>
-              <th>Montant</th>
-              <th>Paiement</th>
-              <th>Statut</th>
-            </tr>
-          </thead>
-          <tbody>
+        <table class="tbl" id="tableHistorique">
+          <thead><tr><th>Réf.</th><th>Client</th><th>Espace</th><th>Événement</th><th>Durée</th><th>Dates</th><th>Montant</th><th>Paiement</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="bodyHistorique">
           {% for res in historique %}
-          <tr>
+          <tr data-espace="{{ res.espace.id }}" data-statut="{{ res.statut }}" data-mois="{{ res.date_debut|date:'Y-m' }}" data-client="{{ res.nom_client|lower }}">
+            <td style="font-size:10px;color:#7a8b9c;font-weight:600">{{ res.numero }}</td>
             <td>
               <div style="font-weight:600">{{ res.nom_client }}</div>
               <span class="badge b-{{ res.type_client }}">{{ res.get_type_client_display }}</span>
-              {% if res.reservation_hotel %}<div style="font-size:10px;color:#7a8b9c">Ch. {{ res.reservation_hotel.chambre.numero }}</div>{% endif %}
             </td>
             <td style="font-weight:600">{{ res.espace.nom }}</td>
             <td style="font-size:12px">{{ res.type_evenement }}</td>
-            <td style="font-size:11px;white-space:nowrap">
-              {% if res.type_duree == 'journee' %}
-              <span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">📅 Journée</span>
-              {% elif res.type_duree == 'demi_matin' %}
-              <span style="background:#fef3c7;color:#d97706;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌅 Matin</span>
-              {% else %}
-              <span style="background:#fde8d8;color:#c2410c;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌇 Après-midi</span>
-              {% endif %}
+            <td>
+              {% if res.type_duree == 'journee' %}<span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">📅 Journée</span>
+              {% elif res.type_duree == 'demi_matin' %}<span style="background:#fef3c7;color:#d97706;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌅 Matin</span>
+              {% else %}<span style="background:#fde8d8;color:#c2410c;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌇 Après-midi</span>{% endif %}
             </td>
-            <td style="font-size:11px;white-space:nowrap">
-              {{ res.date_debut|date:"d/m/Y" }}
-              {% if res.type_duree == 'journee' %}<br><span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>{% endif %}
-            </td>
+            <td style="font-size:11px;white-space:nowrap">{{ res.date_debut|date:"d/m/Y" }}{% if res.type_duree == 'journee' %}<br><span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>{% endif %}</td>
             <td>
               <div style="font-weight:700;color:#1a2535">{{ res.montant_net|floatformat:0 }} F</div>
               {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F remise</div>{% endif %}
-              {% if res.avance > 0 %}<div style="font-size:10px;color:#7a8b9c">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
             </td>
             <td style="font-size:11px">
               {% if res.mode_paiement == 'especes' %}💵 Espèces
               {% elif res.mode_paiement == 'mobile_money' %}📱 Mobile
               {% elif res.mode_paiement == 'carte_bancaire' %}💳 Carte
               {% elif res.mode_paiement == 'chambre' %}🏨 Chambre
-              {% else %}<span style="color:#7a8b9c">—</span>
-              {% endif %}
+              {% else %}<span style="color:#7a8b9c">—</span>{% endif %}
             </td>
-            <td>
-              <span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span>
-            </td>
+            <td><span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span></td>
+            <td><button class="btn-p btn-outline" title="Imprimer reçu" onclick="imprimerRecu({{ res.id }})"><i class="fas fa-print"></i></button></td>
           </tr>
+          {% empty %}
+          <tr><td colspan="10" style="text-align:center;padding:30px;color:#7a8b9c">Aucune réservation dans l'historique</td></tr>
           {% endfor %}
           </tbody>
         </table>
       </div>
-      {% else %}
-      <div style="padding:40px;text-align:center;color:#7a8b9c;font-size:13px">
-        <div style="font-size:36px;margin-bottom:10px">📋</div>
-        Aucune réservation dans l'historique
-      </div>
-      {% endif %}
     </div>
   </div>
+
+</div></div>
 
 <!-- MODAL RÉSERVATION -->
 <div class="modal-ov" id="modalReservation">
@@ -330,29 +319,19 @@
       <button class="close-btn" onclick="fermerModal('modalReservation')">×</button>
     </div>
     <div class="type-pills">
-      <div class="type-pill particulier active" onclick="setTypeClient('particulier',this)">
-        <span class="pill-icon">👤</span><span class="pill-label">Particulier / Entreprise</span>
-      </div>
-      <div class="type-pill heberge" onclick="setTypeClient('heberge',this)">
-        <span class="pill-icon">🏨</span><span class="pill-label">Résident hôtel</span>
-      </div>
+      <div class="type-pill particulier active" onclick="setTypeClient('particulier',this)"><span class="pill-icon">👤</span><span class="pill-label">Particulier / Entreprise</span></div>
+      <div class="type-pill heberge" onclick="setTypeClient('heberge',this)"><span class="pill-icon">🏨</span><span class="pill-label">Résident hôtel</span></div>
     </div>
     <input type="hidden" id="resTypeClient" value="particulier">
     <input type="hidden" id="resReservationHotelId" value="">
     <div id="rowResident" style="display:none;margin-bottom:14px">
-      <div class="form-row">
-        <label>Résident *</label>
-        <select id="selectResident" onchange="selectionnerResident(this)" style="width:100%;padding:9px 12px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535">
-          <option value="">— Sélectionner un résident —</option>
-          {% for r in residents %}
-          <option value="{{ r.id }}" data-nom="{{ r.client.nom_complet }}">
-            Ch. {{ r.chambre.numero }} — {{ r.client.nom_complet }} (départ {{ r.date_depart|date:"d/m/Y" }})
-          </option>
-          {% empty %}
-          <option disabled>Aucun résident en cours</option>
-          {% endfor %}
-        </select>
-      </div>
+      <label style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Chambre du résident</label>
+      <select id="selectResident" onchange="selectionnerResident(this)" style="width:100%;padding:9px 12px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535">
+        <option value="">— Sélectionner un résident —</option>
+        {% for r in residents %}
+        <option value="{{ r.id }}" data-nom="{{ r.client.nom_complet }}">Ch. {{ r.chambre.numero }} — {{ r.client.nom_complet }} (départ {{ r.date_depart|date:"d/m/Y" }})</option>
+        {% empty %}<option disabled>Aucun résident en cours</option>{% endfor %}
+      </select>
     </div>
     <div class="form-row">
       <label>Espace *</label>
@@ -360,9 +339,8 @@
         <option value="">— Choisir un espace —</option>
         {% for e in espaces %}
         <option value="{{ e.id }}" data-prix="{{ e.prix_jour|stringformat:'g' }}" data-prixdemi="{{ e.prix_demi_journee|stringformat:'g' }}" data-capacite="{{ e.capacite }}">
-          {{ e.nom }} — {{ e.prix_jour|floatformat:0 }} F/j · {% if e.prix_demi_journee %}{{ e.prix_demi_journee|floatformat:0 }} F/½j{% else %}demi: {{ e.prix_jour|floatformat:0 }}×65%{% endif %} ({{ e.capacite }} pers.)
-        </option>
-        {% endfor %}
+          {{ e.nom }} — {{ e.prix_jour|floatformat:0 }} F/j ({{ e.capacite }} pers.)
+        </option>{% endfor %}
       </select>
     </div>
     <div id="rowClientInfo">
@@ -372,30 +350,22 @@
       </div>
     </div>
     <div class="form-row"><label>Type d'événement *</label><input type="text" id="resTypeEvenement" placeholder="Conférence, mariage, anniversaire…"></div>
-
     <div class="form-row">
       <label>Durée *</label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
         <div class="duree-pill active" data-duree="journee" onclick="setDuree('journee',this)" style="padding:10px;border-radius:9px;border:2px solid #2563eb;background:#eff6ff;cursor:pointer;text-align:center;transition:all .15s">
-          <div style="font-size:18px">📅</div>
-          <div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Journée</div>
-          <div style="font-size:10px;color:#7a8b9c">8h–18h</div>
+          <div style="font-size:18px">📅</div><div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Journée</div><div style="font-size:10px;color:#7a8b9c">8h–18h</div>
         </div>
         <div class="duree-pill" data-duree="demi_matin" onclick="setDuree('demi_matin',this)" style="padding:10px;border-radius:9px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s">
-          <div style="font-size:18px">🌅</div>
-          <div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Demi-matin</div>
-          <div style="font-size:10px;color:#7a8b9c">8h–13h</div>
+          <div style="font-size:18px">🌅</div><div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Demi-matin</div><div style="font-size:10px;color:#7a8b9c">8h–13h</div>
         </div>
         <div class="duree-pill" data-duree="demi_aprem" onclick="setDuree('demi_aprem',this)" style="padding:10px;border-radius:9px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s">
-          <div style="font-size:18px">🌇</div>
-          <div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Demi-après-midi</div>
-          <div style="font-size:10px;color:#7a8b9c">14h–18h</div>
+          <div style="font-size:18px">🌇</div><div style="font-size:11px;font-weight:700;color:#1a2535;margin-top:3px">Demi-après-midi</div><div style="font-size:10px;color:#7a8b9c">14h–18h</div>
         </div>
       </div>
       <input type="hidden" id="resTypeDuree" value="journee">
     </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="rowDates">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label>Date début *</label><input type="date" id="resDateDebut" onchange="calculerPrix()"></div>
       <div class="form-row" id="rowDateFin"><label>Date fin *</label><input type="date" id="resDateFin" onchange="calculerPrix()"></div>
     </div>
@@ -412,9 +382,7 @@
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalReservation')">Annuler</button>
-      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerReservation()">
-        <i class="fas fa-check"></i> Confirmer
-      </button>
+      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerReservation()"><i class="fas fa-check"></i> Confirmer</button>
     </div>
   </div>
 </div>
@@ -441,10 +409,7 @@
       </select>
     </div>
     <div id="encRecuRow">
-      <div class="form-row">
-        <label>Montant reçu (FCFA)</label>
-        <input type="number" id="encMontantRecu" placeholder="Saisir montant" oninput="calcRendu()">
-      </div>
+      <div class="form-row"><label>Montant reçu (FCFA)</label><input type="number" id="encMontantRecu" placeholder="Saisir montant" oninput="calcRendu()"></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
         <button onclick="encSetMontant(1000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">1 000</button>
         <button onclick="encSetMontant(2000)" style="padding:5px 11px;border-radius:7px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:600;cursor:pointer">2 000</button>
@@ -459,9 +424,41 @@
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalEncaissement')">Annuler</button>
-      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" id="btnEncaisser" onclick="validerEncaissement()">
-        <i class="fas fa-check"></i> Confirmer &amp; Imprimer
-      </button>
+      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" id="btnEncaisser" onclick="validerEncaissement()"><i class="fas fa-check"></i> Confirmer &amp; Imprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ANNULATION -->
+<div class="modal-ov" id="modalAnnulation">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-head">
+      <h3><i class="fas fa-times-circle" style="color:#dc2626;margin-right:8px"></i>Annuler la réservation</h3>
+      <button class="close-btn" onclick="fermerModal('modalAnnulation')">×</button>
+    </div>
+    <input type="hidden" id="annulResId">
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px">
+      <div style="font-weight:700;color:#dc2626;margin-bottom:4px">⚠️ Confirmation d'annulation</div>
+      <div id="annulInfo" style="color:#7a8b9c"></div>
+    </div>
+    <div class="form-row">
+      <label>Motif d'annulation *</label>
+      <select id="annulMotifSelect" onchange="toggleMotifAutre(this)">
+        <option value="">— Sélectionner un motif —</option>
+        <option value="Annulation client">Annulation client</option>
+        <option value="Cas de force majeure">Cas de force majeure</option>
+        <option value="Problème technique">Problème technique</option>
+        <option value="Double réservation">Double réservation</option>
+        <option value="autre">Autre motif…</option>
+      </select>
+    </div>
+    <div class="form-row" id="rowMotifAutre" style="display:none">
+      <label>Préciser le motif</label>
+      <textarea id="annulMotifTexte" rows="2" placeholder="Décrivez le motif d'annulation…" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalAnnulation')">Retour</button>
+      <button class="btn-p btn-danger" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerAnnulation()"><i class="fas fa-times"></i> Confirmer l'annulation</button>
     </div>
   </div>
 </div>
@@ -476,18 +473,140 @@ function fmt(n){return parseFloat(n).toLocaleString('fr-FR')+' F';}
 function toast(msg,type='info'){
   const colors={success:'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0',error:'background:#fee2e2;color:#dc2626;border:1px solid #fecaca',info:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
   const t=document.createElement('div');
-  t.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500`;
-  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+  t.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.15)`;
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
 
-// Onglets
-function setTab(name, el) {
+// ── Onglets ──
+function setTab(name,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('content-'+name).classList.add('active');
 }
 
+// ── Filtres historique ──
+function filtrerHistorique(){
+  const espace=document.getElementById('filtreEspace').value;
+  const statut=document.getElementById('filtreStatut').value;
+  const mois=document.getElementById('filtreMois').value;
+  const client=document.getElementById('filtreClient').value.toLowerCase();
+  document.querySelectorAll('#bodyHistorique tr[data-espace]').forEach(tr=>{
+    const ok=((!espace||tr.dataset.espace===espace)&&(!statut||tr.dataset.statut===statut)&&(!mois||tr.dataset.mois===mois)&&(!client||tr.dataset.client.includes(client)));
+    tr.style.display=ok?'':'none';
+  });
+}
+function resetFiltres(){
+  ['filtreEspace','filtreStatut','filtreMois'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('filtreClient').value='';
+  filtrerHistorique();
+}
+
+// ── Annulation ──
+function ouvrirAnnulation(resId,nomClient,espaceNom){
+  document.getElementById('annulResId').value=resId;
+  document.getElementById('annulInfo').textContent=`${nomClient} — ${espaceNom}`;
+  document.getElementById('annulMotifSelect').value='';
+  document.getElementById('annulMotifTexte').value='';
+  document.getElementById('rowMotifAutre').style.display='none';
+  ouvrirModal('modalAnnulation');
+}
+function toggleMotifAutre(sel){document.getElementById('rowMotifAutre').style.display=sel.value==='autre'?'':'none';}
+async function confirmerAnnulation(){
+  const resId=document.getElementById('annulResId').value;
+  const sel=document.getElementById('annulMotifSelect').value;
+  const texte=document.getElementById('annulMotifTexte').value.trim();
+  if(!sel){toast('❌ Veuillez sélectionner un motif','error');return;}
+  const motif=sel==='autre'?(texte||'Autre'):sel;
+  try{
+    const r=await fetch(`/espaces-evenementiels/api/annuler/${resId}/`,{
+      method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({motif})
+    });
+    const d=await r.json();
+    if(d.success){fermerModal('modalAnnulation');toast('✅ Réservation annulée','success');setTimeout(()=>location.reload(),800);}
+    else toast('❌ '+(d.error||'Erreur'),'error');
+  }catch(e){toast('❌ Erreur réseau','error');}
+}
+
+// ── Imprimer reçu ──
+function imprimerRecu(resId){
+  const w=window.open(`/espaces-evenementiels/recu/${resId}/`,'_blank','width=500,height=700');
+  if(w)w.focus();
+}
+
+// ── Calendrier ──
+let calDate=new Date();
+let calEvents=[];
+let calInitialized=false;
+
+const MOIS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const JOURS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const COULEURS=['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777'];
+const ESPACES_DATA = [{% for e in espaces %}{'id':{{ e.id }},'nom':'{{ e.nom|escapejs }}'},{% endfor %}];
+
+async function initCalendrier(){
+  if(calInitialized)return;
+  calInitialized=true;
+  await chargerEvenements();
+  renderCalendrier();
+}
+
+async function chargerEvenements(){
+  try{
+    const r=await fetch('/espaces-evenementiels/api/calendrier/');
+    const d=await r.json();
+    calEvents=d.events||[];
+  }catch(e){calEvents=[];}
+}
+
+function changerMois(delta){
+  calDate=new Date(calDate.getFullYear(),calDate.getMonth()+delta,1);
+  renderCalendrier();
+}
+
+function renderCalendrier(){
+  const filtre=document.getElementById('calFiltreEspace').value;
+  const events=filtre?calEvents.filter(e=>String(e.espace_id)===filtre):calEvents;
+  const annee=calDate.getFullYear(),mois=calDate.getMonth();
+  document.getElementById('calTitre').textContent=`${MOIS[mois]} ${annee}`;
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  JOURS.forEach(j=>{const d=document.createElement('div');d.className='cal-day-name';d.textContent=j;grid.appendChild(d);});
+  const premier=new Date(annee,mois,1).getDay();
+  const nbJours=new Date(annee,mois+1,0).getDate();
+  const aujourd=new Date();
+  for(let i=0;i<premier;i++){const d=document.createElement('div');d.className='cal-day other-month';grid.appendChild(d);}
+  for(let j=1;j<=nbJours;j++){
+    const d=document.createElement('div');
+    d.className='cal-day'+(j===aujourd.getDate()&&mois===aujourd.getMonth()&&annee===aujourd.getFullYear()?' today':'');
+    const num=document.createElement('div');num.className='cal-day-num';num.textContent=j;d.appendChild(num);
+    const dateStr=`${annee}-${String(mois+1).padStart(2,'0')}-${String(j).padStart(2,'0')}`;
+    const evDuJour=events.filter(e=>{
+      const ds=e.start,df=e.end||e.start;
+      return dateStr>=ds&&dateStr<=df;
+    });
+    evDuJour.forEach(ev=>{
+      const el=document.createElement('div');
+      el.className='cal-event';
+      el.style.background=ev.color||'#2563eb';
+      el.title=`${ev.title} — ${ev.espace}\n${ev.evenement}\n${ev.duree_label}`;
+      el.textContent=ev.title.split(' ')[0];
+      d.appendChild(el);
+    });
+    grid.appendChild(d);
+  }
+  // Légende espaces
+  const leg=document.getElementById('calLegende');
+  leg.innerHTML='';
+  ESPACES_DATA.forEach((e,i)=>{
+    const item=document.createElement('div');item.className='cal-legend-item';
+    item.innerHTML=`<div class="cal-legend-dot" style="background:${COULEURS[i%COULEURS.length]}"></div>${e.nom}`;
+    leg.appendChild(item);
+  });
+}
+
+// ── Réservation ──
 function ouvrirModalReservation(espaceId=null,resHotelId=null){
   ['resNomClient','resTelephone','resTypeEvenement','resDateDebut','resDateFin','resCommentaire'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('resNbPersonnes').value=1;
@@ -495,13 +614,17 @@ function ouvrirModalReservation(espaceId=null,resHotelId=null){
   document.getElementById('resAvance').value=0;
   document.getElementById('prixEstimate').style.display='none';
   document.getElementById('resReservationHotelId').value='';
-  const selRes = document.getElementById('selectResident');
-  if(selRes) selRes.selectedIndex=0;
+  document.querySelectorAll('.res-card').forEach(c=>c.classList.remove('selected'));
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.duree-pill').forEach(p=>{p.style.borderColor='#d4dce8';p.style.background='white';});
+  document.querySelector('.duree-pill[data-duree="journee"]').style.borderColor='#2563eb';
+  document.querySelector('.duree-pill[data-duree="journee"]').style.background='#eff6ff';
+  document.getElementById('resTypeDuree').value='journee';
+  document.getElementById('rowDateFin').style.display='';
   if(resHotelId){
     setTypeClient('heberge',document.querySelector('.type-pill.heberge'));
-    const card=document.querySelector(`.res-card[data-res-id="${resHotelId}"]`);
-    if(card)selectionnerResident(card);
+    const sel=document.getElementById('selectResident');
+    for(let i=0;i<sel.options.length;i++){if(sel.options[i].value==resHotelId){sel.selectedIndex=i;selectionnerResident(sel);break;}}
   } else {
     document.querySelector('.type-pill.particulier').classList.add('active');
     document.getElementById('rowResident').style.display='none';
@@ -511,7 +634,6 @@ function ouvrirModalReservation(espaceId=null,resHotelId=null){
   else document.getElementById('resEspaceId').value='';
   ouvrirModal('modalReservation');
 }
-
 function setTypeClient(type,el){
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
@@ -522,93 +644,82 @@ function setTypeClient(type,el){
   document.getElementById('resReservationHotelId').value='';
   document.getElementById('resNomClient').value='';
 }
-
 function selectionnerResident(sel){
-  const opt = sel.options[sel.selectedIndex];
-  document.getElementById('resReservationHotelId').value = opt.value || '';
-  document.getElementById('resNomClient').value = opt.dataset.nom || '';
+  const opt=sel.options[sel.selectedIndex];
+  document.getElementById('resReservationHotelId').value=opt.value||'';
+  document.getElementById('resNomClient').value=opt.dataset.nom||'';
 }
-
-function setDuree(type, el) {
-  document.querySelectorAll('.duree-pill').forEach(p => {
-    p.style.borderColor = '#d4dce8'; p.style.background = 'white';
-  });
-  el.style.borderColor = '#2563eb'; el.style.background = '#eff6ff';
-  document.getElementById('resTypeDuree').value = type;
-  // Masquer date fin pour demi-journée
-  const rowFin = document.getElementById('rowDateFin');
-  rowFin.style.display = type === 'journee' ? '' : 'none';
+function setDuree(type,el){
+  document.querySelectorAll('.duree-pill').forEach(p=>{p.style.borderColor='#d4dce8';p.style.background='white';});
+  el.style.borderColor='#2563eb';el.style.background='#eff6ff';
+  document.getElementById('resTypeDuree').value=type;
+  document.getElementById('rowDateFin').style.display=type==='journee'?'':'none';
   calculerPrix();
 }
-
 function calculerPrix(){
   const sel=document.getElementById('resEspaceId');
   const opt=sel.options[sel.selectedIndex];
   const prixJ=parseFloat(opt?.dataset?.prix||0);
-  const prixDemi=parseFloat(opt?.dataset?.prixdemi||0) || prixJ*0.65;
+  const prixDemi=parseFloat(opt?.dataset?.prixdemi||0)||prixJ*0.65;
   const debut=document.getElementById('resDateDebut').value;
   const fin=document.getElementById('resDateFin').value;
   const type=document.getElementById('resTypeDuree').value;
   const remise=parseFloat(document.getElementById('resRemise').value)||0;
   if(!prixJ||!debut){document.getElementById('prixEstimate').style.display='none';return;}
-
-  let total=0, label='';
+  let total=0,label='';
   if(type==='journee'){
     if(!fin){document.getElementById('prixEstimate').style.display='none';return;}
-    const dt1=new Date(debut),dt2=new Date(fin);
-    if(dt2<dt1){document.getElementById('prixEstimate').style.display='none';return;}
-    const jours=Math.max(1,Math.ceil((dt2-dt1)/86400000)+1);
-    total=jours*prixJ;
-    label=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}`;
+    const jours=Math.max(1,Math.ceil((new Date(fin)-new Date(debut))/86400000)+1);
+    total=jours*prixJ;label=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}`;
   } else {
-    total=prixDemi;
-    label=type==='demi_matin'?'Demi-journée matin (8h–13h)':'Demi-journée après-midi (14h–18h)';
+    total=prixDemi;label=type==='demi_matin'?'Demi-journée matin (8h–13h)':'Demi-journée après-midi (14h–18h)';
   }
   const net=total-remise;
   document.getElementById('prixEstimate').style.display='';
   document.getElementById('prixEstimateVal').textContent=fmt(net);
   document.getElementById('prixEstimateSub').textContent=label+(remise>0?' — remise '+fmt(remise):'');
 }
-
 async function confirmerReservation(){
   const espaceId=document.getElementById('resEspaceId').value;
   const nomClient=document.getElementById('resNomClient').value.trim();
   const typeClient=document.getElementById('resTypeClient').value;
   const telephone=document.getElementById('resTelephone').value.trim();
   const typeEvenement=document.getElementById('resTypeEvenement').value.trim();
+  const typeDuree=document.getElementById('resTypeDuree').value;
   const dateDebut=document.getElementById('resDateDebut').value;
   const dateFin=document.getElementById('resDateFin').value;
-  const typeDuree=document.getElementById('resTypeDuree').value;
-  const nbPersonnes=document.getElementById('resNbPersonnes').value;
-  const remise=document.getElementById('resRemise').value||0;
-  const avance=document.getElementById('resAvance').value||0;
-  const commentaire=document.getElementById('resCommentaire').value;
   const resHotelId=document.getElementById('resReservationHotelId').value;
   if(!espaceId){toast('❌ Veuillez sélectionner un espace','error');return;}
   if(!nomClient){toast('❌ Nom du client requis','error');return;}
   if(!typeEvenement){toast("❌ Type d'événement requis",'error');return;}
   if(!dateDebut){toast('❌ Date de début requise','error');return;}
-  // Pour journée : date fin obligatoire. Pour demi-journée : date fin calculée automatiquement
-  if(typeDuree==='journee'&&!dateFin){toast('❌ Date de fin requise pour une journée','error');return;}
+  if(typeDuree==='journee'&&!dateFin){toast('❌ Date de fin requise','error');return;}
   try{
     const r=await fetch("{% url 'espaces_evenementiels:api_reserver' %}",{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,
-        telephone,type_evenement:typeEvenement,
-        type_duree:document.getElementById('resTypeDuree').value,
-        date_debut:dateDebut+'T00:00:00',date_fin:dateFin+'T23:59:59',
-        nombre_personnes:nbPersonnes,remise,avance,commentaire,
+      body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,telephone,
+        type_evenement:typeEvenement,type_duree:typeDuree,
+        date_debut:dateDebut+'T00:00:00',date_fin:dateFin?dateFin+'T23:59:59':dateDebut+'T23:59:59',
+        nombre_personnes:document.getElementById('resNbPersonnes').value,
+        remise:document.getElementById('resRemise').value||0,
+        avance:document.getElementById('resAvance').value||0,
+        commentaire:document.getElementById('resCommentaire').value,
         reservation_hotel_id:resHotelId||null})
     });
     const d=await r.json();
     if(d.success){
       fermerModal('modalReservation');
       toast('✅ '+d.message,'success');
-      setTimeout(()=>location.reload(),800);
+      // Imprimer reçu automatiquement
+      if(d.reservation_id){
+        setTimeout(()=>window.open(`/espaces-evenementiels/recu/${d.reservation_id}/`,'_blank','width=500,height=700'),500);
+      }
+      setTimeout(()=>location.reload(),1200);
     } else toast('❌ '+d.error,'error');
   }catch(e){toast('❌ Erreur réseau','error');}
 }
 
+// ── Encaissement ──
 function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotelId,chambreNum){
   const restant=montantNet-avance;_encTotal=restant;
   document.getElementById('encResId').value=resId;
@@ -618,17 +729,11 @@ function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotel
   document.getElementById('encRendu').style.display='none';
   const sel=document.getElementById('encMode');
   const existOpt=document.getElementById('encOptChambre');
-  if(resHotelId&&!existOpt){
-    const opt=document.createElement('option');
-    opt.value='chambre';opt.id='encOptChambre';
-    opt.textContent='🏨 Mettre en chambre (Ch. '+chambreNum+')';
-    sel.appendChild(opt);
-  } else if(!resHotelId&&existOpt){existOpt.remove();}
-  sel.value=resHotelId?'chambre':'especes';
-  encModeChange(sel);
+  if(resHotelId&&!existOpt){const opt=document.createElement('option');opt.value='chambre';opt.id='encOptChambre';opt.textContent='🏨 Mettre en chambre (Ch. '+chambreNum+')';sel.appendChild(opt);}
+  else if(!resHotelId&&existOpt)existOpt.remove();
+  sel.value=resHotelId?'chambre':'especes';encModeChange(sel);
   ouvrirModal('modalEncaissement');
 }
-
 function encModeChange(sel){document.getElementById('encRecuRow').style.display=sel.value==='chambre'?'none':'';}
 function encSetMontant(v){document.getElementById('encMontantRecu').value=v;calcRendu();}
 function encSetExact(){document.getElementById('encMontantRecu').value=_encTotal;calcRendu();}
@@ -655,20 +760,12 @@ async function validerEncaissement(){
     const d=await r.json();
     if(d.success){
       fermerModal('modalEncaissement');
-      if(surChambre){
-        const params=new URLSearchParams({module:'Espace Location',chambre:d.chambre_nom,lignes:JSON.stringify(d.lignes),total:d.total});
-        const w=window.open('/facturation/receipt/depot/?'+params,'_blank','width=380,height=580');
-        if(w)w.focus();
-      } else if(d.ticket_html){
-        const w=window.open('','_blank','width=420,height=720');
-        if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}
-      }
-      toast('✅ Encaissement effectué','success');
-      setTimeout(()=>location.reload(),800);
+      if(surChambre){const params=new URLSearchParams({module:'Espace Location',chambre:d.chambre_nom,lignes:JSON.stringify(d.lignes),total:d.total});const w=window.open('/facturation/receipt/depot/?'+params,'_blank','width=380,height=580');if(w)w.focus();}
+      else if(d.ticket_html){const w=window.open('','_blank','width=420,height=720');if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}}
+      toast('✅ Encaissement effectué','success');setTimeout(()=>location.reload(),800);
     } else toast('❌ '+(d.error||'Erreur'),'error');
   }catch(e){toast('❌ Erreur réseau','error');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';}
 }
 </script>
 {% endblock %}
-{# v2 #}
