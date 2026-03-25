@@ -186,43 +186,63 @@
 </div>
 
 <script>
-// Parser le contenu HTML stocké en base pour reconstruire le tableau articles
+// Parser le contenu du ticket - supporte HTML (piscine/restaurant/espace) et texte (cave)
 (function() {
     const tbody = document.getElementById('lignesBody');
     if (!tbody) return;
 
-    // Le contenu est du HTML avec des div.row contenant item-name et item-price
-    const contenu = `{{ ticket.contenu|safe }}`;
-    const parser  = new DOMParser();
-    const doc     = parser.parseFromString('<div>' + contenu + '</div>', 'text/html');
-    const rows    = doc.querySelectorAll('.row');
-
+    const contenu = `{{ ticket.contenu|escapejs }}`;
     let html = '';
-    rows.forEach(row => {
-        const nameEl  = row.querySelector('.item-name');
-        const priceEl = row.querySelector('.item-price');
-        if (!nameEl || !priceEl) return;
 
-        const fullName = nameEl.textContent.trim();
-        const montant  = priceEl.textContent.trim();
-
-        // Extraire qty du nom : "Article x2" → nom="Article", qty=2
-        const qtyMatch = fullName.match(/^(.+?)\s+x(\d+)$/);
-        const nom = qtyMatch ? qtyMatch[1] : fullName;
-        const qty = qtyMatch ? qtyMatch[2] : '1';
-
-        html += `<tr>
-            <td style="max-width:130px;word-wrap:break-word;">${nom}</td>
-            <td style="text-align:center;">${qty}</td>
-            <td style="text-align:right;font-weight:bold;">${montant}</td>
-        </tr>`;
-    });
+    // Format HTML : div.row avec item-name et item-price
+    if (contenu.includes('item-name')) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString('<div>' + contenu + '</div>', 'text/html');
+        doc.querySelectorAll('.row').forEach(row => {
+            const nameEl  = row.querySelector('.item-name');
+            const priceEl = row.querySelector('.item-price');
+            if (!nameEl || !priceEl) return;
+            const fullName = nameEl.textContent.trim();
+            const montant  = priceEl.textContent.trim();
+            const qtyMatch = fullName.match(/^(.+?)\s+x(\d+)$/);
+            const nom = qtyMatch ? qtyMatch[1] : fullName;
+            const qty = qtyMatch ? qtyMatch[2] : '1';
+            html += `<tr>
+                <td style="max-width:140px;word-wrap:break-word;">${nom}</td>
+                <td style="text-align:center;">${qty}</td>
+                <td style="text-align:right;font-weight:bold;">${montant}</td>
+            </tr>`;
+        });
+    }
+    // Format texte brut Cave : "  Article x1  1,000 F"
+    else {
+        const lines = contenu.split('\n');
+        lines.forEach(line => {
+            line = line.trim();
+            if (!line || line.startsWith('=') || line.startsWith('TOTAL') ||
+                line.startsWith('Reglement') || line.startsWith('Recu') ||
+                line.startsWith('Rendu') || line.startsWith('COMPLEXE') ||
+                line.startsWith('Ticket') || line.startsWith('Date') ||
+                line.startsWith('Espace') || line.startsWith('Ref') ||
+                line.startsWith('<span')) return;
+            // Pattern: "Nom article x2  1,500 F"
+            const match = line.match(/^(.+?)\s+x(\d+)\s+([\d,\s]+)\s*F\s*$/);
+            if (match) {
+                html += `<tr>
+                    <td style="max-width:140px;word-wrap:break-word;">${match[1].trim()}</td>
+                    <td style="text-align:center;">${match[2]}</td>
+                    <td style="text-align:right;font-weight:bold;">${match[3].trim()} F</td>
+                </tr>`;
+            }
+        });
+    }
 
     if (html) {
         tbody.innerHTML = html;
     } else {
-        // Fallback si parsing échoue
-        tbody.innerHTML = `<tr><td colspan="3" style="font-size:10px;white-space:pre-wrap;">${contenu.replace(/<[^>]+>/g,'').trim()}</td></tr>`;
+        // Fallback minimal
+        const texte = contenu.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+        tbody.innerHTML = `<tr><td colspan="3" style="font-size:10px;white-space:pre-wrap;word-break:break-word">${texte.substring(0,300)}</td></tr>`;
     }
 })();
 

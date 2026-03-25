@@ -985,7 +985,9 @@ def api_vente_create(request):
             f"  {l['nom']} x{l['qty']}  {int(Decimal(str(l['prix'])) * int(l['qty'])):,} F"
             for l in lignes
         )
+        serveur_cave = request.user.get_full_name() or request.user.username
         contenu = (
+            f'<span class="ticket-meta" data-serveur="{serveur_cave}"></span>'
             f"COMPLEXE BEHANIAN - Cave\n"
             f"Ticket  : {ticket_nom}\n"
             f"Date    : {date_str}\n"

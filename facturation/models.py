@@ -368,6 +368,7 @@ class Ticket(models.Model):
         ('caisse', 'Caisse'),
         ('piscine', 'Piscine'),
         ('cave', 'Cave'),
+        ('espace', 'Espaces Événementiels'),
         ('autre', 'Autre'),
     ]
     
