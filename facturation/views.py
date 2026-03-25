@@ -487,7 +487,6 @@ def ticket_detail(request, pk):
 @require_module_access('facturation')
 def ticket_reprint(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
-    # Marquer comme duplicata
     ticket.mark_as_duplicata()
     return redirect('facturation:ticket_print_thermal', pk=ticket.pk)
 
@@ -495,7 +494,14 @@ def ticket_reprint(request, pk):
 def ticket_print_thermal(request, pk):
     """Afficher le ticket en format thermique (HTML)"""
     ticket = get_object_or_404(Ticket, pk=pk)
-    return render(request, 'facturation/ticket_print_thermal.html', {'ticket': ticket})
+    # Récupérer le nom du serveur depuis cree_par
+    serveur = ''
+    if ticket.cree_par:
+        serveur = ticket.cree_par.get_full_name() or ticket.cree_par.username
+    return render(request, 'facturation/ticket_print_thermal.html', {
+        'ticket': ticket,
+        'serveur': serveur,
+    })
 
 @require_module_access('facturation')
 def ticket_pdf(request, pk):

@@ -205,7 +205,6 @@
                 <td>
                   <div style="display:flex;gap:4px">
                     <a href="{% url 'facturation:ticket_detail' t.pk %}" class="btn-p outline" title="Détail"><i class="fas fa-eye"></i></a>
-                    <a href="{% url 'facturation:ticket_pdf' t.pk %}" class="btn-p outline" title="PDF" target="_blank"><i class="fas fa-file-pdf"></i></a>
                     <button class="btn-p primary" title="Convertir en facture" onclick="convertirEnFacture({{ t.pk }},'{{ t.numero }}',{{ t.montant_total|stringformat:'g' }})"><i class="fas fa-file-invoice"></i></button>
                   </div>
                 </td>
@@ -304,8 +303,6 @@
             <td>
               <div style="display:flex;gap:4px;flex-wrap:wrap">
                 <a href="{% url 'facturation:ticket_detail' t.pk %}" class="btn-p outline" title="Détail"><i class="fas fa-eye"></i></a>
-                <a href="{% url 'facturation:ticket_pdf' t.pk %}" class="btn-p outline" title="PDF" target="_blank"><i class="fas fa-file-pdf"></i></a>
-                <a href="{% url 'facturation:ticket_print_thermal' t.pk %}" class="btn-p outline" title="Thermique" target="_blank"><i class="fas fa-print"></i></a>
                 <button class="btn-p primary" title="→ Facture" onclick="convertirEnFacture({{ t.pk }},'{{ t.numero }}',{{ t.montant_total|stringformat:'g' }})"><i class="fas fa-file-invoice"></i></button>
                 <a href="{% url 'facturation:create_avoir_from_ticket' t.pk %}" class="btn-p danger" title="→ Avoir"><i class="fas fa-undo"></i></a>
               </div>

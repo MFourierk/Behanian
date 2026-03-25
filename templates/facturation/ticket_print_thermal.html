@@ -124,12 +124,7 @@
         <span>{{ receptionniste|default:ticket.cree_par.get_full_name|default:ticket.cree_par.username }}</span>
     </div>
     {% endif %}
-    {% if ticket.serveur %}
-    <div class="meta-row">
-        <span class="meta-label">Serveur :</span>
-        <span>{{ ticket.serveur }}</span>
-    </div>
-    {% elif serveur %}
+    {% if serveur %}
     <div class="meta-row">
         <span class="meta-label">Serveur :</span>
         <span>{{ serveur }}</span>
