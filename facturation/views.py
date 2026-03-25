@@ -48,18 +48,68 @@ def get_logo_path():
 @require_module_access('facturation')
 def index(request):
     """Vue principale du module facturation"""
-    recent_factures = Facture.objects.all()[:5]
-    recent_proformas = Proforma.objects.all()[:5]
-    recent_avoirs = Avoir.objects.all()[:5]
+    from django.utils import timezone
+    from django.db.models import Sum, Count, Q
+    today = timezone.now().date()
+
+    # KPIs tickets
+    tickets_jour = Ticket.objects.filter(date_creation__date=today)
+    ca_jour = tickets_jour.aggregate(s=Sum('montant_total'))['s'] or 0
+    tickets_mois = Ticket.objects.filter(
+        date_creation__month=today.month, date_creation__year=today.year
+    )
+    ca_mois = tickets_mois.aggregate(s=Sum('montant_total'))['s'] or 0
+
+    # KPIs documents
+    factures_impayees = Facture.objects.filter(statut__in=['envoyee','en_attente'])
+    montant_impaye = factures_impayees.aggregate(s=Sum('total'))['s'] or 0
+
+    # Tickets récents tous modules
+    tickets_recents = Ticket.objects.select_related('client','cree_par').order_by('-date_creation')[:10]
+
+    # Répartition CA par module
+    ca_par_module = {}
+    for m, l in [('hotel','Hôtel'),('restaurant','Restaurant'),('cave','Cave'),('piscine','Piscine'),('caisse','Caisse'),('autre','Autre')]:
+        ca = Ticket.objects.filter(module=m).aggregate(s=Sum('montant_total'))['s'] or 0
+        if ca > 0:
+            ca_par_module[l] = int(ca)
+
+    # Documents récents
+    recent_factures = Facture.objects.select_related('client').order_by('-date_creation')[:8]
+    recent_proformas = Proforma.objects.select_related('client').order_by('-date_creation')[:8]
+    recent_avoirs = Avoir.objects.select_related('client').order_by('-date_creation')[:8]
+
+    # Services et JSON
     services = Service.objects.all()
     services_json = json.dumps([{'id': s.id, 'nom': s.nom} for s in services])
-    
+
+    # Clients pour formulaires
+    clients = Client.objects.all().order_by('nom')
+
     context = {
+        # KPIs
+        'ca_jour': int(ca_jour),
+        'ca_mois': int(ca_mois),
+        'nb_tickets_jour': tickets_jour.count(),
+        'nb_tickets_mois': tickets_mois.count(),
+        'nb_factures_impayees': factures_impayees.count(),
+        'montant_impaye': int(montant_impaye),
+        'nb_proformas': Proforma.objects.filter(statut='en_attente').count(),
+        'nb_avoirs': Avoir.objects.filter(statut='en_attente').count(),
+        # Données
+        'tickets_recents': tickets_recents,
+        'ca_par_module': ca_par_module,
         'recent_factures': recent_factures,
         'recent_proformas': recent_proformas,
         'recent_avoirs': recent_avoirs,
+        'total_tickets': Ticket.objects.count(),
+        'total_factures': Facture.objects.count(),
+        'total_proformas': Proforma.objects.count(),
+        'total_avoirs': Avoir.objects.count(),
+        # Forms
         'services': services,
         'services_json': services_json,
+        'clients': clients,
     }
     return render(request, 'facturation/index.html', context)
 
