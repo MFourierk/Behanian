@@ -953,6 +953,7 @@ def api_vente_create(request):
         ref          = data.get('ref', '')
         ticket_nom   = data.get('ticket_nom', 'T-???')
         montant_recu = Decimal(str(data.get('montant_recu', total)))
+        serveur_nom  = data.get('serveur', '')
 
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
@@ -985,7 +986,8 @@ def api_vente_create(request):
             f"  {l['nom']} x{l['qty']}  {int(Decimal(str(l['prix'])) * int(l['qty'])):,} F"
             for l in lignes
         )
-        serveur_cave = request.user.get_full_name() or request.user.username
+        # Serveur sélectionné ou à défaut le caissier connecté
+        serveur_cave = serveur_nom or request.user.get_full_name() or request.user.username
         contenu = (
             f'<span class="ticket-meta" data-serveur="{serveur_cave}"></span>'
             f"COMPLEXE BEHANIAN - Cave\n"
