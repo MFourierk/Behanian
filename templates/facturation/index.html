@@ -128,9 +128,6 @@
     <button class="btn-action btn-violet" onclick="ouvrirModal('modalAvoir')">
       <i class="fas fa-undo"></i> Nouvel Avoir
     </button>
-    <a href="{% url 'facturation:ticket_list' %}" class="btn-action btn-outline">
-      <i class="fas fa-receipt"></i> Tous les tickets
-    </a>
     <a href="{% url 'facturation:facture_list' %}" class="btn-action btn-outline">
       <i class="fas fa-file-invoice-dollar"></i> Toutes les factures
     </a>
@@ -278,7 +275,7 @@
   <div class="tab-content" id="content-tickets">
     <div class="panel">
       <div class="ph">
-        <h3>🧾 Tous les tickets</h3>
+        <h3>🧾 Tickets par module</h3>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="filtreModuleTicket" onchange="filtrerTickets()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px">
             <option value="">Tous modules</option>
@@ -323,9 +320,7 @@
           </tbody>
         </table>
       </div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:right">
-        <a href="{% url 'facturation:ticket_list' %}" class="btn-p outline">Voir tous les tickets <i class="fas fa-arrow-right"></i></a>
-      </div>
+
     </div>
   </div>
 
