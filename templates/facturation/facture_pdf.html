@@ -1,187 +1,95 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Facture {{ facture.numero }}</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 1cm;
-        }
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            color: #333;
-        }
-        .watermark {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 15cm;
-            opacity: 0.1;
-            z-index: -1000;
-            text-align: center;
-        }
-        .header-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 40px;
-        }
-        .logo-placeholder {
-            width: 150px;
-            text-align: center;
-        }
-        .company-details {
-            text-align: right;
-        }
-        .company-name {
-            color: #d35400; /* Matching Hotel theme */
-            font-weight: bold;
-            font-size: 20px;
-            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-            text-transform: uppercase;
-        }
-        .invoice-title {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .invoice-title h1 {
-            margin: 0;
-            font-size: 28px;
-        }
-        .invoice-details {
-            margin-bottom: 40px;
-        }
-        .invoice-details table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .invoice-details td {
-            padding: 5px;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 40px;
-        }
-        .items-table th, .items-table td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-        }
-        .items-table th {
-            background-color: #f2f2f2;
-        }
-        .totals {
-            text-align: right;
-        }
-        .totals table {
-            width: 50%;
-            margin-left: auto;
-            border-collapse: collapse;
-        }
-        .totals td {
-            padding: 8px;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 12px;
-        }
-    </style>
-</head>
-<body>
-    <div class="watermark">
-        <img src="file://{{ logo_path }}" alt="" style="width: 100%; height: auto;">
-    </div>
-    <div class="header-container">
-        <div class="logo-placeholder">
-            <img src="file://{{ logo_path }}" alt="Logo" style="max-width: 100%; height: auto;">
-        </div>
-        <div class="company-details">
-            <div class="company-name">{{ coordonnees.nom_complexe }}</div>
-            {{ coordonnees.adresse|linebreaksbr }}<br>
-            Tel: {{ coordonnees.telephone1 }} / {{ coordonnees.telephone2 }}<br>
-            Email: {{ coordonnees.email }}<br>
-        </div>
-    </div>
+{% extends 'print_base.html' %}
+{% block doc_title %}{{ facture.numero }}{% endblock %}
 
-    <div class="invoice-title">
-        <h1>FACTURE</h1>
-    </div>
+{% block doc_content %}
+<!-- TITRE -->
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Facture</div>
+    <div class="doc-title-sub">Complexe Hôtelier Behanian · Services &amp; Prestations</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-{{ facture.statut }}">{{ facture.get_statut_display }}</span>
+    <span class="doc-ref">{{ facture.numero }}</span>
+  </div>
+</div>
 
-    <div class="invoice-details">
-        <table>
-            <tr>
-                <td>
-                    <strong>Facturé à :</strong><br>
-                    {{ facture.client.nom_complet }}<br>
-                    {% if facture.client.adresse %}{{ facture.client.adresse }}<br>{% endif %}
-                    {% if facture.client.telephone %}Tel: {{ facture.client.telephone }}<br>{% endif %}
-                    {% if facture.client.email %}Email: {{ facture.client.email }}<br>{% endif %}
-                </td>
-                <td style="text-align: right;">
-                    <strong>Facture N° :</strong> {{ facture.numero }}<br>
-                    <strong>Date :</strong> {{ facture.date_facturation|date:"d/m/Y" }}
-                </td>
-            </tr>
-        </table>
-    </div>
+<!-- META -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations Facture</div>
+    <div class="meta-row"><span class="meta-lbl">N° Facture</span><span class="meta-val bold">{{ facture.numero }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date</span><span class="meta-val">{{ facture.date_facturation|date:"d/m/Y" }}</span></div>
+    {% if facture.date_echeance %}<div class="meta-row"><span class="meta-lbl">Échéance</span><span class="meta-val">{{ facture.date_echeance|date:"d/m/Y" }}</span></div>{% endif %}
+    <div class="meta-row"><span class="meta-lbl">Statut</span><span class="meta-val">{{ facture.get_statut_display }}</span></div>
+    {% if facture.cree_par %}<div class="meta-row"><span class="meta-lbl">Établi par</span><span class="meta-val">{{ facture.cree_par.get_full_name|default:facture.cree_par.username }}</span></div>{% endif %}
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Facturer à</div>
+    <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val bold">{{ facture.client.nom|default:"Client anonyme" }}</span></div>
+    {% if facture.client and facture.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ facture.client.telephone|default:"" }}</span></div>{% endif %}
+    {% if facture.client and facture.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ facture.client.email|default:"" }}</span></div>{% endif %}
+    {% if facture.client and facture.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ facture.client.adresse|default:"" }}</span></div>{% endif %}
+    <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a;font-weight:700">{{ facture.montant_paye|floatformat:0 }} FCFA</span></div>
+  </div>
+</div>
 
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th>Description</th>
-                <th style="text-align: right;">Quantité</th>
-                <th style="text-align: right;">Prix Unitaire (HT)</th>
-                <th style="text-align: right;">Montant (HT)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% regroup lignes by article.service.nom as service_list %}
-            {% for service in service_list %}
-                <tr>
-                    <td colspan="4" style="background-color: #e6e6e6;"><strong>{{ service.grouper }}</strong></td>
-                </tr>
-                {% for ligne in service.list %}
-                <tr>
-                    <td>{{ ligne.article.nom }} {% if ligne.description %}- {{ ligne.description }}{% endif %}</td>
-                    <td style="text-align: right;">{{ ligne.quantite|floatformat:0 }}</td>
-                    <td style="text-align: right;">{{ ligne.prix_unitaire|floatformat:"-2" }} F CFA</td>
-                    <td style="text-align: right;">{{ ligne.montant_ht|floatformat:"-2" }} F CFA</td>
-                </tr>
-                {% endfor %}
-            {% empty %}
-                <tr>
-                    <td colspan="4">Aucune ligne</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- LIGNES -->
+<div class="content-section">
+  <div class="section-title">Détail des prestations</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Désignation</th>
+        <th style="width:80px">Unité</th>
+        <th class="r" style="width:70px">Qté</th>
+        <th class="r" style="width:110px">Prix U. (FCFA)</th>
+        <th class="r" style="width:120px">Total HT (FCFA)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ligne in lignes %}
+      <tr>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td>
+          <span class="bold">{{ ligne.designation|default:ligne.article.nom|default:"Prestation" }}</span>
+          {% if ligne.description %}<br><span style="font-size:9px;color:#6b7a8d">{{ ligne.description }}</span>{% endif %}
+        </td>
+        <td>u</td>
+        <td class="r">{{ ligne.quantite|floatformat:2 }}</td>
+        <td class="r">{{ ligne.prix_unitaire|floatformat:0 }}</td>
+        <td class="r bold">{{ ligne.montant_ht|floatformat:0 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:16px;color:#8a9ab0;font-style:italic">Aucune ligne</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="4"></td><td class="total-label">Sous-total HT</td><td class="r">{{ facture.sous_total|floatformat:0 }}</td></tr>
+      {% if facture.remise > 0 %}<tr><td colspan="4"></td><td style="text-align:right;font-size:10px;color:#16a34a">Remise</td><td class="r" style="color:#16a34a">- {{ facture.remise|floatformat:0 }}</td></tr>{% endif %}
+      {% if facture.taux_tva > 0 %}<tr><td colspan="4"></td><td class="total-label">TVA {{ facture.taux_tva }}%</td><td class="r">{{ facture.montant_tva|floatformat:0 }}</td></tr>{% endif %}
+      <tr><td colspan="4"></td><td class="total-label">TOTAL TTC</td><td class="total-val">{{ facture.total|floatformat:0 }} FCFA</td></tr>
+      {% if facture.montant_paye > 0 %}
+      <tr><td colspan="4"></td><td style="text-align:right;font-size:10px;color:#16a34a;padding:4px 0">Montant payé</td><td class="r" style="font-size:10px;color:#16a34a">{{ facture.montant_paye|floatformat:0 }}</td></tr>
+      {% if facture.total > facture.montant_paye %}
+      <tr><td colspan="4"></td><td style="text-align:right;font-weight:700;color:#dc2626">Reste dû</td><td class="r bold" style="color:#dc2626">{{ facture.total|floatformat:0 }} FCFA</td></tr>
+      {% endif %}
+      {% endif %}
+    </tfoot>
+  </table>
+</div>
 
-        <div class="totals">
-            <table>
-                <tr>
-                    <td><strong>Total HT :</strong></td>
-                    <td style="text-align: right;">{{ facture.sous_total|floatformat:"-2" }} F CFA</td>
-                </tr>
-                <tr>
-                    <td><strong>TVA ({{ facture.taux_tva|floatformat:"-2" }}%) :</strong></td>
-                    <td style="text-align: right;">{{ facture.montant_tva|floatformat:"-2" }} F CFA</td>
-                </tr>
-                <tr>
-                    <td><strong>Total TTC :</strong></td>
-                    <td style="text-align: right;"><strong>{{ facture.total|floatformat:"-2" }} F CFA</strong></td>
-                </tr>
-            </table>
-        </div>
+{% if facture.notes %}
+<div class="notes-box"><strong>Notes</strong> {{ facture.notes }}</div>
+{% endif %}
 
-    <div class="footer">
-        <p>Merci de votre confiance.</p>
-    </div>
-</body>
-</html>
+<!-- SIGNATURES -->
+<div class="signatures cols-2">
+  <div class="sig-box"><div class="sig-line">Client</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Facturation</div><div class="sig-hint">Signature &amp; Cachet</div></div>
+</div>
+
+<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
+{% endblock %}
+{% block doc_footer_right %}Facture {{ facture.numero }} · {{ facture.date_facturation|date:"d/m/Y" }}{% endblock %}

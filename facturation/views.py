@@ -208,32 +208,22 @@ def facture_create(request):
 
 @require_module_access('facturation')
 def facture_detail(request, pk):
+    from types import SimpleNamespace
     facture = get_object_or_404(Facture, pk=pk)
-    lignes = facture.lignes.select_related('article__service').order_by('article__service__nom', 'id')
+    # Protéger client None
+    if not facture.client:
+        facture.client = SimpleNamespace(nom='Client anonyme', telephone='', email='', adresse='')
+    lignes = facture.lignes.order_by('id')
     return render(request, 'facturation/facture_detail.html', {'facture': facture, 'lignes': lignes})
 
 @require_module_access('facturation')
 def facture_pdf(request, pk):
+    """Affiche la facture en mode impression (style bon de réception)."""
     facture = get_object_or_404(Facture, pk=pk)
-    lignes = facture.lignes.select_related('article__service').order_by('article__service__nom', 'id')
-
-    context = {
-        'facture': facture,
-        'lignes': lignes,
-        'nom_entreprise': NOM_ENTREPRISE,
-        'adresse_entreprise': ADRESSE_ENTREPRISE,
-        'telephone_entreprise': TELEPHONE_ENTREPRISE,
-        'email_entreprise': EMAIL_ENTREPRISE,
-        'logo_path': get_logo_path(),
-    }
-
-    html_string = render_to_string('facturation/facture_pdf.html', context)
-    html = HTML(string=html_string)
-    pdf = html.write_pdf()
-
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="facture_{facture.numero}.pdf"'
-    return response
+    if not facture.client:
+        from types import SimpleNamespace
+        facture.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
+    return render(request, 'facturation/facture_pdf.html', {'facture': facture})
 
 @require_module_access('facturation')
 def proforma_list(request):
@@ -331,24 +321,12 @@ def proforma_detail(request, pk):
 
 @require_module_access('facturation')
 def proforma_pdf(request, pk):
+    """Affiche le proforma en mode impression."""
     proforma = get_object_or_404(Proforma, pk=pk)
-
-    context = {
-        'proforma': proforma,
-        'nom_entreprise': NOM_ENTREPRISE,
-        'adresse_entreprise': ADRESSE_ENTREPRISE,
-        'telephone_entreprise': TELEPHONE_ENTREPRISE,
-        'email_entreprise': EMAIL_ENTREPRISE,
-        'logo_path': get_logo_path(),
-    }
-
-    html_string = render_to_string('facturation/proforma_pdf.html', context)
-    html = HTML(string=html_string)
-    pdf = html.write_pdf()
-
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="proforma_{proforma.numero}.pdf"'
-    return response
+    if not proforma.client:
+        from types import SimpleNamespace
+        proforma.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
+    return render(request, 'facturation/proforma_pdf.html', {'proforma': proforma})
 
 @require_module_access('facturation')
 def avoir_list(request):
@@ -443,34 +421,13 @@ def avoir_detail(request, pk):
 
 @require_module_access('facturation')
 def avoir_pdf(request, pk):
+    """Affiche l'avoir en mode impression."""
     avoir = get_object_or_404(Avoir, pk=pk)
-    lignes = avoir.lignes.select_related('article__service').order_by('article__service__nom', 'id')
+    if not avoir.client:
+        from types import SimpleNamespace
+        avoir.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
+    return render(request, 'facturation/avoir_pdf.html', {'avoir': avoir})
 
-    context = {
-        'avoir': avoir,
-        'lignes': lignes,
-        'nom_entreprise': NOM_ENTREPRISE,
-        'adresse_entreprise': ADRESSE_ENTREPRISE,
-        'telephone_entreprise': TELEPHONE_ENTREPRISE,
-        'email_entreprise': EMAIL_ENTREPRISE,
-        'logo_path': get_logo_path(),
-    }
-
-    if hasattr(avoir, 'ticket_origine') and avoir.ticket_origine:
-        template_name = 'facturation/avoir_ticket_pdf.html'
-        html_string = render_to_string(template_name, context)
-        # Use base_url for potentially relative links, though logo uses absolute file path
-        html = HTML(string=html_string, base_url=request.build_absolute_uri())
-    else:
-        template_name = 'facturation/avoir_pdf.html'
-        html_string = render_to_string(template_name, context)
-        html = HTML(string=html_string)
-
-    pdf = html.write_pdf()
-
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="avoir_{avoir.numero}.pdf"'
-    return response
 
 @require_module_access('facturation')
 def ticket_list(request):
