@@ -125,6 +125,7 @@ class ReservationEspace(models.Model):
     prix_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total (FCFA)")
     remise = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Remise (FCFA)")
     avance = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Avance payée (FCFA)")
+    mode_paiement = models.CharField(max_length=30, blank=True, null=True, verbose_name="Mode de paiement")
     
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
     commentaire = models.TextField(blank=True, null=True, verbose_name="Commentaire")

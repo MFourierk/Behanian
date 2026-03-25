@@ -39,13 +39,27 @@ def espaces_index(request):
     from hotel.models import Reservation as HotelReservation
     residents = HotelReservation.objects.filter(statut='en_cours').select_related('client', 'chambre')
 
+    # Historique : toutes réservations terminées ou annulées
+    historique = ReservationEspace.objects.filter(
+        statut__in=['terminee', 'annulee']
+    ).select_related('espace', 'reservation_hotel__client', 'reservation_hotel__chambre').order_by('-date_debut')
+
+    # Stats historique
+    total_reservations = ReservationEspace.objects.count()
+    recette_totale = ReservationEspace.objects.filter(
+        statut='terminee'
+    ).aggregate(s=Sum(F('prix_total') - F('remise')))['s'] or 0
+
     context = {
         'espaces': espaces,
         'reservations_actives': reservations_actives,
+        'historique': historique,
         'total_espaces': total_espaces,
         'espaces_dispo': espaces_dispo,
         'reservations_jour': reservations_jour,
         'recette_mois': int(recette_mois),
+        'recette_totale': int(recette_totale),
+        'total_reservations': total_reservations,
         'residents': residents,
     }
     return render(request, 'espaces_evenementiels/index.html', context)
@@ -191,6 +205,7 @@ def api_encaisser(request, reservation_id):
                 prix_unitaire=restant,
             )
             res.statut = 'terminee'
+            res.mode_paiement = 'chambre'
             res.save()
             lignes = [
                 {'nom': f'{res.espace.nom} ({res.duree_jours}h)', 'total': float(montant_net)},
@@ -221,6 +236,7 @@ def api_encaisser(request, reservation_id):
             'serveur': request.user.get_full_name() or request.user.username,
         })
         res.statut = 'terminee'
+        res.mode_paiement = mode_paiement
         res.save()
         return JsonResponse({
             'success': True, 'sur_chambre': False,

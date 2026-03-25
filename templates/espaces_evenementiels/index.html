@@ -115,6 +115,12 @@
       <span style="background:#dc2626;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ reservations_actives.count }}</span>
       {% endif %}
     </button>
+    <button class="tab" id="tab-historique" onclick="setTab('historique',this)">
+      <i class="fas fa-history"></i> Historique
+      {% if historique.count > 0 %}
+      <span style="background:#64748b;color:white;border-radius:10px;padding:1px 7px;font-size:10px">{{ historique.count }}</span>
+      {% endif %}
+    </button>
   </div>
 
   <!-- ONGLET ESPACES -->
@@ -220,6 +226,101 @@
   </div>
 
 </div></div>
+
+<!-- ONGLET HISTORIQUE -->
+  <div class="tab-content" id="content-historique">
+
+    <!-- Stats historique -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="kpi k-bleu">
+        <div class="klbl">Total réservations</div>
+        <div class="kval">{{ total_reservations }}</div>
+        <div class="ksub">depuis l'ouverture</div>
+      </div>
+      <div class="kpi k-vert">
+        <div class="klbl">Terminées</div>
+        <div class="kval">{{ historique|length }}</div>
+        <div class="ksub">réservations clôturées</div>
+      </div>
+      <div class="kpi k-or">
+        <div class="klbl">Recette totale</div>
+        <div class="kval">{{ recette_totale|floatformat:0 }} F</div>
+        <div class="ksub">toutes périodes</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph">
+        <h3>📋 Historique des réservations</h3>
+        <span style="font-size:11px;color:#7a8b9c">{{ historique|length }} entrée(s)</span>
+      </div>
+      {% if historique %}
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Espace</th>
+              <th>Événement</th>
+              <th>Durée</th>
+              <th>Dates</th>
+              <th>Montant</th>
+              <th>Paiement</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for res in historique %}
+          <tr>
+            <td>
+              <div style="font-weight:600">{{ res.nom_client }}</div>
+              <span class="badge b-{{ res.type_client }}">{{ res.get_type_client_display }}</span>
+              {% if res.reservation_hotel %}<div style="font-size:10px;color:#7a8b9c">Ch. {{ res.reservation_hotel.chambre.numero }}</div>{% endif %}
+            </td>
+            <td style="font-weight:600">{{ res.espace.nom }}</td>
+            <td style="font-size:12px">{{ res.type_evenement }}</td>
+            <td style="font-size:11px;white-space:nowrap">
+              {% if res.type_duree == 'journee' %}
+              <span style="background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">📅 Journée</span>
+              {% elif res.type_duree == 'demi_matin' %}
+              <span style="background:#fef3c7;color:#d97706;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌅 Matin</span>
+              {% else %}
+              <span style="background:#fde8d8;color:#c2410c;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600">🌇 Après-midi</span>
+              {% endif %}
+            </td>
+            <td style="font-size:11px;white-space:nowrap">
+              {{ res.date_debut|date:"d/m/Y" }}
+              {% if res.type_duree == 'journee' %}<br><span style="color:#7a8b9c">→ {{ res.date_fin|date:"d/m/Y" }}</span>{% endif %}
+            </td>
+            <td>
+              <div style="font-weight:700;color:#1a2535">{{ res.montant_net|floatformat:0 }} F</div>
+              {% if res.remise > 0 %}<div style="font-size:10px;color:#16a34a">-{{ res.remise|floatformat:0 }} F remise</div>{% endif %}
+              {% if res.avance > 0 %}<div style="font-size:10px;color:#7a8b9c">avance: {{ res.avance|floatformat:0 }} F</div>{% endif %}
+            </td>
+            <td style="font-size:11px">
+              {% if res.mode_paiement == 'especes' %}💵 Espèces
+              {% elif res.mode_paiement == 'mobile_money' %}📱 Mobile
+              {% elif res.mode_paiement == 'carte_bancaire' %}💳 Carte
+              {% elif res.mode_paiement == 'chambre' %}🏨 Chambre
+              {% else %}<span style="color:#7a8b9c">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="padding:40px;text-align:center;color:#7a8b9c;font-size:13px">
+        <div style="font-size:36px;margin-bottom:10px">📋</div>
+        Aucune réservation dans l'historique
+      </div>
+      {% endif %}
+    </div>
+  </div>
 
 <!-- MODAL RÉSERVATION -->
 <div class="modal-ov" id="modalReservation">
