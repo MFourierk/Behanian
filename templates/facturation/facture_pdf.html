@@ -28,7 +28,9 @@ body, html { height: auto !important; }
     <div class="meta-row"><span class="meta-lbl">Date</span><span class="meta-val">{{ facture.date_facturation|date:"d/m/Y" }}</span></div>
     {% if facture.date_echeance %}<div class="meta-row"><span class="meta-lbl">Échéance</span><span class="meta-val">{{ facture.date_echeance|date:"d/m/Y" }}</span></div>{% endif %}
     <div class="meta-row"><span class="meta-lbl">Statut</span><span class="meta-val">{{ facture.get_statut_display }}</span></div>
-    {% if facture.cree_par %}<div class="meta-row"><span class="meta-lbl">Établi par</span><span class="meta-val">{{ facture.cree_par.get_full_name|default:facture.cree_par.username }}</span></div>{% endif %}
+    {% if module_ticket %}<div class="meta-row"><span class="meta-lbl">Service</span><span class="meta-val">{{ module_ticket }}</span></div>{% endif %}
+    {% if facture.cree_par %}<div class="meta-row"><span class="meta-lbl">Caissier</span><span class="meta-val">{{ facture.cree_par.get_full_name|default:facture.cree_par.username }}</span></div>{% endif %}
+    {% if serveur_ticket %}<div class="meta-row"><span class="meta-lbl">Serveur</span><span class="meta-val">{{ serveur_ticket }}</span></div>{% endif %}
   </div>
   <div class="meta-box">
     <div class="meta-box-title">Facturer à</div>
@@ -74,11 +76,6 @@ body, html { height: auto !important; }
       {% if facture.remise > 0 %}<tr><td colspan="3"></td><td colspan="2" style="text-align:right;color:#16a34a;font-size:10px">Remise accordée</td><td class="r" style="color:#16a34a">- {{ facture.remise|floatformat:0 }} FCFA</td></tr>{% endif %}
       {% if facture.taux_tva > 0 %}<tr><td colspan="3"></td><td colspan="2" class="total-label">TVA {{ facture.taux_tva }}%</td><td class="r">{{ facture.montant_tva|floatformat:0 }} FCFA</td></tr>{% endif %}
       <tr><td colspan="3"></td><td colspan="2" class="total-label" style="font-size:13px;font-weight:800;color:#1a2535">TOTAL TTC</td><td style="text-align:right;font-size:14px;font-weight:800;color:#c0392b;background:#fdf2f2;white-space:nowrap">{{ facture.total|floatformat:0 }} FCFA</td></tr>
-      {% if facture.montant_paye > 0 %}
-      <tr><td colspan="3"></td><td colspan="2" class="total-label" style="color:#16a34a">Déjà encaissé</td><td style="text-align:right;color:#16a34a;font-weight:700;white-space:nowrap">{{ facture.montant_paye|floatformat:0 }} FCFA</td></tr>
-      {% if facture.total > facture.montant_paye %}
-      <tr><td colspan="3"></td><td colspan="2" class="total-label" style="color:#dc2626;font-size:12px">Reste dû</td><td class="total-val" style="font-size:12px">{{ facture.total|floatformat:0 }} FCFA</td></tr>
-      {% endif %}
       {% endif %}
     </tfoot>
   </table>

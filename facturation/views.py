@@ -219,12 +219,45 @@ def facture_detail(request, pk):
 @require_module_access('facturation')
 def facture_pdf(request, pk):
     """Affiche la facture en mode impression (style bon de réception)."""
+    import re
     facture = get_object_or_404(Facture, pk=pk)
     if not facture.client:
         from types import SimpleNamespace
         facture.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
     lignes = facture.lignes.order_by('id')
-    return render(request, 'facturation/facture_pdf.html', {'facture': facture, 'lignes': lignes})
+
+    # Récupérer infos depuis le ticket d'origine (via notes)
+    module_ticket = ''
+    serveur_ticket = ''
+    if facture.notes:
+        match = re.search(r'ticket\s+(TC-\S+)', facture.notes, re.IGNORECASE)
+        if match:
+            try:
+                ticket = Ticket.objects.get(numero=match.group(1))
+                module_ticket = ticket.get_module_display()
+                # Serveur depuis data-serveur dans contenu
+                if ticket.contenu:
+                    srv_match = re.search(r'data-serveur="([^"]*)"', ticket.contenu)
+                    if srv_match:
+                        serveur_ticket = srv_match.group(1)
+                # Fallback via commande restaurant
+                if not serveur_ticket and ticket.module == 'restaurant' and ticket.objet_id:
+                    try:
+                        from restaurant.models import Commande
+                        cmd = Commande.objects.select_related('serveur').filter(id=ticket.objet_id).first()
+                        if cmd and cmd.serveur:
+                            serveur_ticket = cmd.serveur.get_full_name() or cmd.serveur.username
+                    except Exception:
+                        pass
+            except Ticket.DoesNotExist:
+                pass
+
+    return render(request, 'facturation/facture_pdf.html', {
+        'facture': facture,
+        'lignes': lignes,
+        'module_ticket': module_ticket,
+        'serveur_ticket': serveur_ticket,
+    })
 
 @require_module_access('facturation')
 def proforma_list(request):
