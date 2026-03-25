@@ -183,9 +183,9 @@
             <h3>🧾 Derniers tickets</h3>
             <a href="{% url 'facturation:ticket_list' %}" class="btn-p outline" style="font-size:11px">Voir tout</a>
           </div>
-          <div style="overflow-x:auto">
+          <div style="overflow-x:auto;overflow-y:auto;max-height:380px">
             <table class="tbl">
-              <thead><tr><th>N°</th><th>Module</th><th>Date</th><th>Montant</th><th>Paiement</th><th>Opérateur</th><th></th></tr></thead>
+              <thead><tr><th style="position:sticky;top:0;z-index:1;background:#f8fafc">N°</th><th style="position:sticky;top:0;z-index:1;background:#f8fafc">Module</th><th style="position:sticky;top:0;z-index:1;background:#f8fafc">Date</th><th style="position:sticky;top:0;z-index:1;background:#f8fafc">Montant</th><th style="position:sticky;top:0;z-index:1;background:#f8fafc">Paiement</th><th style="position:sticky;top:0;z-index:1;background:#f8fafc">Opérateur</th><th style="position:sticky;top:0;z-index:1;background:#f8fafc"></th></tr></thead>
               <tbody>
               {% for t in tickets_recents %}
               <tr>
