@@ -223,7 +223,8 @@ def facture_pdf(request, pk):
     if not facture.client:
         from types import SimpleNamespace
         facture.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
-    return render(request, 'facturation/facture_pdf.html', {'facture': facture})
+    lignes = facture.lignes.order_by('id')
+    return render(request, 'facturation/facture_pdf.html', {'facture': facture, 'lignes': lignes})
 
 @require_module_access('facturation')
 def proforma_list(request):
@@ -326,7 +327,8 @@ def proforma_pdf(request, pk):
     if not proforma.client:
         from types import SimpleNamespace
         proforma.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
-    return render(request, 'facturation/proforma_pdf.html', {'proforma': proforma})
+    lignes = proforma.lignes.order_by('id')
+    return render(request, 'facturation/proforma_pdf.html', {'proforma': proforma, 'lignes': lignes})
 
 @require_module_access('facturation')
 def avoir_list(request):
@@ -426,7 +428,8 @@ def avoir_pdf(request, pk):
     if not avoir.client:
         from types import SimpleNamespace
         avoir.client = SimpleNamespace(nom='Client anonyme', telephone=None, email=None, adresse=None)
-    return render(request, 'facturation/avoir_pdf.html', {'avoir': avoir})
+    lignes = avoir.lignes.order_by('id')
+    return render(request, 'facturation/avoir_pdf.html', {'avoir': avoir, 'lignes': lignes})
 
 
 @require_module_access('facturation')

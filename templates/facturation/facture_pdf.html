@@ -53,7 +53,7 @@
       <tr>
         <td class="muted">{{ forloop.counter }}</td>
         <td>
-          <span class="bold">{{ ligne.designation|default:ligne.article.nom|default:"Prestation" }}</span>
+          <span class="bold">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}Prestation{% endif %}</span>
           {% if ligne.description %}<br><span style="font-size:9px;color:#6b7a8d">{{ ligne.description }}</span>{% endif %}
         </td>
         <td>u</td>
