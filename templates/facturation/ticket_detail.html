@@ -1,191 +1,87 @@
 {% extends 'dashboard/base_dashboard.html' %}
-
-{% block title %}Détails Ticket {{ ticket.numero }} - Facturation{% endblock %}
+{% block title %}Ticket {{ ticket.numero }} — Facturation{% endblock %}
 
 {% block extra_css %}
 <style>
-    .card {
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .ticket-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 20px;
-        margin-bottom: 20px;
-    }
-
-    .ticket-status {
-        display: flex;
-        gap: 10px;
-    }
-
-    .badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .badge-success { background-color: #d4edda; color: #155724; }
-    .badge-warning { background-color: #fff3cd; color: #856404; }
-    .badge-info { background-color: #d1ecf1; color: #0c5460; }
-    .badge-danger { background-color: #f8d7da; color: #721c24; }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 30px;
-        margin-bottom: 30px;
-    }
-
-    .info-group h3 {
-        font-size: 14px;
-        color: #95a5a6;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .info-group p {
-        font-size: 16px;
-        color: #2c3e50;
-        font-weight: 500;
-    }
-
-    .ticket-content {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        font-family: 'Courier New', Courier, monospace;
-        margin-bottom: 30px;
-        border: 1px solid #e9ecef;
-    }
-    
-    .ticket-content .row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-    }
-    
-    .ticket-content .item-name {
-        flex: 1;
-        text-align: left;
-    }
-    
-    .ticket-content .item-price {
-        text-align: right;
-        font-weight: bold;
-        white-space: nowrap;
-    }
-
-    .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 15px;
-        margin-top: 30px;
-        border-top: 1px solid #eee;
-        padding-top: 20px;
-    }
-
-    .btn {
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s;
-        cursor: pointer;
-        border: none;
-        font-size: 14px;
-    }
-
-    .btn-secondary {
-        background: #ecf0f1;
-        color: #7f8c8d;
-    }
-
-    .btn-secondary:hover {
-        background: #bdc3c7;
-        color: #2c3e50;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-    }
+.fac-body{background:#eef1f5;padding:20px 0 50px}
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}
+.meta-box{background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e8edf5}
+.meta-box-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7a8b9c;margin-bottom:12px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f3f7}
+.meta-row:last-child{border-bottom:none}
+.meta-lbl{font-size:11px;color:#7a8b9c;font-weight:500}
+.meta-val{font-size:12px;font-weight:600;color:#1a2535}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-hotel{background:#dbeafe;color:#1e40af}.b-restaurant{background:#fef3c7;color:#d97706}
+.b-cave{background:#f3e8ff;color:#7c3aed}.b-piscine{background:#d1fae5;color:#065f46}
+.b-caisse{background:#dcfce7;color:#15803d}.b-autre{background:#f1f5f9;color:#64748b}
+.ticket-content{background:#1a2535;border-radius:12px;padding:20px;font-family:'Courier New',monospace;font-size:12px;color:#c9a84c;line-height:1.8;margin:16px 20px}
+.btn-p{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .12s;text-decoration:none}
+.btn-primary{background:#2563eb;color:white}.btn-success{background:#16a34a;color:white}
+.btn-danger{background:#dc2626;color:white}.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div class="page-title">
-        <h1>🎫 Détails du Ticket</h1>
-    </div>
-    <a href="{% url 'facturation:ticket_list' %}" class="btn btn-secondary">← Retour à la liste</a>
-</div>
+<div class="fac-body"><div class="container-fluid" style="max-width:900px">
 
-<div class="card">
-    <div class="ticket-header">
-        <div>
-            <h2 style="margin: 0; color: #2c3e50;">Ticket #{{ ticket.numero }}</h2>
-            <p style="color: #7f8c8d; margin-top: 5px;">Module: {{ ticket.get_module_display }}</p>
-        </div>
-        <div class="ticket-status">
-            {% if ticket.imprime %}
-                <span class="badge badge-success">Imprimé</span>
-            {% else %}
-                <span class="badge badge-warning">Non imprimé</span>
-            {% endif %}
-            
-            {% if ticket.est_duplicata %}
-                <span class="badge badge-info">Duplicata</span>
-            {% endif %}
-        </div>
+  <!-- HEADER -->
+  <div class="header-glam caisse-watermark">
+    <div class="header-content">
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0">Ticket {{ ticket.numero }}</h2>
+      <p class="mb-0 opacity-75">{{ ticket.get_module_display }} · {{ ticket.date_creation|date:"d/m/Y à H:i" }}</p>
     </div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
 
-    <div class="info-grid">
-        <div class="info-group">
-            <h3>Informations Générales</h3>
-            <p>Date: {{ ticket.date_creation|date:"d/m/Y H:i" }}</p>
-            <p>Montant: <strong>{{ ticket.montant_total|floatformat:"-2" }} F CFA</strong></p>
-            {% if ticket.imprime %}
-                <p>Imprimé le: {{ ticket.date_impression|date:"d/m/Y H:i" }}</p>
-            {% endif %}
-        </div>
+  <!-- ACTIONS -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <a href="{% url 'facturation:ticket_list' %}" class="btn-p btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
+    <a href="{% url 'facturation:ticket_pdf' ticket.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
+    <a href="{% url 'facturation:ticket_print_thermal' ticket.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-print"></i> Thermique</a>
+    <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn-p btn-primary"><i class="fas fa-redo"></i> Réimprimer</a>
+    <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="btn-p btn-danger" onclick="return confirm('Créer un avoir pour ce ticket ?')"><i class="fas fa-undo"></i> Créer Avoir</a>
+  </div>
 
-        {% if ticket.client %}
-        <div class="info-group">
-            <h3>Client</h3>
-            <p>{{ ticket.client.nom_complet }}</p>
-            <p>{{ ticket.client.telephone }}</p>
-            <p>{{ ticket.client.email }}</p>
-        </div>
-        {% endif %}
+  <!-- INFOS -->
+  <div class="panel">
+    <div class="ph">
+      <h3>🧾 Informations du ticket</h3>
+      <div style="display:flex;gap:8px">
+        <span class="badge b-{{ ticket.module }}">{{ ticket.get_module_display }}</span>
+        {% if ticket.imprime %}<span style="background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700">✅ Imprimé</span>
+        {% else %}<span style="background:#fef3c7;color:#d97706;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700">⏳ Non imprimé</span>{% endif %}
+        {% if ticket.est_duplicata %}<span style="background:#dbeafe;color:#1e40af;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700">Duplicata</span>{% endif %}
+      </div>
     </div>
-
-    <div class="info-group">
-        <h3>Contenu du Ticket</h3>
-        <div class="ticket-content">{{ ticket.contenu|safe }}</div>
+    <div class="meta-grid">
+      <div class="meta-box">
+        <div class="meta-box-title">Informations générales</div>
+        <div class="meta-row"><span class="meta-lbl">N° Ticket</span><span class="meta-val" style="font-family:monospace">{{ ticket.numero }}</span></div>
+        <div class="meta-row"><span class="meta-lbl">Module</span><span class="meta-val">{{ ticket.get_module_display }}</span></div>
+        <div class="meta-row"><span class="meta-lbl">Date création</span><span class="meta-val">{{ ticket.date_creation|date:"d/m/Y H:i" }}</span></div>
+        {% if ticket.date_impression %}<div class="meta-row"><span class="meta-lbl">Date impression</span><span class="meta-val">{{ ticket.date_impression|date:"d/m/Y H:i" }}</span></div>{% endif %}
+        {% if ticket.cree_par %}<div class="meta-row"><span class="meta-lbl">Opérateur</span><span class="meta-val">{{ ticket.cree_par.get_full_name|default:ticket.cree_par.username }}</span></div>{% endif %}
+      </div>
+      <div class="meta-box">
+        <div class="meta-box-title">Paiement</div>
+        <div class="meta-row"><span class="meta-lbl">Montant total</span><span class="meta-val" style="font-size:16px;color:#2563eb">{{ ticket.montant_total|floatformat:0 }} F</span></div>
+        <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a">{{ ticket.montant_paye|floatformat:0 }} F</span></div>
+        {% if ticket.monnaie_rendue > 0 %}<div class="meta-row"><span class="meta-lbl">Monnaie rendue</span><span class="meta-val">{{ ticket.monnaie_rendue|floatformat:0 }} F</span></div>{% endif %}
+        <div class="meta-row"><span class="meta-lbl">Mode paiement</span><span class="meta-val">{{ ticket.get_mode_paiement_display }}</span></div>
+        {% if ticket.client %}<div class="meta-row"><span class="meta-lbl">Client</span><span class="meta-val">{{ ticket.client.nom }}</span></div>{% endif %}
+      </div>
     </div>
+  </div>
 
-    <div class="actions">
-        <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="btn btn-secondary" onclick="return confirm('Voulez-vous créer un avoir pour ce ticket ?');">
-            ↩️ Créer Avoir
-        </a>
-        <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn btn-primary">
-            🖨️ Réimprimer le Ticket
-        </a>
-    </div>
-</div>
+  <!-- CONTENU -->
+  <div class="panel">
+    <div class="ph"><h3>📄 Contenu du ticket</h3></div>
+    <div class="ticket-content">{{ ticket.contenu|safe }}</div>
+  </div>
+
+</div></div>
 {% endblock %}

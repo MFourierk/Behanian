@@ -1,210 +1,126 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Proforma {{ proforma.numero }} — Facturation{% endblock %}
 
-{% block title %}Proforma {{ proforma.numero }}{% endblock %}
+{% block extra_css %}
+<style>
+.fac-body{background:#eef1f5;padding:20px 0 50px}
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}
+.meta-box{background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e8edf5}
+.meta-box-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7a8b9c;margin-bottom:12px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f3f7}
+.meta-row:last-child{border-bottom:none}
+.meta-lbl{font-size:11px;color:#7a8b9c;font-weight:500}
+.meta-val{font-size:12px;font-weight:600;color:#1a2535}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #d4dce8;background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-en_attente{background:#fef3c7;color:#d97706}.b-acceptee{background:#dcfce7;color:#15803d}
+.b-convertie{background:#f3e8ff;color:#7c3aed}.b-annulee{background:#fee2e2;color:#dc2626}
+.b-validee{background:#dcfce7;color:#15803d}
+.btn-p{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .12s;text-decoration:none}
+.btn-primary{background:#2563eb;color:white}.btn-success{background:#16a34a;color:white}
+.btn-gold{background:#c9a84c;color:#1a2535}.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.total-row{background:#f8fafc;font-weight:700}
+.grand-total{background:#1a2535;color:white}
+.grand-total td{color:white!important;font-size:14px!important;font-weight:700!important}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div class="page-title">
-        <h1>Proforma {{ proforma.numero }}</h1>
-    </div>
-    <div class="page-datetime">
-        <div id="currentDate"></div>
-        <div id="currentTime"></div>
-    </div>
-</div>
+<div class="fac-body"><div class="container-fluid" style="max-width:960px">
 
-<div class="tabs-container">
-    <div class="tabs">
-        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
-        <a href="{% url 'facturation:facture_create' %}" class="tab">Nouvelle Facture</a>
-        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
-        <a href="{% url 'facturation:proforma_list' %}" class="tab active">Proformas</a>
-        <a href="{% url 'facturation:avoir_list' %}" class="tab">Avoirs</a>
-        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+  <!-- HEADER -->
+  <div class="header-glam caisse-watermark">
+    <div class="header-content">
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0">Proforma {{ proforma.numero }}</h2>
+      <p class="mb-0 opacity-75">{{ proforma.client.nom|default:"Client anonyme" }} · {{ proforma.date_creation|date:"d/m/Y" }}</p>
     </div>
-</div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
 
-<div class="content-section">
-    <div class="mb-3 d-flex justify-content-between">
-        <a href="{% url 'facturation:proforma_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Retour à la liste
-        </a>
-        <div>
-            {% if proforma.statut == 'accepted' %}
-                <a href="{% url 'facturation:proforma_convert' proforma.pk %}" class="btn btn-success">Convertir en Facture</a>
-            {% endif %}
-            <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn btn-primary" target="_blank">
-                <i class="fas fa-print"></i> Imprimer / PDF
-            </a>
-        </div>
+  <!-- ACTIONS -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <a href="{% url 'facturation:proforma_list' %}" class="btn-p btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
+    <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
+    {% if proforma.statut in 'en_attente,acceptee,validee' %}
+    <button class="btn-p btn-success" onclick="convertirEnFacture()"><i class="fas fa-file-invoice"></i> Convertir en Facture</button>
+    {% endif %}
+  </div>
+
+  <!-- INFOS -->
+  <div class="panel">
+    <div class="ph">
+      <h3>📄 Proforma {{ proforma.numero }}</h3>
+      <span class="badge b-{{ proforma.statut }}">{{ proforma.get_statut_display }}</span>
     </div>
-
-    <div class="card">
-        <div class="card-body p-5">
-            <!-- En-tête proforma -->
-            <div class="row mb-4">
-                <div class="col-6">
-                    <h2 class="text-primary">FACTURE PROFORMA</h2>
-                    <h5>{{ proforma.numero }}</h5>
-                    <p class="mb-0">Date: {{ proforma.date_creation|date:"d/m/Y" }}</p>
-                    <p class="mb-0">Validité: {{ proforma.date_validite|date:"d/m/Y" }}</p>
-                    <span class="badge badge-{% if proforma.statut == 'accepted' %}success{% elif proforma.statut == 'invoiced' %}info{% elif proforma.statut == 'refused' %}danger{% else %}secondary{% endif %} mt-2">
-                        {{ proforma.get_statut_display }}
-                    </span>
-                </div>
-                <div class="col-6 text-right">
-                    <h4>{{ proforma.client.nom_complet }}</h4>
-                    {% if proforma.client.adresse %}<p class="mb-0">{{ proforma.client.adresse|linebreaksbr }}</p>{% endif %}
-                    {% if proforma.client.telephone %}<p class="mb-0">Tél: {{ proforma.client.telephone }}</p>{% endif %}
-                    {% if proforma.client.email %}<p class="mb-0">{{ proforma.client.email }}</p>{% endif %}
-                </div>
-            </div>
-
-            <!-- Lignes -->
-            <div class="table-responsive mb-4">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th class="text-center">Quantité</th>
-                            <th class="text-right">Prix Unitaire</th>
-                            <th class="text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% regroup lignes by article.service.nom as service_list %}
-                        {% for service in service_list %}
-                            <tr class="table-secondary">
-                                <td colspan="4"><strong>{{ service.grouper }}</strong></td>
-                            </tr>
-                            {% for ligne in service.list %}
-                                <tr>
-                                    <td>
-                                        <span class="pl-3">{{ ligne.article.nom }}</span>
-                                        {% if ligne.description %}
-                                            <br><small class="text-muted pl-3">{{ ligne.description }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">{{ ligne.quantite|floatformat:2 }}</td>
-                                    <td class="text-right">{{ ligne.prix_unitaire|floatformat:2 }}</td>
-                                    <td class="text-right">{{ ligne.montant_ht|floatformat:2 }}</td>
-                                </tr>
-                            {% endfor %}
-                        {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">Aucune ligne</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Totaux -->
-            <div class="row">
-                <div class="col-md-6">
-                    {% if proforma.notes %}
-                        <div class="alert alert-light border">
-                            <strong>Notes:</strong><br>
-                            {{ proforma.notes|linebreaks }}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td class="text-right"><strong>Sous-total:</strong></td>
-                            <td class="text-right">{{ proforma.sous_total|floatformat:2 }} FCFA</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right"><strong>TVA ({{ proforma.taux_tva|floatformat:2 }}%):</strong></td>
-                            <td class="text-right">{{ proforma.montant_tva|floatformat:2 }} FCFA</td>
-                        </tr>
-                        <tr class="border-top">
-                            <td class="text-right"><h4>Total TTC:</h4></td>
-                            <td class="text-right"><h4 class="text-primary">{{ proforma.total|floatformat:0 }} FCFA</h4></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="mt-5 text-center text-muted">
-                <p>Merci de votre confiance !</p>
-            </div>
-        </div>
+    <div class="meta-grid">
+      <div class="meta-box">
+        <div class="meta-box-title">Informations</div>
+        <div class="meta-row"><span class="meta-lbl">N° Proforma</span><span class="meta-val" style="font-family:monospace">{{ proforma.numero }}</span></div>
+        <div class="meta-row"><span class="meta-lbl">Date création</span><span class="meta-val">{{ proforma.date_creation|date:"d/m/Y" }}</span></div>
+        {% if proforma.date_validite %}<div class="meta-row"><span class="meta-lbl">Valide jusqu'au</span><span class="meta-val">{{ proforma.date_validite|date:"d/m/Y" }}</span></div>{% endif %}
+        {% if proforma.cree_par %}<div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ proforma.cree_par.get_full_name|default:proforma.cree_par.username }}</span></div>{% endif %}
+      </div>
+      <div class="meta-box">
+        <div class="meta-box-title">Client</div>
+        <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val">{{ proforma.client.nom|default:"—" }}</span></div>
+        {% if proforma.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ proforma.client.telephone }}</span></div>{% endif %}
+        {% if proforma.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ proforma.client.email }}</span></div>{% endif %}
+        {% if proforma.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ proforma.client.adresse }}</span></div>{% endif %}
+      </div>
     </div>
-</div>
+  </div>
+
+  <!-- LIGNES -->
+  <div class="panel">
+    <div class="ph"><h3>📋 Détail des prestations</h3></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr><th>#</th><th>Désignation</th><th>Service</th><th class="r" style="text-align:right">Qté</th><th class="r" style="text-align:right">Prix U.</th><th class="r" style="text-align:right">Total HT</th></tr>
+        </thead>
+        <tbody>
+          {% for ligne in lignes %}
+          <tr>
+            <td style="color:#7a8b9c">{{ forloop.counter }}</td>
+            <td>
+              <div style="font-weight:600">{{ ligne.article.nom }}</div>
+              {% if ligne.description %}<div style="font-size:11px;color:#7a8b9c">{{ ligne.description }}</div>{% endif %}
+            </td>
+            <td><span style="background:#f0f3f7;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;color:#3d4f63">{{ ligne.article.service.nom|default:"—" }}</span></td>
+            <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
+            <td style="text-align:right">{{ ligne.prix_unitaire|floatformat:0 }} F</td>
+            <td style="text-align:right;font-weight:600">{{ ligne.montant_ht|floatformat:0 }} F</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ proforma.sous_total|floatformat:0 }} F</td></tr>
+          {% if proforma.remise > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ proforma.remise|floatformat:0 }} F</td></tr>{% endif %}
+          {% if proforma.taux_tva > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">TVA {{ proforma.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ proforma.montant_tva|floatformat:0 }} F</td></tr>{% endif %}
+          <tr class="grand-total"><td colspan="5" style="text-align:right;padding:14px 16px">TOTAL TTC</td><td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important">{{ proforma.total|floatformat:0 }} FCFA</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    {% if proforma.notes %}
+    <div style="padding:16px 20px;border-top:1px solid #d4dce8;background:#f8fafc;font-size:12px;color:#3d4f63"><strong>Notes :</strong> {{ proforma.notes }}</div>
+    {% endif %}
+  </div>
+
+</div></div>
 
 <script>
-// Local clock script removed to use global clock
+function convertirEnFacture(){
+  if(confirm('Convertir ce proforma en facture ?')){
+    window.location.href = "{% url 'facturation:facture_create' %}?proforma={{ proforma.pk }}";
+  }
+}
 </script>
-
-<style>
-.tabs-container {
-    margin-bottom: 20px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.tabs {
-    display: flex;
-    gap: 0;
-}
-
-.tab {
-    padding: 12px 20px;
-    text-decoration: none;
-    color: #6c757d;
-    border: 1px solid transparent;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: -1px;
-    transition: all 0.3s ease;
-}
-
-.tab:hover {
-    color: #0056b3;
-    text-decoration: none;
-    border-color: #e9ecef #e9ecef #dee2e6;
-}
-
-.tab.active {
-    color: #0056b3;
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
-}
-
-.card {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.badge {
-    padding: 0.5em 0.8em;
-    font-size: 85%;
-}
-
-.badge-success {
-    color: #fff;
-    background-color: #28a745;
-}
-
-.badge-primary {
-    color: #fff;
-    background-color: #007bff;
-}
-
-.badge-secondary {
-    color: #fff;
-    background-color: #6c757d;
-}
-
-.badge-info {
-    color: #fff;
-    background-color: #17a2b8;
-}
-
-.badge-danger {
-    color: #fff;
-    background-color: #dc3545;
-}
-</style>
 {% endblock %}

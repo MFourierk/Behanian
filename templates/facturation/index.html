@@ -119,18 +119,15 @@
 
   <!-- ACTIONS RAPIDES -->
   <div class="actions-rapides">
-    <button class="btn-action btn-primary" onclick="ouvrirModal('modalFacture')">
+    <button class="btn-action btn-primary" onclick="setTab('factures',document.getElementById('tab-factures'));ouvrirModal('modalFacture')">
       <i class="fas fa-file-invoice"></i> Nouvelle Facture
     </button>
-    <button class="btn-action btn-or" onclick="ouvrirModal('modalProforma')">
+    <button class="btn-action btn-or" onclick="setTab('proformas',document.getElementById('tab-proformas'));ouvrirModal('modalProforma')">
       <i class="fas fa-file-alt"></i> Nouveau Proforma
     </button>
-    <button class="btn-action btn-violet" onclick="ouvrirModal('modalAvoir')">
+    <button class="btn-action btn-violet" onclick="setTab('avoirs',document.getElementById('tab-avoirs'));ouvrirModal('modalAvoir')">
       <i class="fas fa-undo"></i> Nouvel Avoir
     </button>
-    <a href="{% url 'facturation:facture_list' %}" class="btn-action btn-outline">
-      <i class="fas fa-file-invoice-dollar"></i> Toutes les factures
-    </a>
   </div>
 
   <!-- ONGLETS -->
@@ -329,7 +326,7 @@
     <div class="panel">
       <div class="ph">
         <h3>📋 Factures</h3>
-        <button class="btn-p primary" onclick="ouvrirModal('modalFacture')"><i class="fas fa-plus"></i> Nouvelle</button>
+        
       </div>
       <div style="overflow-x:auto">
         <table class="tbl">
@@ -358,9 +355,7 @@
           </tbody>
         </table>
       </div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:right">
-        <a href="{% url 'facturation:facture_list' %}" class="btn-p outline">Voir toutes <i class="fas fa-arrow-right"></i></a>
-      </div>
+
     </div>
   </div>
 
@@ -369,7 +364,7 @@
     <div class="panel">
       <div class="ph">
         <h3>📄 Proformas</h3>
-        <button class="btn-p gold" onclick="ouvrirModal('modalProforma')"><i class="fas fa-plus"></i> Nouveau</button>
+        
       </div>
       <div style="overflow-x:auto">
         <table class="tbl">
@@ -397,9 +392,7 @@
           </tbody>
         </table>
       </div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:right">
-        <a href="{% url 'facturation:proforma_list' %}" class="btn-p outline">Voir tous <i class="fas fa-arrow-right"></i></a>
-      </div>
+
     </div>
   </div>
 
@@ -408,7 +401,7 @@
     <div class="panel">
       <div class="ph">
         <h3>🔄 Avoirs</h3>
-        <button class="btn-p" style="background:#7c3aed;color:white" onclick="ouvrirModal('modalAvoir')"><i class="fas fa-plus"></i> Nouveau</button>
+        
       </div>
       <div style="overflow-x:auto">
         <table class="tbl">
@@ -440,9 +433,7 @@
           </tbody>
         </table>
       </div>
-      <div style="padding:12px 16px;border-top:1px solid var(--border);text-align:right">
-        <a href="{% url 'facturation:avoir_list' %}" class="btn-p outline">Voir tous <i class="fas fa-arrow-right"></i></a>
-      </div>
+
     </div>
   </div>
 
