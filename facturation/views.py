@@ -494,9 +494,15 @@ def ticket_reprint(request, pk):
 def ticket_print_thermal(request, pk):
     """Afficher le ticket en format thermique (HTML)"""
     ticket = get_object_or_404(Ticket, pk=pk)
-    # Récupérer le nom du serveur depuis cree_par
+    # Extraire le serveur depuis le data-attribute sauvegardé dans le contenu
+    import re
     serveur = ''
-    if ticket.cree_par:
+    if ticket.contenu:
+        match = re.search(r'data-serveur="([^"]*)"', ticket.contenu)
+        if match:
+            serveur = match.group(1)
+    # Fallback: cree_par si pas de serveur dans le contenu
+    if not serveur and ticket.cree_par:
         serveur = ticket.cree_par.get_full_name() or ticket.cree_par.username
     return render(request, 'facturation/ticket_print_thermal.html', {
         'ticket': ticket,

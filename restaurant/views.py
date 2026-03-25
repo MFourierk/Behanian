@@ -161,7 +161,7 @@ def valider_commande(request):
                 all_items_objs = LigneCommande.objects.filter(commande=commande)
                 
                 # Génération du contenu HTML pour le Ticket
-                services_html = ""
+                services_html = '<span class="ticket-meta" data-serveur="' + serveur_nom + '"></span>'
 
                 if client_name:
                     services_html += f"""
