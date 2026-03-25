@@ -45,7 +45,7 @@
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'facturation:proforma_list' %}" class="btn-p btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
+    <a href="{% url 'facturation:index' %}#proformas" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','proformas')"><i class="fas fa-arrow-left"></i> Retour</a>
     <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
     {% if proforma.statut in 'en_attente,acceptee,validee' %}
     <button class="btn-p btn-success" onclick="convertirEnFacture()"><i class="fas fa-file-invoice"></i> Convertir en Facture</button>

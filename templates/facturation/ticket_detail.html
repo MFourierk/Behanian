@@ -39,7 +39,7 @@
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'facturation:ticket_list' %}" class="btn-p btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
+    <a href="{% url 'facturation:index' %}#tickets" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','tickets')"><i class="fas fa-arrow-left"></i> Retour</a>
     <a href="{% url 'facturation:ticket_pdf' ticket.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
     <a href="{% url 'facturation:ticket_print_thermal' ticket.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-print"></i> Thermique</a>
     <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn-p btn-primary"><i class="fas fa-redo"></i> Réimprimer</a>

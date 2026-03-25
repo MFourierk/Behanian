@@ -750,10 +750,17 @@ function convertirProformaEnFacture(proformaId){
   window.location.href=`/facturation/proformas/${proformaId}/`;
 }
 
-// Initialisation dates
+// Initialisation dates + restauration onglet
 document.addEventListener('DOMContentLoaded',()=>{
   const today=new Date().toISOString().split('T')[0];
   document.querySelectorAll('input[type="date"][name="date_facturation"]').forEach(el=>el.value=today);
+  // Restaurer l'onglet actif si retour depuis une page détail
+  const savedTab=sessionStorage.getItem('facTab');
+  if(savedTab){
+    const tabEl=document.getElementById('tab-'+savedTab);
+    if(tabEl){setTab(savedTab,tabEl);}
+    sessionStorage.removeItem('facTab');
+  }
 });
 </script>
 {% endblock %}

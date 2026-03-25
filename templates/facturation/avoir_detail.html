@@ -15,7 +15,7 @@
 </div>
 
 <div class="action-bar">
-    <a href="{% url 'facturation:avoir_list' %}" class="btn-back">
+    <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="btn-back">
         <i class="fas fa-chevron-left"></i>
     </a>
     <div class="action-buttons" style="display: flex; gap: 10px;">
@@ -29,10 +29,10 @@
     <div class="tabs">
         <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
         <a href="{% url 'facturation:facture_create' %}" class="tab">Nouvelle Facture</a>
-        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
-        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
-        <a href="{% url 'facturation:avoir_list' %}" class="tab active">Avoirs</a>
-        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
+        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab">Factures</a>
+        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab">Proformas</a>
+        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab active">Avoirs</a>
+        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab">Tickets</a>
     </div>
 </div>
 
