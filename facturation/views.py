@@ -493,17 +493,30 @@ def ticket_reprint(request, pk):
 @require_module_access('facturation')
 def ticket_print_thermal(request, pk):
     """Afficher le ticket en format thermique (HTML)"""
-    ticket = get_object_or_404(Ticket, pk=pk)
-    # Extraire le serveur depuis le data-attribute sauvegardé dans le contenu
     import re
+    ticket = get_object_or_404(Ticket, pk=pk)
     serveur = ''
+
+    # 1. Chercher dans le contenu HTML (nouveaux tickets)
     if ticket.contenu:
         match = re.search(r'data-serveur="([^"]*)"', ticket.contenu)
         if match:
             serveur = match.group(1)
-    # Fallback: cree_par si pas de serveur dans le contenu
+
+    # 2. Chercher via la commande restaurant (objet_id)
+    if not serveur and ticket.module == 'restaurant' and ticket.objet_id:
+        try:
+            from restaurant.models import Commande
+            cmd = Commande.objects.select_related('serveur').filter(id=ticket.objet_id).first()
+            if cmd and cmd.serveur:
+                serveur = cmd.serveur.get_full_name() or cmd.serveur.username
+        except Exception:
+            pass
+
+    # 3. Fallback: cree_par
     if not serveur and ticket.cree_par:
         serveur = ticket.cree_par.get_full_name() or ticket.cree_par.username
+
     return render(request, 'facturation/ticket_print_thermal.html', {
         'ticket': ticket,
         'serveur': serveur,

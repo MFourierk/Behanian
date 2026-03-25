@@ -149,6 +149,16 @@ def valider_commande(request):
 
             with transaction.atomic():
                 commande.statut = 'payee'
+                # Sauvegarder le serveur sélectionné dans la commande
+                if serveur_nom:
+                    from django.contrib.auth.models import User as AuthUser
+                    srv = AuthUser.objects.filter(
+                        first_name__icontains=serveur_nom.split()[0] if serveur_nom else ''
+                    ).first() or AuthUser.objects.filter(
+                        username__icontains=serveur_nom.split()[0] if serveur_nom else ''
+                    ).first()
+                    if srv:
+                        commande.serveur = srv
                 commande.save()
                 
                 if commande.table:
