@@ -264,94 +264,152 @@ def proforma_list(request):
     proformas = Proforma.objects.all()
     return render(request, 'facturation/proforma_list.html', {'proformas': proformas})
 
-@require_module_access('facturation')
+def _generer_numero_proforma():
+    """Génère un numéro PRO-YYYY-XXXX automatique."""
+    from django.utils import timezone as tz
+    annee = tz.now().year
+    last = Proforma.objects.filter(numero__startswith=f'PRO-{annee}-').order_by('numero').last()
+    seq = int(last.numero.split('-')[-1]) + 1 if last else 1
+    return f'PRO-{annee}-{seq:04d}'
+
+
 def proforma_create(request):
-    if request.method == 'POST':
-        try:
-            with transaction.atomic():
-                # 1. Gérer le client
-                client_name = request.POST.get('client_name')
-                client_phone = request.POST.get('client_phone')
-                client_email = request.POST.get('client_email')
-                client_address = request.POST.get('client_address') # Assurez-vous que ce champ existe si nécessaire
+    """Créer un proforma multi-services depuis le modal ou le formulaire POST JSON."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
-                client, created = Client.objects.get_or_create(
-                    nom=client_name,
-                    defaults={
-                        'telephone': client_phone,
-                        'email': client_email,
-                        'adresse': client_address or ''
-                    }
+    try:
+        # Accepter JSON (modal index) ou POST form
+        if request.content_type and 'application/json' in request.content_type:
+            data = json.loads(request.body)
+        else:
+            data = request.POST.dict()
+
+        client_name = data.get('client_name', '').strip()
+        if not client_name:
+            return JsonResponse({'success': False, 'error': 'Nom du client requis'})
+
+        with transaction.atomic():
+            # Client
+            client, _ = Client.objects.get_or_create(
+                nom=client_name,
+                defaults={
+                    'telephone': data.get('client_phone', ''),
+                    'email': data.get('client_email', ''),
+                    'adresse': data.get('client_address', ''),
+                }
+            )
+
+            # Dates
+            from datetime import date, timedelta
+            from django.utils.dateparse import parse_date
+            date_validite = parse_date(data.get('date_validite', '')) or (date.today() + timedelta(days=30))
+
+            # Proforma
+            proforma = Proforma.objects.create(
+                numero=_generer_numero_proforma(),
+                client=client,
+                date_validite=date_validite,
+                statut='en_attente',
+                remise=Decimal(str(data.get('remise', '0') or '0')),
+                taux_tva=Decimal(str(data.get('taux_tva', '0') or '0')),
+                notes=data.get('notes', ''),
+                cree_par=request.user,
+            )
+
+            # Lignes — format: [{service, designation, quantite, prix_unitaire}, ...]
+            lignes_data = data.get('lignes', [])
+            if isinstance(lignes_data, str):
+                import json as _json
+                lignes_data = _json.loads(lignes_data)
+
+            sous_total = Decimal('0')
+            for ld in lignes_data:
+                designation = str(ld.get('designation', '')).strip()
+                if not designation:
+                    continue
+                qte = Decimal(str(ld.get('quantite', '1') or '1'))
+                prix = Decimal(str(ld.get('prix_unitaire', '0') or '0'))
+                service_nom = str(ld.get('service', ''))
+
+                LigneProforma.objects.create(
+                    proforma=proforma,
+                    article=None,
+                    designation=designation,
+                    description=service_nom,  # On stocke le service dans description
+                    quantite=qte,
+                    prix_unitaire=prix,
                 )
+                sous_total += qte * prix
 
-                # 2. Créer l'objet Proforma principal
-                date_creation_str = request.POST.get('date_creation')
-                if date_creation_str:
-                    date_creation = timezone.datetime.strptime(date_creation_str, '%Y-%m-%d')
-                    # Make it timezone aware if naive
-                    if timezone.is_naive(date_creation):
-                        date_creation = timezone.make_aware(date_creation)
-                else:
-                    date_creation = timezone.now()
-                
-                # Validité par défaut de 15 jours
-                date_validite = date_creation.date() + timedelta(days=15)
+            # Totaux
+            net = sous_total - proforma.remise
+            proforma.sous_total = sous_total
+            proforma.montant_tva = net * (proforma.taux_tva / 100)
+            proforma.total = net + proforma.montant_tva
+            proforma.save()
 
-                proforma = Proforma.objects.create(
-                    client=client,
-                    cree_par=request.user,
-                    remise=Decimal(request.POST.get('remise', 0)),
-                    taux_tva=Decimal(request.POST.get('tva', 0)), # Le champ s'appelle 'tva' dans le form
-                    date_creation=date_creation,
-                    date_validite=date_validite
-                )
+            return JsonResponse({
+                'success': True,
+                'numero': proforma.numero,
+                'detail_url': f'/facturation/proformas/{proforma.pk}/',
+                'pdf_url': f'/facturation/proformas/{proforma.pk}/pdf/',
+            })
 
-                # 3. Traiter les lignes d'articles
-                i = 1
-                while f'articles-{i}-service' in request.POST:
-                    service_id = request.POST.get(f'articles-{i}-service')
-                    composite_id = request.POST.get(f'articles-{i}-description')
-                    quantity = request.POST.get(f'articles-{i}-quantity')
-                    price = request.POST.get(f'articles-{i}-price')
-
-                    if service_id and composite_id and quantity and price:
-                        try:
-                            content_type_id, object_id = composite_id.split(':')
-                            service = get_object_or_404(Service, id=service_id)
-
-                            article_wrapper, created = Article.objects.get_or_create(
-                                content_type_id=content_type_id,
-                                object_id=object_id,
-                                defaults={'service': service}
-                            )
-
-                            LigneProforma.objects.create(
-                                proforma=proforma,
-                                article=article_wrapper,
-                                quantite=Decimal(quantity),
-                                prix_unitaire=Decimal(price)
-                            )
-                        except (ValueError, Service.DoesNotExist, ContentType.DoesNotExist) as e:
-                            # Log l'erreur et continuer
-                            print(f"Skipping invalid article line: {i}. Error: {e}")
-                    
-                    i += 1
-
-                # 4. Calculer les totaux
-                proforma.calculate_totals()
-                
-                pdf_url = reverse('facturation:proforma_pdf', kwargs={'pk': proforma.pk})
-                return JsonResponse({'success': True, 'pdf_url': pdf_url})
-                
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)})
 
 @require_module_access('facturation')
 def proforma_detail(request, pk):
     proforma = get_object_or_404(Proforma, pk=pk)
-    return render(request, 'facturation/proforma_detail.html', {'proforma': proforma})
+    lignes = proforma.lignes.order_by('id')
+    return render(request, 'facturation/proforma_detail.html', {'proforma': proforma, 'lignes': lignes})
+
+
+@require_module_access('facturation')
+def proforma_to_facture(request, pk):
+    """Convertir un proforma en facture en un clic."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requis'})
+    proforma = get_object_or_404(Proforma, pk=pk)
+    try:
+        with transaction.atomic():
+            annee = timezone.now().year
+            last = Facture.objects.filter(numero__startswith=f'FAC-{annee}-').order_by('numero').last()
+            seq = int(last.numero.split('-')[-1]) + 1 if last else 1
+            numero = f'FAC-{annee}-{seq:04d}'
+
+            from datetime import date, timedelta
+            facture = Facture.objects.create(
+                numero=numero,
+                client=proforma.client,
+                date_facturation=date.today(),
+                date_echeance=date.today() + timedelta(days=30),
+                statut='envoyee',
+                sous_total=proforma.sous_total,
+                remise=proforma.remise,
+                taux_tva=proforma.taux_tva,
+                montant_tva=proforma.montant_tva,
+                total=proforma.total,
+                montant_paye=0,
+                notes=f'Converti depuis proforma {proforma.numero}',
+                cree_par=request.user,
+            )
+            for lp in proforma.lignes.all():
+                LigneFacture.objects.create(
+                    facture=facture,
+                    article=None,
+                    designation=lp.designation,
+                    description=lp.description,
+                    quantite=lp.quantite,
+                    prix_unitaire=lp.prix_unitaire,
+                )
+            proforma.statut = 'invoiced'
+            proforma.save()
+            return JsonResponse({'success': True, 'detail_url': f'/facturation/factures/{facture.pk}/'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 @require_module_access('facturation')
 def proforma_pdf(request, pk):

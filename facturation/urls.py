@@ -15,6 +15,7 @@ urlpatterns = [
     path('proformas/nouveau/', views.proforma_create, name='proforma_create'),
     path('proformas/<int:pk>/', views.proforma_detail, name='proforma_detail'),
     path('proformas/<int:pk>/pdf/', views.proforma_pdf, name='proforma_pdf'),
+    path('proformas/<int:pk>/to-facture/', views.proforma_to_facture, name='proforma_to_facture'),
     
     path('avoirs/', views.avoir_list, name='avoir_list'),
     path('avoirs/nouveau/', views.avoir_create, name='avoir_create'),

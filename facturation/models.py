@@ -162,11 +162,15 @@ class LigneFacture(models.Model):
 
 class Proforma(models.Model):
     STATUT_CHOICES = [
+        ('en_attente', 'En attente'),
         ('draft', 'Brouillon'),
         ('sent', 'Envoyé'),
         ('accepted', 'Accepté'),
+        ('validee', 'Validée'),
         ('refused', 'Refusé'),
+        ('annulee', 'Annulée'),
         ('invoiced', 'Facturé'),
+        ('convertie', 'Convertie'),
     ]
     
     numero = models.CharField(max_length=20, unique=True)

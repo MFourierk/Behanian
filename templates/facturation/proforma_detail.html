@@ -47,8 +47,8 @@
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <a href="{% url 'facturation:index' %}#proformas" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','proformas')"><i class="fas fa-arrow-left"></i> Retour</a>
     <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
-    {% if proforma.statut in 'en_attente,acceptee,validee' %}
-    <button class="btn-p btn-success" onclick="convertirEnFacture()"><i class="fas fa-file-invoice"></i> Convertir en Facture</button>
+    {% if proforma.statut != 'invoiced' and proforma.statut != 'convertie' %}
+    <button class="btn-p btn-success" onclick="convertirEnFacture()"><i class="fas fa-file-invoice"></i> → Facture</button>
     {% endif %}
   </div>
 
@@ -117,10 +117,15 @@
 </div></div>
 
 <script>
-function convertirEnFacture(){
-  if(confirm('Convertir ce proforma en facture ?')){
-    window.location.href = "{% url 'facturation:facture_create' %}?proforma={{ proforma.pk }}";
-  }
+async function convertirEnFacture(){
+  if(!confirm('Convertir le proforma {{ proforma.numero }} en facture ?')) return;
+  const r = await fetch("{% url 'facturation:proforma_to_facture' proforma.pk %}", {
+    method:'POST',
+    headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'}
+  });
+  const d = await r.json();
+  if(d.success){ window.location = d.detail_url; }
+  else alert('Erreur: ' + (d.error||'Inconnue'));
 }
 </script>
 {% endblock %}

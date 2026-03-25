@@ -2,11 +2,17 @@
 {% block doc_title %}{{ proforma.numero }}{% endblock %}
 
 {% block doc_content %}
+<style>
+@page { margin: 1.2cm; size: A4; }
+.service-header { background:#1a2535; color:white; padding:6px 12px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; margin-top:10px; border-radius:4px 4px 0 0; }
+.service-subtotal { text-align:right; padding:6px 12px; font-size:11px; font-weight:700; color:#2563eb; background:#f0f4ff; border-top:1px solid #d4dce8; }
+</style>
+
 <!-- TITRE -->
 <div class="doc-title-band">
   <div>
-    <div class="doc-title-text">Facture Proforma</div>
-    <div class="doc-title-sub">Complexe Hôtelier Behanian · Devis &amp; Estimations</div>
+    <div class="doc-title-text">FACTURE PROFORMA</div>
+    <div class="doc-title-sub">Complexe Hôtelier Behanian · Document non contractuel</div>
   </div>
   <div class="doc-title-right">
     <span class="badge badge-{{ proforma.statut }}">{{ proforma.get_statut_display }}</span>
@@ -17,76 +23,86 @@
 <!-- META -->
 <div class="meta-grid cols-2">
   <div class="meta-box">
-    <div class="meta-box-title">Informations Proforma</div>
+    <div class="meta-box-title">Informations proforma</div>
     <div class="meta-row"><span class="meta-lbl">N° Proforma</span><span class="meta-val bold">{{ proforma.numero }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Date</span><span class="meta-val">{{ proforma.date_creation|date:"d/m/Y" }}</span></div>
-    {% if proforma.date_validite %}<div class="meta-row"><span class="meta-lbl">Valide jusqu'au</span><span class="meta-val">{{ proforma.date_validite|date:"d/m/Y" }}</span></div>{% endif %}
-    <div class="meta-row"><span class="meta-lbl">Statut</span><span class="meta-val">{{ proforma.get_statut_display }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date d'émission</span><span class="meta-val">{{ proforma.date_creation|date:"d/m/Y" }}</span></div>
+    {% if proforma.date_validite %}<div class="meta-row"><span class="meta-lbl">Valable jusqu'au</span><span class="meta-val">{{ proforma.date_validite|date:"d/m/Y" }}</span></div>{% endif %}
     {% if proforma.cree_par %}<div class="meta-row"><span class="meta-lbl">Établi par</span><span class="meta-val">{{ proforma.cree_par.get_full_name|default:proforma.cree_par.username }}</span></div>{% endif %}
   </div>
   <div class="meta-box">
-    <div class="meta-box-title">Destinataire</div>
-    <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val bold">{{ proforma.client.nom|default:"Client" }}</span></div>
-    {% if proforma.client and proforma.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ proforma.client.telephone|default:"" }}</span></div>{% endif %}
-    {% if proforma.client and proforma.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ proforma.client.email|default:"" }}</span></div>{% endif %}
-    {% if proforma.client and proforma.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ proforma.client.adresse|default:"" }}</span></div>{% endif %}
+    <div class="meta-box-title">Client</div>
+    {% if proforma.client %}
+    <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val bold">{{ proforma.client.nom }}</span></div>
+    {% if proforma.client and proforma.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ proforma.client.telephone }}</span></div>{% endif %}
+    {% if proforma.client and proforma.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ proforma.client.email }}</span></div>{% endif %}
+    {% if proforma.client and proforma.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ proforma.client.adresse }}</span></div>{% endif %}
+    {% endif %}
   </div>
 </div>
 
-<!-- LIGNES -->
+<!-- LIGNES GROUPÉES PAR SERVICE -->
 <div class="content-section">
-  <div class="section-title">Détail des prestations proposées</div>
-  <table class="doc-table">
+  <div class="section-title">Détail des prestations par service</div>
+
+  {% regroup lignes by description as services_list %}
+  {% for service_group in services_list %}
+  <div class="service-header">
+    <i>{{ service_group.grouper|default:"Prestations diverses" }}</i>
+  </div>
+  <table class="doc-table" style="margin-bottom:0;border-radius:0">
     <thead>
       <tr>
         <th style="width:30px">#</th>
-        <th>Désignation / Prestation</th>
-        <th style="width:80px">Unité</th>
-        <th class="r" style="width:70px">Qté</th>
-        <th class="r" style="width:110px">Prix U. (FCFA)</th>
-        <th class="r" style="width:120px">Total HT (FCFA)</th>
+        <th>Désignation</th>
+        <th style="width:70px;text-align:right">Qté</th>
+        <th style="width:130px;text-align:right">Prix U. (FCFA)</th>
+        <th style="width:130px;text-align:right">Total HT (FCFA)</th>
       </tr>
     </thead>
     <tbody>
-      {% for ligne in lignes %}
+      {% for ligne in service_group.list %}
       <tr>
         <td class="muted">{{ forloop.counter }}</td>
-        <td>
-          <span class="bold">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}Prestation{% endif %}</span>
-          {% if ligne.description %}<br><span style="font-size:9px;color:#6b7a8d">{{ ligne.description }}</span>{% endif %}
-        </td>
-        <td>u</td>
-        <td class="r">{{ ligne.quantite|floatformat:2 }}</td>
-        <td class="r">{{ ligne.prix_unitaire|floatformat:0 }}</td>
-        <td class="r bold">{{ ligne.montant_ht|floatformat:0 }}</td>
+        <td class="bold">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}—{% endif %}</td>
+        <td style="text-align:right;white-space:nowrap">{{ ligne.quantite|floatformat:2 }}</td>
+        <td style="text-align:right;white-space:nowrap">{{ ligne.prix_unitaire|floatformat:0 }} FCFA</td>
+        <td style="text-align:right;font-weight:700;white-space:nowrap">{{ ligne.montant_ht|floatformat:0 }} FCFA</td>
       </tr>
-      {% empty %}
-      <tr><td colspan="6" style="text-align:center;padding:16px;color:#8a9ab0;font-style:italic">Aucune ligne</td></tr>
       {% endfor %}
     </tbody>
+  </table>
+  <div class="service-subtotal">
+    Sous-total {{ service_group.grouper|default:"Divers" }} :
+    {% with st=0 %}
+    {% for l in service_group.list %}{{ l.montant_ht|floatformat:0 }}{% endfor %}
+    {% endwith %}
+  </div>
+  {% endfor %}
+
+  <!-- TOTAUX GLOBAUX -->
+  <table class="doc-table" style="margin-top:10px">
     <tfoot>
-      <tr><td colspan="4"></td><td class="total-label">Sous-total HT</td><td class="r">{{ proforma.sous_total|floatformat:0 }}</td></tr>
-      {% if proforma.remise > 0 %}<tr><td colspan="4"></td><td style="text-align:right;font-size:10px;color:#16a34a">Remise</td><td class="r" style="color:#16a34a">- {{ proforma.remise|floatformat:0 }}</td></tr>{% endif %}
-      {% if proforma.taux_tva > 0 %}<tr><td colspan="4"></td><td class="total-label">TVA {{ proforma.taux_tva }}%</td><td class="r">{{ proforma.montant_tva|floatformat:0 }}</td></tr>{% endif %}
-      <tr><td colspan="4"></td><td class="total-label">TOTAL TTC</td><td class="total-val">{{ proforma.total|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td colspan="1" class="total-label">Sous-total HT</td><td style="text-align:right;font-weight:700;white-space:nowrap">{{ proforma.sous_total|floatformat:0 }} FCFA</td></tr>
+      {% if proforma.remise > 0 %}<tr><td colspan="3"></td><td class="total-label" style="color:#16a34a">Remise</td><td style="text-align:right;color:#16a34a;white-space:nowrap">- {{ proforma.remise|floatformat:0 }} FCFA</td></tr>{% endif %}
+      {% if proforma.taux_tva > 0 %}<tr><td colspan="3"></td><td class="total-label">TVA {{ proforma.taux_tva }}%</td><td style="text-align:right;white-space:nowrap">{{ proforma.montant_tva|floatformat:0 }} FCFA</td></tr>{% endif %}
+      <tr><td colspan="3"></td><td class="total-label" style="font-size:13px;font-weight:800;color:#1a2535">TOTAL TTC</td><td style="text-align:right;font-size:14px;font-weight:800;color:#c0392b;background:#fdf2f2;white-space:nowrap">{{ proforma.total|floatformat:0 }} FCFA</td></tr>
     </tfoot>
   </table>
 </div>
 
 {% if proforma.notes %}
-<div class="notes-box"><strong>Notes / Conditions</strong> {{ proforma.notes }}</div>
+<div class="notes-box"><strong>Notes</strong> {{ proforma.notes }}</div>
 {% endif %}
 
-<div style="margin:10px 0;padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:9px;color:#6b7a8d;border:1px solid #e8edf5">
-  <strong>Ce document est un proforma.</strong> Il ne constitue pas une facture définitive. Valable jusqu'au {{ proforma.date_validite|date:"d/m/Y"|default:"confirmation" }}.
+<div style="margin:10px 0;padding:10px 14px;background:#fffbeb;border-radius:8px;font-size:9px;color:#6b7a8d;border:1px solid #fde68a">
+  <strong>Ce document est un devis / proforma.</strong> Il n'a pas valeur de facture. Sous réserve d'acceptation, une facture sera émise. Validité : {{ proforma.date_validite|date:"d/m/Y" }}.
 </div>
 
 <!-- SIGNATURES -->
 <div class="signatures cols-2">
-  <div class="sig-box"><div class="sig-line">Client — Bon pour accord</div><div class="sig-hint">Signature &amp; Date</div></div>
-  <div class="sig-box"><div class="sig-line">Complexe Behanian</div><div class="sig-hint">Signature &amp; Cachet</div></div>
+  <div class="sig-box"><div class="sig-line">Client — Bon pour accord</div><div class="sig-hint">Nom, date &amp; signature</div></div>
+  <div class="sig-box"><div class="sig-line">Complexe Hôtelier Behanian</div><div class="sig-hint">Cachet &amp; signature</div></div>
 </div>
 
-<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
 {% endblock %}
-{% block doc_footer_right %}Proforma {{ proforma.numero }} · {{ proforma.date_creation|date:"d/m/Y" }}{% endblock %}
+{% block doc_footer_right %}Proforma {{ proforma.numero }} · Valable jusqu'au {{ proforma.date_validite|date:"d/m/Y"|default:"—" }}{% endblock %}
