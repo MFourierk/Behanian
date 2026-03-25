@@ -674,6 +674,54 @@ def create_document(request, doc_type):
     return JsonResponse({'success': False, 'error': 'Type de document invalide'})
 
 
+def _parser_contenu_ticket(contenu):
+    """Parse le contenu d'un ticket et retourne une liste de (designation, prix)."""
+    if not contenu:
+        return []
+    
+    lignes = []
+    
+    # Format HTML : <div class="row"><span class="item-name">...</span><span class="item-price">...</span></div>
+    if '<div class="row">' in contenu or '<div class=' in contenu:
+        from html.parser import HTMLParser
+        import re
+        # Extraire les paires item-name / item-price
+        noms = re.findall(r'<span[^>]*class=[^>]*item-name[^>]*>(.*?)</span>', contenu, re.DOTALL)
+        prix = re.findall(r'<span[^>]*class=[^>]*item-price[^>]*>(.*?)</span>', contenu, re.DOTALL)
+        for i, nom in enumerate(noms):
+            nom_clean = re.sub(r'<[^>]+>', '', nom).strip()
+            if not nom_clean:
+                continue
+            prix_val = Decimal('0')
+            if i < len(prix):
+                prix_str = re.sub(r'[^\d,.]', '', prix[i].replace(',', '').replace(' ','').strip())
+                try:
+                    prix_val = Decimal(prix_str) if prix_str else Decimal('0')
+                except Exception:
+                    prix_val = Decimal('0')
+            lignes.append((nom_clean, prix_val))
+    
+    else:
+        # Format texte brut Cave : "  Article x1  1,000 F"
+        import re
+        for line in contenu.split('\n'):
+            line = line.strip()
+            if not line or line.startswith('=') or line.startswith('TOTAL') or line.startswith('Reglement') or line.startswith('Recu') or line.startswith('Rendu') or line.startswith('COMPLEXE') or line.startswith('Ticket') or line.startswith('Date') or line.startswith('Espace') or line.startswith('Ref'):
+                continue
+            # Pattern : "Nom article x2  1,500 F"
+            match = re.match(r'^(.+?)\s+([\d,\s]+)\s*F\s*$', line)
+            if match:
+                nom = match.group(1).strip()
+                prix_str = match.group(2).replace(',', '').replace(' ', '').strip()
+                try:
+                    prix_val = Decimal(prix_str)
+                    lignes.append((nom, prix_val))
+                except Exception:
+                    pass
+    
+    return lignes
+
+
 def facture_from_ticket(request):
     """Convertir un ticket en facture."""
     if request.method != 'POST':
@@ -731,15 +779,27 @@ def facture_from_ticket(request):
         )
 
         # Créer une ligne facture avec le contenu du ticket
-        # Créer la ligne de facture sans article (facture libre depuis ticket)
-        LigneFacture.objects.create(
-            facture=facture,
-            article=None,
-            designation=f"{ticket.get_module_display()} — {ticket.numero}",
-            description=ticket.contenu[:200] if ticket.contenu else '',
-            quantite=1,
-            prix_unitaire=ticket.montant_total,
-        )
+        # Parser le contenu du ticket pour créer une ligne par article
+        lignes_parsed = _parser_contenu_ticket(ticket.contenu)
+        
+        if lignes_parsed:
+            for designation, prix in lignes_parsed:
+                LigneFacture.objects.create(
+                    facture=facture,
+                    article=None,
+                    designation=designation,
+                    quantite=1,
+                    prix_unitaire=prix,
+                )
+        else:
+            # Fallback : une seule ligne avec le total
+            LigneFacture.objects.create(
+                facture=facture,
+                article=None,
+                designation=f"{ticket.get_module_display()} — {ticket.numero}",
+                quantite=1,
+                prix_unitaire=ticket.montant_total,
+            )
 
         return JsonResponse({
             'success': True,
