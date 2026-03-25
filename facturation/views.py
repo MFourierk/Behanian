@@ -65,7 +65,7 @@ def index(request):
     montant_impaye = factures_impayees.aggregate(s=Sum('total'))['s'] or 0
 
     # Tickets récents tous modules
-    tickets_recents = Ticket.objects.select_related('client','cree_par').order_by('-date_creation')[:10]
+    tickets_recents = Ticket.objects.select_related('client','cree_par').order_by('-date_creation')[:50]
 
     # Répartition CA par module
     ca_par_module = {}
