@@ -14,25 +14,14 @@
     </div>
 </div>
 
-<div class="action-bar">
-    <a href="{% url 'facturation:index' %}" class="btn-back">
-        <i class="fas fa-chevron-left"></i>
-    </a>
+<div style="display:flex;gap:10px;margin-bottom:20px">
+    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','avoirs')" style="padding:9px 18px;border-radius:9px;border:1px solid #d4dce8;background:white;color:#3d4f63;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none"><i class="fas fa-arrow-left"></i> Retour</a>
     <a href="{% url 'facturation:avoir_create' %}" class="btn-add-glam">
         <i class="fas fa-plus mr-2"></i> Créer un avoir
     </a>
 </div>
 
-<div class="tabs-container">
-    <div class="tabs">
-        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
-        <a href="{% url 'facturation:index' %}" class="tab">Nouvelle Facture</a>
-        <a href="{% url 'facturation:facture_list' %}" class="tab">Factures</a>
-        <a href="{% url 'facturation:proforma_list' %}" class="tab">Proformas</a>
-        <a href="{% url 'facturation:avoir_list' %}" class="tab active">Avoirs</a>
-        <a href="{% url 'facturation:ticket_list' %}" class="tab">Tickets</a>
-    </div>
-</div>
+
 
 <div class="content-section">
     <div class="card">
@@ -90,37 +79,18 @@
 
 
 <style>
-.tabs-container {
-    margin-bottom: 20px;
-    border-bottom: 1px solid #dee2e6;
-}
+
 
 .tabs {
     display: flex;
     gap: 0;
 }
 
-.tab {
-    padding: 12px 20px;
-    text-decoration: none;
-    color: #6c757d;
-    border: 1px solid transparent;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: -1px;
-    transition: all 0.3s ease;
-}
 
-.tab:hover {
-    color: #0056b3;
-    text-decoration: none;
-    border-color: #e9ecef #e9ecef #dee2e6;
-}
 
-.tab.active {
-    color: #0056b3;
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
-}
+
+
+
 
 .card {
     border: 1px solid #dee2e6;
