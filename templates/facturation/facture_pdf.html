@@ -30,7 +30,7 @@
     {% if facture.client and facture.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ facture.client.telephone|default:"" }}</span></div>{% endif %}
     {% if facture.client and facture.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ facture.client.email|default:"" }}</span></div>{% endif %}
     {% if facture.client and facture.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ facture.client.adresse|default:"" }}</span></div>{% endif %}
-    <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a;font-weight:700">{{ facture.montant_paye|floatformat:0 }} FCFA</span></div>
+    {% if facture.montant_paye > 0 %}<div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a;font-weight:700">{{ facture.montant_paye|floatformat:0 }} FCFA</span></div>{% endif %}
   </div>
 </div>
 
@@ -42,7 +42,6 @@
       <tr>
         <th style="width:30px">#</th>
         <th>Désignation</th>
-        <th style="width:80px">Unité</th>
         <th class="r" style="width:70px">Qté</th>
         <th class="r" style="width:110px">Prix U. (FCFA)</th>
         <th class="r" style="width:120px">Total HT (FCFA)</th>
@@ -56,7 +55,6 @@
           <span class="bold">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}Prestation{% endif %}</span>
           {% if ligne.description %}<br><span style="font-size:9px;color:#6b7a8d">{{ ligne.description }}</span>{% endif %}
         </td>
-        <td>u</td>
         <td class="r">{{ ligne.quantite|floatformat:2 }}</td>
         <td class="r">{{ ligne.prix_unitaire|floatformat:0 }}</td>
         <td class="r bold">{{ ligne.montant_ht|floatformat:0 }}</td>
@@ -66,14 +64,14 @@
       {% endfor %}
     </tbody>
     <tfoot>
-      <tr><td colspan="4"></td><td class="total-label">Sous-total HT</td><td class="r">{{ facture.sous_total|floatformat:0 }}</td></tr>
-      {% if facture.remise > 0 %}<tr><td colspan="4"></td><td style="text-align:right;font-size:10px;color:#16a34a">Remise</td><td class="r" style="color:#16a34a">- {{ facture.remise|floatformat:0 }}</td></tr>{% endif %}
-      {% if facture.taux_tva > 0 %}<tr><td colspan="4"></td><td class="total-label">TVA {{ facture.taux_tva }}%</td><td class="r">{{ facture.montant_tva|floatformat:0 }}</td></tr>{% endif %}
-      <tr><td colspan="4"></td><td class="total-label">TOTAL TTC</td><td class="total-val">{{ facture.total|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td colspan="2" class="total-label">Sous-total HT</td><td class="r">{{ facture.sous_total|floatformat:0 }} FCFA</td></tr>
+      {% if facture.remise > 0 %}<tr><td colspan="3"></td><td colspan="2" style="text-align:right;color:#16a34a;font-size:10px">Remise accordée</td><td class="r" style="color:#16a34a">- {{ facture.remise|floatformat:0 }} FCFA</td></tr>{% endif %}
+      {% if facture.taux_tva > 0 %}<tr><td colspan="3"></td><td colspan="2" class="total-label">TVA {{ facture.taux_tva }}%</td><td class="r">{{ facture.montant_tva|floatformat:0 }} FCFA</td></tr>{% endif %}
+      <tr><td colspan="3"></td><td colspan="2" class="total-label" style="font-size:13px;font-weight:800;color:#1a2535">TOTAL TTC</td><td class="total-val">{{ facture.total|floatformat:0 }} FCFA</td></tr>
       {% if facture.montant_paye > 0 %}
-      <tr><td colspan="4"></td><td style="text-align:right;font-size:10px;color:#16a34a;padding:4px 0">Montant payé</td><td class="r" style="font-size:10px;color:#16a34a">{{ facture.montant_paye|floatformat:0 }}</td></tr>
+      <tr><td colspan="3"></td><td colspan="2" class="total-label" style="color:#16a34a">Déjà encaissé</td><td class="r" style="color:#16a34a;font-weight:700">{{ facture.montant_paye|floatformat:0 }} FCFA</td></tr>
       {% if facture.total > facture.montant_paye %}
-      <tr><td colspan="4"></td><td style="text-align:right;font-weight:700;color:#dc2626">Reste dû</td><td class="r bold" style="color:#dc2626">{{ facture.total|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td colspan="2" class="total-label" style="color:#dc2626;font-size:12px">Reste dû</td><td class="total-val" style="font-size:12px">{{ facture.total|floatformat:0 }} FCFA</td></tr>
       {% endif %}
       {% endif %}
     </tfoot>
