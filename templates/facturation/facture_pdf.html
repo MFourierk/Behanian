@@ -11,7 +11,7 @@ body, html { height: auto !important; }
 <!-- TITRE -->
 <div class="doc-title-band">
   <div>
-    <div class="doc-title-text">Facture</div>
+    <div class="doc-title-text">FACTURE</div>
     <div class="doc-title-sub">Complexe Hôtelier Behanian · Services &amp; Prestations</div>
   </div>
   <div class="doc-title-right">
@@ -76,7 +76,6 @@ body, html { height: auto !important; }
       {% if facture.remise > 0 %}<tr><td colspan="3"></td><td colspan="2" style="text-align:right;color:#16a34a;font-size:10px">Remise accordée</td><td class="r" style="color:#16a34a">- {{ facture.remise|floatformat:0 }} FCFA</td></tr>{% endif %}
       {% if facture.taux_tva > 0 %}<tr><td colspan="3"></td><td colspan="2" class="total-label">TVA {{ facture.taux_tva }}%</td><td class="r">{{ facture.montant_tva|floatformat:0 }} FCFA</td></tr>{% endif %}
       <tr><td colspan="3"></td><td colspan="2" class="total-label" style="font-size:13px;font-weight:800;color:#1a2535">TOTAL TTC</td><td style="text-align:right;font-size:14px;font-weight:800;color:#c0392b;background:#fdf2f2;white-space:nowrap">{{ facture.total|floatformat:0 }} FCFA</td></tr>
-      {% endif %}
     </tfoot>
   </table>
 </div>
