@@ -11,4 +11,5 @@ urlpatterns = [
     path('api/calendrier/', views.api_calendrier, name='api_calendrier'),
     path('api/espace/<int:espace_id>/', views.api_espace_detail, name='api_espace_detail'),
     path('recu/<int:reservation_id>/', views.recu_reservation, name='recu_reservation'),
+    path('contrat/<int:pk>/', views.contrat_print, name='contrat_print'),
 ]

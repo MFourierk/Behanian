@@ -230,7 +230,8 @@
                 <button class="btn-p btn-success" onclick="ouvrirEncaissement({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}',{{ res.montant_net|stringformat:'g' }},{{ res.avance|stringformat:'g' }},{% if res.reservation_hotel %}{{ res.reservation_hotel.id }}{% else %}null{% endif %},'{% if res.reservation_hotel %}{{ res.reservation_hotel.chambre.numero }}{% endif %}')">
                   <i class="fas fa-cash-register"></i>
                 </button>
-                <button class="btn-p btn-outline" title="Imprimer reçu" onclick="imprimerRecu({{ res.id }})"><i class="fas fa-print"></i></button>
+                <button class="btn-p btn-outline" title="Reçu de réservation" onclick="imprimerRecu({{ res.id }})"><i class="fas fa-receipt"></i></button>
+                <button class="btn-p btn-outline" title="Contrat de location" onclick="imprimerContrat({{ res.id }})"><i class="fas fa-file-contract"></i></button>
                 <button class="btn-p btn-danger" title="Annuler" onclick="ouvrirAnnulation({{ res.id }},'{{ res.nom_client|escapejs }}','{{ res.espace.nom|escapejs }}')"><i class="fas fa-times"></i></button>
               </div>
             </td>
@@ -298,7 +299,10 @@
               {% else %}<span style="color:#7a8b9c">—</span>{% endif %}
             </td>
             <td><span class="badge b-{{ res.statut }}">{{ res.get_statut_display }}</span></td>
-            <td><button class="btn-p btn-outline" title="Imprimer reçu" onclick="imprimerRecu({{ res.id }})"><i class="fas fa-print"></i></button></td>
+            <td>
+              <button class="btn-p btn-outline" style="margin-bottom:3px" title="Reçu" onclick="imprimerRecu({{ res.id }})"><i class="fas fa-receipt"></i></button>
+              <button class="btn-p btn-outline" title="Contrat" onclick="imprimerContrat({{ res.id }})"><i class="fas fa-file-contract"></i></button>
+            </td>
           </tr>
           {% empty %}
           <tr><td colspan="10" style="text-align:center;padding:30px;color:#7a8b9c">Aucune réservation dans l'historique</td></tr>
@@ -532,6 +536,10 @@ async function confirmerAnnulation(){
 // ── Imprimer reçu ──
 function imprimerRecu(resId){
   const w=window.open(`/espaces-evenementiels/recu/${resId}/`,'_blank','width=500,height=700');
+  if(w)w.focus();
+}
+function imprimerContrat(resId){
+  const w=window.open(`/espaces-evenementiels/contrat/${resId}/`,'_blank','width=750,height=900');
   if(w)w.focus();
 }
 
