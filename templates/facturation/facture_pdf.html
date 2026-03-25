@@ -2,6 +2,12 @@
 {% block doc_title %}{{ facture.numero }}{% endblock %}
 
 {% block doc_content %}
+<style>
+@page { margin: 1.2cm; size: A4; }
+body, html { height: auto !important; }
+.signatures { page-break-inside: avoid; margin-top: 20px; }
+.notes-box { page-break-inside: avoid; }
+</style>
 <!-- TITRE -->
 <div class="doc-title-band">
   <div>
@@ -30,7 +36,7 @@
     {% if facture.client and facture.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ facture.client.telephone|default:"" }}</span></div>{% endif %}
     {% if facture.client and facture.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ facture.client.email|default:"" }}</span></div>{% endif %}
     {% if facture.client and facture.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ facture.client.adresse|default:"" }}</span></div>{% endif %}
-    {% if facture.montant_paye > 0 %}<div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a;font-weight:700">{{ facture.montant_paye|floatformat:0 }} FCFA</span></div>{% endif %}
+    <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a;font-weight:700">{{ facture.montant_paye|floatformat:0 }} FCFA</span></div>
   </div>
 </div>
 
@@ -42,9 +48,9 @@
       <tr>
         <th style="width:30px">#</th>
         <th>Désignation</th>
-        <th class="r" style="width:70px">Qté</th>
-        <th class="r" style="width:110px">Prix U. (FCFA)</th>
-        <th class="r" style="width:120px">Total HT (FCFA)</th>
+        <th style="width:60px;text-align:right">Qté</th>
+        <th style="width:120px;text-align:right">Prix U. (FCFA)</th>
+        <th style="width:130px;text-align:right">Total HT (FCFA)</th>
       </tr>
     </thead>
     <tbody>
@@ -55,9 +61,9 @@
           <span class="bold">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}Prestation{% endif %}</span>
           {% if ligne.description %}<br><span style="font-size:9px;color:#6b7a8d">{{ ligne.description }}</span>{% endif %}
         </td>
-        <td class="r">{{ ligne.quantite|floatformat:2 }}</td>
-        <td class="r">{{ ligne.prix_unitaire|floatformat:0 }}</td>
-        <td class="r bold">{{ ligne.montant_ht|floatformat:0 }}</td>
+        <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
+        <td style="text-align:right">{{ ligne.prix_unitaire|floatformat:0 }} F</td>
+        <td style="text-align:right;font-weight:700">{{ ligne.montant_ht|floatformat:0 }} F</td>
       </tr>
       {% empty %}
       <tr><td colspan="6" style="text-align:center;padding:16px;color:#8a9ab0;font-style:italic">Aucune ligne</td></tr>
@@ -88,6 +94,6 @@
   <div class="sig-box"><div class="sig-line">Responsable Facturation</div><div class="sig-hint">Signature &amp; Cachet</div></div>
 </div>
 
-<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
+
 {% endblock %}
 {% block doc_footer_right %}Facture {{ facture.numero }} · {{ facture.date_facturation|date:"d/m/Y" }}{% endblock %}
