@@ -12,6 +12,7 @@ def _get_dashboard_stats(user, modules):
     yesterday = today - timedelta(days=1)
 
     stats = {
+        'date_ref': None,
         'ca_jour': 0, 'ca_hier': 0, 'ca_mois': 0,
         'nb_tickets_jour': 0,
         'taux_occupation': 0, 'chambres_occupees': 0, 'total_chambres': 0,
@@ -40,9 +41,21 @@ def _get_dashboard_stats(user, modules):
         stats['ca_mois'] = int(tickets_mois.aggregate(s=Sum('montant_total'))['s'] or 0)
         stats['nb_tickets_jour'] = tickets_jour.count()
 
+        # Si pas de tickets aujourd'hui → utiliser la dernière journée active
+        tickets_module_ref = tickets_jour
+        stats['date_ref'] = today
+        if not tickets_jour.exists():
+            last = Ticket.objects.order_by('-date_creation').first()
+            if last:
+                last_date = last.date_creation.date()
+                tickets_module_ref = Ticket.objects.filter(date_creation__date=last_date)
+                stats['date_ref'] = last_date
+                stats['ca_jour'] = int(tickets_module_ref.aggregate(s=Sum('montant_total'))['s'] or 0)
+                stats['nb_tickets_jour'] = tickets_module_ref.count()
+
         # CA par module
         for mod, label in [('hotel','Hôtel'),('restaurant','Restaurant'),('cave','Cave'),('piscine','Piscine'),('espace','Espaces')]:
-            ca = tickets_jour.filter(module__startswith=mod).aggregate(s=Sum('montant_total'))['s'] or 0
+            ca = tickets_module_ref.filter(module__startswith=mod).aggregate(s=Sum('montant_total'))['s'] or 0
             if ca: stats['ca_par_module'][label] = int(ca)
 
         # CA 7 derniers jours
@@ -127,6 +140,7 @@ def dashboard_view(request):
 
     context = {
         **stats,
+        'date_ref': stats.get('date_ref', today),
         'user': request.user,
         'today': today,
         'accessible_modules': modules,
