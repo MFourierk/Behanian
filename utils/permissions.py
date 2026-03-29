@@ -12,7 +12,7 @@ GROUPE_MANAGER_GENERAL    = 'Manager Général(e)'
 GROUPE_MANAGER_CUISINE    = 'Manager Cuisine'
 GROUPE_RECEPTIONNISTE     = 'Réceptionniste'
 GROUPE_CAISSIER           = 'Caissière / Caissier'
-GROUPE_CAISSIER_PRINCIPAL = 'Caissier(ère) Principal(e)'
+GROUPE_CAISSIER_PRINCIPAL = 'Responsable Caisse'
 GROUPE_SERVEUR            = 'Serveuse/Serveur'
 
 # Modules accessibles par groupe

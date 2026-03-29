@@ -3,19 +3,31 @@ from django.utils.deprecation import MiddlewareMixin
 from .models import CaisseSession
 
 
-MODULES_PROTEGES = [
-    '/restaurant/api/',
-    '/bar/api/',
-    '/piscine/api/',
-    '/hotel/api/',
-    '/espaces-evenementiels/api/',
+# URLs protégées par module → type de session requis
+MODULES_PROTEGES = {
+    '/restaurant/api/': 'module',
+    '/bar/api/':        'module',
+    '/piscine/api/':    'module',
+    '/espaces-evenementiels/api/': 'module',
+    '/hotel/api/':      'hotel',
+    '/hotel/checkout':  'hotel',
+}
+
+# URLs à exclure même dans les modules protégés
+EXCLUSIONS = [
+    'login', 'logout', 'static', 'media', 'admin',
+    'get_', 'list', 'detail', 'check', 'status',
 ]
 
 
 class CaisseOuverteMiddleware(MiddlewareMixin):
     """
-    Bloque les transactions (POST API) si aucune caisse n'est ouverte.
-    Ne bloque pas les lectures (GET) ni les pages de configuration.
+    Vérifie qu'une caisse est ouverte avant toute transaction.
+    
+    Logique :
+    - Hôtel       → session ouverte par un Réceptionniste ou Manager
+    - Autres modules → session ouverte par un Caissier(e) ou Manager
+    - La caisse centrale (Manager) peut toujours opérer
     """
 
     def process_request(self, request):
@@ -23,18 +35,46 @@ class CaisseOuverteMiddleware(MiddlewareMixin):
             return None
 
         path = request.path
-        if not any(path.startswith(p) for p in MODULES_PROTEGES):
+        module_type = None
+        for prefix, mtype in MODULES_PROTEGES.items():
+            if path.startswith(prefix):
+                module_type = mtype
+                break
+
+        if not module_type:
             return None
 
-        # Exclure les URLs qui ne créent pas de tickets
-        exclusions = ['login', 'logout', 'static', 'media', 'admin', 'caisse']
-        if any(e in path for e in exclusions):
+        # Exclure les actions de lecture
+        if any(e in path for e in EXCLUSIONS):
             return None
 
-        # Vérifier si une caisse est ouverte
-        if not CaisseSession.objects.filter(is_open=True).exists():
+        # Superuser et Manager peuvent toujours opérer
+        if request.user.is_superuser:
+            return None
+
+        user_groups = list(request.user.groups.values_list('name', flat=True))
+        manager_groups = ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse', 'Responsable Hôtel']
+        if any(g in user_groups for g in manager_groups):
+            return None
+
+        # Vérifier session caisse selon le type de module
+        if module_type == 'hotel':
+            # Hôtel : session ouverte par cet utilisateur ou un réceptionniste
+            session_ouverte = CaisseSession.objects.filter(
+                is_open=True,
+                type_caisse='hotel'
+            ).exists()
+        else:
+            # Autres modules : session caisse module ouverte
+            session_ouverte = CaisseSession.objects.filter(
+                is_open=True,
+                type_caisse='module'
+            ).exists()
+
+        if not session_ouverte:
             return JsonResponse({
                 'success': False,
+                'ok': False,
                 'error': '⚠️ Caisse non ouverte. Veuillez ouvrir la caisse avant d\'enregistrer des transactions.',
                 'caisse_fermee': True,
             }, status=403)

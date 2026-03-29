@@ -84,7 +84,7 @@
   {% if session_active %}
   <div class="caisse-status open">
     <div>
-      <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:4px">🟢 CAISSE OUVERTE</div>
+      <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:4px">🟢 CAISSE OUVERTE — {{ session_active.get_type_caisse_display }}</div>
       <div style="font-size:20px;font-weight:800">{{ session_active.user.get_full_name|default:session_active.user.username }}</div>
       <div style="font-size:12px;opacity:.7;margin-top:2px">Depuis {{ session_active.opened_at|date:"H:i" }} · Fond : {{ session_active.fond_caisse|floatformat:0 }} F</div>
     </div>
@@ -92,6 +92,9 @@
       <button class="btn-a btn-or" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus-circle"></i> Mouvement</button>
       <button class="btn-a btn-bleu" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-university"></i> Banque</button>
       <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport</button>
+      {% if session_active.type_caisse != 'centrale' %}
+      <button class="btn-a btn-violet" onclick="ouvrirModal('modalVersement')"><i class="fas fa-exchange-alt"></i> Verser à la caisse</button>
+      {% endif %}
       <button class="btn-a btn-rouge" onclick="ouvrirModal('modalCloturer')"><i class="fas fa-lock"></i> Clôturer</button>
     </div>
   </div>
@@ -360,7 +363,7 @@
           <tbody>
           {% for s in sessions_jour %}
           <tr>
-            <td style="font-weight:600">{{ s.user.get_full_name|default:s.user.username }}</td>
+            <td style="font-weight:600">{{ s.user.get_full_name|default:s.user.username }}<br><span style="font-size:10px;color:#7a8b9c">{{ s.get_type_caisse_display }}</span></td>
             <td style="font-size:11px">{{ s.opened_at|date:"H:i" }}</td>
             <td style="font-size:11px">{{ s.closed_at|date:"H:i"|default:"En cours" }}</td>
             <td style="font-size:11px">{{ s.duree }}</td>
@@ -549,6 +552,39 @@
   </div>
 </div>
 
+<!-- MODAL VERSEMENT CAISSE CENTRALE -->
+<div class="modal-ov" id="modalVersement">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-exchange-alt" style="color:#7c3aed;margin-right:8px"></i>Versement à la caisse centrale</h3>
+      <button class="close-btn" onclick="fermerModal('modalVersement')">×</button>
+    </div>
+    <div style="background:#f5f0ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#6d28d9">
+      <i class="fas fa-info-circle"></i> Ce versement physique sera contrôlé par le responsable de la caisse centrale.
+    </div>
+    <div class="form-row">
+      <label>Montant versé physiquement (FCFA) *</label>
+      <input type="number" id="vs_montant" class="fc" placeholder="Ex: 150000" min="0">
+    </div>
+    <div class="form-row">
+      <label>Mode de remise</label>
+      <select id="vs_mode" class="fc">
+        <option value="especes">Espèces</option>
+        <option value="mobile_money">Mobile Money</option>
+        <option value="virement">Virement interne</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Description / Référence</label>
+      <input type="text" id="vs_description" class="fc" placeholder="Ex: Versement fin de service restaurant">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalVersement')">Annuler</button>
+      <button class="btn-a btn-violet" style="flex:2;justify-content:center" onclick="enregistrerVersement()"><i class="fas fa-check"></i> Confirmer le versement</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const CSRF = '{{ csrf_token }}';
 
@@ -623,6 +659,20 @@ async function enregistrerPrelevement(){
     notes: document.getElementById('pr_notes').value,
   });
   if(d.success){ fermerModal('modalPrelevement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
+  else toast('❌ '+d.error,'error');
+}
+
+async function enregistrerVersement(){
+  const montant = document.getElementById('vs_montant').value;
+  if(!montant||montant<=0){toast('Montant requis','error');return;}
+  const d = await post("{% url 'caisse:mouvement' %}", {
+    type: 'versement',
+    module: 'caisse',
+    montant,
+    mode_paiement: document.getElementById('vs_mode').value,
+    description: document.getElementById('vs_description').value || 'Versement à la caisse centrale',
+  });
+  if(d.success){ fermerModal('modalVersement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
   else toast('❌ '+d.error,'error');
 }
 

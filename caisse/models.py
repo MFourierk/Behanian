@@ -6,7 +6,15 @@ from decimal import Decimal
 
 class CaisseSession(models.Model):
     """Session de caisse — ouverture à clôture."""
+
+    TYPE_CHOICES = [
+        ('hotel',    'Caisse Hôtel (Réception)'),
+        ('module',   'Caisse Module (Restaurant/Cave/Piscine/Espaces)'),
+        ('centrale', 'Caisse Centrale (Manager)'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='caisse_sessions')
+    type_caisse = models.CharField(max_length=20, choices=TYPE_CHOICES, default='module')
     opened_at = models.DateTimeField(default=timezone.now)
     closed_at = models.DateTimeField(null=True, blank=True)
     is_open = models.BooleanField(default=True)

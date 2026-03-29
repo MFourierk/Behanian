@@ -124,8 +124,18 @@ def ouvrir_caisse(request):
         data = json.loads(request.body)
         fond = _dec(data.get('fond_caisse', 0))
         notes = data.get('notes', '')
+        # Déterminer le type de caisse selon le groupe de l'utilisateur
+        user_groups = list(request.user.groups.values_list('name', flat=True))
+        if request.user.is_superuser or any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
+            type_caisse = 'centrale'
+        elif 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
+            type_caisse = 'hotel'
+        else:
+            type_caisse = 'module'  # Caissier(e) → Restaurant, Cave, Piscine, Espaces
+
         session = CaisseSession.objects.create(
             user=request.user,
+            type_caisse=type_caisse,
             fond_caisse=fond,
             notes=notes,
         )
