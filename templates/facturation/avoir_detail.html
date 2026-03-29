@@ -1,205 +1,164 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Avoir {{ avoir.numero }} — Facturation{% endblock %}
 
-{% block title %}Avoir {{ avoir.numero }}{% endblock %}
+{% block extra_css %}
+<style>
+.fac-body{background:#eef1f5;padding:20px 0 50px}
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px}
+.meta-box{background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e8edf5}
+.meta-box-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7a8b9c;margin-bottom:12px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f3f7}
+.meta-row:last-child{border-bottom:none}
+.meta-lbl{font-size:11px;color:#7a8b9c;font-weight:500}
+.meta-val{font-size:12px;font-weight:600;color:#1a2535}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #d4dce8;background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-en_attente{background:#fef3c7;color:#d97706}.b-traitee{background:#dcfce7;color:#15803d}
+.b-annulee{background:#fee2e2;color:#dc2626}.b-draft{background:#f1f5f9;color:#64748b}
+.b-accepted{background:#dcfce7;color:#15803d}.b-refunded{background:#d1fae5;color:#065f46}
+.btn-p{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .12s;text-decoration:none}
+.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-violet{background:#7c3aed;color:white}
+.total-row{background:#f8fafc;font-weight:700}
+.grand-total{background:#1a2535}
+.grand-total td{color:white!important;font-size:14px!important;font-weight:700!important}
+.motif-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;margin:16px 20px;font-size:12px;color:#9a3412}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="header-glam facturation-watermark">
+<div class="fac-body"><div class="container-fluid" style="max-width:960px">
+
+  <!-- HEADER -->
+  <div class="header-glam caisse-watermark">
     <div class="header-content">
-        <h2>Avoir {{ avoir.numero }}</h2>
-        <p class="mb-0 opacity-75">Détails de l'avoir</p>
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0">Avoir {{ avoir.numero }}</h2>
+      <p class="mb-0 opacity-75">{{ avoir.client.nom|default:"Client anonyme" }} · {{ avoir.date_avoir|date:"d/m/Y" }}</p>
     </div>
-    <div class="header-clock">
-        <span class="time">--:-- GMT</span>
-        <span class="date">Chargement...</span>
-    </div>
-</div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
 
-<div class="action-bar">
-    <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="btn-back">
-        <i class="fas fa-chevron-left"></i>
+  <!-- ACTIONS -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','avoirs')">
+      <i class="fas fa-arrow-left"></i> Retour
     </a>
-    <div class="action-buttons" style="display: flex; gap: 10px;">
-        <a href="{% url 'facturation:avoir_pdf' avoir.pk %}" class="btn-action primary" target="_blank" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-            <i class="fas fa-print"></i> Imprimer / PDF
-        </a>
+    <a href="{% url 'facturation:avoir_pdf' avoir.pk %}" class="btn-p btn-violet" target="_blank">
+      <i class="fas fa-file-pdf"></i> PDF / Imprimer
+    </a>
+  </div>
+
+  <!-- INFOS -->
+  <div class="panel">
+    <div class="ph">
+      <h3>🔄 Avoir {{ avoir.numero }}</h3>
+      <span class="badge b-{{ avoir.statut }}">{{ avoir.get_statut_display }}</span>
     </div>
-</div>
 
-<div class="tabs-container">
-    <div class="tabs">
-        <a href="{% url 'facturation:index' %}" class="tab">Tableau de bord</a>
-        <a href="{% url 'facturation:facture_create' %}" class="tab">Nouvelle Facture</a>
-        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab">Factures</a>
-        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab">Proformas</a>
-        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab active">Avoirs</a>
-        <a href="{% url 'facturation:index' %}" onclick="sessionStorage.setItem('facTab','avoirs')" class="tab">Tickets</a>
+    <!-- Motif -->
+    <div class="motif-box">
+      <strong><i class="fas fa-info-circle"></i> Motif :</strong> {{ avoir.motif|default:"—" }}
     </div>
-</div>
 
-<div class="content-section">
-    <div class="card">
-        <div class="card-body p-5">
-            <!-- En-tête avoir -->
-            <div class="row mb-4">
-                <div class="col-6">
-                    <h2 class="text-primary">AVOIR</h2>
-                    <h5>{{ avoir.numero }}</h5>
-                    <p class="mb-0">Date: {{ avoir.date_avoir|date:"d/m/Y" }}</p>
-                    {% if avoir.facture_origine %}
-                        <p class="mb-0">Facture d'origine: <a href="{% url 'facturation:facture_detail' avoir.facture_origine.pk %}">{{ avoir.facture_origine.numero }}</a></p>
-                    {% endif %}
-                    <span class="badge badge-{% if avoir.statut == 'refunded' %}success{% elif avoir.statut == 'accepted' %}primary{% else %}secondary{% endif %} mt-2">
-                        {{ avoir.get_statut_display }}
-                    </span>
-                </div>
-                <div class="col-6 text-right">
-                    <h4>{{ avoir.client.nom_complet }}</h4>
-                    {% if avoir.client.adresse %}<p class="mb-0">{{ avoir.client.adresse|linebreaksbr }}</p>{% endif %}
-                    {% if avoir.client.telephone %}<p class="mb-0">Tél: {{ avoir.client.telephone }}</p>{% endif %}
-                    {% if avoir.client.email %}<p class="mb-0">{{ avoir.client.email }}</p>{% endif %}
-                </div>
-            </div>
-
-            <!-- Motif -->
-            <div class="alert alert-info mb-4">
-                <strong>Motif de l'avoir:</strong> {{ avoir.motif }}
-            </div>
-
-            <!-- Lignes -->
-            <div class="table-responsive mb-4">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th class="text-center">Quantité</th>
-                            <th class="text-right">Prix Unitaire</th>
-                            <th class="text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% regroup lignes by article.service.nom as service_list %}
-                        {% for service in service_list %}
-                            <tr class="table-secondary">
-                                <td colspan="4"><strong>{{ service.grouper }}</strong></td>
-                            </tr>
-                            {% for ligne in service.list %}
-                                <tr>
-                                    <td>
-                                        <span class="pl-3">{{ ligne.article.nom }}</span>
-                                        {% if ligne.description %}
-                                            <br><small class="text-muted pl-3">{{ ligne.description }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center">{{ ligne.quantite|floatformat:2 }}</td>
-                                    <td class="text-right">{{ ligne.prix_unitaire|floatformat:2 }}</td>
-                                    <td class="text-right">{{ ligne.montant_ht|floatformat:2 }}</td>
-                                </tr>
-                            {% endfor %}
-                        {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center">Aucune ligne</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Totaux -->
-            <div class="row">
-                <div class="col-md-6">
-                    {% if avoir.notes %}
-                        <div class="alert alert-light border">
-                            <strong>Notes:</strong><br>
-                            {{ avoir.notes|linebreaks }}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td class="text-right"><strong>Sous-total:</strong></td>
-                            <td class="text-right">{{ avoir.sous_total|floatformat:2 }} FCFA</td>
-                        </tr>
-                        <tr>
-                            <td class="text-right"><strong>TVA ({{ avoir.taux_tva|floatformat:2 }}%):</strong></td>
-                            <td class="text-right">{{ avoir.montant_tva|floatformat:2 }} FCFA</td>
-                        </tr>
-                        <tr class="border-top">
-                            <td class="text-right"><h4>Total TTC:</h4></td>
-                            <td class="text-right"><h4 class="text-primary">{{ avoir.total|floatformat:0 }} FCFA</h4></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="mt-5 text-center text-muted">
-                <p>Merci de votre confiance !</p>
-            </div>
+    <div class="meta-grid">
+      <div class="meta-box">
+        <div class="meta-box-title">Informations</div>
+        <div class="meta-row"><span class="meta-lbl">N° Avoir</span><span class="meta-val" style="font-family:monospace">{{ avoir.numero }}</span></div>
+        <div class="meta-row"><span class="meta-lbl">Date avoir</span><span class="meta-val">{{ avoir.date_avoir|date:"d/m/Y" }}</span></div>
+        {% if avoir.facture_origine %}
+        <div class="meta-row">
+          <span class="meta-lbl">Facture d'origine</span>
+          <a href="{% url 'facturation:facture_detail' avoir.facture_origine.pk %}" style="font-size:12px;font-weight:600;color:#2563eb;font-family:monospace">{{ avoir.facture_origine.numero }}</a>
         </div>
+        {% endif %}
+        {% if avoir.ticket_origine %}
+        <div class="meta-row"><span class="meta-lbl">Ticket d'origine</span><span class="meta-val" style="font-family:monospace">{{ avoir.ticket_origine.numero }}</span></div>
+        {% endif %}
+        {% if avoir.cree_par %}<div class="meta-row"><span class="meta-lbl">Émis par</span><span class="meta-val">{{ avoir.cree_par.get_full_name|default:avoir.cree_par.username }}</span></div>{% endif %}
+      </div>
+      <div class="meta-box">
+        <div class="meta-box-title">Client</div>
+        <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val bold">{{ avoir.client.nom|default:"—" }}</span></div>
+        {% if avoir.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ avoir.client.telephone }}</span></div>{% endif %}
+        {% if avoir.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ avoir.client.email }}</span></div>{% endif %}
+        <div class="meta-row">
+          <span class="meta-lbl">Montant avoir</span>
+          <span class="meta-val" style="font-size:16px;color:#7c3aed">{{ avoir.total|floatformat:0 }} FCFA</span>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<script>
-// Local clock script removed to use global clock
-</script>
+  <!-- LIGNES -->
+  <div class="panel">
+    <div class="ph"><h3>📋 Détail de l'avoir</h3></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Désignation</th>
+            <th style="text-align:right">Qté</th>
+            <th style="text-align:right">Prix U.</th>
+            <th style="text-align:right">Total HT</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne in lignes %}
+          <tr>
+            <td style="color:#7a8b9c">{{ forloop.counter }}</td>
+            <td>
+              <div style="font-weight:600">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}—{% endif %}</div>
+              {% if ligne.description %}<div style="font-size:11px;color:#7a8b9c">{{ ligne.description }}</div>{% endif %}
+            </td>
+            <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
+            <td style="text-align:right;white-space:nowrap">{{ ligne.prix_unitaire|floatformat:0 }} F</td>
+            <td style="text-align:right;font-weight:700;white-space:nowrap">{{ ligne.montant_ht|floatformat:0 }} F</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="3"></td>
+            <td style="text-align:right;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#4a5568">Sous-total HT</td>
+            <td style="text-align:right;padding:10px 16px;font-weight:700;white-space:nowrap">{{ avoir.sous_total|floatformat:0 }} FCFA</td>
+          </tr>
+          {% if avoir.remise > 0 %}
+          <tr class="total-row">
+            <td colspan="3"></td>
+            <td style="text-align:right;padding:10px 16px;color:#16a34a;font-weight:700">Remise</td>
+            <td style="text-align:right;padding:10px 16px;color:#16a34a;white-space:nowrap">- {{ avoir.remise|floatformat:0 }} FCFA</td>
+          </tr>
+          {% endif %}
+          {% if avoir.taux_tva > 0 %}
+          <tr class="total-row">
+            <td colspan="3"></td>
+            <td style="text-align:right;padding:10px 16px;font-weight:700">TVA {{ avoir.taux_tva }}%</td>
+            <td style="text-align:right;padding:10px 16px;white-space:nowrap">{{ avoir.montant_tva|floatformat:0 }} FCFA</td>
+          </tr>
+          {% endif %}
+          <tr class="grand-total">
+            <td colspan="3"></td>
+            <td style="text-align:right;padding:14px 16px">TOTAL AVOIR</td>
+            <td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important;white-space:nowrap">{{ avoir.total|floatformat:0 }} FCFA</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% if avoir.notes %}
+    <div style="padding:14px 20px;border-top:1px solid #d4dce8;background:#f8fafc;font-size:12px;color:#3d4f63">
+      <strong>Notes :</strong> {{ avoir.notes }}
+    </div>
+    {% endif %}
+  </div>
 
-<style>
-.tabs-container {
-    margin-bottom: 20px;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.tabs {
-    display: flex;
-    gap: 0;
-}
-
-.tab {
-    padding: 12px 20px;
-    text-decoration: none;
-    color: #6c757d;
-    border: 1px solid transparent;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: -1px;
-    transition: all 0.3s ease;
-}
-
-.tab:hover {
-    color: #0056b3;
-    text-decoration: none;
-    border-color: #e9ecef #e9ecef #dee2e6;
-}
-
-.tab.active {
-    color: #0056b3;
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
-}
-
-.card {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.badge {
-    padding: 0.5em 0.8em;
-    font-size: 85%;
-}
-
-.badge-success {
-    color: #fff;
-    background-color: #28a745;
-}
-
-.badge-primary {
-    color: #fff;
-    background-color: #007bff;
-}
-
-.badge-secondary {
-    color: #fff;
-    background-color: #6c757d;
-}
-</style>
+</div></div>
 {% endblock %}
