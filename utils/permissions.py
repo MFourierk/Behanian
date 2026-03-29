@@ -154,3 +154,15 @@ def require_gestion_access(module):
             return view_func(request, *args, **kwargs)
         return wrapper
     return decorator
+
+
+def caisse_est_ouverte(user):
+    """Vérifie si une caisse est ouverte pour cet utilisateur ou toute caisse du jour."""
+    from caisse.models import CaisseSession
+    return CaisseSession.objects.filter(is_open=True).exists()
+
+
+def verifier_caisse_ouverte(request):
+    """Retourne True si une caisse est ouverte, sinon False."""
+    from caisse.models import CaisseSession
+    return CaisseSession.objects.filter(is_open=True).exists()

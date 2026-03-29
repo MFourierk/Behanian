@@ -109,6 +109,18 @@
   </div>
   {% endif %}
 
+  <!-- ALERTE CAISSE FERMÉE -->
+  {% if not session_active %}
+  <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <i class="fas fa-exclamation-triangle" style="color:#f97316;font-size:20px"></i>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#9a3412">Caisse non ouverte</div>
+      <div style="font-size:12px;color:#c2410c">Aucune opération ne peut être enregistrée. Veuillez ouvrir la caisse avant de commencer.</div>
+    </div>
+    <button class="btn-a btn-vert" style="margin-left:auto" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir maintenant</button>
+  </div>
+  {% endif %}
+
   <!-- KPIs -->
   <div class="kpi-grid">
     <div class="kpi k-or">
@@ -381,9 +393,16 @@
       <h3><i class="fas fa-unlock" style="color:#16a34a;margin-right:8px"></i>Ouvrir la caisse</h3>
       <button class="close-btn" onclick="fermerModal('modalOuvrir')">×</button>
     </div>
+    {% if last_session %}
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:6px">💰 Solde de la dernière clôture</div>
+      <div style="font-size:20px;font-weight:800;color:#1a2535">{{ solde_veille|floatformat:0 }} FCFA</div>
+      <div style="font-size:10px;color:#7a8b9c;margin-top:3px">Clôture du {{ last_session.closed_at|date:"d/m/Y à H:i" }}</div>
+    </div>
+    {% endif %}
     <div class="form-row">
-      <label>Fond de caisse (FCFA)</label>
-      <input type="number" id="ov_fond" class="fc" placeholder="Ex: 50000" min="0" value="0">
+      <label>Fond de caisse (FCFA) — pré-rempli depuis la veille</label>
+      <input type="number" id="ov_fond" class="fc" placeholder="Ex: 50000" min="0" value="{{ solde_veille }}">
     </div>
     <div class="form-row">
       <label>Notes d'ouverture</label>

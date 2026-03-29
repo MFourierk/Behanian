@@ -67,6 +67,16 @@ def get_stats_jour(date=None):
 
 # ── Vues principales ───────────────────────────────────────────────────────
 
+def get_solde_veille():
+    """Retourne le solde restant après la dernière clôture."""
+    last = CaisseSession.objects.filter(is_open=False).order_by('-closed_at').first()
+    if not last:
+        return 0, None
+    # Solde = fond réel compté + espèces encaissées - prélèvement banque
+    solde = last.fond_caisse_reel + last.total_especes - last.prelevement_banque
+    return int(solde), last
+
+
 @require_module_access('caisse')
 def index(request):
     today = timezone.now().date()
@@ -89,6 +99,7 @@ def index(request):
         date__date=today, valide=True
     ).select_related('cree_par').order_by('-date')
 
+    solde_veille, last_session = get_solde_veille()
     context = {
         'today': today,
         'session_active': session_active,
@@ -97,6 +108,8 @@ def index(request):
         'sessions_jour': sessions_jour,
         'mouvements': mouvements,
         'prelevements': prelevements,
+        'solde_veille': solde_veille,
+        'last_session': last_session,
     }
     return render(request, 'caisse/index.html', context)
 
