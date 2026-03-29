@@ -1,0 +1,109 @@
+{% extends 'print_base.html' %}
+{% block doc_title %}Rapport de Caisse — {{ session.opened_at|date:"d/m/Y" }}{% endblock %}
+
+{% block doc_content %}
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">RAPPORT DE CAISSE</div>
+    <div class="doc-title-sub">Complexe Hôtelier Behanian · {{ session.opened_at|date:"d/m/Y" }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-{% if session.is_open %}en_attente{% else %}validee{% endif %}">{% if session.is_open %}En cours{% else %}Clôturée{% endif %}</span>
+    <span class="doc-ref">{{ session.opened_at|date:"d/m/Y" }}</span>
+  </div>
+</div>
+
+<!-- SESSION -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Session de caisse</div>
+    <div class="meta-row"><span class="meta-lbl">Caissier</span><span class="meta-val bold">{{ session.user.get_full_name|default:session.user.username }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Ouverture</span><span class="meta-val">{{ session.opened_at|date:"d/m/Y H:i" }}</span></div>
+    {% if session.closed_at %}<div class="meta-row"><span class="meta-lbl">Clôture</span><span class="meta-val">{{ session.closed_at|date:"d/m/Y H:i" }}</span></div>{% endif %}
+    <div class="meta-row"><span class="meta-lbl">Durée</span><span class="meta-val">{{ session.duree }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Fond de caisse</span><span class="meta-val">{{ session.fond_caisse|floatformat:0 }} FCFA</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Récapitulatif</div>
+    <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val bold" style="color:#16a34a">{{ stats.total|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Espèces</span><span class="meta-val">{{ stats.especes|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Mobile Money</span><span class="meta-val">{{ stats.mobile|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Carte bancaire</span><span class="meta-val">{{ stats.carte|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Prélèvement banque</span><span class="meta-val" style="color:#dc2626">- {{ stats.prelevements|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Net en caisse</span><span class="meta-val bold">{{ stats.net|floatformat:0 }} FCFA</span></div>
+  </div>
+</div>
+
+<!-- RECETTES PAR MODULE -->
+<div class="content-section">
+  <div class="section-title">Recettes par module</div>
+  <table class="doc-table">
+    <thead><tr><th>Module</th><th class="r">Montant (FCFA)</th></tr></thead>
+    <tbody>
+    {% for module, montant in stats.par_module.items %}
+    <tr><td class="bold">{{ module }}</td><td class="r">{{ montant|floatformat:0 }}</td></tr>
+    {% empty %}
+    <tr><td colspan="2" style="text-align:center;color:#8a9ab0">Aucune recette</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td class="total-label">TOTAL GÉNÉRAL</td><td class="total-val">{{ stats.total|floatformat:0 }} FCFA</td></tr>
+    </tfoot>
+  </table>
+</div>
+
+<!-- JOURNAL MOUVEMENTS -->
+{% if mouvements %}
+<div class="content-section">
+  <div class="section-title">Journal des mouvements de caisse</div>
+  <table class="doc-table">
+    <thead><tr><th>Heure</th><th>Type</th><th>Description</th><th>Réf.</th><th class="r">Montant</th></tr></thead>
+    <tbody>
+    {% for mv in mouvements %}
+    <tr>
+      <td>{{ mv.date|date:"H:i" }}</td>
+      <td>{{ mv.get_type_display }}</td>
+      <td>{{ mv.description|default:"—" }}</td>
+      <td style="font-family:monospace;font-size:9px">{{ mv.reference|default:"—" }}</td>
+      <td class="r {% if mv.est_entree %}bold{% endif %}" style="color:{% if mv.est_entree %}#16a34a{% else %}#dc2626{% endif %}">
+        {% if mv.est_entree %}+{% else %}-{% endif %}{{ mv.montant|floatformat:0 }}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- PRÉLÈVEMENTS -->
+{% if prelevements %}
+<div class="content-section">
+  <div class="section-title">Prélèvements banque</div>
+  <table class="doc-table">
+    <thead><tr><th>Heure</th><th>Banque</th><th>Référence</th><th class="r">Montant</th></tr></thead>
+    <tbody>
+    {% for p in prelevements %}
+    <tr>
+      <td>{{ p.date|date:"H:i" }}</td>
+      <td class="bold">{{ p.banque|default:"—" }}</td>
+      <td style="font-family:monospace;font-size:9px">{{ p.reference|default:"—" }}</td>
+      <td class="r bold" style="color:#dc2626">{{ p.montant|floatformat:0 }} FCFA</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if session.notes %}
+<div class="notes-box"><strong>Notes</strong> {{ session.notes }}</div>
+{% endif %}
+
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Caissier</div><div class="sig-hint">{{ session.user.get_full_name|default:session.user.username }}</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Caisse</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+</div>
+{% endblock %}
+{% block doc_footer_right %}Caisse {{ session.opened_at|date:"d/m/Y" }} · {{ session.user.get_full_name|default:session.user.username }}{% endblock %}

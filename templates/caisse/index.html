@@ -1,159 +1,614 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
-{% block title %}Caisse Centrale — BEHANIAN{% endblock %}
+{% block title %}Caisse — BEHANIAN{% endblock %}
+
 {% block extra_css %}
 <style>
-.caisse-body{background:#eef1f5;padding:20px 0 40px}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi-card{background:#f8fafc;border:1px solid #d4dce8;border-radius:12px;padding:16px 18px;border-top:3px solid #d4dce8}
-.kpi-card.vert{border-top-color:#16a34a}.kpi-card.bleu{border-top-color:#2563eb}.kpi-card.orange{border-top-color:#d97706}.kpi-card.violet{border-top-color:#7c3aed}
-.kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:#5a6b7c;margin-bottom:8px}
-.kpi-val{font-size:24px;font-weight:700;color:#1a2535;line-height:1}
-.kpi-sub{font-size:11px;color:#7a8b9c;margin-top:5px}
-.main-grid{display:grid;grid-template-columns:1fr 280px;gap:16px}
-.panel{background:#f8fafc;border:1px solid #d4dce8;border-radius:12px;overflow:hidden}
-.panel-head{padding:14px 18px;border-bottom:1px solid #dde3ec;display:flex;align-items:center;justify-content:space-between;background:#f2f5f9}
-.panel-head h3{font-size:14px;font-weight:600;color:#1a2535}
-.table-new{width:100%;border-collapse:collapse;font-size:13px}
-.table-new th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #dde3ec;background:#eef1f5}
-.table-new td{padding:11px 16px;border-bottom:1px solid #dde3ec;color:#1a2535;vertical-align:middle}
-.table-new tr:last-child td{border-bottom:none}
-.table-new tr:hover td{background:#e8edf5}
-.mpill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
-.m-hotel{background:#dbeafe;color:#1e40af}.m-restaurant{background:#fef3c7;color:#92400e}.m-bar{background:#f3e8ff;color:#6b21a8}.m-piscine{background:#e0f2fe;color:#075985}.m-autre{background:#f1f0ec;color:#44403c}
-.mbadge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
-.mode-especes{background:#dcfce7;color:#15803d}.mode-mobile{background:#fff7ed;color:#c2410c}.mode-carte{background:#e0e7ff;color:#3730a3}.mode-virement{background:#f0f9ff;color:#0369a1}
-.right-panel{display:flex;flex-direction:column;gap:14px}
-.stat-mod{padding:10px 16px;border-bottom:1px solid #dde3ec;display:flex;justify-content:space-between;align-items:center}
-.stat-mod:last-child{border:none}
-.smod-label{font-size:12px;color:#5a6b7c;font-weight:500}
-.smod-val{font-size:13px;font-weight:700;color:#1a2535}
-.sess-item{padding:12px 16px;border-bottom:1px solid #dde3ec;display:flex;align-items:center;gap:10px}
-.sess-item:last-child{border:none}
-.sess-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.dot-open{background:#16a34a}.dot-closed{background:#94a3b8}
-.sess-user{font-size:12px;font-weight:600;color:#1a2535}
-.sess-time{font-size:11px;color:#7a8b9c;margin-top:1px}
-.cbtn{padding:9px 20px;font-size:13px;font-weight:600;border-radius:9px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
-.btn-ouvrir{background:#16a34a;color:white}.btn-ouvrir:hover{background:#15803d}
-.btn-fermer{background:#dc2626;color:white}.btn-fermer:hover{background:#b91c1c}
-.sbanner{padding:12px 18px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500}
-.banner-open{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
-.banner-closed{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+:root{--gold:#c9a84c;--dark:#1a2535;--mid:#2d3f55;--light:#eef1f5;--border:#d4dce8;--text:#3d4f63;--muted:#7a8b9c}
+.cai-body{background:var(--light);padding:20px 0 50px}
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:white;border-radius:14px;border:1px solid var(--border);padding:18px 20px;border-left:4px solid var(--border)}
+.kpi.k-or{border-left-color:var(--gold)}.kpi.k-vert{border-left-color:#16a34a}
+.kpi.k-rouge{border-left-color:#dc2626}.kpi.k-bleu{border-left-color:#2563eb}
+.klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px}
+.kval{font-size:26px;font-weight:700;color:var(--dark);line-height:1}
+.ksub{font-size:11px;color:var(--muted);margin-top:4px}
+/* Statut caisse */
+.caisse-status{border-radius:14px;padding:20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.caisse-status.open{background:linear-gradient(135deg,#16a34a,#15803d);color:white}
+.caisse-status.closed{background:linear-gradient(135deg,#dc2626,#b91c1c);color:white}
+.caisse-status.no-session{background:linear-gradient(135deg,var(--dark),var(--mid));color:white}
+/* Panels */
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+/* Tableau */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:11px 14px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:#f5f8ff}
+/* Badges */
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.b-hotel{background:#dbeafe;color:#1e40af}.b-restaurant{background:#fef3c7;color:#d97706}
+.b-cave{background:#f3e8ff;color:#7c3aed}.b-piscine{background:#d1fae5;color:#065f46}
+.b-espaces{background:#fce7f3;color:#9d174d}.b-caisse{background:#f0fdf4;color:#15803d}
+.b-encaissement{background:#dcfce7;color:#15803d}.b-depense{background:#fee2e2;color:#dc2626}
+.b-prelevement{background:#dbeafe;color:#1e40af}.b-versement{background:#f3e8ff;color:#7c3aed}
+.b-fond_caisse{background:#fef3c7;color:#d97706}.b-ajustement{background:#f1f5f9;color:#64748b}
+/* Boutons */
+.btn-a{padding:10px 18px;border-radius:10px;border:none;cursor:pointer;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:7px;transition:all .15s;text-decoration:none}
+.btn-or{background:var(--gold);color:var(--dark)}.btn-vert{background:#16a34a;color:white}
+.btn-rouge{background:#dc2626;color:white}.btn-bleu{background:#2563eb;color:white}
+.btn-violet{background:#7c3aed;color:white}.btn-outline{background:white;color:var(--text);border:1px solid var(--border)}
+.btn-dark{background:var(--dark);color:var(--gold)}
+/* Grille modules */
+.module-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px}
+.module-card{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.module-card .nom{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.module-card .montant{font-size:18px;font-weight:700;color:var(--dark)}
+/* Modal */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:9000;align-items:flex-start;justify-content:center;padding-top:50px;overflow-y:auto}
+.modal-ov.open{display:flex}
+.modal-box{background:white;border-radius:18px;padding:26px;width:480px;max-width:95%;margin-bottom:40px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:15px;font-weight:700;color:var(--dark);margin:0}
+.close-btn{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer}
+.form-row{margin-bottom:13px}
+.form-row label{display:block;font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.fc{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);box-sizing:border-box}
+.fc:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+/* Entrée / Sortie couleurs */
+.entree{color:#16a34a;font-weight:700}.sortie{color:#dc2626;font-weight:700}
+/* Onglets */
+.tabs{display:flex;gap:4px;margin-bottom:18px;background:white;border-radius:12px;padding:5px;border:1px solid var(--border);width:fit-content}
+.tab{padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);background:transparent;transition:all .15s}
+.tab.active{background:var(--dark);color:var(--gold)}
+.tab-content{display:none}.tab-content.active{display:block}
 </style>
 {% endblock %}
+
 {% block content %}
-<div class="caisse-body"><div class="container-fluid">
+<div class="cai-body"><div class="container-fluid">
+
+  <!-- HEADER -->
   <div class="header-glam caisse-watermark">
-    <div class="header-content"><h2>Caisse Centrale</h2><p class="mb-0 opacity-75">Encaissements & Décaissements — {{ today|date:"d/m/Y" }}</p></div>
+    <div class="header-content">
+      <h2 style="font-size:1.6rem;font-weight:700;margin:0">Caisse</h2>
+      <p class="mb-0 opacity-75">{{ today|date:"l d F Y" }} · Gestion des transactions</p>
+    </div>
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
-  {% if is_manager %}
-  <div style="text-align:right;margin-bottom:10px">
-    <a href="{% url 'caisse:suivi' %}" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;background:#2563eb;color:white;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none">
-      <i class="fas fa-chart-line"></i> Suivi de caisse (30 jours)
-    </a>
+  <!-- STATUT CAISSE -->
+  {% if session_active %}
+  <div class="caisse-status open">
+    <div>
+      <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:4px">🟢 CAISSE OUVERTE</div>
+      <div style="font-size:20px;font-weight:800">{{ session_active.user.get_full_name|default:session_active.user.username }}</div>
+      <div style="font-size:12px;opacity:.7;margin-top:2px">Depuis {{ session_active.opened_at|date:"H:i" }} · Fond : {{ session_active.fond_caisse|floatformat:0 }} F</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-a btn-or" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus-circle"></i> Mouvement</button>
+      <button class="btn-a btn-bleu" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-university"></i> Banque</button>
+      <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport</button>
+      <button class="btn-a btn-rouge" onclick="ouvrirModal('modalCloturer')"><i class="fas fa-lock"></i> Clôturer</button>
+    </div>
+  </div>
+  {% else %}
+  <div class="caisse-status {% if sessions_jour %}closed{% else %}no-session{% endif %}">
+    <div>
+      <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:4px">
+        {% if sessions_jour %}🔴 CAISSE CLÔTURÉE{% else %}⚪ CAISSE NON OUVERTE{% endif %}
+      </div>
+      <div style="font-size:18px;font-weight:800">
+        {% if sessions_jour %}Journée terminée · {{ stats.total|floatformat:0 }} F encaissés{% else %}Aucune session aujourd'hui{% endif %}
+      </div>
+    </div>
+    <button class="btn-a btn-vert" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir la caisse</button>
   </div>
   {% endif %}
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-    {% if session_active %}
-    <div class="sbanner banner-open" style="margin:0;flex:1">
-      <i class="fas fa-circle" style="font-size:9px"></i>
-      Caisse ouverte depuis {{ session_active.opened_at|date:"H:i" }} — {{ request.user.get_full_name|default:request.user.username }}
-    </div>
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="fermer">
-      <button type="submit" class="cbtn btn-fermer"><i class="fas fa-lock"></i> Clôturer</button>
-    </form>
-    {% else %}
-    <div class="sbanner banner-closed" style="margin:0;flex:1">
-      <i class="fas fa-circle" style="font-size:9px"></i>
-      Caisse fermée — ouvrez votre session pour démarrer
-    </div>
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="ouvrir">
-      <button type="submit" class="cbtn btn-ouvrir"><i class="fas fa-lock-open"></i> Ouvrir la caisse</button>
-    </form>
-    {% endif %}
-  </div>
-
+  <!-- KPIs -->
   <div class="kpi-grid">
-    <div class="kpi-card vert"><div class="kpi-label">Total encaissé</div><div class="kpi-val">{{ stats.total|floatformat:0 }} F</div><div class="kpi-sub">{{ stats.nb_tickets }} transaction(s)</div></div>
-    <div class="kpi-card bleu"><div class="kpi-label">Espèces</div><div class="kpi-val">{{ stats.especes|floatformat:0 }} F</div><div class="kpi-sub">Règlement liquide</div></div>
-    <div class="kpi-card orange"><div class="kpi-label">Mobile Money</div><div class="kpi-val">{{ stats.mobile|floatformat:0 }} F</div><div class="kpi-sub">Orange, Wave, MTN…</div></div>
-    <div class="kpi-card violet"><div class="kpi-label">Carte / Virement</div><div class="kpi-val">{{ stats.carte|floatformat:0 }} F</div><div class="kpi-sub">Bancaire</div></div>
+    <div class="kpi k-or">
+      <div class="klbl">Total encaissé</div>
+      <div class="kval">{{ stats.total|floatformat:0 }} F</div>
+      <div class="ksub">{{ stats.nb_tickets }} transaction(s)</div>
+    </div>
+    <div class="kpi k-vert">
+      <div class="klbl">Espèces</div>
+      <div class="kval">{{ stats.especes|floatformat:0 }} F</div>
+      <div class="ksub">En caisse physique</div>
+    </div>
+    <div class="kpi k-bleu">
+      <div class="klbl">Mobile / Carte</div>
+      <div class="kval">{{ stats.mobile|floatformat:0 }} F</div>
+      <div class="ksub">Électronique</div>
+    </div>
+    <div class="kpi k-rouge">
+      <div class="klbl">Prélèvements banque</div>
+      <div class="kval">{{ stats.prelevements|floatformat:0 }} F</div>
+      <div class="ksub">Net caisse : {{ stats.net|floatformat:0 }} F</div>
+    </div>
   </div>
 
-  <div class="main-grid">
-    <div class="panel">
-      <div class="panel-head"><h3>Transactions du jour</h3><span style="font-size:11px;color:#7a8b9c">{{ stats.nb_tickets }} opération(s)</span></div>
-      {% if stats.tickets %}
-      <div style="overflow-x:auto">
-        <table class="table-new">
-          <thead><tr><th>Ticket</th><th>Heure</th><th>Module</th><th>Client</th><th>Caissier</th><th>Mode</th><th style="text-align:right">Montant</th></tr></thead>
-          <tbody>
-            {% for t in stats.tickets %}
-            <tr>
-              <td style="font-weight:600;color:#2563eb">{{ t.numero }}</td>
-              <td>{{ t.date_creation|date:"H:i" }}</td>
-              <td><span class="mpill m-{{ t.module }}">{% if t.module == 'hotel' %}🏨 Hôtel{% elif t.module == 'restaurant' %}🍽️ Resto{% elif t.module == 'bar' %}🍷 Cave{% elif t.module == 'piscine' %}🏊 Piscine{% else %}{{ t.module }}{% endif %}</span></td>
-              <td>{{ t.client.nom_complet|default:"—" }}</td>
-              <td>{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
-              <td><span class="mbadge {% if t.mode_paiement == 'especes' %}mode-especes{% elif t.mode_paiement == 'carte_bancaire' %}mode-carte{% elif t.mode_paiement == 'virement' %}mode-virement{% else %}mode-mobile{% endif %}">{{ t.get_mode_paiement_display }}</span></td>
-              <td style="text-align:right;font-weight:700">{{ t.montant_total|floatformat:0 }} F</td>
-            </tr>
+  <!-- ONGLETS -->
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('dashboard',this)">📊 Tableau de bord</button>
+    <button class="tab" onclick="setTab('transactions',this)">💰 Transactions</button>
+    <button class="tab" onclick="setTab('mouvements',this)">📋 Journal</button>
+    <button class="tab" onclick="setTab('sessions',this)">🕐 Sessions</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="tab-content active" id="content-dashboard">
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+      <div>
+        <!-- CA par module -->
+        <div class="panel">
+          <div class="ph"><h3>📊 Recettes par module</h3></div>
+          <div class="module-grid">
+            {% for module, montant in stats.par_module.items %}
+            <div class="module-card">
+              <div class="nom">{{ module }}</div>
+              <div class="montant">{{ montant|floatformat:0 }} F</div>
+            </div>
+            {% empty %}
+            <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--muted)">Aucune transaction aujourd'hui</div>
             {% endfor %}
+          </div>
+        </div>
+
+        <!-- Derniers tickets -->
+        <div class="panel">
+          <div class="ph"><h3>🧾 Dernières transactions</h3></div>
+          <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+            <table class="tbl">
+              <thead><tr><th style="position:sticky;top:0;background:#f8fafc">N°</th><th style="position:sticky;top:0;background:#f8fafc">Module</th><th style="position:sticky;top:0;background:#f8fafc">Heure</th><th style="position:sticky;top:0;background:#f8fafc">Mode</th><th style="position:sticky;top:0;background:#f8fafc">Montant</th><th style="position:sticky;top:0;background:#f8fafc">Opérateur</th></tr></thead>
+              <tbody>
+              {% for t in stats.tickets %}
+              <tr>
+                <td style="font-family:monospace;font-size:11px">{{ t.numero }}</td>
+                <td><span class="badge b-{{ t.module }}">{{ t.get_module_display }}</span></td>
+                <td style="font-size:11px;white-space:nowrap">{{ t.date_creation|date:"H:i" }}</td>
+                <td style="font-size:11px">
+                  {% if t.mode_paiement == 'especes' %}💵 Espèces
+                  {% elif t.mode_paiement == 'carte_bancaire' %}💳 Carte
+                  {% elif t.mode_paiement in 'mobile_money,orange_money,wave' %}📱 Mobile
+                  {% else %}{{ t.get_mode_paiement_display }}{% endif %}
+                </td>
+                <td class="entree">{{ t.montant_total|floatformat:0 }} F</td>
+                <td style="font-size:11px;color:var(--muted)">{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Aucune transaction</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite -->
+      <div>
+        <!-- Répartition modes -->
+        <div class="panel">
+          <div class="ph"><h3>💳 Modes de paiement</h3></div>
+          <div style="padding:16px">
+            {% for label, val in stats.items %}{% endfor %}
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a">
+                <span style="font-size:12px;font-weight:600">💵 Espèces</span>
+                <span style="font-size:13px;font-weight:700;color:#16a34a">{{ stats.especes|floatformat:0 }} F</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#eff6ff;border-radius:8px;border-left:3px solid #2563eb">
+                <span style="font-size:12px;font-weight:600">📱 Mobile Money</span>
+                <span style="font-size:13px;font-weight:700;color:#2563eb">{{ stats.mobile|floatformat:0 }} F</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f5f3ff;border-radius:8px;border-left:3px solid #7c3aed">
+                <span style="font-size:12px;font-weight:600">💳 Carte bancaire</span>
+                <span style="font-size:13px;font-weight:700;color:#7c3aed">{{ stats.carte|floatformat:0 }} F</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#fef3c7;border-radius:8px;border-left:3px solid #d97706">
+                <span style="font-size:12px;font-weight:600">🏦 Virement</span>
+                <span style="font-size:13px;font-weight:700;color:#d97706">{{ stats.virement|floatformat:0 }} F</span>
+              </div>
+            </div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between">
+                <span style="font-size:11px;color:var(--muted)">Prélèvement banque</span>
+                <span style="font-size:12px;color:#dc2626;font-weight:700">- {{ stats.prelevements|floatformat:0 }} F</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px">
+                <span style="font-size:12px;font-weight:700">Net en caisse</span>
+                <span style="font-size:14px;font-weight:800;color:var(--dark)">{{ stats.net|floatformat:0 }} F</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prélèvements du jour -->
+        <div class="panel">
+          <div class="ph">
+            <h3>🏦 Prélèvements banque</h3>
+            {% if session_active %}<button class="btn-a btn-bleu" style="font-size:11px;padding:5px 10px" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-plus"></i></button>{% endif %}
+          </div>
+          {% for p in prelevements %}
+          <div style="padding:10px 14px;border-bottom:1px solid #f0f3f7;display:flex;justify-content:space-between">
+            <div>
+              <div style="font-size:12px;font-weight:600">{{ p.banque|default:"Banque" }}</div>
+              <div style="font-size:10px;color:var(--muted)">{{ p.date|date:"H:i" }} · {{ p.reference|default:"—" }}</div>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:#dc2626">{{ p.montant|floatformat:0 }} F</div>
+          </div>
+          {% empty %}
+          <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Aucun prélèvement aujourd'hui</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div class="tab-content" id="content-transactions">
+    <div class="panel">
+      <div class="ph"><h3>💰 Toutes les transactions du jour</h3>
+        <span style="font-size:11px;color:var(--muted)">{{ stats.nb_tickets }} ticket(s) · {{ stats.total|floatformat:0 }} F</span>
+      </div>
+      <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th style="position:sticky;top:0;background:#f8fafc">N° Ticket</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Module</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Heure</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Client</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Mode</th>
+            <th style="position:sticky;top:0;background:#f8fafc;text-align:right">Montant</th>
+            <th style="position:sticky;top:0;background:#f8fafc;text-align:right">Reçu</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Opérateur</th>
+          </tr></thead>
+          <tbody>
+          {% for t in stats.tickets %}
+          <tr>
+            <td style="font-family:monospace;font-size:11px">{{ t.numero }}</td>
+            <td><span class="badge b-{{ t.module }}">{{ t.get_module_display }}</span></td>
+            <td style="font-size:11px">{{ t.date_creation|date:"H:i" }}</td>
+            <td style="font-size:11px">{{ t.client.nom|default:"—" }}</td>
+            <td style="font-size:11px">{{ t.get_mode_paiement_display }}</td>
+            <td style="text-align:right;font-weight:600">{{ t.montant_total|floatformat:0 }} F</td>
+            <td style="text-align:right;color:#16a34a;font-weight:600">{{ t.montant_paye|floatformat:0 }} F</td>
+            <td style="font-size:11px;color:var(--muted)">{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Aucune transaction aujourd'hui</td></tr>
+          {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc;font-weight:700">
+              <td colspan="5" style="padding:10px 14px;text-align:right;font-size:12px;text-transform:uppercase">TOTAL</td>
+              <td style="padding:10px 14px;text-align:right;color:var(--dark)">{{ stats.total|floatformat:0 }} F</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL MOUVEMENTS -->
+  <div class="tab-content" id="content-mouvements">
+    <div class="panel">
+      <div class="ph">
+        <h3>📋 Journal de caisse</h3>
+        {% if session_active %}<button class="btn-a btn-or" style="font-size:11px;padding:6px 12px" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus"></i> Nouveau</button>{% endif %}
+      </div>
+      <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th style="position:sticky;top:0;background:#f8fafc">Heure</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Type</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Module</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Description</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Réf.</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Mode</th>
+            <th style="position:sticky;top:0;background:#f8fafc;text-align:right">Montant</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Par</th>
+          </tr></thead>
+          <tbody>
+          {% for mv in mouvements %}
+          <tr>
+            <td style="font-size:11px;white-space:nowrap">{{ mv.date|date:"H:i" }}</td>
+            <td><span class="badge b-{{ mv.type }}">{{ mv.get_type_display }}</span></td>
+            <td><span class="badge b-{{ mv.module }}" style="font-size:9px">{{ mv.get_module_display }}</span></td>
+            <td style="font-size:11px;max-width:200px">{{ mv.description|default:"—" }}</td>
+            <td style="font-size:11px;font-family:monospace">{{ mv.reference|default:"—" }}</td>
+            <td style="font-size:11px">{{ mv.get_mode_paiement_display }}</td>
+            <td style="text-align:right;font-weight:700" class="{% if mv.est_entree %}entree{% else %}sortie{% endif %}">
+              {% if mv.est_entree %}+{% else %}-{% endif %}{{ mv.montant|floatformat:0 }} F
+            </td>
+            <td style="font-size:11px;color:var(--muted)">{{ mv.cree_par.get_full_name|default:mv.cree_par.username|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Aucun mouvement enregistré</td></tr>
+          {% endfor %}
           </tbody>
         </table>
       </div>
-      {% else %}
-      <div style="text-align:center;padding:50px;color:#b0b8c1;font-size:13px">
-        <i class="fas fa-receipt" style="font-size:2rem;display:block;margin-bottom:12px;opacity:.3"></i>Aucune transaction aujourd'hui
-      </div>
-      {% endif %}
-    </div>
-
-    <div class="right-panel">
-      <div class="panel">
-        <div class="panel-head"><h3>Répartition par module</h3></div>
-        <div class="stat-mod"><span class="smod-label">🏨 Hôtel</span><span class="smod-val">{{ stats.hotel|floatformat:0 }} F</span></div>
-        <div class="stat-mod"><span class="smod-label">🍽️ Restaurant</span><span class="smod-val">{{ stats.restaurant|floatformat:0 }} F</span></div>
-        <div class="stat-mod"><span class="smod-label">🍷 Cave</span><span class="smod-val">{{ stats.bar|floatformat:0 }} F</span></div>
-        <div class="stat-mod"><span class="smod-label">🏊 Piscine</span><span class="smod-val">{{ stats.piscine|floatformat:0 }} F</span></div>
-        {% if stats.autres > 0 %}<div class="stat-mod"><span class="smod-label">⚙️ Autres</span><span class="smod-val">{{ stats.autres|floatformat:0 }} F</span></div>{% endif %}
-        <div class="stat-mod" style="border-top:2px solid #dde3ec;margin-top:4px">
-          <span class="smod-label" style="font-weight:700;color:#1a2535">Total</span>
-          <span class="smod-val" style="color:#2563eb;font-size:15px">{{ stats.total|floatformat:0 }} F</span>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><h3>Sessions du jour</h3></div>
-        {% if sessions_jour %}{% for s in sessions_jour %}
-        <div class="sess-item">
-          <div class="sess-dot {% if s.is_open %}dot-open{% else %}dot-closed{% endif %}"></div>
-          <div style="flex:1"><div class="sess-user">{{ s.user.get_full_name|default:s.user.username }}</div>
-          <div class="sess-time">Ouv. {{ s.opened_at|date:"H:i" }}{% if s.closed_at %} · Clôt. {{ s.closed_at|date:"H:i" }}{% else %} · En cours{% endif %}</div></div>
-          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;{% if s.is_open %}background:#dcfce7;color:#15803d{% else %}background:#f1f5f9;color:#64748b{% endif %}">{% if s.is_open %}Active{% else %}Clôturée{% endif %}</span>
-        </div>
-        {% endfor %}{% else %}
-        <div style="padding:20px;text-align:center;color:#b0b8c1;font-size:12px">Aucune session aujourd'hui</div>
-        {% endif %}
-      </div>
-
-      {% if sessions_histo %}
-      <div class="panel">
-        <div class="panel-head"><h3>Historique (7 jours)</h3></div>
-        {% for s in sessions_histo %}
-        <div class="sess-item">
-          <div class="sess-dot dot-closed"></div>
-          <div><div class="sess-user">{{ s.user.get_full_name|default:s.user.username }}</div>
-          <div class="sess-time">{{ s.opened_at|date:"d/m · H:i" }} → {{ s.closed_at|date:"H:i" }}</div></div>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
     </div>
   </div>
+
+  <!-- SESSIONS -->
+  <div class="tab-content" id="content-sessions">
+    <div class="panel">
+      <div class="ph"><h3>🕐 Sessions du jour</h3></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Caissier</th><th>Ouverture</th><th>Clôture</th><th>Durée</th><th>Fond</th><th>Total</th><th>Prélèvement</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+          {% for s in sessions_jour %}
+          <tr>
+            <td style="font-weight:600">{{ s.user.get_full_name|default:s.user.username }}</td>
+            <td style="font-size:11px">{{ s.opened_at|date:"H:i" }}</td>
+            <td style="font-size:11px">{{ s.closed_at|date:"H:i"|default:"En cours" }}</td>
+            <td style="font-size:11px">{{ s.duree }}</td>
+            <td style="font-size:11px">{{ s.fond_caisse|floatformat:0 }} F</td>
+            <td style="font-weight:700;color:#16a34a">{{ s.total_general|floatformat:0 }} F</td>
+            <td style="color:#dc2626">{{ s.prelevement_banque|floatformat:0 }} F</td>
+            <td>
+              {% if s.is_open %}<span class="badge" style="background:#dcfce7;color:#15803d">🟢 Ouverte</span>
+              {% else %}<span class="badge" style="background:#fee2e2;color:#dc2626">🔴 Clôturée</span>{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'caisse:rapport_session' s.pk %}" class="btn-a btn-outline" style="font-size:10px;padding:4px 8px" target="_blank"><i class="fas fa-print"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Aucune session aujourd'hui</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div></div>
+
+<!-- MODAL OUVRIR CAISSE -->
+<div class="modal-ov" id="modalOuvrir">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-unlock" style="color:#16a34a;margin-right:8px"></i>Ouvrir la caisse</h3>
+      <button class="close-btn" onclick="fermerModal('modalOuvrir')">×</button>
+    </div>
+    <div class="form-row">
+      <label>Fond de caisse (FCFA)</label>
+      <input type="number" id="ov_fond" class="fc" placeholder="Ex: 50000" min="0" value="0">
+    </div>
+    <div class="form-row">
+      <label>Notes d'ouverture</label>
+      <textarea id="ov_notes" class="fc" rows="2" style="resize:vertical" placeholder="Observations…"></textarea>
+    </div>
+    <div style="background:#f0fdf4;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#15803d">
+      <strong>Caissier :</strong> {{ request.user.get_full_name|default:request.user.username }}<br>
+      <strong>Date :</strong> {{ today|date:"d/m/Y" }}
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalOuvrir')">Annuler</button>
+      <button class="btn-a btn-vert" style="flex:2;justify-content:center" onclick="ouvrirCaisse()"><i class="fas fa-unlock"></i> Ouvrir la caisse</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLÔTURER -->
+<div class="modal-ov" id="modalCloturer">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-lock" style="color:#dc2626;margin-right:8px"></i>Clôturer la caisse</h3>
+      <button class="close-btn" onclick="fermerModal('modalCloturer')">×</button>
+    </div>
+    <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div>Total encaissé : <strong>{{ stats.total|floatformat:0 }} F</strong></div>
+        <div>Espèces : <strong>{{ stats.especes|floatformat:0 }} F</strong></div>
+        <div>Mobile : <strong>{{ stats.mobile|floatformat:0 }} F</strong></div>
+        <div>Carte : <strong>{{ stats.carte|floatformat:0 }} F</strong></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Espèces comptées en caisse (FCFA)</label>
+      <input type="number" id="cl_fond_reel" class="fc" placeholder="Montant physique compté" min="0" value="0">
+    </div>
+    <div class="form-row">
+      <label>Prélèvement banque (FCFA)</label>
+      <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0">
+    </div>
+    <div class="form-row">
+      <label>Banque / Référence</label>
+      <input type="text" id="cl_banque" class="fc" placeholder="Ex: SGBCI — Bordereau N°123">
+    </div>
+    <div class="form-row">
+      <label>Notes de clôture</label>
+      <textarea id="cl_notes" class="fc" rows="2" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalCloturer')">Annuler</button>
+      <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="cloturerCaisse()"><i class="fas fa-lock"></i> Confirmer la clôture</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOUVEMENT -->
+<div class="modal-ov" id="modalMouvement">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-plus-circle" style="color:var(--gold);margin-right:8px"></i>Enregistrer un mouvement</h3>
+      <button class="close-btn" onclick="fermerModal('modalMouvement')">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-row">
+        <label>Type *</label>
+        <select id="mv_type" class="fc">
+          <option value="depense">Dépense / Décaissement</option>
+          <option value="remboursement">Remboursement client</option>
+          <option value="versement">Versement module</option>
+          <option value="ajustement">Ajustement caisse</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Module concerné</label>
+        <select id="mv_module" class="fc">
+          <option value="caisse">Caisse</option>
+          <option value="hotel">Hôtel</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="cave">Cave / Bar</option>
+          <option value="piscine">Piscine</option>
+          <option value="espaces">Espaces</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-row">
+        <label>Montant (FCFA) *</label>
+        <input type="number" id="mv_montant" class="fc" placeholder="Ex: 25000" min="0">
+      </div>
+      <div class="form-row">
+        <label>Mode de paiement</label>
+        <select id="mv_mode" class="fc">
+          <option value="especes">Espèces</option>
+          <option value="mobile_money">Mobile Money</option>
+          <option value="carte_bancaire">Carte bancaire</option>
+          <option value="virement">Virement</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Description *</label>
+      <input type="text" id="mv_description" class="fc" placeholder="Ex: Achat fournitures, remboursement client…">
+    </div>
+    <div class="form-row">
+      <label>Référence (ticket/facture)</label>
+      <input type="text" id="mv_reference" class="fc" placeholder="Ex: FAC-2026-0001">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalMouvement')">Annuler</button>
+      <button class="btn-a btn-or" style="flex:2;justify-content:center" onclick="enregistrerMouvement()"><i class="fas fa-check"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRÉLÈVEMENT BANQUE -->
+<div class="modal-ov" id="modalPrelevement">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-university" style="color:#2563eb;margin-right:8px"></i>Prélèvement banque</h3>
+      <button class="close-btn" onclick="fermerModal('modalPrelevement')">×</button>
+    </div>
+    <div class="form-row">
+      <label>Montant à verser à la banque (FCFA) *</label>
+      <input type="number" id="pr_montant" class="fc" placeholder="Ex: 500000" min="0">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-row">
+        <label>Banque</label>
+        <input type="text" id="pr_banque" class="fc" placeholder="Ex: SGBCI, BICICI…">
+      </div>
+      <div class="form-row">
+        <label>N° Bordereau</label>
+        <input type="text" id="pr_reference" class="fc" placeholder="Référence bordereau">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notes</label>
+      <textarea id="pr_notes" class="fc" rows="2" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalPrelevement')">Annuler</button>
+      <button class="btn-a btn-bleu" style="flex:2;justify-content:center" onclick="enregistrerPrelevement()"><i class="fas fa-university"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+
+function ouvrirModal(id){document.getElementById(id).classList.add('open');}
+function fermerModal(id){document.getElementById(id).classList.remove('open');}
+
+function setTab(name, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('content-'+name).classList.add('active');
+}
+
+function toast(msg, type='info'){
+  const colors = {success:'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0',error:'background:#fee2e2;color:#dc2626;border:1px solid #fecaca',info:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15)`;
+  t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 3500);
+}
+
+async function post(url, data){
+  const r = await fetch(url, {
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
+
+async function ouvrirCaisse(){
+  const fond = document.getElementById('ov_fond').value || 0;
+  const notes = document.getElementById('ov_notes').value;
+  const d = await post("{% url 'caisse:ouvrir' %}", {fond_caisse: fond, notes});
+  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
+}
+
+async function cloturerCaisse(){
+  if(!confirm('Confirmer la clôture de caisse ?')) return;
+  const d = await post("{% url 'caisse:cloturer' %}", {
+    fond_reel: document.getElementById('cl_fond_reel').value||0,
+    prelevement_banque: document.getElementById('cl_prelev').value||0,
+    banque: document.getElementById('cl_banque').value,
+    notes: document.getElementById('cl_notes').value,
+  });
+  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
+}
+
+async function enregistrerMouvement(){
+  const montant = document.getElementById('mv_montant').value;
+  const description = document.getElementById('mv_description').value.trim();
+  if(!montant||montant<=0){toast('Montant requis','error');return;}
+  if(!description){toast('Description requise','error');return;}
+  const d = await post("{% url 'caisse:mouvement' %}", {
+    type: document.getElementById('mv_type').value,
+    module: document.getElementById('mv_module').value,
+    montant, description,
+    mode_paiement: document.getElementById('mv_mode').value,
+    reference: document.getElementById('mv_reference').value,
+  });
+  if(d.success){ fermerModal('modalMouvement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
+  else toast('❌ '+d.error,'error');
+}
+
+async function enregistrerPrelevement(){
+  const montant = document.getElementById('pr_montant').value;
+  if(!montant||montant<=0){toast('Montant requis','error');return;}
+  const d = await post("{% url 'caisse:prelevement' %}", {
+    montant,
+    banque: document.getElementById('pr_banque').value,
+    reference: document.getElementById('pr_reference').value,
+    notes: document.getElementById('pr_notes').value,
+  });
+  if(d.success){ fermerModal('modalPrelevement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
+  else toast('❌ '+d.error,'error');
+}
+
+function ouvrirRapport(){
+  window.open("{% url 'caisse:rapport' %}", '_blank', 'width=800,height=900');
+}
+</script>
 {% endblock %}
