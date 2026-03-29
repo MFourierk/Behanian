@@ -1,8 +1,10 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}Gestion des Tables{% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Tables" "" %}
 <style>
     /* Table Styles */
     .table-card {

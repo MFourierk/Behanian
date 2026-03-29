@@ -1,8 +1,10 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}Mouvement Stock - Cuisine BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "Mouvement" "" %}
 <div class="header-glam cuisine-watermark">
     <div class="header-content">
         <h2>Mouvement de Stock</h2>

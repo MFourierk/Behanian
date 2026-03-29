@@ -1,6 +1,8 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Chambres" "parametres:chambre_list" "Supprimer" "" %}
 <div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: 85vh; background-color: #f8f9fa;">
     <div class="card border-0 text-center p-4" style="max-width: 400px; width: 100%; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); background: white;">
         

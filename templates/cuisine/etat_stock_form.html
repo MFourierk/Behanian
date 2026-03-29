@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}État du Stock{% endblock %}
@@ -18,6 +19,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "État du stock" "" %}
 <div class="header-glam cuisine-watermark">
     <div class="header-content">
         <h2>État du Stock</h2>

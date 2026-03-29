@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Articles" "bar:articles_list" "Formulaire" "" %}
 <style>
     .form-header {
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);

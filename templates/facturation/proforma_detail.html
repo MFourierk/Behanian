@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Proforma {{ proforma.numero }} — Facturation{% endblock %}
 
 {% block extra_css %}
@@ -32,6 +33,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Proformas" "facturation:proforma_list" "Détail proforma" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:960px">
 
   <!-- HEADER -->

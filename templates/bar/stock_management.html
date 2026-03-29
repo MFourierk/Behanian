@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}Stock - Cave BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Gestion du stock" "" %}
 <style>
     /* ===== HEADER ===== */
     .page-header {

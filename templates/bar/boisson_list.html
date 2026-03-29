@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load humanize %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Boissons" "" %}
 <div class="container-fluid py-4">
     {% include 'bar/_gestion_nav.html' %}
 

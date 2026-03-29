@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}Détail Fiche Technique - {{ fiche.plat.nom }}{% endblock %}
 
@@ -39,6 +40,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Recettes" "cuisine:recette_list" "Détail recette" "" %}
 <div class="container-fluid py-4">
     <div class="header-glam cuisine-watermark">
         <div class="header-content">

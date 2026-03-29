@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}Tables de la Cave - BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Tables" "" %}
 <style>
     .header-glam {
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);

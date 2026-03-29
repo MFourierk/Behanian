@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}Supprimer Table Bar - BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Tables Cave" "parametres:tablebar_list" "Supprimer" "" %}
 <style>
     .header-glam {
         background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);

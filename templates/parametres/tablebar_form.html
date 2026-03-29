@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}
@@ -6,6 +7,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Tables Cave" "parametres:tablebar_list" "Formulaire" "" %}
 <style>
     .header-glam {
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);

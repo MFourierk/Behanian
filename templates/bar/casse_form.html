@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Casse" "" %}
 <style>
     .page-header { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(231,76,60,0.25); }
     .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }

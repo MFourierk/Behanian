@@ -1,8 +1,10 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}Proformas{% endblock %}
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Proformas" "" %}
 <div class="header-glam facturation-watermark">
     <div class="header-content">
         <h2>Proformas</h2>

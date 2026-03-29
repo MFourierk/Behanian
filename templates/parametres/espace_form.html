@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load widget_tweaks %}
 {% block title %}{% if object %}Modifier{% else %}Ajouter{% endif %} un Espace — BEHANIAN{% endblock %}
 
@@ -39,6 +40,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Espaces" "parametres:espace_list" "Formulaire" "" %}
 <div class="form-page"><div class="container" style="max-width:800px">
 
   <div class="form-card">

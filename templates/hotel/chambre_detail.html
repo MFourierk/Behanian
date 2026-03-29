@@ -1,8 +1,10 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}Détails Chambre {{ chambre.numero }} - Hôtel{% endblock %}
 
 {% block content %}
+{% breadcrumb "Hôtel" "hotel:index" "Chambre" "" %}
 <div class="header-glam hotel-watermark">
     <div class="header-content">
         <h2>Chambre N° {{ chambre.numero }}</h2>

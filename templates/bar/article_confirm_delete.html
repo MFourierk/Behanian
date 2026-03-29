@@ -1,6 +1,8 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Supprimer Article - Cave BEHANIAN{% endblock %}
 {% block content %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Articles" "bar:articles_list" "Supprimer" "" %}
 <div class="container-fluid py-4" style="max-width:500px; margin:auto;">
     <div style="background:white;border-radius:16px;padding:40px;box-shadow:0 4px 20px rgba(0,0,0,0.08);text-align:center;">
         <div style="width:70px;height:70px;background:#fdecea;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:30px;color:#e74c3c;">

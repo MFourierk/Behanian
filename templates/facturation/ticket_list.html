@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 {% load i18n %}
 
@@ -7,6 +8,7 @@
 
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Tickets" "" %}
 <style>
     :root {
         --font-family: 'Inter', sans-serif;

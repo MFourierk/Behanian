@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}{{ page_title|default:"New Recipe Card" }}{% endblock %}
@@ -28,6 +29,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Recettes" "cuisine:recette_list" "Formulaire" "" %}
 <div class="container-fluid">
     <div class="card">
         <div class="card-header">

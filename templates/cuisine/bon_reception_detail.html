@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 {% block title %}{{ br.numero }} — Cuisine{% endblock %}
 
@@ -44,6 +45,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "cuisine:bon_reception_list" "Détail réception" "" %}
 <div class="br-body">
 <div class="container-fluid">
 

@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 {% block title %}{{ fiche.nom }} — Fiche Technique{% endblock %}
 
@@ -36,6 +37,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Fiches techniques" "cuisine:fiche_list" "Détail fiche" "" %}
 <div class="fd-body"><div class="container-fluid">
 
   <div class="fd-header">

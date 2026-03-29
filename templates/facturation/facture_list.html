@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Factures — Facturation{% endblock %}
 
 {% block extra_css %}
@@ -27,6 +28,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Factures" "" %}
 <div class="fac-body"><div class="container-fluid">
 
   <div class="header-glam caisse-watermark">

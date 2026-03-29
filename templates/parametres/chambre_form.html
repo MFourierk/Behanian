@@ -1,10 +1,12 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}
     {% if object %}Modifier{% else %}Ajouter{% endif %} une Chambre
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Chambres" "parametres:chambre_list" "Formulaire" "" %}
 <style>
     .glamour-container {
         min-height: 85vh;

@@ -1,7 +1,9 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Plats" "parametres:plat_list" "Formulaire" "" %}
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-md-8">

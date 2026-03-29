@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Gestion du Personnel — Paramètres{% endblock %}
 
 {% block extra_css %}
@@ -41,6 +42,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Personnel" "" %}
 <div class="rh-body"><div class="container-fluid">
 
   <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">

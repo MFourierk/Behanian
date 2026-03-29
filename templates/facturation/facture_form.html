@@ -1,8 +1,10 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}Nouvelle Facture{% endblock %}
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Factures" "facturation:facture_list" "Nouvelle facture" "" %}
 <div class="header-glam facturation-watermark">
     <div class="header-content">
         <h2>Nouvelle Facture</h2>

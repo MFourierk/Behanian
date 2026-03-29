@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Facture {{ facture.numero }} — Facturation{% endblock %}
 
 {% block extra_css %}
@@ -32,6 +33,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Factures" "facturation:facture_list" "Détail facture" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:960px">
 
   <!-- HEADER -->

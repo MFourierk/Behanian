@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Ticket {{ ticket.numero }} — Facturation{% endblock %}
 
 {% block extra_css %}
@@ -26,6 +27,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Facturation" "facturation:index" "Tickets" "facturation:ticket_list" "Détail ticket" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:900px">
 
   <!-- HEADER -->

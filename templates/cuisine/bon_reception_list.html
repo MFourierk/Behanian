@@ -1,4 +1,5 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 
 {% block title %}{{ page_title }} - Cuisine{% endblock %}
 
@@ -28,6 +29,7 @@
 {% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "" %}
 <div class="header-glam cuisine-watermark">
     <div class="header-content">
         <h2>{{ page_title }}</h2>

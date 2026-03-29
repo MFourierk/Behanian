@@ -1,6 +1,8 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% block title %}Historique Caisse{% endblock %}
 {% block content %}
+{% breadcrumb "Caisse" "caisse:index" "Historique" "" %}
 <div style="background:#eef1f5;padding:20px 0 50px"><div class="container-fluid">
   <div class="header-glam caisse-watermark">
     <div class="header-content">
