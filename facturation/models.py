@@ -302,7 +302,8 @@ class Avoir(models.Model):
         ordering = ['-date_creation']
     
     def __str__(self):
-        return f"Avoir {self.numero} - Facture {self.facture_originale.numero}"
+        origine = self.facture_origine.numero if self.facture_origine else "—"
+        return f"Avoir {self.numero} — {self.client.nom if self.client else origine}"
     
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -435,20 +436,18 @@ class Ticket(models.Model):
 
 # Méthodes utilitaires pour la génération de numéros
 def generate_facture_numero():
-    """Générer un numéro de facture unique"""
-    prefix = "FCT"
-    last_facture = Facture.objects.filter(numero__startswith=prefix).order_by('-id').first()
-    
-    if last_facture:
+    """Générer un numéro de facture unique — format FAC-YYYY-XXXX"""
+    from django.utils import timezone as tz
+    annee = tz.now().year
+    last = Facture.objects.filter(numero__startswith=f'FAC-{annee}-').order_by('numero').last()
+    if last:
         try:
-            last_number = int(last_facture.numero.replace(prefix + "-", ""))
-            new_number = last_number + 1
+            seq = int(last.numero.split('-')[-1]) + 1
         except (ValueError, AttributeError):
-            new_number = 1
+            seq = Facture.objects.count() + 1
     else:
-        new_number = 1
-    
-    return f"{prefix}-{new_number:06d}"
+        seq = 1
+    return f'FAC-{annee}-{seq:04d}'
 
 
 def generate_ticket_numero():
@@ -477,37 +476,33 @@ def generate_ticket_numero():
 
 
 def generate_proforma_numero():
-    """Générer un numéro de proforma unique"""
-    prefix = "PROF"
-    last_proforma = Proforma.objects.filter(numero__startswith=prefix).order_by('-id').first()
-    
-    if last_proforma:
+    """Générer un numéro de proforma unique — format PRO-YYYY-XXXX"""
+    from django.utils import timezone as tz
+    annee = tz.now().year
+    last = Proforma.objects.filter(numero__startswith=f'PRO-{annee}-').order_by('numero').last()
+    if last:
         try:
-            last_number = int(last_proforma.numero.replace(prefix + "-", ""))
-            new_number = last_number + 1
+            seq = int(last.numero.split('-')[-1]) + 1
         except (ValueError, AttributeError):
-            new_number = 1
+            seq = Proforma.objects.count() + 1
     else:
-        new_number = 1
-    
-    return f"{prefix}-{new_number:06d}"
+        seq = 1
+    return f'PRO-{annee}-{seq:04d}'
 
 
 def generate_avoir_numero():
-    """Générer un numéro d'avoir unique"""
-    prefix = "AVOIR"
-    last_avoir = Avoir.objects.filter(numero__startswith=prefix).order_by('-id').first()
-    
-    if last_avoir:
+    """Générer un numéro d'avoir unique — format AVO-YYYY-XXXX"""
+    from django.utils import timezone as tz
+    annee = tz.now().year
+    last = Avoir.objects.filter(numero__startswith=f'AVO-{annee}-').order_by('numero').last()
+    if last:
         try:
-            last_number = int(last_avoir.numero.replace(prefix + "-", ""))
-            new_number = last_number + 1
+            seq = int(last.numero.split('-')[-1]) + 1
         except (ValueError, AttributeError):
-            new_number = 1
+            seq = Avoir.objects.count() + 1
     else:
-        new_number = 1
-    
-    return f"{prefix}-{new_number:06d}"
+        seq = 1
+    return f'AVO-{annee}-{seq:04d}'
 
 
 # Ajouter les méthodes de génération aux modèles

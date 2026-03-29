@@ -557,49 +557,45 @@
 
 <!-- MODAL AVOIR -->
 <div class="modal-ov" id="modalAvoir">
-  <div class="modal-box" style="width:500px">
+  <div class="modal-box" style="width:460px">
     <div class="modal-head">
       <h3><i class="fas fa-undo" style="color:#7c3aed;margin-right:8px"></i>Nouvel Avoir</h3>
       <button class="close-btn" onclick="fermerModal('modalAvoir')">×</button>
     </div>
-    <form method="post" action="{% url 'facturation:avoir_create' %}" id="avoirForm">
-      {% csrf_token %}
+    <div class="form-row">
+      <label>Client *</label>
+      <input type="text" id="av_client" class="fc" placeholder="Nom du client" required>
+    </div>
+    <div class="form-row">
+      <label>Motif *</label>
+      <select id="av_motif_select" class="fc" onchange="toggleMotifAvoir(this)">
+        <option value="">— Sélectionner —</option>
+        <option value="Retour marchandise">Retour marchandise</option>
+        <option value="Erreur de facturation">Erreur de facturation</option>
+        <option value="Remise commerciale">Remise commerciale</option>
+        <option value="Annulation de prestation">Annulation de prestation</option>
+        <option value="Trop-perçu">Trop-perçu</option>
+        <option value="autre">Autre motif…</option>
+      </select>
+    </div>
+    <div class="form-row" id="rowMotifAvoir" style="display:none">
+      <label>Préciser</label>
+      <input type="text" id="av_motif" class="fc" placeholder="Décrivez le motif">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-row">
-        <label>Client *</label>
-        <input type="text" name="client_name" class="fc" placeholder="Nom du client" required>
+        <label>Montant (F) *</label>
+        <input type="number" id="av_montant" class="fc" placeholder="Ex: 15000" min="0">
       </div>
       <div class="form-row">
-        <label>Motif de l'avoir *</label>
-        <select name="motif_select" class="fc" onchange="toggleMotifAvoir(this)">
-          <option value="">— Sélectionner —</option>
-          <option value="Retour marchandise">Retour marchandise</option>
-          <option value="Erreur de facturation">Erreur de facturation</option>
-          <option value="Remise commerciale">Remise commerciale</option>
-          <option value="Annulation de prestation">Annulation de prestation</option>
-          <option value="Trop-perçu">Trop-perçu</option>
-          <option value="autre">Autre motif…</option>
-        </select>
+        <label>Notes</label>
+        <input type="text" id="av_notes" class="fc" placeholder="Optionnel">
       </div>
-      <div class="form-row" id="rowMotifAvoir" style="display:none">
-        <label>Préciser le motif</label>
-        <input type="text" name="motif" class="fc" placeholder="Décrivez le motif">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-row">
-          <label>Montant de l'avoir (F) *</label>
-          <input type="number" name="montant" class="fc" placeholder="Ex: 15000" min="0" required>
-        </div>
-        <div class="form-row">
-          <label>Référence (facture/ticket)</label>
-          <input type="text" name="reference_origine" class="fc" placeholder="FAC-2026-001">
-        </div>
-      </div>
-      <div class="form-row"><label>Notes</label><textarea name="notes" class="fc" rows="2" style="resize:vertical" placeholder="Informations complémentaires…"></textarea></div>
-      <div style="display:flex;gap:10px;margin-top:6px">
-        <button type="button" class="btn-p outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalAvoir')">Annuler</button>
-        <button type="submit" class="btn-p" style="flex:2;justify-content:center;padding:10px;font-size:13px;background:#7c3aed;color:white"><i class="fas fa-check"></i> Créer l'avoir</button>
-      </div>
-    </form>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button type="button" class="btn-p outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalAvoir')">Annuler</button>
+      <button type="button" class="btn-p" style="flex:2;justify-content:center;padding:10px;font-size:13px;background:#7c3aed;color:white" onclick="soumettreAvoir()"><i class="fas fa-check"></i> Créer l'avoir</button>
+    </div>
   </div>
 </div>
 
@@ -893,6 +889,38 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
+
+// Soumettre avoir
+async function soumettreAvoir(){
+  const client = document.getElementById('av_client')?.value.trim();
+  if(!client){toast('Nom du client requis','error');return;}
+  const motif = document.getElementById('av_motif_select')?.value === 'autre'
+    ? document.getElementById('av_motif')?.value.trim()
+    : document.getElementById('av_motif_select')?.value;
+  if(!motif){toast('Motif requis','error');return;}
+  const montant = document.getElementById('av_montant')?.value;
+  if(!montant || montant <= 0){toast('Montant requis','error');return;}
+
+  try{
+    const r = await fetch("{% url 'facturation:avoir_create' %}",{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({
+        client_name:client,
+        motif_select:document.getElementById('av_motif_select')?.value,
+        motif:motif,
+        montant:montant,
+        notes:document.getElementById('av_notes')?.value||''
+      })
+    });
+    const d = await r.json();
+    if(d.success){
+      fermerModal('modalAvoir');
+      toast('✅ Avoir '+d.numero+' créé','success');
+      setTimeout(()=>window.location=d.detail_url,800);
+    } else toast('❌ '+(d.error||'Erreur'),'error');
+  }catch(e){toast('❌ Erreur réseau','error');}
+}
 
 // Initialisation dates + restauration onglet
 document.addEventListener('DOMContentLoaded',()=>{

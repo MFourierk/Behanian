@@ -31,6 +31,7 @@
     <div class="meta-row"><span class="meta-lbl">Nom</span><span class="meta-val bold">{{ avoir.client.nom }}</span></div>
     {% if avoir.client and avoir.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ avoir.client.telephone }}</span></div>{% endif %}
     {% if avoir.client and avoir.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ avoir.client.email }}</span></div>{% endif %}
+    {% endif %}
   </div>
 </div>
 
@@ -82,6 +83,5 @@
   <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
 </div>
 
-<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
 {% endblock %}
 {% block doc_footer_right %}Avoir {{ avoir.numero }} · {{ avoir.date_avoir|date:"d/m/Y" }}{% endblock %}

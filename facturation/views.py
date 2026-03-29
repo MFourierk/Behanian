@@ -426,85 +426,108 @@ def avoir_list(request):
     avoirs = Avoir.objects.all()
     return render(request, 'facturation/avoir_list.html', {'avoirs': avoirs})
 
-@require_module_access('facturation')
+def _generer_numero_avoir():
+    annee = timezone.now().year
+    last = Avoir.objects.filter(numero__startswith=f'AVO-{annee}-').order_by('numero').last()
+    seq = int(last.numero.split('-')[-1]) + 1 if last else 1
+    return f'AVO-{annee}-{seq:04d}'
+
+
 def avoir_create(request):
-    if request.method == 'POST':
-        try:
-            with transaction.atomic():
-                # 1. Gérer le client
-                client_name = request.POST.get('client_name')
-                client_phone = request.POST.get('client_phone')
-                client_email = request.POST.get('client_email')
-                client_address = request.POST.get('client_address')
+    """Créer un avoir depuis le modal (JSON) ou depuis une facture/ticket."""
+    if request.method != 'POST':
+        # GET — afficher le formulaire avec pré-remplissage facture si ?facture=pk
+        facture_id = request.GET.get('facture')
+        facture = None
+        if facture_id:
+            try:
+                facture = Facture.objects.select_related('client').get(pk=facture_id)
+            except Facture.DoesNotExist:
+                pass
+        return render(request, 'facturation/avoir_form.html', {'facture': facture})
 
-                client, created = Client.objects.get_or_create(
-                    nom=client_name,
-                    defaults={
-                        'telephone': client_phone,
-                        'email': client_email,
-                        'adresse': client_address or ''
-                    }
+    try:
+        # Accepter JSON (modal) ou POST form
+        if request.content_type and 'application/json' in request.content_type:
+            data = json.loads(request.body)
+        else:
+            data = request.POST.dict()
+
+        client_name = data.get('client_name', '').strip()
+        if not client_name:
+            return JsonResponse({'success': False, 'error': 'Nom du client requis'})
+
+        motif_select = data.get('motif_select', '')
+        motif = data.get('motif', '') or motif_select
+        if not motif:
+            motif = 'Avoir'
+
+        with transaction.atomic():
+            client_obj, _ = Client.objects.get_or_create(
+                nom=client_name,
+                defaults={'telephone': data.get('client_phone', '')}
+            )
+
+            # Facture ou ticket d'origine
+            facture_origine = None
+            ticket_origine = None
+            facture_id = data.get('facture_id') or data.get('facture')
+            ticket_id = data.get('ticket_id')
+            if facture_id:
+                try:
+                    facture_origine = Facture.objects.get(pk=facture_id)
+                except Facture.DoesNotExist:
+                    pass
+            if ticket_id:
+                try:
+                    ticket_origine = Ticket.objects.get(pk=ticket_id)
+                except Ticket.DoesNotExist:
+                    pass
+
+            montant = Decimal(str(data.get('montant', '0') or '0'))
+
+            avoir = Avoir.objects.create(
+                numero=_generer_numero_avoir(),
+                client=client_obj,
+                facture_origine=facture_origine,
+                ticket_origine=ticket_origine,
+                motif=motif,
+                statut='en_attente',
+                sous_total=montant,
+                remise=0,
+                taux_tva=0,
+                montant_tva=0,
+                total=montant,
+                notes=data.get('notes', ''),
+                cree_par=request.user,
+                date_avoir=timezone.now().date(),
+            )
+
+            # Ligne unique avec le montant
+            if montant > 0:
+                LigneAvoir.objects.create(
+                    avoir=avoir,
+                    article=None,
+                    designation=motif,
+                    quantite=1,
+                    prix_unitaire=montant,
                 )
 
-                # 2. Créer l'objet Avoir principal
-                date_creation_str = request.POST.get('date_creation')
-                if date_creation_str:
-                    date_creation = timezone.datetime.strptime(date_creation_str, '%Y-%m-%d')
-                    if timezone.is_naive(date_creation):
-                        date_creation = timezone.make_aware(date_creation)
-                else:
-                    date_creation = timezone.now()
+            # Si depuis modal index (JSON) → redirect vers détail
+            if request.content_type and 'application/json' in request.content_type:
+                return JsonResponse({
+                    'success': True,
+                    'numero': avoir.numero,
+                    'detail_url': f'/facturation/avoirs/{avoir.pk}/',
+                })
 
-                avoir = Avoir.objects.create(
-                    client=client,
-                    cree_par=request.user,
-                    motif=request.POST.get('motif', 'Avoir standard'),
-                    remise=Decimal(request.POST.get('remise', 0)),
-                    taux_tva=Decimal(request.POST.get('tva', 0)),
-                    date_creation=date_creation,
-                    date_avoir=date_creation.date()
-                )
+            return redirect('facturation:avoir_detail', pk=avoir.pk)
 
-                # 3. Traiter les lignes d'articles
-                i = 1
-                while f'articles-{i}-service' in request.POST:
-                    service_id = request.POST.get(f'articles-{i}-service')
-                    composite_id = request.POST.get(f'articles-{i}-description')
-                    quantity = request.POST.get(f'articles-{i}-quantity')
-                    price = request.POST.get(f'articles-{i}-price')
-
-                    if service_id and composite_id and quantity and price:
-                        try:
-                            content_type_id, object_id = composite_id.split(':')
-                            service = get_object_or_404(Service, id=service_id)
-
-                            article_wrapper, created = Article.objects.get_or_create(
-                                content_type_id=content_type_id,
-                                object_id=object_id,
-                                defaults={'service': service}
-                            )
-
-                            LigneAvoir.objects.create(
-                                avoir=avoir,
-                                article=article_wrapper,
-                                quantite=Decimal(quantity),
-                                prix_unitaire=Decimal(price)
-                            )
-                        except (ValueError, Service.DoesNotExist, ContentType.DoesNotExist) as e:
-                            print(f"Skipping invalid article line: {i}. Error: {e}")
-                    
-                    i += 1
-
-                # 4. Calculer les totaux
-                avoir.calculate_totals()
-                
-                pdf_url = reverse('facturation:avoir_pdf', kwargs={'pk': avoir.pk})
-                return JsonResponse({'success': True, 'pdf_url': pdf_url})
-
-        except Exception as e:
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        if request.content_type and 'application/json' in request.content_type:
             return JsonResponse({'success': False, 'error': str(e)})
-
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+        return redirect('facturation:avoir_list')
 
 @require_module_access('facturation')
 def avoir_detail(request, pk):
