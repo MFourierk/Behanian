@@ -11,7 +11,8 @@ from restaurant.models import Table, PlatMenu, CategorieMenu
 from espaces_evenementiels.models import EspaceEvenementiel
 from bar.models import BoissonBar, CategorieBar, TableBar
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 
 @require_manager
 def parametres_index(request):
@@ -356,3 +357,139 @@ class EspaceDeleteView(DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Espace supprimé avec succès.")
         return super().delete(request, *args, **kwargs)
+
+# ── Gestion du Personnel (RH) ──────────────────────────────────────────────
+
+from django.contrib.auth.models import User, Group
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+import json
+
+GROUPES_METIER = [
+    ('Directeur Général',    '👑 Direction'),
+    ('Manager Général(e)',   '👑 Direction'),
+    ('Responsable Hôtel',    '🏨 Hôtel'),
+    ('Réceptionniste',       '🏨 Hôtel'),
+    ('Responsable Caisse',   '💰 Caisse'),
+    ('Caissier(e)',          '💰 Caisse'),
+    ('Manager Cuisine',      '🍽️ Cuisine'),
+    ('Cuisinier(e)',         '🍽️ Cuisine'),
+    ('Serveuse/Serveur',     '🍽️ Restaurant'),
+    ('Agent de Sécurité',    '🔒 Sécurité'),
+]
+
+
+@require_manager
+def personnel_list(request):
+    utilisateurs = User.objects.all().prefetch_related('groups').order_by('last_name', 'first_name')
+    groupes = Group.objects.filter(name__in=[g[0] for g in GROUPES_METIER]).order_by('name')
+    context = {
+        'utilisateurs': utilisateurs,
+        'groupes': groupes,
+        'groupes_metier': GROUPES_METIER,
+    }
+    return render(request, 'parametres/personnel_list.html', context)
+
+
+@require_manager
+def personnel_create(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body) if request.content_type and 'application/json' in request.content_type else request.POST.dict()
+            
+            username   = data.get('username', '').strip()
+            first_name = data.get('first_name', '').strip()
+            last_name  = data.get('last_name', '').strip()
+            email      = data.get('email', '').strip()
+            password   = data.get('password', '').strip()
+            groupe_nom = data.get('groupe', '')
+
+            if not username or not password:
+                return JsonResponse({'success': False, 'error': 'Username et mot de passe requis'})
+
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'success': False, 'error': f"L'identifiant '{username}' existe déjà"})
+
+            user = User.objects.create_user(
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                password=password,
+            )
+
+            if groupe_nom:
+                try:
+                    groupe = Group.objects.get(name=groupe_nom)
+                    user.groups.add(groupe)
+                except Group.DoesNotExist:
+                    pass
+
+            return JsonResponse({
+                'success': True,
+                'message': f'{first_name} {last_name} créé avec succès',
+                'user_id': user.pk,
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'POST requis'})
+
+
+@require_manager
+def personnel_update(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body) if request.content_type and 'application/json' in request.content_type else request.POST.dict()
+            
+            user.first_name = data.get('first_name', user.first_name).strip()
+            user.last_name  = data.get('last_name', user.last_name).strip()
+            user.email      = data.get('email', user.email).strip()
+            user.save()
+
+            # Mettre à jour le groupe
+            groupe_nom = data.get('groupe', '')
+            if groupe_nom:
+                user.groups.clear()
+                try:
+                    groupe = Group.objects.get(name=groupe_nom)
+                    user.groups.add(groupe)
+                except Group.DoesNotExist:
+                    pass
+
+            return JsonResponse({'success': True, 'message': f'{user.get_full_name()} mis à jour'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'POST requis'})
+
+
+@require_manager
+def personnel_toggle(request, pk):
+    """Activer / Désactiver un utilisateur."""
+    user = get_object_or_404(User, pk=pk)
+    if user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Impossible de désactiver le superadmin'})
+    user.is_active = not user.is_active
+    user.save()
+    statut = 'activé' if user.is_active else 'désactivé'
+    return JsonResponse({'success': True, 'message': f'{user.get_full_name()} {statut}', 'is_active': user.is_active})
+
+
+@require_manager
+def personnel_reset_password(request, pk):
+    """Réinitialiser le mot de passe d'un utilisateur."""
+    user = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            new_password = data.get('password', '').strip()
+            if len(new_password) < 4:
+                return JsonResponse({'success': False, 'error': 'Mot de passe trop court (minimum 4 caractères)'})
+            user.set_password(new_password)
+            user.save()
+            return JsonResponse({'success': True, 'message': f'Mot de passe de {user.get_full_name()} réinitialisé'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'POST requis'})

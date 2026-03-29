@@ -1,0 +1,336 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Gestion du Personnel — Paramètres{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c;--text:#3d4f63}
+.rh-body{background:var(--light);padding:20px 0 50px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0}
+.btn-a{padding:8px 16px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-or{background:var(--gold);color:var(--dark)}.btn-vert{background:#16a34a;color:white}
+.btn-rouge{background:#dc2626;color:white}.btn-outline{background:white;color:var(--text);border:1px solid var(--border)}
+.btn-bleu{background:#2563eb;color:white}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:9000;align-items:flex-start;justify-content:center;padding-top:50px;overflow-y:auto}
+.modal-ov.open{display:flex}
+.modal-box{background:white;border-radius:18px;padding:26px;width:520px;max-width:95%;margin-bottom:40px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:15px;font-weight:700;color:var(--dark);margin:0}
+.close-btn{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer}
+.form-row{margin-bottom:13px}
+.form-row label{display:block;font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.fc{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);box-sizing:border-box}
+.fc:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.groupe-tag{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#f0f3f7;color:var(--text)}
+/* Couleurs avatars par groupe */
+.av-direction{background:#c9a84c}.av-hotel{background:#2563eb}.av-caisse{background:#16a34a}
+.av-cuisine{background:#d97706}.av-restaurant{background:#7c3aed}.av-securite{background:#64748b}.av-autre{background:#94a3b8}
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:white;border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-card .nb{font-size:28px;font-weight:700;color:var(--dark)}
+.stat-card .lbl{font-size:11px;color:var(--muted);margin-top:4px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rh-body"><div class="container-fluid">
+
+  <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
+    <div class="header-content">
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0">Gestion du Personnel</h2>
+      <p class="mb-0 opacity-75">Ressources Humaines · {{ utilisateurs.count }} membre(s) du personnel</p>
+    </div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    <a href="{% url 'parametres:parametres_index' %}" class="btn-a btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
+    <button class="btn-a btn-or" onclick="ouvrirModal('modalCreer')"><i class="fas fa-user-plus"></i> Nouveau membre</button>
+  </div>
+
+  <!-- STATS PAR DÉPARTEMENT -->
+  <div class="stats-grid">
+    {% regroup utilisateurs by groups.first as dept_list %}
+    <div class="stat-card"><div class="nb">{{ utilisateurs.count }}</div><div class="lbl">👥 Total</div></div>
+    <div class="stat-card"><div class="nb">{{ utilisateurs.filter_active|default:utilisateurs.count }}</div><div class="lbl">✅ Actifs</div></div>
+    {% for g in groupes %}<div class="stat-card"><div class="nb">{{ g.user_set.count }}</div><div class="lbl">{{ g.name }}</div></div>{% endfor %}
+  </div>
+
+  <!-- LISTE PERSONNEL -->
+  <div class="panel">
+    <div class="ph">
+      <h3>👥 Liste du personnel</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="filtrePersonnel" placeholder="Rechercher…" oninput="filtrer()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;width:160px">
+        <select id="filtreGroupe" onchange="filtrer()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px">
+          <option value="">Tous les postes</option>
+          {% for g in groupes %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto;max-height:600px;overflow-y:auto">
+      <table class="tbl" id="tablePersonnel">
+        <thead>
+          <tr>
+            <th style="position:sticky;top:0;background:#f8fafc"></th>
+            <th style="position:sticky;top:0;background:#f8fafc">Nom complet</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Identifiant</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Poste / Groupe</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Email</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Statut</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for u in utilisateurs %}
+        {% with groupe=u.groups.first %}
+        <tr data-nom="{{ u.get_full_name|lower }}" data-groupe="{{ groupe.name|default:'' }}">
+          <td>
+            <div class="avatar av-{% if groupe.name in 'Directeur Général,Manager Général(e)' %}direction{% elif 'Hôtel' in groupe.name|default:'' or 'Réceptionniste' in groupe.name|default:'' %}hotel{% elif 'Caisse' in groupe.name|default:'' %}caisse{% elif 'Cuisine' in groupe.name|default:'' %}cuisine{% elif 'Serveur' in groupe.name|default:'' or 'Serveuse' in groupe.name|default:'' %}restaurant{% elif 'Sécurité' in groupe.name|default:'' %}securite{% else %}autre{% endif %}">
+              {{ u.first_name|first|default:u.username|first|upper }}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:700">{{ u.get_full_name|default:u.username }}</div>
+            {% if u.is_superuser %}<span style="font-size:10px;color:#dc2626;font-weight:600">⭐ Super Admin</span>{% endif %}
+          </td>
+          <td style="font-family:monospace;color:var(--muted)">{{ u.username }}</td>
+          <td>
+            {% if groupe %}
+            <span class="groupe-tag">{{ groupe.name }}</span>
+            {% else %}
+            <span style="color:var(--muted);font-size:11px">Aucun poste</span>
+            {% endif %}
+          </td>
+          <td style="font-size:11px;color:var(--muted)">{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge" style="background:#dcfce7;color:#15803d">✅ Actif</span>
+            {% else %}
+            <span class="badge" style="background:#fee2e2;color:#dc2626">❌ Inactif</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:5px">
+              <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Modifier" onclick="ouvrirModifier({{ u.pk }},'{{ u.username }}','{{ u.first_name }}','{{ u.last_name }}','{{ u.email }}','{{ groupe.name|default:'' }}')">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Réinitialiser mot de passe" onclick="ouvrirResetPwd({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
+                <i class="fas fa-key"></i>
+              </button>
+              {% if not u.is_superuser %}
+              <button class="btn-a {% if u.is_active %}btn-rouge{% else %}btn-vert{% endif %}" style="padding:5px 8px;font-size:11px" title="{% if u.is_active %}Désactiver{% else %}Activer{% endif %}" onclick="toggleUser({{ u.pk }}, this)">
+                <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}"></i>
+              </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Aucun utilisateur</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GROUPES / POSTES -->
+  <div class="panel">
+    <div class="ph"><h3>🏷️ Postes disponibles</h3></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px">
+      {% for nom, dept in groupes_metier %}
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">{{ dept }}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--dark)">{{ nom }}</div>
+        <div style="font-size:11px;color:#2563eb;margin-top:4px">
+          {% for g in groupes %}{% if g.name == nom %}{{ g.user_set.count }} membre(s){% endif %}{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div></div>
+
+<!-- MODAL CRÉER -->
+<div class="modal-ov" id="modalCreer">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-user-plus" style="color:#16a34a;margin-right:8px"></i>Nouveau membre du personnel</h3>
+      <button class="close-btn" onclick="fermerModal('modalCreer')">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-row"><label>Prénom *</label><input type="text" id="cr_prenom" class="fc" placeholder="Prénom"></div>
+      <div class="form-row"><label>Nom *</label><input type="text" id="cr_nom" class="fc" placeholder="Nom de famille"></div>
+    </div>
+    <div class="form-row"><label>Identifiant (login) *</label><input type="text" id="cr_username" class="fc" placeholder="Ex: jean.dupont" autocomplete="off"></div>
+    <div class="form-row"><label>Mot de passe *</label><input type="password" id="cr_password" class="fc" placeholder="Minimum 4 caractères" autocomplete="new-password"></div>
+    <div class="form-row">
+      <label>Poste / Groupe *</label>
+      <select id="cr_groupe" class="fc">
+        <option value="">— Sélectionner un poste —</option>
+        {% for nom, dept in groupes_metier %}
+        <option value="{{ nom }}">{{ dept }} · {{ nom }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row"><label>Email</label><input type="email" id="cr_email" class="fc" placeholder="email@example.com"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalCreer')">Annuler</button>
+      <button class="btn-a btn-vert" style="flex:2;justify-content:center" onclick="creerMembre()"><i class="fas fa-check"></i> Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MODIFIER -->
+<div class="modal-ov" id="modalModifier">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-edit" style="color:#2563eb;margin-right:8px"></i>Modifier le membre</h3>
+      <button class="close-btn" onclick="fermerModal('modalModifier')">×</button>
+    </div>
+    <input type="hidden" id="mod_pk">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-row"><label>Prénom</label><input type="text" id="mod_prenom" class="fc"></div>
+      <div class="form-row"><label>Nom</label><input type="text" id="mod_nom" class="fc"></div>
+    </div>
+    <div class="form-row">
+      <label>Poste / Groupe</label>
+      <select id="mod_groupe" class="fc">
+        <option value="">— Aucun —</option>
+        {% for nom, dept in groupes_metier %}
+        <option value="{{ nom }}">{{ dept }} · {{ nom }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row"><label>Email</label><input type="email" id="mod_email" class="fc"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalModifier')">Annuler</button>
+      <button class="btn-a btn-bleu" style="flex:2;justify-content:center" onclick="modifierMembre()"><i class="fas fa-save"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESET PASSWORD -->
+<div class="modal-ov" id="modalPwd">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-head">
+      <h3><i class="fas fa-key" style="color:#d97706;margin-right:8px"></i>Réinitialiser le mot de passe</h3>
+      <button class="close-btn" onclick="fermerModal('modalPwd')">×</button>
+    </div>
+    <input type="hidden" id="pwd_pk">
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#92400e">
+      Réinitialisation du mot de passe de : <strong id="pwd_nom"></strong>
+    </div>
+    <div class="form-row"><label>Nouveau mot de passe *</label><input type="password" id="pwd_new" class="fc" placeholder="Minimum 4 caractères"></div>
+    <div class="form-row"><label>Confirmer</label><input type="password" id="pwd_confirm" class="fc" placeholder="Répéter le mot de passe"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalPwd')">Annuler</button>
+      <button class="btn-a btn-or" style="flex:2;justify-content:center" onclick="resetPassword()"><i class="fas fa-key"></i> Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+
+function ouvrirModal(id){document.getElementById(id).classList.add('open');}
+function fermerModal(id){document.getElementById(id).classList.remove('open');}
+
+function toast(msg, type='info'){
+  const colors={success:'background:#dcfce7;color:#15803d',error:'background:#fee2e2;color:#dc2626',info:'background:#dbeafe;color:#1e40af'};
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15)`;
+  t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3500);
+}
+
+async function post(url, data){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF}, body:JSON.stringify(data)});
+  return r.json();
+}
+
+function filtrer(){
+  const q = document.getElementById('filtrePersonnel').value.toLowerCase();
+  const g = document.getElementById('filtreGroupe').value;
+  document.querySelectorAll('#tablePersonnel tbody tr[data-nom]').forEach(tr=>{
+    const ok = (!q || tr.dataset.nom.includes(q)) && (!g || tr.dataset.groupe === g);
+    tr.style.display = ok ? '' : 'none';
+  });
+}
+
+async function creerMembre(){
+  const prenom = document.getElementById('cr_prenom').value.trim();
+  const nom    = document.getElementById('cr_nom').value.trim();
+  const uname  = document.getElementById('cr_username').value.trim();
+  const pwd    = document.getElementById('cr_password').value;
+  const groupe = document.getElementById('cr_groupe').value;
+  if(!prenom||!nom){toast('Prénom et nom requis','error');return;}
+  if(!uname){toast('Identifiant requis','error');return;}
+  if(!pwd||pwd.length<4){toast('Mot de passe trop court','error');return;}
+  if(!groupe){toast('Poste requis','error');return;}
+  const d = await post("{% url 'parametres:personnel_create' %}", {
+    first_name:prenom, last_name:nom, username:uname, password:pwd,
+    groupe, email:document.getElementById('cr_email').value
+  });
+  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
+}
+
+function ouvrirModifier(pk, username, prenom, nom, email, groupe){
+  document.getElementById('mod_pk').value = pk;
+  document.getElementById('mod_prenom').value = prenom;
+  document.getElementById('mod_nom').value = nom;
+  document.getElementById('mod_email').value = email;
+  document.getElementById('mod_groupe').value = groupe;
+  ouvrirModal('modalModifier');
+}
+
+async function modifierMembre(){
+  const pk = document.getElementById('mod_pk').value;
+  const d = await post(`/parametres/personnel/${pk}/modifier/`, {
+    first_name: document.getElementById('mod_prenom').value,
+    last_name:  document.getElementById('mod_nom').value,
+    email:      document.getElementById('mod_email').value,
+    groupe:     document.getElementById('mod_groupe').value,
+  });
+  if(d.success){ fermerModal('modalModifier'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
+}
+
+function ouvrirResetPwd(pk, nom){
+  document.getElementById('pwd_pk').value = pk;
+  document.getElementById('pwd_nom').textContent = nom;
+  document.getElementById('pwd_new').value = '';
+  document.getElementById('pwd_confirm').value = '';
+  ouvrirModal('modalPwd');
+}
+
+async function resetPassword(){
+  const pwd = document.getElementById('pwd_new').value;
+  const confirm = document.getElementById('pwd_confirm').value;
+  if(pwd !== confirm){toast('Les mots de passe ne correspondent pas','error');return;}
+  if(pwd.length < 4){toast('Mot de passe trop court','error');return;}
+  const pk = document.getElementById('pwd_pk').value;
+  const d = await post(`/parametres/personnel/${pk}/reset-password/`, {password: pwd});
+  if(d.success){ fermerModal('modalPwd'); toast('✅ '+d.message,'success'); }
+  else toast('❌ '+d.error,'error');
+}
+
+async function toggleUser(pk, btn){
+  const d = await post(`/parametres/personnel/${pk}/toggle/`, {});
+  if(d.success){
+    toast('✅ '+d.message,'success');
+    setTimeout(()=>location.reload(),800);
+  } else toast('❌ '+d.error,'error');
+}
+</script>
+{% endblock %}

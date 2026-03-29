@@ -53,4 +53,11 @@ urlpatterns = [
     path('espaces/ajouter/', views.EspaceCreateView.as_view(), name='espace_create'),
     path('espaces/<int:pk>/modifier/', views.EspaceUpdateView.as_view(), name='espace_update'),
     path('espaces/<int:pk>/supprimer/', views.EspaceDeleteView.as_view(), name='espace_delete'),
+
+    # RH - Gestion du personnel
+    path('personnel/', views.personnel_list, name='personnel_list'),
+    path('personnel/ajouter/', views.personnel_create, name='personnel_create'),
+    path('personnel/<int:pk>/modifier/', views.personnel_update, name='personnel_update'),
+    path('personnel/<int:pk>/toggle/', views.personnel_toggle, name='personnel_toggle'),
+    path('personnel/<int:pk>/reset-password/', views.personnel_reset_password, name='personnel_reset_password'),
 ]
