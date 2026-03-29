@@ -225,6 +225,22 @@
             </div>
         </div>
 
+        <!-- RESSOURCES HUMAINES -->
+        <div class="module-card" style="border-top:3px solid #c9a84c">
+            <div class="icon-wrapper" style="background:rgba(201,168,76,.12)">
+                <i class="fas fa-users" style="color:#c9a84c"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Ressources Humaines</h5>
+                <p class="card-text">Gestion du personnel, postes, accès utilisateurs et réinitialisation des mots de passe.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:personnel_list' %}" class="btn-glam" style="background:#c9a84c;color:#1a2535;border-color:#c9a84c">
+                    <i class="fas fa-users-cog mr-2"></i> Gérer le Personnel
+                </a>
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}
