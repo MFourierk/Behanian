@@ -693,7 +693,7 @@
                             <td style="font-size:0.88rem;color:#7f8c8d;">{{ br.date_reception|date:"d/m/Y" }}</td>
                             <td style="font-weight:600;color:#2c3e50;">{{ br.nb_articles }}</td>
                             <td style="font-weight:700;color:#2c3e50;">{{ br.total|floatformat:0 }} FCFA</td>
-                            <td style="font-size:0.85rem;">{{ br.operateur.get_full_name|default:br.operateur.username }}</td>
+                            <td style="font-size:0.85rem;">{% if br.operateur %}{{ br.operateur.get_full_name|default:br.operateur.username }}{% else %}—{% endif %}</td>
                             <td>
                                 {% if br.statut == "brouillon" %}<span class="bc-badge brouillon">Brouillon</span>
                                 {% elif br.statut == "en_cours" %}<span class="bc-badge envoye">En cours</span>
@@ -849,7 +849,7 @@
                                     {{ mv.quantite|floatformat:0 }} × {{ mv.boisson.prix_achat|floatformat:0 }} FCFA
                                 {% else %}—{% endif %}
                             </td>
-                            <td style="font-size:0.85rem;">{{ mv.utilisateur.get_full_name|default:mv.utilisateur.username|default:"—" }}</td>
+                            <td style="font-size:0.85rem;">{% if mv.utilisateur %}{{ mv.utilisateur.get_full_name|default:mv.utilisateur.username }}{% else %}—{% endif %}</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;max-width:200px;">{{ mv.commentaire|default:"—"|truncatechars:60 }}</td>
                         </tr>
                         {% empty %}
@@ -962,7 +962,7 @@
                                 {% endwith %}
                             </td>
                             <td style="font-weight:600;color:#e74c3c;">{{ inv.valeur_ecart_total|floatformat:0 }} FCFA</td>
-                            <td style="font-size:0.85rem;">{{ inv.cree_par.get_full_name|default:inv.cree_par.username|default:"—" }}</td>
+                            <td style="font-size:0.85rem;">{% if inv.cree_par %}{{ inv.cree_par.get_full_name|default:inv.cree_par.username }}{% else %}—{% endif %}</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;">
                                 {% if inv.date_validation %}{{ inv.date_validation|date:"d/m/Y" }}{% else %}—{% endif %}
                             </td>
@@ -1067,7 +1067,7 @@
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ css.date_casse|date:"d/m/Y" }}</td>
                             <td style="font-weight:600;text-align:center;">{{ css.nb_articles }}</td>
                             <td style="font-weight:700;color:#e74c3c;">{{ css.total_valeur|floatformat:0 }} FCFA</td>
-                            <td style="font-size:0.85rem;">{{ css.declare_par.get_full_name|default:css.declare_par.username|default:"—" }}</td>
+                            <td style="font-size:0.85rem;">{% if css.declare_par %}{{ css.declare_par.get_full_name|default:css.declare_par.username }}{% else %}—{% endif %}</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;max-width:180px;">{{ css.description|default:"—"|truncatechars:50 }}</td>
                             <td>
                                 {% if css.statut == "declare" %}<span class="bc-badge brouillon">⏳ En attente</span>
