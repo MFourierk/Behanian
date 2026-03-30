@@ -432,6 +432,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 {% endblock %}
 
 {% block content %}
+{% load breadcrumb %}
+<div style="padding:4px 12px;background:#f4f1f9;border-bottom:1px solid #e8e2f0;">
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Vente rapide" "" %}
+</div>
 <div class="tpe-wrap">
 
   <!-- ========== PANNEAU GAUCHE — CATALOGUE ========== -->

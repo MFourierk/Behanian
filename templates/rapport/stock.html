@@ -4,7 +4,6 @@
 {% block title %}Rapport de Stock — BEHANIAN{% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Rapport de Stock" "" %}
 <style>
 /* ===== LAYOUT GÉNÉRAL ===== */
 .rpt-header {
@@ -234,9 +233,10 @@ table.articles-table tr:hover { background: #f8f9fa; }
         </div>
     </div>
 
-    {% if module_filtre == 'cuisine' %}
-        {% elif module_filtre == 'cave' %}
-    {% breadcrumb "Cave" "bar:dashboard" "Rapport de Stock" "" %}
+    {% if module_filtre == 'cave' %}
+    {% breadcrumb "Cave / Bar" "bar:dashboard" "Rapport de Stock" "" %}
+    {% elif module_filtre == 'cuisine' %}
+    {% breadcrumb "Cuisine" "cuisine:index" "Rapport de Stock" "" %}
     {% else %}
     {% breadcrumb "Tableau de bord" "dashboard:index" "Rapport de Stock" "" %}
     {% endif %}
