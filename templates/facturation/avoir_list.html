@@ -9,13 +9,13 @@
         <h2>Avoirs</h2>
         <p class="mb-0 opacity-75">Historique des avoirs</p>
     </div>
-
-{% breadcrumb "Facturation" "facturation:index" "Avoirs" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
+{% breadcrumb "Facturation" "facturation:index" "Avoirs" "" %}
+
 
 <div style="display:flex;gap:10px;margin-bottom:20px">
     <a href="{% url 'facturation:avoir_create' %}" class="btn-add-glam">

@@ -46,14 +46,11 @@
             <h2>{{ fiche.plat.nom }}</h2>
             <p class="mb-0 opacity-75">Détail de la fiche technique</p>
         </div>
-
-{% breadcrumb "Cuisine" "cuisine:index" "Recettes" "cuisine:recette_list" "Détail recette" "" %}
     </div>
+{% breadcrumb "Cuisine" "cuisine:index" "Recettes" "cuisine:recette_list" "Détail recette" "" %}
+
 
     <div class="action-bar">
-        <a href="{% url 'cuisine:recette_list' %}" class="btn-back" title="Retour à la liste">
-            <i class="fas fa-arrow-left"></i>
-        </a>
         <a href="{% url 'cuisine:recette_edit' fiche.pk %}" class="btn-add-glam">
             <i class="fas fa-edit mr-2"></i> Modifier
         </a>

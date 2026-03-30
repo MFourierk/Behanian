@@ -34,13 +34,11 @@
         <h2>{{ page_title }}</h2>
         <p class="mb-0 opacity-75">Liste des réceptions de marchandises</p>
     </div>
-
-{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "" %}
 </div>
+{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "" %}
+
 
 <div class="header-actions d-flex justify-content-between align-items-center">
-    <a href="{% url 'cuisine:index' %}" class="btn-back" title="Retour au tableau de bord"><i class="fas fa-arrow-left"></i></a>
-    
     <div class="d-flex align-items-center">
         <form method="get" class="me-2">
             <input type="text" name="q" class="form-control" placeholder="Rechercher un bon..." value="{{ request.GET.q }}">

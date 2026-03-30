@@ -74,19 +74,16 @@
         <h2>{% if form.instance.pk %}Modifier Table Bar{% else %}Nouvelle Table Bar{% endif %}</h2>
         <p class="mb-0 opacity-75">Configuration des tables du bar</p>
     </div>
-
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Tables Cave" "parametres:tablebar_list" "Formulaire" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Tables Cave" "parametres:tablebar_list" "Formulaire" "" %}
+
 
 <div class="action-bar">
-    <a href="{% url 'parametres:tablebar_list' %}" class="btn-back">
-        <i class="fas fa-chevron-left"></i>
-    </a>
-</div>
+    </div>
 
 <div class="row justify-content-center">
     <div class="col-md-6">

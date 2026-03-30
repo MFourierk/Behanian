@@ -42,10 +42,10 @@
       <h2 style="font-size:1.4rem;font-weight:700;margin:0">Avoir {{ avoir.numero }}</h2>
       <p class="mb-0 opacity-75">{{ avoir.client.nom|default:"Client anonyme" }} · {{ avoir.date_avoir|date:"d/m/Y" }}</p>
     </div>
-
-{% breadcrumb "Facturation" "facturation:index" "Avoirs" "facturation:avoir_list" "Détail avoir" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
+{% breadcrumb "Facturation" "facturation:index" "Avoirs" "facturation:avoir_list" "Détail avoir" "" %}
+
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">

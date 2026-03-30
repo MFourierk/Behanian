@@ -74,19 +74,16 @@
         <h2>{% if form.instance.pk %}Modifier Boisson{% else %}Nouvelle Boisson{% endif %}</h2>
         <p class="mb-0 opacity-75">Configuration de la carte des boissons</p>
     </div>
-
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Boissons" "parametres:boissonbar_list" "Formulaire" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Boissons" "parametres:boissonbar_list" "Formulaire" "" %}
+
 
 <div class="action-bar">
-    <a href="{% url 'parametres:boissonbar_list' %}" class="btn-back">
-        <i class="fas fa-chevron-left"></i>
-    </a>
-</div>
+    </div>
 
 <div class="row justify-content-center">
     <div class="col-md-8">

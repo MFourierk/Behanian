@@ -104,18 +104,15 @@
             <h2>Chambres</h2>
             <p class="mb-0 opacity-75">Gestion des chambres de l'hôtel</p>
         </div>
-
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Hôtel — Chambres" "" %}
         <div class="header-clock">
             <span class="time">--:-- GMT</span>
             <span class="date">Chargement...</span>
         </div>
     </div>
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Hôtel — Chambres" "" %}
+
 
     <div class="action-bar">
-        <a href="{% url 'parametres:parametres_index' %}" class="btn-back" title="Retour">
-            &laquo;
-        </a>
         <a href="{% url 'parametres:chambre_create' %}" class="btn-add-module">
             <i class="fas fa-plus mr-2"></i> Nouvelle Chambre
         </a>

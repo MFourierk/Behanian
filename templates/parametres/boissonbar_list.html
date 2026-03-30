@@ -121,18 +121,15 @@
         <h2>Gestion des Boissons</h2>
         <p class="mb-0 opacity-75">Configuration de la Cave</p>
     </div>
-
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Boissons" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Boissons" "" %}
+
 
 <div class="action-bar">
-    <a href="{% url 'parametres:parametres_index' %}" class="btn-back">
-        <i class="fas fa-chevron-left"></i>
-    </a>
     <a href="{% url 'parametres:boissonbar_create' %}" class="btn-add-glam">
         <i class="fas fa-plus"></i> Nouvelle Boisson
     </a>

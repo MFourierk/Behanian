@@ -10,18 +10,15 @@
             <h2>État du Stock</h2>
             <p class="mb-0 opacity-75">Visualisation du stock à date</p>
         </div>
-
-{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "État du stock" "" %}
         <div class="header-clock">
             <span class="time">--:-- GMT</span>
             <span class="date">Chargement...</span>
         </div>
     </div>
+{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "État du stock" "" %}
+
     
     <div class="action-bar">
-        <a href="{% url 'cuisine:index' %}" class="btn-back">
-            <i class="fas fa-chevron-left"></i>
-        </a>
         <a href="{% url 'cuisine:inventaire_saisie' %}" class="btn-add-glam">
             <i class="fas fa-clipboard-check mr-2"></i> Faire un Inventaire
         </a>

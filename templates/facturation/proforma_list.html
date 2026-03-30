@@ -9,13 +9,13 @@
         <h2>Proformas</h2>
         <p class="mb-0 opacity-75">Historique des factures proforma</p>
     </div>
-
-{% breadcrumb "Facturation" "facturation:index" "Proformas" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
+{% breadcrumb "Facturation" "facturation:index" "Proformas" "" %}
+
 
 <div style="display:flex;gap:10px;margin-bottom:20px">
     <a href="{% url 'facturation:proforma_create' %}" class="btn-add-glam">

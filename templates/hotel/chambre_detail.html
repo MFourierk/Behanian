@@ -9,18 +9,15 @@
         <h2>Chambre N° {{ chambre.numero }}</h2>
         <p class="mb-0 opacity-75">{{ chambre.get_type_chambre_display }} - Étage {{ chambre.etage }}</p>
     </div>
-
-{% breadcrumb "Hôtel" "hotel:index" "Chambre" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
+{% breadcrumb "Hôtel" "hotel:index" "Chambre" "" %}
+
 
 <div class="action-bar">
-    <a href="{% url 'hotel:index' %}" class="btn-back">
-        <i class="fas fa-chevron-left"></i>
-    </a>
     <button class="btn-add-glam">
         <i class="fas fa-edit mr-2"></i> Modifier
     </button>
