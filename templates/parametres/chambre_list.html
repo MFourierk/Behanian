@@ -1,245 +1,96 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
-
-{% block title %}Gestion des Chambres{% endblock %}
-
-{% block content %}
+{% block title %}Chambres — Paramètres{% endblock %}
+{% block extra_css %}
 <style>
-    /* Table Styles */
-    .table-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        overflow: hidden;
-        border: none;
-    }
-
-    .table-glam {
-        width: 100%;
-        margin-bottom: 0;
-    }
-
-    .table-glam thead th {
-        background: #f8f9fa;
-        border-bottom: 2px solid #ecf0f1;
-        color: #7f8c8d;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        padding: 20px;
-    }
-
-    .table-glam tbody td {
-        padding: 20px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f0f0f0;
-        color: #2c3e50;
-        font-weight: 500;
-    }
-
-    .table-glam tr:last-child td {
-        border-bottom: none;
-    }
-
-    .table-glam tr:hover td {
-        background: #fcfcfc;
-    }
-
-    /* Status Badges */
-    .status-badge {
-        padding: 6px 15px;
-        border-radius: 50px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-    .status-disponible { background: #eafaf1; color: #2ecc71; }
-    .status-occupe { background: #fdebd0; color: #f39c12; }
-    .status-maintenance { background: #fadbd8; color: #e74c3c; }
-
-    /* Action Buttons */
-    .action-btn {
-        width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        margin: 0 3px;
-        text-decoration: none;
-    }
-
-    .btn-edit { background: #ebf5fb; color: #3498db; }
-    .btn-edit:hover { background: #3498db; color: white; }
-
-    .btn-delete { background: #fdedec; color: #e74c3c; }
-    .btn-delete:hover { background: #e74c3c; color: white; }
-    
-    /* Module Specific Add Button */
-    .btn-add-module {
-        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 50px;
-        font-weight: 600;
-        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        transition: all 0.3s;
-        display: inline-flex;
-        align-items: center;
-        text-decoration: none;
-    }
-
-    .btn-add-module:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
-        color: white;
-    }
+:root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c}
+.pg-body{background:var(--light);padding:20px 0 50px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:11px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:13px 16px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-disponible{background:#dcfce7;color:#15803d}.b-occupee{background:#fee2e2;color:#dc2626}
+.b-maintenance{background:#fed7aa;color:#c2410c}.b-reservee{background:#fef3c7;color:#d97706}
+.btn-a{padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-or{background:var(--gold);color:var(--dark)}.btn-rouge{background:#dc2626;color:white}
+.btn-outline{background:white;color:var(--text);border:1px solid var(--border)}
+.action-btn{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:white;cursor:pointer;transition:all .12s;text-decoration:none;font-size:13px;color:var(--muted)}
+.action-btn:hover.edit{background:#dbeafe;border-color:#93c5fd;color:#2563eb}
+.action-btn:hover.del{background:#fee2e2;border-color:#fca5a5;color:#dc2626}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:white;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;border-top:3px solid}
+.stat .nb{font-size:26px;font-weight:800;color:var(--dark)}
+.stat .lb{font-size:11px;color:var(--muted);margin-top:4px}
+.equip-icon{font-size:14px;opacity:.8}
 </style>
-
-<div class="container-fluid py-4">
-    <div class="header-glam hotel-watermark">
-        <div class="header-content">
-            <h2>Chambres</h2>
-            <p class="mb-0 opacity-75">Gestion des chambres de l'hôtel</p>
-        </div>
-        <div class="header-clock">
-            <span class="time">--:-- GMT</span>
-            <span class="date">Chargement...</span>
-        </div>
+{% endblock %}
+{% block content %}
+<div class="pg-body"><div class="container-fluid">
+  <div class="header-glam hotel-watermark">
+    <div class="header-content">
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0">🛏️ Chambres</h2>
+      <p class="mb-0 opacity-75">Gestion des chambres de l'hôtel · {{ chambres.count }} chambre(s)</p>
     </div>
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Hôtel — Chambres" "" %}
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Hôtel — Chambres" "" %}
 
-
-    <div class="action-bar">
-        <a href="{% url 'parametres:chambre_create' %}" class="btn-add-module">
-            <i class="fas fa-plus mr-2"></i> Nouvelle Chambre
-        </a>
-    </div>
-
-    <div class="table-card">
-        <div class="table-responsive">
-            <table class="table table-glam">
-                <thead>
-                    <tr>
-                        <th>Numéro</th>
-                        <th>Type</th>
-                        <th>Tarifs</th>
-                        <th>Équipements</th>
-                        <th>Statut</th>
-                        <th class="text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for chambre in chambres %}
-                    <tr>
-                        <td>
-                            <span style="font-weight: 700; font-size: 1.1rem;">#{{ chambre.numero }}</span>
-                        </td>
-                        <td>{{ chambre.get_type_chambre_display }}</td>
-                        <td>
-                            <div class="small">
-                                <div><span class="text-muted">Nuitée:</span> <strong>{{ chambre.prix_nuit }} FCFA</strong></div>
-                                <div><span class="text-muted">Séjour:</span> <strong>{{ chambre.prix_sejour }} FCFA</strong></div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge badge-light border mr-2">{{ chambre.capacite }} <i class="fas fa-user"></i></span>
-                                {% if chambre.wifi %}<i class="fas fa-wifi text-primary" title="WiFi"></i>{% endif %}
-                                {% if chambre.climatisation %}<i class="fas fa-snowflake text-info" title="Climatisation"></i>{% endif %}
-                                {% if chambre.television %}<i class="fas fa-tv text-dark" title="Télévision"></i>{% endif %}
-                                {% if chambre.minibar %}<i class="fas fa-cocktail text-warning" title="Minibar"></i>{% endif %}
-                                {% if chambre.machine_a_cafe %}<i class="fas fa-coffee text-dark" title="Machine à café"></i>{% endif %}
-                                {% if chambre.baignoire %}<i class="fas fa-bath text-info" title="Baignoire"></i>{% endif %}
-                                {% if chambre.coffre_fort %}<i class="fas fa-lock text-secondary" title="Coffre-fort"></i>{% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            <span class="status-badge status-{{ chambre.statut }}">
-                                {{ chambre.get_statut_display }}
-                            </span>
-                        </td>
-                        <td class="text-right">
-                            <a href="{% url 'parametres:chambre_update' chambre.pk %}" class="action-btn btn-edit" title="Modifier">
-                                <i class="fas fa-pencil-alt"></i>
-                            </a>
-                            <button type="button" class="action-btn btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal" data-url="{% url 'parametres:chambre_delete' chambre.pk %}" data-number="{{ chambre.numero }}" title="Supprimer" style="border:none; cursor:pointer;">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-5">
-                            <div class="text-muted">
-                                <i class="fas fa-bed fa-3x mb-3"></i>
-                                <p>Aucune chambre enregistrée.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 15px 50px rgba(0,0,0,0.15); width: 400px; margin: auto;">
-      <div class="modal-body p-4">
-        <!-- Icon -->
-        <div class="mb-4 position-relative d-inline-block">
-            <div class="icon-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; background-color: #fee2e2; border-radius: 50%;">
-                <i class="fas fa-trash-alt" style="font-size: 28px; color: #ef4444;"></i>
-            </div>
-            <!-- Decor elements -->
-            <span style="position: absolute; top: -5px; right: -5px; color: #ef4444; font-size: 14px;">+</span>
-            <span style="position: absolute; bottom: 5px; left: -10px; color: #ef4444; font-size: 10px;">+</span>
-            <span style="position: absolute; top: 50%; right: -15px; color: #ef4444; font-size: 8px;">+</span>
-        </div>
-
-        <h5 class="mb-2" style="font-weight: 700; color: #1f2937; text-align: left;">Supprimer la chambre ?</h5>
-        <p class="text-muted mb-4" style="font-size: 0.9rem; text-align: left; line-height: 1.5;">
-            La chambre <strong id="delete-room-number"></strong> sera définitivement supprimée et ne pourra pas être récupérée.
-        </p>
-
-        <form id="deleteForm" method="post" action="">
-            {% csrf_token %}
-            <div class="d-flex gap-3">
-                <button type="button" class="btn btn-outline-danger flex-fill py-2" data-bs-dismiss="modal" style="border-radius: 10px; font-weight: 600; border: 1px solid #ef4444; color: #ef4444;">
-                    Annuler
-                </button>
-                <button type="submit" class="btn btn-danger flex-fill py-2" style="border-radius: 10px; font-weight: 600; background-color: #ef4444; border: none;">
-                    Supprimer
-                </button>
-            </div>
-        </form>
-      </div>
+  <div class="stats-row">
+    <div class="stat" style="border-top-color:#2563eb"><div class="nb">{{ chambres.count }}</div><div class="lb">🛏️ Total</div></div>
+    <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ chambres|length }}</div><div class="lb">✅ Configurées</div></div>
+    <div class="stat" style="border-top-color:var(--gold)"><div class="nb">{{ chambres.count }}</div><div class="lb">💰 Tarifées</div></div>
+    <div class="stat" style="border-top-color:#7c3aed">
+      <a href="{% url 'parametres:chambre_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center">
+        <i class="fas fa-plus"></i> Nouvelle chambre
+      </a>
     </div>
   </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var deleteModal = document.getElementById('deleteModal');
-    if (deleteModal) {
-        deleteModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var url = button.getAttribute('data-url');
-            var number = button.getAttribute('data-number');
-            
-            var form = deleteModal.querySelector('#deleteForm');
-            form.action = url;
-            
-            var span = deleteModal.querySelector('#delete-room-number');
-            span.textContent = number;
-        });
-    }
-});
-</script>
-
+  <div class="panel">
+    <div class="ph">
+      <h3>🛏️ Liste des chambres</h3>
+      <a href="{% url 'parametres:chambre_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>N°</th><th>Type</th><th>Étage</th><th>Capacité</th><th>Prix nuit</th><th>Prix séjour</th><th>Équipements</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for ch in chambres %}
+        <tr>
+          <td style="font-weight:700;font-size:15px">#{{ ch.numero }}</td>
+          <td>{{ ch.get_type_chambre_display }}</td>
+          <td style="color:var(--muted)">Étage {{ ch.etage|default:"—" }}</td>
+          <td>{{ ch.capacite }} <i class="fas fa-user" style="color:var(--muted);font-size:11px"></i></td>
+          <td style="font-weight:600;color:#16a34a">{{ ch.prix_nuit|floatformat:0 }} F</td>
+          <td style="color:var(--muted)">{{ ch.prix_sejour|floatformat:0 }} F</td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              {% if ch.wifi %}<span class="equip-icon" title="WiFi">📶</span>{% endif %}
+              {% if ch.climatisation %}<span class="equip-icon" title="Clim">❄️</span>{% endif %}
+              {% if ch.television %}<span class="equip-icon" title="TV">📺</span>{% endif %}
+              {% if ch.minibar %}<span class="equip-icon" title="Minibar">🍸</span>{% endif %}
+              {% if ch.baignoire %}<span class="equip-icon" title="Baignoire">🛁</span>{% endif %}
+              {% if ch.coffre_fort %}<span class="equip-icon" title="Coffre">🔒</span>{% endif %}
+            </div>
+          </td>
+          <td><span class="badge b-{{ ch.statut }}">{{ ch.get_statut_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'parametres:chambre_update' ch.pk %}" class="action-btn edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
+              <a href="{% url 'parametres:chambre_delete' ch.pk %}" class="action-btn del" title="Supprimer"><i class="fas fa-trash-alt"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)"><i class="fas fa-bed" style="font-size:2rem;margin-bottom:12px;display:block;opacity:.3"></i>Aucune chambre — <a href="{% url 'parametres:chambre_create' %}" style="color:#2563eb">Ajouter la première</a></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div></div>
 {% endblock %}

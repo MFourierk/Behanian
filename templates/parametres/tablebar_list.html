@@ -1,157 +1,76 @@
 {% extends 'dashboard/base_dashboard.html' %}
-{% load breadcrumb %}
-{% load static %}
-
-{% block title %}Tables de la Cave - BEHANIAN{% endblock %}
-
-{% block content %}
+{% load breadcrumb static %}
+{% block title %}Tables Cave — Paramètres{% endblock %}
+{% block extra_css %}
 <style>
-    .header-glam {
-        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
-        padding: 30px;
-        border-radius: 20px;
-        color: white;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 25px rgba(142, 68, 173, 0.2);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .header-glam::after {
-        content: '🍷';
-        position: absolute;
-        right: -20px;
-        bottom: -40px;
-        font-size: 150px;
-        opacity: 0.15;
-        transform: rotate(20deg);
-        z-index: 0;
-        pointer-events: none;
-    }
-
-    .header-content { position: relative; z-index: 1; }
-
-    .action-bar {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-        gap: 15px;
-    }
-
-    .btn-add-glam {
-        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 50px;
-        font-weight: 600;
-        box-shadow: 0 5px 15px rgba(142, 68, 173, 0.3);
-        transition: all 0.3s;
-        display: inline-flex;
-        align-items: center;
-    }
-    
-    .btn-add-glam:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(142, 68, 173, 0.4);
-        color: white;
-        text-decoration: none;
-    }
-
-    .table-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        overflow: hidden;
-        border: none;
-    }
-
-    .table-glam {
-        width: 100%;
-        margin-bottom: 0;
-    }
-
-    .table-glam thead th {
-        background: #f8f9fa;
-        border-bottom: 2px solid #ecf0f1;
-        color: #7f8c8d;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-        padding: 20px;
-    }
-
-    .table-glam tbody td {
-        padding: 20px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f0f0f0;
-        color: #2c3e50;
-        font-weight: 500;
-    }
+:root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c}
+.pg-body{background:var(--light);padding:20px 0 50px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:11px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:13px 16px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+.btn-a{padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-or{background:var(--gold);color:var(--dark)}
+.action-btn{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:white;cursor:pointer;transition:all .12s;text-decoration:none;font-size:13px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat{background:white;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;border-top:3px solid}
+.stat .nb{font-size:26px;font-weight:800;color:var(--dark)}.stat .lb{font-size:11px;color:var(--muted);margin-top:4px}
 </style>
-
-<div class="header-glam">
+{% endblock %}
+{% block content %}
+<div class="pg-body"><div class="container-fluid">
+  <div class="header-glam bar-watermark">
     <div class="header-content">
-        <h2>Tables de la Cave</h2>
-        <p class="mb-0 opacity-75">Gestion des tables et espaces de consommation</p>
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0">🪑 Tables de la Cave</h2>
+      <p class="mb-0 opacity-75">Configuration des tables · {{ tables.count }} table(s)</p>
     </div>
-    <div class="header-clock">
-        <span class="time">--:-- GMT</span>
-        <span class="date">Chargement...</span>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Tables" "" %}
+
+  <div class="stats-row">
+    <div class="stat" style="border-top-color:#7c3aed"><div class="nb">{{ tables.count }}</div><div class="lb">🪑 Tables totales</div></div>
+    <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ tables.count }}</div><div class="lb">✅ Configurées</div></div>
+    <div class="stat" style="border-top-color:var(--gold)">
+      <a href="{% url 'parametres:tablebar_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center"><i class="fas fa-plus"></i> Nouvelle table</a>
     </div>
-</div>
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Tables" "" %}
+  </div>
 
-
-<div class="action-bar">
-    <a href="{% url 'parametres:tablebar_create' %}" class="btn-add-glam">
-        <i class="fas fa-plus"></i> Nouvelle Table
-    </a>
-</div>
-
-<div class="table-card">
-    <div class="table-responsive">
-        <table class="table table-glam">
-            <thead>
-                <tr>
-                    <th>Numéro</th>
-                    <th>Capacité</th>
-                    <th>Statut</th>
-                    <th class="text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for table in tables %}
-                <tr>
-                    <td><strong>Table {{ table.numero }}</strong></td>
-                    <td><i class="fas fa-users text-muted mr-2"></i> {{ table.capacite }} pers.</td>
-                    <td>
-                        {% if table.statut == 'disponible' %}
-                            <span class="badge badge-success px-3 py-2">Disponible</span>
-                        {% elif table.statut == 'occupee' %}
-                            <span class="badge badge-danger px-3 py-2">Occupée</span>
-                        {% else %}
-                            <span class="badge badge-warning px-3 py-2">Réservée</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-right">
-                        <a href="{% url 'parametres:tablebar_update' table.pk %}" class="btn btn-sm btn-light text-primary" title="Modifier">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{% url 'parametres:tablebar_delete' table.pk %}" class="btn btn-sm btn-light text-danger" title="Supprimer">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center py-5 text-muted">
-                        <p>Aucune table configurée pour le bar.</p>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+  <div class="panel">
+    <div class="ph">
+      <h3>🪑 Tables de la Cave</h3>
+      <a href="{% url 'parametres:tablebar_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
     </div>
-</div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>N° Table</th><th>Capacité</th><th>Zone</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for t in tables %}
+        <tr>
+          <td style="font-weight:700;font-size:15px">Table {{ t.numero }}</td>
+          <td>{{ t.capacite }} <i class="fas fa-user" style="color:var(--muted);font-size:11px"></i></td>
+          <td style="color:var(--muted)">{{ t.zone|default:"—" }}</td>
+          <td>
+            <span style="background:{% if t.statut == 'libre' %}#dcfce7;color:#15803d{% elif t.statut == 'occupee' %}#fee2e2;color:#dc2626{% else %}#fef3c7;color:#d97706{% endif %};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">
+              {{ t.get_statut_display|default:"Libre" }}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'parametres:tablebar_update' t.pk %}" class="action-btn" style="color:#2563eb;background:#dbeafe;border-color:#93c5fd"><i class="fas fa-pencil-alt"></i></a>
+              <a href="{% url 'parametres:tablebar_delete' t.pk %}" class="action-btn" style="color:#dc2626;background:#fee2e2;border-color:#fca5a5"><i class="fas fa-trash-alt"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted)">Aucune table — <a href="{% url 'parametres:tablebar_create' %}" style="color:#2563eb">Créer la première</a></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div></div>
 {% endblock %}
