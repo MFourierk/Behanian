@@ -42,7 +42,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Personnel" "" %}
 <div class="rh-body"><div class="container-fluid">
 
   <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
@@ -50,11 +49,12 @@
       <h2 style="font-size:1.5rem;font-weight:700;margin:0">Gestion du Personnel</h2>
       <p class="mb-0 opacity-75">Ressources Humaines · {{ utilisateurs.count }} membre(s) du personnel</p>
     </div>
+
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Personnel" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
   <div style="display:flex;gap:10px;margin-bottom:20px">
-    <a href="{% url 'parametres:parametres_index' %}" class="btn-a btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
     <button class="btn-a btn-or" onclick="ouvrirModal('modalCreer')"><i class="fas fa-user-plus"></i> Nouveau membre</button>
   </div>
 

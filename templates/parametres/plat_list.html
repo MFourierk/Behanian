@@ -4,7 +4,6 @@
 {% block title %}Gestion des Plats & Menus{% endblock %}
 
 {% block content %}
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Plats" "" %}
 <style>
     /* Table Styles */
     .table-card {
@@ -100,6 +99,8 @@
             <h2>Plats & Menus</h2>
             <p class="mb-0 opacity-75">Liste de tous les plats et boissons</p>
         </div>
+
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Plats" "" %}
         <div class="header-clock">
             <span class="time">--:-- GMT</span>
             <span class="date">Chargement...</span>

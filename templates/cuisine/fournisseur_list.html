@@ -3,6 +3,7 @@
 {% block title %}Fournisseurs - Cuisine BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Fournisseurs" "" %}
 <style>
     .page-header {
         background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
@@ -84,8 +85,7 @@
         <div class="header-clock"><span class="time"></span><span class="date"></span></div>
     </div>
 
-    {% breadcrumb "Cuisine" "cuisine:index" "Fournisseurs" "" %}
-
+    
     <!-- Stats -->
     <div class="stats-row">
         <div class="stat-card red">

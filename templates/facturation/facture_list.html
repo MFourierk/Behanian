@@ -28,7 +28,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Facturation" "facturation:index" "Factures" "" %}
 <div class="fac-body"><div class="container-fluid">
 
   <div class="header-glam caisse-watermark">
@@ -36,11 +35,12 @@
       <h2 style="font-size:1.5rem;font-weight:700;margin:0">Factures</h2>
       <p class="mb-0 opacity-75">Historique de toutes les factures</p>
     </div>
+
+{% breadcrumb "Facturation" "facturation:index" "Factures" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
   <div style="display:flex;gap:10px;margin-bottom:20px">
-    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','factures')"><i class="fas fa-arrow-left"></i> Retour</a>
     <button class="btn-p btn-primary" onclick="sessionStorage.setItem('facTab','factures');window.location='{% url 'facturation:index' %}'"><i class="fas fa-plus"></i> Nouvelle facture</button>
   </div>
 

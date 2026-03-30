@@ -26,10 +26,11 @@
 </style>
 {% endblock %}
 {% block content %}
-{% breadcrumb "Caisse" "caisse:index" "Suivi" "" %}
 <div class="body-suivi"><div class="container-fluid">
   <div class="header-glam caisse-watermark">
     <div class="header-content"><h2>Suivi de Caisse</h2><p class="mb-0 opacity-75">Période : {{ debut|date:"d/m/Y" }} → {{ today|date:"d/m/Y" }}</p></div>
+
+{% breadcrumb "Caisse" "caisse:index" "Suivi" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 

@@ -27,7 +27,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Facturation" "facturation:index" "Tickets" "facturation:ticket_list" "Détail ticket" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:900px">
 
   <!-- HEADER -->
@@ -36,12 +35,13 @@
       <h2 style="font-size:1.4rem;font-weight:700;margin:0">Ticket {{ ticket.numero }}</h2>
       <p class="mb-0 opacity-75">{{ ticket.get_module_display }} · {{ ticket.date_creation|date:"d/m/Y à H:i" }}</p>
     </div>
+
+{% breadcrumb "Facturation" "facturation:index" "Tickets" "facturation:ticket_list" "Détail ticket" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'facturation:index' %}#tickets" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','tickets')"><i class="fas fa-arrow-left"></i> Retour</a>
     <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn-p btn-primary"><i class="fas fa-redo"></i> Réimprimer</a>
     <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="btn-p btn-danger" onclick="return confirm('Créer un avoir pour ce ticket ?')"><i class="fas fa-undo"></i> Créer Avoir</a>
   </div>

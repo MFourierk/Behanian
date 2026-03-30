@@ -3,6 +3,7 @@
 {% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Commandes" "cuisine:stock_management" "Bon de Commande" "" %}
 <style>
     .form-header {
         background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
@@ -81,8 +82,7 @@
         </div>
     </div>
 
-    {% breadcrumb "Cuisine" "cuisine:index" "Commandes" "cuisine:stock_management" "Bon de Commande" "" %}
-
+    
     <div id="printable-zone">
 
         <!-- En-tête impression uniquement -->

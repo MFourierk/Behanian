@@ -33,7 +33,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Facturation" "facturation:index" "Factures" "facturation:facture_list" "Détail facture" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:960px">
 
   <!-- HEADER -->
@@ -42,12 +41,13 @@
       <h2 style="font-size:1.4rem;font-weight:700;margin:0">Facture {{ facture.numero }}</h2>
       <p class="mb-0 opacity-75">{% if facture.client %}{{ facture.client.nom }}{% else %}Client anonyme{% endif %} · {{ facture.date_facturation|date:"d/m/Y" }}</p>
     </div>
+
+{% breadcrumb "Facturation" "facturation:index" "Factures" "facturation:facture_list" "Détail facture" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','factures')"><i class="fas fa-arrow-left"></i> Retour</a>
     <a href="{% url 'facturation:facture_pdf' facture.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
     {% if facture.statut != 'annulee' %}
     <a href="{% url 'facturation:avoir_create' %}?facture={{ facture.pk }}" class="btn-p btn-danger"><i class="fas fa-undo"></i> Créer un avoir</a>

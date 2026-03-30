@@ -20,7 +20,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Facturation" "facturation:index" "Avoirs" "facturation:avoir_list" "Nouvel avoir" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:700px">
 
   <div class="header-glam caisse-watermark">
@@ -28,12 +27,12 @@
       <h2 style="font-size:1.4rem;font-weight:700;margin:0">Nouvel Avoir</h2>
       <p class="mb-0 opacity-75">Note de crédit client</p>
     </div>
+
+{% breadcrumb "Facturation" "facturation:index" "Avoirs" "facturation:avoir_list" "Nouvel avoir" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
-  <div style="display:flex;gap:10px;margin-bottom:20px">
-    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','avoirs')"><i class="fas fa-arrow-left"></i> Retour</a>
-  </div>
+  
 
   {% if facture %}
   <div class="info-box">

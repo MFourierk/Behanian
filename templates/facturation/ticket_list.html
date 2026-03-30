@@ -8,7 +8,6 @@
 
 
 {% block content %}
-{% breadcrumb "Facturation" "facturation:index" "Tickets" "" %}
 <style>
     :root {
         --font-family: 'Inter', sans-serif;
@@ -236,15 +235,15 @@
         <h2>Tickets & Avoirs</h2>
         <p class="mb-0 opacity-75">Gestion des tickets et avoirs</p>
     </div>
+
+{% breadcrumb "Facturation" "facturation:index" "Tickets" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>
     </div>
 </div>
 
-<div style="display:flex;gap:10px;margin-bottom:20px">
-    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','tickets')" style="padding:9px 18px;border-radius:9px;border:1px solid #d4dce8;background:white;color:#3d4f63;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none"><i class="fas fa-arrow-left"></i> Retour</a>
-</div>
+
 
 
 

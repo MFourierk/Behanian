@@ -34,7 +34,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Facturation" "facturation:index" "Avoirs" "facturation:avoir_list" "Détail avoir" "" %}
 <div class="fac-body"><div class="container-fluid" style="max-width:960px">
 
   <!-- HEADER -->
@@ -43,14 +42,13 @@
       <h2 style="font-size:1.4rem;font-weight:700;margin:0">Avoir {{ avoir.numero }}</h2>
       <p class="mb-0 opacity-75">{{ avoir.client.nom|default:"Client anonyme" }} · {{ avoir.date_avoir|date:"d/m/Y" }}</p>
     </div>
+
+{% breadcrumb "Facturation" "facturation:index" "Avoirs" "facturation:avoir_list" "Détail avoir" "" %}
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'facturation:index' %}" class="btn-p btn-outline" onclick="sessionStorage.setItem('facTab','avoirs')">
-      <i class="fas fa-arrow-left"></i> Retour
-    </a>
     <a href="{% url 'facturation:avoir_pdf' avoir.pk %}" class="btn-p btn-violet" target="_blank">
       <i class="fas fa-file-pdf"></i> PDF / Imprimer
     </a>

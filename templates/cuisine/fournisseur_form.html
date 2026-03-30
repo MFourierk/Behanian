@@ -3,6 +3,7 @@
 {% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Fournisseurs" "cuisine:fournisseur_list" "Nouveau Fournisseur" "" %}
 <style>
     .form-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25); display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
     .form-header::after { content: '🚚'; position: absolute; right: -10px; bottom: -30px; font-size: 130px; opacity: 0.08; pointer-events: none; }
@@ -48,8 +49,7 @@
     </div>
 
     {% if mode == 'create' %}
-    {% breadcrumb "Cuisine" "cuisine:index" "Fournisseurs" "cuisine:fournisseur_list" "Nouveau Fournisseur" "" %}
-    {% else %}
+        {% else %}
     {% breadcrumb "Cuisine" "cuisine:index" "Fournisseurs" "cuisine:fournisseur_list" "Modifier Fournisseur" "" %}
     {% endif %}
 

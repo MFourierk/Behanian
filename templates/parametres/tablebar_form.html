@@ -7,7 +7,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Tables Cave" "parametres:tablebar_list" "Formulaire" "" %}
 <style>
     .header-glam {
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
@@ -75,6 +74,8 @@
         <h2>{% if form.instance.pk %}Modifier Table Bar{% else %}Nouvelle Table Bar{% endif %}</h2>
         <p class="mb-0 opacity-75">Configuration des tables du bar</p>
     </div>
+
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Tables Cave" "parametres:tablebar_list" "Formulaire" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>

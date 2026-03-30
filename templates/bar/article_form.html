@@ -327,10 +327,7 @@
 
         <!-- Boutons -->
         <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:8px;">
-            <a href="{% url 'bar:stock_management' %}?tab=articles" class="btn-cancel">
-                <i class="fas fa-arrow-left"></i> Retour
-            </a>
-            <button type="submit" class="btn-submit">
+                        <button type="submit" class="btn-submit">
                 <i class="fas fa-save"></i>
                 {% if mode == 'edit' %}Enregistrer les modifications{% else %}Créer l'article{% endif %}
             </button>

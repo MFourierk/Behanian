@@ -4,13 +4,14 @@
 {% block title %}État du Stock - Cuisine{% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "État du stock" "" %}
 <div class="container-fluid py-4">
     <div class="header-glam cuisine-watermark">
         <div class="header-content">
             <h2>État du Stock</h2>
             <p class="mb-0 opacity-75">Visualisation du stock à date</p>
         </div>
+
+{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "État du stock" "" %}
         <div class="header-clock">
             <span class="time">--:-- GMT</span>
             <span class="date">Chargement...</span>

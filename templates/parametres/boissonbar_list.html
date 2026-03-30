@@ -5,7 +5,6 @@
 {% block title %}Gestion des Boissons (Cave){% endblock %}
 
 {% block content %}
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Boissons" "" %}
 <style>
     .header-glam {
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); /* Bar Purple */
@@ -122,6 +121,8 @@
         <h2>Gestion des Boissons</h2>
         <p class="mb-0 opacity-75">Configuration de la Cave</p>
     </div>
+
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Boissons" "" %}
     <div class="header-clock">
         <span class="time">--:-- GMT</span>
         <span class="date">Chargement...</span>

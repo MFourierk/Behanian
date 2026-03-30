@@ -4,7 +4,6 @@
 {% block title %}Gestion des Tables{% endblock %}
 
 {% block content %}
-{% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Tables" "" %}
 <style>
     /* Table Styles */
     .table-card {
@@ -97,6 +96,8 @@
             <h2>Tables</h2>
             <p class="mb-0 opacity-75">Gestion des tables du restaurant</p>
         </div>
+
+{% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Tables" "" %}
         <div class="header-clock">
             <span class="time">--:-- GMT</span>
             <span class="date">Chargement...</span>

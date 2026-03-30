@@ -45,7 +45,6 @@
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "cuisine:bon_reception_list" "Détail réception" "" %}
 <div class="br-body">
 <div class="container-fluid">
 
@@ -61,14 +60,13 @@
       <h2>{{ br.numero }}</h2>
       <p class="mb-0 opacity-75">Bon de Réception — Cuisine</p>
     </div>
+
+{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "cuisine:bon_reception_list" "Détail réception" "" %}
   </div>
 
   <!-- Actions -->
   <div class="no-print" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'cuisine:bon_reception_list' %}" class="btn-p btn-back">
-      <i class="fas fa-arrow-left"></i> Retour
-    </a>
-    <a href="{% url 'cuisine:bon_reception_print' br.id %}" target="_blank" class="btn-p btn-print">
+        <a href="{% url 'cuisine:bon_reception_print' br.id %}" target="_blank" class="btn-p btn-print">
       <i class="fas fa-print"></i> Imprimer / PDF
     </a>
     {% if br.statut == 'brouillon' %}
