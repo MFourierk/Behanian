@@ -39,21 +39,24 @@
   </div>
   {% breadcrumb "Paramètres" "parametres:parametres_index" "Hôtel — Chambres" "" %}
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <a href="{% url 'parametres:chambre_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouvelle chambre</a>
+  </div>
+
   <div class="stats-row">
     <div class="stat" style="border-top-color:#2563eb"><div class="nb">{{ chambres.count }}</div><div class="lb">🛏️ Total</div></div>
     <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ chambres|length }}</div><div class="lb">✅ Configurées</div></div>
     <div class="stat" style="border-top-color:var(--gold)"><div class="nb">{{ chambres.count }}</div><div class="lb">💰 Tarifées</div></div>
     <div class="stat" style="border-top-color:#7c3aed">
-      <a href="{% url 'parametres:chambre_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center">
-        <i class="fas fa-plus"></i> Nouvelle chambre
-      </a>
+      <div class="nb">{{ chambres.filter_maintenance|default:"0" }}</div>
+      <div class="lb">🔧 Maintenance</div>
     </div>
   </div>
 
   <div class="panel">
     <div class="ph">
       <h3>🛏️ Liste des chambres</h3>
-      <a href="{% url 'parametres:chambre_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
+      
     </div>
     <div style="overflow-x:auto">
       <table class="tbl">

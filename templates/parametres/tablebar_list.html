@@ -31,18 +31,20 @@
   </div>
   {% breadcrumb "Paramètres" "parametres:parametres_index" "Cave — Tables" "" %}
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <a href="{% url 'parametres:tablebar_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouvelle table</a>
+  </div>
+
   <div class="stats-row">
     <div class="stat" style="border-top-color:#7c3aed"><div class="nb">{{ tables.count }}</div><div class="lb">🪑 Tables totales</div></div>
     <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ tables.count }}</div><div class="lb">✅ Configurées</div></div>
-    <div class="stat" style="border-top-color:var(--gold)">
-      <a href="{% url 'parametres:tablebar_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center"><i class="fas fa-plus"></i> Nouvelle table</a>
-    </div>
+
   </div>
 
   <div class="panel">
     <div class="ph">
       <h3>🪑 Tables de la Cave</h3>
-      <a href="{% url 'parametres:tablebar_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
+      
     </div>
     <div style="overflow-x:auto">
       <table class="tbl">

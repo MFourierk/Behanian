@@ -32,19 +32,21 @@
   </div>
   {% breadcrumb "Paramètres" "parametres:parametres_index" "Espaces" "" %}
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <a href="{% url 'parametres:espace_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouvel espace</a>
+  </div>
+
   <div class="stats-row">
     <div class="stat" style="border-top-color:#16a085"><div class="nb">{{ espaces.count }}</div><div class="lb">🎪 Espaces total</div></div>
     <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ espaces.filter_dispo|default:espaces.count }}</div><div class="lb">✅ Disponibles</div></div>
     <div class="stat" style="border-top-color:var(--gold)"><div class="nb">{{ espaces.count }}</div><div class="lb">💰 Tarifés</div></div>
-    <div class="stat" style="border-top-color:#2563eb">
-      <a href="{% url 'parametres:espace_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center"><i class="fas fa-plus"></i> Nouvel espace</a>
-    </div>
+
   </div>
 
   <div class="panel">
     <div class="ph">
       <h3>🎪 Liste des espaces</h3>
-      <a href="{% url 'parametres:espace_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
+      
     </div>
     <div style="overflow-x:auto">
       <table class="tbl">

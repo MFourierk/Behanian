@@ -31,18 +31,20 @@
   </div>
   {% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Catégories" "" %}
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <a href="{% url 'parametres:categorie_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouvelle catégorie</a>
+  </div>
+
   <div class="stats-row">
     <div class="stat" style="border-top-color:#d35400"><div class="nb">{{ categories.count }}</div><div class="lb">🏷️ Catégories</div></div>
     <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ categories.count }}</div><div class="lb">✅ Actives</div></div>
-    <div class="stat" style="border-top-color:var(--gold)">
-      <a href="{% url 'parametres:categorie_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center"><i class="fas fa-plus"></i> Nouvelle catégorie</a>
-    </div>
+
   </div>
 
   <div class="panel">
     <div class="ph">
       <h3>🏷️ Liste des catégories</h3>
-      <a href="{% url 'parametres:categorie_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
+      
     </div>
     <div style="overflow-x:auto">
       <table class="tbl">

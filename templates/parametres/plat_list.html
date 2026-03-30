@@ -32,19 +32,21 @@
   </div>
   {% breadcrumb "Paramètres" "parametres:parametres_index" "Restaurant — Plats" "" %}
 
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <a href="{% url 'parametres:plat_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouveau plat</a>
+  </div>
+
   <div class="stats-row">
     <div class="stat" style="border-top-color:#c0392b"><div class="nb">{{ plats.count }}</div><div class="lb">🍜 Total plats</div></div>
     <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ plats.filter_dispo|default:plats.count }}</div><div class="lb">✅ Disponibles</div></div>
     <div class="stat" style="border-top-color:#d35400"><div class="nb">{% for cat in categories %}{{ cat.nom }}{% if not forloop.last %}, {% endif %}{% endfor %}</div><div class="lb" style="font-size:9px">Catégories</div></div>
-    <div class="stat" style="border-top-color:var(--gold)">
-      <a href="{% url 'parametres:plat_create' %}" class="btn-a btn-or" style="width:100%;justify-content:center"><i class="fas fa-plus"></i> Nouveau plat</a>
-    </div>
+
   </div>
 
   <div class="panel">
     <div class="ph">
       <h3>🍜 Liste des plats</h3>
-      <a href="{% url 'parametres:plat_create' %}" class="btn-a btn-or" style="padding:6px 14px;font-size:11px"><i class="fas fa-plus"></i> Ajouter</a>
+      
     </div>
     <div style="overflow-x:auto">
       <table class="tbl">
