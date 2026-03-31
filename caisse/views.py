@@ -139,9 +139,19 @@ def index(request):
 @require_module_access('caisse')
 @require_POST
 def ouvrir_caisse(request):
-    session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+    # Vérifier si l'utilisateur a déjà UNE SESSION DU MÊME TYPE ouverte
+    # (Un Manager peut ouvrir la centrale même si une autre session hotel/module est ouverte par d'autres)
+    user_groups = list(request.user.groups.values_list('name', flat=True))
+    if request.user.is_superuser or any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
+        type_attendu = 'centrale'
+    elif 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
+        type_attendu = 'hotel'
+    else:
+        type_attendu = 'module'
+
+    session = CaisseSession.objects.filter(user=request.user, is_open=True, type_caisse=type_attendu).first()
     if session:
-        return JsonResponse({'success': False, 'error': 'Caisse déjà ouverte'})
+        return JsonResponse({'success': False, 'error': f'Votre caisse {session.get_type_caisse_display()} est déjà ouverte'})
     try:
         data = json.loads(request.body)
         fond = _dec(data.get('fond_caisse', 0))
