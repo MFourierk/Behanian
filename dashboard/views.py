@@ -100,9 +100,13 @@ def _get_dashboard_stats(user, modules):
     # Caisse ouverte
     try:
         from caisse.models import CaisseSession
-        session = CaisseSession.objects.filter(is_open=True).first()
-        stats['caisse_ouverte'] = session is not None
-        stats['caisse_type'] = session.get_type_caisse_display() if session else ''
+        # La caisse centrale est ouverte uniquement si une session de type 'centrale' existe
+        session_centrale = CaisseSession.objects.filter(is_open=True, type_caisse='centrale').first()
+        session_any = CaisseSession.objects.filter(is_open=True).first()
+        stats['caisse_ouverte'] = session_centrale is not None
+        stats['caisse_type'] = session_centrale.get_type_caisse_display() if session_centrale else (
+            session_any.get_type_caisse_display() if session_any else ''
+        )
     except Exception:
         pass
 
