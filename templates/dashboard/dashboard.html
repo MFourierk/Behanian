@@ -70,9 +70,7 @@
   <div class="header-glam dashboard-watermark">
     <div class="header-content">
       <h2 style="font-size:1.6rem;font-weight:700;margin:0">Tableau de bord</h2>
-      <p class="mb-0 opacity-75">
-        {{ today|date:"l d F Y" }} &nbsp;·&nbsp;
-        <span class="live-dot"></span>&nbsp;Données en temps réel
+      <p class="mb-0 opacity-75"><span class="live-dot"></span>&nbsp;Données en temps réel
         &nbsp;·&nbsp;
         {% if caisse_ouverte %}
         <span class="caisse-pill open"><i class="fas fa-lock-open"></i> Caisse ouverte — {{ caisse_type }}</span>
