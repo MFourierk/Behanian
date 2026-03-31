@@ -22,12 +22,23 @@ def _dec(val, default=0):
         return Decimal(str(default))
 
 
-def get_stats_jour(date=None):
-    """Stats complètes d'une journée depuis les tickets + mouvements caisse."""
+def get_stats_jour(date=None, type_caisse=None):
+    """Stats complètes d'une journée.
+    - type_caisse=None ou 'centrale' : toutes les transactions
+    - type_caisse='hotel'   : tickets hotel uniquement
+    - type_caisse='module'  : tickets hors hotel
+    """
     if date is None:
         date = timezone.now().date()
 
     tickets = Ticket.objects.filter(date_creation__date=date)
+
+    # Filtrer selon le type de caisse
+    if type_caisse == 'hotel':
+        tickets = tickets.filter(module__in=['hotel'])
+    elif type_caisse == 'module':
+        tickets = tickets.exclude(module__in=['hotel'])
+    # type_caisse == 'centrale' ou None → tout voir
 
     total         = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
     especes       = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
@@ -82,7 +93,18 @@ def index(request):
     today = timezone.now().date()
     is_manager = request.user.groups.filter(name=GROUPE_MANAGER_GENERAL).exists() or request.user.is_superuser
     session_active = CaisseSession.objects.filter(user=request.user, is_open=True).first()
-    stats = get_stats_jour(today)
+    # La caisse centrale voit tout. Hotel et Module voient leurs propres stats.
+    user_type = None
+    if session_active:
+        user_type = session_active.type_caisse
+    elif not is_manager:
+        # Même sans session, appliquer le filtre selon le rôle
+        user_groups = list(request.user.groups.values_list('name', flat=True))
+        if 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
+            user_type = 'hotel'
+        elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
+            user_type = 'module'
+    stats = get_stats_jour(today, type_caisse=user_type)
 
     # Sessions du jour (toutes)
     sessions_jour = CaisseSession.objects.filter(
@@ -150,10 +172,49 @@ def ouvrir_caisse(request):
                 description=f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}',
                 cree_par=request.user,
             )
+
+        # ── CONSOLIDATION AUTOMATIQUE pour la caisse centrale ──────────────
+        msg_consolidation = ''
+        if type_caisse == 'centrale':
+            today = timezone.now().date()
+            # Récupérer toutes les sessions hotel et module du jour déjà clôturées ou ouvertes
+            sessions_autres = CaisseSession.objects.filter(
+                opened_at__date=today,
+                type_caisse__in=['hotel', 'module']
+            ).exclude(id=session.id)
+
+            total_consolide = _dec(0)
+            nb_sessions = sessions_autres.count()
+
+            for s in sessions_autres:
+                # Calculer le CA de chaque session depuis les tickets
+                stats_s = get_stats_jour(today, type_caisse=s.type_caisse)
+                montant_s = _dec(stats_s['total'])
+                if montant_s > 0:
+                    total_consolide += montant_s
+                    MouvementCaisse.objects.get_or_create(
+                        session=session,
+                        type='versement',
+                        module='caisse',
+                        reference=f'CONSOLIDATION-{s.pk}',
+                        defaults={
+                            'montant': montant_s,
+                            'mode_paiement': 'especes',
+                            'description': f'Consolidation automatique — {s.get_type_caisse_display()} ({s.user.get_full_name() or s.user.username})',
+                            'cree_par': request.user,
+                        }
+                    )
+
+            if nb_sessions > 0:
+                msg_consolidation = f' | {nb_sessions} caisse(s) consolidée(s) : {int(total_consolide):,} F'
+        # ────────────────────────────────────────────────────────────────────
+
         return JsonResponse({
             'success': True,
-            'message': f'Caisse ouverte — Fond: {int(fond):,} F',
-            'opened_at': session.opened_at.strftime('%d/%m/%Y à %H:%M'),
+            'message': f'Caisse ouverte — Fond: {int(fond):,} F{msg_consolidation}',
+            'opened_at': session.opened_at.strftime("%d/%m/%Y à %H:%M"),
+            'type_caisse': type_caisse,
+            'consolidation': msg_consolidation != '',
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -168,7 +229,6 @@ def cloturer_caisse(request):
     try:
         data = json.loads(request.body)
         today = timezone.now().date()
-        stats = get_stats_jour(today)
 
         fond_reel = _dec(data.get('fond_reel', 0))
         prelev    = _dec(data.get('prelevement_banque', 0))

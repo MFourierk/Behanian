@@ -112,6 +112,30 @@
   </div>
   {% endif %}
 
+  <!-- CONSOLIDATION INFO — caisse centrale uniquement -->
+  {% if session_active and session_active.type_caisse == 'centrale' %}
+  <div style="background:linear-gradient(135deg,#1a2535,#2d3f55);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <i class="fas fa-sitemap" style="color:var(--gold);font-size:20px"></i>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:white">Caisse Centrale — Vue consolidée</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6)">Toutes les transactions de toutes les caisses sont visibles</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px">
+      {% for s in sessions_jour %}
+      {% if s.type_caisse != 'centrale' %}
+      <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:6px 12px;text-align:center">
+        <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px">{{ s.get_type_caisse_display }}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--gold)">{{ s.user.get_full_name|default:s.user.username }}</div>
+        <div style="font-size:10px;color:{% if s.is_open %}#4ade80{% else %}#f87171{% endif %}">{% if s.is_open %}En cours{% else %}Clôturée{% endif %}</div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ALERTE CAISSE FERMÉE -->
   {% if not session_active %}
   <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
