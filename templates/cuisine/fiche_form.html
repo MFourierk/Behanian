@@ -73,10 +73,10 @@
             <h2><i class="fas fa-book-open mr-2"></i> {{ page_title }}</h2>
             <p>{% if mode == 'create' %}Créez une nouvelle recette standardisée avec son coût de revient.{% else %}Modifiez la fiche technique et ses ingrédients.{% endif %}</p>
         </div>
+{% if fiche.reference %}<div style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:10px;padding:10px 18px;text-align:center;"><div style="font-size:0.7rem;opacity:0.8;letter-spacing:1px;">RÉFÉRENCE</div><div style="font-size:1.1rem;font-weight:800;">{{ fiche.reference }}</div></div>{% endif %}
+    </div>
 {% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Nouvelle Fiche" "" %}
 
-        {% if fiche.reference %}<div style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:10px;padding:10px 18px;text-align:center;"><div style="font-size:0.7rem;opacity:0.8;letter-spacing:1px;">RÉFÉRENCE</div><div style="font-size:1.1rem;font-weight:800;">{{ fiche.reference }}</div></div>{% endif %}
-    </div>
 
     {% if mode == 'create' %}
         {% else %}
