@@ -22,6 +22,17 @@ urlpatterns = [
     path('parametres/', include('parametres.urls')),
 ]
 
+# ── Remise à Zéro Admin (superuser uniquement) ──────────────────────────────
+from dashboard.admin_reset_views import (
+    reset_dashboard, reset_confirm, reset_execute, reset_success
+)
+urlpatterns += [
+    path('admin/reset/', reset_dashboard, name='admin_reset_dashboard'),
+    path('admin/reset/<str:type_reset>/confirm/', reset_confirm, name='admin_reset_confirm'),
+    path('admin/reset/<str:type_reset>/execute/', reset_execute, name='admin_reset_execute'),
+    path('admin/reset/<str:type_reset>/success/', reset_success, name='admin_reset_success'),
+]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     

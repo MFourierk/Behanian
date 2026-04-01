@@ -1,0 +1,16 @@
+{% extends "admin/index.html" %}
+{% block content %}
+{{ block.super }}
+<div style="margin-top:24px;padding:20px;background:linear-gradient(135deg,#1A2535,#2D3F55);border-radius:12px;display:flex;align-items:center;justify-content:space-between">
+  <div>
+    <div style="font-size:13px;font-weight:700;color:#C9A84C;margin-bottom:4px">⚙️ ADMINISTRATION SYSTÈME</div>
+    <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">🔄 Remise à Zéro des données</div>
+    <div style="font-size:13px;color:#8B9DBB">Supprimer les transactions de test et réinitialiser les numérotations</div>
+  </div>
+  <div style="display:flex;gap:10px">
+    <a href="/admin/reset/" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:#C9A84C;color:#1A2535;border-radius:10px;font-weight:800;font-size:14px;text-decoration:none">
+      🔄 Remise à Zéro
+    </a>
+  </div>
+</div>
+{% endblock %}

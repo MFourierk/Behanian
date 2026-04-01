@@ -1,14 +1,16 @@
 from django.contrib import admin
-from .models import Configuration
+from django.urls import path
+from django.shortcuts import redirect
 
-@admin.register(Configuration)
-class ConfigurationAdmin(admin.ModelAdmin):
-    list_display = ('nom_complexe', 'telephone', 'email')
 
-    # Empêcher l'ajout de nouvelles configurations via l'admin
-    def has_add_permission(self, request):
-        return False
+class ResetAdminSite(admin.AdminSite):
+    """Admin site personnalisé avec lien vers la remise à zéro."""
+    pass
 
-    # Empêcher la suppression des configurations via l'admin
-    def has_delete_permission(self, request, obj=None):
-        return False
+
+# Ajouter le lien dans le menu admin via app_index
+def get_reset_url(request):
+    return redirect('/admin/reset/')
+
+
+admin.site.index_template = 'admin/custom_index.html'

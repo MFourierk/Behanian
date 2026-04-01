@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Remise à Zéro Effectuée{% endblock %}
+{% block extrahead %}
+<style>
+.success-wrap{max-width:720px;margin:0 auto;padding:24px 0 60px}
+.success-hero{background:linear-gradient(135deg,#F0FDF4,#DCFCE7);border:2px solid #16A34A;border-radius:16px;padding:32px;margin-bottom:24px;text-align:center}
+.success-hero .icon{font-size:56px;margin-bottom:12px}
+.success-hero h1{font-size:24px;font-weight:800;color:#15803D;margin:0 0 8px}
+.success-hero p{color:#166534;margin:0}
+.counts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.count-card{background:#fff;border:1px solid #D4DCE8;border-radius:10px;padding:14px;text-align:center}
+.count-card .nb{font-size:24px;font-weight:800;color:#16A34A}
+.count-card .lb{font-size:11px;color:#7A8B9C;margin-top:3px}
+.btn-home{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#1A2535;color:#fff;border-radius:10px;font-weight:700;text-decoration:none}
+</style>
+{% endblock %}
+{% block content %}
+<div class="success-wrap">
+  <div class="success-hero">
+    <div class="icon">✅</div>
+    <h1>Remise à zéro effectuée !</h1>
+    <p>
+      {% if type_reset == 'partiel' %}
+        Toutes les transactions ont été supprimées. Les stocks et la structure sont conservés. Les numérotations sont réinitialisées.
+      {% else %}
+        Remise à zéro complète effectuée. Seule la structure de l'application a été conservée.
+      {% endif %}
+    </p>
+  </div>
+
+  <h2 style="font-size:14px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">
+    Vérification — Compteurs actuels (doivent tous être à 0)
+  </h2>
+  <div class="counts-grid">
+    <div class="count-card"><div class="nb">{{ counts.facturation.Tickets|default:0 }}</div><div class="lb">Tickets</div></div>
+    <div class="count-card"><div class="nb">{{ counts.facturation.Factures|default:0 }}</div><div class="lb">Factures</div></div>
+    <div class="count-card"><div class="nb">{{ counts.caisse.Sessions caisse|default:0 }}</div><div class="lb">Sessions caisse</div></div>
+    <div class="count-card"><div class="nb">{{ counts.hotel.Réservations hôtel|default:0 }}</div><div class="lb">Réservations</div></div>
+    <div class="count-card"><div class="nb">{{ counts.restaurant.Commandes restaurant|default:0 }}</div><div class="lb">Commandes</div></div>
+    <div class="count-card"><div class="nb">{{ counts.cave.Mouvements stock cave|default:0 }}</div><div class="lb">Mvt stock cave</div></div>
+    <div class="count-card"><div class="nb">{{ counts.piscine.Accès piscine|default:0 }}</div><div class="lb">Accès piscine</div></div>
+    <div class="count-card"><div class="nb">{{ counts.espaces.Réservations espaces|default:0 }}</div><div class="lb">Réserv. espaces</div></div>
+  </div>
+
+  <div style="display:flex;gap:12px">
+    <a href="{% url 'admin_reset_dashboard' %}" class="btn-home">🔄 Retour au menu Remise à Zéro</a>
+    <a href="/admin/" class="btn-home" style="background:#2563EB">🏠 Administration Django</a>
+    <a href="/dashboard/" class="btn-home" style="background:#16A34A">📊 Tableau de bord</a>
+  </div>
+</div>
+{% endblock %}

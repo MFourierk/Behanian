@@ -1,0 +1,88 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Confirmation — {{ title }}{% endblock %}
+{% block extrahead %}
+<style>
+:root{--gold:#C9A84C;--dark:#1A2535}
+.confirm-wrap{max-width:720px;margin:0 auto;padding:24px 0 60px}
+.confirm-hero{border-radius:16px;padding:28px 32px;margin-bottom:24px;border:2px solid}
+.confirm-hero h1{font-size:22px;font-weight:800;margin:0 0 8px}
+.confirm-hero p{margin:0;font-size:14px;line-height:1.5}
+.two-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.list-card{background:#fff;border:1px solid #D4DCE8;border-radius:12px;padding:18px}
+.list-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:0 0 12px}
+.list-card ul{margin:0;padding-left:16px;font-size:13px;color:#374151;line-height:1.8}
+.form-card{background:#fff;border:1px solid #D4DCE8;border-radius:12px;padding:24px;margin-bottom:20px}
+.form-card h3{font-size:15px;font-weight:700;color:var(--dark);margin:0 0 20px;padding-bottom:12px;border-bottom:1px solid #F0F3F7}
+.field-group{margin-bottom:16px}
+.field-group label{display:block;font-size:12px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.field-group input{width:100%;padding:10px 14px;border:2px solid #D4DCE8;border-radius:8px;font-size:14px;font-family:monospace;transition:border-color .2s}
+.field-group input:focus{outline:none;border-color:var(--gold)}
+.field-hint{font-size:11px;color:#9CA3AF;margin-top:4px}
+.btn-row{display:flex;gap:12px;align-items:center}
+.btn-cancel{padding:10px 20px;border-radius:8px;border:1px solid #D4DCE8;background:#fff;color:#374151;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer}
+.btn-confirm{padding:10px 24px;border-radius:8px;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+.warning-box{border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;font-size:13px;line-height:1.5}
+</style>
+{% endblock %}
+{% block content %}
+<div class="confirm-wrap">
+
+  <div class="confirm-hero" style="background:{{ color }}11;border-color:{{ color }}">
+    <h1 style="color:{{ color }}">{{ title }}</h1>
+    <p style="color:{{ color }}CC">{{ description }}</p>
+  </div>
+
+  <div class="warning-box" style="background:#FEF2F2;border:1px solid #FECACA">
+    <span style="font-size:20px;flex-shrink:0">⚠️</span>
+    <div style="color:#991B1B"><strong>ATTENTION :</strong> {{ warning }}</div>
+  </div>
+
+  <div class="two-cols">
+    <div class="list-card">
+      <h3 style="color:{{ color }}">❌ Ce qui sera supprimé</h3>
+      <ul>
+        {% for item in items %}<li>{{ item }}</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="list-card">
+      <h3 style="color:#16A34A">✅ Ce qui sera conservé</h3>
+      <ul style="color:#15803D">
+        {% for item in conserve %}<li>{{ item }}</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Formulaire double confirmation -->
+  <div class="form-card">
+    <h3>🔐 Double confirmation requise</h3>
+    <form method="POST" action="{% url 'admin_reset_execute' type_reset %}">
+      {% csrf_token %}
+      <div class="field-group">
+        <label>Mot de passe administrateur</label>
+        <input type="password" name="password_admin" placeholder="Votre mot de passe admin" required autocomplete="off">
+        <div class="field-hint">Votre mot de passe de connexion à l'administration Django</div>
+      </div>
+      <div class="field-group">
+        <label>Code de confirmation</label>
+        <input type="text" name="code_confirmation" placeholder='Saisir exactement : CONFIRMER'
+               required autocomplete="off" style="letter-spacing:2px;text-transform:uppercase">
+        <div class="field-hint">Saisissez le mot <strong>CONFIRMER</strong> en majuscules pour valider</div>
+      </div>
+      {% if messages %}
+      {% for message in messages %}
+      <div class="warning-box" style="background:#FEF2F2;border:1px solid #FECACA;margin-top:12px">
+        <span>❌</span><div style="color:#991B1B">{{ message }}</div>
+      </div>
+      {% endfor %}
+      {% endif %}
+      <div class="btn-row" style="margin-top:20px">
+        <a href="{% url 'admin_reset_dashboard' %}" class="btn-cancel">← Annuler</a>
+        <button type="submit" class="btn-confirm" style="background:{{ color }}">
+          ⚡ Exécuter la remise à zéro
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
