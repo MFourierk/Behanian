@@ -113,10 +113,12 @@
       <ul>
         <li>Tickets, Factures, Proformas, Avoirs</li>
         <li>Sessions et mouvements de caisse</li>
-        <li>Réservations et commandes</li>
-        <li>Bons, inventaires, casses</li>
+        <li>Réservations, commandes, consommations</li>
+        <li>Bons, inventaires, casses Cave et Cuisine</li>
+        <li>Stocks Cave et Cuisine remis à <strong>0</strong></li>
         <li>Numérotation TC-, FAC-, PRO-, AVO- réinitialisée</li>
-        <li>Chambres → Disponible · Tables → Libre</li>
+        <li>Chambres → Disponible · Tables → Libre · Espaces → Disponible</li>
+        <li>Articles, plats, boissons, chambres conservés</li>
       </ul>
       <a href="{% url 'admin_reset_confirm' 'partiel' %}" class="btn-action btn-partiel">
         🟡 Lancer la remise partielle
@@ -127,10 +129,14 @@
       <p>Tout ce que fait la remise partielle + remet tous les stocks à zéro. Ne conserve que la structure de l'application.</p>
       <ul>
         <li>Tout ce que fait la remise partielle +</li>
-        <li>Stocks Cave remis à 0</li>
-        <li>Stocks ingrédients Cuisine remis à 0</li>
-        <li>Clients hôtel supprimés</li>
-        <li>Structure intacte : catégories, plats, boissons, chambres, espaces, utilisateurs</li>
+        <li>Boissons, catégories et tables Cave supprimées</li>
+        <li>Ingrédients, plats, fiches techniques supprimés</li>
+        <li>Catégories, unités, fournisseurs Cuisine supprimés</li>
+        <li>Plats, catégories et tables Restaurant supprimés</li>
+        <li>Chambres Hôtel supprimées</li>
+        <li>Espaces événementiels supprimés</li>
+        <li>Tarifs piscine supprimés</li>
+        <li style="color:#15803D;font-weight:700">✅ Seuls les utilisateurs et groupes sont conservés</li>
       </ul>
       <a href="{% url 'admin_reset_confirm' 'complet' %}" class="btn-action btn-complet">
         🔴 Lancer la remise complète

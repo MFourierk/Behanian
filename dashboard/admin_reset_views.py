@@ -137,9 +137,9 @@ def reset_confirm(request, type_reset):
         ]
     else:
         titre = 'Remise à Zéro Complète'
-        description = 'Supprime toutes les transactions ET remet tous les stocks à zéro.'
+        description = 'Supprime TOUT sauf les utilisateurs et groupes. Repart de zéro avec une application vierge.'
         color = '#DC2626'
-        warning = 'ATTENTION DANGER — Cette action efface TOUTES les données de test y compris les stocks. IRRÉVERSIBLE.'
+        warning = 'DANGER MAXIMUM — Cette action supprime toutes les données : articles, chambres, espaces, plats, boissons, stocks. Seuls les utilisateurs sont conservés. IRRÉVERSIBLE.'
         items = [
             'Tout ce que fait la remise partielle +',
             'Stocks Cave remis à 0',
