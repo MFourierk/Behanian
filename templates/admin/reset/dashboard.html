@@ -3,144 +3,211 @@
 {% block extrahead %}
 <style>
 :root{--gold:#C9A84C;--dark:#1A2535;--border:#D4DCE8;--light:#F8FAFC}
-*{box-sizing:border-box}
 .reset-wrap{max-width:960px;margin:0 auto;padding:24px 0 60px}
-.reset-hero{background:linear-gradient(135deg,#1A2535 0%,#2D3F55 100%);border-radius:16px;padding:32px 36px;margin-bottom:28px;position:relative;overflow:hidden}
-.reset-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:rgba(201,168,76,.08);border-radius:50%}
-.reset-hero h1{font-size:26px;font-weight:800;color:#fff;margin:0 0 8px}
+.reset-hero{background:linear-gradient(135deg,#1A2535 0%,#2D3F55 100%);border-radius:16px;padding:32px 36px;margin-bottom:28px}
+.reset-hero .badge{display:inline-block;background:rgba(201,168,76,.2);color:var(--gold);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:14px;border:1px solid rgba(201,168,76,.3)}
+.reset-hero h1{font-size:24px;font-weight:800;color:#fff;margin:0 0 8px}
 .reset-hero p{color:#8B9DBB;margin:0;font-size:14px}
-.reset-hero .badge{display:inline-block;background:rgba(201,168,76,.2);color:var(--gold);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:16px;border:1px solid rgba(201,168,76,.3)}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
 .stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;border-top:3px solid}
 .stat-card .nb{font-size:28px;font-weight:800;color:var(--dark)}
 .stat-card .lb{font-size:11px;color:#7A8B9C;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.modules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:32px}
-.mod-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;align-items:flex-start;gap:14px}
-.mod-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.mod-title{font-weight:700;font-size:14px;color:var(--dark);margin:0 0 4px}
-.mod-desc{font-size:12px;color:#7A8B9C;margin:0 0 10px}
-.mod-counts{display:flex;flex-wrap:wrap;gap:6px}
-.mod-count{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.modules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:28px}
+.mod-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.mod-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.mod-title{font-weight:700;font-size:13px;color:var(--dark);margin:0 0 3px}
+.mod-desc{font-size:11px;color:#7A8B9C;margin:0 0 8px}
+.mod-pills{display:flex;flex-wrap:wrap;gap:5px}
+.mod-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
 .actions-row{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.action-card{border-radius:16px;padding:28px;position:relative;overflow:hidden}
+.action-card{border-radius:14px;padding:26px}
 .action-card.partiel{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:2px solid #F59E0B}
 .action-card.complet{background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border:2px solid #EF4444}
-.action-card h3{font-size:18px;font-weight:800;margin:0 0 8px}
+.action-card h3{font-size:16px;font-weight:800;margin:0 0 8px}
 .action-card.partiel h3{color:#B45309}
 .action-card.complet h3{color:#991B1B}
-.action-card p{font-size:13px;margin:0 0 16px;line-height:1.5}
-.action-card.partiel p{color:#92400E}
+.action-card p{font-size:13px;margin:0 0 14px;line-height:1.5}
+.action-card.partiel p{color:#78350F}
 .action-card.complet p{color:#7F1D1D}
-.action-card ul{margin:0 0 20px;padding-left:18px;font-size:12px}
-.action-card.partiel ul{color:#92400E}
+.action-card ul{margin:0 0 18px;padding-left:16px;font-size:12px;line-height:1.7}
+.action-card.partiel ul{color:#78350F}
 .action-card.complet ul{color:#7F1D1D}
-.action-card ul li{margin-bottom:4px}
-.btn-action{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;border:none;cursor:pointer;transition:all .15s}
+.btn-action{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:10px;font-weight:700;font-size:13px;text-decoration:none;transition:all .15s}
 .btn-partiel{background:#F59E0B;color:#fff}
 .btn-partiel:hover{background:#D97706;color:#fff}
 .btn-complet{background:#EF4444;color:#fff}
 .btn-complet:hover{background:#DC2626;color:#fff}
-.warning-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:28px;display:flex;align-items:center;gap:10px;font-size:13px;color:#991B1B}
+.warn{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:24px;display:flex;align-items:center;gap:10px;font-size:13px;color:#991B1B}
+.section-title{font-size:12px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.6px;margin:0 0 12px}
 </style>
 {% endblock %}
 {% block content %}
 <div class="reset-wrap">
 
-  <!-- Hero -->
   <div class="reset-hero">
     <div class="badge">⚙️ ADMINISTRATION SYSTÈME — SUPERUSER UNIQUEMENT</div>
     <h1>🔄 Remise à Zéro — BEHANIAN</h1>
-    <p>Gestion des données de test. Permet de supprimer les transactions et réinitialiser les numérotations avant la mise en production.</p>
+    <p>Supprime les transactions de test et réinitialise les numérotations avant la mise en production.</p>
   </div>
 
-  <!-- Avertissement -->
-  <div class="warning-banner">
+  <div class="warn">
     <span style="font-size:18px">⚠️</span>
-    <div><strong>Ces actions sont irréversibles.</strong> Effectuez une sauvegarde de la base de données avant toute remise à zéro.</div>
+    <div><strong>Ces actions sont irréversibles.</strong> Effectuez une sauvegarde avant toute remise à zéro.</div>
   </div>
 
-  <!-- Stats globales -->
+  <!-- Stats -->
+  <div class="section-title">Transactions actuelles</div>
   <div class="stats-grid">
-    <div class="stat-card" style="border-top-color:#16A34A">
+    <div class="stat-card" style="border-top-color:#1A2535">
       <div class="nb">{{ total }}</div>
       <div class="lb">Total transactions</div>
     </div>
     <div class="stat-card" style="border-top-color:#1D4ED8">
-      <div class="nb">{{ counts.facturation.Tickets|default:0 }}</div>
+      <div class="nb">{{ flat.tickets }}</div>
       <div class="lb">Tickets</div>
     </div>
     <div class="stat-card" style="border-top-color:#D35400">
-      <div class="nb">{{ counts.restaurant.Commandes restaurant|default:0 }}</div>
+      <div class="nb">{{ flat.commandes }}</div>
       <div class="lb">Commandes</div>
     </div>
     <div class="stat-card" style="border-top-color:#2563EB">
-      <div class="nb">{{ counts.hotel.Réservations hôtel|default:0 }}</div>
+      <div class="nb">{{ flat.resa_hotel }}</div>
       <div class="lb">Réservations hôtel</div>
     </div>
   </div>
 
-  <!-- Détail par module -->
-  <h2 style="font-size:15px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px">Détail par module</h2>
+  <!-- Modules -->
+  <div class="section-title">Détail par module</div>
   <div class="modules-grid">
-    {% for m in modules_info %}
+
     <div class="mod-card">
-      <div class="mod-icon" style="background:{{ m.light }};color:{{ m.color }}">{{ m.icon }}</div>
-      <div style="flex:1;min-width:0">
-        <div class="mod-title">{{ m.nom }}</div>
-        <div class="mod-desc">{{ m.description }}</div>
-        <div class="mod-counts">
-          {% with module_data=counts|dictsort:"0" %}
-          {% for key, data in counts.items %}
-          {% if key == m.key %}
-            {% for label, count in data.items %}
-            <span class="mod-count" style="background:{{ m.light }};color:{{ m.color }}">{{ label }}: {{ count }}</span>
-            {% endfor %}
-          {% endif %}
-          {% endfor %}
-          {% endwith %}
+      <div class="mod-icon" style="background:#EFF6FF;color:#1D4ED8">📄</div>
+      <div>
+        <div class="mod-title">Facturation</div>
+        <div class="mod-desc">Tickets · Factures · Proformas · Avoirs</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#EFF6FF;color:#1D4ED8">Tickets: {{ flat.tickets }}</span>
+          <span class="mod-pill" style="background:#EFF6FF;color:#1D4ED8">Factures: {{ flat.factures }}</span>
+          <span class="mod-pill" style="background:#EFF6FF;color:#1D4ED8">Proformas: {{ flat.proformas }}</span>
+          <span class="mod-pill" style="background:#EFF6FF;color:#1D4ED8">Avoirs: {{ flat.avoirs }}</span>
         </div>
       </div>
     </div>
-    {% endfor %}
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#DCFCE7;color:#16A34A">💰</div>
+      <div>
+        <div class="mod-title">Caisse</div>
+        <div class="mod-desc">Sessions · Mouvements · Prélèvements</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#DCFCE7;color:#16A34A">Sessions: {{ flat.sessions }}</span>
+          <span class="mod-pill" style="background:#DCFCE7;color:#16A34A">Mouvements: {{ flat.mouvements }}</span>
+          <span class="mod-pill" style="background:#DCFCE7;color:#16A34A">Prélèvements: {{ flat.prelevements }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#DBEAFE;color:#2563EB">🏨</div>
+      <div>
+        <div class="mod-title">Hôtel</div>
+        <div class="mod-desc">Réservations · Consommations · Clients</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#DBEAFE;color:#2563EB">Réservations: {{ flat.resa_hotel }}</span>
+          <span class="mod-pill" style="background:#DBEAFE;color:#2563EB">Consommations: {{ flat.conso_hotel }}</span>
+          <span class="mod-pill" style="background:#DBEAFE;color:#2563EB">Clients: {{ flat.clients_hotel }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#FFF7ED;color:#D35400">🍽️</div>
+      <div>
+        <div class="mod-title">Restaurant</div>
+        <div class="mod-desc">Commandes · Lignes</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#FFF7ED;color:#D35400">Commandes: {{ flat.commandes }}</span>
+          <span class="mod-pill" style="background:#FFF7ED;color:#D35400">Lignes: {{ flat.lignes_cmd }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#F5F3FF;color:#7C3AED">🍷</div>
+      <div>
+        <div class="mod-title">Cave / Bar</div>
+        <div class="mod-desc">Mouvements · Bons · Inventaires</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#F5F3FF;color:#7C3AED">Mvt stock: {{ flat.mvt_cave }}</span>
+          <span class="mod-pill" style="background:#F5F3FF;color:#7C3AED">Bons cmd: {{ flat.bc_cave }}</span>
+          <span class="mod-pill" style="background:#F5F3FF;color:#7C3AED">Réceptions: {{ flat.br_cave }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#FEF2F2;color:#C0392B">👨‍🍳</div>
+      <div>
+        <div class="mod-title">Cuisine</div>
+        <div class="mod-desc">Mouvements · Bons réception</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#FEF2F2;color:#C0392B">Mvt stock: {{ flat.mvt_cuisine }}</span>
+          <span class="mod-pill" style="background:#FEF2F2;color:#C0392B">Réceptions: {{ flat.br_cuisine }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#ECFEFF;color:#0891B2">🏊</div>
+      <div>
+        <div class="mod-title">Piscine</div>
+        <div class="mod-desc">Accès · Consommations</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#ECFEFF;color:#0891B2">Accès: {{ flat.acces_piscine }}</span>
+          <span class="mod-pill" style="background:#ECFEFF;color:#0891B2">Consommations: {{ flat.conso_piscine }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mod-card">
+      <div class="mod-icon" style="background:#F0FDF4;color:#16A085">📅</div>
+      <div>
+        <div class="mod-title">Espaces Événementiels</div>
+        <div class="mod-desc">Réservations</div>
+        <div class="mod-pills">
+          <span class="mod-pill" style="background:#F0FDF4;color:#16A085">Réservations: {{ flat.resa_espaces }}</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Actions -->
-  <h2 style="font-size:15px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px">Actions disponibles</h2>
+  <div class="section-title">Actions de remise à zéro</div>
   <div class="actions-row">
     <div class="action-card partiel">
       <h3>🟡 Remise à Zéro Partielle</h3>
-      <p>Supprime toutes les transactions et réinitialise les numérotations. Les stocks, articles, plats et boissons sont conservés.</p>
+      <p>Supprime toutes les transactions et réinitialise les numérotations. Stocks, articles, plats et boissons conservés.</p>
       <ul>
         <li>Tickets, Factures, Proformas, Avoirs</li>
         <li>Sessions et mouvements de caisse</li>
-        <li>Réservations, commandes, consommations</li>
-        <li>Bons, inventaires, casses Cave et Cuisine</li>
-        <li>Stocks Cave et Cuisine remis à <strong>0</strong></li>
+        <li>Réservations, commandes et consommations</li>
+        <li>Bons, inventaires, casses (Cave + Cuisine)</li>
         <li>Numérotation TC-, FAC-, PRO-, AVO- réinitialisée</li>
-        <li>Chambres → Disponible · Tables → Libre · Espaces → Disponible</li>
-        <li>Articles, plats, boissons, chambres conservés</li>
+        <li>Chambres → Disponible · Tables → Libre</li>
       </ul>
-      <a href="{% url 'admin_reset_confirm' 'partiel' %}" class="btn-action btn-partiel">
-        🟡 Lancer la remise partielle
-      </a>
+      <a href="{% url 'admin_reset_confirm' 'partiel' %}" class="btn-action btn-partiel">🟡 Lancer la remise partielle</a>
     </div>
     <div class="action-card complet">
       <h3>🔴 Remise à Zéro Complète</h3>
-      <p>Tout ce que fait la remise partielle + remet tous les stocks à zéro. Ne conserve que la structure de l'application.</p>
+      <p>Tout ce que fait la partielle + remet tous les stocks à zéro. Ne conserve que la structure.</p>
       <ul>
         <li>Tout ce que fait la remise partielle +</li>
-        <li>Boissons, catégories et tables Cave supprimées</li>
-        <li>Ingrédients, plats, fiches techniques supprimés</li>
-        <li>Catégories, unités, fournisseurs Cuisine supprimés</li>
-        <li>Plats, catégories et tables Restaurant supprimés</li>
-        <li>Chambres Hôtel supprimées</li>
-        <li>Espaces événementiels supprimés</li>
-        <li>Tarifs piscine supprimés</li>
-        <li style="color:#15803D;font-weight:700">✅ Seuls les utilisateurs et groupes sont conservés</li>
+        <li>Stocks Cave remis à 0</li>
+        <li>Stocks ingrédients Cuisine remis à 0</li>
+        <li>Structure intacte : catégories, plats, boissons, chambres, espaces, utilisateurs</li>
       </ul>
-      <a href="{% url 'admin_reset_confirm' 'complet' %}" class="btn-action btn-complet">
-        🔴 Lancer la remise complète
-      </a>
+      <a href="{% url 'admin_reset_confirm' 'complet' %}" class="btn-action btn-complet">🔴 Lancer la remise complète</a>
     </div>
   </div>
 

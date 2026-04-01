@@ -32,14 +32,14 @@
     Vérification — Compteurs actuels (doivent tous être à 0)
   </h2>
   <div class="counts-grid">
-    <div class="count-card"><div class="nb">{{ counts.facturation.Tickets|default:0 }}</div><div class="lb">Tickets</div></div>
-    <div class="count-card"><div class="nb">{{ counts.facturation.Factures|default:0 }}</div><div class="lb">Factures</div></div>
-    <div class="count-card"><div class="nb">{{ counts.caisse.Sessions caisse|default:0 }}</div><div class="lb">Sessions caisse</div></div>
-    <div class="count-card"><div class="nb">{{ counts.hotel.Réservations hôtel|default:0 }}</div><div class="lb">Réservations</div></div>
-    <div class="count-card"><div class="nb">{{ counts.restaurant.Commandes restaurant|default:0 }}</div><div class="lb">Commandes</div></div>
-    <div class="count-card"><div class="nb">{{ counts.cave.Mouvements stock cave|default:0 }}</div><div class="lb">Mvt stock cave</div></div>
-    <div class="count-card"><div class="nb">{{ counts.piscine.Accès piscine|default:0 }}</div><div class="lb">Accès piscine</div></div>
-    <div class="count-card"><div class="nb">{{ counts.espaces.Réservations espaces|default:0 }}</div><div class="lb">Réserv. espaces</div></div>
+    <div class="count-card"><div class="nb">{{ flat.tickets|default:0 }}</div><div class="lb">Tickets</div></div>
+    <div class="count-card"><div class="nb">{{ flat.factures|default:0 }}</div><div class="lb">Factures</div></div>
+    <div class="count-card"><div class="nb">{{ flat.sessions|default:0 }}</div><div class="lb">Sessions caisse</div></div>
+    <div class="count-card"><div class="nb">{{ flat.resa_hotel|default:0 }}</div><div class="lb">Réservations</div></div>
+    <div class="count-card"><div class="nb">{{ flat.commandes|default:0 }}</div><div class="lb">Commandes</div></div>
+    <div class="count-card"><div class="nb">{{ flat.mvt_cave|default:0 }}</div><div class="lb">Mvt stock cave</div></div>
+    <div class="count-card"><div class="nb">{{ flat.acces_piscine|default:0 }}</div><div class="lb">Accès piscine</div></div>
+    <div class="count-card"><div class="nb">{{ flat.resa_espaces|default:0 }}</div><div class="lb">Réserv. espaces</div></div>
   </div>
 
   <div style="display:flex;gap:12px">

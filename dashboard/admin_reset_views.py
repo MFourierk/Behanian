@@ -31,9 +31,35 @@ def reset_dashboard(request):
         for v in (module.values() if isinstance(module, dict) else [])
     )
 
+    # Aplatir les counts pour le template (pas d'espaces dans les clés Django)
+    flat = {
+        'tickets':     counts.get('facturation',{}).get('Tickets', 0),
+        'factures':    counts.get('facturation',{}).get('Factures', 0),
+        'proformas':   counts.get('facturation',{}).get('Proformas', 0),
+        'avoirs':      counts.get('facturation',{}).get('Avoirs', 0),
+        'clients_fact':counts.get('facturation',{}).get('Clients facturation', 0),
+        'sessions':    counts.get('caisse',{}).get('Sessions caisse', 0),
+        'mouvements':  counts.get('caisse',{}).get('Mouvements caisse', 0),
+        'prelevements':counts.get('caisse',{}).get('Prélèvements banque', 0),
+        'resa_hotel':  counts.get('hotel',{}).get('Réservations hôtel', 0),
+        'conso_hotel': counts.get('hotel',{}).get('Consommations hôtel', 0),
+        'clients_hotel':counts.get('hotel',{}).get('Clients hôtel', 0),
+        'commandes':   counts.get('restaurant',{}).get('Commandes restaurant', 0),
+        'lignes_cmd':  counts.get('restaurant',{}).get('Lignes commande', 0),
+        'mvt_cave':    counts.get('cave',{}).get('Mouvements stock cave', 0),
+        'bc_cave':     counts.get('cave',{}).get('Bons commande cave', 0),
+        'br_cave':     counts.get('cave',{}).get('Bons réception cave', 0),
+        'inv_cave':    counts.get('cave',{}).get('Inventaires cave', 0),
+        'mvt_cuisine': counts.get('cuisine',{}).get('Mouvements stock cuisine', 0),
+        'br_cuisine':  counts.get('cuisine',{}).get('Bons réception cuisine', 0),
+        'acces_piscine':counts.get('piscine',{}).get('Accès piscine', 0),
+        'conso_piscine':counts.get('piscine',{}).get('Consommations piscine', 0),
+        'resa_espaces':counts.get('espaces',{}).get('Réservations espaces', 0),
+    }
     context = {
         'title': 'Remise à Zéro — BEHANIAN',
         'counts': counts,
+        'flat': flat,
         'total': total,
         'modules_info': [
             {
@@ -207,9 +233,20 @@ def reset_execute(request, type_reset):
 def reset_success(request, type_reset):
     """Page de succès après remise à zéro."""
     counts = get_counts()
+    flat = {
+        'tickets':      counts.get('facturation',{}).get('Tickets', 0),
+        'factures':     counts.get('facturation',{}).get('Factures', 0),
+        'sessions':     counts.get('caisse',{}).get('Sessions caisse', 0),
+        'resa_hotel':   counts.get('hotel',{}).get('Réservations hôtel', 0),
+        'commandes':    counts.get('restaurant',{}).get('Commandes restaurant', 0),
+        'mvt_cave':     counts.get('cave',{}).get('Mouvements stock cave', 0),
+        'acces_piscine':counts.get('piscine',{}).get('Accès piscine', 0),
+        'resa_espaces': counts.get('espaces',{}).get('Réservations espaces', 0),
+    }
     context = {
         'title': 'Remise à Zéro Effectuée',
         'type_reset': type_reset,
         'counts': counts,
+        'flat': flat,
     }
     return render(request, 'admin/reset/success.html', context)
