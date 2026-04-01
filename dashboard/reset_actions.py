@@ -1,19 +1,126 @@
 """
-Logique de remise à zéro — BEHANIAN
+Logique de remise à zéro modulaire — BEHANIAN
+Chaque module peut être sélectionné indépendamment.
 """
 from django.db import transaction
 
 
+# ── Définition des modules ─────────────────────────────────────────────────────
+MODULES = {
+    'facturation': {
+        'label': 'Facturation',
+        'color': '#1D4ED8',
+        'light': '#EFF6FF',
+        'icon': '📄',
+        'description': 'Tickets, Factures, Proformas, Avoirs, Clients facturation',
+        'sous_modules': {
+            'tickets':   'Tickets (TC-)',
+            'factures':  'Factures + Lignes (FAC-)',
+            'proformas': 'Proformas + Lignes (PRO-)',
+            'avoirs':    'Avoirs + Lignes (AVO-)',
+            'clients':   'Clients facturation',
+        },
+    },
+    'caisse': {
+        'label': 'Caisse',
+        'color': '#16A34A',
+        'light': '#DCFCE7',
+        'icon': '💰',
+        'description': 'Sessions, Mouvements, Prélèvements banque',
+        'sous_modules': {
+            'sessions':    'Sessions de caisse',
+            'mouvements':  'Mouvements de caisse',
+            'prelevements':'Prélèvements banque',
+        },
+    },
+    'hotel': {
+        'label': 'Hôtel',
+        'color': '#2563EB',
+        'light': '#DBEAFE',
+        'icon': '🏨',
+        'description': 'Réservations, Consommations, Clients hôtel',
+        'sous_modules': {
+            'reservations':  'Réservations hôtel',
+            'consommations': 'Consommations hôtel',
+            'clients':       'Clients hôtel',
+        },
+    },
+    'restaurant': {
+        'label': 'Restaurant',
+        'color': '#D35400',
+        'light': '#FFF7ED',
+        'icon': '🍽️',
+        'description': 'Commandes et lignes de commande',
+        'sous_modules': {
+            'commandes': 'Commandes + Lignes',
+        },
+    },
+    'cave': {
+        'label': 'Cave / Bar',
+        'color': '#7C3AED',
+        'light': '#F5F3FF',
+        'icon': '🍷',
+        'description': 'Mouvements stock, Bons commande/réception, Inventaires, Casses',
+        'sous_modules': {
+            'mouvements':  'Mouvements de stock',
+            'commandes':   'Bons de commande',
+            'receptions':  'Bons de réception',
+            'inventaires': 'Inventaires',
+            'casses':      'Casses / Pertes',
+            'stocks':      'Remettre les stocks à 0',
+        },
+    },
+    'cuisine': {
+        'label': 'Cuisine',
+        'color': '#C0392B',
+        'light': '#FEF2F2',
+        'icon': '👨‍🍳',
+        'description': 'Mouvements stock, Bons commande/réception, Inventaires, Casses',
+        'sous_modules': {
+            'mouvements':  'Mouvements de stock',
+            'commandes':   'Bons de commande',
+            'receptions':  'Bons de réception',
+            'inventaires': 'Inventaires',
+            'casses':      'Casses / Pertes',
+            'stocks':      'Remettre les stocks à 0',
+        },
+    },
+    'piscine': {
+        'label': 'Piscine',
+        'color': '#0891B2',
+        'light': '#ECFEFF',
+        'icon': '🏊',
+        'description': 'Accès et consommations piscine',
+        'sous_modules': {
+            'acces':       'Accès / Tickets entrée',
+            'consommations':'Consommations piscine',
+        },
+    },
+    'espaces': {
+        'label': 'Espaces Événementiels',
+        'color': '#16A085',
+        'light': '#F0FDF4',
+        'icon': '📅',
+        'description': 'Réservations d\'espaces',
+        'sous_modules': {
+            'reservations': 'Réservations espaces',
+        },
+    },
+}
+
+
 def get_counts():
+    """Inventaire détaillé de toutes les transactions."""
     counts = {}
+
     try:
         from facturation.models import Ticket, Facture, Proforma, Avoir, Client
         counts['facturation'] = {
-            'Tickets':             Ticket.objects.count(),
-            'Factures':            Facture.objects.count(),
-            'Proformas':           Proforma.objects.count(),
-            'Avoirs':              Avoir.objects.count(),
-            'Clients facturation': Client.objects.count(),
+            'tickets':   Ticket.objects.count(),
+            'factures':  Facture.objects.count(),
+            'proformas': Proforma.objects.count(),
+            'avoirs':    Avoir.objects.count(),
+            'clients':   Client.objects.count(),
         }
     except Exception as e:
         counts['facturation'] = {'erreur': str(e)}
@@ -21,19 +128,19 @@ def get_counts():
     try:
         from caisse.models import CaisseSession, MouvementCaisse, PrelevementBanque
         counts['caisse'] = {
-            'Sessions caisse':     CaisseSession.objects.count(),
-            'Mouvements caisse':   MouvementCaisse.objects.count(),
-            'Prélèvements banque': PrelevementBanque.objects.count(),
+            'sessions':    CaisseSession.objects.count(),
+            'mouvements':  MouvementCaisse.objects.count(),
+            'prelevements':PrelevementBanque.objects.count(),
         }
     except Exception as e:
         counts['caisse'] = {'erreur': str(e)}
 
     try:
-        from hotel.models import Reservation, Consommation, Client as HotelClient
+        from hotel.models import Reservation, Consommation, Client as HC
         counts['hotel'] = {
-            'Réservations hôtel':  Reservation.objects.count(),
-            'Consommations hôtel': Consommation.objects.count(),
-            'Clients hôtel':       HotelClient.objects.count(),
+            'reservations':  Reservation.objects.count(),
+            'consommations': Consommation.objects.count(),
+            'clients':       HC.objects.count(),
         }
     except Exception as e:
         counts['hotel'] = {'erreur': str(e)}
@@ -41,8 +148,8 @@ def get_counts():
     try:
         from restaurant.models import Commande, LigneCommande
         counts['restaurant'] = {
-            'Commandes restaurant': Commande.objects.count(),
-            'Lignes commande':      LigneCommande.objects.count(),
+            'commandes': Commande.objects.count(),
+            'lignes':    LigneCommande.objects.count(),
         }
     except Exception as e:
         counts['restaurant'] = {'erreur': str(e)}
@@ -50,12 +157,12 @@ def get_counts():
     try:
         from bar.models import MouvementStockBar, BonCommandeBar, BonReceptionBar, InventaireBar, CasseBar, BoissonBar
         counts['cave'] = {
-            'Mouvements stock cave': MouvementStockBar.objects.count(),
-            'Bons commande cave':    BonCommandeBar.objects.count(),
-            'Bons réception cave':   BonReceptionBar.objects.count(),
-            'Inventaires cave':      InventaireBar.objects.count(),
-            'Casses cave':           CasseBar.objects.count(),
-            'Stock cave (articles)': BoissonBar.objects.count(),
+            'mouvements':  MouvementStockBar.objects.count(),
+            'commandes':   BonCommandeBar.objects.count(),
+            'receptions':  BonReceptionBar.objects.count(),
+            'inventaires': InventaireBar.objects.count(),
+            'casses':      CasseBar.objects.count(),
+            'stocks':      BoissonBar.objects.filter(quantite_stock__gt=0).count(),
         }
     except Exception as e:
         counts['cave'] = {'erreur': str(e)}
@@ -63,12 +170,12 @@ def get_counts():
     try:
         from cuisine.models import MouvementStockCuisine, BonCommandeCuisine, BonReceptionCuisine, InventaireCuisine, CasseCuisine, Ingredient
         counts['cuisine'] = {
-            'Mouvements stock cuisine': MouvementStockCuisine.objects.count(),
-            'Bons commande cuisine':    BonCommandeCuisine.objects.count(),
-            'Bons réception cuisine':   BonReceptionCuisine.objects.count(),
-            'Inventaires cuisine':      InventaireCuisine.objects.count(),
-            'Casses cuisine':           CasseCuisine.objects.count(),
-            'Ingrédients (articles)':   Ingredient.objects.count(),
+            'mouvements':  MouvementStockCuisine.objects.count(),
+            'commandes':   BonCommandeCuisine.objects.count(),
+            'receptions':  BonReceptionCuisine.objects.count(),
+            'inventaires': InventaireCuisine.objects.count(),
+            'casses':      CasseCuisine.objects.count(),
+            'stocks':      Ingredient.objects.filter(quantite_stock__gt=0).count(),
         }
     except Exception as e:
         counts['cuisine'] = {'erreur': str(e)}
@@ -76,8 +183,8 @@ def get_counts():
     try:
         from piscine.models import AccesPiscine, ConsommationPiscine
         counts['piscine'] = {
-            'Accès piscine':          AccesPiscine.objects.count(),
-            'Consommations piscine':  ConsommationPiscine.objects.count(),
+            'acces':        AccesPiscine.objects.count(),
+            'consommations':ConsommationPiscine.objects.count(),
         }
     except Exception as e:
         counts['piscine'] = {'erreur': str(e)}
@@ -85,7 +192,7 @@ def get_counts():
     try:
         from espaces_evenementiels.models import ReservationEspace
         counts['espaces'] = {
-            'Réservations espaces': ReservationEspace.objects.count(),
+            'reservations': ReservationEspace.objects.count(),
         }
     except Exception as e:
         counts['espaces'] = {'erreur': str(e)}
@@ -93,153 +200,131 @@ def get_counts():
     return counts
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  REMISE À ZÉRO PARTIELLE
-#  Supprime : toutes les transactions + documents + stocks cave et cuisine
-#  Réinitialise : statuts chambres → disponible, tables → libre, espaces → disponible
-#  Conserve : articles, plats, boissons, chambres, espaces, tables,
-#             catégories, ingrédients (structure), tarifs, utilisateurs, groupes
-# ─────────────────────────────────────────────────────────────────────────────
-def reset_partiel():
-    with transaction.atomic():
+def get_total(counts):
+    return sum(
+        v for mod in counts.values()
+        for k, v in (mod.items() if isinstance(mod, dict) else {}.items())
+        if isinstance(v, int) and k != 'stocks'
+    )
 
-        # ── Facturation ──────────────────────────────────────────────────────
-        from facturation.models import (LigneAvoir, Avoir, LigneFacture, Facture,
-                                        LigneProforma, Proforma, Ticket, Client)
-        LigneAvoir.objects.all().delete()
-        Avoir.objects.all().delete()
-        LigneFacture.objects.all().delete()
-        Facture.objects.all().delete()
-        LigneProforma.objects.all().delete()
-        Proforma.objects.all().delete()
-        Ticket.objects.all().delete()
-        Client.objects.all().delete()
 
-        # ── Caisse ───────────────────────────────────────────────────────────
-        from caisse.models import MouvementCaisse, PrelevementBanque, CaisseSession
-        MouvementCaisse.objects.all().delete()
-        PrelevementBanque.objects.all().delete()
-        CaisseSession.objects.all().delete()
+# ── Suppressions unitaires ─────────────────────────────────────────────────────
 
-        # ── Hôtel ─────────────────────────────────────────────────────────────
-        from hotel.models import Consommation, Reservation, Chambre, Client as HotelClient
-        Consommation.objects.all().delete()
+def _reset_facturation(sous=None):
+    """sous = liste de clés à supprimer, ou None = tout"""
+    from facturation.models import LigneAvoir, Avoir, LigneFacture, Facture, LigneProforma, Proforma, Ticket, Client
+    tout = sous is None
+    if tout or 'avoirs'    in sous: LigneAvoir.objects.all().delete();   Avoir.objects.all().delete()
+    if tout or 'factures'  in sous: LigneFacture.objects.all().delete();  Facture.objects.all().delete()
+    if tout or 'proformas' in sous: LigneProforma.objects.all().delete(); Proforma.objects.all().delete()
+    if tout or 'tickets'   in sous: Ticket.objects.all().delete()
+    if tout or 'clients'   in sous: Client.objects.all().delete()
+
+
+def _reset_caisse(sous=None):
+    from caisse.models import MouvementCaisse, PrelevementBanque, CaisseSession
+    tout = sous is None
+    if tout or 'mouvements'  in sous: MouvementCaisse.objects.all().delete()
+    if tout or 'prelevements'in sous: PrelevementBanque.objects.all().delete()
+    if tout or 'sessions'    in sous: CaisseSession.objects.all().delete()
+
+
+def _reset_hotel(sous=None):
+    from hotel.models import Consommation, Reservation, Chambre
+    tout = sous is None
+    if tout or 'consommations'in sous: Consommation.objects.all().delete()
+    if tout or 'reservations' in sous:
         Reservation.objects.all().delete()
-        HotelClient.objects.all().delete()
-        Chambre.objects.all().update(statut='disponible')   # ← statut réinitialisé
-
-        # ── Restaurant ────────────────────────────────────────────────────────
-        from restaurant.models import LigneCommande, Commande, Table
-        LigneCommande.objects.all().delete()
-        Commande.objects.all().delete()
-        Table.objects.all().update(statut='libre')           # ← statut réinitialisé
-
-        # ── Cave / Bar ─────────────────────────────────────────────────────────
-        from bar.models import (LigneCasseBar, CasseBar, LigneInventaireBar, InventaireBar,
-                                LigneBonReceptionBar, BonReceptionBar, LigneBonCommandeBar,
-                                BonCommandeBar, MouvementStockBar, BoissonBar)
-        LigneCasseBar.objects.all().delete()
-        CasseBar.objects.all().delete()
-        LigneInventaireBar.objects.all().delete()
-        InventaireBar.objects.all().delete()
-        LigneBonReceptionBar.objects.all().delete()
-        BonReceptionBar.objects.all().delete()
-        LigneBonCommandeBar.objects.all().delete()
-        BonCommandeBar.objects.all().delete()
-        MouvementStockBar.objects.all().delete()
-        BoissonBar.objects.all().update(quantite_stock=0)    # ← stocks → 0
-
-        # ── Cuisine ───────────────────────────────────────────────────────────
-        from cuisine.models import (LigneCasseCuisine, CasseCuisine, LigneInventaireCuisine,
-                                    InventaireCuisine, LigneBonReceptionCuisine, BonReceptionCuisine,
-                                    LigneBonCommandeCuisine, BonCommandeCuisine,
-                                    MouvementStockCuisine, Ingredient)
-        LigneCasseCuisine.objects.all().delete()
-        CasseCuisine.objects.all().delete()
-        LigneInventaireCuisine.objects.all().delete()
-        InventaireCuisine.objects.all().delete()
-        LigneBonReceptionCuisine.objects.all().delete()
-        BonReceptionCuisine.objects.all().delete()
-        LigneBonCommandeCuisine.objects.all().delete()
-        BonCommandeCuisine.objects.all().delete()
-        MouvementStockCuisine.objects.all().delete()
-        Ingredient.objects.all().update(quantite_stock=0)    # ← stocks → 0
-
-        # ── Piscine ───────────────────────────────────────────────────────────
-        from piscine.models import ConsommationPiscine, AccesPiscine
-        ConsommationPiscine.objects.all().delete()
-        AccesPiscine.objects.all().delete()
-
-        # ── Espaces ───────────────────────────────────────────────────────────
-        from espaces_evenementiels.models import ReservationEspace, EspaceEvenementiel
-        ReservationEspace.objects.all().delete()
-        try:
-            EspaceEvenementiel.objects.all().update(statut='disponible')  # ← statut réinitialisé
-        except Exception:
-            pass  # champ statut peut ne pas exister
-
-    return True
+        Chambre.objects.all().update(statut='disponible')
+    if tout or 'clients'      in sous:
+        from hotel.models import Client as HC
+        HC.objects.all().delete()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  REMISE À ZÉRO COMPLÈTE
-#  Tout ce que fait la partielle +
-#  Supprime aussi : boissons cave, ingrédients cuisine, chambres, espaces,
-#                   tables restaurant, tables cave, plats, catégories, tarifs piscine
-#  Conserve UNIQUEMENT : utilisateurs, groupes, permissions
-# ─────────────────────────────────────────────────────────────────────────────
-def reset_complet():
-    # D'abord tout ce que fait la partielle
-    reset_partiel()
+def _reset_restaurant(sous=None):
+    from restaurant.models import LigneCommande, Commande, Table
+    LigneCommande.objects.all().delete()
+    Commande.objects.all().delete()
+    Table.objects.all().update(statut='libre')
 
+
+def _reset_cave(sous=None):
+    from bar.models import (LigneCasseBar, CasseBar, LigneInventaireBar, InventaireBar,
+                            LigneBonReceptionBar, BonReceptionBar, LigneBonCommandeBar,
+                            BonCommandeBar, MouvementStockBar, BoissonBar)
+    tout = sous is None
+    if tout or 'casses'     in sous: LigneCasseBar.objects.all().delete();      CasseBar.objects.all().delete()
+    if tout or 'inventaires'in sous: LigneInventaireBar.objects.all().delete();  InventaireBar.objects.all().delete()
+    if tout or 'receptions' in sous: LigneBonReceptionBar.objects.all().delete();BonReceptionBar.objects.all().delete()
+    if tout or 'commandes'  in sous: LigneBonCommandeBar.objects.all().delete(); BonCommandeBar.objects.all().delete()
+    if tout or 'mouvements' in sous: MouvementStockBar.objects.all().delete()
+    if tout or 'stocks'     in sous: BoissonBar.objects.all().update(quantite_stock=0)
+
+
+def _reset_cuisine(sous=None):
+    from cuisine.models import (LigneCasseCuisine, CasseCuisine, LigneInventaireCuisine,
+                                InventaireCuisine, LigneBonReceptionCuisine, BonReceptionCuisine,
+                                LigneBonCommandeCuisine, BonCommandeCuisine, MouvementStockCuisine,
+                                Ingredient)
+    tout = sous is None
+    if tout or 'casses'     in sous: LigneCasseCuisine.objects.all().delete();      CasseCuisine.objects.all().delete()
+    if tout or 'inventaires'in sous: LigneInventaireCuisine.objects.all().delete();  InventaireCuisine.objects.all().delete()
+    if tout or 'receptions' in sous: LigneBonReceptionCuisine.objects.all().delete();BonReceptionCuisine.objects.all().delete()
+    if tout or 'commandes'  in sous: LigneBonCommandeCuisine.objects.all().delete(); BonCommandeCuisine.objects.all().delete()
+    if tout or 'mouvements' in sous: MouvementStockCuisine.objects.all().delete()
+    if tout or 'stocks'     in sous: Ingredient.objects.all().update(quantite_stock=0)
+
+
+def _reset_piscine(sous=None):
+    from piscine.models import ConsommationPiscine, AccesPiscine
+    tout = sous is None
+    if tout or 'consommations'in sous: ConsommationPiscine.objects.all().delete()
+    if tout or 'acces'        in sous: AccesPiscine.objects.all().delete()
+
+
+def _reset_espaces(sous=None):
+    from espaces_evenementiels.models import ReservationEspace
+    ReservationEspace.objects.all().delete()
+
+
+# ── Fonctions principales ──────────────────────────────────────────────────────
+
+def reset_modules(selection):
+    """
+    Reset sélectif : selection = dict {module: [sous_modules]} ou {module: True}
+    Exemple:
+        {'facturation': ['tickets','factures'], 'caisse': True, 'hotel': ['reservations']}
+    """
     with transaction.atomic():
-
-        # ── Cave : supprimer tous les articles ───────────────────────────────
-        from bar.models import BoissonBar, CategorieBar, TableBar
-        BoissonBar.objects.all().delete()
-        CategorieBar.objects.all().delete()
-        TableBar.objects.all().delete()
-
-        # ── Cuisine : supprimer articles et structure ────────────────────────
-        from cuisine.models import (LigneFicheTechnique, FicheTechnique, Plat,
-                                    CategoriePlat, Ingredient, CategorieIngredient,
-                                    UniteIngredient, Fournisseur)
-        LigneFicheTechnique.objects.all().delete()
-        FicheTechnique.objects.all().delete()
-        Plat.objects.all().delete()
-        CategoriePlat.objects.all().delete()
-        Ingredient.objects.all().delete()
-        CategorieIngredient.objects.all().delete()
-        UniteIngredient.objects.all().delete()
-        Fournisseur.objects.all().delete()
-
-        # ── Restaurant : supprimer plats, catégories, tables ─────────────────
-        from restaurant.models import PlatMenu, CategorieMenu, Table
-        PlatMenu.objects.all().delete()
-        CategorieMenu.objects.all().delete()
-        Table.objects.all().delete()
-
-        # ── Hôtel : supprimer chambres ───────────────────────────────────────
-        from hotel.models import Chambre
-        Chambre.objects.all().delete()
-
-        # ── Espaces : supprimer espaces ──────────────────────────────────────
-        from espaces_evenementiels.models import EspaceEvenementiel
-        EspaceEvenementiel.objects.all().delete()
-
-        # ── Piscine : supprimer tarifs ────────────────────────────────────────
-        try:
-            from piscine.models import TarifPiscine
-            TarifPiscine.objects.all().delete()
-        except Exception:
-            pass
-
-        # ── Facturation : supprimer services et articles ──────────────────────
-        try:
-            from facturation.models import Service, Article
-            Service.objects.all().delete()
-            Article.objects.all().delete()
-        except Exception:
-            pass
-
+        for module, sous in selection.items():
+            sous_list = None if sous is True else (list(sous) if sous else None)
+            if module == 'facturation': _reset_facturation(sous_list)
+            elif module == 'caisse':    _reset_caisse(sous_list)
+            elif module == 'hotel':     _reset_hotel(sous_list)
+            elif module == 'restaurant':_reset_restaurant(sous_list)
+            elif module == 'cave':      _reset_cave(sous_list)
+            elif module == 'cuisine':   _reset_cuisine(sous_list)
+            elif module == 'piscine':   _reset_piscine(sous_list)
+            elif module == 'espaces':   _reset_espaces(sous_list)
     return True
+
+
+def reset_partiel():
+    """Remise à zéro partielle standard — tous les modules, stocks conservés."""
+    selection = {
+        'facturation': True,
+        'caisse':      True,
+        'hotel':       True,
+        'restaurant':  True,
+        'cave':        ['mouvements','commandes','receptions','inventaires','casses'],
+        'cuisine':     ['mouvements','commandes','receptions','inventaires','casses'],
+        'piscine':     True,
+        'espaces':     True,
+    }
+    return reset_modules(selection)
+
+
+def reset_complet():
+    """Remise à zéro complète — tout supprimé, stocks remis à 0."""
+    selection = {mod: True for mod in MODULES}
+    return reset_modules(selection)

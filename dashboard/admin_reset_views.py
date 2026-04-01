@@ -1,18 +1,17 @@
+import json
 """
-Vues admin pour la remise à zéro — BEHANIAN
-Accessibles depuis /admin/reset/
+Vues admin pour la remise à zéro modulaire — BEHANIAN
+Accessible depuis /system/reset/  (superuser uniquement)
 """
 from django.shortcuts import render, redirect
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
-from django.utils.decorators import method_decorator
 from django.http import HttpResponseForbidden
-from .reset_actions import get_counts, reset_partiel, reset_complet
+from .reset_actions import get_counts, get_total, reset_modules, reset_partiel, reset_complet, MODULES
 
 
 def superuser_required(view_func):
-    """Décorateur : réserve la vue aux superutilisateurs uniquement."""
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated or not request.user.is_superuser:
             return HttpResponseForbidden("Accès réservé aux administrateurs système.")
@@ -20,113 +19,27 @@ def superuser_required(view_func):
     return wrapper
 
 
+def _make_flat(counts):
+    """Aplatir les counts pour le template."""
+    flat = {}
+    for module, data in counts.items():
+        if isinstance(data, dict):
+            for key, val in data.items():
+                flat[f"{module}__{key}"] = val
+    return flat
+
+
 @staff_member_required
 @superuser_required
 def reset_dashboard(request):
-    """Page principale du menu Remise à Zéro."""
     counts = get_counts()
-    total = sum(
-        v if isinstance(v, int) else 0
-        for module in counts.values()
-        for v in (module.values() if isinstance(module, dict) else [])
-    )
-
-    # Aplatir les counts pour le template (pas d'espaces dans les clés Django)
-    flat = {
-        'tickets':     counts.get('facturation',{}).get('Tickets', 0),
-        'factures':    counts.get('facturation',{}).get('Factures', 0),
-        'proformas':   counts.get('facturation',{}).get('Proformas', 0),
-        'avoirs':      counts.get('facturation',{}).get('Avoirs', 0),
-        'clients_fact':counts.get('facturation',{}).get('Clients facturation', 0),
-        'sessions':    counts.get('caisse',{}).get('Sessions caisse', 0),
-        'mouvements':  counts.get('caisse',{}).get('Mouvements caisse', 0),
-        'prelevements':counts.get('caisse',{}).get('Prélèvements banque', 0),
-        'resa_hotel':  counts.get('hotel',{}).get('Réservations hôtel', 0),
-        'conso_hotel': counts.get('hotel',{}).get('Consommations hôtel', 0),
-        'clients_hotel':counts.get('hotel',{}).get('Clients hôtel', 0),
-        'commandes':   counts.get('restaurant',{}).get('Commandes restaurant', 0),
-        'lignes_cmd':  counts.get('restaurant',{}).get('Lignes commande', 0),
-        'mvt_cave':    counts.get('cave',{}).get('Mouvements stock cave', 0),
-        'bc_cave':     counts.get('cave',{}).get('Bons commande cave', 0),
-        'br_cave':     counts.get('cave',{}).get('Bons réception cave', 0),
-        'inv_cave':    counts.get('cave',{}).get('Inventaires cave', 0),
-        'mvt_cuisine': counts.get('cuisine',{}).get('Mouvements stock cuisine', 0),
-        'br_cuisine':  counts.get('cuisine',{}).get('Bons réception cuisine', 0),
-        'acces_piscine':counts.get('piscine',{}).get('Accès piscine', 0),
-        'conso_piscine':counts.get('piscine',{}).get('Consommations piscine', 0),
-        'resa_espaces':counts.get('espaces',{}).get('Réservations espaces', 0),
-    }
+    total  = get_total(counts)
     context = {
-        'title': 'Remise à Zéro — BEHANIAN',
-        'counts': counts,
-        'flat': flat,
-        'total': total,
-        'modules_info': [
-            {
-                'key': 'facturation',
-                'nom': 'Facturation',
-                'icon': '📄',
-                'color': '#1D4ED8',
-                'light': '#EFF6FF',
-                'description': 'Tickets · Factures · Proformas · Avoirs · Clients',
-            },
-            {
-                'key': 'caisse',
-                'nom': 'Caisse',
-                'icon': '💰',
-                'color': '#16A34A',
-                'light': '#DCFCE7',
-                'description': 'Sessions · Mouvements · Prélèvements banque',
-            },
-            {
-                'key': 'hotel',
-                'nom': 'Hôtel',
-                'icon': '🏨',
-                'color': '#2563EB',
-                'light': '#DBEAFE',
-                'description': 'Réservations · Consommations · Clients hôtel',
-            },
-            {
-                'key': 'restaurant',
-                'nom': 'Restaurant',
-                'icon': '🍽️',
-                'color': '#D35400',
-                'light': '#FFF7ED',
-                'description': 'Commandes · Lignes de commande',
-            },
-            {
-                'key': 'cave',
-                'nom': 'Cave / Bar',
-                'icon': '🍷',
-                'color': '#7C3AED',
-                'light': '#F5F3FF',
-                'description': 'Mouvements stock · Bons · Inventaires · Casses',
-            },
-            {
-                'key': 'cuisine',
-                'nom': 'Cuisine',
-                'icon': '👨‍🍳',
-                'color': '#C0392B',
-                'light': '#FEF2F2',
-                'description': 'Mouvements stock · Bons · Inventaires · Casses',
-            },
-            {
-                'key': 'piscine',
-                'nom': 'Piscine',
-                'icon': '🏊',
-                'color': '#0891B2',
-                'light': '#ECFEFF',
-                'description': 'Accès · Consommations',
-            },
-            {
-                'key': 'espaces',
-                'nom': 'Espaces',
-                'icon': '📅',
-                'color': '#16A085',
-                'light': '#F0FDF4',
-                'description': 'Réservations d\'espaces',
-            },
-        ],
+        'title':   'Remise à Zéro — BEHANIAN',
+        'counts':  counts,
+        'flat':    _make_flat(counts),
+        'total':   total,
+        'modules': MODULES,
     }
     return render(request, 'admin/reset/dashboard.html', context)
 
@@ -134,62 +47,48 @@ def reset_dashboard(request):
 @staff_member_required
 @superuser_required
 def reset_confirm(request, type_reset):
-    """Page de confirmation avec double saisie."""
-    if type_reset not in ('partiel', 'complet'):
+    """Page de confirmation avec checkboxes modulaires."""
+    if type_reset not in ('partiel', 'complet', 'personnalise'):
         return redirect('admin_reset_dashboard')
 
+    counts = get_counts()
+    flat   = _make_flat(counts)
+
     if type_reset == 'partiel':
-        titre = 'Remise à Zéro Partielle'
-        description = 'Supprime toutes les transactions. Les stocks, articles, plats, boissons et chambres sont conservés.'
-        color = '#D97706'
-        warning = 'Cette action est IRRÉVERSIBLE. Toutes les transactions de test seront supprimées définitivement.'
-        items = [
-            'Tickets, Factures, Proformas, Avoirs',
-            'Sessions et mouvements de caisse',
-            'Réservations et consommations hôtel',
-            'Commandes restaurant',
-            'Mouvements stock, bons et inventaires Cave',
-            'Mouvements stock, bons et inventaires Cuisine',
-            'Accès et consommations Piscine',
-            'Réservations Espaces',
-            'Numérotations réinitialisées (TC-, FAC-, PRO-, AVO-...)',
-        ]
-        conserve = [
-            'Chambres, tables, espaces, tarifs piscine',
-            'Plats, catégories, boissons (stocks conservés)',
-            'Ingrédients (stocks conservés)',
-            'Utilisateurs, groupes, permissions',
-            'Fournisseurs, catégories, unités',
-        ]
-    else:
-        titre = 'Remise à Zéro Complète'
-        description = 'Supprime TOUT sauf les utilisateurs et groupes. Repart de zéro avec une application vierge.'
-        color = '#DC2626'
-        warning = 'DANGER MAXIMUM — Cette action supprime toutes les données : articles, chambres, espaces, plats, boissons, stocks. Seuls les utilisateurs sont conservés. IRRÉVERSIBLE.'
-        items = [
-            'Tout ce que fait la remise partielle +',
-            'Stocks Cave remis à 0',
-            'Stocks Cuisine (ingrédients) remis à 0',
-            'Clients hôtel supprimés',
-        ]
-        conserve = [
-            'Chambres, tables, espaces (structure uniquement)',
-            'Plats, catégories, boissons (quantité = 0)',
-            'Ingrédients (quantité = 0)',
-            'Tarifs piscine',
-            'Utilisateurs, groupes, permissions',
-            'Fournisseurs, catégories, unités',
-        ]
+        titre       = 'Remise à Zéro Partielle'
+        color       = '#D97706'
+        description = 'Supprime toutes les transactions. Les stocks sont conservés.'
+        # Pré-cocher tout sauf stocks cave/cuisine
+        preselection = {
+            mod: list(info['sous_modules'].keys())
+            for mod, info in MODULES.items()
+        }
+        # Décocher les stocks par défaut en partiel
+        for mod in ['cave', 'cuisine']:
+            preselection[mod] = [k for k in MODULES[mod]['sous_modules'] if k != 'stocks']
+
+    elif type_reset == 'complet':
+        titre       = 'Remise à Zéro Complète'
+        color       = '#DC2626'
+        description = 'Supprime tout y compris les stocks. Ne conserve que la structure.'
+        preselection = {mod: list(info['sous_modules'].keys()) for mod, info in MODULES.items()}
+
+    else:  # personnalise
+        titre       = 'Remise à Zéro Personnalisée'
+        color       = '#7C3AED'
+        description = 'Sélectionnez précisément les données à supprimer.'
+        preselection = {}
 
     context = {
-        'title': titre,
-        'type_reset': type_reset,
-        'description': description,
-        'color': color,
-        'warning': warning,
-        'items': items,
-        'conserve': conserve,
-        'mot_de_passe_requis': 'CONFIRMER',
+        'title':            titre,
+        'type_reset':       type_reset,
+        'description':      description,
+        'color':            color,
+        'modules':          MODULES,
+        'counts':           counts,
+        'flat':             flat,
+        'preselection':     preselection,
+        'preselection_json':json.dumps(preselection),
     }
     return render(request, 'admin/reset/confirm.html', context)
 
@@ -198,31 +97,36 @@ def reset_confirm(request, type_reset):
 @superuser_required
 @require_POST
 def reset_execute(request, type_reset):
-    """Exécute la remise à zéro après vérification du code de confirmation."""
-    if type_reset not in ('partiel', 'complet'):
-        return redirect('admin_reset_dashboard')
+    """Exécute le reset selon la sélection des checkboxes."""
 
-    # Double sécurité : vérifier le code saisi
-    code_saisi = request.POST.get('code_confirmation', '').strip().upper()
-    if code_saisi != 'CONFIRMER':
-        messages.error(request, f'Code de confirmation incorrect. Saisissez exactement : CONFIRMER')
+    # Double sécurité
+    code = request.POST.get('code_confirmation', '').strip().upper()
+    if code != 'CONFIRMER':
+        messages.error(request, 'Code de confirmation incorrect. Saisissez exactement : CONFIRMER')
         return redirect('admin_reset_confirm', type_reset=type_reset)
 
-    # Vérifier aussi le mot de passe admin
-    password_saisi = request.POST.get('password_admin', '').strip()
-    if not request.user.check_password(password_saisi):
+    mdp = request.POST.get('password_admin', '').strip()
+    if not request.user.check_password(mdp):
         messages.error(request, 'Mot de passe administrateur incorrect.')
         return redirect('admin_reset_confirm', type_reset=type_reset)
 
+    # Construire la sélection depuis les checkboxes POST
+    selection = {}
+    for mod in MODULES:
+        sous_coches = request.POST.getlist(f'sous_{mod}')
+        if sous_coches:
+            selection[mod] = sous_coches
+
+    if not selection:
+        messages.error(request, 'Aucun module sélectionné. Cochez au moins un élément.')
+        return redirect('admin_reset_confirm', type_reset=type_reset)
+
     try:
-        if type_reset == 'partiel':
-            reset_partiel()
-            messages.success(request, '✅ Remise à zéro partielle effectuée avec succès. Toutes les transactions ont été supprimées.')
-        else:
-            reset_complet()
-            messages.success(request, '✅ Remise à zéro complète effectuée. Toutes les transactions et stocks ont été remis à zéro.')
+        reset_modules(selection)
+        nb_modules = len(selection)
+        messages.success(request, f'✅ Remise à zéro effectuée sur {nb_modules} module(s).')
     except Exception as e:
-        messages.error(request, f'❌ Erreur lors de la remise à zéro : {e}')
+        messages.error(request, f'❌ Erreur : {e}')
         return redirect('admin_reset_dashboard')
 
     return redirect('admin_reset_success', type_reset=type_reset)
@@ -231,22 +135,14 @@ def reset_execute(request, type_reset):
 @staff_member_required
 @superuser_required
 def reset_success(request, type_reset):
-    """Page de succès après remise à zéro."""
     counts = get_counts()
-    flat = {
-        'tickets':      counts.get('facturation',{}).get('Tickets', 0),
-        'factures':     counts.get('facturation',{}).get('Factures', 0),
-        'sessions':     counts.get('caisse',{}).get('Sessions caisse', 0),
-        'resa_hotel':   counts.get('hotel',{}).get('Réservations hôtel', 0),
-        'commandes':    counts.get('restaurant',{}).get('Commandes restaurant', 0),
-        'mvt_cave':     counts.get('cave',{}).get('Mouvements stock cave', 0),
-        'acces_piscine':counts.get('piscine',{}).get('Accès piscine', 0),
-        'resa_espaces': counts.get('espaces',{}).get('Réservations espaces', 0),
-    }
+    total  = get_total(counts)
     context = {
-        'title': 'Remise à Zéro Effectuée',
+        'title':      'Remise à Zéro Effectuée',
         'type_reset': type_reset,
-        'counts': counts,
-        'flat': flat,
+        'counts':     counts,
+        'flat':       _make_flat(counts),
+        'total':      total,
+        'modules':    MODULES,
     }
     return render(request, 'admin/reset/success.html', context)

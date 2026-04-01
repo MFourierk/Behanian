@@ -1,88 +1,270 @@
 {% extends "admin/base_site.html" %}
-{% block title %}Confirmation — {{ title }}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 {% block extrahead %}
 <style>
-:root{--gold:#C9A84C;--dark:#1A2535}
-.confirm-wrap{max-width:720px;margin:0 auto;padding:24px 0 60px}
-.confirm-hero{border-radius:16px;padding:28px 32px;margin-bottom:24px;border:2px solid}
-.confirm-hero h1{font-size:22px;font-weight:800;margin:0 0 8px}
-.confirm-hero p{margin:0;font-size:14px;line-height:1.5}
-.two-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.list-card{background:#fff;border:1px solid #D4DCE8;border-radius:12px;padding:18px}
-.list-card h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin:0 0 12px}
-.list-card ul{margin:0;padding-left:16px;font-size:13px;color:#374151;line-height:1.8}
-.form-card{background:#fff;border:1px solid #D4DCE8;border-radius:12px;padding:24px;margin-bottom:20px}
-.form-card h3{font-size:15px;font-weight:700;color:var(--dark);margin:0 0 20px;padding-bottom:12px;border-bottom:1px solid #F0F3F7}
-.field-group{margin-bottom:16px}
-.field-group label{display:block;font-size:12px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.field-group input{width:100%;padding:10px 14px;border:2px solid #D4DCE8;border-radius:8px;font-size:14px;font-family:monospace;transition:border-color .2s}
-.field-group input:focus{outline:none;border-color:var(--gold)}
-.field-hint{font-size:11px;color:#9CA3AF;margin-top:4px}
-.btn-row{display:flex;gap:12px;align-items:center}
-.btn-cancel{padding:10px 20px;border-radius:8px;border:1px solid #D4DCE8;background:#fff;color:#374151;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer}
-.btn-confirm{padding:10px 24px;border-radius:8px;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
-.warning-box{border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;font-size:13px;line-height:1.5}
+:root{--gold:#C9A84C;--dark:#1A2535;--border:#D4DCE8}
+.rz{max-width:900px;margin:0 auto;padding:24px 0 60px}
+.hero{border-radius:14px;padding:22px 28px;margin-bottom:20px;border:2px solid}
+.hero h1{font-size:20px;font-weight:800;margin:0 0 6px}
+.hero p{font-size:13px;margin:0}
+.warn{border-radius:10px;padding:11px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px}
+
+/* Modules checkboxes */
+.modules-list{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+.mod-block{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.mod-header{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #F0F3F7;cursor:pointer;user-select:none}
+.mod-header:hover{background:#FAFAFA}
+.mod-check-all{width:20px;height:20px;border-radius:6px;cursor:pointer;accent-color:var(--color,#1A2535);flex-shrink:0}
+.mod-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.mod-label{font-weight:700;font-size:14px;color:var(--dark);flex:1}
+.mod-desc{font-size:12px;color:#9CA3AF}
+.mod-count{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;flex-shrink:0}
+.sous-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;padding:0}
+.sous-item{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #F8F8F8;border-right:1px solid #F8F8F8}
+.sous-item:nth-child(3n){border-right:none}
+.sous-check{width:17px;height:17px;border-radius:5px;cursor:pointer;accent-color:var(--color,#1A2535);flex-shrink:0}
+.sous-label{font-size:12px;color:#374151;font-weight:500}
+.sous-count{font-size:11px;color:#9CA3AF;margin-left:auto;font-weight:600}
+
+/* Selectionner tout */
+.select-all-bar{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:13px}
+.btn-sel{padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#374151}
+.btn-sel:hover{background:#F0F3F7}
+
+/* Récap sélection */
+.recap{background:#F8FAFC;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;min-height:44px}
+.recap-title{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.recap-pills{display:flex;flex-wrap:wrap;gap:5px}
+.recap-pill{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid}
+
+/* Form confirmation */
+.form-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:16px}
+.form-card h3{font-size:14px;font-weight:700;color:var(--dark);margin:0 0 16px;padding-bottom:10px;border-bottom:1px solid #F0F3F7}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fg input{width:100%;padding:9px 13px;border:2px solid var(--border);border-radius:8px;font-size:14px;transition:border-color .2s}
+.fg input:focus{outline:none;border-color:var(--color,var(--gold))}
+.fg .hint{font-size:11px;color:#9CA3AF;margin-top:3px}
+.btn-row{display:flex;gap:10px;align-items:center}
+.btn-cancel{padding:9px 18px;border-radius:8px;border:1px solid var(--border);background:#fff;color:#374151;font-size:13px;font-weight:600;text-decoration:none}
+.btn-go{padding:9px 22px;border-radius:8px;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.stitle{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px}
 </style>
 {% endblock %}
 {% block content %}
-<div class="confirm-wrap">
+<div class="rz">
 
-  <div class="confirm-hero" style="background:{{ color }}11;border-color:{{ color }}">
+  <div class="hero" style="background:{{ color }}11;border-color:{{ color }}">
     <h1 style="color:{{ color }}">{{ title }}</h1>
     <p style="color:{{ color }}CC">{{ description }}</p>
   </div>
 
-  <div class="warning-box" style="background:#FEF2F2;border:1px solid #FECACA">
-    <span style="font-size:20px;flex-shrink:0">⚠️</span>
-    <div style="color:#991B1B"><strong>ATTENTION :</strong> {{ warning }}</div>
+  <div class="warn" style="background:#FEF2F2;border:1px solid #FECACA;color:#991B1B">
+    <span style="font-size:17px">⚠️</span>
+    <div><strong>Action irréversible.</strong> Vérifiez soigneusement votre sélection avant de confirmer.</div>
   </div>
 
-  <div class="two-cols">
-    <div class="list-card">
-      <h3 style="color:{{ color }}">❌ Ce qui sera supprimé</h3>
-      <ul>
-        {% for item in items %}<li>{{ item }}</li>{% endfor %}
-      </ul>
-    </div>
-    <div class="list-card">
-      <h3 style="color:#16A34A">✅ Ce qui sera conservé</h3>
-      <ul style="color:#15803D">
-        {% for item in conserve %}<li>{{ item }}</li>{% endfor %}
-      </ul>
-    </div>
-  </div>
+  <form method="POST" action="{% url 'admin_reset_execute' type_reset %}" id="resetForm">
+    {% csrf_token %}
 
-  <!-- Formulaire double confirmation -->
-  <div class="form-card">
-    <h3>🔐 Double confirmation requise</h3>
-    <form method="POST" action="{% url 'admin_reset_execute' type_reset %}">
-      {% csrf_token %}
-      <div class="field-group">
-        <label>Mot de passe administrateur</label>
-        <input type="password" name="password_admin" placeholder="Votre mot de passe admin" required autocomplete="off">
-        <div class="field-hint">Votre mot de passe de connexion à l'administration Django</div>
-      </div>
-      <div class="field-group">
-        <label>Code de confirmation</label>
-        <input type="text" name="code_confirmation" placeholder='Saisir exactement : CONFIRMER'
-               required autocomplete="off" style="letter-spacing:2px;text-transform:uppercase">
-        <div class="field-hint">Saisissez le mot <strong>CONFIRMER</strong> en majuscules pour valider</div>
-      </div>
-      {% if messages %}
-      {% for message in messages %}
-      <div class="warning-box" style="background:#FEF2F2;border:1px solid #FECACA;margin-top:12px">
-        <span>❌</span><div style="color:#991B1B">{{ message }}</div>
+    <!-- Barre sélectionner tout / rien -->
+    <div class="select-all-bar">
+      <span style="font-weight:600;font-size:13px;color:#374151">Sélection rapide :</span>
+      <button type="button" class="btn-sel" onclick="selectAll(true)">✅ Tout cocher</button>
+      <button type="button" class="btn-sel" onclick="selectAll(false)">☐ Tout décocher</button>
+      <span style="margin-left:auto;font-size:12px;color:#7A8B9C" id="selCount">0 élément(s) sélectionné(s)</span>
+    </div>
+
+    <!-- Modules -->
+    <div class="stitle">Sélectionnez les données à supprimer</div>
+    <div class="modules-list">
+      {% for mod_key, mod_info in modules.items %}
+      <div class="mod-block" style="--color:{{ mod_info.color }}">
+        <div class="mod-header" onclick="toggleModule('{{ mod_key }}')">
+          <input type="checkbox" class="mod-check-all" id="chk_all_{{ mod_key }}"
+                 style="accent-color:{{ mod_info.color }}"
+                 onchange="onModuleToggle('{{ mod_key }}', this.checked)"
+                 {% if preselection and mod_key in preselection and preselection|length > 0 %}checked{% endif %}
+                 onclick="event.stopPropagation()">
+          <div class="mod-icon" style="background:{{ mod_info.light }};color:{{ mod_info.color }}">{{ mod_info.icon }}</div>
+          <div style="flex:1">
+            <div class="mod-label">{{ mod_info.label }}</div>
+            <div class="mod-desc">{{ mod_info.description }}</div>
+          </div>
+          <span class="mod-count" style="background:{{ mod_info.light }};color:{{ mod_info.color }}" id="cnt_{{ mod_key }}">
+            0 sél.
+          </span>
+        </div>
+        <div class="sous-grid" id="sous_{{ mod_key }}">
+          {% for sous_key, sous_label in mod_info.sous_modules.items %}
+          <label class="sous-item">
+            <input type="checkbox" class="sous-check sous-{{ mod_key }}"
+                   name="sous_{{ mod_key }}" value="{{ sous_key }}"
+                   style="accent-color:{{ mod_info.color }}"
+                   data-mod="{{ mod_key }}"
+                   onchange="onSousChange('{{ mod_key }}')"
+                   {% if preselection and mod_key in preselection %}
+                     {% for pre_sous in preselection|dictsort:"0" %}{% endfor %}
+                     checked
+                   {% endif %}>
+            <span class="sous-label">{{ sous_label }}</span>
+            <span class="sous-count" id="sc_{{ mod_key }}_{{ sous_key }}">—</span>
+          </label>
+          {% endfor %}
+        </div>
       </div>
       {% endfor %}
-      {% endif %}
-      <div class="btn-row" style="margin-top:20px">
+    </div>
+
+    <!-- Récap -->
+    <div class="recap" id="recap">
+      <div class="recap-title">Récapitulatif de la sélection</div>
+      <div class="recap-pills" id="recapPills"><span style="color:#9CA3AF;font-size:12px">Aucune sélection</span></div>
+    </div>
+
+    <!-- Double confirmation -->
+    <div class="form-card">
+      <h3>🔐 Double confirmation requise</h3>
+      <div class="fg">
+        <label>Mot de passe administrateur</label>
+        <input type="password" name="password_admin" placeholder="Votre mot de passe admin" required autocomplete="off" style="--color:{{ color }}">
+        <div class="hint">Votre mot de passe de connexion Django</div>
+      </div>
+      <div class="fg">
+        <label>Code de confirmation</label>
+        <input type="text" name="code_confirmation" placeholder="Saisir : CONFIRMER"
+               required autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;--color:{{ color }}"
+               oninput="this.value=this.value.toUpperCase()">
+        <div class="hint">Saisissez le mot <strong>CONFIRMER</strong> en majuscules</div>
+      </div>
+      {% if messages %}{% for msg in messages %}
+      <div class="warn" style="background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;margin-top:10px">
+        <span>❌</span><div>{{ msg }}</div>
+      </div>
+      {% endfor %}{% endif %}
+      <div class="btn-row" style="margin-top:16px">
         <a href="{% url 'admin_reset_dashboard' %}" class="btn-cancel">← Annuler</a>
-        <button type="submit" class="btn-confirm" style="background:{{ color }}">
+        <button type="submit" class="btn-go" style="background:{{ color }}" id="btnGo">
           ⚡ Exécuter la remise à zéro
         </button>
       </div>
-    </form>
-  </div>
-
+    </div>
+  </form>
 </div>
+
+<script>
+// Données des counts depuis Django
+const COUNTS = {
+  {% for mod_key, mod_info in modules.items %}
+  "{{ mod_key }}": {
+    {% for sous_key, sous_label in mod_info.sous_modules.items %}
+    "{{ sous_key }}": {{ flat|default_if_none:0 }},
+    {% endfor %}
+  },
+  {% endfor %}
+};
+
+// Pré-sélection initiale
+const PRESEL = {{ preselection_json|default:"{}" }};
+
+function initCounts() {
+  // Remplir les counts dans les labels
+  {% for mod_key, mod_info in modules.items %}
+  {% for sous_key, sous_label in mod_info.sous_modules.items %}
+  const el_{{ mod_key }}_{{ sous_key }} = document.getElementById('sc_{{ mod_key }}_{{ sous_key }}');
+  if(el_{{ mod_key }}_{{ sous_key }}) {
+    const v = {{ flat|default_if_none:0 }};
+    // On va chercher la valeur depuis flat__
+    el_{{ mod_key }}_{{ sous_key }}.textContent = '';
+  }
+  {% endfor %}
+  {% endfor %}
+}
+
+function onSousChange(mod) {
+  const checks = document.querySelectorAll(`.sous-${mod}`);
+  const all = document.getElementById(`chk_all_${mod}`);
+  const total = checks.length;
+  const coches = [...checks].filter(c=>c.checked).length;
+  if(all) {
+    all.checked = coches > 0;
+    all.indeterminate = coches > 0 && coches < total;
+  }
+  const cnt = document.getElementById(`cnt_${mod}`);
+  if(cnt) cnt.textContent = `${coches} sél.`;
+  updateRecap();
+  updateCount();
+}
+
+function onModuleToggle(mod, checked) {
+  document.querySelectorAll(`.sous-${mod}`).forEach(c => c.checked = checked);
+  onSousChange(mod);
+}
+
+function toggleModule(mod) {
+  // Ne rien faire (le click sur la row ne doit pas toggle les checkboxes)
+}
+
+function selectAll(val) {
+  document.querySelectorAll('.sous-check').forEach(c => c.checked = val);
+  document.querySelectorAll('.mod-check-all').forEach(c => { c.checked = val; c.indeterminate = false; });
+  document.querySelectorAll('[id^="cnt_"]').forEach(el => {
+    const mod = el.id.replace('cnt_','');
+    const n = document.querySelectorAll(`.sous-${mod}`).length;
+    el.textContent = val ? `${n} sél.` : '0 sél.';
+  });
+  updateRecap();
+  updateCount();
+}
+
+function updateRecap() {
+  const container = document.getElementById('recapPills');
+  const pills = [];
+  {% for mod_key, mod_info in modules.items %}
+  const sel_{{ mod_key }} = [...document.querySelectorAll('.sous-{{ mod_key }}:checked')].map(c=>c.parentElement.querySelector('.sous-label').textContent.trim());
+  if(sel_{{ mod_key }}.length > 0) {
+    pills.push(`<span class="recap-pill" style="background:{{ mod_info.light }};color:{{ mod_info.color }};border-color:{{ mod_info.color }}33">{{ mod_info.icon }} {{ mod_info.label }} (${sel_{{ mod_key }}.length})</span>`);
+  }
+  {% endfor %}
+  container.innerHTML = pills.length ? pills.join('') : '<span style="color:#9CA3AF;font-size:12px">Aucune sélection</span>';
+}
+
+function updateCount() {
+  const total = document.querySelectorAll('.sous-check:checked').length;
+  document.getElementById('selCount').textContent = `${total} élément(s) sélectionné(s)`;
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  // Appliquer la pré-sélection
+  {% for mod_key, mod_info in modules.items %}
+  {% if preselection and mod_key in preselection %}
+  // Module {{ mod_key }} pré-sélectionné
+  document.querySelectorAll('.sous-{{ mod_key }}').forEach(c => {
+    const preKeys = [{% for sous_key in preselection|dictsort:"0" %}'{{ sous_key }}',{% endfor %}];
+    // Tous cochés pour preset complet/partiel
+    c.checked = true;
+  });
+  {% endif %}
+  {% endfor %}
+
+  // Désélectionner les stocks pour la remise partielle
+  {% if type_reset == 'partiel' %}
+  ['cave__stocks','cuisine__stocks'].forEach(id => {
+    document.querySelectorAll(`.sous-cave[value="stocks"], .sous-cuisine[value="stocks"]`).forEach(c => c.checked = false);
+  });
+  {% endif %}
+
+  // Vide pour personnalisé
+  {% if type_reset == 'personnalise' %}
+  document.querySelectorAll('.sous-check,.mod-check-all').forEach(c => { c.checked = false; c.indeterminate = false; });
+  {% endif %}
+
+  // Mettre à jour les compteurs de modules
+  {% for mod_key, mod_info in modules.items %}
+  onSousChange('{{ mod_key }}');
+  {% endfor %}
+  updateCount();
+});
+</script>
 {% endblock %}
