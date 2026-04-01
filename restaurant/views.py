@@ -30,26 +30,27 @@ def restaurant_index(request):
         boissons_bar = BoissonBar.objects.filter(disponible=True)
         
         for b in boissons_bar:
-            # On utilise get_or_create avec le nom exact
-            # Note: Le système de stock utilise déjà le nom pour faire le lien (voir plus bas)
-            plat, created = PlatMenu.objects.get_or_create(
-                nom__iexact=b.nom,
-                defaults={
-                    'nom': b.nom,
-                    'categorie': cat_boissons,
-                    'prix': b.prix,
-                    'description': b.description or "",
-                    'temps_preparation': 0,
-                    'disponible': b.disponible,
-                    'image': b.image  # Copie de l'image
-                }
-            )
-            if not created:
-                # Si le plat existait déjà, on met à jour les infos
-                plat.prix = b.prix
-                plat.disponible = b.disponible
-                plat.image = b.image
-                plat.save()
+            # Recherche insensible à la casse SANS get_or_create (qui ne supporte pas les lookups)
+            plat = PlatMenu.objects.filter(nom__iexact=b.nom).first()
+            if plat:
+                # Mise à jour uniquement si changement réel
+                changed = False
+                if plat.prix != b.prix:        plat.prix = b.prix;             changed = True
+                if plat.disponible != b.disponible: plat.disponible = b.disponible; changed = True
+                if b.image and plat.image != b.image: plat.image = b.image;     changed = True
+                if changed:
+                    plat.save()
+            else:
+                # Création uniquement si la boisson n'existe pas encore en tant que plat
+                PlatMenu.objects.create(
+                    nom=b.nom,
+                    categorie=cat_boissons,
+                    prix=b.prix,
+                    description=b.description or "",
+                    temps_preparation=0,
+                    disponible=b.disponible,
+                    image=b.image,
+                )
     except Exception as e:
         print(f"Erreur synchro boissons: {e}")
 

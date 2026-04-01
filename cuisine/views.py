@@ -652,8 +652,10 @@ def _save_fiche_from_plat(request, plat):
                 pass
 
 
-def _sync_plat_to_restaurant(plat):
-    """Crée ou met à jour le PlatMenu correspondant dans le restaurant."""
+def _sync_plat_to_restaurant(plat, ancien_nom=None):
+    """Crée ou met à jour le PlatMenu correspondant dans le restaurant.
+    ancien_nom : nom avant renommage, pour retrouver le bon PlatMenu existant.
+    """
     try:
         from restaurant.models import PlatMenu, CategorieMenu
         # Trouver ou créer la catégorie restaurant correspondante
@@ -662,19 +664,24 @@ def _sync_plat_to_restaurant(plat):
             nom=cat_nom,
             defaults={'ordre': 1}
         )
-        # Trouver ou créer le PlatMenu
-        plat_resto, created = PlatMenu.objects.get_or_create(
-            nom=plat.nom,
-            defaults={
-                'categorie':         cat_resto,
-                'prix':              plat.prix_vente,
-                'temps_preparation': 15,
-                'disponible':        plat.statut == 'disponible',
-                'description':       plat.description_carte,
-            }
-        )
+        # Chercher d'abord par ancien nom (si renommage), puis par nom actuel
+        nom_recherche = ancien_nom if ancien_nom else plat.nom
+        plat_resto = PlatMenu.objects.filter(nom__iexact=nom_recherche).first()
+        created = False
+        if not plat_resto:
+            # Pas trouvé non plus par le nom actuel → création
+            plat_resto = PlatMenu(
+                nom=plat.nom,
+                categorie=cat_resto,
+                prix=plat.prix_vente,
+                temps_preparation=15,
+                disponible=plat.statut == 'disponible',
+                description=plat.description_carte,
+            )
+            created = True
         if not created:
-            # Mettre à jour si existe déjà
+            # Mettre à jour : nom (peut avoir changé), catégorie, prix, dispo, description
+            plat_resto.nom         = plat.nom
             plat_resto.categorie   = cat_resto
             plat_resto.prix        = plat.prix_vente
             plat_resto.disponible  = plat.statut == 'disponible'
@@ -717,10 +724,12 @@ def plat_create(request):
         )
         if request.FILES.get('image'):
             plat.image = request.FILES['image']
+        # Mémoriser l'ancien nom AVANT save pour la synchro restaurant
+        ancien_nom = Plat.objects.get(pk=plat.pk).nom if plat.pk else None
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
-        _sync_plat_to_restaurant(plat)
+        _sync_plat_to_restaurant(plat, ancien_nom=ancien_nom)
         messages.success(request, f"Plat '{plat.nom}' créé avec sa fiche technique.")
         return redirect('/cuisine/plats/')
     import json
@@ -768,10 +777,12 @@ def plat_edit(request, pk):
             plat.image = request.FILES['image']
         elif request.POST.get('image-clear'):
             plat.image = None
+        # Mémoriser l'ancien nom AVANT save pour la synchro restaurant
+        ancien_nom = Plat.objects.get(pk=plat.pk).nom if plat.pk else None
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
-        _sync_plat_to_restaurant(plat)
+        _sync_plat_to_restaurant(plat, ancien_nom=ancien_nom)
         messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé.")
         return redirect('/cuisine/plats/')
     from restaurant.models import PlatMenu
