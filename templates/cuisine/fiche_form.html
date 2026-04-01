@@ -3,7 +3,7 @@
 {% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Nouvelle Fiche" "" %}
+
 <style>
     .form-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 0; box-shadow: 0 10px 25px rgba(192,57,43,0.25); display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
     .form-header::after { content: '📖'; position: absolute; right: -10px; bottom: -30px; font-size: 130px; opacity: 0.08; pointer-events: none; }
@@ -73,6 +73,8 @@
             <h2><i class="fas fa-book-open mr-2"></i> {{ page_title }}</h2>
             <p>{% if mode == 'create' %}Créez une nouvelle recette standardisée avec son coût de revient.{% else %}Modifiez la fiche technique et ses ingrédients.{% endif %}</p>
         </div>
+{% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Nouvelle Fiche" "" %}
+
         {% if fiche.reference %}<div style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:10px;padding:10px 18px;text-align:center;"><div style="font-size:0.7rem;opacity:0.8;letter-spacing:1px;">RÉFÉRENCE</div><div style="font-size:1.1rem;font-weight:800;">{{ fiche.reference }}</div></div>{% endif %}
     </div>
 

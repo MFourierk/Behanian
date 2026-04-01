@@ -36,7 +36,7 @@ window.addEventListener('afterprint', () => {
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Receptions" "cuisine:stock_management" "Nouvelle Reception" "" %}
+
 <style>
 .form-header {
     background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
@@ -255,6 +255,8 @@ input:focus, select:focus, textarea:focus {
             <h2><i class="fas fa-truck mr-2"></i> {{ page_title }}</h2>
             <p>Enregistrez les marchandises reçues — le stock et le CMUP seront mis à jour à la validation</p>
 </div>
+{% breadcrumb "Cuisine" "cuisine:index" "Receptions" "cuisine:stock_management" "Nouvelle Reception" "" %}
+
 <div class="header-badge">
             <div class="badge-label">Référence</div>
             <div class="badge-val">BR-CUI-{% now "Y" %}-XXXX</div>
