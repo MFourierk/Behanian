@@ -1,0 +1,201 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}{% if mode == 'edit' %}Modifier{% else %}Nouveau{% endif %} Forfait{% endblock %}
+{% block extra_css %}
+<style>
+:root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c}
+.pg-body{background:var(--light);padding:20px 0 50px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid var(--border);background:#f8fafc}
+.ph h3{font-size:13px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-control{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--dark);transition:border-color .15s}
+.form-control:focus{outline:none;border-color:var(--gold)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.btn-a{padding:10px 22px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-or{background:var(--gold);color:var(--dark)}
+.btn-sec{background:#f1f5f9;color:var(--dark)}
+
+/* Lignes forfait dynamiques */
+.ligne-block{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
+.ligne-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ligne-type-btn{padding:5px 12px;border-radius:6px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;color:var(--dark);transition:all .12s}
+.ligne-type-btn.active.plat{background:#fff7ed;border-color:#d35400;color:#d35400}
+.ligne-type-btn.active.boisson{background:#f5f3ff;border-color:#7c3aed;color:#7c3aed}
+.ligne-type-btn.active.autre{background:#f8fafc;border-color:#374151;color:#374151}
+.ligne-body{display:grid;grid-template-columns:1fr 80px;gap:10px}
+.del-ligne{position:absolute;top:10px;right:12px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.select-ctrl{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark)}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pg-body"><div class="container-fluid" style="max-width:860px">
+  <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
+    <div class="header-content">
+      <h2 style="font-size:1.3rem;font-weight:700;margin:0;color:white">
+        {% if mode == 'edit' %}✏️ Modifier : {{ forfait.nom }}{% else %}🎁 Nouveau Forfait{% endif %}
+      </h2>
+      <p class="mb-0" style="opacity:.7;color:white">Combinaison de plats et boissons à prix fixe</p>
+    </div>
+  </div>
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Forfaits" "parametres:forfait_list" "Formulaire" "" %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- Infos générales -->
+    <div class="panel">
+      <div class="ph"><h3>📋 Informations générales</h3></div>
+      <div style="padding:20px">
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group">
+            <label>Nom du forfait *</label>
+            <input type="text" name="nom" class="form-control" value="{{ forfait.nom|default:'' }}" required placeholder="Ex: Forfait Piscine VIP 10 000F">
+          </div>
+          <div class="form-group">
+            <label>Module concerné *</label>
+            <select name="module" class="form-control" required>
+              {% for val, lab in modules %}
+              <option value="{{ val }}" {% if forfait.module == val %}selected{% endif %}>{{ lab }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prix du forfait (FCFA) *</label>
+            <input type="number" name="prix" class="form-control" value="{{ forfait.prix|default:'' }}" required placeholder="10000" min="0">
+          </div>
+          <div class="form-group">
+            <label>Photo du forfait (optionnel)</label>
+            {% if forfait.image %}<div style="margin-bottom:6px"><img src="{{ forfait.image.url }}" style="height:60px;border-radius:6px"></div>{% endif %}
+            <input type="file" name="image" class="form-control" accept="image/*">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Décrivez ce que comprend le forfait...">{{ forfait.description|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" name="disponible" {% if not forfait or forfait.disponible %}checked{% endif %}> Forfait disponible à la vente
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lignes du forfait -->
+    <div class="panel">
+      <div class="ph" style="justify-content:space-between;display:flex;align-items:center">
+        <h3>📦 Contenu du forfait</h3>
+        <button type="button" class="btn-a btn-or" onclick="ajouterLigne()" style="padding:6px 14px;font-size:11px">
+          <i class="fas fa-plus"></i> Ajouter un élément
+        </button>
+      </div>
+      <div style="padding:16px">
+        <div id="lignes-container">
+          {% if forfait %}
+            {% for l in forfait.lignes.all %}
+            <div class="ligne-block" data-idx="{{ forloop.counter0 }}">
+              <button type="button" class="del-ligne" onclick="this.closest('.ligne-block').remove()"><i class="fas fa-times"></i></button>
+              <div class="ligne-header">
+                <span style="font-size:12px;font-weight:600;color:var(--muted)">Élément {{ forloop.counter }}</span>
+                <button type="button" class="ligne-type-btn {% if l.type_item == 'plat' %}active plat{% endif %}" onclick="setType(this,'plat')" data-type="plat">🍽️ Plat</button>
+                <button type="button" class="ligne-type-btn {% if l.type_item == 'boisson' %}active boisson{% endif %}" onclick="setType(this,'boisson')" data-type="boisson">🍷 Boisson</button>
+                <button type="button" class="ligne-type-btn {% if l.type_item == 'autre' %}active autre{% endif %}" onclick="setType(this,'autre')" data-type="autre">📝 Autre</button>
+                <input type="hidden" name="ligne_type" value="{{ l.type_item }}">
+              </div>
+              <div class="ligne-body">
+                <div>
+                  <select name="ligne_plat" class="select-ctrl plat-field" {% if l.type_item != 'plat' %}style="display:none"{% endif %}>
+                    <option value="">— Choisir un plat —</option>
+                    {% for p in plats %}<option value="{{ p.pk }}" {% if l.plat_id == p.pk %}selected{% endif %}>{{ p.nom }}</option>{% endfor %}
+                  </select>
+                  <select name="ligne_boisson" class="select-ctrl boisson-field" {% if l.type_item != 'boisson' %}style="display:none"{% endif %}>
+                    <option value="">— Choisir une boisson —</option>
+                    {% for b in boissons %}<option value="{{ b.pk }}" {% if l.boisson_id == b.pk %}selected{% endif %}>{{ b.nom }}</option>{% endfor %}
+                  </select>
+                  <input type="text" name="ligne_libelle" class="form-control autre-field" value="{{ l.libelle }}" placeholder="Libellé libre (ex: Séance piscine)" {% if l.type_item != 'autre' %}style="display:none"{% endif %}>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);font-weight:600">Qté</label>
+                  <input type="number" name="ligne_quantite" class="form-control" value="{{ l.quantite }}" min="1" style="text-align:center">
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <div id="empty-msg" style="{% if forfait and forfait.lignes.exists %}display:none{% endif %}text-align:center;padding:30px;color:var(--muted);font-size:13px">
+          <i class="fas fa-box-open" style="font-size:1.8rem;opacity:.3;display:block;margin-bottom:8px"></i>
+          Aucun élément — cliquez "+ Ajouter un élément"
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <a href="{% url 'parametres:forfait_list' %}" class="btn-a btn-sec">Annuler</a>
+      <button type="submit" class="btn-a btn-or"><i class="fas fa-save"></i> Enregistrer le forfait</button>
+    </div>
+  </form>
+</div></div>
+
+<!-- Données pour JS -->
+<script>
+const PLATS    = [{% for p in plats %}{id:{{ p.pk }},nom:"{{ p.nom|escapejs }}"},{% endfor %}];
+const BOISSONS = [{% for b in boissons %}{id:{{ b.pk }},nom:"{{ b.nom|escapejs }}"},{% endfor %}];
+let lineCount = document.querySelectorAll('.ligne-block').length;
+
+function ajouterLigne() {
+  document.getElementById('empty-msg').style.display = 'none';
+  const idx = lineCount++;
+  const div = document.createElement('div');
+  div.className = 'ligne-block';
+  div.dataset.idx = idx;
+  div.innerHTML = `
+    <button type="button" class="del-ligne" onclick="this.closest('.ligne-block').remove()"><i class="fas fa-times"></i></button>
+    <div class="ligne-header">
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">Élément</span>
+      <button type="button" class="ligne-type-btn active plat" onclick="setType(this,'plat')" data-type="plat">🍽️ Plat</button>
+      <button type="button" class="ligne-type-btn" onclick="setType(this,'boisson')" data-type="boisson">🍷 Boisson</button>
+      <button type="button" class="ligne-type-btn" onclick="setType(this,'autre')" data-type="autre">📝 Autre</button>
+      <input type="hidden" name="ligne_type" value="plat">
+    </div>
+    <div class="ligne-body">
+      <div>
+        <select name="ligne_plat" class="select-ctrl plat-field">
+          <option value="">— Choisir un plat —</option>
+          ${PLATS.map(p=>`<option value="${p.id}">${p.nom}</option>`).join('')}
+        </select>
+        <select name="ligne_boisson" class="select-ctrl boisson-field" style="display:none">
+          <option value="">— Choisir une boisson —</option>
+          ${BOISSONS.map(b=>`<option value="${b.id}">${b.nom}</option>`).join('')}
+        </select>
+        <input type="text" name="ligne_libelle" class="form-control autre-field" placeholder="Libellé (ex: Séance piscine)" style="display:none">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);font-weight:600">Qté</label>
+        <input type="number" name="ligne_quantite" class="form-control" value="1" min="1" style="text-align:center">
+      </div>
+    </div>`;
+  document.getElementById('lignes-container').appendChild(div);
+}
+
+function setType(btn, type) {
+  const block = btn.closest('.ligne-block');
+  // Boutons
+  block.querySelectorAll('.ligne-type-btn').forEach(b => {
+    b.classList.remove('active','plat','boisson','autre');
+    if(b.dataset.type === type) b.classList.add('active', type);
+  });
+  // Champ hidden
+  block.querySelector('input[name="ligne_type"]').value = type;
+  // Affichage des champs
+  block.querySelector('.plat-field').style.display    = type==='plat'    ? '' : 'none';
+  block.querySelector('.boisson-field').style.display = type==='boisson' ? '' : 'none';
+  block.querySelector('.autre-field').style.display   = type==='autre'   ? '' : 'none';
+}
+</script>
+{% endblock %}

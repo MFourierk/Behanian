@@ -1,5 +1,5 @@
 from utils.permissions import require_module_access, require_manager
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
@@ -493,3 +493,90 @@ def personnel_reset_password(request, pk):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'POST requis'})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORFAITS
+# ═══════════════════════════════════════════════════════════════════════════════
+from restaurant.models import Forfait, LigneForfait
+from cuisine.models import Plat
+from bar.models import BoissonBar as BoissonBarModel
+
+@login_required
+def forfait_list(request):
+    forfaits = Forfait.objects.prefetch_related('lignes__plat', 'lignes__boisson').all()
+    return render(request, 'parametres/forfait_list.html', {'forfaits': forfaits})
+
+@login_required
+def forfait_create(request):
+    plats    = Plat.objects.filter(statut='disponible').order_by('nom')
+    boissons = BoissonBarModel.objects.filter(disponible=True).order_by('nom')
+    modules  = Forfait.MODULE_CHOICES
+    if request.method == 'POST':
+        f = Forfait.objects.create(
+            nom=request.POST['nom'],
+            module=request.POST['module'],
+            prix=request.POST['prix'],
+            description=request.POST.get('description', ''),
+            disponible=request.POST.get('disponible') == 'on',
+        )
+        if request.FILES.get('image'):
+            f.image = request.FILES['image']
+            f.save()
+        _save_lignes_forfait(request, f)
+        messages.success(request, f"Forfait « {f.nom} » créé avec succès.")
+        return redirect('parametres:forfait_list')
+    return render(request, 'parametres/forfait_form.html', {
+        'plats': plats, 'boissons': boissons, 'modules': modules, 'mode': 'create'
+    })
+
+@login_required
+def forfait_edit(request, pk):
+    forfait  = get_object_or_404(Forfait, pk=pk)
+    plats    = Plat.objects.filter(statut='disponible').order_by('nom')
+    boissons = BoissonBarModel.objects.filter(disponible=True).order_by('nom')
+    modules  = Forfait.MODULE_CHOICES
+    if request.method == 'POST':
+        forfait.nom         = request.POST['nom']
+        forfait.module      = request.POST['module']
+        forfait.prix        = request.POST['prix']
+        forfait.description = request.POST.get('description', '')
+        forfait.disponible  = request.POST.get('disponible') == 'on'
+        if request.FILES.get('image'):
+            forfait.image = request.FILES['image']
+        forfait.save()
+        forfait.lignes.all().delete()
+        _save_lignes_forfait(request, forfait)
+        messages.success(request, f"Forfait « {forfait.nom} » modifié.")
+        return redirect('parametres:forfait_list')
+    return render(request, 'parametres/forfait_form.html', {
+        'forfait': forfait, 'plats': plats, 'boissons': boissons,
+        'modules': modules, 'mode': 'edit'
+    })
+
+@login_required
+def forfait_delete(request, pk):
+    forfait = get_object_or_404(Forfait, pk=pk)
+    if request.method == 'POST':
+        forfait.delete()
+        messages.success(request, "Forfait supprimé.")
+        return redirect('parametres:forfait_list')
+    return render(request, 'parametres/forfait_confirm_delete.html', {'forfait': forfait})
+
+def _save_lignes_forfait(request, forfait):
+    """Lire les lignes du formulaire dynamique et les enregistrer."""
+    types     = request.POST.getlist('ligne_type')
+    plat_ids  = request.POST.getlist('ligne_plat')
+    bois_ids  = request.POST.getlist('ligne_boisson')
+    libelles  = request.POST.getlist('ligne_libelle')
+    quantites = request.POST.getlist('ligne_quantite')
+    for i, typ in enumerate(types):
+        qte = int(quantites[i]) if i < len(quantites) and quantites[i] else 1
+        ligne = LigneForfait(forfait=forfait, type_item=typ, quantite=qte, ordre=i)
+        if typ == 'plat' and i < len(plat_ids) and plat_ids[i]:
+            ligne.plat_id = plat_ids[i]
+        elif typ == 'boisson' and i < len(bois_ids) and bois_ids[i]:
+            ligne.boisson_id = bois_ids[i]
+        elif typ == 'autre' and i < len(libelles) and libelles[i]:
+            ligne.libelle = libelles[i]
+        ligne.save()

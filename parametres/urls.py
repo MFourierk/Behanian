@@ -60,4 +60,10 @@ urlpatterns = [
     path('personnel/<int:pk>/modifier/', views.personnel_update, name='personnel_update'),
     path('personnel/<int:pk>/toggle/', views.personnel_toggle, name='personnel_toggle'),
     path('personnel/<int:pk>/reset-password/', views.personnel_reset_password, name='personnel_reset_password'),
+
+    # Forfaits
+    path('forfaits/', views.forfait_list, name='forfait_list'),
+    path('forfaits/ajouter/', views.forfait_create, name='forfait_create'),
+    path('forfaits/<int:pk>/modifier/', views.forfait_edit, name='forfait_edit'),
+    path('forfaits/<int:pk>/supprimer/', views.forfait_delete, name='forfait_delete'),
 ]

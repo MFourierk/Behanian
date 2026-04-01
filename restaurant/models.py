@@ -166,3 +166,82 @@ class Reservation(models.Model):
 
     def __str__(self):
         return f"Réservation {self.client_nom} - {self.table.numero}"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FORFAITS — Combinaisons plat(s) + boisson(s) vendues ensemble
+# Ex : Forfait Piscine 10 000F = séance + demi-poulet + garniture + boisson + eau
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class Forfait(models.Model):
+    """Forfait = ensemble de plats et/ou boissons vendus à prix fixe."""
+
+    MODULE_CHOICES = [
+        ('piscine',  'Piscine'),
+        ('espaces',  'Espaces Événementiels'),
+        ('hotel',    'Hôtel'),
+        ('restaurant','Restaurant'),
+        ('autre',    'Autre'),
+    ]
+
+    nom           = models.CharField(max_length=200, verbose_name="Nom du forfait")
+    module        = models.CharField(max_length=20, choices=MODULE_CHOICES, default='piscine',
+                                     verbose_name="Module concerné")
+    prix          = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix forfait (FCFA)")
+    description   = models.TextField(blank=True, verbose_name="Description")
+    disponible    = models.BooleanField(default=True, verbose_name="Disponible")
+    image         = models.ImageField(upload_to='forfaits/', blank=True, null=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['module', 'nom']
+        verbose_name = "Forfait"
+        verbose_name_plural = "Forfaits"
+
+    def __str__(self):
+        return f"{self.nom} — {int(self.prix)} F ({self.get_module_display()})"
+
+
+class LigneForfait(models.Model):
+    """Un élément du forfait : plat cuisine OU boisson cave."""
+
+    TYPE_CHOICES = [
+        ('plat',    'Plat cuisine'),
+        ('boisson', 'Boisson cave'),
+        ('autre',   'Autre prestation'),
+    ]
+
+    forfait    = models.ForeignKey(Forfait, on_delete=models.CASCADE, related_name='lignes')
+    type_item  = models.CharField(max_length=10, choices=TYPE_CHOICES, default='plat')
+    # Lien vers plat cuisine (optionnel)
+    plat       = models.ForeignKey('cuisine.Plat', on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name='forfaits')
+    # Lien vers boisson bar (optionnel)
+    boisson    = models.ForeignKey('bar.BoissonBar', on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name='forfaits')
+    # Pour les prestations libres (ex : "Séance piscine")
+    libelle    = models.CharField(max_length=200, blank=True,
+                                  verbose_name="Libellé libre (si pas plat/boisson)")
+    quantite   = models.PositiveIntegerField(default=1)
+    ordre      = models.PositiveIntegerField(default=0, verbose_name="Ordre d'affichage")
+
+    class Meta:
+        ordering = ['ordre', 'id']
+
+    def __str__(self):
+        if self.plat:
+            return f"{self.quantite}× {self.plat.nom}"
+        if self.boisson:
+            return f"{self.quantite}× {self.boisson.nom}"
+        return f"{self.quantite}× {self.libelle}"
+
+    @property
+    def nom_affiche(self):
+        if self.plat:    return self.plat.nom
+        if self.boisson: return self.boisson.nom
+        return self.libelle
+
+    @property
+    def image_url(self):
+        if self.plat and self.plat.image:    return self.plat.image.url
+        if self.boisson and self.boisson.image: return self.boisson.image.url
+        return None

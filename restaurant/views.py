@@ -23,36 +23,9 @@ from .views_extension import create_reservation, update_reservation_status
 def restaurant_index(request):
     """Vue principale du restaurant"""
     
-    # Synchronisation des Boissons du Bar vers le Menu Restaurant
-    # Cela permet de lister les boissons de la Cave dans la grille et d'utiliser la déduction de stock existante
-    try:
-        cat_boissons, _ = CategorieMenu.objects.get_or_create(nom="Boissons", defaults={'ordre': 100})
-        boissons_bar = BoissonBar.objects.filter(disponible=True)
-        
-        for b in boissons_bar:
-            # Recherche insensible à la casse SANS get_or_create (qui ne supporte pas les lookups)
-            plat = PlatMenu.objects.filter(nom__iexact=b.nom).first()
-            if plat:
-                # Mise à jour uniquement si changement réel
-                changed = False
-                if plat.prix != b.prix:        plat.prix = b.prix;             changed = True
-                if plat.disponible != b.disponible: plat.disponible = b.disponible; changed = True
-                if b.image and plat.image != b.image: plat.image = b.image;     changed = True
-                if changed:
-                    plat.save()
-            else:
-                # Création uniquement si la boisson n'existe pas encore en tant que plat
-                PlatMenu.objects.create(
-                    nom=b.nom,
-                    categorie=cat_boissons,
-                    prix=b.prix,
-                    description=b.description or "",
-                    temps_preparation=0,
-                    disponible=b.disponible,
-                    image=b.image,
-                )
-    except Exception as e:
-        print(f"Erreur synchro boissons: {e}")
+    # Boissons Bar : plus synchronisées automatiquement vers le restaurant.
+    # Elles sont vendues via le TPE Cave. Pour les forfaits (ex: piscine),
+    # utiliser le système de Forfaits (voir restaurant/models.py → Forfait).
 
     # Récupérer toutes les catégories et plats
     categories = CategorieMenu.objects.all()
