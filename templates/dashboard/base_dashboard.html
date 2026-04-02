@@ -718,9 +718,13 @@
             </a>
             {% endif %}
             {% if 'restaurant' in accessible_modules %}
-            <a href="{% url 'restaurant:index' %}" class="nav-item {% if request.resolver_match.app_name == 'restaurant' %}active{% endif %}">
+            <a href="{% url 'restaurant:index' %}" class="nav-item {% if request.resolver_match.app_name == 'restaurant' and request.resolver_match.url_name == 'index' %}active{% endif %}">
                 <span class="nav-item-icon">🍽️</span>
                 <span class="nav-text">Restaurant</span>
+            </a>
+            <a href="{% url 'restaurant:reservation_list' %}" class="nav-item {% if request.resolver_match.url_name == 'reservation_list' %}active{% endif %}" style="padding-left:42px;font-size:12px">
+                <span class="nav-item-icon">📅</span>
+                <span class="nav-text">Réservations</span>
             </a>
             {% endif %}
             {% if 'cuisine' in accessible_modules %}
