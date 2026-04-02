@@ -53,7 +53,9 @@ class PlatMenu(models.Model):
     disponible = models.BooleanField(default=True, verbose_name="Disponible")
     is_accompagnement = models.BooleanField(default=False, verbose_name="Est un accompagnement")
     description = models.TextField(blank=True, null=True, verbose_name="Description")
-    
+    cuisine_plat_id = models.IntegerField(null=True, blank=True, db_index=True,
+                                          help_text="ID du plat Cuisine source — synchro permanente par ID")
+
     def save(self, *args, **kwargs):
         if self.image:
             img = Image.open(self.image)

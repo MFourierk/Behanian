@@ -653,39 +653,45 @@ def _save_fiche_from_plat(request, plat):
 
 
 def _sync_plat_to_restaurant(plat, ancien_nom=None):
-    """Crée ou met à jour le PlatMenu correspondant dans le restaurant.
-    ancien_nom : nom avant renommage, pour retrouver le bon PlatMenu existant.
+    """Synchronise un plat Cuisine → Restaurant en utilisant cuisine_plat_id.
+    La recherche se fait TOUJOURS par ID cuisine — le nom peut changer librement.
     """
     try:
         from restaurant.models import PlatMenu, CategorieMenu
-        # Trouver ou créer la catégorie restaurant correspondante
+        # Catégorie restaurant correspondante
         cat_nom = plat.categorie.nom if plat.categorie else 'Plats'
         cat_resto, _ = CategorieMenu.objects.get_or_create(
             nom=cat_nom,
             defaults={'ordre': 1}
         )
-        # Chercher d'abord par ancien nom (si renommage), puis par nom actuel
-        nom_recherche = ancien_nom if ancien_nom else plat.nom
-        plat_resto = PlatMenu.objects.filter(nom__iexact=nom_recherche).first()
+        # ── Recherche par cuisine_plat_id (ID stable, indépendant du nom) ──
+        plat_resto = PlatMenu.objects.filter(cuisine_plat_id=plat.pk).first()
         created = False
         if not plat_resto:
-            # Pas trouvé non plus par le nom actuel → création
-            plat_resto = PlatMenu(
-                nom=plat.nom,
-                categorie=cat_resto,
-                prix=plat.prix_vente,
-                temps_preparation=15,
-                disponible=plat.statut == 'disponible',
-                description=plat.description_carte,
-            )
-            created = True
+            # Fallback : chercher par nom si ancien plat sans cuisine_plat_id
+            plat_resto = PlatMenu.objects.filter(nom__iexact=plat.nom).first()
+            if not plat_resto:
+                plat_resto = PlatMenu(
+                    cuisine_plat_id=plat.pk,
+                    nom=plat.nom,
+                    categorie=cat_resto,
+                    prix=plat.prix_vente,
+                    temps_preparation=15,
+                    disponible=plat.statut == 'disponible',
+                    description=plat.description_carte,
+                )
+                created = True
+            else:
+                # Marquer l'existant avec son ID cuisine pour les prochaines fois
+                plat_resto.cuisine_plat_id = plat.pk
         if not created:
-            # Mettre à jour : nom (peut avoir changé), catégorie, prix, dispo, description
-            plat_resto.nom         = plat.nom
-            plat_resto.categorie   = cat_resto
-            plat_resto.prix        = plat.prix_vente
-            plat_resto.disponible  = plat.statut == 'disponible'
-            plat_resto.description = plat.description_carte
+            # Mise à jour complète — le nom peut avoir changé, on suit l'ID
+            plat_resto.nom              = plat.nom
+            plat_resto.cuisine_plat_id  = plat.pk
+            plat_resto.categorie        = cat_resto
+            plat_resto.prix             = plat.prix_vente
+            plat_resto.disponible       = plat.statut == 'disponible'
+            plat_resto.description      = plat.description_carte
         # is_accompagnement stocké dans le contexte de l'appel
         if hasattr(plat, '_is_accompagnement'):
             plat_resto.is_accompagnement = plat._is_accompagnement
@@ -714,21 +720,27 @@ def _sync_plat_to_restaurant(plat, ancien_nom=None):
 
 def _epurer_plats_restaurant():
     """
-    Épuration automatique : supprime du restaurant les plats
-    qui ne correspondent plus à aucun plat actif en cuisine.
-    Appelée après chaque modification/suppression de plat cuisine.
+    Épuration : supprime du restaurant les plats sans correspondance cuisine.
+    Utilise cuisine_plat_id en priorité, puis le nom en fallback.
     """
     from restaurant.models import PlatMenu
-    # Noms de tous les plats cuisine non archivés (insensible à la casse)
-    noms_cuisine = set(
-        p.nom.lower().strip()
-        for p in Plat.objects.exclude(statut='archive')
-    )
+    # IDs et noms des plats cuisine actifs
+    plats_cuisine_actifs = Plat.objects.exclude(statut='archive')
+    ids_cuisine   = set(p.pk for p in plats_cuisine_actifs)
+    noms_cuisine  = set(p.nom.lower().strip() for p in plats_cuisine_actifs)
+
     supprimes = []
     for plat_resto in PlatMenu.objects.all():
-        if plat_resto.nom.lower().strip() not in noms_cuisine:
-            supprimes.append(plat_resto.nom)
-            plat_resto.delete()
+        if plat_resto.cuisine_plat_id:
+            # Vérification par ID — fiable
+            if plat_resto.cuisine_plat_id not in ids_cuisine:
+                supprimes.append(plat_resto.nom)
+                plat_resto.delete()
+        else:
+            # Fallback : vérification par nom pour les anciens plats
+            if plat_resto.nom.lower().strip() not in noms_cuisine:
+                supprimes.append(plat_resto.nom)
+                plat_resto.delete()
     return supprimes
 
 @require_module_access('cuisine')
@@ -745,11 +757,10 @@ def plat_create(request):
         )
         if request.FILES.get('image'):
             plat.image = request.FILES['image']
-        ancien_nom = None  # Création : pas d'ancien nom
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
-        _sync_plat_to_restaurant(plat, ancien_nom=ancien_nom)
+        _sync_plat_to_restaurant(plat)  # Synchro par cuisine_plat_id
         _epurer_plats_restaurant()
         messages.success(request, f"Plat '{plat.nom}' créé avec sa fiche technique.")
         return redirect('/cuisine/plats/')
@@ -789,8 +800,6 @@ def plat_edit(request, pk):
     categories  = CategoriePlat.objects.all()
     ingredients = Ingredient.objects.filter(statut=True).select_related('unite_recette')
     if request.method == 'POST':
-        # ⚠️ Mémoriser l'ancien nom AVANT toute modification
-        ancien_nom = Plat.objects.get(pk=plat.pk).nom
         plat.nom               = request.POST.get('nom')
         plat.categorie_id      = request.POST.get('categorie') or None
         plat.description_carte = request.POST.get('description_carte', '')
@@ -803,7 +812,7 @@ def plat_edit(request, pk):
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
-        _sync_plat_to_restaurant(plat, ancien_nom=ancien_nom)
+        _sync_plat_to_restaurant(plat)  # Synchro par cuisine_plat_id
         _epurer_plats_restaurant()  # Nettoyer les doublons éventuels
         messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé.")
         return redirect('/cuisine/plats/')
