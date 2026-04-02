@@ -1194,14 +1194,22 @@ def epurer_plats(request):
         elif action == 'sync_manquants':
             for plat in manquants:
                 _sync_plat_to_restaurant(plat)
-            messages.success(request, f"{len(manquants)} plat(s) manquant(s) synchronisé(s) vers le restaurant.")
+            _epurer_plats_restaurant()
+            messages.success(request, f"{len(manquants)} plat(s) synchronisé(s).")
         elif action == 'sync_tout':
+            # Synchro complète : établir les liens ID manquants puis synchroniser
             count = 0
             for plat in plats_cuisine:
+                # Établir le lien cuisine_plat_id si manquant
+                from restaurant.models import PlatMenu as PM
+                pm = PM.objects.filter(nom__iexact=plat.nom, cuisine_plat_id__isnull=True).first()
+                if pm:
+                    pm.cuisine_plat_id = plat.pk
+                    pm.save(update_fields=['cuisine_plat_id'])
                 _sync_plat_to_restaurant(plat)
                 count += 1
             _epurer_plats_restaurant()
-            messages.success(request, f"{count} plat(s) synchronisé(s) et orphelins supprimés.")
+            messages.success(request, f"✅ {count} plat(s) synchronisé(s). Restaurant aligné avec la cuisine.")
         return redirect('/cuisine/epuration/')
 
     context = {
