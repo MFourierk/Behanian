@@ -1,0 +1,96 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Forfaits — Paramètres{% endblock %}
+{% block extra_css %}
+<style>
+:root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c}
+.pg-body{background:var(--light);padding:20px 0 50px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:11px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+.btn-a{padding:8px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-or{background:var(--gold);color:var(--dark)}
+.action-btn{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:white;cursor:pointer;transition:all .12s;text-decoration:none;font-size:13px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat{background:white;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;border-top:3px solid}
+.stat .nb{font-size:26px;font-weight:800;color:var(--dark)}.stat .lb{font-size:11px;color:var(--muted);margin-top:4px}
+.module-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.ligne-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pg-body"><div class="container-fluid">
+  <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
+    <div class="header-content">
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0;color:white">🎁 Forfaits</h2>
+      <p class="mb-0" style="opacity:.7;color:white">Combinaisons plats + boissons vendues à prix fixe · {{ forfaits.count }} forfait(s)</p>
+    </div>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Forfaits" "" %}
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <a href="{% url 'parametres:forfait_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouveau forfait</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat" style="border-top-color:#c9a84c"><div class="nb">{{ forfaits.count }}</div><div class="lb">🎁 Total forfaits</div></div>
+    <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ forfaits|length }}</div><div class="lb">✅ Configurés</div></div>
+    <div class="stat" style="border-top-color:#0891b2"><div class="nb">{{ forfaits|length }}</div><div class="lb">📦 Modules couverts</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h3>🎁 Liste des forfaits</h3></div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Nom</th><th>Module</th><th>Prix</th><th>Contenu</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for f in forfaits %}
+        <tr>
+          <td style="font-weight:700">{{ f.nom }}</td>
+          <td>
+            <span class="module-badge"
+              style="background:{% if f.module == 'piscine' %}#ecfeff;color:#0891b2
+                {% elif f.module == 'hotel' %}#dbeafe;color:#2563eb
+                {% elif f.module == 'espaces' %}#f0fdf4;color:#16a085
+                {% elif f.module == 'restaurant' %}#fff7ed;color:#d35400
+                {% else %}#f1f5f9;color:#374151{% endif %}">
+              {{ f.get_module_display }}
+            </span>
+          </td>
+          <td style="font-weight:700;color:#16a34a">{{ f.prix|floatformat:0 }} F</td>
+          <td>
+            {% for l in f.lignes.all %}
+            <span class="ligne-pill" style="background:{% if l.type_item == 'plat' %}#fff7ed;color:#d35400{% elif l.type_item == 'boisson' %}#f5f3ff;color:#7c3aed{% else %}#f8fafc;color:#374151{% endif %}">
+              {{ l.quantite }}× {{ l.nom_affiche }}
+            </span>
+            {% empty %}<span style="color:var(--muted);font-size:11px">Aucun élément</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% if f.disponible %}<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">✅ Actif</span>
+            {% else %}<span style="background:#fee2e2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">⛔ Inactif</span>{% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'parametres:forfait_edit' f.pk %}" class="action-btn" style="color:#2563eb;background:#dbeafe;border-color:#93c5fd"><i class="fas fa-pencil-alt"></i></a>
+              <a href="{% url 'parametres:forfait_delete' f.pk %}" class="action-btn" style="color:#dc2626;background:#fee2e2;border-color:#fca5a5"><i class="fas fa-trash-alt"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">
+          <i class="fas fa-gift" style="font-size:2rem;margin-bottom:12px;display:block;opacity:.3"></i>
+          Aucun forfait — <a href="{% url 'parametres:forfait_create' %}" style="color:#2563eb">Créer le premier</a>
+        </td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

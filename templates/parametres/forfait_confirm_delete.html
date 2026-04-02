@@ -1,0 +1,17 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block content %}
+<div class="container-fluid py-4" style="max-width:500px">
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Forfaits" "parametres:forfait_list" "Supprimer" "" %}
+  <div style="background:white;border-radius:14px;padding:28px;border:1px solid #d4dce8;text-align:center">
+    <div style="width:60px;height:60px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">🗑️</div>
+    <h4 style="font-weight:700;color:#1a2535;margin-bottom:8px">Supprimer le forfait ?</h4>
+    <p style="color:#7a8b9c;margin-bottom:24px">Le forfait <strong>{{ forfait.nom }}</strong> sera définitivement supprimé.</p>
+    <form method="post" style="display:flex;gap:10px;justify-content:center">
+      {% csrf_token %}
+      <a href="{% url 'parametres:forfait_list' %}" style="padding:9px 20px;border-radius:8px;border:1px solid #d4dce8;background:white;color:#374151;font-weight:600;text-decoration:none">Annuler</a>
+      <button type="submit" style="padding:9px 20px;border-radius:8px;border:none;background:#dc2626;color:white;font-weight:700;cursor:pointer">Supprimer</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
