@@ -710,6 +710,27 @@ def _sync_plat_to_restaurant(plat, ancien_nom=None):
     except Exception as e:
         pass  # Ne pas bloquer la sauvegarde si la synchro échoue
 
+
+
+def _epurer_plats_restaurant():
+    """
+    Épuration automatique : supprime du restaurant les plats
+    qui ne correspondent plus à aucun plat actif en cuisine.
+    Appelée après chaque modification/suppression de plat cuisine.
+    """
+    from restaurant.models import PlatMenu
+    # Noms de tous les plats cuisine non archivés (insensible à la casse)
+    noms_cuisine = set(
+        p.nom.lower().strip()
+        for p in Plat.objects.exclude(statut='archive')
+    )
+    supprimes = []
+    for plat_resto in PlatMenu.objects.all():
+        if plat_resto.nom.lower().strip() not in noms_cuisine:
+            supprimes.append(plat_resto.nom)
+            plat_resto.delete()
+    return supprimes
+
 @require_module_access('cuisine')
 def plat_create(request):
     categories   = CategoriePlat.objects.all()
@@ -724,12 +745,12 @@ def plat_create(request):
         )
         if request.FILES.get('image'):
             plat.image = request.FILES['image']
-        # Mémoriser l'ancien nom AVANT save pour la synchro restaurant
-        ancien_nom = Plat.objects.get(pk=plat.pk).nom if plat.pk else None
+        ancien_nom = None  # Création : pas d'ancien nom
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
         _sync_plat_to_restaurant(plat, ancien_nom=ancien_nom)
+        _epurer_plats_restaurant()
         messages.success(request, f"Plat '{plat.nom}' créé avec sa fiche technique.")
         return redirect('/cuisine/plats/')
     import json
@@ -768,6 +789,8 @@ def plat_edit(request, pk):
     categories  = CategoriePlat.objects.all()
     ingredients = Ingredient.objects.filter(statut=True).select_related('unite_recette')
     if request.method == 'POST':
+        # ⚠️ Mémoriser l'ancien nom AVANT toute modification
+        ancien_nom = Plat.objects.get(pk=plat.pk).nom
         plat.nom               = request.POST.get('nom')
         plat.categorie_id      = request.POST.get('categorie') or None
         plat.description_carte = request.POST.get('description_carte', '')
@@ -777,12 +800,11 @@ def plat_edit(request, pk):
             plat.image = request.FILES['image']
         elif request.POST.get('image-clear'):
             plat.image = None
-        # Mémoriser l'ancien nom AVANT save pour la synchro restaurant
-        ancien_nom = Plat.objects.get(pk=plat.pk).nom if plat.pk else None
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
         _sync_plat_to_restaurant(plat, ancien_nom=ancien_nom)
+        _epurer_plats_restaurant()  # Nettoyer les doublons éventuels
         messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé.")
         return redirect('/cuisine/plats/')
     from restaurant.models import PlatMenu
@@ -805,6 +827,7 @@ def plat_delete(request, pk):
     if request.method == 'POST':
         plat.statut = 'archive'
         plat.save()
+        _epurer_plats_restaurant()  # Retirer le plat archivé du restaurant
         messages.success(request, f"Plat '{plat.nom}' archivé.")
         return redirect('/cuisine/plats/')
     return render(request, 'cuisine/plat_confirm_delete.html', {'plat': plat})
@@ -1134,3 +1157,49 @@ def rapport_stock_cuisine(request):
     request.GET = get
     from rapport.views import rapport_stock
     return rapport_stock(request)
+
+@require_module_access('cuisine')
+def epurer_plats(request):
+    """Vue d'épuration manuelle : vérification et nettoyage cuisine ↔ restaurant."""
+    from restaurant.models import PlatMenu
+    from cuisine.models import Plat
+
+    # Tous les plats cuisine actifs
+    plats_cuisine = Plat.objects.exclude(statut='archive').order_by('nom')
+    noms_cuisine  = set(p.nom.lower().strip() for p in plats_cuisine)
+
+    # Plats restaurant
+    plats_resto   = PlatMenu.objects.all().order_by('nom')
+
+    # Analyser : orphelins, en-commun, manquants
+    orphelins  = [p for p in plats_resto if p.nom.lower().strip() not in noms_cuisine]
+    en_commun  = [p for p in plats_resto if p.nom.lower().strip() in noms_cuisine]
+    noms_resto = set(p.nom.lower().strip() for p in plats_resto)
+    manquants  = [p for p in plats_cuisine if p.nom.lower().strip() not in noms_resto]
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'supprimer_orphelins':
+            supprimes = _epurer_plats_restaurant()
+            messages.success(request, f"{len(supprimes)} plat(s) orphelin(s) supprimé(s) du restaurant.")
+        elif action == 'sync_manquants':
+            for plat in manquants:
+                _sync_plat_to_restaurant(plat)
+            messages.success(request, f"{len(manquants)} plat(s) manquant(s) synchronisé(s) vers le restaurant.")
+        elif action == 'sync_tout':
+            count = 0
+            for plat in plats_cuisine:
+                _sync_plat_to_restaurant(plat)
+                count += 1
+            _epurer_plats_restaurant()
+            messages.success(request, f"{count} plat(s) synchronisé(s) et orphelins supprimés.")
+        return redirect('/cuisine/epuration/')
+
+    context = {
+        'plats_cuisine': plats_cuisine,
+        'plats_resto':   plats_resto,
+        'orphelins':     orphelins,
+        'en_commun':     en_commun,
+        'manquants':     manquants,
+    }
+    return render(request, 'cuisine/epuration.html', context)

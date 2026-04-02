@@ -1,0 +1,183 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Épuration Cuisine ↔ Restaurant{% endblock %}
+{% block extra_css %}
+<style>
+:root{--rouge:#c0392b;--vert:#16a34a;--orange:#d97706;--border:#d4dce8;--light:#f8fafc;--dark:#1a2535;--muted:#7a8b9c}
+.pg{background:#eef1f5;padding:20px 0 50px}
+.hero{background:linear-gradient(135deg,var(--rouge),#e74c3c);border-radius:14px;padding:24px 28px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.hero h2{font-size:1.4rem;font-weight:800;color:white;margin:0}
+.hero p{margin:4px 0 0;color:rgba(255,255,255,.75);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:white;border-radius:12px;padding:18px;text-align:center;border-top:3px solid;border:1px solid var(--border)}
+.kpi .nb{font-size:32px;font-weight:800}
+.kpi .lb{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:11px 16px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.btn{padding:9px 20px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;text-decoration:none;transition:all .12s}
+.btn-rouge{background:var(--rouge);color:white}
+.btn-vert{background:var(--vert);color:white}
+.btn-orange{background:var(--orange);color:white}
+.actions-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pg"><div class="container-fluid">
+
+  <div class="hero">
+    <div>
+      <h2>🔄 Épuration Cuisine ↔ Restaurant</h2>
+      <p>Vérification et synchronisation de la liste des plats entre les deux modules</p>
+    </div>
+  </div>
+  {% breadcrumb "Cuisine" "cuisine:index" "Plats / Carte" "cuisine:plat_list" "Épuration" "" %}
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi" style="border-top-color:var(--rouge)">
+      <div class="nb" style="color:var(--rouge)">{{ orphelins|length }}</div>
+      <div class="lb" style="color:var(--rouge)">🗑️ Orphelins restaurant</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Plats restaurant sans correspondance en cuisine</div>
+    </div>
+    <div class="kpi" style="border-top-color:var(--vert)">
+      <div class="nb" style="color:var(--vert)">{{ en_commun|length }}</div>
+      <div class="lb" style="color:var(--vert)">✅ Synchronisés</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Plats présents dans les deux modules</div>
+    </div>
+    <div class="kpi" style="border-top-color:var(--orange)">
+      <div class="nb" style="color:var(--orange)">{{ manquants|length }}</div>
+      <div class="lb" style="color:var(--orange)">⚠️ Manquants au restaurant</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Plats cuisine absents du restaurant</div>
+    </div>
+  </div>
+
+  <!-- Actions rapides -->
+  {% if orphelins or manquants %}
+  <div class="actions-bar">
+    {% if orphelins %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="supprimer_orphelins">
+      <button type="submit" class="btn btn-rouge"
+              onclick="return confirm('Supprimer {{ orphelins|length }} plat(s) orphelin(s) du restaurant ?')">
+        🗑️ Supprimer les {{ orphelins|length }} orphelin(s)
+      </button>
+    </form>
+    {% endif %}
+    {% if manquants %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="sync_manquants">
+      <button type="submit" class="btn btn-orange">
+        ➕ Ajouter les {{ manquants|length }} manquant(s) au restaurant
+      </button>
+    </form>
+    {% endif %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="sync_tout">
+      <button type="submit" class="btn btn-vert"
+              onclick="return confirm('Synchronisation complète : supprimer les orphelins et synchroniser tous les plats cuisine ?')">
+        🔄 Synchronisation complète
+      </button>
+    </form>
+  </div>
+  {% else %}
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:22px">✅</span>
+    <div>
+      <div style="font-weight:700;color:#15803d">Tout est synchronisé !</div>
+      <div style="font-size:12px;color:#16a34a">Les plats cuisine et restaurant sont parfaitement alignés.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Orphelins -->
+  {% if orphelins %}
+  <div class="panel">
+    <div class="ph">
+      <h3 style="color:var(--rouge)">🗑️ Plats orphelins au restaurant ({{ orphelins|length }})</h3>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Nom du plat au restaurant</th><th>Catégorie</th><th>Prix</th><th>Statut</th></tr></thead>
+      <tbody>
+      {% for p in orphelins %}
+      <tr>
+        <td style="font-weight:600;color:var(--rouge)">{{ p.nom }}</td>
+        <td style="color:var(--muted)">{{ p.categorie.nom|default:"—" }}</td>
+        <td>{{ p.prix|floatformat:0 }} F</td>
+        <td>
+          {% if p.disponible %}
+          <span class="badge" style="background:#dcfce7;color:#15803d">Disponible</span>
+          {% else %}
+          <span class="badge" style="background:#fee2e2;color:#dc2626">Indisponible</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Synchronisés -->
+  <div class="panel">
+    <div class="ph">
+      <h3 style="color:var(--vert)">✅ Plats synchronisés ({{ en_commun|length }})</h3>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Nom</th><th>Prix restaurant</th><th>Prix cuisine</th><th>Statut</th></tr></thead>
+      <tbody>
+      {% for pr in en_commun %}
+      {% with pc=plats_cuisine %}
+      <tr>
+        <td style="font-weight:600">{{ pr.nom }}</td>
+        <td style="color:var(--vert);font-weight:700">{{ pr.prix|floatformat:0 }} F</td>
+        <td style="color:var(--muted)">
+          {% for p in plats_cuisine %}{% if p.nom|lower == pr.nom|lower %}{{ p.prix_vente|floatformat:0 }} F{% endif %}{% endfor %}
+        </td>
+        <td>
+          {% if pr.disponible %}
+          <span class="badge" style="background:#dcfce7;color:#15803d">✅ Dispo</span>
+          {% else %}
+          <span class="badge" style="background:#fee2e2;color:#dc2626">❌ Indispo</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted)">Aucun plat synchronisé</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Manquants -->
+  {% if manquants %}
+  <div class="panel">
+    <div class="ph">
+      <h3 style="color:var(--orange)">⚠️ Plats cuisine absents du restaurant ({{ manquants|length }})</h3>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Nom du plat cuisine</th><th>Catégorie</th><th>Prix vente</th><th>Statut</th></tr></thead>
+      <tbody>
+      {% for p in manquants %}
+      <tr>
+        <td style="font-weight:600;color:var(--orange)">{{ p.nom }}</td>
+        <td style="color:var(--muted)">{{ p.categorie.nom|default:"—" }}</td>
+        <td style="font-weight:700">{{ p.prix_vente|floatformat:0 }} F</td>
+        <td>
+          <span class="badge" style="background:#fffbeb;color:#d97706">{{ p.get_statut_display }}</span>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div></div>
+{% endblock %}

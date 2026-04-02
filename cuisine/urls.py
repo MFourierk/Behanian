@@ -70,4 +70,5 @@ urlpatterns = [
     path('api/ingredient/<int:pk>/prix/', views.get_ingredient_prix, name='get_ingredient_prix'),
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('api/commande/<int:pk>/lignes/', views.get_bc_lignes, name='get_bc_lignes'),
+    path('epuration/', views.epurer_plats, name='epuration'),
 ]
