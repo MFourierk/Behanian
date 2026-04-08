@@ -6,683 +6,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Dashboard - BEHANIAN{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+    <!-- Bibliothèques locales (offline compatible) -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/fontawesome.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/google-fonts.css' %}">
+    <!-- Styles Behanian centralisés -->
+    <link rel="stylesheet" href="{% static 'css/behanian.css' %}">
     <style>
-        /* HIDE ALL MESSAGES/ALERTS AS REQUESTED */
-        .alert, .messages, .success-message, .error-message, .warning-message {
-            display: none !important;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f6fa;
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: 260px; /* Reduced width */
-            background: #ffffff;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            left: 0;
-            top: 0;
-            z-index: 1000;
-            border-right: 1px solid rgba(0,0,0,0.05);
-            transition: width 0.3s ease;
-        }
-
-        .logo-section {
-            padding: 20px 15px;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            background: linear-gradient(to bottom, #ffffff, #fafafa);
-            position: relative; /* For toggle button */
-        }
-
-        .logo {
-            display: flex;
-            flex-direction: column; /* Stack vertically */
-            align-items: center;
-            justify-content: center;
-            gap: 0px; /* Reduced gap from 10px */
-            text-align: center;
-        }
-
-        .logo-icon {
-            width: 120px;
-            height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* Glamour touch: Gold border/shadow */
-            filter: drop-shadow(0 2px 4px rgba(212, 175, 55, 0.3));
-            transition: all 0.3s ease;
-        }
-
-        .logo-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .logo-text {
-            text-align: center;
-            margin-top: -20px; /* Negative margin to pull text closer to logo */
-        }
-
-        .logo-text h1 {
-            font-family: 'Playfair Display', serif; /* Glamour Font */
-            font-size: 20px;
-            font-weight: 700;
-            color: #2c3e50;
-            line-height: 1.1;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin: 0; /* Ensure no default margins */
-        }
-        
-        .logo-text h1 span {
-            color: #d4af37; /* Gold color for BEHANIAN or accents */
-            font-size: 24px;
-        }
-
-        .logo-text p {
-            font-size: 12px;
-            color: #95a5a6;
-            margin-top: 4px;
-            font-weight: 500;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .nav-menu {
-            flex: 1;
-            padding: 15px 10px;
-            overflow-y: auto;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            margin: 4px 0;
-            color: #5a6c7d;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s;
-            font-size: 16px; /* Increased from 14px */
-            font-weight: 500;
-            position: relative;
-        }
-
-        .nav-item:hover {
-            background: #fff8e1; /* Light gold tint */
-            color: #d4af37; /* Gold text */
-        }
-
-        .nav-item.active {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); /* Elegant Dark */
-            color: #d4af37; /* Gold Text */
-            box-shadow: 0 4px 10px rgba(44, 62, 80, 0.3);
-        }
-
-        .nav-item-icon {
-            font-size: 20px; /* Increased from 18px */
-            margin-right: 12px;
-            width: 24px;
-            text-align: center;
-        }
-
-        .user-section {
-            padding: 20px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: linear-gradient(to top, #ffffff, #fafafa);
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #d4af37; /* Gold */
-            font-size: 16px;
-            font-weight: 600;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .user-info h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 2px;
-            font-family: 'Playfair Display', serif;
-        }
-
-        .user-info p {
-            font-size: 11px;
-            color: #95a5a6;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .logout-btn {
-            margin-left: auto;
-            color: #ffffff;
-            background-color: #e74c3c;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-            text-decoration: none;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(231, 76, 60, 0.4);
-            margin-top: -8px; /* Lift up slightly */
-        }
-
-        .logout-btn:hover {
-            color: #ffffff;
-            background: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.5);
-        }
-
-        /* SIDEBAR COLLAPSED STATE */
-        .sidebar.collapsed {
-            width: 80px;
-        }
-
-        .sidebar.collapsed .logo-text,
-        .sidebar.collapsed .nav-text,
-        .sidebar.collapsed .user-info {
-            display: none;
-        }
-
-        .sidebar.collapsed .logo {
-            justify-content: center;
-            padding: 0;
-        }
-
-        .sidebar.collapsed .logo-icon {
-            width: 50px;
-            height: 50px;
-        }
-
-        .sidebar.collapsed .nav-item {
-            justify-content: center;
-            padding: 15px 0;
-        }
-
-        .sidebar.collapsed .nav-item-icon {
-            margin-right: 0;
-            font-size: 24px;
-        }
-
-        .sidebar.collapsed .user-section {
-            justify-content: center;
-            padding: 20px 0;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .sidebar.collapsed .user-avatar {
-             margin: 0;
-             width: 45px;
-             height: 45px;
-             font-size: 18px;
-        }
-
-        .sidebar.collapsed .logout-btn {
-            display: flex;
-            margin: 0 auto;
-            width: 40px;
-            height: 40px;
-            background: #e74c3c;
-            color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(231, 76, 60, 0.4);
-        }
-
-        .sidebar.collapsed ~ .main-content {
-            margin-left: 80px;
-        }
-        
-        /* Show tooltip on hover for collapsed items */
-        .sidebar.collapsed .nav-item {
-            position: relative;
-        }
-        
-        .sidebar.collapsed .nav-item:hover .nav-text {
-            display: block;
-            position: absolute;
-            left: 70px; /* Offset from sidebar */
-            top: 50%;
-            transform: translateY(-50%);
-            background: #2c3e50;
-            color: #d4af37;
-            padding: 8px 15px;
-            border-radius: 4px;
-            white-space: nowrap;
-            z-index: 1002;
-            box-shadow: 4px 4px 10px rgba(0,0,0,0.1);
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        /* Pointy arrow for tooltip */
-        .sidebar.collapsed .nav-item:hover .nav-text::before {
-            content: '';
-            position: absolute;
-            left: -5px;
-            top: 50%;
-            transform: translateY(-50%);
-            border-width: 5px 5px 5px 0;
-            border-style: solid;
-            border-color: transparent #2c3e50 transparent transparent;
-        }
-        
-        /* TOGGLE BUTTON */
-        .sidebar-toggle {
-            position: absolute;
-            top: 20px;
-            right: -15px;
-            width: 30px;
-            height: 30px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            border: 1px solid #eee;
-            z-index: 1001;
-            color: #5a6c7d;
-            transition: all 0.3s;
-        }
-        
-        .sidebar-toggle:hover {
-            color: #d4af37;
-            transform: scale(1.1);
-        }
-
-        /* Adjust main content margin to match new sidebar width */
-        .main-content {
-            margin-left: 260px;
-            flex: 1;
-            padding: 30px;
-            transition: margin-left 0.3s ease;
-        }
-
-        /* COMMON PAGE HEADER */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .page-title h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .page-datetime {
-            color: #95a5a6;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .btn-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: white;
-            border: 1px solid #dfe6e9;
-            border-radius: 10px;
-            color: #5a6c7d;
-            font-weight: 500;
-            font-size: 14px;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-action:hover {
-            background: #f8f9fa;
-            border-color: #b2bec3;
-            transform: translateY(-1px);
-        }
-
-        .btn-action.primary, .btn-action.btn-primary {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-            color: white;
-            border: none;
-        }
-        
-        .btn-action.primary:hover, .btn-action.btn-primary:hover {
-            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
-            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-        }
-
-        .btn-action.danger, .btn-action.btn-danger {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            color: white;
-            border: none;
-        }
-
-        .btn-action.danger:hover, .btn-action.btn-danger:hover {
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-        }
-
-        /* ACTION BAR & GLAM BUTTONS */
-        .action-bar {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 15px;
-            margin-bottom: 25px;
-            padding: 0 5px;
-        }
-
-        .btn-add-glam {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 20px;
-            background: white;
-            color: #d35400; /* Matching Restaurant/Glam theme */
-            border: 1px solid #e0e0e0;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-decoration: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
-        }
-
-        .btn-add-glam:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(211, 84, 0, 0.15);
-            border-color: #d35400;
-            color: #d35400;
-            text-decoration: none;
-        }
-
-        .back-link {
-            display: inline-block;
-            font-size: 1.5rem;
-            color: #a0aec0;
-            margin-top: 15px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        .back-link:hover {
-            color: #8e44ad;
-            transform: translateX(-3px);
-        }
-
-
-
-        /* GLOBAL BUTTON SPACING */
-        .btn i, .btn-action i, .btn-primary i, .btn-secondary i, .btn-danger i, .btn-success i, .btn-warning i, .btn-info i, button i, a.btn i, a[class*="btn"] i, .tab-btn i, .nav-item i, .stat-box i, .status-tab i {
-            margin-right: 8px !important;
-        }
-
-        /* WATERMARK & CLOCK STYLES */
-        .header-glam {
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 30px 40px;
-            border-radius: 20px;
-            color: white;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-glam::after {
-            position: absolute;
-            right: -20px;
-            bottom: -40px;
-            font-size: 150px;
-            opacity: 0.15;
-            transform: rotate(20deg);
-            z-index: 0;
-            pointer-events: none;
-            font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
-        }
-
-        /* Default watermark if none specified */
-        .header-glam::after { content: '🏢'; }
-
-        /* Specific watermarks per module with Gradients */
-        .header-glam.dashboard-watermark {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            box-shadow: 0 10px 25px rgba(44, 62, 80, 0.2);
-        }
-
-        .header-glam.dashboard-watermark::after {
-            content: '📊';
-            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header-glam.hotel-watermark {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-            box-shadow: 0 10px 25px rgba(41, 128, 185, 0.2);
-        }
-        .header-glam.hotel-watermark::after { content: '🏨'; }
-
-        .header-glam.restaurant-watermark {
-            background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
-            box-shadow: 0 10px 25px rgba(211, 84, 0, 0.2);
-        }
-        .header-glam.restaurant-watermark::after { content: '🍽️'; }
-
-        .header-glam.cuisine-watermark {
-            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
-            box-shadow: 0 10px 25px rgba(192, 57, 43, 0.2);
-        }
-        .header-glam.cuisine-watermark::after { content: '👨‍🍳'; }
-
-        .header-glam.bar-watermark {
-            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
-            box-shadow: 0 10px 25px rgba(142, 68, 173, 0.2);
-        }
-        .header-glam.bar-watermark::after { content: '🍷'; }
-
-        .header-glam.piscine-watermark {
-            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-            box-shadow: 0 10px 25px rgba(0, 184, 148, 0.2);
-        }
-        .header-glam.piscine-watermark::after { content: '🏊'; }
-
-        .header-glam.boite-watermark {
-            background: linear-gradient(135deg, #2c3e50 0%, #e91e63 100%); /* Dark to Pink for Nightclub */
-            box-shadow: 0 10px 25px rgba(233, 30, 99, 0.2);
-        }
-        .header-glam.boite-watermark::after { content: '🎵'; }
-
-        .header-glam.events-watermark {
-            background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
-            box-shadow: 0 10px 25px rgba(22, 160, 133, 0.2);
-        }
-        .header-glam.events-watermark::after { content: '📅'; }
-
-        .header-glam.caisse-watermark {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            box-shadow: 0 10px 25px rgba(39, 174, 96, 0.2);
-        }
-        .header-glam.caisse-watermark::after { content: '💰'; }
-
-        .header-glam.facturation-watermark {
-            background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%);
-            box-shadow: 0 10px 25px rgba(127, 140, 141, 0.2);
-        }
-        .header-glam.facturation-watermark::after { content: '🧾'; }
-
-        .header-glam.params-watermark {
-            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
-            box-shadow: 0 10px 25px rgba(44, 62, 80, 0.2);
-        }
-        .header-glam.params-watermark::after { content: '⚙️'; }
-
-        .header-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .header-clock {
-            position: relative;
-            z-index: 1;
-            text-align: right;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-            background: rgba(0,0,0,0.1);
-            padding: 8px 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .header-clock .time {
-            font-size: 1.4rem;
-            font-weight: 700;
-            display: block;
-            line-height: 1.2;
-        }
-
-        .header-clock .date {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.9;
-        }
-
-        /* --- STYLES POUR ASCENSEURS --- */
-        .scrollable {
-            max-height: 60vh; /* Hauteur max de 60% de la fenêtre */
-            overflow-y: auto;
-        }
-
-        #commandes-en-cours, #commandes-pretes, #commandes-servies, #commandes-annulees {
-            max-height: 75vh;
-            overflow-y: auto;
-            padding-right: 15px;
-        }
-        /* --- FIN STYLES ASCENSEURS --- */
-
-        /* STYLES POUR LES MODALES */
-        .modal-content {
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        .modal-header {
-            border-bottom: 1px solid #f0f0f0;
-            padding: 1.25rem 1.5rem;
-        }
-        .modal-header .btn-close {
-            background: none;
-            border: none;
-            box-shadow: none;
-            font-size: 1.2rem;
-            opacity: 0.7;
-            transition: all 0.2s ease;
-        }
-        .modal-header .btn-close:hover {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-        .modal-title {
-            font-weight: 600;
-            color: #2c3e50;
-            font-family: 'Playfair Display', serif;
-        }
-        .modal-body {
-            padding: 1.5rem;
-        }
-        .modal-body .form-group {
-            margin-bottom: 1.25rem;
-        }
-        .modal-body label {
-            font-weight: 500;
-            color: #5a6c7d;
-            margin-bottom: .5rem;
-            font-size: 14px;
-        }
-        .modal-footer {
-            border-top: 1px solid #f0f0f0;
-            padding: 1rem 1.5rem;
-            gap: 10px;
-        }
-        .modal-footer .btn-secondary {
-            background-color: #f0f2f5;
-            border-color: #f0f2f5;
-            color: #5a6c7d;
-            font-weight: 600;
-        }
-        .modal-footer .btn-secondary:hover {
-            background-color: #e4e6e9;
-            border-color: #e4e6e9;
-        }
-        .modal-footer .btn-primary {
-            background-color: #f39c12;
-            border-color: #f39c12;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .modal-footer .btn-primary:hover {
-            background-color: #e67e22;
-            border-color: #e67e22;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
-        }
-
-
+        /* Styles additionnels par template — voir behanian.css pour les styles globaux */
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -708,18 +39,18 @@
 
         <nav class="nav-menu">
             <a href="{% url 'dashboard:index' %}" class="nav-item {% if request.resolver_match.url_name == 'index' and request.resolver_match.app_name == 'dashboard' %}active{% endif %}">
-                <span class="nav-item-icon">📊</span>
+                <span class="nav-item-icon"><i class="fas fa-chart-line"></i></span>
                 <span class="nav-text">Dashboard</span>
             </a>
             {% if 'hotel' in accessible_modules %}
             <a href="{% url 'hotel:index' %}" class="nav-item {% if request.resolver_match.app_name == 'hotel' %}active{% endif %}">
-                <span class="nav-item-icon">🏨</span>
+                <span class="nav-item-icon"><i class="fas fa-hotel"></i></span>
                 <span class="nav-text">Hôtel</span>
             </a>
             {% endif %}
             {% if 'restaurant' in accessible_modules %}
-            <a href="{% url 'restaurant:index' %}" class="nav-item {% if request.resolver_match.app_name == 'restaurant' and request.resolver_match.url_name == 'index' %}active{% endif %}">
-                <span class="nav-item-icon">🍽️</span>
+            <a href="{% url 'restaurant:index' %}" class="nav-item {% if request.resolver_match.app_name == 'restaurant' %}active{% endif %}">
+                <span class="nav-item-icon"><i class="fas fa-utensils"></i></span>
                 <span class="nav-text">Restaurant</span>
             </a>
             <a href="{% url 'restaurant:reservation_list' %}" class="nav-item {% if request.resolver_match.url_name == 'reservation_list' %}active{% endif %}" style="padding-left:42px;font-size:12px">
@@ -729,43 +60,43 @@
             {% endif %}
             {% if 'cuisine' in accessible_modules %}
             <a href="{% url 'cuisine:index' %}" class="nav-item {% if request.resolver_match.app_name == 'cuisine' %}active{% endif %}">
-                <span class="nav-item-icon">👨‍🍳</span>
+                <span class="nav-item-icon"><i class="fas fa-hat-chef"></i></span>
                 <span class="nav-text">Cuisine</span>
             </a>
             {% endif %}
             {% if 'bar' in accessible_modules %}
             <a href="{% url 'bar:dashboard' %}" class="nav-item {% if request.resolver_match.app_name == 'bar' %}active{% endif %}">
-                <span class="nav-item-icon">🍷</span>
+                <span class="nav-item-icon"><i class="fas fa-wine-glass"></i></span>
                 <span class="nav-text">Cave</span>
             </a>
             {% endif %}
             {% if 'piscine' in accessible_modules %}
             <a href="{% url 'piscine:index' %}" class="nav-item {% if request.resolver_match.app_name == 'piscine' %}active{% endif %}">
-                <span class="nav-item-icon">🏊</span>
+                <span class="nav-item-icon"><i class="fas fa-person-swimming"></i></span>
                 <span class="nav-text">Piscine</span>
             </a>
             {% endif %}
             {% if 'espaces' in accessible_modules %}
             <a href="{% url 'espaces_evenementiels:index' %}" class="nav-item {% if request.resolver_match.app_name == 'espaces_evenementiels' %}active{% endif %}">
-                <span class="nav-item-icon">📅</span>
+                <span class="nav-item-icon"><i class="fas fa-calendar-days"></i></span>
                 <span class="nav-text">Espaces Location</span>
             </a>
             {% endif %}
             {% if 'facturation' in accessible_modules %}
             <a href="{% url 'facturation:index' %}" class="nav-item {% if request.resolver_match.app_name == 'facturation' %}active{% endif %}">
-                <span class="nav-item-icon">🧾</span>
+                <span class="nav-item-icon"><i class="fas fa-file-invoice"></i></span>
                 <span class="nav-text">Facturation</span>
             </a>
             {% endif %}
             {% if 'caisse' in accessible_modules %}
             <a href="{% url 'caisse:index' %}" class="nav-item {% if request.resolver_match.app_name == 'caisse' %}active{% endif %}">
-                <span class="nav-item-icon">💰</span>
+                <span class="nav-item-icon"><i class="fas fa-cash-register"></i></span>
                 <span class="nav-text">Caisse</span>
             </a>
             {% endif %}
             {% if 'parametres' in accessible_modules %}
             <a href="{% url 'parametres:parametres_index' %}" class="nav-item {% if request.resolver_match.app_name == 'parametres' or 'parametres' in request.path %}active{% endif %}">
-                <span class="nav-item-icon">⚙️</span>
+                <span class="nav-item-icon"><i class="fas fa-gear"></i></span>
                 <span class="nav-text">Paramétrage</span>
             </a>
             {% endif %}
@@ -777,7 +108,7 @@
                 <h4>{{ user.get_full_name|default:user.username }}</h4>
                 <p>{{ user_role }}</p>
             </div>
-            <a href="{% url 'logout' %}" class="logout-btn" title="Se déconnecter">↗️</a>
+            <a href="{% url 'logout' %}" class="logout-btn" title="Se déconnecter"><i class="fas fa-right-from-bracket"></i></a>
         </div>
     </div>
 
@@ -796,10 +127,10 @@
         {% block content %}{% endblock %}
     </div>
     <!-- SCRIPTS -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Scripts locaux (offline compatible) -->
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/chart.min.js' %}"></script>
     <script>
         function updateClock() {
             const now = new Date();
