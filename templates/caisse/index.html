@@ -92,7 +92,9 @@
       <button class="btn-a btn-or" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus-circle"></i> Mouvement</button>
       <button class="btn-a btn-bleu" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-university"></i> Banque</button>
       <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport</button>
-      {% if session_active.type_caisse != 'centrale' %}
+      {% if session_active.type_caisse == 'centrale' %}
+      <button class="btn-a btn-dark" id="btnSync" onclick="syncCentrale()"><i class="fas fa-sync-alt"></i> Synchroniser</button>
+      {% else %}
       <button class="btn-a btn-violet" onclick="ouvrirModal('modalVersement')"><i class="fas fa-exchange-alt"></i> Verser à la caisse</button>
       {% endif %}
       <button class="btn-a btn-rouge" onclick="ouvrirModal('modalCloturer')"><i class="fas fa-lock"></i> Clôturer</button>
@@ -108,7 +110,9 @@
         {% if sessions_jour %}Journée terminée · {{ stats.total|floatformat:0 }} F encaissés{% else %}Aucune session aujourd'hui{% endif %}
       </div>
     </div>
+    {% if can_open_caisse %}
     <button class="btn-a btn-vert" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir la caisse</button>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -144,7 +148,9 @@
       <div style="font-size:13px;font-weight:700;color:#9a3412">Caisse non ouverte</div>
       <div style="font-size:12px;color:#c2410c">Aucune opération ne peut être enregistrée. Veuillez ouvrir la caisse avant de commencer.</div>
     </div>
+    {% if can_open_caisse %}
     <button class="btn-a btn-vert" style="margin-left:auto" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir maintenant</button>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -702,6 +708,15 @@ async function enregistrerVersement(){
 
 function ouvrirRapport(){
   window.open("{% url 'caisse:rapport' %}", '_blank', 'width=800,height=900');
+}
+
+async function syncCentrale(){
+  const btn = document.getElementById('btnSync');
+  if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Sync...'; }
+  const d = await post("{% url 'caisse:sync' %}", {});
+  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Synchroniser'; }
+  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
+  else toast('❌ '+d.error,'error');
 }
 </script>
 {% endblock %}

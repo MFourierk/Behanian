@@ -5,7 +5,7 @@
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
-{% breadcrumb "Cave / Bar" "bar:dashboard" "Réception" "" %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Gestion de stock" "bar:stock_management" "Bon de réception" "" %}
 <style>
     .page-header {
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
@@ -71,10 +71,6 @@
 </style>
 
 <div class="container-fluid py-4">
-
-    <a href="/bar/stock/?tab=reception" class="back-link">
-        <i class="fas fa-chevron-left"></i> Retour aux bons de réception
-    </a>
 
     <div class="page-header">
         <div>
@@ -211,7 +207,7 @@
 
         <!-- ACTIONS -->
         <div class="actions-bar">
-            <a href="/bar/stock/?tab=reception" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+            <a href="{% url 'bar:stock_management' %}" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
             <button type="submit" class="btn-save" onclick="document.querySelector('[name=statut]').value='brouillon'">
                 <i class="fas fa-save"></i> Enregistrer en brouillon
             </button>

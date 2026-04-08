@@ -23,7 +23,7 @@ _RULES = [
     (['Manager Cuisine'],                                  ['cuisine']),
     (['Réceptionniste', 'Receptionniste'],                 ['hotel']),
     (['Caissière / Caissier', 'Caissiere / Caissier'],    ['restaurant', 'bar', 'piscine', 'espaces']),
-    (['Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)'], ['caisse']),
+    (['Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)', 'Responsable Caisse'], ['caisse']),
     (['Serveuse/Serveur'],                                 []),
 ]
 for _names, _modules in _RULES:

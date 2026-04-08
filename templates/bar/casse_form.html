@@ -5,7 +5,7 @@
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
-{% breadcrumb "Cave / Bar" "bar:dashboard" "Casse" "" %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Gestion de stock" "bar:stock_management" "Casse" "" %}
 <style>
     .page-header { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(231,76,60,0.25); }
     .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
@@ -53,8 +53,6 @@
 </style>
 
 <div class="container-fluid py-4">
-    <a href="/bar/stock/?tab=casses" class="back-link"><i class="fas fa-chevron-left"></i> Retour aux casses</a>
-
     <div class="page-header">
         <div>
             <h2><i class="fas fa-exclamation-triangle mr-2"></i> {{ page_title }}</h2>
@@ -170,7 +168,7 @@
 
         <!-- Actions -->
         <div class="actions-bar">
-            <a href="/bar/stock/?tab=casses" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+            <a href="{% url 'bar:stock_management' %}" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
             <button type="submit" class="btn-save">
                 <i class="fas fa-save"></i> Enregistrer (en attente)
             </button>

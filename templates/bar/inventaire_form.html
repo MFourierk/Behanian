@@ -5,7 +5,7 @@
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
-{% breadcrumb "Cave / Bar" "bar:dashboard" "Inventaire" "" %}
+{% breadcrumb "Cave / Bar" "bar:dashboard" "Gestion de stock" "bar:stock_management" "Inventaire" "" %}
 <style>
     .page-header { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2); }
     .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
@@ -48,8 +48,6 @@
 </style>
 
 <div class="container-fluid py-4">
-    <a href="/bar/stock/?tab=inventaire" class="back-link"><i class="fas fa-chevron-left"></i> Retour aux inventaires</a>
-
     <div class="page-header">
         <div>
             <h2><i class="fas fa-clipboard-list mr-2"></i> {{ page_title }}</h2>
@@ -178,7 +176,7 @@
                 <div class="lbl">Valeur totale écarts</div>
             </div>
             <div style="display:flex;gap:10px;">
-                <a href="/bar/stock/?tab=inventaire" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+                <a href="{% url 'bar:stock_management' %}" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
                 <button type="submit" class="btn-save"><i class="fas fa-save"></i> Enregistrer</button>
                 <button type="submit" class="btn-save btn-valider" onclick="document.querySelector('[name=statut]').value='valide';return confirm('Valider et ajuster le stock immédiatement ?')">
                     <i class="fas fa-check"></i> Valider & Ajuster

@@ -10,7 +10,7 @@ class CaisseSession(models.Model):
     TYPE_CHOICES = [
         ('hotel',    'Caisse Hôtel (Réception)'),
         ('module',   'Caisse Module (Restaurant/Cave/Piscine/Espaces)'),
-        ('centrale', 'Caisse Centrale (Manager)'),
+        ('centrale', 'Caisse Centrale (Caissière Principale)'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='caisse_sessions')

@@ -373,20 +373,58 @@
       <div class="form-row"><label>Date début *</label><input type="date" id="resDateDebut" onchange="calculerPrix()"></div>
       <div class="form-row" id="rowDateFin"><label>Date fin *</label><input type="date" id="resDateFin" onchange="calculerPrix()"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label>Nb personnes</label><input type="number" id="resNbPersonnes" value="1" min="1"></div>
-      <div class="form-row"><label>Remise (FCFA)</label><input type="number" id="resRemise" value="0" min="0" onchange="calculerPrix()"></div>
-      <div class="form-row"><label>Avance (FCFA)</label><input type="number" id="resAvance" value="0" min="0"></div>
+      <div class="form-row"><label>Avance perçue (FCFA)</label><input type="number" id="resAvance" value="0" min="0"></div>
     </div>
-    <div class="form-row"><label>Commentaire</label><textarea id="resCommentaire" rows="2" style="resize:vertical"></textarea></div>
+    <!-- Remise manuelle FCFA ou % -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row">
+        <label style="display:flex;align-items:center;gap:8px">Remise
+          <span style="display:flex;border:1px solid #d4dce8;border-radius:6px;overflow:hidden;font-size:10px;font-weight:700">
+            <button type="button" id="btnRemiseFcfa" onclick="setRemiseMode('fcfa')" style="padding:2px 8px;border:none;background:#1a2535;color:white;cursor:pointer">FCFA</button>
+            <button type="button" id="btnRemisePct" onclick="setRemiseMode('pct')" style="padding:2px 8px;border:none;background:white;color:#7a8b9c;cursor:pointer">%</button>
+          </span>
+        </label>
+        <input type="hidden" id="resRemiseMode" value="fcfa">
+        <input type="number" id="resRemise" value="0" min="0" step="100" onchange="calculerPrix()" placeholder="0">
+      </div>
+      <div class="form-row"><label>Commentaire</label><textarea id="resCommentaire" rows="1" style="resize:none;height:38px"></textarea></div>
+    </div>
+
+    <!-- Prix calculé détaillé -->
     <div class="prix-box" id="prixEstimate" style="display:none">
-      <div class="lbl">Prix estimé</div>
+      <div class="lbl">Tarification</div>
+      <div id="prixDetail" style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:6px;line-height:1.8;text-align:left"></div>
       <div class="amt" id="prixEstimateVal">0 F</div>
       <div class="sub" id="prixEstimateSub"></div>
     </div>
+
+    <!-- Tarif personnalisé (override caissière) -->
+    <div style="margin-bottom:12px">
+      <button type="button" id="btnTarifCustom" onclick="toggleTarifCustom()"
+        style="width:100%;padding:8px 14px;border-radius:9px;border:1.5px dashed #d4dce8;background:#f8fafc;color:#64748b;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="fas fa-pencil-alt"></i> Appliquer un tarif personnalisé
+      </button>
+      <div id="rowTarifCustom" style="display:none;margin-top:10px;background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:14px">
+        <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Tarif spécial — Saisie libre</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-row" style="margin:0">
+            <label style="color:#92400e">Montant total (FCFA) *</label>
+            <input type="number" id="resPrixCustom" min="0" step="100" onchange="calculerPrix()" style="border-color:#fed7aa">
+          </div>
+          <div class="form-row" style="margin:0">
+            <label style="color:#92400e">Motif * <span style="font-weight:400;font-size:10px">(obligatoire)</span></label>
+            <input type="text" id="resMotifTarif" placeholder="Ex: Client VIP, accord négocié…" style="border-color:#fed7aa">
+          </div>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" id="resTarifCustomMode" value="0">
+
     <div style="display:flex;gap:10px">
       <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalReservation')">Annuler</button>
-      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerReservation()"><i class="fas fa-check"></i> Confirmer</button>
+      <button class="btn-p btn-success" style="flex:2;justify-content:center;padding:10px;font-size:13px" onclick="confirmerReservation()"><i class="fas fa-check"></i> Confirmer la réservation</button>
     </div>
   </div>
 </div>
@@ -616,11 +654,16 @@ function renderCalendrier(){
 
 // ── Réservation ──
 function ouvrirModalReservation(espaceId=null,resHotelId=null){
-  ['resNomClient','resTelephone','resTypeEvenement','resDateDebut','resDateFin','resCommentaire'].forEach(id=>document.getElementById(id).value='');
+  ['resNomClient','resTelephone','resTypeEvenement','resDateDebut','resDateFin','resCommentaire','resPrixCustom','resMotifTarif'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('resNbPersonnes').value=1;
   document.getElementById('resRemise').value=0;
   document.getElementById('resAvance').value=0;
   document.getElementById('prixEstimate').style.display='none';
+  document.getElementById('resTarifCustomMode').value='0';
+  document.getElementById('rowTarifCustom').style.display='none';
+  document.getElementById('btnTarifCustom').style.borderColor='#d4dce8';
+  document.getElementById('btnTarifCustom').style.color='#64748b';
+  setRemiseMode('fcfa');
   document.getElementById('resReservationHotelId').value='';
   document.querySelectorAll('.res-card').forEach(c=>c.classList.remove('selected'));
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
@@ -651,6 +694,7 @@ function setTypeClient(type,el){
   document.getElementById('rowClientInfo').style.display=isH?'none':'';
   document.getElementById('resReservationHotelId').value='';
   document.getElementById('resNomClient').value='';
+  calculerPrix(); // recalcule pour appliquer/retirer la réduction résident
 }
 function selectionnerResident(sel){
   const opt=sel.options[sel.selectedIndex];
@@ -664,6 +708,36 @@ function setDuree(type,el){
   document.getElementById('rowDateFin').style.display=type==='journee'?'':'none';
   calculerPrix();
 }
+/* ── Remise mode FCFA / % ── */
+function setRemiseMode(mode){
+  document.getElementById('resRemiseMode').value=mode;
+  const fcfa=document.getElementById('btnRemiseFcfa');
+  const pct=document.getElementById('btnRemisePct');
+  fcfa.style.background=mode==='fcfa'?'#1a2535':'white';
+  fcfa.style.color=mode==='fcfa'?'white':'#7a8b9c';
+  pct.style.background=mode==='pct'?'#1a2535':'white';
+  pct.style.color=mode==='pct'?'white':'#7a8b9c';
+  document.getElementById('resRemise').placeholder=mode==='pct'?'0 %':'0';
+  document.getElementById('resRemise').value=0;
+  calculerPrix();
+}
+
+/* ── Tarif personnalisé toggle ── */
+function toggleTarifCustom(){
+  const on=document.getElementById('resTarifCustomMode').value==='1';
+  const newOn=!on;
+  document.getElementById('resTarifCustomMode').value=newOn?'1':'0';
+  document.getElementById('rowTarifCustom').style.display=newOn?'':'none';
+  const btn=document.getElementById('btnTarifCustom');
+  btn.style.borderColor=newOn?'#f97316':'#d4dce8';
+  btn.style.color=newOn?'#ea580c':'#64748b';
+  btn.style.background=newOn?'#fff7ed':'#f8fafc';
+  btn.innerHTML=newOn?'<i class="fas fa-times"></i> Annuler le tarif personnalisé':'<i class="fas fa-pencil-alt"></i> Appliquer un tarif personnalisé';
+  if(!newOn){document.getElementById('resPrixCustom').value='';document.getElementById('resMotifTarif').value='';}
+  calculerPrix();
+}
+
+/* ── Calcul prix ERP ── */
 function calculerPrix(){
   const sel=document.getElementById('resEspaceId');
   const opt=sel.options[sel.selectedIndex];
@@ -672,21 +746,60 @@ function calculerPrix(){
   const debut=document.getElementById('resDateDebut').value;
   const fin=document.getElementById('resDateFin').value;
   const type=document.getElementById('resTypeDuree').value;
-  const remise=parseFloat(document.getElementById('resRemise').value)||0;
+  const typeClient=document.getElementById('resTypeClient').value;
+  const remiseVal=parseFloat(document.getElementById('resRemise').value)||0;
+  const remiseMode=document.getElementById('resRemiseMode').value;
+  const customMode=document.getElementById('resTarifCustomMode').value==='1';
+  const prixCustom=parseFloat(document.getElementById('resPrixCustom')?.value||0);
+
   if(!prixJ||!debut){document.getElementById('prixEstimate').style.display='none';return;}
-  let total=0,label='';
+
+  let prixBase=0,jours=1,lignes=[];
+
   if(type==='journee'){
     if(!fin){document.getElementById('prixEstimate').style.display='none';return;}
-    const jours=Math.max(1,Math.ceil((new Date(fin)-new Date(debut))/86400000)+1);
-    total=jours*prixJ;label=`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)}`;
+    jours=Math.max(1,Math.ceil((new Date(fin)-new Date(debut))/86400000)+1);
+    prixBase=jours*prixJ;
+    lignes.push(`${jours} jour${jours>1?'s':''} × ${fmt(prixJ)} = ${fmt(prixBase)}`);
   } else {
-    total=prixDemi;label=type==='demi_matin'?'Demi-journée matin (8h–13h)':'Demi-journée après-midi (14h–18h)';
+    prixBase=prixDemi;
+    lignes.push(type==='demi_matin'?`Demi-journée matin (8h–13h) = ${fmt(prixBase)}`:`Demi-journée après-midi (14h–18h) = ${fmt(prixBase)}`);
   }
-  const net=total-remise;
+
+  // Discounts automatiques ERP
+  let discountAuto=0,discountLabel='';
+  if(type==='journee'){
+    if(jours>=6){discountAuto=prixBase*0.15;discountLabel=`Dégressif 6j+ : -15% (-${fmt(discountAuto)})`;}
+    else if(jours>=3){discountAuto=prixBase*0.10;discountLabel=`Dégressif 3j+ : -10% (-${fmt(discountAuto)})`;}
+  }
+  if(typeClient==='heberge'){
+    const resDiscount=prixBase*0.15;
+    if(resDiscount>discountAuto){discountAuto=resDiscount;discountLabel=`Tarif résident hôtel : -15% (-${fmt(discountAuto)})`;}
+  }
+  if(discountLabel) lignes.push(`<span style="color:#4ade80">${discountLabel}</span>`);
+  let prixApresDiscount=prixBase-discountAuto;
+
+  // Remise manuelle
+  let remiseFcfa=0;
+  if(remiseVal>0){
+    remiseFcfa=remiseMode==='pct'?prixApresDiscount*remiseVal/100:remiseVal;
+    lignes.push(`<span style="color:#fbbf24">Remise ${remiseMode==='pct'?remiseVal+'%':''}: -${fmt(remiseFcfa)}</span>`);
+  }
+  let prixNet=prixApresDiscount-remiseFcfa;
+
+  // Override tarif personnalisé
+  if(customMode&&prixCustom>0){
+    prixNet=prixCustom;
+    lignes=[];
+    lignes.push(`<span style="color:#fb923c">⚡ Tarif personnalisé : ${fmt(prixCustom)}</span>`);
+  }
+
   document.getElementById('prixEstimate').style.display='';
-  document.getElementById('prixEstimateVal').textContent=fmt(net);
-  document.getElementById('prixEstimateSub').textContent=label+(remise>0?' — remise '+fmt(remise):'');
+  document.getElementById('prixDetail').innerHTML=lignes.join('<br>');
+  document.getElementById('prixEstimateVal').textContent=fmt(prixNet);
+  document.getElementById('prixEstimateSub').textContent='Prix net à facturer';
 }
+
 async function confirmerReservation(){
   const espaceId=document.getElementById('resEspaceId').value;
   const nomClient=document.getElementById('resNomClient').value.trim();
@@ -697,28 +810,51 @@ async function confirmerReservation(){
   const dateDebut=document.getElementById('resDateDebut').value;
   const dateFin=document.getElementById('resDateFin').value;
   const resHotelId=document.getElementById('resReservationHotelId').value;
+  const customMode=document.getElementById('resTarifCustomMode').value==='1';
+  const prixCustom=document.getElementById('resPrixCustom')?.value||'';
+  const motifTarif=document.getElementById('resMotifTarif')?.value.trim()||'';
+  const remiseMode=document.getElementById('resRemiseMode').value;
+  const remiseVal=parseFloat(document.getElementById('resRemise').value)||0;
+
   if(!espaceId){toast('❌ Veuillez sélectionner un espace','error');return;}
   if(!nomClient){toast('❌ Nom du client requis','error');return;}
   if(!typeEvenement){toast("❌ Type d'événement requis",'error');return;}
   if(!dateDebut){toast('❌ Date de début requise','error');return;}
   if(typeDuree==='journee'&&!dateFin){toast('❌ Date de fin requise','error');return;}
+  if(customMode&&(!prixCustom||parseFloat(prixCustom)<=0)){toast('❌ Montant du tarif personnalisé requis','error');return;}
+  if(customMode&&!motifTarif){toast('❌ Motif du tarif personnalisé obligatoire','error');return;}
+
+  // Calculer remise en FCFA finale à envoyer
+  let remiseFcfa=0;
+  if(remiseVal>0&&remiseMode==='pct'){
+    // On envoie le % séparément, le serveur calcule
+    remiseFcfa=0;
+  } else {
+    remiseFcfa=remiseVal;
+  }
+
   try{
     const r=await fetch("{% url 'espaces_evenementiels:api_reserver' %}",{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({espace_id:espaceId,nom_client:nomClient,type_client:typeClient,telephone,
-        type_evenement:typeEvenement,type_duree:typeDuree,
-        date_debut:dateDebut+'T00:00:00',date_fin:dateFin?dateFin+'T23:59:59':dateDebut+'T23:59:59',
+      body:JSON.stringify({
+        espace_id:espaceId, nom_client:nomClient, type_client:typeClient, telephone,
+        type_evenement:typeEvenement, type_duree:typeDuree,
+        date_debut:dateDebut+'T00:00:00',
+        date_fin:dateFin?dateFin+'T23:59:59':dateDebut+'T23:59:59',
         nombre_personnes:document.getElementById('resNbPersonnes').value,
-        remise:document.getElementById('resRemise').value||0,
+        remise:remiseFcfa,
+        remise_pct:remiseMode==='pct'?remiseVal:0,
         avance:document.getElementById('resAvance').value||0,
         commentaire:document.getElementById('resCommentaire').value,
-        reservation_hotel_id:resHotelId||null})
+        reservation_hotel_id:resHotelId||null,
+        prix_custom:customMode?prixCustom:'',
+        motif_tarif:motifTarif,
+      })
     });
     const d=await r.json();
     if(d.success){
       fermerModal('modalReservation');
       toast('✅ '+d.message,'success');
-      // Imprimer reçu automatiquement
       if(d.reservation_id){
         setTimeout(()=>window.open(`/espaces-evenementiels/recu/${d.reservation_id}/`,'_blank','width=500,height=700'),500);
       }

@@ -44,9 +44,11 @@
 .fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);box-sizing:border-box}
 .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--rouge)}
 /* DATE FILTRE */
-.date-nav{display:flex;align-items:center;gap:10px}
-.date-nav a{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--dark);font-size:14px}
+.date-nav{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:nowrap}
+.date-nav a{height:30px;border-radius:8px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--dark);font-size:14px;white-space:nowrap;padding:0 10px}
+.date-nav a.arr{width:30px;padding:0}
 .date-nav a:hover{background:var(--rouge);color:white}
+.ph{flex-wrap:nowrap;gap:12px}
 /* TIMELINE */
 .timeline-slot{display:flex;gap:12px;padding:10px 16px;border-bottom:1px solid #f0f3f7;align-items:flex-start}
 .timeline-slot:last-child{border-bottom:none}

@@ -85,6 +85,11 @@ def api_reserver(request):
         commentaire = data.get('commentaire', '')
         reservation_hotel_id = data.get('reservation_hotel_id')
 
+        # Champs tarification professionnelle
+        prix_custom   = data.get('prix_custom')   # override manuel de la caissière
+        motif_tarif   = data.get('motif_tarif', '').strip()
+        remise_pct    = Decimal(str(data.get('remise_pct', 0)))  # remise en %
+
         if not all([espace_id, nom_client, date_str]):
             return JsonResponse({'success': False, 'error': 'Champs requis manquants'})
 
@@ -93,30 +98,59 @@ def api_reserver(request):
         from django.utils.dateparse import parse_datetime
         from datetime import datetime, time
 
-        # Calculer dt_debut et dt_fin selon type_duree
-        date_base_str = date_str.split('T')[0]  # extraire YYYY-MM-DD
-        
+        # ── Calcul dates et prix de base ──────────────────────────────────
+        date_base_str = date_str.split('T')[0]
+
         if type_duree == 'journee':
-            # date_debut → date_fin (plusieurs jours possibles)
             dt_debut = parse_datetime(date_str) or parse_datetime(date_base_str + 'T00:00:00')
             dt_fin = parse_datetime(date_fin_str) if date_fin_str else parse_datetime(date_base_str + 'T23:59:59')
             if not dt_debut or not dt_fin or dt_fin <= dt_debut:
                 return JsonResponse({'success': False, 'error': 'Dates invalides'})
             jours = max(1, (dt_fin.date() - dt_debut.date()).days + 1)
-            prix_total = Decimal(str(jours)) * espace.prix_jour
+            prix_base = Decimal(str(jours)) * espace.prix_jour
 
         elif type_duree == 'demi_matin':
             dt_debut = parse_datetime(date_base_str + 'T08:00:00')
             dt_fin   = parse_datetime(date_base_str + 'T13:00:00')
-            prix_total = espace.prix_demi_journee or (espace.prix_jour * Decimal('0.65'))
+            jours = 1
+            prix_base = espace.prix_demi_journee or (espace.prix_jour * Decimal('0.65'))
 
         elif type_duree == 'demi_aprem':
             dt_debut = parse_datetime(date_base_str + 'T14:00:00')
             dt_fin   = parse_datetime(date_base_str + 'T18:00:00')
-            prix_total = espace.prix_demi_journee or (espace.prix_jour * Decimal('0.65'))
+            jours = 1
+            prix_base = espace.prix_demi_journee or (espace.prix_jour * Decimal('0.65'))
 
         else:
             return JsonResponse({'success': False, 'error': 'Type de durée invalide'})
+
+        # ── Tarification ERP : discounts automatiques ─────────────────────
+        # 1. Dégressif multi-jours (journée uniquement)
+        discount_auto = Decimal('0')
+        if type_duree == 'journee':
+            if jours >= 6:
+                discount_auto = prix_base * Decimal('0.15')
+            elif jours >= 3:
+                discount_auto = prix_base * Decimal('0.10')
+
+        # 2. Tarif résident hôtel (-15% si supérieur au dégressif)
+        if type_client == 'heberge':
+            resident_discount = prix_base * Decimal('0.15')
+            if resident_discount > discount_auto:
+                discount_auto = resident_discount
+
+        # 3. Remise en pourcentage (champ manuel)
+        if remise_pct > 0:
+            remise = remise + (prix_base * remise_pct / Decimal('100'))
+
+        # Prix après discounts automatiques (avant remise manuelle)
+        prix_total = prix_base - discount_auto
+
+        # ── Override prix libre par la caissière ─────────────────────────
+        if prix_custom and Decimal(str(prix_custom)) > 0:
+            prix_total = Decimal(str(prix_custom))
+            trace = f"[Tarif personnalisé — {motif_tarif or 'Non précisé'}]"
+            commentaire = f"{trace}\n{commentaire}" if commentaire else trace
 
         # Vérifier chevauchement
         chevauchements = ReservationEspace.objects.filter(

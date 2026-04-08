@@ -122,10 +122,23 @@ def index(request):
     ).select_related('cree_par').order_by('-date')
 
     solde_veille, last_session = get_solde_veille()
+
+    # Peut ouvrir une caisse (les gestionnaires en lecture seule ne peuvent pas)
+    can_open_caisse = (
+        request.user.is_superuser or
+        any(g in list(request.user.groups.values_list('name', flat=True)) for g in [
+            'Responsable Caisse', 'Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)',
+            'Manager Général(e)', 'Manager General(e)',
+            'Réceptionniste', 'Receptionniste', 'Responsable Hôtel',
+            'Caissière / Caissier', 'Caissiere / Caissier',
+        ])
+    )
+
     context = {
         'today': today,
         'session_active': session_active,
         'is_manager': is_manager,
+        'can_open_caisse': can_open_caisse,
         'stats': stats,
         'sessions_jour': sessions_jour,
         'mouvements': mouvements,
@@ -136,18 +149,34 @@ def index(request):
     return render(request, 'caisse/index.html', context)
 
 
+
+# Groupes autorisés à ouvrir la caisse centrale
+# Règle ERP hôtellerie : caissière principale (rôle dédié) + manager général (suppléant)
+GROUPES_CAISSE_CENTRALE = [
+    'Responsable Caisse',
+    'Caissier(ère) Principal(e)',
+    'Caissier(ere) Principal(e)',
+    'Manager Général(e)',
+    'Manager General(e)',
+]
+
+def _get_type_caisse(user):
+    """Retourne le type de caisse attendu selon le rôle de l'utilisateur."""
+    if user.is_superuser:
+        return 'centrale'
+    groups = list(user.groups.values_list('name', flat=True))
+    if any(g in groups for g in GROUPES_CAISSE_CENTRALE):
+        return 'centrale'
+    if any(g in groups for g in ['Réceptionniste', 'Receptionniste', 'Responsable Hôtel']):
+        return 'hotel'
+    return 'module'
+
+
 @require_module_access('caisse')
 @require_POST
 def ouvrir_caisse(request):
-    # Vérifier si l'utilisateur a déjà UNE SESSION DU MÊME TYPE ouverte
-    # (Un Manager peut ouvrir la centrale même si une autre session hotel/module est ouverte par d'autres)
     user_groups = list(request.user.groups.values_list('name', flat=True))
-    if request.user.is_superuser or any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
-        type_attendu = 'centrale'
-    elif 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
-        type_attendu = 'hotel'
-    else:
-        type_attendu = 'module'
+    type_attendu = _get_type_caisse(request.user)
 
     session = CaisseSession.objects.filter(user=request.user, is_open=True, type_caisse=type_attendu).first()
     if session:
@@ -156,14 +185,7 @@ def ouvrir_caisse(request):
         data = json.loads(request.body)
         fond = _dec(data.get('fond_caisse', 0))
         notes = data.get('notes', '')
-        # Déterminer le type de caisse selon le groupe de l'utilisateur
-        user_groups = list(request.user.groups.values_list('name', flat=True))
-        if request.user.is_superuser or any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
-            type_caisse = 'centrale'
-        elif 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
-            type_caisse = 'hotel'
-        else:
-            type_caisse = 'module'  # Caissier(e) → Restaurant, Cave, Piscine, Espaces
+        type_caisse = type_attendu
 
         session = CaisseSession.objects.create(
             user=request.user,
@@ -244,6 +266,9 @@ def cloturer_caisse(request):
         prelev    = _dec(data.get('prelevement_banque', 0))
         banque    = data.get('banque', '')
         notes     = data.get('notes', '')
+
+        # Calculer les totaux de la session avant clôture
+        stats = get_stats_jour(today, type_caisse=session.type_caisse)
 
         # Clôturer la session
         session.closed_at        = timezone.now()
@@ -395,6 +420,72 @@ def api_stats_jour(request):
     stats = get_stats_jour(date)
     stats.pop('tickets', None)  # pas sérialisable
     return JsonResponse(stats)
+
+
+@require_module_access('caisse')
+@require_POST
+def sync_centrale(request):
+    """Re-synchronise en temps réel les caisses modules/hotel dans la session centrale.
+    Conforme ERP hôtellerie : le rapport X (interim) de la caissière principale
+    reflète les encaissements de tous les centres de revenus en temps réel.
+    """
+    session = CaisseSession.objects.filter(
+        user=request.user, is_open=True, type_caisse='centrale'
+    ).first()
+    if not session:
+        return JsonResponse({'success': False, 'error': 'Aucune session centrale ouverte pour cet utilisateur'})
+
+    try:
+        today = timezone.now().date()
+        sessions_autres = CaisseSession.objects.filter(
+            opened_at__date=today,
+            type_caisse__in=['hotel', 'module']
+        ).exclude(id=session.id)
+
+        total_consolide = _dec(0)
+        nb_updates = 0
+
+        for s in sessions_autres:
+            stats_s = get_stats_jour(today, type_caisse=s.type_caisse)
+            montant_s = _dec(stats_s['total'])
+            ref = f'CONSOLIDATION-{s.pk}'
+
+            existing = MouvementCaisse.objects.filter(session=session, reference=ref).first()
+            if existing:
+                if montant_s > 0 and existing.montant != montant_s:
+                    existing.montant = montant_s
+                    existing.description = (
+                        f'Consolidation sync — {s.get_type_caisse_display()} '
+                        f'({s.user.get_full_name() or s.user.username})'
+                    )
+                    existing.save()
+                    nb_updates += 1
+            elif montant_s > 0:
+                MouvementCaisse.objects.create(
+                    session=session,
+                    type='versement',
+                    module='caisse',
+                    reference=ref,
+                    montant=montant_s,
+                    mode_paiement='especes',
+                    description=(
+                        f'Consolidation — {s.get_type_caisse_display()} '
+                        f'({s.user.get_full_name() or s.user.username})'
+                    ),
+                    cree_par=request.user,
+                )
+                nb_updates += 1
+
+            total_consolide += montant_s
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Synchronisation OK — {int(total_consolide):,} F | {nb_updates} mise(s) à jour',
+            'total': int(total_consolide),
+            'nb_sessions': sessions_autres.count(),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @require_manager

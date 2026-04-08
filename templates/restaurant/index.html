@@ -511,6 +511,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="nav-tab" data-view="boissons" onclick="switchView(this)">
           🍷 Boissons
         </button>
+        <a href="{% url 'restaurant:reservation_list' %}" class="nav-tab" style="text-decoration:none;">
+          📅 Réservations
+        </a>
       </div>
     </div>
 

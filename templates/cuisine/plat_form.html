@@ -61,7 +61,6 @@ textarea.fc{resize:vertical;min-height:70px}
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Plats / Carte" "cuisine:plat_list" "Formulaire" "" %}
 <div class="pf-body">
 <div class="container-fluid">
 
@@ -69,6 +68,8 @@ textarea.fc{resize:vertical;min-height:70px}
     <h2>{{ page_title }}</h2>
     <p>{% if mode == 'create' %}Créez un plat avec sa fiche technique intégrée{% else %}Modifiez le plat et sa composition{% endif %}</p>
   </div>
+
+  {% breadcrumb "Cuisine" "cuisine:index" "Plats / Carte" "cuisine:plat_list" "Formulaire" "" %}
 
   <form method="post" enctype="multipart/form-data" id="plat-form">
     {% csrf_token %}
