@@ -23,35 +23,9 @@ from .views_extension import create_reservation, update_reservation_status
 def restaurant_index(request):
     """Vue principale du restaurant"""
     
-    # Synchronisation des Boissons du Bar vers le Menu Restaurant
-    # Cela permet de lister les boissons de la Cave dans la grille et d'utiliser la déduction de stock existante
-    try:
-        cat_boissons, _ = CategorieMenu.objects.get_or_create(nom="Boissons", defaults={'ordre': 100})
-        boissons_bar = BoissonBar.objects.filter(disponible=True)
-        
-        for b in boissons_bar:
-            # On utilise get_or_create avec le nom exact
-            # Note: Le système de stock utilise déjà le nom pour faire le lien (voir plus bas)
-            plat, created = PlatMenu.objects.get_or_create(
-                nom__iexact=b.nom,
-                defaults={
-                    'nom': b.nom,
-                    'categorie': cat_boissons,
-                    'prix': b.prix,
-                    'description': b.description or "",
-                    'temps_preparation': 0,
-                    'disponible': b.disponible,
-                    'image': b.image  # Copie de l'image
-                }
-            )
-            if not created:
-                # Si le plat existait déjà, on met à jour les infos
-                plat.prix = b.prix
-                plat.disponible = b.disponible
-                plat.image = b.image
-                plat.save()
-    except Exception as e:
-        print(f"Erreur synchro boissons: {e}")
+    # Boissons Bar : plus synchronisées automatiquement vers le restaurant.
+    # Elles sont vendues via le TPE Cave. Pour les forfaits (ex: piscine),
+    # utiliser le système de Forfaits (voir restaurant/models.py → Forfait).
 
     # Récupérer toutes les catégories et plats
     categories = CategorieMenu.objects.all()

@@ -36,7 +36,7 @@ window.addEventListener('afterprint', () => {
 {% endblock %}
 
 {% block content %}
-{% breadcrumb "Cuisine" "cuisine:index" "Receptions" "cuisine:stock_management" "Nouvelle Reception" "" %}
+
 <style>
 .form-header {
     background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
@@ -261,6 +261,8 @@ input:focus, select:focus, textarea:focus {
         </div>
     
 </div>
+{% breadcrumb "Cuisine" "cuisine:index" "Receptions" "cuisine:stock_management" "Nouvelle Reception" "" %}
+
 
     
     <div id="printable-zone">

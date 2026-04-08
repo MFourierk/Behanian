@@ -14,7 +14,7 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         {% if form.non_field_errors %}
@@ -64,6 +64,16 @@
                             <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" class="form-control" rows="3">{{ form.description.value|default:'' }}</textarea>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}">Photo du plat (optionnel)</label>
+                            {% if form.instance.image %}
+                            <div class="mb-2">
+                                <img src="{{ form.instance.image.url }}" style="height:80px;border-radius:8px;object-fit:cover">
+                                <small class="text-muted d-block mt-1">Image actuelle — choisissez une nouvelle pour la remplacer</small>
+                            </div>
+                            {% endif %}
+                            <input type="file" name="{{ form.image.name }}" id="{{ form.image.id_for_label }}" class="form-control-file" accept="image/*">
+                        </div>
                         <div class="d-flex justify-content-end">
                             <a href="{% url 'parametres:plat_list' %}" class="btn btn-secondary mr-2">Annuler</a>
                             <button type="submit" class="btn btn-primary">Enregistrer</button>

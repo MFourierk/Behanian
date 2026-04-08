@@ -652,33 +652,46 @@ def _save_fiche_from_plat(request, plat):
                 pass
 
 
-def _sync_plat_to_restaurant(plat):
-    """Crée ou met à jour le PlatMenu correspondant dans le restaurant."""
+def _sync_plat_to_restaurant(plat, ancien_nom=None):
+    """Synchronise un plat Cuisine → Restaurant en utilisant cuisine_plat_id.
+    La recherche se fait TOUJOURS par ID cuisine — le nom peut changer librement.
+    """
     try:
         from restaurant.models import PlatMenu, CategorieMenu
-        # Trouver ou créer la catégorie restaurant correspondante
+        # Catégorie restaurant correspondante
         cat_nom = plat.categorie.nom if plat.categorie else 'Plats'
         cat_resto, _ = CategorieMenu.objects.get_or_create(
             nom=cat_nom,
             defaults={'ordre': 1}
         )
-        # Trouver ou créer le PlatMenu
-        plat_resto, created = PlatMenu.objects.get_or_create(
-            nom=plat.nom,
-            defaults={
-                'categorie':         cat_resto,
-                'prix':              plat.prix_vente,
-                'temps_preparation': 15,
-                'disponible':        plat.statut == 'disponible',
-                'description':       plat.description_carte,
-            }
-        )
+        # ── Recherche par cuisine_plat_id (ID stable, indépendant du nom) ──
+        plat_resto = PlatMenu.objects.filter(cuisine_plat_id=plat.pk).first()
+        created = False
+        if not plat_resto:
+            # Fallback : chercher par nom si ancien plat sans cuisine_plat_id
+            plat_resto = PlatMenu.objects.filter(nom__iexact=plat.nom).first()
+            if not plat_resto:
+                plat_resto = PlatMenu(
+                    cuisine_plat_id=plat.pk,
+                    nom=plat.nom,
+                    categorie=cat_resto,
+                    prix=plat.prix_vente,
+                    temps_preparation=15,
+                    disponible=plat.statut == 'disponible',
+                    description=plat.description_carte,
+                )
+                created = True
+            else:
+                # Marquer l'existant avec son ID cuisine pour les prochaines fois
+                plat_resto.cuisine_plat_id = plat.pk
         if not created:
-            # Mettre à jour si existe déjà
-            plat_resto.categorie   = cat_resto
-            plat_resto.prix        = plat.prix_vente
-            plat_resto.disponible  = plat.statut == 'disponible'
-            plat_resto.description = plat.description_carte
+            # Mise à jour complète — le nom peut avoir changé, on suit l'ID
+            plat_resto.nom              = plat.nom
+            plat_resto.cuisine_plat_id  = plat.pk
+            plat_resto.categorie        = cat_resto
+            plat_resto.prix             = plat.prix_vente
+            plat_resto.disponible       = plat.statut == 'disponible'
+            plat_resto.description      = plat.description_carte
         # is_accompagnement stocké dans le contexte de l'appel
         if hasattr(plat, '_is_accompagnement'):
             plat_resto.is_accompagnement = plat._is_accompagnement
@@ -703,6 +716,33 @@ def _sync_plat_to_restaurant(plat):
     except Exception as e:
         pass  # Ne pas bloquer la sauvegarde si la synchro échoue
 
+
+
+def _epurer_plats_restaurant():
+    """
+    Épuration : supprime du restaurant les plats sans correspondance cuisine.
+    Utilise cuisine_plat_id en priorité, puis le nom en fallback.
+    """
+    from restaurant.models import PlatMenu
+    # IDs et noms des plats cuisine actifs
+    plats_cuisine_actifs = Plat.objects.exclude(statut='archive')
+    ids_cuisine   = set(p.pk for p in plats_cuisine_actifs)
+    noms_cuisine  = set(p.nom.lower().strip() for p in plats_cuisine_actifs)
+
+    supprimes = []
+    for plat_resto in PlatMenu.objects.all():
+        if plat_resto.cuisine_plat_id:
+            # Vérification par ID — fiable
+            if plat_resto.cuisine_plat_id not in ids_cuisine:
+                supprimes.append(plat_resto.nom)
+                plat_resto.delete()
+        else:
+            # Fallback : vérification par nom pour les anciens plats
+            if plat_resto.nom.lower().strip() not in noms_cuisine:
+                supprimes.append(plat_resto.nom)
+                plat_resto.delete()
+    return supprimes
+
 @require_module_access('cuisine')
 def plat_create(request):
     categories   = CategoriePlat.objects.all()
@@ -720,7 +760,8 @@ def plat_create(request):
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
-        _sync_plat_to_restaurant(plat)
+        _sync_plat_to_restaurant(plat)  # Synchro par cuisine_plat_id
+        _epurer_plats_restaurant()
         messages.success(request, f"Plat '{plat.nom}' créé avec sa fiche technique.")
         return redirect('/cuisine/plats/')
     import json
@@ -771,7 +812,8 @@ def plat_edit(request, pk):
         plat.save()
         _save_fiche_from_plat(request, plat)
         plat._is_accompagnement = request.POST.get('is_accompagnement') == '1'
-        _sync_plat_to_restaurant(plat)
+        _sync_plat_to_restaurant(plat)  # Synchro par cuisine_plat_id
+        _epurer_plats_restaurant()  # Nettoyer les doublons éventuels
         messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé.")
         return redirect('/cuisine/plats/')
     from restaurant.models import PlatMenu
@@ -794,6 +836,7 @@ def plat_delete(request, pk):
     if request.method == 'POST':
         plat.statut = 'archive'
         plat.save()
+        _epurer_plats_restaurant()  # Retirer le plat archivé du restaurant
         messages.success(request, f"Plat '{plat.nom}' archivé.")
         return redirect('/cuisine/plats/')
     return render(request, 'cuisine/plat_confirm_delete.html', {'plat': plat})
@@ -1123,3 +1166,57 @@ def rapport_stock_cuisine(request):
     request.GET = get
     from rapport.views import rapport_stock
     return rapport_stock(request)
+
+@require_module_access('cuisine')
+def epurer_plats(request):
+    """Vue d'épuration manuelle : vérification et nettoyage cuisine ↔ restaurant."""
+    from restaurant.models import PlatMenu
+    from cuisine.models import Plat
+
+    # Tous les plats cuisine actifs
+    plats_cuisine = Plat.objects.exclude(statut='archive').order_by('nom')
+    noms_cuisine  = set(p.nom.lower().strip() for p in plats_cuisine)
+
+    # Plats restaurant
+    plats_resto   = PlatMenu.objects.all().order_by('nom')
+
+    # Analyser : orphelins, en-commun, manquants
+    orphelins  = [p for p in plats_resto if p.nom.lower().strip() not in noms_cuisine]
+    en_commun  = [p for p in plats_resto if p.nom.lower().strip() in noms_cuisine]
+    noms_resto = set(p.nom.lower().strip() for p in plats_resto)
+    manquants  = [p for p in plats_cuisine if p.nom.lower().strip() not in noms_resto]
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'supprimer_orphelins':
+            supprimes = _epurer_plats_restaurant()
+            messages.success(request, f"{len(supprimes)} plat(s) orphelin(s) supprimé(s) du restaurant.")
+        elif action == 'sync_manquants':
+            for plat in manquants:
+                _sync_plat_to_restaurant(plat)
+            _epurer_plats_restaurant()
+            messages.success(request, f"{len(manquants)} plat(s) synchronisé(s).")
+        elif action == 'sync_tout':
+            # Synchro complète : établir les liens ID manquants puis synchroniser
+            count = 0
+            for plat in plats_cuisine:
+                # Établir le lien cuisine_plat_id si manquant
+                from restaurant.models import PlatMenu as PM
+                pm = PM.objects.filter(nom__iexact=plat.nom, cuisine_plat_id__isnull=True).first()
+                if pm:
+                    pm.cuisine_plat_id = plat.pk
+                    pm.save(update_fields=['cuisine_plat_id'])
+                _sync_plat_to_restaurant(plat)
+                count += 1
+            _epurer_plats_restaurant()
+            messages.success(request, f"✅ {count} plat(s) synchronisé(s). Restaurant aligné avec la cuisine.")
+        return redirect('/cuisine/epuration/')
+
+    context = {
+        'plats_cuisine': plats_cuisine,
+        'plats_resto':   plats_resto,
+        'orphelins':     orphelins,
+        'en_commun':     en_commun,
+        'manquants':     manquants,
+    }
+    return render(request, 'cuisine/epuration.html', context)
