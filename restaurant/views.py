@@ -949,3 +949,190 @@ def ajouter_boisson_commande(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MODULE RÉSERVATIONS RESTAURANT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from django.views.decorators.http import require_POST as _require_POST
+from django.http import JsonResponse as _JsonResponse
+import json as _json
+
+@login_required
+def reservation_list(request):
+    """Page principale de gestion des réservations restaurant."""
+    from django.utils import timezone
+    from datetime import timedelta
+
+    today     = timezone.now().date()
+    date_str  = request.GET.get('date', str(today))
+    try:
+        from datetime import date as _date
+        date_filtre = _date.fromisoformat(date_str)
+    except Exception:
+        date_filtre = today
+
+    # Réservations du jour sélectionné
+    resa_jour = Reservation.objects.filter(
+        date_reservation__date=date_filtre
+    ).select_related('table').order_by('date_reservation')
+
+    # Réservations futures (hors aujourd'hui)
+    resa_futures = Reservation.objects.filter(
+        date_reservation__date__gt=today,
+        statut='confirmee'
+    ).select_related('table').order_by('date_reservation')[:20]
+
+    # Stats du jour
+    stats = {
+        'total':     resa_jour.count(),
+        'confirmees':resa_jour.filter(statut='confirmee').count(),
+        'terminees': resa_jour.filter(statut='terminee').count(),
+        'annulees':  resa_jour.filter(statut='annulee').count(),
+        'personnes': sum(r.nombre_personnes for r in resa_jour),
+    }
+
+    tables = Table.objects.all().order_by('numero')
+
+    context = {
+        'resa_jour':    resa_jour,
+        'resa_futures': resa_futures,
+        'tables':       tables,
+        'stats':        stats,
+        'date_filtre':  date_filtre,
+        'today':        today,
+    }
+    return render(request, 'restaurant/reservation_list.html', context)
+
+
+@login_required
+def reservation_create(request):
+    """Créer une réservation depuis le formulaire."""
+    if request.method == 'POST':
+        from django.utils import timezone
+        from django.contrib import messages as _msg
+        try:
+            table_id       = request.POST.get('table')
+            client_nom     = request.POST.get('client_nom', '').strip()
+            client_tel     = request.POST.get('client_telephone', '').strip()
+            date_str       = request.POST.get('date_reservation')
+            nb_personnes   = int(request.POST.get('nombre_personnes', 1))
+            note           = request.POST.get('note', '').strip()
+
+            if not all([table_id, client_nom, date_str]):
+                _msg.error(request, 'Veuillez remplir tous les champs obligatoires.')
+                return redirect('restaurant:reservation_list')
+
+            from django.utils.dateparse import parse_datetime
+            date_res = parse_datetime(date_str)
+            if not date_res:
+                _msg.error(request, 'Format de date invalide.')
+                return redirect('restaurant:reservation_list')
+
+            table = get_object_or_404(Table, pk=table_id)
+
+            # Vérifier conflit sur la même table même créneau (±1h)
+            from datetime import timedelta
+            conflit = Reservation.objects.filter(
+                table=table,
+                statut='confirmee',
+                date_reservation__range=(
+                    date_res - timedelta(hours=1),
+                    date_res + timedelta(hours=1)
+                )
+            ).exists()
+            if conflit:
+                _msg.warning(request, f'⚠️ La table {table.numero} est déjà réservée sur ce créneau (±1h).')
+                return redirect('restaurant:reservation_list')
+
+            Reservation.objects.create(
+                table=table,
+                client_nom=client_nom,
+                client_telephone=client_tel,
+                date_reservation=date_res,
+                nombre_personnes=nb_personnes,
+                note=note,
+                statut='confirmee',
+            )
+            # Marquer la table comme réservée si la résa est aujourd'hui
+            if date_res.date() == timezone.now().date():
+                table.statut = 'reservee'
+                table.save()
+
+            _msg.success(request, f'✅ Réservation créée pour {client_nom} — {table.numero}')
+        except Exception as e:
+            _msg.error(request, f'Erreur : {e}')
+        return redirect('restaurant:reservation_list')
+    return redirect('restaurant:reservation_list')
+
+
+@login_required
+def reservation_update(request, pk):
+    """Modifier une réservation existante."""
+    from django.contrib import messages as _msg
+    resa = get_object_or_404(Reservation, pk=pk)
+    if request.method == 'POST':
+        try:
+            from django.utils.dateparse import parse_datetime
+            resa.client_nom       = request.POST.get('client_nom', resa.client_nom).strip()
+            resa.client_telephone = request.POST.get('client_telephone', '').strip()
+            date_str = request.POST.get('date_reservation')
+            if date_str:
+                date_res = parse_datetime(date_str)
+                if date_res:
+                    resa.date_reservation = date_res
+            resa.nombre_personnes = int(request.POST.get('nombre_personnes', resa.nombre_personnes))
+            resa.note             = request.POST.get('note', '').strip()
+            resa.statut           = request.POST.get('statut', resa.statut)
+            resa.save()
+            # Libérer table si annulée
+            if resa.statut == 'annulee' and resa.table.statut == 'reservee':
+                resa.table.statut = 'libre'
+                resa.table.save()
+            _msg.success(request, f'Réservation de {resa.client_nom} mise à jour.')
+        except Exception as e:
+            _msg.error(request, f'Erreur : {e}')
+        return redirect('restaurant:reservation_list')
+    tables = Table.objects.all().order_by('numero')
+    return render(request, 'restaurant/reservation_form.html', {
+        'resa': resa, 'tables': tables, 'mode': 'edit'
+    })
+
+
+@login_required
+def reservation_cancel(request, pk):
+    """Annuler une réservation."""
+    from django.contrib import messages as _msg
+    resa = get_object_or_404(Reservation, pk=pk)
+    if request.method == 'POST':
+        resa.statut = 'annulee'
+        resa.save()
+        if resa.table.statut == 'reservee':
+            resa.table.statut = 'libre'
+            resa.table.save()
+        _msg.success(request, f'Réservation de {resa.client_nom} annulée.')
+    return redirect('restaurant:reservation_list')
+
+
+@login_required
+def reservation_api_statut(request):
+    """API JSON — changer le statut d'une réservation."""
+    if request.method == 'POST':
+        try:
+            data   = _json.loads(request.body)
+            pk     = data.get('reservation_id')
+            statut = data.get('statut')
+            resa   = get_object_or_404(Reservation, pk=pk)
+            resa.statut = statut
+            resa.save()
+            if statut == 'annulee' and resa.table.statut == 'reservee':
+                resa.table.statut = 'libre'
+                resa.table.save()
+            elif statut == 'terminee':
+                resa.table.statut = 'occupee'
+                resa.table.save()
+            return _JsonResponse({'success': True})
+        except Exception as e:
+            return _JsonResponse({'success': False, 'error': str(e)})
+    return _JsonResponse({'success': False, 'error': 'Méthode non autorisée'})

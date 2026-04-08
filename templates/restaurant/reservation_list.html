@@ -1,0 +1,362 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Réservations Restaurant{% endblock %}
+{% block extra_css %}
+<style>
+:root{--rouge:#c0392b;--vert:#16a34a;--orange:#d97706;--bleu:#2563eb;--violet:#7c3aed;--border:#d4dce8;--light:#f8fafc;--dark:#1a2535;--muted:#7a8b9c}
+.pg{background:#eef1f5;padding:0 0 50px}
+/* HERO */
+.hero{background:linear-gradient(135deg,#1a2535,#2d3f55);padding:24px 28px;margin-bottom:0}
+.hero h2{font-size:1.4rem;font-weight:800;color:white;margin:0}
+.hero p{margin:4px 0 0;color:rgba(255,255,255,.7);font-size:13px}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:20px 28px;background:#f1f4f8}
+.stat{background:white;border-radius:12px;padding:14px 16px;border:1px solid var(--border);border-top:3px solid;text-align:center}
+.stat .nb{font-size:26px;font-weight:800;color:var(--dark)}
+.stat .lb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:3px}
+/* CONTENT */
+.content{padding:0 28px 20px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;vertical-align:middle}
+.tbl tr:hover td{background:#f5f8ff}
+/* BADGES */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-confirmee{background:#dbeafe;color:#1d4ed8}
+.badge-terminee{background:#dcfce7;color:#15803d}
+.badge-annulee{background:#fee2e2;color:#dc2626}
+/* BOUTONS */
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-rouge{background:var(--rouge);color:white}
+.btn-vert{background:var(--vert);color:white}
+.btn-bleu{background:var(--bleu);color:white}
+.btn-ghost{background:#f1f5f9;color:var(--dark);border:1px solid var(--border)}
+.action-btn{width:30px;height:30px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:white;cursor:pointer;text-decoration:none;font-size:12px;transition:all .12s}
+/* FORMULAIRE NOUVELLE RÉSERVATION */
+.form-card{background:white;border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--dark);box-sizing:border-box}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--rouge)}
+/* DATE FILTRE */
+.date-nav{display:flex;align-items:center;gap:10px}
+.date-nav a{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--dark);font-size:14px}
+.date-nav a:hover{background:var(--rouge);color:white}
+/* TIMELINE */
+.timeline-slot{display:flex;gap:12px;padding:10px 16px;border-bottom:1px solid #f0f3f7;align-items:flex-start}
+.timeline-slot:last-child{border-bottom:none}
+.tl-time{font-size:13px;font-weight:700;color:var(--dark);min-width:52px;margin-top:2px}
+.tl-body{flex:1}
+.tl-name{font-weight:700;font-size:14px;color:var(--dark)}
+.tl-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.tl-note{font-size:11px;color:#64748b;margin-top:4px;font-style:italic}
+.tl-actions{display:flex;gap:6px;margin-top:6px}
+/* MODAL EDIT */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:white;border-radius:16px;width:520px;max-height:90vh;overflow-y:auto;padding:28px}
+.modal-box h3{font-size:16px;font-weight:800;color:var(--dark);margin:0 0 20px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pg">
+  <div class="hero">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h2>📅 Réservations Restaurant</h2>
+        <p>Gestion des réservations de tables</p>
+      </div>
+    </div>
+  </div>
+  {% breadcrumb "Restaurant" "restaurant:index" "Réservations" "" %}
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat" style="border-top-color:#2563eb">
+      <div class="nb">{{ stats.total }}</div>
+      <div class="lb">Total du jour</div>
+    </div>
+    <div class="stat" style="border-top-color:#1d4ed8">
+      <div class="nb">{{ stats.confirmees }}</div>
+      <div class="lb">✅ Confirmées</div>
+    </div>
+    <div class="stat" style="border-top-color:#16a34a">
+      <div class="nb">{{ stats.terminees }}</div>
+      <div class="lb">🍽️ Terminées</div>
+    </div>
+    <div class="stat" style="border-top-color:#dc2626">
+      <div class="nb">{{ stats.annulees }}</div>
+      <div class="lb">❌ Annulées</div>
+    </div>
+    <div class="stat" style="border-top-color:#7c3aed">
+      <div class="nb">{{ stats.personnes }}</div>
+      <div class="lb">👥 Couverts</div>
+    </div>
+  </div>
+
+  <div class="content" style="padding-top:20px">
+    {% if messages %}
+    {% for msg in messages %}
+    <div style="background:{% if 'error' in msg.tags %}#fee2e2{% elif 'warning' in msg.tags %}#fef3c7{% else %}#dcfce7{% endif %};border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;font-weight:600;color:{% if 'error' in msg.tags %}#991b1b{% elif 'warning' in msg.tags %}#92400e{% else %}#15803d{% endif %}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- NOUVELLE RÉSERVATION -->
+    <div class="form-card">
+      <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+        <span style="background:#dbeafe;color:#1d4ed8;width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center">+</span>
+        Nouvelle réservation
+      </div>
+      <form method="post" action="{% url 'restaurant:reservation_create' %}">
+        {% csrf_token %}
+        <div class="form-grid" style="margin-bottom:12px">
+          <div class="fg">
+            <label>Nom du client *</label>
+            <input type="text" name="client_nom" placeholder="Ex: M. Kouamé" required>
+          </div>
+          <div class="fg">
+            <label>Téléphone</label>
+            <input type="tel" name="client_telephone" placeholder="+225 07 00 00 00 00">
+          </div>
+          <div class="fg">
+            <label>Date et heure *</label>
+            <input type="datetime-local" name="date_reservation" required>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-bottom:14px">
+          <div class="fg">
+            <label>Table *</label>
+            <select name="table" required>
+              <option value="">— Choisir une table —</option>
+              {% for t in tables %}
+              <option value="{{ t.pk }}">{{ t.numero }} ({{ t.capacite }} pers.) — {{ t.get_statut_display }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="fg">
+            <label>Nombre de personnes *</label>
+            <input type="number" name="nombre_personnes" value="2" min="1" max="20" required>
+          </div>
+          <div class="fg">
+            <label>Note</label>
+            <input type="text" name="note" placeholder="Anniversaire, allergie...">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-rouge">📅 Créer la réservation</button>
+      </form>
+    </div>
+
+    <!-- RÉSERVATIONS DU JOUR -->
+    <div class="panel">
+      <div class="ph">
+        <h3>📅 Réservations du jour</h3>
+        <div class="date-nav">
+          {% with prev_date=date_filtre|date:"Y-m-d" %}
+          <a href="?date={{ date_filtre|date:'Y-m-d' }}" onclick="this.href='?date='+offsetDate(-1)">‹</a>
+          <input type="date" value="{{ date_filtre|date:'Y-m-d' }}" onchange="window.location='?date='+this.value"
+                 style="border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600">
+          <a href="?date={{ date_filtre|date:'Y-m-d' }}" onclick="this.href='?date='+offsetDate(1)">›</a>
+          {% endwith %}
+          <a href="?date={{ today|date:'Y-m-d' }}" class="btn btn-ghost" style="font-size:11px;padding:5px 12px">Aujourd'hui</a>
+        </div>
+      </div>
+
+      {% if resa_jour %}
+      {% for r in resa_jour %}
+      <div class="timeline-slot" style="{% if r.statut == 'annulee' %}opacity:.5{% endif %}">
+        <div class="tl-time">{{ r.date_reservation|date:"H:i" }}</div>
+        <div class="tl-body">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="tl-name">{{ r.client_nom }}</div>
+            <span class="badge badge-{{ r.statut }}">{{ r.get_statut_display }}</span>
+          </div>
+          <div class="tl-meta">
+            🪑 {{ r.table.numero }} &nbsp;·&nbsp;
+            👥 {{ r.nombre_personnes }} pers.
+            {% if r.client_telephone %}&nbsp;·&nbsp; 📞 {{ r.client_telephone }}{% endif %}
+          </div>
+          {% if r.note %}<div class="tl-note">📝 {{ r.note }}</div>{% endif %}
+          <div class="tl-actions">
+            {% if r.statut == 'confirmee' %}
+            <button class="btn btn-vert" style="font-size:11px;padding:5px 12px"
+                    onclick="changerStatut({{ r.pk }}, 'terminee')">🍽️ Arrivée client</button>
+            <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px"
+                    onclick="ouvrirEdit({{ r.pk }}, '{{ r.client_nom|escapejs }}', '{{ r.client_telephone|default:''|escapejs }}', '{{ r.date_reservation|date:'Y-m-d\TH:i' }}', {{ r.nombre_personnes }}, {{ r.table.pk }}, '{{ r.note|default:''|escapejs }}')">
+              ✏️ Modifier
+            </button>
+            <form method="post" action="{% url 'restaurant:reservation_cancel' r.pk %}" style="display:inline"
+                  onsubmit="return confirm('Annuler la réservation de {{ r.client_nom }} ?')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:#dc2626">❌ Annuler</button>
+            </form>
+            {% elif r.statut == 'terminee' %}
+            <span style="font-size:11px;color:#16a34a;font-weight:600">✅ Terminée</span>
+            {% else %}
+            <span style="font-size:11px;color:#dc2626;font-weight:600">❌ Annulée</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="text-align:center;padding:40px;color:var(--muted)">
+        <div style="font-size:2rem;margin-bottom:8px">📅</div>
+        <div style="font-weight:600">Aucune réservation pour le {{ date_filtre|date:"d/m/Y" }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- RÉSERVATIONS FUTURES -->
+    {% if resa_futures %}
+    <div class="panel">
+      <div class="ph"><h3>🔮 Prochaines réservations</h3></div>
+      <table class="tbl">
+        <thead>
+          <tr><th>Date</th><th>Heure</th><th>Client</th><th>Table</th><th>Pers.</th><th>Note</th><th>Statut</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for r in resa_futures %}
+        <tr>
+          <td style="font-weight:600">{{ r.date_reservation|date:"d/m/Y" }}</td>
+          <td style="font-weight:700;color:var(--bleu)">{{ r.date_reservation|date:"H:i" }}</td>
+          <td>
+            <div style="font-weight:600">{{ r.client_nom }}</div>
+            {% if r.client_telephone %}<div style="font-size:11px;color:var(--muted)">{{ r.client_telephone }}</div>{% endif %}
+          </td>
+          <td><span style="background:#f1f5f9;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600">{{ r.table.numero }}</span></td>
+          <td style="text-align:center;font-weight:700">{{ r.nombre_personnes }}</td>
+          <td style="font-size:12px;color:var(--muted)">{{ r.note|default:"—"|truncatechars:30 }}</td>
+          <td><span class="badge badge-{{ r.statut }}">{{ r.get_statut_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <button class="action-btn" style="color:#2563eb;background:#dbeafe"
+                      onclick="ouvrirEdit({{ r.pk }}, '{{ r.client_nom|escapejs }}', '{{ r.client_telephone|default:''|escapejs }}', '{{ r.date_reservation|date:'Y-m-d\TH:i' }}', {{ r.nombre_personnes }}, {{ r.table.pk }}, '{{ r.note|default:''|escapejs }}')">✏️</button>
+              <form method="post" action="{% url 'restaurant:reservation_cancel' r.pk %}" style="display:inline"
+                    onsubmit="return confirm('Annuler ?')">
+                {% csrf_token %}
+                <button type="submit" class="action-btn" style="color:#dc2626;background:#fee2e2">❌</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- MODAL MODIFICATION -->
+<div class="modal-overlay" id="modalEdit">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="margin:0">✏️ Modifier la réservation</h3>
+      <button onclick="fermerModal()" style="background:#f1f5f9;border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px">×</button>
+    </div>
+    <form method="post" id="formEdit">
+      {% csrf_token %}
+      <input type="hidden" name="_method" value="PUT">
+      <div class="form-grid-2" style="margin-bottom:12px">
+        <div class="fg">
+          <label>Nom du client *</label>
+          <input type="text" name="client_nom" id="edit_nom" required>
+        </div>
+        <div class="fg">
+          <label>Téléphone</label>
+          <input type="tel" name="client_telephone" id="edit_tel">
+        </div>
+      </div>
+      <div class="form-grid-2" style="margin-bottom:12px">
+        <div class="fg">
+          <label>Date et heure *</label>
+          <input type="datetime-local" name="date_reservation" id="edit_date" required>
+        </div>
+        <div class="fg">
+          <label>Nombre de personnes</label>
+          <input type="number" name="nombre_personnes" id="edit_nb" min="1" max="20">
+        </div>
+      </div>
+      <div class="form-grid-2" style="margin-bottom:12px">
+        <div class="fg">
+          <label>Table</label>
+          <select name="table" id="edit_table">
+            {% for t in tables %}
+            <option value="{{ t.pk }}">{{ t.numero }} ({{ t.capacite }} pers.)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="fg">
+          <label>Statut</label>
+          <select name="statut" id="edit_statut">
+            <option value="confirmee">Confirmée</option>
+            <option value="terminee">Terminée</option>
+            <option value="annulee">Annulée</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:18px">
+        <label>Note</label>
+        <input type="text" name="note" id="edit_note" placeholder="Anniversaire, allergie...">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="button" onclick="fermerModal()" class="btn btn-ghost">Annuler</button>
+        <button type="submit" class="btn btn-rouge">💾 Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function offsetDate(n) {
+  const d = new Date(document.querySelector('input[type=date]').value);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+function ouvrirEdit(pk, nom, tel, date, nb, tableId, note) {
+  document.getElementById('formEdit').action = '/restaurant/reservations/' + pk + '/modifier/';
+  document.getElementById('edit_nom').value   = nom;
+  document.getElementById('edit_tel').value   = tel;
+  document.getElementById('edit_date').value  = date;
+  document.getElementById('edit_nb').value    = nb;
+  document.getElementById('edit_table').value = tableId;
+  document.getElementById('edit_note').value  = note;
+  document.getElementById('modalEdit').classList.add('open');
+}
+
+function fermerModal() {
+  document.getElementById('modalEdit').classList.remove('open');
+}
+
+function changerStatut(pk, statut) {
+  fetch('/restaurant/reservations/api/statut/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+    body: JSON.stringify({reservation_id: pk, statut: statut})
+  }).then(r => r.json()).then(d => {
+    if (d.success) window.location.reload();
+    else alert('Erreur : ' + d.error);
+  });
+}
+
+// Pré-remplir datetime-local avec maintenant + 1h
+document.addEventListener('DOMContentLoaded', function() {
+  const input = document.querySelector('input[name="date_reservation"]');
+  if (input && !input.value) {
+    const d = new Date();
+    d.setHours(d.getHours() + 1);
+    d.setMinutes(0, 0, 0);
+    input.value = d.toISOString().slice(0, 16);
+  }
+});
+</script>
+{% endblock %}

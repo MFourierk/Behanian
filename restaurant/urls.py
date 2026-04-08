@@ -15,5 +15,11 @@ urlpatterns = [
     path('add-accompagnement-to-ligne/', views.add_accompagnement_to_ligne, name='add_accompagnement_to_ligne'),
     path('create-reservation/', views.create_reservation, name='create_reservation'),
     path('update-reservation-status/', views.update_reservation_status, name='update_reservation_status'),
-]
 
+    # ── Réservations ──────────────────────────────────────────────────────────
+    path('reservations/', views.reservation_list,   name='reservation_list'),
+    path('reservations/creer/', views.reservation_create, name='reservation_create'),
+    path('reservations/<int:pk>/modifier/', views.reservation_update, name='reservation_update'),
+    path('reservations/<int:pk>/annuler/',  views.reservation_cancel, name='reservation_cancel'),
+    path('reservations/api/statut/', views.reservation_api_statut, name='reservation_api_statut'),
+]
