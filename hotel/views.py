@@ -749,12 +749,26 @@ def finalize_checkout(request, ticket_id):
             reservation.chambre.statut = 'disponible'
             reservation.chambre.save()
         
-        # Marquer le ticket comme imprimé
+        # ── Clôturer les sessions piscine liées ──────────────────────────
+        from piscine.models import AccesPiscine
+        acces_piscine = AccesPiscine.objects.filter(
+            reservation_hotel=reservation,
+            date_sortie__isnull=True  # Seulement les sessions encore ouvertes
+        )
+        nb_piscine = acces_piscine.count()
+        for acces in acces_piscine:
+            acces.date_sortie = timezone.now()
+            acces.save()
+
+        # ── Marquer le ticket comme imprimé ───────────────────────────────
         ticket.imprime = True
         ticket.date_impression = timezone.now()
         ticket.save()
-        
-        return JsonResponse({'status': 'success', 'message': 'Séjour clôturé avec succès'})
+
+        msg = 'Séjour clôturé avec succès'
+        if nb_piscine > 0:
+            msg += f' — {nb_piscine} session(s) piscine clôturée(s)'
+        return JsonResponse({'status': 'success', 'message': msg})
         
     except Reservation.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Réservation introuvable'}, status=404)
@@ -862,3 +876,80 @@ def api_supprimer_consommation(request, conso_id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API CHECKOUT — Dépenses multi-modules imputées à la chambre
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@require_module_access('hotel')
+def api_checkout_details(request, reservation_id):
+    """
+    Retourne le détail complet des dépenses liées à une réservation.
+    Utilisé par le modal checkout pour afficher module par module.
+    """
+    from django.http import JsonResponse
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    # ── Hébergement ─────────────────────────────────────────────────────────
+    hebergement = float(reservation.get_prix_reel())
+    avance      = float(reservation.avance)
+
+    # ── Consommations hôtel (bar, restaurant, espace) ────────────────────────
+    consos = []
+    for c in reservation.consommations.all().order_by('type_service'):
+        consos.append({
+            'id':      c.pk,
+            'type':    c.type_service,
+            'label':   c.get_type_service_display(),
+            'nom':     c.nom,
+            'qte':     c.quantite,
+            'prix':    float(c.prix_unitaire),
+            'total':   float(c.total),
+        })
+
+    # ── Piscine — accès + consommations liés à cette réservation ────────────
+    from piscine.models import AccesPiscine
+    piscine_items = []
+    acces_piscine = AccesPiscine.objects.filter(
+        reservation_hotel=reservation
+    ).prefetch_related('consommations')
+
+    for acces in acces_piscine:
+        # Entrée piscine
+        piscine_items.append({
+            'acces_id': acces.pk,
+            'type':     'piscine_entree',
+            'nom':      f"Entrée piscine — {acces.nom_client} ({acces.nb_adultes}A/{acces.nb_enfants}E)",
+            'total':    float(acces.prix_total),
+            'cloture':  acces.date_sortie is not None,
+        })
+        # Consommations piscine
+        for cp in acces.consommations.all():
+            piscine_items.append({
+                'acces_id': acces.pk,
+                'type':     'piscine_conso',
+                'nom':      f"{cp.produit} x{cp.quantite}",
+                'total':    float(cp.get_total()),
+                'cloture':  acces.date_sortie is not None,
+            })
+
+    total_hebergement = hebergement
+    total_consos      = sum(c['total'] for c in consos)
+    total_piscine     = sum(p['total'] for p in piscine_items)
+    total_general     = total_hebergement + total_consos + total_piscine
+    reste             = total_general - avance
+
+    return JsonResponse({
+        'client':            str(reservation.client) if reservation.client else '',
+        'chambre':           reservation.chambre.numero if reservation.chambre else '',
+        'hebergement':       total_hebergement,
+        'avance':            avance,
+        'consos':            consos,
+        'piscine_items':     piscine_items,
+        'total_hebergement': total_hebergement,
+        'total_consos':      total_consos,
+        'total_piscine':     total_piscine,
+        'total_general':     total_general,
+        'reste':             reste,
+    })
