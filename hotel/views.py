@@ -3,15 +3,13 @@ from utils.permissions import require_module_access
 from .models import Chambre, Client, Reservation, Consommation
 from facturation.models import Ticket, generate_ticket_numero
 from decimal import Decimal
-from bar.models import BoissonBar, MouvementStockBar
-from cuisine.models import Plat, MouvementStockCuisine, LigneFicheTechnique, Ingredient
+from bar.models import BoissonBar
 from restaurant.models import PlatMenu
 from espaces_evenementiels.models import EspaceEvenementiel
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-import uuid
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.urls import reverse
@@ -686,138 +684,91 @@ def checkout_reservation(request, reservation_id):
             messages.error(request, "Veuillez sélectionner un serveur/serveuse avant de valider le check-out.")
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
-        temporary_ticket_id = str(uuid.uuid4()) # Générer un ID temporaire unique
-
-        ticket_data = {
-            'numero': generate_ticket_numero(),
-            'module': 'hotel',
-            'objet_id': reservation.id,
-            'client_id': f_client.id if f_client else None, # Stocker l'ID du client
-            'montant_total': float(reservation.get_total_general()), # Convertir Decimal en float pour la session
-            'montant_paye': float(montant_paye + reservation.avance), # Convertir Decimal en float
-            'mode_paiement': mode_paiement,
-            'cree_par_id': request.user.id, # Stocker l'ID de l'utilisateur
-            'contenu': contenu,
-            'reservation_id': reservation.id, # Ajouter l'ID de la réservation pour faciliter la liaison
-        }
-
-        request.session[f'pending_ticket_data_{temporary_ticket_id}'] = ticket_data
-        request.session[f'pending_ticket_serveur_{temporary_ticket_id}'] = serveur_nom
-        request.session[f'pending_ticket_receptionniste_{temporary_ticket_id}'] = receptionniste_nom
+        ticket = Ticket.objects.create(
+            numero=generate_ticket_numero(),
+            module='hotel',
+            objet_id=reservation.id,
+            client=f_client,
+            montant_total=reservation.get_total_general(),
+            montant_paye=montant_paye + reservation.avance,
+            mode_paiement=mode_paiement,
+            cree_par=request.user,
+            contenu=contenu
+        )
 
         messages.success(request, "Paiement enregistré. Veuillez imprimer le ticket pour clôturer le séjour.")
-        return redirect('hotel:ticket_print', temporary_ticket_id=temporary_ticket_id)
+        request.session[f'ticket_{ticket.id}_serveur'] = serveur_nom
+        request.session[f'ticket_{ticket.id}_receptionniste'] = receptionniste_nom
+        return redirect('hotel:ticket_print', ticket_id=ticket.id)
         
     return redirect(reverse('hotel:index') + '?tab=historique')
 
 @require_module_access('hotel')
-def ticket_print(request, temporary_ticket_id):
-    """Afficher le ticket pour impression (pré-validation)"""
-    ticket_data = request.session.get(f'pending_ticket_data_{temporary_ticket_id}')
-    if not ticket_data:
-        messages.error(request, "Données de ticket en attente introuvables.")
-        return redirect('hotel:index') # Rediriger vers une page appropriée
-
-    # Créer un objet factice Ticket pour le template, sans le sauvegarder
-    # On utilise les IDs pour les clés étrangères pour éviter de charger les objets complets ici
-    ticket = Ticket(
-        numero=ticket_data['numero'],
-        module=ticket_data['module'],
-        objet_id=ticket_data['objet_id'],
-        client_id=ticket_data['client_id'],
-        montant_total=ticket_data['montant_total'],
-        montant_paye=ticket_data['montant_paye'],
-        mode_paiement=ticket_data['mode_paiement'],
-        cree_par_id=ticket_data['cree_par_id'],
-        contenu=ticket_data['contenu'],
-        # Le ticket n'est pas encore imprimé ni sauvegardé
-        imprime=False
-    )
-    # Pour s'assurer que le template peut accéder à l'ID temporaire
-    ticket.id = temporary_ticket_id
-    serveur = request.session.get(f'pending_ticket_serveur_{temporary_ticket_id}', '')
-    receptionniste = request.session.get(f'pending_ticket_receptionniste_{temporary_ticket_id}', '')
+def ticket_print(request, ticket_id):
+    """Afficher le ticket pour impression"""
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    serveur = request.session.get(f'ticket_{ticket_id}_serveur', '')
+    receptionniste = request.session.get(f'ticket_{ticket_id}_receptionniste', '')
     return render(request, 'facturation/ticket_print_thermal.html', {
         'ticket': ticket,
         'serveur': serveur,
         'receptionniste': receptionniste,
-        'temporary_ticket_id': temporary_ticket_id, # Passer l'ID temporaire au template
     })
 
 @require_module_access('hotel')
 @transaction.atomic
-def finalize_checkout(request, temporary_ticket_id):
+def finalize_checkout(request, ticket_id):
     """Finaliser le check-out (libérer la chambre) après impression"""
-    ticket_data = request.session.get(f'pending_ticket_data_{temporary_ticket_id}')
-    serveur_nom = request.session.get(f'pending_ticket_serveur_{temporary_ticket_id}')
-    receptionniste_nom = request.session.get(f'pending_ticket_receptionniste_{temporary_ticket_id}')
-
-    if not ticket_data:
-        return JsonResponse({'status': 'error', 'message': 'Données de ticket en attente introuvables.'}, status=400)
-
-    try:
-        reservation = get_object_or_404(Reservation, id=ticket_data['reservation_id'])
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    
+    # On vérifie si c'est bien un ticket d'hôtel
+    if ticket.module != 'hotel':
+        return JsonResponse({'status': 'error', 'message': 'Ticket invalide'}, status=400)
         
-        # Si déjà terminée, on ne fait rien
+    try:
+        if not ticket.objet_id:
+             return JsonResponse({'status': 'error', 'message': 'Ticket sans réservation associée'}, status=400)
+
+        reservation = Reservation.objects.get(id=ticket.objet_id)
+        
+        # Si déjà terminée, on ne fait rien mais on met à jour le ticket
         if reservation.statut == 'terminee':
-            # Supprimer les données temporaires de la session
-            del request.session[f'pending_ticket_data_{temporary_ticket_id}']
-            del request.session[f'pending_ticket_serveur_{temporary_ticket_id}']
-            del request.session[f'pending_ticket_receptionniste_{temporary_ticket_id}']
+            # Assurer que le ticket est marqué imprimé
+            if not ticket.imprime:
+                ticket.imprime = True
+                ticket.date_impression = timezone.now()
+                ticket.save()
             return JsonResponse({'status': 'success', 'message': 'Déjà clôturé'})
             
-        # Créer le ticket réel
-        ticket = Ticket.objects.create(
-            numero=ticket_data['numero'],
-            module=ticket_data['module'],
-            objet_id=ticket_data['objet_id'],
-            client_id=ticket_data['client_id'],
-            montant_total=ticket_data['montant_total'],
-            montant_paye=ticket_data['montant_paye'],
-            mode_paiement=ticket_data['mode_paiement'],
-            cree_par_id=ticket_data['cree_par_id'],
-            contenu=ticket_data['contenu'],
-            imprime=True, # Marquer comme imprimé dès la création
-            date_impression=timezone.now()
-        )
-
         # Mise à jour statuts
         reservation.statut = 'terminee'
         reservation.save()
+        
         # Libérer la chambre
         if reservation.chambre:
             reservation.chambre.statut = 'disponible'
             reservation.chambre.save()
-
-        # --- DÉDUCTION DE STOCK DES CONSOMMATIONS ---
-        consommations = Consommation.objects.filter(reservation=reservation)
-        for conso in consommations:
-            if conso.type_service == 'bar' and conso.boisson:
-                # Déduction pour les boissons
-                MouvementStockBar.objects.create(
-                    boisson=conso.boisson,
-                    type_mouvement='sortie',
-                    quantite=conso.quantite,
-                    commentaire=f"Conso Chambre {reservation.chambre.numero} - Ticket {ticket.numero}"
-                )
-            elif conso.type_service == 'restaurant' and conso.plat:
-                # Déduction pour les plats (via la fiche technique et les ingrédients)
-                if conso.plat.fiche_technique:
-                    lignes_fiche_technique = LigneFicheTechnique.objects.filter(fiche_technique=conso.plat.fiche_technique)
-                    for ligne in lignes_fiche_technique:
-                        MouvementStockCuisine.objects.create(
-                            ingredient=ligne.ingredient,
-                            type_mouvement='sortie',
-                            quantite=ligne.quantite * conso.quantite,
-                            commentaire=f"Conso Plat '{conso.plat.nom}' (Chambre {reservation.chambre.numero}) - Ticket {ticket.numero}"
-                        )
-
-        # Supprimer les données temporaires de la session
-        del request.session[f'pending_ticket_data_{temporary_ticket_id}']
-        del request.session[f'pending_ticket_serveur_{temporary_ticket_id}']
-        del request.session[f'pending_ticket_receptionniste_{temporary_ticket_id}']
         
-        return JsonResponse({'status': 'success', 'message': 'Séjour clôturé avec succès'})
+        # ── Clôturer les sessions piscine liées ──────────────────────────
+        from piscine.models import AccesPiscine
+        acces_piscine = AccesPiscine.objects.filter(
+            reservation_hotel=reservation,
+            date_sortie__isnull=True  # Seulement les sessions encore ouvertes
+        )
+        nb_piscine = acces_piscine.count()
+        for acces in acces_piscine:
+            acces.date_sortie = timezone.now()
+            acces.save()
+
+        # ── Marquer le ticket comme imprimé ───────────────────────────────
+        ticket.imprime = True
+        ticket.date_impression = timezone.now()
+        ticket.save()
+
+        msg = 'Séjour clôturé avec succès'
+        if nb_piscine > 0:
+            msg += f' — {nb_piscine} session(s) piscine clôturée(s)'
+        return JsonResponse({'status': 'success', 'message': msg})
         
     except Reservation.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Réservation introuvable'}, status=404)
@@ -925,3 +876,80 @@ def api_supprimer_consommation(request, conso_id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# API CHECKOUT — Dépenses multi-modules imputées à la chambre
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@require_module_access('hotel')
+def api_checkout_details(request, reservation_id):
+    """
+    Retourne le détail complet des dépenses liées à une réservation.
+    Utilisé par le modal checkout pour afficher module par module.
+    """
+    from django.http import JsonResponse
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    # ── Hébergement ─────────────────────────────────────────────────────────
+    hebergement = float(reservation.get_prix_reel())
+    avance      = float(reservation.avance)
+
+    # ── Consommations hôtel (bar, restaurant, espace) ────────────────────────
+    consos = []
+    for c in reservation.consommations.all().order_by('type_service'):
+        consos.append({
+            'id':      c.pk,
+            'type':    c.type_service,
+            'label':   c.get_type_service_display(),
+            'nom':     c.nom,
+            'qte':     c.quantite,
+            'prix':    float(c.prix_unitaire),
+            'total':   float(c.total),
+        })
+
+    # ── Piscine — accès + consommations liés à cette réservation ────────────
+    from piscine.models import AccesPiscine
+    piscine_items = []
+    acces_piscine = AccesPiscine.objects.filter(
+        reservation_hotel=reservation
+    ).prefetch_related('consommations')
+
+    for acces in acces_piscine:
+        # Entrée piscine
+        piscine_items.append({
+            'acces_id': acces.pk,
+            'type':     'piscine_entree',
+            'nom':      f"Entrée piscine — {acces.nom_client} ({acces.nb_adultes}A/{acces.nb_enfants}E)",
+            'total':    float(acces.prix_total),
+            'cloture':  acces.date_sortie is not None,
+        })
+        # Consommations piscine
+        for cp in acces.consommations.all():
+            piscine_items.append({
+                'acces_id': acces.pk,
+                'type':     'piscine_conso',
+                'nom':      f"{cp.produit} x{cp.quantite}",
+                'total':    float(cp.get_total()),
+                'cloture':  acces.date_sortie is not None,
+            })
+
+    total_hebergement = hebergement
+    total_consos      = sum(c['total'] for c in consos)
+    total_piscine     = sum(p['total'] for p in piscine_items)
+    total_general     = total_hebergement + total_consos + total_piscine
+    reste             = total_general - avance
+
+    return JsonResponse({
+        'client':            str(reservation.client) if reservation.client else '',
+        'chambre':           reservation.chambre.numero if reservation.chambre else '',
+        'hebergement':       total_hebergement,
+        'avance':            avance,
+        'consos':            consos,
+        'piscine_items':     piscine_items,
+        'total_hebergement': total_hebergement,
+        'total_consos':      total_consos,
+        'total_piscine':     total_piscine,
+        'total_general':     total_general,
+        'reste':             reste,
+    })

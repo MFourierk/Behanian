@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/consommations/<int:reservation_id>/', views.api_consommations_reservation, name='api_consommations'),
     path('api/consommation/<int:conso_id>/modifier/', views.api_modifier_consommation, name='api_modifier_conso'),
     path('api/consommation/<int:conso_id>/supprimer/', views.api_supprimer_consommation, name='api_supprimer_conso'),
+    path('api/checkout-details/<int:reservation_id>/', views.api_checkout_details, name='api_checkout_details'),
 ]

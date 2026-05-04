@@ -942,29 +942,66 @@
 
 <!-- MODAL CHECK-OUT (PAIEMENT) -->
 <div id="modalCheckout" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:580px;max-height:90vh;overflow-y:auto">
         <h3>💳 Paiement & Départ</h3>
-        <p id="checkout-client-name" style="margin-bottom: 20px; color: #7f8c8d;"></p>
-        
-        <form id="formCheckout" method="POST">
+        <p id="checkout-client-name" style="margin-bottom:12px;color:#7f8c8d;font-size:13px"></p>
+
+        <!-- Chargement -->
+        <div id="checkout-loading" style="text-align:center;padding:20px;color:#7a8b9c;font-size:13px">
+            ⏳ Chargement des dépenses...
+        </div>
+
+        <form id="formCheckout" method="POST" style="display:none">
             {% csrf_token %}
-            <div id="checkout-breakdown" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span>Hébergement (réel) :</span>
-                    <span id="breakdown-room">0 F</span>
+
+            <!-- RÉCAPITULATIF MULTI-MODULES -->
+            <div style="background:#f8fafc;border:1px solid #d4dce8;border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px">
+
+                <!-- Hébergement -->
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-weight:600">
+                    <span>🏨 Hébergement</span>
+                    <span id="bd-hebergement">0 F</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-                    <span>Services chambre :</span>
-                    <span id="breakdown-services">0 F</span>
+
+                <!-- Consommations hôtel -->
+                <div id="bd-consos-block" style="display:none">
+                    <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">Services chambre</div>
+                    <div id="bd-consos-detail"></div>
+                    <div style="display:flex;justify-content:space-between;font-weight:600;color:#d35400;margin-top:4px">
+                        <span>Sous-total services</span>
+                        <span id="bd-consos-total">0 F</span>
+                    </div>
                 </div>
-                <div id="breakdown-piscine-row" style="display:flex;justify-content:space-between;margin-bottom:5px;color:#0369a1;font-size:13px">
-                    <span>🏊 Piscine :</span>
-                    <span id="breakdown-piscine">0 F</span>
+
+                <!-- Piscine -->
+                <div id="bd-piscine-block" style="display:none">
+                    <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">🏊 Piscine (imputé chambre)</div>
+                    <div id="bd-piscine-detail"></div>
+                    <div style="display:flex;justify-content:space-between;font-weight:600;color:#0891b2;margin-top:4px">
+                        <span>Sous-total piscine</span>
+                        <span id="bd-piscine-total">0 F</span>
+                    </div>
+                    <div style="font-size:11px;color:#16a34a;margin-top:4px;font-style:italic">
+                        ✅ Les sessions piscine seront automatiquement clôturées au check-out
+                    </div>
                 </div>
-                <hr style="margin:10px 0;border-color:#ddd">
-                <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:1.1em">
-                    <span>Reste à payer :</span>
-                    <span id="breakdown-total" style="color:#e74c3c">0 F</span>
+
+                <!-- Avance -->
+                <div id="bd-avance-block" style="display:none">
+                    <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:600;margin-top:8px">
+                        <span>✅ Avance déjà perçue</span>
+                        <span id="bd-avance">0 F</span>
+                    </div>
+                </div>
+
+                <hr style="margin:10px 0;border-color:#d4dce8">
+                <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.1em">
+                    <span>Total général</span>
+                    <span id="bd-total-general" style="color:#1a2535">0 F</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.15em;color:#dc2626;margin-top:6px">
+                    <span>Reste à payer</span>
+                    <span id="bd-reste">0 F</span>
                 </div>
             </div>
             
@@ -1507,13 +1544,79 @@
         document.getElementById('breakdown-total').textContent    = fmt(resteAPayer);
         document.getElementById('montantEncaisse').value          = resteAPayer;
         
-        // Update Form Action
+        // Afficher l'état de chargement
+        document.getElementById('checkout-loading').style.display = 'block';
+        document.getElementById('formCheckout').style.display = 'none';
+
+        // Mettre à jour l'action du formulaire
         const form = document.getElementById('formCheckout');
-        // Replace '0' placeholder with actual ID in URL
         const urlTemplate = "{% url 'hotel:checkout_reservation' 0 %}";
         form.action = urlTemplate.replace('0', resId);
-        
+
         openModal('modalCheckout');
+
+        // Charger les détails via l'API
+        const apiUrl = "{% url 'hotel:api_checkout_details' 0 %}".replace('0', resId);
+        fetch(apiUrl)
+            .then(r => r.json())
+            .then(data => {
+                const fmt = v => Math.round(v).toLocaleString('fr-FR') + ' F';
+
+                // Hébergement
+                document.getElementById('bd-hebergement').textContent = fmt(data.hebergement);
+
+                // Consommations hôtel
+                if (data.consos && data.consos.length > 0) {
+                    let html = '';
+                    let total = 0;
+                    data.consos.forEach(c => {
+                        html += `<div style="display:flex;justify-content:space-between;color:#374151;margin-bottom:3px">
+                            <span style="color:#7a8b9c">[${c.label}] ${c.nom} ×${c.qte}</span>
+                            <span>${fmt(c.total)}</span></div>`;
+                        total += c.total;
+                    });
+                    document.getElementById('bd-consos-detail').innerHTML = html;
+                    document.getElementById('bd-consos-total').textContent = fmt(total);
+                    document.getElementById('bd-consos-block').style.display = 'block';
+                }
+
+                // Piscine
+                if (data.piscine_items && data.piscine_items.length > 0) {
+                    let html = '';
+                    let total = 0;
+                    data.piscine_items.forEach(p => {
+                        const clos = p.cloture ? ' <span style="color:#16a34a;font-size:10px">✓ clôturé</span>' : '';
+                        html += `<div style="display:flex;justify-content:space-between;color:#374151;margin-bottom:3px">
+                            <span style="color:#7a8b9c">${p.nom}${clos}</span>
+                            <span>${fmt(p.total)}</span></div>`;
+                        total += p.total;
+                    });
+                    document.getElementById('bd-piscine-detail').innerHTML = html;
+                    document.getElementById('bd-piscine-total').textContent = fmt(total);
+                    document.getElementById('bd-piscine-block').style.display = 'block';
+                }
+
+                // Avance
+                if (data.avance > 0) {
+                    document.getElementById('bd-avance').textContent = '- ' + fmt(data.avance);
+                    document.getElementById('bd-avance-block').style.display = 'block';
+                }
+
+                // Totaux
+                document.getElementById('bd-total-general').textContent = fmt(data.total_general);
+                document.getElementById('bd-reste').textContent = fmt(data.reste);
+
+                // Pré-remplir le montant à encaisser
+                document.getElementById('montantEncaisse').value = Math.round(data.reste);
+
+                // Afficher le formulaire
+                document.getElementById('checkout-loading').style.display = 'none';
+                document.getElementById('formCheckout').style.display = 'block';
+            })
+            .catch(err => {
+                document.getElementById('checkout-loading').textContent = '❌ Erreur de chargement. Réessayez.';
+                console.error(err);
+            });
     }
 
     function openServiceModal(resId, clientName, roomNum) {
