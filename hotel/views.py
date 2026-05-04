@@ -3,13 +3,15 @@ from utils.permissions import require_module_access
 from .models import Chambre, Client, Reservation, Consommation
 from facturation.models import Ticket, generate_ticket_numero
 from decimal import Decimal
-from bar.models import BoissonBar
+from bar.models import BoissonBar, MouvementStockBar
+from cuisine.models import Plat, MouvementStockCuisine, LigneFicheTechnique, Ingredient
 from restaurant.models import PlatMenu
 from espaces_evenementiels.models import EspaceEvenementiel
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+import uuid
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.urls import reverse
@@ -684,75 +686,136 @@ def checkout_reservation(request, reservation_id):
             messages.error(request, "Veuillez sélectionner un serveur/serveuse avant de valider le check-out.")
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
-        ticket = Ticket.objects.create(
-            numero=generate_ticket_numero(),
-            module='hotel',
-            objet_id=reservation.id,
-            client=f_client,
-            montant_total=reservation.get_total_general(),
-            montant_paye=montant_paye + reservation.avance,
-            mode_paiement=mode_paiement,
-            cree_par=request.user,
-            contenu=contenu
-        )
+        temporary_ticket_id = str(uuid.uuid4()) # Générer un ID temporaire unique
+
+        ticket_data = {
+            'numero': generate_ticket_numero(),
+            'module': 'hotel',
+            'objet_id': reservation.id,
+            'client_id': f_client.id if f_client else None, # Stocker l'ID du client
+            'montant_total': float(reservation.get_total_general()), # Convertir Decimal en float pour la session
+            'montant_paye': float(montant_paye + reservation.avance), # Convertir Decimal en float
+            'mode_paiement': mode_paiement,
+            'cree_par_id': request.user.id, # Stocker l'ID de l'utilisateur
+            'contenu': contenu,
+            'reservation_id': reservation.id, # Ajouter l'ID de la réservation pour faciliter la liaison
+        }
+
+        request.session[f'pending_ticket_data_{temporary_ticket_id}'] = ticket_data
+        request.session[f'pending_ticket_serveur_{temporary_ticket_id}'] = serveur_nom
+        request.session[f'pending_ticket_receptionniste_{temporary_ticket_id}'] = receptionniste_nom
 
         messages.success(request, "Paiement enregistré. Veuillez imprimer le ticket pour clôturer le séjour.")
-        request.session[f'ticket_{ticket.id}_serveur'] = serveur_nom
-        request.session[f'ticket_{ticket.id}_receptionniste'] = receptionniste_nom
-        return redirect('hotel:ticket_print', ticket_id=ticket.id)
+        return redirect('hotel:ticket_print', temporary_ticket_id=temporary_ticket_id)
         
     return redirect(reverse('hotel:index') + '?tab=historique')
 
 @require_module_access('hotel')
-def ticket_print(request, ticket_id):
-    """Afficher le ticket pour impression"""
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    serveur = request.session.get(f'ticket_{ticket_id}_serveur', '')
-    receptionniste = request.session.get(f'ticket_{ticket_id}_receptionniste', '')
+def ticket_print(request, temporary_ticket_id):
+    """Afficher le ticket pour impression (pré-validation)"""
+    ticket_data = request.session.get(f'pending_ticket_data_{temporary_ticket_id}')
+    if not ticket_data:
+        messages.error(request, "Données de ticket en attente introuvables.")
+        return redirect('hotel:index') # Rediriger vers une page appropriée
+
+    # Créer un objet factice Ticket pour le template, sans le sauvegarder
+    # On utilise les IDs pour les clés étrangères pour éviter de charger les objets complets ici
+    ticket = Ticket(
+        numero=ticket_data['numero'],
+        module=ticket_data['module'],
+        objet_id=ticket_data['objet_id'],
+        client_id=ticket_data['client_id'],
+        montant_total=ticket_data['montant_total'],
+        montant_paye=ticket_data['montant_paye'],
+        mode_paiement=ticket_data['mode_paiement'],
+        cree_par_id=ticket_data['cree_par_id'],
+        contenu=ticket_data['contenu'],
+        # Le ticket n'est pas encore imprimé ni sauvegardé
+        imprime=False
+    )
+    # Pour s'assurer que le template peut accéder à l'ID temporaire
+    ticket.id = temporary_ticket_id
+    serveur = request.session.get(f'pending_ticket_serveur_{temporary_ticket_id}', '')
+    receptionniste = request.session.get(f'pending_ticket_receptionniste_{temporary_ticket_id}', '')
     return render(request, 'facturation/ticket_print_thermal.html', {
         'ticket': ticket,
         'serveur': serveur,
         'receptionniste': receptionniste,
+        'temporary_ticket_id': temporary_ticket_id, # Passer l'ID temporaire au template
     })
 
 @require_module_access('hotel')
 @transaction.atomic
-def finalize_checkout(request, ticket_id):
+def finalize_checkout(request, temporary_ticket_id):
     """Finaliser le check-out (libérer la chambre) après impression"""
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    
-    # On vérifie si c'est bien un ticket d'hôtel
-    if ticket.module != 'hotel':
-        return JsonResponse({'status': 'error', 'message': 'Ticket invalide'}, status=400)
-        
-    try:
-        if not ticket.objet_id:
-             return JsonResponse({'status': 'error', 'message': 'Ticket sans réservation associée'}, status=400)
+    ticket_data = request.session.get(f'pending_ticket_data_{temporary_ticket_id}')
+    serveur_nom = request.session.get(f'pending_ticket_serveur_{temporary_ticket_id}')
+    receptionniste_nom = request.session.get(f'pending_ticket_receptionniste_{temporary_ticket_id}')
 
-        reservation = Reservation.objects.get(id=ticket.objet_id)
+    if not ticket_data:
+        return JsonResponse({'status': 'error', 'message': 'Données de ticket en attente introuvables.'}, status=400)
+
+    try:
+        reservation = get_object_or_404(Reservation, id=ticket_data['reservation_id'])
         
-        # Si déjà terminée, on ne fait rien mais on met à jour le ticket
+        # Si déjà terminée, on ne fait rien
         if reservation.statut == 'terminee':
-            # Assurer que le ticket est marqué imprimé
-            if not ticket.imprime:
-                ticket.imprime = True
-                ticket.date_impression = timezone.now()
-                ticket.save()
+            # Supprimer les données temporaires de la session
+            del request.session[f'pending_ticket_data_{temporary_ticket_id}']
+            del request.session[f'pending_ticket_serveur_{temporary_ticket_id}']
+            del request.session[f'pending_ticket_receptionniste_{temporary_ticket_id}']
             return JsonResponse({'status': 'success', 'message': 'Déjà clôturé'})
             
+        # Créer le ticket réel
+        ticket = Ticket.objects.create(
+            numero=ticket_data['numero'],
+            module=ticket_data['module'],
+            objet_id=ticket_data['objet_id'],
+            client_id=ticket_data['client_id'],
+            montant_total=ticket_data['montant_total'],
+            montant_paye=ticket_data['montant_paye'],
+            mode_paiement=ticket_data['mode_paiement'],
+            cree_par_id=ticket_data['cree_par_id'],
+            contenu=ticket_data['contenu'],
+            imprime=True, # Marquer comme imprimé dès la création
+            date_impression=timezone.now()
+        )
+
         # Mise à jour statuts
         reservation.statut = 'terminee'
         reservation.save()
-        
         # Libérer la chambre
         if reservation.chambre:
             reservation.chambre.statut = 'disponible'
             reservation.chambre.save()
-        
-        # Marquer le ticket comme imprimé
-        ticket.imprime = True
-        ticket.date_impression = timezone.now()
-        ticket.save()
+
+        # --- DÉDUCTION DE STOCK DES CONSOMMATIONS ---
+        consommations = Consommation.objects.filter(reservation=reservation)
+        for conso in consommations:
+            if conso.type_service == 'bar' and conso.boisson:
+                # Déduction pour les boissons
+                MouvementStockBar.objects.create(
+                    boisson=conso.boisson,
+                    type_mouvement='sortie',
+                    quantite=conso.quantite,
+                    commentaire=f"Conso Chambre {reservation.chambre.numero} - Ticket {ticket.numero}"
+                )
+            elif conso.type_service == 'restaurant' and conso.plat:
+                # Déduction pour les plats (via la fiche technique et les ingrédients)
+                if conso.plat.fiche_technique:
+                    lignes_fiche_technique = LigneFicheTechnique.objects.filter(fiche_technique=conso.plat.fiche_technique)
+                    for ligne in lignes_fiche_technique:
+                        MouvementStockCuisine.objects.create(
+                            ingredient=ligne.ingredient,
+                            type_mouvement='sortie',
+                            quantite=ligne.quantite * conso.quantite,
+                            commentaire=f"Conso Plat '{conso.plat.nom}' (Chambre {reservation.chambre.numero}) - Ticket {ticket.numero}"
+                        )
+
+        # Supprimer les données temporaires de la session
+        del request.session[f'pending_ticket_data_{temporary_ticket_id}']
+        del request.session[f'pending_ticket_serveur_{temporary_ticket_id}']
+        del request.session[f'pending_ticket_receptionniste_{temporary_ticket_id}']
         
         return JsonResponse({'status': 'success', 'message': 'Séjour clôturé avec succès'})
         
