@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class Table(models.Model):
     """Modèle pour les tables du restaurant"""
@@ -55,6 +56,18 @@ class PlatMenu(models.Model):
     description = models.TextField(blank=True, null=True, verbose_name="Description")
     cuisine_plat_id = models.IntegerField(null=True, blank=True, db_index=True,
                                           help_text="ID du plat Cuisine source — synchro permanente par ID")
+
+    @property
+    def fiche_technique(self):
+        """Retourne la FicheTechnique du plat cuisine associé (via cuisine_plat_id)."""
+        if not self.cuisine_plat_id:
+            return None
+        try:
+            from cuisine.models import Plat
+            plat_cuisine = Plat.objects.get(pk=self.cuisine_plat_id)
+            return getattr(plat_cuisine, 'fiche_technique', None)
+        except Exception:
+            return None
 
     def save(self, *args, **kwargs):
         if self.image:
@@ -247,3 +260,75 @@ class LigneForfait(models.Model):
         if self.plat and self.plat.image:    return self.plat.image.url
         if self.boisson and self.boisson.image: return self.boisson.image.url
         return None
+
+
+class SouscriptionForfait(models.Model):
+    """Lien entre un Forfait et un client (souscription / vente de forfait)."""
+
+    STATUT_CHOICES = [
+        ('active',    'Active'),
+        ('consommee', 'Consommée'),
+        ('expiree',   'Expirée'),
+        ('annulee',   'Annulée'),
+    ]
+    MODE_PAIEMENT_CHOICES = [
+        ('especes',       'Espèces'),
+        ('mobile_money',  'Mobile Money'),
+        ('orange_money',  'Orange Money'),
+        ('wave',          'Wave'),
+        ('carte_bancaire','Carte bancaire'),
+        ('virement',      'Virement'),
+        ('cheque',        'Chèque'),
+        ('autre',         'Autre'),
+    ]
+
+    forfait          = models.ForeignKey(Forfait, on_delete=models.PROTECT,
+                                         related_name='souscriptions', verbose_name="Forfait")
+    # Client enregistré (optionnel — peut être un client de passage)
+    client           = models.ForeignKey('facturation.Client', on_delete=models.SET_NULL,
+                                         null=True, blank=True, related_name='souscriptions',
+                                         verbose_name="Client enregistré")
+    nom_client       = models.CharField(max_length=200, blank=True,
+                                        verbose_name="Nom client (saisie libre)")
+    date_souscription= models.DateTimeField(default=timezone.now,
+                                            verbose_name="Date de souscription")
+    date_validite    = models.DateField(null=True, blank=True,
+                                        verbose_name="Date de validité")
+    statut           = models.CharField(max_length=20, choices=STATUT_CHOICES, default='active',
+                                        verbose_name="Statut")
+    montant_paye     = models.DecimalField(max_digits=10, decimal_places=2,
+                                           verbose_name="Montant encaissé (FCFA)")
+    mode_paiement    = models.CharField(max_length=30, choices=MODE_PAIEMENT_CHOICES,
+                                        default='especes', verbose_name="Mode de paiement")
+    reference        = models.CharField(max_length=100, blank=True,
+                                        verbose_name="Référence (chambre, table…)")
+    notes            = models.TextField(blank=True, verbose_name="Notes internes")
+    cree_par         = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                         related_name='souscriptions_creees',
+                                         verbose_name="Créé par")
+    ticket           = models.OneToOneField('facturation.Ticket', on_delete=models.SET_NULL,
+                                            null=True, blank=True, related_name='souscription',
+                                            verbose_name="Ticket de caisse")
+
+    class Meta:
+        ordering = ['-date_souscription']
+        verbose_name = "Souscription forfait"
+        verbose_name_plural = "Souscriptions forfait"
+
+    def __str__(self):
+        return f"{self.forfait.nom} — {self.client_display} ({self.get_statut_display()})"
+
+    @property
+    def client_display(self):
+        if self.client:
+            return str(self.client)
+        return self.nom_client or "Client inconnu"
+
+    @property
+    def est_active(self):
+        if self.statut != 'active':
+            return False
+        if self.date_validite:
+            from datetime import date
+            return self.date_validite >= date.today()
+        return True

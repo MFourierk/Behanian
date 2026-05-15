@@ -737,6 +737,17 @@ function formatF(n) {
   return parseInt(n).toLocaleString('fr-FR') + ' F';
 }
 
+function afficherErreurStock(data) {
+  /* Affiche une notification claire pour les erreurs de stock */
+  let html = '<strong>⚠️ ' + (data.error || 'Vente impossible') + '</strong>';
+  if (data.details && data.details.length) {
+    html += '<ul style="margin:6px 0 0;padding-left:16px;font-weight:400;font-size:0.82rem">';
+    data.details.forEach(d => { html += '<li>' + d + '</li>'; });
+    html += '</ul>';
+  }
+  toast(html, 'error');
+}
+
 // ============================================================
 // CATALOGUE
 // ============================================================
@@ -1011,7 +1022,7 @@ async function mettreOnChambre() {
       body: JSON.stringify(payload)
     });
     const data = await resp.json();
-    if (!data.ok) { toast('Erreur : '+data.error, 'error'); return; }
+    if (!data.ok) { afficherErreurStock(data); return; }
 
     // Afficher confirmation
     let detail = t.lignes.map(l=>`${l.nom} x${l.qty} — ${formatF(l.prix*l.qty)}`).join('<br>');
@@ -1093,7 +1104,7 @@ async function confirmerPaiement() {
     const data = await resp.json();
 
     if (!data.ok) {
-      toast(`Erreur : ${data.error}`, 'error');
+      afficherErreurStock(data);
       btnConfirm.disabled = false;
       btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer';
       return;

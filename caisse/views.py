@@ -4,7 +4,6 @@ from django.utils import timezone
 from django.db.models import Sum, Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 import json
 from decimal import Decimal, InvalidOperation
 
@@ -25,39 +24,35 @@ def _dec(val, default=0):
 def get_stats_jour(date=None, type_caisse=None):
     """Stats complètes d'une journée.
     - type_caisse=None ou 'centrale' : toutes les transactions
-    - type_caisse='hotel'   : tickets hotel uniquement
-    - type_caisse='module'  : tickets hors hotel
+    - type_caisse='hotel'            : tickets hotel uniquement
+    - type_caisse='module'           : tickets hors hotel
     """
     if date is None:
         date = timezone.now().date()
 
     tickets = Ticket.objects.filter(date_creation__date=date)
 
-    # Filtrer selon le type de caisse
     if type_caisse == 'hotel':
         tickets = tickets.filter(module__in=['hotel'])
     elif type_caisse == 'module':
         tickets = tickets.exclude(module__in=['hotel'])
-    # type_caisse == 'centrale' ou None → tout voir
 
-    total         = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
-    especes       = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
-    mobile        = tickets.filter(mode_paiement__in=['mobile_money','orange_money','wave','moov_money','mtn_money']).aggregate(s=Sum('montant_total'))['s'] or 0
-    carte         = tickets.filter(mode_paiement='carte_bancaire').aggregate(s=Sum('montant_total'))['s'] or 0
-    virement      = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
+    total    = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
+    especes  = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
+    mobile   = tickets.filter(mode_paiement__in=['mobile_money', 'orange_money', 'wave', 'moov_money', 'mtn_money']).aggregate(s=Sum('montant_total'))['s'] or 0
+    carte    = tickets.filter(mode_paiement='carte_bancaire').aggregate(s=Sum('montant_total'))['s'] or 0
+    virement = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
 
-    # Par module
     par_module = {}
-    for mod, label in [('hotel','Hôtel'),('restaurant','Restaurant'),('cave','Cave'),('piscine','Piscine'),('espace','Espaces'),('caisse','Caisse')]:
+    for mod, label in [('hotel', 'Hôtel'), ('restaurant', 'Restaurant'), ('cave', 'Cave'),
+                        ('piscine', 'Piscine'), ('espace', 'Espaces'), ('caisse', 'Caisse')]:
         t = tickets.filter(module__startswith=mod).aggregate(s=Sum('montant_total'))['s'] or 0
-        if t: par_module[label] = int(t)
+        if t:
+            par_module[label] = int(t)
 
-    # Prélèvements banque du jour
-    prelevements = PrelevementBanque.objects.filter(date__date=date, valide=True)
-    total_prelev  = prelevements.aggregate(s=Sum('montant'))['s'] or 0
-
-    # Dépenses du jour
-    depenses = MouvementCaisse.objects.filter(date__date=date, type='depense', valide=True)
+    prelevements   = PrelevementBanque.objects.filter(date__date=date, valide=True)
+    total_prelev   = prelevements.aggregate(s=Sum('montant'))['s'] or 0
+    depenses       = MouvementCaisse.objects.filter(date__date=date, type='depense', valide=True)
     total_depenses = depenses.aggregate(s=Sum('montant'))['s'] or 0
 
     return {
@@ -72,58 +67,69 @@ def get_stats_jour(date=None, type_caisse=None):
         'prelevements': int(total_prelev),
         'depenses': int(total_depenses),
         'net': int(total) - int(total_prelev) - int(total_depenses),
-        'tickets': tickets.select_related('client','cree_par').order_by('-date_creation'),
+        'tickets': tickets.select_related('client', 'cree_par').order_by('-date_creation'),
     }
 
-
-# ── Vues principales ───────────────────────────────────────────────────────
 
 def get_solde_veille():
     """Retourne le solde restant après la dernière clôture."""
     last = CaisseSession.objects.filter(is_open=False).order_by('-closed_at').first()
     if not last:
         return 0, None
-    # Solde = fond réel compté + espèces encaissées - prélèvement banque
     solde = last.fond_caisse_reel + last.total_especes - last.prelevement_banque
     return int(solde), last
 
 
+def _session_non_cloturee_precedente(type_caisse):
+    """Retourne la session ouverte d'un jour antérieur, ou None."""
+    today = timezone.localdate()
+    return CaisseSession.objects.filter(
+        is_open=True,
+        type_caisse=type_caisse,
+        date_session__lt=today,
+    ).order_by('-date_session').first()
+
+
+# ── Vues principales ───────────────────────────────────────────────────────
+
 @require_module_access('caisse')
 def index(request):
-    today = timezone.now().date()
+    today = timezone.localdate()
     is_manager = request.user.groups.filter(name=GROUPE_MANAGER_GENERAL).exists() or request.user.is_superuser
     session_active = CaisseSession.objects.filter(user=request.user, is_open=True).first()
-    # La caisse centrale voit tout. Hotel et Module voient leurs propres stats.
+
     user_type = None
     if session_active:
         user_type = session_active.type_caisse
     elif not is_manager:
-        # Même sans session, appliquer le filtre selon le rôle
         user_groups = list(request.user.groups.values_list('name', flat=True))
         if 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
             user_type = 'hotel'
         elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
             user_type = 'module'
+
     stats = get_stats_jour(today, type_caisse=user_type)
 
-    # Sessions du jour (toutes)
     sessions_jour = CaisseSession.objects.filter(
         opened_at__date=today
     ).select_related('user').order_by('-opened_at')
 
-    # Mouvements du jour
     mouvements = MouvementCaisse.objects.filter(
         date__date=today, valide=True
     ).select_related('cree_par').order_by('-date')
 
-    # Prélèvements du jour
     prelevements = PrelevementBanque.objects.filter(
         date__date=today, valide=True
     ).select_related('cree_par').order_by('-date')
 
     solde_veille, last_session = get_solde_veille()
 
-    # Peut ouvrir une caisse (les gestionnaires en lecture seule ne peuvent pas)
+    # Sessions non clôturées des jours précédents (alerte manager)
+    sessions_bloquantes = CaisseSession.objects.filter(
+        is_open=True,
+        date_session__lt=today,
+    ).select_related('user').order_by('-date_session')
+
     can_open_caisse = (
         request.user.is_superuser or
         any(g in list(request.user.groups.values_list('name', flat=True)) for g in [
@@ -145,13 +151,12 @@ def index(request):
         'prelevements': prelevements,
         'solde_veille': solde_veille,
         'last_session': last_session,
+        'sessions_bloquantes': sessions_bloquantes,
     }
     return render(request, 'caisse/index.html', context)
 
 
-
 # Groupes autorisés à ouvrir la caisse centrale
-# Règle ERP hôtellerie : caissière principale (rôle dédié) + manager général (suppléant)
 GROUPES_CAISSE_CENTRALE = [
     'Responsable Caisse',
     'Caissier(ère) Principal(e)',
@@ -159,6 +164,7 @@ GROUPES_CAISSE_CENTRALE = [
     'Manager Général(e)',
     'Manager General(e)',
 ]
+
 
 def _get_type_caisse(user):
     """Retourne le type de caisse attendu selon le rôle de l'utilisateur."""
@@ -175,25 +181,47 @@ def _get_type_caisse(user):
 @require_module_access('caisse')
 @require_POST
 def ouvrir_caisse(request):
-    user_groups = list(request.user.groups.values_list('name', flat=True))
+    today = timezone.localdate()
     type_attendu = _get_type_caisse(request.user)
 
-    session = CaisseSession.objects.filter(user=request.user, is_open=True, type_caisse=type_attendu).first()
-    if session:
-        return JsonResponse({'success': False, 'error': f'Votre caisse {session.get_type_caisse_display()} est déjà ouverte'})
+    # 1. Vérifier si une session est déjà ouverte pour cet utilisateur aujourd'hui
+    session_existante = CaisseSession.objects.filter(
+        user=request.user, is_open=True, type_caisse=type_attendu
+    ).first()
+    if session_existante:
+        return JsonResponse({
+            'success': False,
+            'error': f'Votre caisse {session_existante.get_type_caisse_display()} est déjà ouverte (depuis {session_existante.opened_at.strftime("%H:%M")})',
+        })
+
+    # 2. Bloquer si une session du même type n'a pas été clôturée hier ou avant
+    session_ancienne = _session_non_cloturee_precedente(type_attendu)
+    if session_ancienne:
+        return JsonResponse({
+            'success': False,
+            'error': (
+                f'⛔ Ouverture impossible : la caisse du {session_ancienne.date_session.strftime("%d/%m/%Y")} '
+                f'({session_ancienne.user.get_full_name() or session_ancienne.user.username}) '
+                f'n\'a pas été clôturée. Un manager doit la forcer-clôturer avant de continuer.'
+            ),
+            'session_bloquante_id': session_ancienne.pk,
+            'bloquee': True,
+        })
+
     try:
-        data = json.loads(request.body)
-        fond = _dec(data.get('fond_caisse', 0))
+        data  = json.loads(request.body)
+        fond  = _dec(data.get('fond_caisse', 0))
         notes = data.get('notes', '')
-        type_caisse = type_attendu
 
         session = CaisseSession.objects.create(
             user=request.user,
-            type_caisse=type_caisse,
+            type_caisse=type_attendu,
+            date_session=today,
             fond_caisse=fond,
             notes=notes,
         )
-        # Enregistrer le fond comme premier mouvement
+
+        # Fond de caisse comme premier mouvement
         if fond > 0:
             MouvementCaisse.objects.create(
                 session=session,
@@ -205,11 +233,9 @@ def ouvrir_caisse(request):
                 cree_par=request.user,
             )
 
-        # ── CONSOLIDATION AUTOMATIQUE pour la caisse centrale ──────────────
+        # ── Consolidation automatique pour la caisse centrale ──────────────
         msg_consolidation = ''
-        if type_caisse == 'centrale':
-            today = timezone.now().date()
-            # Récupérer toutes les sessions hotel et module du jour déjà clôturées ou ouvertes
+        if type_attendu == 'centrale':
             sessions_autres = CaisseSession.objects.filter(
                 opened_at__date=today,
                 type_caisse__in=['hotel', 'module']
@@ -219,8 +245,7 @@ def ouvrir_caisse(request):
             nb_sessions = sessions_autres.count()
 
             for s in sessions_autres:
-                # Calculer le CA de chaque session depuis les tickets
-                stats_s = get_stats_jour(today, type_caisse=s.type_caisse)
+                stats_s  = get_stats_jour(today, type_caisse=s.type_caisse)
                 montant_s = _dec(stats_s['total'])
                 if montant_s > 0:
                     total_consolide += montant_s
@@ -232,21 +257,21 @@ def ouvrir_caisse(request):
                         defaults={
                             'montant': montant_s,
                             'mode_paiement': 'especes',
-                            'description': f'Consolidation automatique — {s.get_type_caisse_display()} ({s.user.get_full_name() or s.user.username})',
+                            'description': f'Consolidation auto — {s.get_type_caisse_display()} ({s.user.get_full_name() or s.user.username})',
                             'cree_par': request.user,
                         }
                     )
 
             if nb_sessions > 0:
                 msg_consolidation = f' | {nb_sessions} caisse(s) consolidée(s) : {int(total_consolide):,} F'
-        # ────────────────────────────────────────────────────────────────────
+        # ──────────────────────────────────────────────────────────────────
 
         return JsonResponse({
             'success': True,
-            'message': f'Caisse ouverte — Fond: {int(fond):,} F{msg_consolidation}',
+            'message': f'Caisse ouverte — {session.numero_session} — Fond: {int(fond):,} F{msg_consolidation}',
             'opened_at': session.opened_at.strftime("%d/%m/%Y à %H:%M"),
-            'type_caisse': type_caisse,
-            'consolidation': msg_consolidation != '',
+            'numero_session': session.numero_session,
+            'type_caisse': type_attendu,
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -259,28 +284,31 @@ def cloturer_caisse(request):
     if not session:
         return JsonResponse({'success': False, 'error': 'Aucune caisse ouverte'})
     try:
-        data = json.loads(request.body)
-        today = timezone.now().date()
-
+        data      = json.loads(request.body)
+        today     = timezone.localdate()
         fond_reel = _dec(data.get('fond_reel', 0))
         prelev    = _dec(data.get('prelevement_banque', 0))
         banque    = data.get('banque', '')
         notes     = data.get('notes', '')
 
-        # Calculer les totaux de la session avant clôture
         stats = get_stats_jour(today, type_caisse=session.type_caisse)
 
-        # Clôturer la session
-        session.closed_at        = timezone.now()
-        session.is_open          = False
-        session.fond_caisse_reel = fond_reel
-        session.total_especes    = stats['especes']
-        session.total_mobile     = stats['mobile']
-        session.total_carte      = stats['carte']
-        session.total_virement   = stats['virement']
-        session.total_general    = stats['total']
+        # Solde théorique = fond initial + espèces encaissées − prélèvements banque
+        solde_th = session.fond_caisse + _dec(stats['especes']) - prelev
+        ecart    = solde_th - fond_reel
+
+        session.closed_at          = timezone.now()
+        session.is_open            = False
+        session.fond_caisse_reel   = fond_reel
+        session.total_especes      = stats['especes']
+        session.total_mobile       = stats['mobile']
+        session.total_carte        = stats['carte']
+        session.total_virement     = stats['virement']
+        session.total_general      = stats['total']
         session.prelevement_banque = prelev
-        session.notes            = notes
+        session.solde_theorique    = solde_th
+        session.ecart              = ecart
+        session.notes              = notes
         session.save()
 
         # Enregistrer le prélèvement banque si > 0
@@ -302,11 +330,51 @@ def cloturer_caisse(request):
                 cree_par=request.user,
             )
 
+        ecart_label = f"+{int(ecart):,} F (excédent)" if ecart > 0 else (f"{int(ecart):,} F (manquant)" if ecart < 0 else "0 F (équilibré)")
         return JsonResponse({
             'success': True,
-            'message': f'Caisse clôturée. Total: {stats["total"]:,} F',
+            'message': f'Caisse clôturée — {session.numero_session}. Total: {stats["total"]:,} F | Écart: {ecart_label}',
             'total': stats['total'],
             'prelev': int(prelev),
+            'solde_theorique': int(solde_th),
+            'ecart': int(ecart),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_manager
+@require_POST
+def force_cloturer_caisse(request, session_id):
+    """Clôture forcée d'une session bloquante par un manager."""
+    session = get_object_or_404(CaisseSession, pk=session_id, is_open=True)
+    try:
+        data      = json.loads(request.body) if request.body else {}
+        fond_reel = _dec(data.get('fond_reel', session.fond_caisse))
+        notes     = data.get('notes', 'Clôture forcée par manager')
+
+        date = session.date_session
+        stats = get_stats_jour(date, type_caisse=session.type_caisse)
+
+        solde_th = session.fond_caisse + _dec(stats['especes']) - session.prelevement_banque
+        ecart    = solde_th - fond_reel
+
+        session.closed_at        = timezone.now()
+        session.is_open          = False
+        session.fond_caisse_reel = fond_reel
+        session.total_especes    = stats['especes']
+        session.total_mobile     = stats['mobile']
+        session.total_carte      = stats['carte']
+        session.total_virement   = stats['virement']
+        session.total_general    = stats['total']
+        session.solde_theorique  = solde_th
+        session.ecart            = ecart
+        session.notes            = notes + f' — forcée par {request.user.get_full_name() or request.user.username}'
+        session.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Session {session.numero_session} du {session.date_session.strftime("%d/%m/%Y")} clôturée de force.',
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -317,7 +385,7 @@ def cloturer_caisse(request):
 def enregistrer_mouvement(request):
     """Dépense, remboursement, ajustement manuel."""
     try:
-        data = json.loads(request.body)
+        data    = json.loads(request.body)
         session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
 
         type_mv = data.get('type', 'depense')
@@ -345,13 +413,13 @@ def enregistrer_mouvement(request):
 def prelevement_banque(request):
     """Prélèvement vers la banque en cours de journée."""
     try:
-        data = json.loads(request.body)
+        data    = json.loads(request.body)
         montant = _dec(data.get('montant', 0))
         if montant <= 0:
             return JsonResponse({'success': False, 'error': 'Montant invalide'})
         session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
 
-        p = PrelevementBanque.objects.create(
+        PrelevementBanque.objects.create(
             session=session,
             montant=montant,
             banque=data.get('banque', ''),
@@ -365,7 +433,7 @@ def prelevement_banque(request):
             module='banque',
             montant=montant,
             mode_paiement='virement',
-            description=f'Prélèvement banque — {data.get("banque","")}',
+            description=f'Prélèvement banque — {data.get("banque", "")}',
             reference=data.get('reference', ''),
             cree_par=request.user,
         )
@@ -383,7 +451,7 @@ def rapport_caisse(request, session_id=None):
     if session_id:
         session = get_object_or_404(CaisseSession, pk=session_id)
     else:
-        today = timezone.now().date()
+        today = timezone.localdate()
         session = CaisseSession.objects.filter(
             opened_at__date=today, user=request.user
         ).order_by('-opened_at').first()
@@ -391,14 +459,10 @@ def rapport_caisse(request, session_id=None):
     if not session:
         return redirect('caisse:index')
 
-    date = session.opened_at.date()
-    stats = get_stats_jour(date)
-    mouvements = MouvementCaisse.objects.filter(
-        session=session, valide=True
-    ).order_by('date')
-    prelevements = PrelevementBanque.objects.filter(
-        session=session, valide=True
-    ).order_by('date')
+    date         = session.date_session or session.opened_at.date()
+    stats        = get_stats_jour(date)
+    mouvements   = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
+    prelevements = PrelevementBanque.objects.filter(session=session, valide=True).order_by('date')
 
     return render(request, 'caisse/rapport.html', {
         'session': session,
@@ -418,17 +482,14 @@ def api_stats_jour(request):
     except ValueError:
         date = timezone.now().date()
     stats = get_stats_jour(date)
-    stats.pop('tickets', None)  # pas sérialisable
+    stats.pop('tickets', None)
     return JsonResponse(stats)
 
 
 @require_module_access('caisse')
 @require_POST
 def sync_centrale(request):
-    """Re-synchronise en temps réel les caisses modules/hotel dans la session centrale.
-    Conforme ERP hôtellerie : le rapport X (interim) de la caissière principale
-    reflète les encaissements de tous les centres de revenus en temps réel.
-    """
+    """Re-synchronise en temps réel les caisses modules/hotel dans la session centrale."""
     session = CaisseSession.objects.filter(
         user=request.user, is_open=True, type_caisse='centrale'
     ).first()
@@ -436,24 +497,24 @@ def sync_centrale(request):
         return JsonResponse({'success': False, 'error': 'Aucune session centrale ouverte pour cet utilisateur'})
 
     try:
-        today = timezone.now().date()
+        today          = timezone.localdate()
         sessions_autres = CaisseSession.objects.filter(
             opened_at__date=today,
             type_caisse__in=['hotel', 'module']
         ).exclude(id=session.id)
 
         total_consolide = _dec(0)
-        nb_updates = 0
+        nb_updates      = 0
 
         for s in sessions_autres:
-            stats_s = get_stats_jour(today, type_caisse=s.type_caisse)
+            stats_s   = get_stats_jour(today, type_caisse=s.type_caisse)
             montant_s = _dec(stats_s['total'])
-            ref = f'CONSOLIDATION-{s.pk}'
+            ref       = f'CONSOLIDATION-{s.pk}'
 
             existing = MouvementCaisse.objects.filter(session=session, reference=ref).first()
             if existing:
                 if montant_s > 0 and existing.montant != montant_s:
-                    existing.montant = montant_s
+                    existing.montant     = montant_s
                     existing.description = (
                         f'Consolidation sync — {s.get_type_caisse_display()} '
                         f'({s.user.get_full_name() or s.user.username})'
@@ -492,14 +553,12 @@ def sync_centrale(request):
 def historique(request):
     """Historique complet des sessions — Manager."""
     from datetime import timedelta
-    today = timezone.now().date()
+    today = timezone.localdate()
     debut = today - timedelta(days=30)
 
     sessions = CaisseSession.objects.filter(
         opened_at__date__gte=debut
     ).select_related('user').order_by('-opened_at')
-
-    stats_periode = get_stats_jour.__wrapped__(debut) if hasattr(get_stats_jour, '__wrapped__') else {}
 
     return render(request, 'caisse/historique.html', {
         'sessions': sessions,

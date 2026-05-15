@@ -700,8 +700,9 @@
 
                     <div class="row" style="display: flex; gap: 10px;">
                         <div class="form-group" style="flex: 1;">
-                            <label>Type Pièce</label>
-                            <select name="piece_identite" class="form-control">
+                            <label>Type Pièce <span class="text-danger">*</span></label>
+                            <select name="piece_identite" class="form-control" required>
+                                <option value="">-- Sélectionner --</option>
                                 <option value="CNI">CNI</option>
                                 <option value="Passeport">Passeport</option>
                                 <option value="Permis">Permis de conduire</option>
@@ -709,8 +710,8 @@
                             </select>
                         </div>
                         <div class="form-group" style="flex: 1;">
-                            <label>Numéro Pièce</label>
-                            <input type="text" name="numero_piece" class="form-control">
+                            <label>Numéro Pièce <span class="text-danger">*</span></label>
+                            <input type="text" name="numero_piece" class="form-control" required placeholder="Ex : 0123456789">
                         </div>
                     </div>
 
@@ -1266,8 +1267,9 @@
 
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
-                        <label>Type Pièce</label>
-                        <select name="piece_identite" id="cr_piece_identite" class="form-control">
+                        <label>Type Pièce <span class="text-danger">*</span></label>
+                        <select name="piece_identite" id="cr_piece_identite" class="form-control" required>
+                            <option value="">-- Sélectionner --</option>
                             <option value="CNI">CNI</option>
                             <option value="Passeport">Passeport</option>
                             <option value="Permis">Permis de conduire</option>
@@ -1275,8 +1277,8 @@
                         </select>
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label>Numéro Pièce</label>
-                        <input type="text" name="numero_piece" id="cr_numero_piece" class="form-control">
+                        <label>Numéro Pièce <span class="text-danger">*</span></label>
+                        <input type="text" name="numero_piece" id="cr_numero_piece" class="form-control" required placeholder="Ex : 0123456789">
                     </div>
                 </div>
 

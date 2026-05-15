@@ -1,5 +1,14 @@
 """
 Contrôle d'accès centralisé — Complexe Hôtelier Behanian
+
+Groupes canoniques (sans accents pour éviter les conflits d'encodage en base) :
+  Manager General     → accès complet sauf suppression transactions
+  Directeur General   → alias de Manager General
+  Manager Cuisine     → module cuisine uniquement
+  Receptionniste      → module hôtel uniquement
+  Caissiere Principale→ tous les caisses (restaurant, bar, piscine, espaces, caisse centrale)
+  Caissiere           → caisses TPE uniquement (restaurant, bar, piscine, espaces) – PAS caisse centrale
+  Utilisateur Simple  → aucun accès interface (gardiens, serveurs, agents)
 """
 from functools import wraps
 from django.shortcuts import redirect
@@ -7,25 +16,66 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 
-# ── Définition des groupes ──
-GROUPE_MANAGER_GENERAL    = 'Manager Général(e)'
+# ── Noms canoniques des groupes ──────────────────────────────
+GROUPE_MANAGER_GENERAL    = 'Manager General'
+GROUPE_DIRECTEUR_GENERAL  = 'Directeur General'
 GROUPE_MANAGER_CUISINE    = 'Manager Cuisine'
-GROUPE_RECEPTIONNISTE     = 'Réceptionniste'
-GROUPE_CAISSIER           = 'Caissière / Caissier'
-GROUPE_CAISSIER_PRINCIPAL = 'Responsable Caisse'
-GROUPE_SERVEUR            = 'Serveuse/Serveur'
+GROUPE_RECEPTIONNISTE     = 'Receptionniste'
+GROUPE_CAISSIERE_PRINCIPALE = 'Caissiere Principale'
+GROUPE_CAISSIERE          = 'Caissiere'
+GROUPE_UTILISATEUR_SIMPLE = 'Utilisateur Simple'
 
-# Modules accessibles par groupe
-# Tous les noms de groupes possibles (avec/sans accents)
-ACCESS_MAP = {}
-_RULES = [
-    (['Manager Général(e)', 'Manager General(e)'],        ['*']),
-    (['Manager Cuisine'],                                  ['cuisine']),
-    (['Réceptionniste', 'Receptionniste'],                 ['hotel']),
-    (['Caissière / Caissier', 'Caissiere / Caissier'],    ['restaurant', 'bar', 'piscine', 'espaces']),
-    (['Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)', 'Responsable Caisse'], ['caisse']),
-    (['Serveuse/Serveur'],                                 []),
+# Noms alternatifs (anciens groupes en base + rétrocompatibilité complète)
+_MANAGERS = [
+    GROUPE_MANAGER_GENERAL, GROUPE_DIRECTEUR_GENERAL,
+    # Variantes accentuées / anciens formats
+    'Manager Général(e)', 'Manager General(e)',
+    'Directeur Général',   # nom existant en base avec accent
 ]
+_CAISSIERE_PRINCIPALE = [
+    GROUPE_CAISSIERE_PRINCIPALE,
+    # Variantes anciens formats
+    'Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)',
+    # Responsable Caisse : accès complet (restaurant+bar+piscine+espaces+caisse)
+    # mais bloqué de la gestion bar (Cave TPE uniquement) via _is_caissier()
+    'Responsable Caisse',
+]
+_CAISSIERE = [
+    GROUPE_CAISSIERE,
+    # Variantes anciennes et nom réel trouvé en base
+    'Caissier(e)',          # nom réel en base
+    'Caissière / Caissier', 'Caissiere / Caissier',
+    'Caissier(E)',
+]
+# Groupes bloqués de la gestion/stock/rapports bar (TPE bar uniquement)
+_BAR_TPE_SEULEMENT = _CAISSIERE + ['Responsable Caisse']
+_RECEPTIONNISTE = [
+    GROUPE_RECEPTIONNISTE,
+    'Réceptionniste',       # nom réel en base avec accent
+    'Responsable Hôtel',    # rôle similaire (accueil/réception)
+]
+_UTILISATEUR_SIMPLE = [
+    GROUPE_UTILISATEUR_SIMPLE,
+    'Serveuse/Serveur',
+    'Agent de Sécurité',   # nom réel en base — aucun accès interface
+    'Cuisinier(e)',         # personnel cuisine — pas d'accès interface
+]
+
+
+# ── Matrice d'accès (groupe → modules) ───────────────────────
+_RULES = [
+    (_MANAGERS,              ['*']),
+    (['Manager Cuisine'],     ['cuisine']),
+    (_RECEPTIONNISTE,         ['hotel']),
+    # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale)
+    (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse']),
+    # Caissière : TPE uniquement, PAS de caisse centrale
+    (_CAISSIERE,              ['restaurant', 'bar', 'piscine', 'espaces']),
+    # Utilisateur Simple + personnel terrain : aucun module
+    (_UTILISATEUR_SIMPLE,     []),
+]
+
+ACCESS_MAP = {}
 for _names, _modules in _RULES:
     for _n in _names:
         ACCESS_MAP[_n] = _modules
@@ -40,7 +90,6 @@ def user_has_access(user, module):
     """Vérifie si l'utilisateur peut accéder à un module."""
     if not user.is_authenticated:
         return False
-    # Seul le superuser a un accès global — is_staff ne donne AUCUN accès supplémentaire
     if user.is_superuser:
         return True
     groups = get_user_groups(user)
@@ -66,22 +115,41 @@ def require_module_access(module):
     return decorator
 
 
+def _is_manager(user):
+    """Vérifie si l'utilisateur est Manager Général ou Directeur Général."""
+    if user.is_superuser:
+        return True
+    return any(g in _MANAGERS for g in get_user_groups(user))
+
+
 def require_manager(view_func):
-    """Décorateur — réservé au Manager Général et superuser."""
+    """Décorateur — réservé au Manager Général, Directeur Général et superuser."""
     @wraps(view_func)
     @login_required
     def wrapper(request, *args, **kwargs):
-        groups = get_user_groups(request.user)
-        if not request.user.is_superuser and GROUPE_MANAGER_GENERAL not in groups:
-            messages.error(request, "Accès refusé — réservé au Manager Général.")
-            return redirect('caisse:index')
+        if not _is_manager(request.user):
+            messages.error(request,
+                "Accès refusé — réservé aux managers et directeurs.")
+            return redirect('dashboard:index')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def require_superuser(view_func):
+    """Décorateur — réservé au superuser uniquement (suppression de transactions)."""
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            messages.error(request,
+                "Action réservée au Super Administrateur — la suppression de transactions est protégée.")
+            return redirect('dashboard:index')
         return view_func(request, *args, **kwargs)
     return wrapper
 
 
 def get_accessible_modules(user):
     """Retourne la liste des modules accessibles pour la sidebar."""
-    # is_staff seul ne donne AUCUN accès module — uniquement superuser
     if user.is_superuser:
         return ['dashboard', 'hotel', 'restaurant', 'bar', 'cuisine',
                 'piscine', 'boite_nuit', 'espaces', 'caisse', 'facturation',
@@ -102,29 +170,28 @@ def get_accessible_modules(user):
 # ── Décorateurs de restriction intra-module ──────────────────
 
 def _is_caissier(user):
+    """True pour tous les groupes limités au TPE bar (bloque gestion/stock/rapports cave)."""
     g = get_user_groups(user)
-    return any(x in g for x in ['Caissière / Caissier','Caissiere / Caissier'])
+    return any(x in g for x in _BAR_TPE_SEULEMENT)
+
+def _is_caissier_principal(user):
+    g = get_user_groups(user)
+    return any(x in g for x in _CAISSIERE_PRINCIPALE)
 
 def _is_receptionniste(user):
     g = get_user_groups(user)
-    return 'Réceptionniste' in g or 'Receptionniste' in g
+    return any(x in g for x in _RECEPTIONNISTE)
 
 def _is_manager_cuisine(user):
     g = get_user_groups(user)
     return 'Manager Cuisine' in g
 
 def _is_manager_general(user):
-    g = get_user_groups(user)
-    return user.is_superuser or 'Manager Général(e)' in g or 'Manager General(e)' in g
+    return _is_manager(user)
 
 
 def require_gestion_access(module):
     """Bloque les caissiers et réceptionnistes des pages de gestion/admin."""
-    from functools import wraps
-    from django.shortcuts import redirect
-    from django.contrib import messages
-
-    # URLs de repli par module
     fallback = {
         'bar':        'bar:tpe',
         'restaurant': 'restaurant:index',
@@ -139,15 +206,12 @@ def require_gestion_access(module):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             user = request.user
-            # Caissiers — accès TPE uniquement
             if _is_caissier(user):
                 messages.error(request, "Accès refusé — section réservée à la gestion.")
                 return redirect(fallback.get(module, 'dashboard:index'))
-            # Réceptionnistes — hotel uniquement, pas d'admin structurel
             if _is_receptionniste(user) and module != 'hotel':
                 messages.error(request, "Accès refusé.")
                 return redirect('hotel:index')
-            # Manager Cuisine — cuisine uniquement
             if _is_manager_cuisine(user) and module not in ['cuisine']:
                 messages.error(request, "Accès refusé.")
                 return redirect('cuisine:index')

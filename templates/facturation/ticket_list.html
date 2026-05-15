@@ -1,374 +1,339 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
-{% load static %}
-{% load i18n %}
 
-{% block title %}Tickets & Avoirs - Facturation{% endblock %}
+{% block title %}Tickets — Facturation{% endblock %}
 
+{% block extra_css %}
+<style>
+/* ── Layout ─────────────────────────────────────────── */
+.fac-body{background:#eef1f5;padding:20px 0 50px}
+.container-tck{max-width:1300px;margin:0 auto;padding:0 20px}
 
+/* ── KPI Cards ──────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:white;border:1px solid #d4dce8;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px}
+.kpi-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.kpi-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#7a8b9c;margin-bottom:3px}
+.kpi-val{font-size:1.4rem;font-weight:800;color:#1a2535;line-height:1}
+.kpi-val.green{color:#16a34a}
+.kpi-val.red{color:#dc2626}
+.kpi-val.blue{color:#2563eb}
+.kpi-val.amber{color:#d97706}
+
+/* ── Panel / Table ──────────────────────────────────── */
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:12px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;flex-wrap:wrap;gap:8px}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.tbl-wrap{max-height:560px;overflow-y:auto;overflow-x:auto}
+.tbl-wrap::-webkit-scrollbar{width:6px;height:6px}
+.tbl-wrap::-webkit-scrollbar-track{background:#f1f5f9}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl thead th{position:sticky;top:0;z-index:2}
+.tbl th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:2px solid #d4dce8;background:#f8fafc;text-align:left;white-space:nowrap}
+.tbl td{padding:11px 14px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:#f5f8ff;cursor:pointer}
+.doc-num{font-size:11px;font-weight:700;color:#1a2535;font-family:'Courier New',monospace;white-space:nowrap}
+
+/* ── Filter bar ─────────────────────────────────────── */
+.filter-bar{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid #d4dce8;background:#f8fafc;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input[type="text"],.filter-bar input[type="date"]{
+  padding:6px 10px;border:1px solid #d4dce8;border-radius:8px;font-size:12px;color:#1a2535;background:white;height:32px}
+.filter-bar input[type="text"]{min-width:220px}
+.search-wrap{position:relative;display:flex;align-items:center}
+.search-wrap i{position:absolute;left:9px;color:#9aa5b1;font-size:11px;pointer-events:none}
+.search-wrap input{padding-left:26px!important}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn-p{padding:5px 10px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;
+       display:inline-flex;align-items:center;gap:4px;text-decoration:none;transition:all .12s;white-space:nowrap}
+.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-outline:hover{background:#f0f4ff;border-color:#93c5fd}
+.btn-primary{background:#2563eb;color:white}
+.btn-primary:hover{background:#1d4ed8}
+.btn-danger{background:#dc2626;color:white}
+.btn-danger:hover{background:#b91c1c}
+.btn-violet{background:#7c3aed;color:white}
+.btn-violet:hover{background:#6d28d9}
+.btn-sm{padding:4px 8px;font-size:10px;border-radius:6px}
+
+/* ── Module badges ───────────────────────────────────── */
+.mod-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.mod-hotel    {background:#d1fae5;color:#065f46}
+.mod-restaurant{background:#fef3c7;color:#92400e}
+.mod-cave     {background:#ede9fe;color:#5b21b6}
+.mod-piscine  {background:#dbeafe;color:#1e40af}
+.mod-espace   {background:#fef9c3;color:#713f12}
+.mod-caisse   {background:#dcfce7;color:#14532d}
+.mod-autre    {background:#f1f5f9;color:#475569}
+
+/* ── Paiement badges ─────────────────────────────────── */
+.pay-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#475569}
+.pay-especes   {background:#fef3c7;color:#92400e}
+.pay-mobile_money,.pay-orange_money,.pay-wave,.pay-moov_money,.pay-mtn_money{background:#ede9fe;color:#5b21b6}
+.pay-carte_bancaire,.pay-carte{background:#dbeafe;color:#1e40af}
+.pay-cheque,.pay-virement{background:#dcfce7;color:#14532d}
+
+/* ── Misc ────────────────────────────────────────────── */
+.empty-state{text-align:center;padding:50px 20px;color:#9aa5b1}
+.empty-state i{font-size:2.5rem;margin-bottom:12px;display:block;opacity:.4}
+.empty-state p{font-size:13px;margin:0}
+.avoir-dot{width:7px;height:7px;border-radius:50%;background:#dc2626;display:inline-block;margin-right:4px;vertical-align:middle}
+.nb-badge{display:inline-block;background:#e2e8f0;color:#475569;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:6px}
+</style>
+{% endblock %}
 
 {% block content %}
-<style>
-    :root {
-        --font-family: 'Inter', sans-serif;
-        --background-color: #f8f9fa;
-        --card-bg: #ffffff;
-        --text-color: #212529;
-        --text-muted: #6c757d;
-        --primary-color: #0d6efd;
-        --success-color: #198754;
-        --danger-color: #dc3545;
-        --warning-color: #ffc107;
-        --border-color: #dee2e6;
-        --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
+<div class="fac-body">
+<div class="container-tck">
 
-    .tickets-avoirs-page {
-        font-family: var(--font-family);
-        background-color: var(--background-color);
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background-color: var(--card-bg);
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border-color);
-    }
-
-    .stat-card .stat-title {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-card .stat-value {
-        font-size: 1.75rem;
-        font-weight: 700;
-        color: var(--text-color);
-    }
-
-    .stat-card .stat-value.positive { color: var(--success-color); }
-    .stat-card .stat-value.negative { color: var(--danger-color); }
-    .stat-card .stat-value.neutral { color: var(--warning-color); }
-
-    .filters-bar {
-        display: flex;
-        align-items: center; /* Aligner verticalement */
-        gap: 1rem;
-        padding: 1.5rem;
-        background-color: var(--card-bg);
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border-color);
-    }
-
-    .filters-bar .search-input {
-        flex-grow: 1; /* Le champ de recherche prend l'espace restant */
-        display: flex;
-        align-items: center;
-        position: relative;
-    }
-
-    .filters-bar .filter-group {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        flex-shrink: 0; /* Empêche les filtres de rétrécir */
-    }
-
-    .filters-bar .search-input i {
-        position: absolute;
-        left: 1rem;
-        color: var(--text-muted);
-    }
-
-    .filters-bar input, .filters-bar select {
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        font-size: 1rem;
-        background-color: #f8f9fa; /* Un fond légèrement différent */
-    }
-    
-    .filters-bar .search-input input {
-        padding-left: 2.5rem;
-        width: 100%;
-    }
-    
-    .filters-bar select, .filters-bar input[type="date"] {
-        min-width: 180px; /* Largeur minimale pour la date et le service */
-    }
-
-    .ticket-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .ticket-item {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: 1.5rem;
-        align-items: center;
-        padding: 1.5rem;
-        background-color: var(--card-bg);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border-color);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .ticket-item:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    .ticket-item .service-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        color: white;
-    }
-
-    .ticket-info .ticket-id {
-        font-weight: 600;
-        color: var(--text-color);
-        margin-bottom: 0.25rem;
-    }
-    .ticket-info .ticket-details, .ticket-info .ticket-items {
-        font-size: 0.9rem;
-        color: var(--text-muted);
-    }
-    .ticket-info .ticket-items {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 300px;
-    }
-
-    .ticket-meta {
-        text-align: right;
-    }
-
-    .ticket-meta .amount {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .ticket-meta .service-tag {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--text-muted);
-        background-color: var(--background-color);
-        border: 1px solid var(--border-color);
-    }
-
-    .ticket-actions {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        grid-column: 3; /* Position in the third column */
-        grid-row: 1; /* Position in the first row */
-        justify-self: end; /* Align to the end of the cell */
-        padding-left: 1.5rem;
-        border-left: 1px solid var(--border-color);
-    }
-
-    .ticket-actions .action-btn {
-        color: var(--text-muted);
-        font-size: 1.25rem;
-        text-decoration: none;
-        transition: color 0.2s ease;
-    }
-
-    .ticket-actions .action-btn:hover {
-        color: var(--primary-color);
-    }
-    
-    .ticket-actions .action-btn.avoir-btn:hover {
-        color: var(--danger-color);
-    }
-
-    /* Service Colors */
-    .service-icon.piscine, .service-tag.piscine { background-color: #3498db; }
-    .service-icon.bar, .service-tag.bar { background-color: #9b59b6; }
-    .service-icon.restaurant, .service-tag.restaurant { background-color: #e67e22; }
-    .service-icon.hotel, .service-tag.hotel { background-color: #1abc9c; }
-    .service-icon.espaces-location, .service-tag.espaces-location { background-color: #f1c40f; }
-    .service-icon.default, .service-tag.default { background-color: #7f8c8d; }
-
-    /* Tabs Style for Ticket List */
-    
-    
-    .tabs {
-        display: flex;
-        gap: 0;
-    }
-    
-    
-    
-    
-    
-    
-
-</style>
-
-<div class="header-glam facturation-watermark">
+  <!-- HEADER -->
+  <div class="header-glam facturation-watermark">
     <div class="header-content">
-        <h2>Tickets & Avoirs</h2>
-        <p class="mb-0 opacity-75">Gestion des tickets et avoirs</p>
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0">Tickets de caisse</h2>
+      <p class="mb-0 opacity-75">Historique des encaissements par module</p>
     </div>
-    <div class="header-clock">
-        <span class="time">--:-- GMT</span>
-        <span class="date">Chargement...</span>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+  {% breadcrumb "Facturation" "facturation:index" "Tickets" "" %}
+
+  <!-- KPI CARDS -->
+  <div class="kpi-grid" style="margin-top:18px">
+    <div class="kpi">
+      <div class="kpi-icon" style="background:#eff6ff"><i class="fas fa-receipt" style="color:#2563eb"></i></div>
+      <div>
+        <div class="kpi-lbl">Tickets affichés</div>
+        <div class="kpi-val blue">{{ stats.tickets_today_count|default:0 }}</div>
+      </div>
     </div>
-</div>
-{% breadcrumb "Facturation" "facturation:index" "Tickets" "" %}
-
-
-
-
-
-
-<div class="tickets-avoirs-page">
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-title">{% trans "Tickets du jour" %}</div>
-            <div class="stat-value">{{ stats.tickets_today_count|default:"0" }}</div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:#f0fdf4"><i class="fas fa-coins" style="color:#16a34a"></i></div>
+      <div>
+        <div class="kpi-lbl">Total encaissé</div>
+        <div class="kpi-val green">{{ stats.total_collected|default:0|floatformat:0 }} F</div>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:#fef2f2"><i class="fas fa-undo" style="color:#dc2626"></i></div>
+      <div>
+        <div class="kpi-lbl">Avoirs sur tickets
+          {% if stats.nb_avoirs %}<span style="font-size:10px;background:#fee2e2;color:#dc2626;border-radius:10px;padding:1px 6px;margin-left:4px;font-weight:700">{{ stats.nb_avoirs }}</span>{% endif %}
         </div>
-        <div class="stat-card">
-            <div class="stat-title">{% trans "Total encaissé" %}</div>
-            <div class="stat-value positive">{{ stats.total_collected|default:"0"|floatformat:"-2" }} F CFA</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">{% trans "Avoirs" %}</div>
-            <div class="stat-value negative">-{{ stats.total_avoirs|default:"0"|floatformat:"-2" }} F CFA</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">{% trans "Net" %}</div>
-            <div class="stat-value neutral">{{ stats.net_total|default:"0"|floatformat:0 }} F</div>
-        </div>
+        <div class="kpi-val red">{% if stats.total_avoirs %}-{% endif %}{{ stats.total_avoirs|default:0|floatformat:0 }} F</div>
+      </div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon" style="background:#fffbeb"><i class="fas fa-chart-line" style="color:#d97706"></i></div>
+      <div>
+        <div class="kpi-lbl">Net du jour</div>
+        <div class="kpi-val amber">{{ stats.net_total|default:0|floatformat:0 }} F</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL TICKETS -->
+  <div class="panel">
+    <!-- Header panneau -->
+    <div class="ph">
+      <h3>
+        <i class="fas fa-list" style="color:#2563eb;margin-right:6px"></i>
+        Liste des tickets
+        <span class="nb-badge" id="nbTickets">{{ tickets|length }}</span>
+      </h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:11px;color:#7a8b9c">
+          <i class="fas fa-calendar-day" style="margin-right:4px"></i>{{ today|date:"d/m/Y" }}
+        </span>
+        <button class="btn-p btn-outline btn-sm" onclick="exportCSV()">
+          <i class="fas fa-download"></i> Export CSV
+        </button>
+      </div>
     </div>
 
-    <div class="filters-bar">
-        <div class="search-input">
-            <i class="fas fa-search"></i>
-            <input type="text" id="ticketSearch" placeholder="Rechercher par n° ticket ou client..." value="{{ request.GET.q|default:'' }}">
-        </div>
-        <div class="filter-group">
-            <input type="date" id="dateFilter" value="{{ today|date:'Y-m-d' }}">
-            <select id="serviceFilter">
-                <option value="">Tous services</option>
-                {% for service in services %}
-                <option value="{{ service.id }}" {% if request.GET.service == service.id|stringformat:'s' %}selected{% endif %}>{{ service.nom }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-
-    <div class="ticket-list" id="ticketList">
-        {% for ticket in tickets %}
-        <div class="ticket-item">
-            {% with service_class=ticket.service.nom|slugify|default:"default" %}
-            <div class="service-icon {{ service_class }}">
-                {% if service_class == 'restaurant' %}<i class="fas fa-utensils"></i>
-                {% elif service_class == 'bar' %}<i class="fas fa-cocktail"></i>
-                {% elif service_class == 'piscine' %}<i class="fas fa-swimmer"></i>
-                {% elif service_class == 'hotel' %}<i class="fas fa-bed"></i>
-                {% elif service_class == 'espaces-location' %}<i class="fas fa-map-marked-alt"></i>
-                {% else %}<i class="fas fa-receipt"></i>{% endif %}
-            </div>
-            
-            <div class="ticket-info">
-                <div class="ticket-id">{{ ticket.numero }}</div>
-                <div class="ticket-details">
-                    Client {{ ticket.client.nom|default:"anonyme" }} • {{ ticket.date_creation|date:"H:i" }}
-                </div>
-                <div class="ticket-items">
-                    {% for item in ticket.articles.all|slice:":3" %}{{ item.nom }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                </div>
-            </div>
-
-            <div class="ticket-meta">
-                <div class="amount">{{ ticket.montant_total|floatformat:"-2" }} F CFA</div>
-                <span class="service-tag {{ service_class }}">{{ ticket.service.nom }}</span>
-            </div>
-
-            <div class="ticket-actions">
-                <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="action-btn" title="Rappel Ticket (Format Thermique)" target="_blank">
-                    <i class="fas fa-print"></i>
-                </a>
-                <a href="{% url 'facturation:ticket_detail' ticket.pk %}" class="action-btn print-btn" title="Détails du ticket">
-                    <i class="fas fa-eye"></i>
-                </a>
-                <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="action-btn avoir-btn" title="Créer un avoir" onclick="return confirm('Voulez-vous créer un avoir pour ce ticket ?');">
-                    <i class="fas fa-undo"></i>
-                </a>
-            </div>
-            {% endwith %}
-        </div>
-        {% empty %}
-        <div class="stat-card" style="text-align: center;">
-            <p>{% trans "Aucun ticket trouvé pour les filtres sélectionnés." %}</p>
-        </div>
+    <!-- Filtres -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="filtreRecherche" placeholder="N° ticket ou client…" oninput="filtrer()" value="{{ request.GET.q|default:'' }}">
+      </div>
+      <input type="date" id="filtreDate" value="{{ date_filter }}" onchange="applyServerFilter()" placeholder="Toutes dates">
+      <select id="filtreModule" onchange="applyServerFilter()">
+        <option value="">Tous modules</option>
+        {% for val, label in module_choices %}
+        <option value="{{ val }}" {% if module_filter == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
+      </select>
+      <select id="filtrePaiement" onchange="filtrer()">
+        <option value="">Tous paiements</option>
+        <option value="especes">Espèces</option>
+        <option value="orange_money">Orange Money</option>
+        <option value="wave">Wave</option>
+        <option value="moov_money">Moov Money</option>
+        <option value="mtn_money">MTN Money</option>
+        <option value="mobile_money">Mobile Money</option>
+        <option value="carte_bancaire">Carte</option>
+        <option value="cheque">Chèque</option>
+        <option value="virement">Virement</option>
+      </select>
+      <button class="btn-p btn-outline btn-sm" onclick="resetFiltres()"><i class="fas fa-times"></i> Effacer</button>
+      <span id="compteur" style="font-size:11px;color:#7a8b9c;margin-left:auto"></span>
     </div>
-</div>
 
+    <!-- Tableau -->
+    <div class="tbl-wrap">
+      <table class="tbl" id="tableTickets">
+        <thead>
+          <tr>
+            <th>N° Ticket</th>
+            <th>Module</th>
+            <th>Client</th>
+            <th>Date & Heure</th>
+            <th>Mode paiement</th>
+            <th style="text-align:right">Montant</th>
+            <th>Opérateur</th>
+            <th style="text-align:center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyTickets">
+        {% for ticket in tickets %}
+        <tr
+          data-module="{{ ticket.module }}"
+          data-paiement="{{ ticket.mode_paiement }}"
+          data-search="{{ ticket.numero|lower }} {{ ticket.client.nom|default:''|lower }}"
+          onclick="window.location='{% url 'facturation:ticket_detail' ticket.pk %}'"
+        >
+          <td>
+            <span class="doc-num">{{ ticket.numero }}</span>
+            {% if ticket.est_duplicata %}
+              <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:4px;margin-left:4px">DUP</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="mod-badge mod-{{ ticket.module }}">
+              {% if ticket.module == 'hotel' %}<i class="fas fa-bed"></i>
+              {% elif ticket.module == 'restaurant' %}<i class="fas fa-utensils"></i>
+              {% elif ticket.module == 'cave' %}<i class="fas fa-wine-bottle"></i>
+              {% elif ticket.module == 'piscine' %}<i class="fas fa-swimming-pool"></i>
+              {% elif ticket.module == 'espace' %}<i class="fas fa-map-marked-alt"></i>
+              {% elif ticket.module == 'caisse' %}<i class="fas fa-cash-register"></i>
+              {% else %}<i class="fas fa-receipt"></i>{% endif %}
+              {{ ticket.get_module_display }}
+            </span>
+          </td>
+          <td style="font-weight:600">{{ ticket.client.nom|default:"—" }}</td>
+          <td style="font-size:11px;color:#4a5b6e;white-space:nowrap">
+            {{ ticket.date_creation|date:"d/m/Y" }}
+            <span style="color:#9aa5b1">{{ ticket.date_creation|date:"H:i" }}</span>
+          </td>
+          <td>
+            <span class="pay-badge pay-{{ ticket.mode_paiement }}">{{ ticket.get_mode_paiement_display }}</span>
+          </td>
+          <td style="text-align:right;font-weight:700;color:#1a2535;font-size:13px">
+            {{ ticket.montant_total|floatformat:0 }} <span style="font-size:10px;font-weight:400;color:#9aa5b1">F</span>
+          </td>
+          <td style="font-size:11px;color:#4a5b6e">
+            {{ ticket.cree_par.get_full_name|default:ticket.cree_par.username|default:"—" }}
+          </td>
+          <td onclick="event.stopPropagation()">
+            <div style="display:flex;gap:4px;justify-content:center">
+              <a href="{% url 'facturation:ticket_detail' ticket.pk %}" class="btn-p btn-outline btn-sm" title="Détails"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'facturation:ticket_pdf' ticket.pk %}" class="btn-p btn-outline btn-sm" title="PDF" target="_blank"><i class="fas fa-file-pdf" style="color:#dc2626"></i></a>
+              <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn-p btn-outline btn-sm" title="Réimprimer (thermique)" target="_blank"><i class="fas fa-print" style="color:#2563eb"></i></a>
+              <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="btn-p btn-danger btn-sm" title="Créer un avoir"
+                 onclick="return confirm('Créer un avoir de {{ ticket.montant_total|floatformat:0 }} F pour le ticket {{ ticket.numero }} ?')">
+                <i class="fas fa-undo"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <i class="fas fa-receipt"></i>
+              <p>Aucun ticket{% if date_filter %} pour le <strong>{{ date_filter }}</strong>{% endif %}</p>
+              <p style="margin-top:6px;font-size:11px">Vérifiez les filtres ou effacez la date pour tout afficher.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /container-tck -->
+</div><!-- /fac-body -->
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Recherche et filtres
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('ticketSearch');
-        const dateFilter = document.getElementById('dateFilter');
-        const serviceFilter = document.getElementById('serviceFilter');
+// ── Filtre côté client (recherche + paiement) ──────────────
+function filtrer() {
+  const q = document.getElementById('filtreRecherche').value.toLowerCase().trim();
+  const pay = document.getElementById('filtrePaiement').value;
+  let visible = 0;
+  document.querySelectorAll('#tbodyTickets tr[data-module]').forEach(tr => {
+    const okQ   = !q   || tr.dataset.search.includes(q);
+    const okPay = !pay || tr.dataset.paiement === pay;
+    const ok = okQ && okPay;
+    tr.style.display = ok ? '' : 'none';
+    if (ok) visible++;
+  });
+  const total = document.querySelectorAll('#tbodyTickets tr[data-module]').length;
+  document.getElementById('compteur').textContent = visible + ' / ' + total + ' ticket(s)';
+  document.getElementById('nbTickets').textContent = visible;
+}
 
-        function applyFilters() {
-            const baseUrl = "{% url 'facturation:ticket_list' %}";
-            const params = new URLSearchParams();
+// ── Filtre serveur (date + module) ─────────────────────────
+function applyServerFilter() {
+  const base = "{% url 'facturation:ticket_list' %}";
+  const params = new URLSearchParams();
+  const d = document.getElementById('filtreDate').value;
+  const m = document.getElementById('filtreModule').value;
+  const q = document.getElementById('filtreRecherche').value;
+  if (d) params.append('date', d);
+  if (m) params.append('module', m);
+  if (q) params.append('q', q);
+  window.location.href = base + (params.toString() ? '?' + params.toString() : '');
+}
 
-            if (dateFilter.value) {
-                params.append('date', dateFilter.value);
-            }
-            if (serviceFilter.value) {
-                params.append('service', serviceFilter.value);
-            }
-            if (searchInput.value) {
-                params.append('q', searchInput.value);
-            }
+// ── Réinitialiser ──────────────────────────────────────────
+function resetFiltres() {
+  document.getElementById('filtreRecherche').value = '';
+  document.getElementById('filtrePaiement').value = '';
+  applyServerFilter();
+}
 
-            window.location.href = `${baseUrl}?${params.toString()}`;
-        }
+// ── Export CSV simple ──────────────────────────────────────
+function exportCSV() {
+  const rows = [['N° Ticket','Module','Client','Date','Mode paiement','Montant (F)','Opérateur']];
+  document.querySelectorAll('#tbodyTickets tr[data-module]').forEach(tr => {
+    if (tr.style.display === 'none') return;
+    const cells = tr.querySelectorAll('td');
+    rows.push([
+      cells[0].innerText.replace('DUP','').trim(),
+      cells[1].innerText.trim(),
+      cells[2].innerText.trim(),
+      cells[3].innerText.trim(),
+      cells[4].innerText.trim(),
+      cells[5].innerText.replace('F','').trim(),
+      cells[6].innerText.trim(),
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => '"' + v.replace(/"/g,'""') + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = 'tickets_{{ today|date:"Ymd" }}.csv';
+  a.click();
+}
 
-        // Apply filters on change
-        dateFilter.addEventListener('change', applyFilters);
-        serviceFilter.addEventListener('change', applyFilters);
-
-        // Apply search on pressing Enter
-        searchInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                applyFilters();
-            }
-        });
-    });
+// ── Init ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const total = document.querySelectorAll('#tbodyTickets tr[data-module]').length;
+  document.getElementById('compteur').textContent = total + ' ticket(s)';
+});
 </script>
 {% endblock %}

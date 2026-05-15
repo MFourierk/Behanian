@@ -61,7 +61,7 @@ def index(request):
     ca_mois = tickets_mois.aggregate(s=Sum('montant_total'))['s'] or 0
 
     # KPIs documents
-    factures_impayees = Facture.objects.filter(statut__in=['envoyee','en_attente'])
+    factures_impayees = Facture.objects.filter(statut__in=['envoyee', 'en_attente', 'impayee'])
     montant_impaye = factures_impayees.aggregate(s=Sum('total'))['s'] or 0
 
     # Tickets récents tous modules
@@ -115,7 +115,7 @@ def index(request):
 
 @require_module_access('facturation')
 def facture_list(request):
-    factures = Facture.objects.all()
+    factures = Facture.objects.select_related('client', 'cree_par').order_by('-date_creation')
     return render(request, 'facturation/facture_list.html', {'factures': factures})
 
 @require_module_access('facturation')
@@ -261,7 +261,7 @@ def facture_pdf(request, pk):
 
 @require_module_access('facturation')
 def proforma_list(request):
-    proformas = Proforma.objects.all()
+    proformas = Proforma.objects.select_related('client', 'cree_par').order_by('-date_creation')
     return render(request, 'facturation/proforma_list.html', {'proformas': proformas})
 
 def _generer_numero_proforma():
@@ -273,6 +273,7 @@ def _generer_numero_proforma():
     return f'PRO-{annee}-{seq:04d}'
 
 
+@require_module_access('facturation')
 def proforma_create(request):
     """Créer un proforma multi-services depuis le modal ou le formulaire POST JSON."""
     if request.method != 'POST':
@@ -352,8 +353,8 @@ def proforma_create(request):
             return JsonResponse({
                 'success': True,
                 'numero': proforma.numero,
-                'detail_url': f'/facturation/proformas/{proforma.pk}/',
-                'pdf_url': f'/facturation/proformas/{proforma.pk}/pdf/',
+                'detail_url': reverse('facturation:proforma_detail', kwargs={'pk': proforma.pk}),
+                'pdf_url': reverse('facturation:proforma_pdf', kwargs={'pk': proforma.pk}),
             })
 
     except Exception as e:
@@ -405,9 +406,9 @@ def proforma_to_facture(request, pk):
                     quantite=lp.quantite,
                     prix_unitaire=lp.prix_unitaire,
                 )
-            proforma.statut = 'invoiced'
+            proforma.statut = 'convertie'
             proforma.save()
-            return JsonResponse({'success': True, 'detail_url': f'/facturation/factures/{facture.pk}/'})
+            return JsonResponse({'success': True, 'detail_url': reverse('facturation:facture_detail', kwargs={'pk': facture.pk})})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
@@ -423,7 +424,7 @@ def proforma_pdf(request, pk):
 
 @require_module_access('facturation')
 def avoir_list(request):
-    avoirs = Avoir.objects.all()
+    avoirs = Avoir.objects.select_related('client', 'cree_par', 'facture_origine', 'ticket_origine').order_by('-date_creation')
     return render(request, 'facturation/avoir_list.html', {'avoirs': avoirs})
 
 def _generer_numero_avoir():
@@ -433,6 +434,7 @@ def _generer_numero_avoir():
     return f'AVO-{annee}-{seq:04d}'
 
 
+@require_module_access('facturation')
 def avoir_create(request):
     """Créer un avoir depuis le modal (JSON) ou depuis une facture/ticket."""
     if request.method != 'POST':
@@ -518,7 +520,7 @@ def avoir_create(request):
                 return JsonResponse({
                     'success': True,
                     'numero': avoir.numero,
-                    'detail_url': f'/facturation/avoirs/{avoir.pk}/',
+                    'detail_url': reverse('facturation:avoir_detail', kwargs={'pk': avoir.pk}),
                 })
 
             return redirect('facturation:avoir_detail', pk=avoir.pk)
@@ -549,47 +551,56 @@ def avoir_pdf(request, pk):
 @require_module_access('facturation')
 def ticket_list(request):
     today = timezone.now().date()
-    
-    selected_date_str = request.GET.get('date', today.strftime('%Y-%m-%d'))
-    try:
-        selected_date = timezone.datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-    except (ValueError, TypeError):
-        selected_date = today
 
-    tickets = Ticket.objects.filter(date_creation__date=selected_date, imprime=True).order_by('-date_creation')
+    # Date filter : optionnel — vide = tout afficher
+    date_str    = request.GET.get('date', '')
+    module_filter = request.GET.get('module', '')
+    query       = request.GET.get('q', '')
 
-    service_filter = request.GET.get('service')
-    if service_filter:
-        tickets = tickets.filter(service__id=service_filter)
+    selected_date = None
+    if date_str:
+        try:
+            selected_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            selected_date = None
 
-    query = request.GET.get('q')
+    tickets = Ticket.objects.select_related('client', 'cree_par').order_by('-date_creation')
+
+    if selected_date:
+        tickets = tickets.filter(date_creation__date=selected_date)
+    if module_filter:
+        tickets = tickets.filter(module=module_filter)
     if query:
         tickets = tickets.filter(
             Q(numero__icontains=query) | Q(client__nom__icontains=query)
         )
 
-    tickets_today_count = tickets.count()
-    
-    total_collected = tickets.aggregate(total=Sum('montant_total'))['total'] or Decimal('0')
-    
-    total_avoirs = Avoir.objects.filter(date_creation__date=selected_date).aggregate(total=Sum('total'))['total'] or Decimal('0')
-    
-    net_total = total_collected - total_avoirs
+    # KPIs : calculés sur les mêmes tickets que le tableau
+    nb_tickets      = tickets.count()
+    total_collected = tickets.aggregate(s=Sum('montant_total'))['s'] or Decimal('0')
+
+    # Avoirs uniquement liés aux tickets visibles (ticket_origine)
+    ticket_ids   = tickets.values_list('id', flat=True)
+    avoirs_qs    = Avoir.objects.filter(ticket_origine_id__in=ticket_ids)
+    total_avoirs = avoirs_qs.aggregate(s=Sum('total'))['s'] or Decimal('0')
+    nb_avoirs    = avoirs_qs.count()
 
     stats = {
-        'tickets_today_count': tickets_today_count,
-        'total_collected': total_collected,
-        'total_avoirs': total_avoirs,
-        'net_total': net_total,
+        'tickets_today_count': nb_tickets,
+        'total_collected':     total_collected,
+        'total_avoirs':        total_avoirs,
+        'nb_avoirs':           nb_avoirs,
+        'net_total':           total_collected - total_avoirs,
     }
 
-    services = Service.objects.all()
-
     context = {
-        'tickets': tickets,
-        'services': services,
-        'stats': stats,
-        'today': selected_date,
+        'tickets':        tickets,
+        'module_choices': Ticket.MODULE_CHOICES,
+        'module_filter':  module_filter,
+        'date_filter':    date_str,
+        'query':          query,
+        'stats':          stats,
+        'today':          today,
     }
     return render(request, 'facturation/ticket_list.html', context)
 
@@ -778,8 +789,8 @@ def get_articles_by_service(request, service_id):
             for espace in EspaceEvenementiel.objects.all():
                 articles.append({
                     'id': espace.id,
-                    'name': espace.nom,
-                    'price': float(espace.capacite), # Prix par défaut ou capacité? À vérifier. Mettons capacité pour l'instant ou 0.
+                    'name': f"{espace.nom} ({espace.capacite} pers.)",
+                    'price': float(espace.prix_jour),
                     'content_type_id': ContentType.objects.get_for_model(EspaceEvenementiel).id,
                     'object_id': espace.id
                 })

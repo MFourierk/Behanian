@@ -1,6 +1,6 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
-{% block title %}{% if mode == 'edit' %}Modifier{% else %}Nouveau{% endif %} Forfait{% endblock %}
+{% block title %}{% if mode == 'edit' %}Modifier{% else %}Nouveau{% endif %} Menu VIP{% endblock %}
 {% block extra_css %}
 <style>
 :root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c}
@@ -35,12 +35,12 @@
   <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
     <div class="header-content">
       <h2 style="font-size:1.3rem;font-weight:700;margin:0;color:white">
-        {% if mode == 'edit' %}✏️ Modifier : {{ forfait.nom }}{% else %}🎁 Nouveau Forfait{% endif %}
+        {% if mode == 'edit' %}✏️ Modifier : {{ forfait.nom }}{% else %}⭐ Nouveau Menu VIP{% endif %}
       </h2>
-      <p class="mb-0" style="opacity:.7;color:white">Combinaison de plats et boissons à prix fixe</p>
+      <p class="mb-0" style="opacity:.7;color:white">Combinaison de plats et boissons à prix fixe — visible dans tous les modules</p>
     </div>
   </div>
-  {% breadcrumb "Paramètres" "parametres:parametres_index" "Forfaits" "parametres:forfait_list" "Formulaire" "" %}
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Menus VIP" "parametres:forfait_list" "Formulaire" "" %}
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -49,47 +49,37 @@
     <div class="panel">
       <div class="ph"><h3>📋 Informations générales</h3></div>
       <div style="padding:20px">
-        <div class="form-row" style="margin-bottom:16px">
-          <div class="form-group">
-            <label>Nom du forfait *</label>
-            <input type="text" name="nom" class="form-control" value="{{ forfait.nom|default:'' }}" required placeholder="Ex: Forfait Piscine VIP 10 000F">
-          </div>
-          <div class="form-group">
-            <label>Module concerné *</label>
-            <select name="module" class="form-control" required>
-              {% for val, lab in modules %}
-              <option value="{{ val }}" {% if forfait.module == val %}selected{% endif %}>{{ lab }}</option>
-              {% endfor %}
-            </select>
-          </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Nom du Menu VIP *</label>
+          <input type="text" name="nom" class="form-control" value="{{ forfait.nom|default:'' }}" required placeholder="Ex: Menu VIP Piscine 10 000F">
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Prix du forfait (FCFA) *</label>
+            <label>Prix du Menu VIP (FCFA) *</label>
             <input type="number" name="prix" class="form-control" value="{{ forfait.prix|default:'' }}" required placeholder="10000" min="0">
           </div>
           <div class="form-group">
-            <label>Photo du forfait (optionnel)</label>
+            <label>Photo du Menu VIP (optionnel)</label>
             {% if forfait.image %}<div style="margin-bottom:6px"><img src="{{ forfait.image.url }}" style="height:60px;border-radius:6px"></div>{% endif %}
             <input type="file" name="image" class="form-control" accept="image/*">
           </div>
         </div>
         <div class="form-group">
           <label>Description</label>
-          <textarea name="description" class="form-control" rows="2" placeholder="Décrivez ce que comprend le forfait...">{{ forfait.description|default:'' }}</textarea>
+          <textarea name="description" class="form-control" rows="2" placeholder="Décrivez ce que comprend le Menu VIP...">{{ forfait.description|default:'' }}</textarea>
         </div>
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" name="disponible" {% if not forfait or forfait.disponible %}checked{% endif %}> Forfait disponible à la vente
+            <input type="checkbox" name="disponible" {% if not forfait or forfait.disponible %}checked{% endif %}> Menu VIP disponible à la vente
           </label>
         </div>
       </div>
     </div>
 
-    <!-- Lignes du forfait -->
+    <!-- Lignes du Menu VIP — version simplifiée -->
     <div class="panel">
       <div class="ph" style="justify-content:space-between;display:flex;align-items:center">
-        <h3>📦 Contenu du forfait</h3>
+        <h3>📦 Contenu du Menu VIP</h3>
         <button type="button" class="btn-a btn-or" onclick="ajouterLigne()" style="padding:6px 14px;font-size:11px">
           <i class="fas fa-plus"></i> Ajouter un élément
         </button>
@@ -98,29 +88,28 @@
         <div id="lignes-container">
           {% if forfait %}
             {% for l in forfait.lignes.all %}
-            <div class="ligne-block" data-idx="{{ forloop.counter0 }}">
-              <button type="button" class="del-ligne" onclick="this.closest('.ligne-block').remove()"><i class="fas fa-times"></i></button>
-              <div class="ligne-header">
-                <span style="font-size:12px;font-weight:600;color:var(--muted)">Élément {{ forloop.counter }}</span>
-                <button type="button" class="ligne-type-btn {% if l.type_item == 'plat' %}active plat{% endif %}" onclick="setType(this,'plat')" data-type="plat">🍽️ Plat</button>
-                <button type="button" class="ligne-type-btn {% if l.type_item == 'boisson' %}active boisson{% endif %}" onclick="setType(this,'boisson')" data-type="boisson">🍷 Boisson</button>
-                <button type="button" class="ligne-type-btn {% if l.type_item == 'autre' %}active autre{% endif %}" onclick="setType(this,'autre')" data-type="autre">📝 Autre</button>
-                <input type="hidden" name="ligne_type" value="{{ l.type_item }}">
-              </div>
+            <div class="ligne-block">
+              <button type="button" class="del-ligne" onclick="this.closest('.ligne-block').remove()">×</button>
               <div class="ligne-body">
-                <div>
-                  <select name="ligne_plat" class="select-ctrl plat-field" {% if l.type_item != 'plat' %}style="display:none"{% endif %}>
-                    <option value="">— Choisir un plat —</option>
-                    {% for p in plats %}<option value="{{ p.pk }}" {% if l.plat_id == p.pk %}selected{% endif %}>{{ p.nom }}</option>{% endfor %}
+                <div style="flex:1">
+                  <select name="ligne_item" class="select-ctrl" onchange="onItemChange(this)" required>
+                    <option value="">— Choisir un élément —</option>
+                    <optgroup label="🍽️ Plats cuisine">
+                      {% for p in plats %}<option value="plat:{{ p.pk }}" {% if l.type_item == 'plat' and l.plat_id == p.pk %}selected{% endif %}>{{ p.nom }}</option>{% endfor %}
+                    </optgroup>
+                    <optgroup label="🍷 Boissons cave">
+                      {% for b in boissons %}<option value="boisson:{{ b.pk }}" {% if l.type_item == 'boisson' and l.boisson_id == b.pk %}selected{% endif %}>{{ b.nom }}</option>{% endfor %}
+                    </optgroup>
+                    <optgroup label="📝 Autre">
+                      <option value="autre" {% if l.type_item == 'autre' %}selected{% endif %}>Libellé libre…</option>
+                    </optgroup>
                   </select>
-                  <select name="ligne_boisson" class="select-ctrl boisson-field" {% if l.type_item != 'boisson' %}style="display:none"{% endif %}>
-                    <option value="">— Choisir une boisson —</option>
-                    {% for b in boissons %}<option value="{{ b.pk }}" {% if l.boisson_id == b.pk %}selected{% endif %}>{{ b.nom }}</option>{% endfor %}
-                  </select>
-                  <input type="text" name="ligne_libelle" class="form-control autre-field" value="{{ l.libelle }}" placeholder="Libellé libre (ex: Séance piscine)" {% if l.type_item != 'autre' %}style="display:none"{% endif %}>
+                  <input type="text" name="ligne_libelle" class="form-control" value="{{ l.libelle }}"
+                         placeholder="Ex: Séance piscine, Entrée VIP…"
+                         style="margin-top:6px;{% if l.type_item != 'autre' %}display:none{% endif %}">
                 </div>
-                <div>
-                  <label style="font-size:11px;color:var(--muted);font-weight:600">Qté</label>
+                <div style="width:80px;flex-shrink:0">
+                  <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Qté</label>
                   <input type="number" name="ligne_quantite" class="form-control" value="{{ l.quantite }}" min="1" style="text-align:center">
                 </div>
               </div>
@@ -128,7 +117,7 @@
             {% endfor %}
           {% endif %}
         </div>
-        <div id="empty-msg" style="{% if forfait and forfait.lignes.exists %}display:none{% endif %}text-align:center;padding:30px;color:var(--muted);font-size:13px">
+        <div id="empty-msg" style="{% if forfait and forfait.lignes.exists %}display:none;{% endif %}text-align:center;padding:30px;color:var(--muted);font-size:13px">
           <i class="fas fa-box-open" style="font-size:1.8rem;opacity:.3;display:block;margin-bottom:8px"></i>
           Aucun élément — cliquez "+ Ajouter un élément"
         </div>
@@ -137,65 +126,56 @@
 
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <a href="{% url 'parametres:forfait_list' %}" class="btn-a btn-sec">Annuler</a>
-      <button type="submit" class="btn-a btn-or"><i class="fas fa-save"></i> Enregistrer le forfait</button>
+      <button type="submit" class="btn-a btn-or"><i class="fas fa-save"></i> Enregistrer</button>
     </div>
   </form>
 </div></div>
 
-<!-- Données pour JS -->
+<style>
+.ligne-block { display:flex; align-items:flex-start; gap:10px; background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; position:relative; }
+.ligne-body  { display:flex; gap:10px; flex:1; align-items:flex-start; }
+.del-ligne   { background:#fee2e2; color:#dc2626; border:none; border-radius:6px; width:28px; height:28px; cursor:pointer; font-size:16px; font-weight:700; flex-shrink:0; margin-top:2px; }
+</style>
+
 <script>
-const PLATS    = [{% for p in plats %}{id:{{ p.pk }},nom:"{{ p.nom|escapejs }}"},{% endfor %}];
-const BOISSONS = [{% for b in boissons %}{id:{{ b.pk }},nom:"{{ b.nom|escapejs }}"},{% endfor %}];
-let lineCount = document.querySelectorAll('.ligne-block').length;
+function onItemChange(sel) {
+  const block = sel.closest('.ligne-block');
+  const libField = block.querySelector('input[name="ligne_libelle"]');
+  libField.style.display = sel.value === 'autre' ? '' : 'none';
+  if (sel.value !== 'autre') libField.value = '';
+}
 
 function ajouterLigne() {
   document.getElementById('empty-msg').style.display = 'none';
-  const idx = lineCount++;
   const div = document.createElement('div');
   div.className = 'ligne-block';
-  div.dataset.idx = idx;
   div.innerHTML = `
-    <button type="button" class="del-ligne" onclick="this.closest('.ligne-block').remove()"><i class="fas fa-times"></i></button>
-    <div class="ligne-header">
-      <span style="font-size:12px;font-weight:600;color:var(--muted)">Élément</span>
-      <button type="button" class="ligne-type-btn active plat" onclick="setType(this,'plat')" data-type="plat">🍽️ Plat</button>
-      <button type="button" class="ligne-type-btn" onclick="setType(this,'boisson')" data-type="boisson">🍷 Boisson</button>
-      <button type="button" class="ligne-type-btn" onclick="setType(this,'autre')" data-type="autre">📝 Autre</button>
-      <input type="hidden" name="ligne_type" value="plat">
-    </div>
+    <button type="button" class="del-ligne" onclick="this.closest('.ligne-block').remove()">×</button>
     <div class="ligne-body">
-      <div>
-        <select name="ligne_plat" class="select-ctrl plat-field">
-          <option value="">— Choisir un plat —</option>
-          ${PLATS.map(p=>`<option value="${p.id}">${p.nom}</option>`).join('')}
+      <div style="flex:1">
+        <select name="ligne_item" class="select-ctrl" onchange="onItemChange(this)" required>
+          <option value="">— Choisir un élément —</option>
+          <optgroup label="🍽️ Plats cuisine">
+            ${PLATS.map(p=>`<option value="plat:${p.id}">${p.nom}</option>`).join('')}
+          </optgroup>
+          <optgroup label="🍷 Boissons cave">
+            ${BOISSONS.map(b=>`<option value="boisson:${b.id}">${b.nom}</option>`).join('')}
+          </optgroup>
+          <optgroup label="📝 Autre">
+            <option value="autre">Libellé libre…</option>
+          </optgroup>
         </select>
-        <select name="ligne_boisson" class="select-ctrl boisson-field" style="display:none">
-          <option value="">— Choisir une boisson —</option>
-          ${BOISSONS.map(b=>`<option value="${b.id}">${b.nom}</option>`).join('')}
-        </select>
-        <input type="text" name="ligne_libelle" class="form-control autre-field" placeholder="Libellé (ex: Séance piscine)" style="display:none">
+        <input type="text" name="ligne_libelle" class="form-control" placeholder="Ex: Séance piscine, Entrée VIP…" style="margin-top:6px;display:none">
       </div>
-      <div>
-        <label style="font-size:11px;color:var(--muted);font-weight:600">Qté</label>
+      <div style="width:80px;flex-shrink:0">
+        <label style="font-size:11px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px">Qté</label>
         <input type="number" name="ligne_quantite" class="form-control" value="1" min="1" style="text-align:center">
       </div>
     </div>`;
   document.getElementById('lignes-container').appendChild(div);
 }
 
-function setType(btn, type) {
-  const block = btn.closest('.ligne-block');
-  // Boutons
-  block.querySelectorAll('.ligne-type-btn').forEach(b => {
-    b.classList.remove('active','plat','boisson','autre');
-    if(b.dataset.type === type) b.classList.add('active', type);
-  });
-  // Champ hidden
-  block.querySelector('input[name="ligne_type"]').value = type;
-  // Affichage des champs
-  block.querySelector('.plat-field').style.display    = type==='plat'    ? '' : 'none';
-  block.querySelector('.boisson-field').style.display = type==='boisson' ? '' : 'none';
-  block.querySelector('.autre-field').style.display   = type==='autre'   ? '' : 'none';
-}
+const PLATS    = [{% for p in plats %}{id:{{ p.pk }},nom:"{{ p.nom|escapejs }}"},{% endfor %}];
+const BOISSONS = [{% for b in boissons %}{id:{{ b.pk }},nom:"{{ b.nom|escapejs }}"},{% endfor %}];
 </script>
 {% endblock %}

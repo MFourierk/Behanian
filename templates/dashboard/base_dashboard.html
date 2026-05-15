@@ -18,6 +18,13 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Bouton hamburger (mobile uniquement) -->
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileSidebar()" aria-label="Menu">
+        <i class="fas fa-bars" id="hamburgerIcon"></i>
+    </button>
+    <!-- Overlay sombre derrière la sidebar mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="logo-section">
@@ -190,6 +197,92 @@
                 toggleIcon.classList.add('fa-chevron-right');
             }
         });
+
+        // ── Sidebar mobile (hamburger) ─────────────────────────
+        function toggleMobileSidebar() {
+            const sidebar  = document.getElementById('sidebar');
+            const overlay  = document.getElementById('sidebarOverlay');
+            const icon     = document.getElementById('hamburgerIcon');
+            const isOpen   = sidebar.classList.contains('mobile-open');
+            if (isOpen) {
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+                icon.classList.replace('fa-times', 'fa-bars');
+            } else {
+                sidebar.classList.add('mobile-open');
+                overlay.classList.add('active');
+                icon.classList.replace('fa-bars', 'fa-times');
+            }
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const icon    = document.getElementById('hamburgerIcon');
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+            icon.classList.replace('fa-times', 'fa-bars');
+        }
+
+        // Fermer la sidebar mobile en cliquant sur un lien nav
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.sidebar .nav-item a, .sidebar .nav-link').forEach(function(link) {
+                    link.addEventListener('click', closeMobileSidebar);
+                });
+            }
+        });
+    </script>
+    <script>
+    /**
+     * getCsrfToken() — méthode standard pour récupérer le token CSRF Django.
+     * Utilise le cookie (compatible avec CSRF_COOKIE_HTTPONLY = False).
+     * Disponible dans tous les templates qui étendent base_dashboard.html.
+     */
+    function getCsrfToken() {
+        var name = 'csrftoken';
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    /**
+     * fetchJSON(url, data) — wrapper fetch AJAX standardisé.
+     * Inclut automatiquement le CSRF token et envoie en JSON.
+     * Retourne la promesse avec le corps JSON parsé.
+     *
+     * Usage :
+     *   fetchJSON('/mon/url/', {champ: valeur})
+     *     .then(data => { ... })
+     *     .catch(err => console.error(err));
+     */
+    function fetchJSON(url, data, method) {
+        method = method || 'POST';
+        return fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type':  'application/json',
+                'X-CSRFToken':   getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: method !== 'GET' ? JSON.stringify(data) : undefined,
+        }).then(function(response) {
+            return response.json().then(function(json) {
+                json.__status = response.status;
+                json.__ok = response.ok;
+                return json;
+            });
+        });
+    }
     </script>
     {% block extra_js %}{% endblock %}
 </body>

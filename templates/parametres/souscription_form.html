@@ -1,0 +1,212 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Lier {{ forfait.nom }} à un client{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{--gold:#c9a84c;--dark:#1a2535;--mid:#2d3f55;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c;--green:#16a34a}
+.pg-body{background:var(--light);padding:20px 0 50px}
+.panel{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid var(--border);background:#f8fafc;display:flex;align-items:center;justify-content:space-between}
+.ph h3{font-size:13px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.form-control{width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;color:var(--dark);transition:border-color .15s;background:white}
+.form-control:focus{outline:none;border-color:var(--gold)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.btn-a{padding:10px 22px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .12s}
+.btn-or{background:var(--gold);color:var(--dark)}
+.btn-sec{background:#f1f5f9;color:var(--dark)}
+.btn-vert{background:var(--green);color:white}
+/* Carte récap forfait */
+.forfait-card{background:linear-gradient(135deg,var(--dark),var(--mid));border-radius:14px;padding:20px;color:white;margin-bottom:20px}
+.forfait-card .nom{font-size:18px;font-weight:800;margin-bottom:4px}
+.forfait-card .prix{font-size:28px;font-weight:900;color:var(--gold);margin-bottom:8px}
+.forfait-card .meta{font-size:11px;opacity:.7}
+.lignes-preview{background:rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-top:12px}
+.ligne-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.ligne-item:last-child{border-bottom:none}
+/* Séparateur client */
+.sep{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:11px;font-weight:700}
+.sep::before,.sep::after{content:'';flex:1;height:1px;background:var(--border)}
+/* Mode paiement */
+.mode-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.mode-btn{padding:8px 6px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--dark);transition:all .12s;background:white}
+.mode-btn.active{border-color:var(--gold);background:#fff8e6;color:var(--dark)}
+.mode-btn i{display:block;font-size:16px;margin-bottom:3px}
+/* Résumé total */
+.total-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:space-between}
+.total-box .label{font-size:12px;font-weight:600;color:#15803d}
+.total-box .val{font-size:22px;font-weight:800;color:#15803d}
+
+@media(max-width:768px){.form-row{grid-template-columns:1fr!important}.mode-grid{grid-template-columns:repeat(2,1fr)!important}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pg-body"><div class="container-fluid" style="max-width:780px">
+
+  <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
+    <div class="header-content">
+      <h2 style="font-size:1.3rem;font-weight:700;margin:0;color:white">🎁 Lier un forfait à un client</h2>
+      <p class="mb-0" style="opacity:.7;color:white">Créer une souscription et générer le ticket de caisse</p>
+    </div>
+  </div>
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Forfaits" "parametres:forfait_list" "Lier à un client" "" %}
+
+  <!-- Récap du forfait -->
+  <div class="forfait-card">
+    <div class="nom">{{ forfait.nom }}</div>
+    <div class="prix">{{ forfait.prix|floatformat:0 }} FCFA</div>
+    <div class="meta">
+      <span style="background:rgba(255,255,255,.15);padding:2px 10px;border-radius:20px;margin-right:8px">{{ forfait.get_module_display }}</span>
+      {{ forfait.lignes.count }} élément(s) inclus
+    </div>
+    {% if forfait.lignes.exists %}
+    <div class="lignes-preview">
+      {% for l in forfait.lignes.all %}
+      <div class="ligne-item">
+        {% if l.type_item == 'plat' %}🍽️{% elif l.type_item == 'boisson' %}🍷{% else %}📝{% endif %}
+        <strong>{{ l.quantite }}×</strong> {{ l.nom_affiche }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if forfait.description %}
+    <div style="font-size:12px;opacity:.65;margin-top:10px;font-style:italic">{{ forfait.description }}</div>
+    {% endif %}
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Identification du client -->
+    <div class="panel">
+      <div class="ph"><h3>👤 Identification du client</h3></div>
+      <div style="padding:20px">
+        <div class="form-group">
+          <label>Client existant (optionnel)</label>
+          <select name="client_id" class="form-control" id="selectClient" onchange="syncClientName()">
+            <option value="">— Choisir dans la base clients —</option>
+            {% for c in clients %}
+            <option value="{{ c.pk }}" data-nom="{{ c.nom_complet }}">{{ c.nom_complet }}{% if c.telephone %} · {{ c.telephone }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Sélectionnez un client enregistré pour lier la souscription à son compte.</div>
+        </div>
+        <div class="sep">OU</div>
+        <div class="form-group">
+          <label>Nom du client (saisie libre)</label>
+          <input type="text" name="nom_client" id="nomClientLibre" class="form-control"
+                 placeholder="Ex: Jean-Pierre KOUASSI" autocomplete="off">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Pour un client de passage sans compte enregistré.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Détails souscription -->
+    <div class="panel">
+      <div class="ph"><h3>📋 Détails de la souscription</h3></div>
+      <div style="padding:20px">
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group" style="margin:0">
+            <label>Date de validité (optionnel)</label>
+            <input type="date" name="date_validite" class="form-control">
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">Laisser vide si le forfait n'a pas de date d'expiration.</div>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Référence (chambre, table, réservation…)</label>
+            <input type="text" name="reference" class="form-control" placeholder="Ex: Chambre 101, Table 5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes internes</label>
+          <textarea name="notes" class="form-control" rows="2" placeholder="Observations, conditions particulières…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paiement -->
+    <div class="panel">
+      <div class="ph"><h3>💳 Paiement</h3></div>
+      <div style="padding:20px">
+        <div class="form-group">
+          <label>Montant encaissé (FCFA)</label>
+          <input type="number" name="montant_paye" class="form-control" value="{{ forfait.prix|floatformat:0 }}"
+                 min="0" id="montantInput" oninput="updateTotal()" required>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Par défaut le prix du forfait. Modifiable en cas de remise.</div>
+        </div>
+        <div class="form-group">
+          <label>Mode de paiement</label>
+          <div class="mode-grid" id="modeGrid">
+            {% for val, lab in mode_choices %}
+            <div class="mode-btn {% if val == 'especes' %}active{% endif %}"
+                 onclick="setMode('{{ val }}', this)"
+                 data-val="{{ val }}">
+              {% if val == 'especes' %}<i class="fas fa-money-bill-wave"></i>
+              {% elif val == 'mobile_money' %}<i class="fas fa-mobile-alt"></i>
+              {% elif val == 'orange_money' %}<i class="fas fa-broadcast-tower"></i>
+              {% elif val == 'wave' %}<i class="fas fa-water"></i>
+              {% elif val == 'carte_bancaire' %}<i class="fas fa-credit-card"></i>
+              {% elif val == 'virement' %}<i class="fas fa-university"></i>
+              {% elif val == 'cheque' %}<i class="fas fa-file-invoice"></i>
+              {% else %}<i class="fas fa-ellipsis-h"></i>{% endif %}
+              {{ lab }}
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="mode_paiement" id="modeInput" value="especes">
+        </div>
+        <div class="total-box" id="totalBox">
+          <span class="label">💰 Total à encaisser</span>
+          <span class="val" id="totalVal">{{ forfait.prix|floatformat:0 }} F</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <a href="{% url 'parametres:forfait_list' %}" class="btn-a btn-sec"><i class="fas fa-arrow-left"></i> Annuler</a>
+      <button type="submit" class="btn-a btn-vert" onclick="return validerForm()">
+        <i class="fas fa-link"></i> Créer la souscription et générer le ticket
+      </button>
+    </div>
+  </form>
+</div></div>
+
+<script>
+function syncClientName() {
+  const sel = document.getElementById('selectClient');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt.value) {
+    document.getElementById('nomClientLibre').value = '';
+    document.getElementById('nomClientLibre').disabled = true;
+  } else {
+    document.getElementById('nomClientLibre').disabled = false;
+  }
+}
+
+function setMode(val, el) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('modeInput').value = val;
+}
+
+function updateTotal() {
+  const v = parseFloat(document.getElementById('montantInput').value) || 0;
+  document.getElementById('totalVal').textContent = v.toLocaleString('fr-FR') + ' F';
+}
+
+function validerForm() {
+  const clientId  = document.getElementById('selectClient').value;
+  const nomLibre  = document.getElementById('nomClientLibre').value.trim();
+  if (!clientId && !nomLibre) {
+    alert('Veuillez sélectionner un client ou saisir un nom.');
+    return false;
+  }
+  return true;
+}
+
+// Initialiser l'état disabled du champ libre si client pré-sélectionné
+syncClientName();
+</script>
+{% endblock %}

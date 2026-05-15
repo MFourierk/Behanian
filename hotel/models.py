@@ -231,13 +231,4 @@ class Consommation(models.Model):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         
-        # Gestion du stock pour le Bar lors de la création
-        if is_new and self.type_service == 'bar' and self.boisson:
-            from bar.models import MouvementStockBar
-            # On enregistre une sortie de stock
-            MouvementStockBar.objects.create(
-                boisson=self.boisson,
-                type_mouvement='sortie',
-                quantite=self.quantite,
-                commentaire=f"Conso Chambre {self.reservation.chambre.numero}"
-            )
+

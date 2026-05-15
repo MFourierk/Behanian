@@ -66,4 +66,9 @@ urlpatterns = [
     path('forfaits/ajouter/', views.forfait_create, name='forfait_create'),
     path('forfaits/<int:pk>/modifier/', views.forfait_edit, name='forfait_edit'),
     path('forfaits/<int:pk>/supprimer/', views.forfait_delete, name='forfait_delete'),
+
+    # Souscriptions forfait (lien forfait ↔ client)
+    path('forfaits/souscriptions/', views.souscription_list, name='souscription_list'),
+    path('forfaits/<int:forfait_pk>/lier-client/', views.souscription_create, name='souscription_create'),
+    path('forfaits/souscriptions/<int:pk>/statut/', views.souscription_changer_statut, name='souscription_statut'),
 ]

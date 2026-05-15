@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('ouvrir/', views.ouvrir_caisse, name='ouvrir'),
     path('cloturer/', views.cloturer_caisse, name='cloturer'),
+    path('force-cloturer/<int:session_id>/', views.force_cloturer_caisse, name='force_cloturer'),
     path('mouvement/', views.enregistrer_mouvement, name='mouvement'),
     path('prelevement/', views.prelevement_banque, name='prelevement'),
     path('rapport/', views.rapport_caisse, name='rapport'),

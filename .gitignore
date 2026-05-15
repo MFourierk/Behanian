@@ -11,3 +11,6 @@ db_backup.sqlite3
 
 # Fichiers media uploadés
 media/
+
+# Notes personnelles
+Gitinfo.txt

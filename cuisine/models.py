@@ -420,6 +420,25 @@ class FicheTechnique(models.Model):
             return self.cout_total / self.nb_portions
         return Decimal('0')
 
+    def max_portions_possibles(self):
+        """
+        Nombre maximum de portions réalisables avec le stock actuel.
+        Retourne 0 si une des fiches techniques manque de stock.
+        """
+        import math
+        lignes = self.lignes.select_related('ingredient').all()
+        if not lignes:
+            return 999  # Pas d'ingrédients = disponible sans limite
+        min_portions = None
+        for ligne in lignes:
+            if ligne.quantite and ligne.quantite > 0:
+                portions = float(ligne.ingredient.quantite_stock) / float(ligne.quantite)
+                if min_portions is None or portions < min_portions:
+                    min_portions = portions
+        if min_portions is None:
+            return 0
+        return int(math.floor(min_portions))
+
     class Meta:
         verbose_name        = "Fiche Technique"
         verbose_name_plural = "Fiches Techniques"

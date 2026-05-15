@@ -26,11 +26,14 @@ def check_stock_availability(plat, quantity=1):
             })
 
     if manquants:
-        details = ", ".join(
-            f"{m['ingredient'].nom} (manque {m['manque']:.3f})"
+        nom_plat = getattr(plat, 'nom', 'ce plat')
+        lignes = "\n".join(
+            f"  • {m['ingredient'].nom} : "
+            f"{int(m['disponible']) if m['disponible'] == int(m['disponible']) else m['disponible']:.2f} disponible"
+            f" / {int(m['necessaire']) if m['necessaire'] == int(m['necessaire']) else m['necessaire']:.2f} nécessaire"
             for m in manquants
         )
-        return False, f"Ingrédients insuffisants : {details}"
+        return False, f"« {nom_plat} » ne peut pas être servi — stock insuffisant :\n{lignes}"
 
     return True, ""
 

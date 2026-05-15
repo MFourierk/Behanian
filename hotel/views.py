@@ -179,6 +179,7 @@ def chambre_detail(request, chambre_id):
     return render(request, 'hotel/chambre_detail.html', context)
 
 @require_module_access('hotel')
+@require_POST
 @transaction.atomic
 def checkin_reservation(request, reservation_id):
     """Effectuer le check-in d'une réservation existante avec mise à jour des infos client"""
@@ -207,6 +208,12 @@ def checkin_reservation(request, reservation_id):
         reservation.provenance = request.POST.get('provenance', reservation.provenance)
         reservation.destination = request.POST.get('destination', reservation.destination)
         
+        # Validation champs obligatoires pièce d'identité
+        if not piece_identite or not numero_piece:
+            msg = "Le type de pièce et le numéro de pièce sont obligatoires pour effectuer le check-in."
+            messages.error(request, msg)
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
+
         # Mise à jour Client
         updated = False
         if nom: client.nom = nom; updated=True
@@ -238,20 +245,8 @@ def checkin_reservation(request, reservation_id):
             return redirect('hotel:print_checkin_form', reservation_id=reservation.id)
         return redirect(reverse('hotel:index') + '?tab=checkinout')
     
-    # Comportement GET standard (fallback ou lien direct)
-    if reservation.statut != 'confirmee':
-        messages.error(request, "Seule une réservation confirmée peut faire l'objet d'un check-in.")
-        return redirect('hotel:index')
-    
-    # Si GET direct, on fait le check-in simple (comportement précédent)
-    # Mais idéalement on devrait rediriger vers la modale via JS, mais ici c'est du backend.
-    # On garde le comportement simple pour la rétrocompatibilité si JS échoue, 
-    # mais l'UI principale utilisera le POST.
-    reservation.statut = 'en_cours'
-    reservation.save()
-    reservation.chambre.statut = 'occupee'
-    reservation.chambre.save()
-    messages.success(request, f"Check-in effectué pour {reservation.client.nom_complet}.")
+    # Ce point ne devrait jamais être atteint : @require_POST garantit que seuls les
+    # formulaires POST avec token CSRF peuvent déclencher le check-in.
     return redirect(reverse('hotel:index') + '?tab=checkinout')
 
 @require_module_access('hotel')
@@ -288,6 +283,13 @@ def checkin_direct(request):
 
         if not all([nom, chambre_id, date_depart]):
             msg = "Veuillez remplir tous les champs obligatoires (Nom, Chambre, Date de départ)."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect('hotel:index')
+
+        if not piece_identite or not numero_piece:
+            msg = "Le type de pièce et le numéro de pièce sont obligatoires pour effectuer le check-in."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
@@ -749,26 +751,12 @@ def finalize_checkout(request, ticket_id):
             reservation.chambre.statut = 'disponible'
             reservation.chambre.save()
         
-        # ── Clôturer les sessions piscine liées ──────────────────────────
-        from piscine.models import AccesPiscine
-        acces_piscine = AccesPiscine.objects.filter(
-            reservation_hotel=reservation,
-            date_sortie__isnull=True  # Seulement les sessions encore ouvertes
-        )
-        nb_piscine = acces_piscine.count()
-        for acces in acces_piscine:
-            acces.date_sortie = timezone.now()
-            acces.save()
-
-        # ── Marquer le ticket comme imprimé ───────────────────────────────
+        # Marquer le ticket comme imprimé
         ticket.imprime = True
         ticket.date_impression = timezone.now()
         ticket.save()
-
-        msg = 'Séjour clôturé avec succès'
-        if nb_piscine > 0:
-            msg += f' — {nb_piscine} session(s) piscine clôturée(s)'
-        return JsonResponse({'status': 'success', 'message': msg})
+        
+        return JsonResponse({'status': 'success', 'message': 'Séjour clôturé avec succès'})
         
     except Reservation.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Réservation introuvable'}, status=404)
@@ -802,12 +790,17 @@ def ajouter_consommation(request, reservation_id):
                 conso.prix_unitaire = boisson.prix
                 
             elif type_service == 'restaurant':
+                from cuisine.utils import check_stock_availability, process_stock_movement
                 plat_id = request.POST.get('plat_id')
                 plat = get_object_or_404(PlatMenu, id=plat_id)
+                ok, msg = check_stock_availability(plat, quantite)
+                if not ok:
+                    messages.error(request, f'Stock insuffisant pour {plat.nom} — {msg}')
+                    return redirect(f"{reverse('hotel:index')}?tab=checkinout")
                 conso.plat = plat
                 conso.nom = plat.nom
                 conso.prix_unitaire = plat.prix
-                
+
             elif type_service == 'espace':
                 espace_id = request.POST.get('espace_id')
                 espace = get_object_or_404(EspaceEvenementiel, id=espace_id)
@@ -819,7 +812,14 @@ def ajouter_consommation(request, reservation_id):
                 conso.nom = request.POST.get('description')
                 conso.prix_unitaire = Decimal(request.POST.get('prix'))
                 
-            conso.save() # Déclenche la gestion du stock via save() du modèle
+            conso.save()  # Déclenche la gestion du stock bar via MouvementStockBar.save()
+            # Déduction stock cuisine pour les plats restaurant
+            if type_service == 'restaurant' and conso.plat:
+                from cuisine.utils import process_stock_movement
+                process_stock_movement(
+                    conso.plat, quantite, 'sortie', request.user,
+                    f'Hotel Chambre {reservation.chambre.numero}'
+                )
             messages.success(request, "Service ajouté avec succès.")
             
         except Exception as e:
@@ -878,78 +878,41 @@ def api_supprimer_consommation(request, conso_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# API CHECKOUT — Dépenses multi-modules imputées à la chambre
-# ═══════════════════════════════════════════════════════════════════════════════
-
 @require_module_access('hotel')
 def api_checkout_details(request, reservation_id):
-    """
-    Retourne le détail complet des dépenses liées à une réservation.
-    Utilisé par le modal checkout pour afficher module par module.
-    """
-    from django.http import JsonResponse
-    reservation = get_object_or_404(Reservation, id=reservation_id)
+    """Retourne le détail de facturation d'une réservation pour la modale checkout."""
+    from .models import Reservation, Consommation
+    reservation = get_object_or_404(Reservation, id=reservation_id, statut='en_cours')
 
-    # ── Hébergement ─────────────────────────────────────────────────────────
-    hebergement = float(reservation.get_prix_reel())
-    avance      = float(reservation.avance)
+    hebergement   = float(reservation.get_prix_reel())
+    avance        = float(reservation.avance)
+    total_general = float(reservation.get_total_general())
+    reste         = float(reservation.get_montant_restant_reel())
 
-    # ── Consommations hôtel (bar, restaurant, espace) ────────────────────────
+    # Consommations hors piscine
     consos = []
-    for c in reservation.consommations.all().order_by('type_service'):
+    for c in reservation.consommations.exclude(type_service='piscine').order_by('date_ajout'):
         consos.append({
-            'id':      c.pk,
-            'type':    c.type_service,
-            'label':   c.get_type_service_display(),
-            'nom':     c.nom,
-            'qte':     c.quantite,
-            'prix':    float(c.prix_unitaire),
-            'total':   float(c.total),
+            'label': c.get_type_service_display(),
+            'nom':   c.nom,
+            'qte':   c.quantite,
+            'total': float(c.total),
         })
 
-    # ── Piscine — accès + consommations liés à cette réservation ────────────
-    from piscine.models import AccesPiscine
+    # Consommations piscine
     piscine_items = []
-    acces_piscine = AccesPiscine.objects.filter(
-        reservation_hotel=reservation
-    ).prefetch_related('consommations')
-
-    for acces in acces_piscine:
-        # Entrée piscine
+    for c in reservation.consommations.filter(type_service='piscine').order_by('date_ajout'):
         piscine_items.append({
-            'acces_id': acces.pk,
-            'type':     'piscine_entree',
-            'nom':      f"Entrée piscine — {acces.nom_client} ({acces.nb_adultes}A/{acces.nb_enfants}E)",
-            'total':    float(acces.prix_total),
-            'cloture':  acces.date_sortie is not None,
+            'nom':     c.nom,
+            'total':   float(c.total),
+            'cloture': True,  # Déjà enregistrées = sessions clôturées
         })
-        # Consommations piscine
-        for cp in acces.consommations.all():
-            piscine_items.append({
-                'acces_id': acces.pk,
-                'type':     'piscine_conso',
-                'nom':      f"{cp.produit} x{cp.quantite}",
-                'total':    float(cp.get_total()),
-                'cloture':  acces.date_sortie is not None,
-            })
-
-    total_hebergement = hebergement
-    total_consos      = sum(c['total'] for c in consos)
-    total_piscine     = sum(p['total'] for p in piscine_items)
-    total_general     = total_hebergement + total_consos + total_piscine
-    reste             = total_general - avance
 
     return JsonResponse({
-        'client':            str(reservation.client) if reservation.client else '',
-        'chambre':           reservation.chambre.numero if reservation.chambre else '',
-        'hebergement':       total_hebergement,
-        'avance':            avance,
-        'consos':            consos,
-        'piscine_items':     piscine_items,
-        'total_hebergement': total_hebergement,
-        'total_consos':      total_consos,
-        'total_piscine':     total_piscine,
-        'total_general':     total_general,
-        'reste':             reste,
+        'hebergement':   hebergement,
+        'consos':        consos,
+        'piscine_items': piscine_items,
+        'avance':        avance,
+        'total_general': total_general,
+        'reste':         reste,
     })

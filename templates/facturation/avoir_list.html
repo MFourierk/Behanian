@@ -1,145 +1,157 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
+{% block title %}Avoirs — Facturation{% endblock %}
 
-{% block title %}Avoirs{% endblock %}
+{% block extra_css %}
+<style>
+.fac-body{background:#eef1f5;padding:20px 0 50px}
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;flex-wrap:wrap;gap:8px}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.tbl-wrap{max-height:560px;overflow-y:auto;overflow-x:auto}
+.tbl-wrap::-webkit-scrollbar{width:6px;height:6px}
+.tbl-wrap::-webkit-scrollbar-track{background:#f1f5f9}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl thead th{position:sticky;top:0;z-index:2}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:2px solid #d4dce8;background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-en_attente{background:#fef3c7;color:#d97706}
+.b-accepted{background:#dcfce7;color:#15803d}
+.b-traitee{background:#dcfce7;color:#15803d}
+.b-refunded{background:#d1fae5;color:#065f46}
+.b-annulee{background:#fee2e2;color:#dc2626}
+.btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;text-decoration:none;transition:all .12s}
+.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-outline:hover{background:#f0f4ff}
+.btn-primary{background:#2563eb;color:white}
+.btn-danger{background:#dc2626;color:white}
+.filter-bar{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid #d4dce8;background:#f8fafc;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{padding:6px 10px;border:1px solid #d4dce8;border-radius:8px;font-size:12px;color:#1a2535;background:white;height:32px}
+.doc-num{font-size:11px;font-weight:700;color:#1a2535;font-family:'Courier New',monospace}
+.origine-link{font-size:10px;color:#2563eb;text-decoration:none;font-weight:600}
+.origine-link:hover{text-decoration:underline}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="header-glam facturation-watermark">
+<div class="fac-body"><div class="container-fluid">
+
+  <div class="header-glam facturation-watermark">
     <div class="header-content">
-        <h2>Avoirs</h2>
-        <p class="mb-0 opacity-75">Historique des avoirs</p>
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0">Avoirs</h2>
+      <p class="mb-0 opacity-75">Historique des notes de crédit</p>
     </div>
-    <div class="header-clock">
-        <span class="time">--:-- GMT</span>
-        <span class="date">Chargement...</span>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+  {% breadcrumb "Facturation" "facturation:index" "Avoirs" "" %}
+
+  <div style="display:flex;gap:10px;margin:16px 0">
+    <button class="btn-p btn-primary" onclick="sessionStorage.setItem('facTab','avoirs');window.location='{% url 'facturation:index' %}'">
+      <i class="fas fa-plus"></i> Nouvel avoir
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <h3><i class="fas fa-undo" style="color:#dc2626;margin-right:6px"></i>Liste des avoirs</h3>
+      <span id="compteur" style="font-size:11px;color:#7a8b9c"></span>
     </div>
-</div>
-{% breadcrumb "Facturation" "facturation:index" "Avoirs" "" %}
-
-
-<div style="display:flex;gap:10px;margin-bottom:20px">
-    <a href="{% url 'facturation:avoir_create' %}" class="btn-add-glam">
-        <i class="fas fa-plus mr-2"></i> Créer un avoir
-    </a>
-</div>
-
-
-
-<div class="content-section">
-    <div class="card">
-        <div class="card-header">
-            <h3>Liste des avoirs</h3>
-        </div>
-        <div class="card-body">
-            {% if avoirs %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Numéro</th>
-                                <th>Facture d'origine</th>
-                                <th>Client</th>
-                                <th>Date</th>
-                                <th>Motif</th>
-                                <th>Total</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for avoir in avoirs %}
-                                <tr>
-                                    <td><strong>{{ avoir.numero }}</strong></td>
-                                    <td>{{ avoir.facture_origine.numero }}</td>
-                                    <td>{{ avoir.client.nom_complet }}</td>
-                                    <td>{{ avoir.date_avoir|date:"d/m/Y" }}</td>
-                                    <td>
-                                        <small>{{ avoir.motif|truncatewords:10 }}</small>
-                                    </td>
-                                    <td>{{ avoir.total|floatformat:0 }} FCFA</td>
-                                    <td>
-                                        <span class="badge badge-{% if avoir.statut == 'accepted' %}success{% elif avoir.statut == 'sent' %}primary{% else %}secondary{% endif %}">
-                                            {{ avoir.get_statut_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'facturation:avoir_detail' avoir.pk %}" class="btn btn-sm btn-outline-primary">Détail</a>
-                                        <a href="{% url 'facturation:avoir_pdf' avoir.pk %}" class="btn btn-sm btn-outline-secondary">PDF</a>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="filter-bar">
+      <select id="filtreStatut" onchange="filtrer()">
+        <option value="">Tous statuts</option>
+        <option value="en_attente">En attente</option>
+        <option value="accepted">Accepté</option>
+        <option value="traitee">Traité</option>
+        <option value="refunded">Remboursé</option>
+        <option value="annulee">Annulé</option>
+      </select>
+      <input type="text" id="filtreClient" placeholder="Rechercher client…" oninput="filtrer()">
+      <input type="month" id="filtreMois" onchange="filtrer()">
+      <button class="btn-p btn-outline" onclick="resetFiltres()" style="height:32px"><i class="fas fa-times"></i> Effacer</button>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="tableAvoirs">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Origine</th>
+            <th>Client</th>
+            <th>Date</th>
+            <th>Motif</th>
+            <th style="text-align:right">Montant</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for a in avoirs %}
+        <tr data-statut="{{ a.statut }}" data-client="{{ a.client.nom|default:''|lower }}" data-mois="{{ a.date_avoir|date:'Y-m' }}">
+          <td><span class="doc-num">{{ a.numero }}</span></td>
+          <td>
+            {% if a.facture_origine %}
+              <a href="{% url 'facturation:facture_detail' a.facture_origine.pk %}" class="origine-link">
+                <i class="fas fa-file-invoice" style="margin-right:3px"></i>{{ a.facture_origine.numero }}
+              </a>
+            {% elif a.ticket_origine %}
+              <a href="{% url 'facturation:ticket_detail' a.ticket_origine.pk %}" class="origine-link">
+                <i class="fas fa-receipt" style="margin-right:3px"></i>{{ a.ticket_origine.numero }}
+              </a>
             {% else %}
-                <p class="text-muted">Aucun avoir trouvé.</p>
+              <span style="color:#9aa5b1;font-size:11px">—</span>
             {% endif %}
-        </div>
+          </td>
+          <td style="font-weight:600">{{ a.client.nom|default:"—" }}</td>
+          <td style="font-size:11px;color:#4a5b6e">{{ a.date_avoir|date:"d/m/Y" }}</td>
+          <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#4a5b6e"
+              title="{{ a.motif }}">{{ a.motif|truncatewords:6 }}</td>
+          <td style="text-align:right;font-weight:700;color:#dc2626">{{ a.total|floatformat:0 }} F</td>
+          <td><span class="badge b-{{ a.statut }}">{{ a.get_statut_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'facturation:avoir_detail' a.pk %}" class="btn-p btn-outline" title="Détail"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'facturation:avoir_pdf' a.pk %}" class="btn-p btn-outline" title="PDF" target="_blank"><i class="fas fa-file-pdf" style="color:#dc2626"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:#9aa5b1">
+          <i class="fas fa-undo" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3"></i>
+          Aucun avoir
+        </td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
-</div>
+  </div>
 
+</div></div>
 
-
-<style>
-
-
-.tabs {
-    display: flex;
-    gap: 0;
+<script>
+function filtrer(){
+  const s=document.getElementById('filtreStatut').value;
+  const c=document.getElementById('filtreClient').value.toLowerCase();
+  const m=document.getElementById('filtreMois').value;
+  let v=0;
+  document.querySelectorAll('#tableAvoirs tbody tr[data-statut]').forEach(tr=>{
+    const ok=(!s||tr.dataset.statut===s)&&(!c||tr.dataset.client.includes(c))&&(!m||tr.dataset.mois===m);
+    tr.style.display=ok?'':'none';
+    if(ok)v++;
+  });
+  document.getElementById('compteur').textContent=v+' avoir(s)';
 }
-
-
-
-
-
-
-
-.card {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    margin-bottom: 20px;
+function resetFiltres(){
+  ['filtreStatut','filtreMois'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('filtreClient').value='';
+  filtrer();
 }
-
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.card-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.card-body {
-    padding: 20px;
-}
-
-.table {
-    margin-bottom: 0;
-}
-
-.badge {
-    padding: 0.25em 0.4em;
-    font-size: 75%;
-}
-
-.badge-success {
-    color: #fff;
-    background-color: #28a745;
-}
-
-.badge-primary {
-    color: #fff;
-    background-color: #007bff;
-}
-
-.badge-secondary {
-    color: #fff;
-    background-color: #6c757d;
-}
-</style>
+document.addEventListener('DOMContentLoaded',()=>{
+  const t=document.querySelectorAll('#tableAvoirs tbody tr[data-statut]').length;
+  document.getElementById('compteur').textContent=t+' avoir(s)';
+});
+</script>
 {% endblock %}

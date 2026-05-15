@@ -189,9 +189,9 @@ class TableListView(ListView):
 class TableCreateView(CreateView):
     model = Table
     template_name = 'parametres/table_form.html'
-    fields = ['numero', 'capacite', 'statut', 'zone']
+    fields = ['numero', 'capacite', 'statut']
     success_url = reverse_lazy('parametres:table_list')
-    
+
     def form_valid(self, form):
         messages.success(self.request, "Table créée avec succès.")
         return super().form_valid(form)
@@ -200,7 +200,7 @@ class TableCreateView(CreateView):
 class TableUpdateView(UpdateView):
     model = Table
     template_name = 'parametres/table_form.html'
-    fields = ['numero', 'capacite', 'statut', 'zone']
+    fields = ['numero', 'capacite', 'statut']
     success_url = reverse_lazy('parametres:table_list')
     
     def form_valid(self, form):
@@ -466,6 +466,7 @@ def personnel_update(request, pk):
 
 
 @require_manager
+@require_POST
 def personnel_toggle(request, pk):
     """Activer / Désactiver un utilisateur."""
     user = get_object_or_404(User, pk=pk)
@@ -495,6 +496,7 @@ def personnel_reset_password(request, pk):
     return JsonResponse({'success': False, 'error': 'POST requis'})
 
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # FORFAITS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -502,12 +504,28 @@ from restaurant.models import Forfait, LigneForfait
 from cuisine.models import Plat
 from bar.models import BoissonBar as BoissonBarModel
 
-@login_required
-def forfait_list(request):
-    forfaits = Forfait.objects.prefetch_related('lignes__plat', 'lignes__boisson').all()
-    return render(request, 'parametres/forfait_list.html', {'forfaits': forfaits})
 
-@login_required
+@require_manager
+def forfait_list(request):
+    module_filter = request.GET.get('module', '')
+    forfaits = Forfait.objects.prefetch_related('lignes__plat', 'lignes__boisson').all()
+    if module_filter:
+        forfaits = forfaits.filter(module=module_filter)
+    from restaurant.models import SouscriptionForfait
+    nb_actifs        = Forfait.objects.filter(disponible=True).count()
+    nb_souscriptions = SouscriptionForfait.objects.count()
+    nb_modules       = Forfait.objects.values('module').distinct().count()
+    return render(request, 'parametres/forfait_list.html', {
+        'forfaits':         forfaits,
+        'module_filter':    module_filter,
+        'modules':          Forfait.MODULE_CHOICES,
+        'nb_actifs':        nb_actifs,
+        'nb_souscriptions': nb_souscriptions,
+        'nb_modules':       nb_modules,
+    })
+
+
+@require_manager
 def forfait_create(request):
     plats    = Plat.objects.filter(statut='disponible').order_by('nom')
     boissons = BoissonBarModel.objects.filter(disponible=True).order_by('nom')
@@ -515,7 +533,7 @@ def forfait_create(request):
     if request.method == 'POST':
         f = Forfait.objects.create(
             nom=request.POST['nom'],
-            module=request.POST['module'],
+            module='restaurant',
             prix=request.POST['prix'],
             description=request.POST.get('description', ''),
             disponible=request.POST.get('disponible') == 'on',
@@ -524,13 +542,14 @@ def forfait_create(request):
             f.image = request.FILES['image']
             f.save()
         _save_lignes_forfait(request, f)
-        messages.success(request, f"Forfait « {f.nom} » créé avec succès.")
+        messages.success(request, f"Forfait \u00ab {f.nom} \u00bb cr\u00e9\u00e9 avec succ\u00e8s.")
         return redirect('parametres:forfait_list')
     return render(request, 'parametres/forfait_form.html', {
         'plats': plats, 'boissons': boissons, 'modules': modules, 'mode': 'create'
     })
 
-@login_required
+
+@require_manager
 def forfait_edit(request, pk):
     forfait  = get_object_or_404(Forfait, pk=pk)
     plats    = Plat.objects.filter(statut='disponible').order_by('nom')
@@ -538,7 +557,6 @@ def forfait_edit(request, pk):
     modules  = Forfait.MODULE_CHOICES
     if request.method == 'POST':
         forfait.nom         = request.POST['nom']
-        forfait.module      = request.POST['module']
         forfait.prix        = request.POST['prix']
         forfait.description = request.POST.get('description', '')
         forfait.disponible  = request.POST.get('disponible') == 'on'
@@ -547,36 +565,190 @@ def forfait_edit(request, pk):
         forfait.save()
         forfait.lignes.all().delete()
         _save_lignes_forfait(request, forfait)
-        messages.success(request, f"Forfait « {forfait.nom} » modifié.")
+        messages.success(request, f"Forfait \u00ab {forfait.nom} \u00bb modifi\u00e9.")
         return redirect('parametres:forfait_list')
     return render(request, 'parametres/forfait_form.html', {
         'forfait': forfait, 'plats': plats, 'boissons': boissons,
         'modules': modules, 'mode': 'edit'
     })
 
-@login_required
+
+@require_manager
 def forfait_delete(request, pk):
     forfait = get_object_or_404(Forfait, pk=pk)
     if request.method == 'POST':
         forfait.delete()
-        messages.success(request, "Forfait supprimé.")
+        messages.success(request, "Forfait supprim\u00e9.")
         return redirect('parametres:forfait_list')
     return render(request, 'parametres/forfait_confirm_delete.html', {'forfait': forfait})
 
+
 def _save_lignes_forfait(request, forfait):
-    """Lire les lignes du formulaire dynamique et les enregistrer."""
-    types     = request.POST.getlist('ligne_type')
-    plat_ids  = request.POST.getlist('ligne_plat')
-    bois_ids  = request.POST.getlist('ligne_boisson')
+    """
+    Enregistre les lignes du formulaire simplifié.
+    Chaque ligne a : ligne_item (plat:ID | boisson:ID | autre), ligne_libelle, ligne_quantite.
+    """
+    items     = request.POST.getlist('ligne_item')
     libelles  = request.POST.getlist('ligne_libelle')
     quantites = request.POST.getlist('ligne_quantite')
-    for i, typ in enumerate(types):
-        qte = int(quantites[i]) if i < len(quantites) and quantites[i] else 1
-        ligne = LigneForfait(forfait=forfait, type_item=typ, quantite=qte, ordre=i)
-        if typ == 'plat' and i < len(plat_ids) and plat_ids[i]:
-            ligne.plat_id = plat_ids[i]
-        elif typ == 'boisson' and i < len(bois_ids) and bois_ids[i]:
-            ligne.boisson_id = bois_ids[i]
-        elif typ == 'autre' and i < len(libelles) and libelles[i]:
-            ligne.libelle = libelles[i]
+
+    ordre = 0
+    for i, item in enumerate(items):
+        if not item:
+            continue
+        qte     = max(1, int(quantites[i])) if i < len(quantites) and quantites[i].isdigit() else 1
+        libelle = libelles[i].strip() if i < len(libelles) else ''
+
+        ligne = LigneForfait(forfait=forfait, quantite=qte, ordre=ordre)
+
+        if item.startswith('plat:'):
+            plat_id = item.split(':', 1)[1]
+            if not plat_id:
+                continue
+            ligne.type_item = 'plat'
+            ligne.plat_id   = plat_id
+        elif item.startswith('boisson:'):
+            bois_id = item.split(':', 1)[1]
+            if not bois_id:
+                continue
+            ligne.type_item  = 'boisson'
+            ligne.boisson_id = bois_id
+        elif item == 'autre':
+            if not libelle:
+                continue
+            ligne.type_item = 'autre'
+            ligne.libelle   = libelle
+        else:
+            continue
+
         ligne.save()
+        ordre += 1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOUSCRIPTIONS FORFAIT
+# ═══════════════════════════════════════════════════════════════════════════════
+from restaurant.models import SouscriptionForfait
+from facturation.models import Client, Ticket
+from django.utils import timezone as tz
+import json
+
+
+@require_manager
+def souscription_list(request):
+    souscriptions = (SouscriptionForfait.objects
+                     .select_related('forfait', 'client', 'cree_par', 'ticket')
+                     .order_by('-date_souscription'))
+    statut_filter = request.GET.get('statut', '')
+    module_filter = request.GET.get('module', '')
+    if statut_filter:
+        souscriptions = souscriptions.filter(statut=statut_filter)
+    if module_filter:
+        souscriptions = souscriptions.filter(forfait__module=module_filter)
+    return render(request, 'parametres/souscription_list.html', {
+        'souscriptions':  souscriptions,
+        'statut_filter':  statut_filter,
+        'module_filter':  module_filter,
+        'statut_choices': SouscriptionForfait.STATUT_CHOICES,
+        'module_choices': Forfait.MODULE_CHOICES,
+    })
+
+
+@require_manager
+def souscription_create(request, forfait_pk):
+    forfait = get_object_or_404(Forfait, pk=forfait_pk, disponible=True)
+    clients = Client.objects.order_by('nom', 'prenom')
+
+    if request.method == 'POST':
+        client_id    = request.POST.get('client_id', '').strip()
+        nom_client   = request.POST.get('nom_client', '').strip()
+        date_val_str = request.POST.get('date_validite', '').strip()
+        mode_paie    = request.POST.get('mode_paiement', 'especes')
+        montant_str  = request.POST.get('montant_paye', str(forfait.prix)).strip()
+        reference    = request.POST.get('reference', '').strip()
+        notes        = request.POST.get('notes', '').strip()
+
+        if not client_id and not nom_client:
+            messages.error(request, "Saisissez un client existant ou un nom libre.")
+            return render(request, 'parametres/souscription_form.html', {
+                'forfait': forfait, 'clients': clients,
+                'mode_choices': SouscriptionForfait.MODE_PAIEMENT_CHOICES,
+            })
+
+        from decimal import Decimal, InvalidOperation
+        try:
+            montant = Decimal(montant_str)
+        except (InvalidOperation, ValueError):
+            montant = forfait.prix
+
+        date_validite = None
+        if date_val_str:
+            from datetime import date
+            try:
+                date_validite = date.fromisoformat(date_val_str)
+            except ValueError:
+                pass
+
+        from datetime import datetime
+        num_ticket = f"TKT-FORF-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+        lignes_txt = '\n'.join(
+            f"  {l.quantite}x {l.nom_affiche}"
+            for l in forfait.lignes.select_related('plat', 'boisson').all()
+        )
+        client_obj = Client.objects.filter(pk=client_id).first() if client_id else None
+        contenu_ticket = (
+            f"FORFAIT : {forfait.nom}\n"
+            f"Module  : {forfait.get_module_display()}\n"
+            f"Client  : {client_obj or nom_client}\n"
+            f"Contenu :\n{lignes_txt or '  (aucun element)'}\n"
+            f"Reference : {reference or '--'}"
+        )
+
+        ticket = Ticket.objects.create(
+            numero=num_ticket,
+            module=forfait.module if forfait.module in [m[0] for m in Ticket.MODULE_CHOICES] else 'autre',
+            client=client_obj,
+            montant_total=montant,
+            montant_paye=montant,
+            mode_paiement=mode_paie,
+            contenu=contenu_ticket,
+            cree_par=request.user,
+        )
+
+        sous = SouscriptionForfait.objects.create(
+            forfait=forfait,
+            client=client_obj,
+            nom_client=nom_client if not client_obj else '',
+            date_validite=date_validite,
+            statut='active',
+            montant_paye=montant,
+            mode_paiement=mode_paie,
+            reference=reference,
+            notes=notes,
+            cree_par=request.user,
+            ticket=ticket,
+        )
+
+        messages.success(request,
+            f"Forfait {forfait.nom!r} lie a {sous.client_display}. Ticket {num_ticket} genere.")
+        return redirect('parametres:souscription_list')
+
+    return render(request, 'parametres/souscription_form.html', {
+        'forfait':      forfait,
+        'clients':      clients,
+        'mode_choices': SouscriptionForfait.MODE_PAIEMENT_CHOICES,
+    })
+
+
+@require_manager
+@require_POST
+def souscription_changer_statut(request, pk):
+    sous   = get_object_or_404(SouscriptionForfait, pk=pk)
+    statut = request.POST.get('statut', '')
+    valides = [s[0] for s in SouscriptionForfait.STATUT_CHOICES]
+    if statut not in valides:
+        return JsonResponse({'success': False, 'error': 'Statut invalide'})
+    sous.statut = statut
+    sous.save()
+    return JsonResponse({'success': True, 'statut': sous.get_statut_display()})

@@ -157,7 +157,7 @@
             setTimeout(function() {
                 if(confirm("Voulez-vous clôturer la transaction et libérer la chambre ?")) {
                     // Appel AJAX pour finaliser
-                    fetch("{% url 'hotel:finalize_checkout' ticket.id %}")
+                    fetch("{% url 'hotel:finalize_checkout' temporary_ticket_id %}")
                     .then(response => response.json())
                     .then(data => {
                         if(data.status === 'success') {

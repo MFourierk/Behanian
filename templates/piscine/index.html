@@ -496,7 +496,7 @@ async function validerEntree(){
   const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value})});
   const d=await r.json();
   if(d.success){fermerModal('modalEntree');location.reload();}
-  else alert(d.error||'Erreur');
+  else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
 }
 
 // ── Panier ──
@@ -558,7 +558,7 @@ async function modifConso(id, delta){
   });
   const d=await r.json();
   if(d.success){ chargerEnCours(); }
-  else alert(d.error||'Erreur');
+  else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
 }
 
 async function suppConso(id){
@@ -569,7 +569,7 @@ async function suppConso(id){
   });
   const d=await r.json();
   if(d.success){ chargerEnCours(); }
-  else alert(d.error||'Erreur');
+  else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
 }
 
 function ouvrirCommande(id, nom){
@@ -683,24 +683,41 @@ function supprimerPanier(idx){
   renderPanier();
 }
 
+function piscineNotif(msg, type='success') {
+  /* Notification stylée — remplace les alert() */
+  const colors = {
+    success: {bg:'#dcfce7', color:'#15803d', border:'#bbf7d0', icon:'✓'},
+    error:   {bg:'#fee2e2', color:'#991b1b', border:'#fca5a5', icon:'⚠️'},
+    info:    {bg:'#dbeafe', color:'#1e40af', border:'#93c5fd', icon:'ℹ️'},
+  };
+  const c = colors[type] || colors.info;
+  const div = document.createElement('div');
+  div.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;background:${c.bg};color:${c.color};padding:14px 20px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid ${c.border};max-width:360px;box-shadow:0 4px 12px rgba(0,0,0,.12);line-height:1.5`;
+  div.innerHTML = `<strong>${c.icon} ${msg}</strong>`;
+  document.body.appendChild(div);
+  setTimeout(() => { div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(), 400); }, 3500);
+}
+
 async function validerCommande(){
-  if(panier.length===0){alert('Le panier est vide.');return;}
+  if(panier.length===0){ piscineNotif('Le panier est vide.','error'); return; }
   const id=document.getElementById('cmdAccesId').value;
   const url=`{% url "piscine:consommation" 0 %}`.replace('/0/','/'+id+'/');
-  let erreurs=[];
+  let erreurs=[], succès=0;
   for(const item of panier){
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({type:item.type,id:item.id,quantite:item.qty})});
     const d=await r.json();
-    if(!d.success) erreurs.push(item.nom+': '+d.error);
+    if(!d.success) erreurs.push('• ' + item.nom + ' : ' + (d.error||'Erreur'));
+    else succès++;
   }
-  if(erreurs.length){ alert('Erreurs:\n'+erreurs.join('\n')); }
-  const toast=document.createElement('div');
-  toast.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0';
-  toast.textContent=`✓ ${panier.length} article(s) ajouté(s)`;
-  document.body.appendChild(toast);setTimeout(()=>toast.remove(),2500);
-  fermerModal('modalCommande');
-  setTimeout(()=>location.reload(),600);
+  if(erreurs.length){
+    piscineNotif('Commande partielle — articles bloqués :<br>' + erreurs.join('<br>'), 'error');
+  }
+  if(succès > 0){
+    piscineNotif(succès + ' article(s) ajouté(s) avec succès', 'success');
+    fermerModal('modalCommande');
+    setTimeout(()=>location.reload(), 800);
+  }
 }
 
 // ═══ FONCTIONS UNIVERSELLES PAIEMENT PISCINE ═══
@@ -732,7 +749,7 @@ async function piscineMettreEnChambre() {
     body: JSON.stringify({ mode_paiement: 'chambre', montant_recu: 0, sur_chambre: true })
   });
   const d = await r.json();
-  if (!d.success) { alert(d.error || 'Erreur'); return; }
+  if (!d.success) { piscineNotif(d.error || 'Une erreur est survenue. Veuillez réessayer.', 'error'); return; }
   fermerModal('modalSortie');
   // Afficher reçu de dépôt avec choix impression
   piscineOuvrirRecuDepot(d.chambre_nom, 'Piscine', d.lignes, d.total);
@@ -813,7 +830,7 @@ async function sauvegarderTarif(){
   const r=await fetch('{% url "piscine:tarifs" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({adulte:a,enfant:e})});
   const d=await r.json();
   if(d.success){fermerModal('modalTarif');location.reload();}
-  else alert(d.error);
+  else piscineNotif(d.error || 'Une erreur est survenue.', 'error');
 }
 
 updatePrix();

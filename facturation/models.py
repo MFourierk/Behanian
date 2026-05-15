@@ -55,12 +55,18 @@ class Article(models.Model):
         unique_together = ('content_type', 'object_id')
 
     def __str__(self):
-        return self.nom
+        try:
+            return self.nom
+        except Exception:
+            return f'Article #{self.pk}'
 
     @property
     def nom(self):
         """Retourne le nom de l'objet lié."""
-        return getattr(self.content_object, 'nom', str(self.content_object))
+        obj = self.content_object
+        if obj is None:
+            return f'Article #{self.pk} (objet supprimé)'
+        return getattr(obj, 'nom', str(obj))
 
     @property
     def prix_unitaire(self):
@@ -76,10 +82,13 @@ class Article(models.Model):
 
 class Facture(models.Model):
     STATUT_CHOICES = [
-        ('draft', 'Brouillon'),
-        ('sent', 'Envoyée'),
-        ('paid', 'Payée'),
-        ('cancelled', 'Annulée'),
+        ('brouillon', 'Brouillon'),
+        ('envoyee', 'Envoyée'),
+        ('en_attente', 'En attente'),
+        ('payee', 'Payée'),
+        ('impayee', 'Impayée'),
+        ('partielle', 'Part. payée'),
+        ('annulee', 'Annulée'),
     ]
     
     numero = models.CharField(max_length=20, unique=True)
@@ -87,15 +96,15 @@ class Facture(models.Model):
     date_creation = models.DateTimeField(default=timezone.now)
     date_facturation = models.DateField(default=timezone.now)
     date_echeance = models.DateField(blank=True, null=True)
-    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='draft')
-    
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
+
     # Champs de calcul
     sous_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     remise = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('20.00'))
+    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     montant_tva = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    
+
     # Champs de paiement
     montant_paye = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     date_paiement = models.DateTimeField(blank=True, null=True)
@@ -163,13 +172,12 @@ class LigneFacture(models.Model):
 class Proforma(models.Model):
     STATUT_CHOICES = [
         ('en_attente', 'En attente'),
-        ('draft', 'Brouillon'),
-        ('sent', 'Envoyé'),
-        ('accepted', 'Accepté'),
+        ('brouillon', 'Brouillon'),
+        ('envoyee', 'Envoyée'),
+        ('acceptee', 'Acceptée'),
         ('validee', 'Validée'),
-        ('refused', 'Refusé'),
+        ('refusee', 'Refusée'),
         ('annulee', 'Annulée'),
-        ('invoiced', 'Facturé'),
         ('convertie', 'Convertie'),
     ]
     
@@ -177,22 +185,22 @@ class Proforma(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     date_creation = models.DateTimeField(default=timezone.now)
     date_validite = models.DateField()
-    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='draft')
-    
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
+
     # Champs de calcul
     sous_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     remise = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('20.00'))
+    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     montant_tva = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    
+
     # Métadonnées
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     notes = models.TextField(blank=True)
-    
+
     class Meta:
         ordering = ['-date_creation']
-    
+
     def __str__(self):
         return f"Proforma {self.numero} - {self.client.nom_complet}"
     
@@ -205,9 +213,9 @@ class Proforma(models.Model):
     
     def convert_to_facture(self):
         """Convertir le proforma en facture"""
-        if self.statut != 'accepted':
+        if self.statut not in ('acceptee', 'validee'):
             raise ValueError("Le proforma doit être accepté pour être converti en facture")
-        
+
         # Créer la facture
         facture = Facture.objects.create(
             numero=Facture.generate_numero(),
@@ -232,8 +240,8 @@ class Proforma(models.Model):
                 taux_remise=ligne_proforma.taux_remise
             )
         
-        # Marquer le proforma comme facturé
-        self.statut = 'invoiced'
+        # Marquer le proforma comme converti
+        self.statut = 'convertie'
         self.save()
         
         return facture
@@ -270,10 +278,11 @@ class LigneProforma(models.Model):
 
 class Avoir(models.Model):
     STATUT_CHOICES = [
-        ('draft', 'Brouillon'),
-        ('sent', 'Envoyé'),
+        ('en_attente', 'En attente'),
         ('accepted', 'Accepté'),
+        ('traitee', 'Traitée'),
         ('refunded', 'Remboursé'),
+        ('annulee', 'Annulée'),
     ]
     
     numero = models.CharField(max_length=20, unique=True)
@@ -282,8 +291,8 @@ class Avoir(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     date_creation = models.DateTimeField(default=timezone.now)
     date_avoir = models.DateField(default=timezone.now)
-    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='draft')
-    
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
+
     # Motif obligatoire pour l'avoir
     motif = models.TextField(help_text="Motif obligatoire de l'avoir")
     
@@ -321,13 +330,12 @@ class Avoir(models.Model):
         """Appliquer le remboursement à la facture originale"""
         if self.statut != 'accepted':
             raise ValueError("L'avoir doit être accepté pour être appliqué")
-        
-        facture = self.facture_originale
-        facture.montant_paye -= self.total
-        if facture.montant_paye < 0:
-            facture.montant_paye = Decimal('0.00')
-        facture.save()
-        
+
+        if self.facture_origine:
+            facture = self.facture_origine
+            facture.montant_paye = max(Decimal('0.00'), facture.montant_paye - self.total)
+            facture.save()
+
         self.statut = 'refunded'
         self.save()
 

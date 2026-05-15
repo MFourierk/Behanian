@@ -1,6 +1,6 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
-{% block title %}Forfaits — Paramètres{% endblock %}
+{% block title %}Menus VIP — Paramètres{% endblock %}
 {% block extra_css %}
 <style>
 :root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c}
@@ -26,25 +26,25 @@
 <div class="pg-body"><div class="container-fluid">
   <div class="header-glam" style="background:linear-gradient(135deg,#1a2535,#2d3f55)">
     <div class="header-content">
-      <h2 style="font-size:1.4rem;font-weight:700;margin:0;color:white">🎁 Forfaits</h2>
-      <p class="mb-0" style="opacity:.7;color:white">Combinaisons plats + boissons vendues à prix fixe · {{ forfaits.count }} forfait(s)</p>
+      <h2 style="font-size:1.4rem;font-weight:700;margin:0;color:white">⭐ Menus VIP</h2>
+      <p class="mb-0" style="opacity:.7;color:white">Combinaisons plats + boissons vendues à prix fixe · {{ forfaits.count }} menu(s) VIP</p>
     </div>
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
-  {% breadcrumb "Paramètres" "parametres:parametres_index" "Forfaits" "" %}
+  {% breadcrumb "Paramètres" "parametres:parametres_index" "Menus VIP" "" %}
 
   <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-    <a href="{% url 'parametres:forfait_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouveau forfait</a>
+    <a href="{% url 'parametres:forfait_create' %}" class="btn-a btn-or"><i class="fas fa-plus"></i> Nouveau Menu VIP</a>
   </div>
 
   <div class="stats-row">
-    <div class="stat" style="border-top-color:#c9a84c"><div class="nb">{{ forfaits.count }}</div><div class="lb">🎁 Total forfaits</div></div>
-    <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ forfaits|length }}</div><div class="lb">✅ Configurés</div></div>
-    <div class="stat" style="border-top-color:#0891b2"><div class="nb">{{ forfaits|length }}</div><div class="lb">📦 Modules couverts</div></div>
+    <div class="stat" style="border-top-color:#c9a84c"><div class="nb">{{ forfaits.count }}</div><div class="lb">⭐ Total Menus VIP</div></div>
+    <div class="stat" style="border-top-color:#16a34a"><div class="nb">{{ nb_actifs }}</div><div class="lb">✅ Actifs</div></div>
+    <div class="stat" style="border-top-color:#0891b2"><div class="nb">{{ nb_modules }}</div><div class="lb">📦 Modules couverts</div></div>
   </div>
 
   <div class="panel">
-    <div class="ph"><h3>🎁 Liste des forfaits</h3></div>
+    <div class="ph"><h3>⭐ Liste des Menus VIP</h3></div>
     <div style="overflow-x:auto">
       <table class="tbl">
         <thead><tr><th>Nom</th><th>Module</th><th>Prix</th><th>Contenu</th><th>Statut</th><th>Actions</th></tr></thead>
@@ -84,8 +84,8 @@
         </tr>
         {% empty %}
         <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">
-          <i class="fas fa-gift" style="font-size:2rem;margin-bottom:12px;display:block;opacity:.3"></i>
-          Aucun forfait — <a href="{% url 'parametres:forfait_create' %}" style="color:#2563eb">Créer le premier</a>
+          <i class="fas fa-star" style="font-size:2rem;margin-bottom:12px;display:block;opacity:.3"></i>
+          Aucun Menu VIP — <a href="{% url 'parametres:forfait_create' %}" style="color:#2563eb">Créer le premier</a>
         </td></tr>
         {% endfor %}
         </tbody>

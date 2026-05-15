@@ -603,6 +603,33 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
             Aucun plat disponible
           </div>
           {% endif %}
+
+          {% for forfait in forfaits %}
+          <div class="article-card {% if not forfait.en_stock %}rupture{% endif %}"
+               data-type="forfait"
+               data-id="{{ forfait.id }}"
+               data-nom="{{ forfait.nom|lower }}"
+               data-cat="tout"
+               onclick="ajouterForfait({{ forfait.id }}, '{{ forfait.nom|escapejs }}', {{ forfait.prix|stringformat:'g' }}, {{ forfait.en_stock|yesno:'true,false' }})">
+            <div class="ac-img-wrap">
+              {% if forfait.image %}<img src="{{ forfait.image.url }}" alt="{{ forfait.nom }}">{% else %}<span style="font-size:1.8rem;line-height:1">⭐</span>{% endif %}
+              <span class="ac-stock-badge {% if forfait.en_stock %}ok{% else %}rupture{% endif %}">
+                {% if forfait.en_stock %}✓{% else %}—{% endif %}
+              </span>
+              <span style="position:absolute;top:4px;left:4px;background:#c9a84c;color:#1a2535;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px">VIP</span>
+            </div>
+            <div class="ac-body">
+              <div class="ac-nom">{{ forfait.nom }}</div>
+              <div class="ac-footer">
+                <div>
+                  <div class="ac-prix">{{ forfait.prix|floatformat:0 }} F</div>
+                  <div class="ac-unite">Menu VIP</div>
+                </div>
+                <button class="ac-add" onclick="event.stopPropagation(); ajouterForfait({{ forfait.id }}, '{{ forfait.nom|escapejs }}', {{ forfait.prix|stringformat:'g' }}, {{ forfait.en_stock|yesno:'true,false' }})">+</button>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -993,7 +1020,7 @@ function verifierTable() {
 // ── AJOUTER PLAT (cuisine) ──
 function ajouterArticle(type, id, nom, prix, categorie, enStock) {
   if (!verifierTable()) return;
-  if (!enStock) { toast('❌ Stock insuffisant', 'error'); return; }
+  if (!enStock) { toast(`❌ <strong>${nom}</strong> — stock insuffisant, ce plat ne peut pas être servi.`, 'error'); return; }
 
   const accPills = document.querySelectorAll('#accPills .acc-pill[data-acc-id]');
   if (accPills.length > 0) {
@@ -1031,7 +1058,7 @@ async function _envoyerPlat(platId, nom, prix, accId) {
       })
     });
     const data = await r.json();
-    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
+    if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     t.commandeDbId = data.commande_id;
     t.lignes = data.items; t.total = data.total;
     const card = document.querySelector(`.article-card[data-id="${platId}"]`);
@@ -1045,7 +1072,7 @@ async function _envoyerPlat(platId, nom, prix, accId) {
 // ── AJOUTER BOISSON (Cave) ──
 async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
   if (!verifierTable()) return;
-  if (!enStock) { toast('❌ ' + nom + ' est en rupture de stock', 'error'); return; }
+  if (!enStock) { toast(`❌ <strong>${nom}</strong> — stock insuffisant, cette boisson ne peut pas être servie.`, 'error'); return; }
 
   majTicketMeta();
   const t = tickets[ticketActifId];
@@ -1065,7 +1092,7 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
       })
     });
     const data = await r.json();
-    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
+    if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     t.commandeDbId = data.commande_id;
     t.lignes = data.items; t.total = data.total;
     renderTicket();
@@ -1077,6 +1104,45 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
   }
 }
 
+// ── AJOUTER FORFAIT (Menu VIP) ──
+async function ajouterForfait(forfaitId, nom, prix, enStock) {
+  if (!verifierTable()) return;
+  if (!enStock) { toast('❌ ' + nom + ' : stock insuffisant', 'error'); return; }
+
+  majTicketMeta();
+  const t = tickets[ticketActifId];
+
+  try {
+    const r = await fetch("{% url 'restaurant:ajouter_forfait_commande' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({
+        forfait_id: forfaitId,
+        table_id: t.tableId,
+        commande_id: t.commandeDbId,
+        client: t.client,
+      })
+    });
+    const data = await r.json();
+    if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
+    t.commandeDbId = data.commande_id;
+    t.lignes = data.items; t.total = data.total;
+    renderTicket();
+    toast('⭐ ' + nom + ' ajouté au ticket', 'success');
+    majTableCard(t.tableId, 'occupee', t.total, t.client);
+  } catch(e) {
+    console.error('Erreur ajouterForfait:', e);
+    toast('❌ Erreur réseau — réessayez', 'error');
+  }
+}
+
+function filtrerForfaits(val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('#forfaitsGrid .article-card').forEach(c => {
+    c.style.display = c.dataset.nom.includes(q) ? '' : 'none';
+  });
+}
+
 // ── MODIFIER QTÉ ──
 async function modifierQty(ligneId, delta) {
   try {
@@ -1085,7 +1151,7 @@ async function modifierQty(ligneId, delta) {
       body: JSON.stringify({ ligne_id: ligneId, delta })
     });
     const data = await r.json();
-    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
+    if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     const t = tickets[ticketActifId];
     if (t) { t.lignes = data.items; t.total = data.total; }
     renderTicket();
@@ -1403,7 +1469,7 @@ async function confirmerPaiement() {
     });
     const data = await r.json();
     if (!data.success) {
-      toast('❌ ' + data.message, 'error');
+      toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error');
       btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';
       return;
     }

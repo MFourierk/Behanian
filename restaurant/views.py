@@ -1,5 +1,8 @@
+import logging
 from utils.permissions import require_module_access
 from django.shortcuts import render, redirect, get_object_or_404
+
+logger = logging.getLogger(__name__)
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
@@ -28,8 +31,13 @@ def restaurant_index(request):
     # utiliser le système de Forfaits (voir restaurant/models.py → Forfait).
 
     # Récupérer toutes les catégories et plats
+    # Seuls les plats liés à une fiche technique cuisine sont affichés
+    from cuisine.models import Plat as PlatCuisine
+    _plats_avec_ft = PlatCuisine.objects.filter(
+        fiche_technique__isnull=False
+    ).values_list('pk', flat=True)
     categories = CategorieMenu.objects.all()
-    plats = PlatMenu.objects.filter(disponible=True)
+    plats = PlatMenu.objects.filter(disponible=True, cuisine_plat_id__in=_plats_avec_ft)
     
     # Commandes en cours (Non payées)
     commandes_en_cours_list = Commande.objects.filter(statut__in=['en_attente', 'en_preparation', 'prete', 'servie']).order_by('-date_modification')
@@ -209,8 +217,11 @@ def valider_commande(request):
                                 quantite=li.quantite,
                                 prix_unitaire=li.prix_unitaire,
                             )
-                    except Exception:
-                        pass
+                    except Exception as e_chambre:
+                        logger.warning(
+                            "Impossible de lier la commande %s à la réservation hôtel %s : %s",
+                            commande.id, reservation_hotel_id, e_chambre
+                        )
 
                 # Rendu ticket thermique avec serveur
                 ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
@@ -789,12 +800,20 @@ def restaurant_tpe(request):
     # ── Catégories BAR (Cave) ──
     categories_bar = CategorieBar.objects.all().order_by('nom')
 
-    # ── Plats CUISINE uniquement (hors boissons) ──
+    # ── Plats CUISINE uniquement (hors boissons, avec fiche technique obligatoire) ──
+    from cuisine.models import Plat as PlatCuisine
+    _plats_avec_ft = PlatCuisine.objects.filter(
+        fiche_technique__isnull=False
+    ).values_list('pk', flat=True)
     ids_cat_cuisine = [c.id for c in categories_cuisine]
     plats = PlatMenu.objects.filter(
         disponible=True,
+        cuisine_plat_id__in=_plats_avec_ft,
         categorie__id__in=ids_cat_cuisine
-    ) if ids_cat_cuisine else PlatMenu.objects.filter(disponible=True)
+    ) if ids_cat_cuisine else PlatMenu.objects.filter(
+        disponible=True,
+        cuisine_plat_id__in=_plats_avec_ft
+    )
 
     # ── Boissons de la Cave ──
     boissons_bar = BoissonBar.objects.filter(
@@ -840,6 +859,34 @@ def restaurant_tpe(request):
         statut='en_cours'
     ).select_related('client', 'chambre').order_by('chambre__numero')
 
+    # ── Menus VIP (tous modules, disponibles) ──
+    from .models import Forfait
+    forfaits_qs = Forfait.objects.filter(disponible=True).prefetch_related(
+        'lignes__plat', 'lignes__boisson'
+    )
+    forfaits = []
+    for forfait in forfaits_qs:
+        # Vérifier la disponibilité de chaque composant
+        en_stock = True
+        for ligne in forfait.lignes.all():
+            if ligne.plat:
+                # Vérifier via cuisine_plat_id → FicheTechnique
+                try:
+                    plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.pk).first()
+                    if plat_menu:
+                        ok, _ = check_stock_availability(plat_menu, ligne.quantite)
+                        if not ok:
+                            en_stock = False
+                            break
+                except Exception:
+                    pass
+            elif ligne.boisson:
+                if ligne.boisson.quantite_stock < ligne.quantite:
+                    en_stock = False
+                    break
+        forfait.en_stock = en_stock
+        forfaits.append(forfait)
+
     context = {
         'categories': CategorieMenu.objects.all(),
         'plats': plats,
@@ -853,6 +900,7 @@ def restaurant_tpe(request):
         'config': config,
         'serveurs': serveurs,
         'chambres_occupees': chambres_occupees,
+        'forfaits': forfaits,
     }
     return render(request, 'restaurant/index.html', context)
 
@@ -943,6 +991,117 @@ def ajouter_boisson_commande(request):
             'items':      items,
             'total':      float(commande.total),
             'client':     commande.nom_client
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@require_module_access('restaurant')
+@require_POST
+def ajouter_forfait_commande(request):
+    """
+    Ajoute un Forfait (Menu VIP) à une commande restaurant.
+    Vérifie et décrémente le stock de chaque composant (plats cuisine + boissons cave).
+    """
+    try:
+        from .models import Forfait
+        data = json.loads(request.body)
+        forfait_id  = data.get('forfait_id')
+        table_id    = data.get('table_id')
+        commande_id = data.get('commande_id')
+        client_nom  = data.get('client', '')
+
+        forfait = get_object_or_404(Forfait, id=forfait_id, module='restaurant', disponible=True)
+        lignes_forfait = forfait.lignes.select_related('plat', 'boisson').all()
+
+        # ── 1. Vérification stock de tous les composants ──
+        erreurs = []
+        for lf in lignes_forfait:
+            if lf.plat:
+                plat_menu = PlatMenu.objects.filter(cuisine_plat_id=lf.plat.pk).first()
+                if plat_menu:
+                    ok, msg = check_stock_availability(plat_menu, lf.quantite)
+                    if not ok:
+                        erreurs.append(f"{lf.plat.nom}: {msg}")
+            elif lf.boisson:
+                if lf.boisson.quantite_stock < lf.quantite:
+                    erreurs.append(
+                        f"{lf.boisson.nom}: stock insuffisant "
+                        f"({lf.boisson.quantite_stock} dispo, {lf.quantite} requis)"
+                    )
+        if erreurs:
+            return JsonResponse({'success': False, 'message': "Stock insuffisant :\n" + "\n".join(erreurs)})
+
+        # ── 2. Récupérer ou créer la commande ──
+        if commande_id:
+            commande = get_object_or_404(Commande, id=commande_id)
+        elif table_id:
+            table = get_object_or_404(Table, id=table_id)
+            commande = Commande.objects.filter(
+                table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+            ).first()
+            if not commande:
+                commande = Commande.objects.create(
+                    table=table, serveur=request.user,
+                    statut='en_preparation', nom_client=client_nom
+                )
+                table.statut = 'occupee'
+                table.save()
+        else:
+            return JsonResponse({'success': False, 'message': 'Table requise'})
+
+        with transaction.atomic():
+            # ── 3. Créer une LigneCommande unique pour le forfait ──
+            LigneCommande.objects.create(
+                commande=commande,
+                plat=None,
+                boisson=None,
+                accompagnement=None,
+                quantite=1,
+                prix_unitaire=forfait.prix,
+                nom_article=forfait.nom,
+            )
+            commande.total = float(commande.total) + float(forfait.prix)
+            commande.save()
+
+            # ── 4. Déduire stock de chaque composant ──
+            for lf in lignes_forfait:
+                if lf.plat:
+                    plat_menu = PlatMenu.objects.filter(cuisine_plat_id=lf.plat.pk).first()
+                    if plat_menu:
+                        process_stock_movement(
+                            plat_menu, lf.quantite, 'sortie', request.user,
+                            f"Forfait {forfait.nom} — Commande #{commande.id}"
+                        )
+                elif lf.boisson:
+                    lf.boisson.quantite_stock = max(0, lf.boisson.quantite_stock - lf.quantite)
+                    lf.boisson.save()
+                    from bar.models import MouvementStockBar
+                    MouvementStockBar.objects.create(
+                        boisson=lf.boisson,
+                        type_mouvement='sortie',
+                        quantite=lf.quantite,
+                        commentaire=f'Forfait {forfait.nom} — Commande #{commande.id}',
+                        utilisateur=request.user
+                    )
+
+        items = []
+        for l in commande.lignes.all().order_by('id'):
+            items.append({
+                'id':       l.id,
+                'nom':      l.get_nom,
+                'prix':     float(l.prix_unitaire),
+                'quantite': l.quantite,
+            })
+        return JsonResponse({
+            'success':     True,
+            'commande_id': commande.id,
+            'items':       items,
+            'total':       float(commande.total),
+            'client':      commande.nom_client,
         })
 
     except Exception as e:
@@ -1115,24 +1274,23 @@ def reservation_cancel(request, pk):
     return redirect('restaurant:reservation_list')
 
 
-@login_required
+@require_module_access('restaurant')
+@_require_POST
 def reservation_api_statut(request):
     """API JSON — changer le statut d'une réservation."""
-    if request.method == 'POST':
-        try:
-            data   = _json.loads(request.body)
-            pk     = data.get('reservation_id')
-            statut = data.get('statut')
-            resa   = get_object_or_404(Reservation, pk=pk)
-            resa.statut = statut
-            resa.save()
-            if statut == 'annulee' and resa.table.statut == 'reservee':
-                resa.table.statut = 'libre'
-                resa.table.save()
-            elif statut == 'terminee':
-                resa.table.statut = 'occupee'
-                resa.table.save()
-            return _JsonResponse({'success': True})
-        except Exception as e:
-            return _JsonResponse({'success': False, 'error': str(e)})
-    return _JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+    try:
+        data   = _json.loads(request.body)
+        pk     = data.get('reservation_id')
+        statut = data.get('statut')
+        resa   = get_object_or_404(Reservation, pk=pk)
+        resa.statut = statut
+        resa.save()
+        if statut == 'annulee' and resa.table.statut == 'reservee':
+            resa.table.statut = 'libre'
+            resa.table.save()
+        elif statut == 'terminee':
+            resa.table.statut = 'occupee'
+            resa.table.save()
+        return _JsonResponse({'success': True})
+    except Exception as e:
+        return _JsonResponse({'success': False, 'error': str(e)}, status=400)

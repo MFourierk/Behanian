@@ -62,6 +62,14 @@
 .module-bar-fill{height:4px;border-radius:2px;margin-top:6px}
 /* Numéro document */
 .doc-num{font-size:11px;font-weight:700;color:var(--dark);font-family:'Courier New',monospace}
+/* Table scrollable */
+.tbl-wrap{max-height:480px;overflow-y:auto;overflow-x:auto}
+.tbl-wrap::-webkit-scrollbar{width:5px;height:5px}
+.tbl-wrap::-webkit-scrollbar-track{background:#f1f5f9}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.tbl thead th{position:sticky;top:0;z-index:2}
+.tbl th{border-bottom:2px solid var(--border)!important}
 /* Modal */
 .modal-ov{display:none;position:fixed;inset:0;background:rgba(10,15,30,.65);z-index:9000;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
 .modal-ov.open{display:flex}
@@ -284,7 +292,7 @@
           <input type="text" id="filtreTicket" placeholder="N° ou client…" oninput="filtrerTickets()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;width:140px">
         </div>
       </div>
-      <div style="overflow-x:auto">
+      <div class="tbl-wrap">
         <table class="tbl" id="tableTickets">
           <thead><tr><th>N°</th><th>Module</th><th>Date</th><th>Client</th><th>Montant</th><th>Paiement</th><th>Opérateur</th><th></th></tr></thead>
           <tbody>
@@ -325,7 +333,7 @@
         <h3>📋 Factures</h3>
         
       </div>
-      <div style="overflow-x:auto">
+      <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr><th>N°</th><th>Client</th><th>Date</th><th>Échéance</th><th>Montant TTC</th><th>Payé</th><th>Statut</th><th></th></tr></thead>
           <tbody>
@@ -363,7 +371,7 @@
         <h3>📄 Proformas</h3>
         
       </div>
-      <div style="overflow-x:auto">
+      <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr><th>N°</th><th>Client</th><th>Date</th><th>Validité</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
           <tbody>
@@ -400,7 +408,7 @@
         <h3>🔄 Avoirs</h3>
         
       </div>
-      <div style="overflow-x:auto">
+      <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr><th>N°</th><th>Client</th><th>Date</th><th>Motif</th><th>Montant</th><th>Origine</th><th>Statut</th><th></th></tr></thead>
           <tbody>
@@ -483,7 +491,7 @@
       <button type="button" class="btn-p outline" style="margin:8px 0" onclick="ajouterLigne('facArticlesContainer','calculerTotalFacture')">
         <i class="fas fa-plus"></i> Ajouter une ligne
       </button>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px">
         <div class="form-row"><label>Remise (F)</label><input type="number" name="remise" class="fc" value="0" min="0" oninput="calculerTotalFacture()"></div>
         <div class="form-row"><label>TVA (%)</label><input type="number" name="taux_tva" class="fc" value="0" min="0" max="100" oninput="calculerTotalFacture()"></div>
         <div class="form-row"><label>Notes</label><input type="text" name="notes" class="fc" placeholder="Optionnel"></div>
@@ -509,7 +517,7 @@
     </div>
 
     <!-- Infos client -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">
       <div class="form-row" style="margin:0">
         <label>Nom du client *</label>
         <input type="text" id="pro_client_name" class="fc" placeholder="Nom ou raison sociale" required>
@@ -533,7 +541,7 @@
     </button>
 
     <!-- Remise / TVA / Notes -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
       <div class="form-row" style="margin:0"><label>Remise globale (F)</label><input type="number" id="pro_remise" class="fc" value="0" min="0" oninput="proCalculerTotal()"></div>
       <div class="form-row" style="margin:0"><label>TVA (%)</label><input type="number" id="pro_tva" class="fc" value="0" min="0" max="100" oninput="proCalculerTotal()"></div>
       <div class="form-row" style="margin:0"><label>Notes</label><input type="text" id="pro_notes" class="fc" placeholder="Observations…"></div>

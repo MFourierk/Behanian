@@ -140,8 +140,51 @@
   </div>
   {% endif %}
 
+  <!-- ALERTE SESSIONS BLOQUANTES (non clôturées des jours précédents) -->
+  {% if sessions_bloquantes %}
+  <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:14px;padding:16px 20px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <i class="fas fa-ban" style="color:#dc2626;font-size:22px"></i>
+      <div>
+        <div style="font-size:14px;font-weight:800;color:#b91c1c">⛔ Sessions non clôturées — Saisie bloquée</div>
+        <div style="font-size:12px;color:#991b1b">Les caisses ci-dessous n'ont pas été clôturées. Un manager doit forcer leur clôture avant d'ouvrir la journée.</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl" style="background:white;border-radius:10px;overflow:hidden">
+        <thead><tr>
+          <th>N° Session</th><th>Caissier</th><th>Type</th><th>Date oubliée</th><th>Ouvert à</th><th>Total enregistré</th>
+          {% if is_manager %}<th>Action</th>{% endif %}
+        </tr></thead>
+        <tbody>
+        {% for s in sessions_bloquantes %}
+        <tr>
+          <td style="font-family:monospace;font-size:11px;color:#7c3aed">{{ s.numero_session|default:s.pk }}</td>
+          <td style="font-weight:600">{{ s.user.get_full_name|default:s.user.username }}</td>
+          <td><span class="badge b-{{ s.type_caisse }}">{{ s.get_type_caisse_display }}</span></td>
+          <td style="color:#dc2626;font-weight:700">{{ s.date_session|date:"d/m/Y" }}</td>
+          <td style="font-size:11px">{{ s.opened_at|date:"H:i" }}</td>
+          <td style="font-weight:700;color:#dc2626">{{ s.total_general|floatformat:0 }} F</td>
+          {% if is_manager %}
+          <td>
+            <button class="btn-a btn-rouge" style="font-size:10px;padding:5px 10px" onclick="forceCloturerSession({{ s.pk }}, '{{ s.numero_session|default:s.pk }}')">
+              <i class="fas fa-lock"></i> Forcer clôture
+            </button>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if not is_manager %}
+    <div style="margin-top:10px;font-size:11px;color:#991b1b;font-style:italic">Contactez un manager pour débloquer la situation.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- ALERTE CAISSE FERMÉE -->
-  {% if not session_active %}
+  {% if not session_active and not sessions_bloquantes %}
   <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
     <i class="fas fa-exclamation-triangle" style="color:#f97316;font-size:20px"></i>
     <div>
@@ -188,7 +231,7 @@
 
   <!-- DASHBOARD -->
   <div class="tab-content active" id="content-dashboard">
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+    <div class="cai-dashboard-grid" style="display:grid;grid-template-columns:1fr 320px;gap:16px">
       <div>
         <!-- CA par module -->
         <div class="panel">
@@ -235,8 +278,8 @@
         </div>
       </div>
 
-      <!-- Colonne droite -->
-      <div>
+      <!-- Colonne droite (disparaît sous la colonne principale sur mobile) -->
+      <div style="min-width:0">
         <!-- Répartition modes -->
         <div class="panel">
           <div class="ph"><h3>💳 Modes de paiement</h3></div>
@@ -387,19 +430,48 @@
   <div class="tab-content" id="content-sessions">
     <div class="panel">
       <div class="ph"><h3>🕐 Sessions du jour</h3></div>
-      <div style="overflow-x:auto">
+      <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
         <table class="tbl">
-          <thead><tr><th>Caissier</th><th>Ouverture</th><th>Clôture</th><th>Durée</th><th>Fond</th><th>Total</th><th>Prélèvement</th><th>Statut</th><th></th></tr></thead>
+          <thead><tr>
+            <th style="position:sticky;top:0;background:#f8fafc">N° Session</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Caissier</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Ouverture</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Clôture</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Durée</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Fond initial</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Total CA</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Prélèv. banque</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Solde théorique</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Fond compté</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Écart</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Statut</th>
+            <th style="position:sticky;top:0;background:#f8fafc"></th>
+          </tr></thead>
           <tbody>
           {% for s in sessions_jour %}
+          {% with ed=s.ecart_display %}
           <tr>
-            <td style="font-weight:600">{{ s.user.get_full_name|default:s.user.username }}<br><span style="font-size:10px;color:#7a8b9c">{{ s.get_type_caisse_display }}</span></td>
-            <td style="font-size:11px">{{ s.opened_at|date:"H:i" }}</td>
-            <td style="font-size:11px">{{ s.closed_at|date:"H:i"|default:"En cours" }}</td>
+            <td style="font-family:monospace;font-size:11px;color:#7c3aed">{{ s.numero_session|default:s.pk }}</td>
+            <td style="font-weight:600;white-space:nowrap">{{ s.user.get_full_name|default:s.user.username }}<br><span style="font-size:10px;color:#7a8b9c">{{ s.get_type_caisse_display }}</span></td>
+            <td style="font-size:11px;white-space:nowrap">{{ s.opened_at|date:"H:i" }}</td>
+            <td style="font-size:11px;white-space:nowrap">{{ s.closed_at|date:"H:i"|default:"En cours" }}</td>
             <td style="font-size:11px">{{ s.duree }}</td>
             <td style="font-size:11px">{{ s.fond_caisse|floatformat:0 }} F</td>
             <td style="font-weight:700;color:#16a34a">{{ s.total_general|floatformat:0 }} F</td>
             <td style="color:#dc2626">{{ s.prelevement_banque|floatformat:0 }} F</td>
+            <td style="font-weight:600">
+              {% if not s.is_open %}{{ s.solde_theorique|floatformat:0 }} F{% else %}<span style="color:var(--muted)">—</span>{% endif %}
+            </td>
+            <td style="font-size:11px">
+              {% if not s.is_open %}{{ s.fond_caisse_reel|floatformat:0 }} F{% else %}<span style="color:var(--muted)">—</span>{% endif %}
+            </td>
+            <td>
+              {% if not s.is_open %}
+                {% if ed.0 == 'excedent' %}<span class="badge" style="background:#dcfce7;color:#15803d">{{ ed.1 }}</span>
+                {% elif ed.0 == 'manquant' %}<span class="badge" style="background:#fee2e2;color:#dc2626">{{ ed.1 }}</span>
+                {% else %}<span class="badge" style="background:#f1f5f9;color:#475569">{{ ed.1 }}</span>{% endif %}
+              {% else %}<span style="color:var(--muted)">—</span>{% endif %}
+            </td>
             <td>
               {% if s.is_open %}<span class="badge" style="background:#dcfce7;color:#15803d">🟢 Ouverte</span>
               {% else %}<span class="badge" style="background:#fee2e2;color:#dc2626">🔴 Clôturée</span>{% endif %}
@@ -408,8 +480,9 @@
               <a href="{% url 'caisse:rapport_session' s.pk %}" class="btn-a btn-outline" style="font-size:10px;padding:4px 8px" target="_blank"><i class="fas fa-print"></i></a>
             </td>
           </tr>
+          {% endwith %}
           {% empty %}
-          <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Aucune session aujourd'hui</td></tr>
+          <tr><td colspan="13" style="text-align:center;padding:20px;color:var(--muted)">Aucune session aujourd'hui</td></tr>
           {% endfor %}
           </tbody>
         </table>
@@ -459,24 +532,37 @@
       <h3><i class="fas fa-lock" style="color:#dc2626;margin-right:8px"></i>Clôturer la caisse</h3>
       <button class="close-btn" onclick="fermerModal('modalCloturer')">×</button>
     </div>
+    <!-- Récapitulatif session -->
     <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">Résumé de la session</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
         <div>Total encaissé : <strong>{{ stats.total|floatformat:0 }} F</strong></div>
         <div>Espèces : <strong>{{ stats.especes|floatformat:0 }} F</strong></div>
-        <div>Mobile : <strong>{{ stats.mobile|floatformat:0 }} F</strong></div>
-        <div>Carte : <strong>{{ stats.carte|floatformat:0 }} F</strong></div>
+        <div>Mobile / Carte : <strong>{{ stats.mobile|floatformat:0 }} F</strong></div>
+        <div>Fond initial : <strong>{% if session_active %}{{ session_active.fond_caisse|floatformat:0 }}{% else %}0{% endif %} F</strong></div>
       </div>
     </div>
     <div class="form-row">
-      <label>Espèces comptées en caisse (FCFA)</label>
-      <input type="number" id="cl_fond_reel" class="fc" placeholder="Montant physique compté" min="0" value="0">
+      <label>Espèces comptées physiquement (FCFA) *</label>
+      <input type="number" id="cl_fond_reel" class="fc" placeholder="Montant physiquement compté" min="0" value="0" oninput="calculerEcart()">
     </div>
     <div class="form-row">
-      <label>Prélèvement banque (FCFA)</label>
-      <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0">
+      <label>Prélèvement banque à cette clôture (FCFA)</label>
+      <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0" oninput="calculerEcart()">
+    </div>
+    <!-- Calcul écart en temps réel -->
+    <div id="ecart_box" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:var(--muted)">Solde théorique (fond + espèces − prélèv.)</span>
+        <strong id="ecart_theorique">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">Écart (théorique − compté)</span>
+        <strong id="ecart_val" style="font-size:14px">—</strong>
+      </div>
     </div>
     <div class="form-row">
-      <label>Banque / Référence</label>
+      <label>Banque / Référence bordereau</label>
       <input type="text" id="cl_banque" class="fc" placeholder="Ex: SGBCI — Bordereau N°123">
     </div>
     <div class="form-row">
@@ -486,6 +572,36 @@
     <div style="display:flex;gap:10px">
       <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalCloturer')">Annuler</button>
       <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="cloturerCaisse()"><i class="fas fa-lock"></i> Confirmer la clôture</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORCE-CLÔTURE (Manager) -->
+<div class="modal-ov" id="modalForceCloturer">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-exclamation-triangle" style="color:#d97706;margin-right:8px"></i>Clôture forcée — Manager</h3>
+      <button class="close-btn" onclick="fermerModal('modalForceCloturer')">×</button>
+    </div>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#92400e">
+      <i class="fas fa-info-circle"></i> Vous allez forcer la clôture d'une session d'un jour précédent. L'écart sera enregistré dans le rapport.
+    </div>
+    <input type="hidden" id="fc_session_id" value="">
+    <div class="form-row">
+      <label>Session à clôturer</label>
+      <input type="text" id="fc_session_label" class="fc" readonly style="background:#f8fafc;color:var(--muted)">
+    </div>
+    <div class="form-row">
+      <label>Espèces comptées (FCFA) — laisser 0 si inconnu</label>
+      <input type="number" id="fc_fond_reel" class="fc" placeholder="0" min="0" value="0">
+    </div>
+    <div class="form-row">
+      <label>Motif / Notes *</label>
+      <textarea id="fc_notes" class="fc" rows="2" style="resize:vertical" placeholder="Ex: Session oubliée — clôture forcée le lendemain"></textarea>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalForceCloturer')">Annuler</button>
+      <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="confirmerForceCloturer()"><i class="fas fa-lock"></i> Forcer la clôture</button>
     </div>
   </div>
 </div>
@@ -643,12 +759,42 @@ async function post(url, data){
   return r.json();
 }
 
+// Données session active pour le calcul d'écart
+const SESSION_FOND = {{ session_active.fond_caisse|default:0 }};
+const SESSION_ESPECES = {{ stats.especes|default:0 }};
+
+function calculerEcart(){
+  const fondReel = parseFloat(document.getElementById('cl_fond_reel').value)||0;
+  const prelev   = parseFloat(document.getElementById('cl_prelev').value)||0;
+  const solde_th = SESSION_FOND + SESSION_ESPECES - prelev;
+  const ecart    = solde_th - fondReel;
+  document.getElementById('ecart_theorique').textContent = solde_th.toLocaleString('fr-FR') + ' F';
+  const ecartEl = document.getElementById('ecart_val');
+  if(ecart > 0){
+    ecartEl.textContent = '+' + ecart.toLocaleString('fr-FR') + ' F (excédent)';
+    ecartEl.style.color = '#16a34a';
+  } else if(ecart < 0){
+    ecartEl.textContent = ecart.toLocaleString('fr-FR') + ' F (manquant)';
+    ecartEl.style.color = '#dc2626';
+  } else {
+    ecartEl.textContent = '0 F (équilibré ✓)';
+    ecartEl.style.color = '#2563eb';
+  }
+}
+
 async function ouvrirCaisse(){
-  const fond = document.getElementById('ov_fond').value || 0;
+  const fond  = document.getElementById('ov_fond').value || 0;
   const notes = document.getElementById('ov_notes').value;
   const d = await post("{% url 'caisse:ouvrir' %}", {fond_caisse: fond, notes});
-  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
-  else toast('❌ '+d.error,'error');
+  if(d.success){
+    toast('✅ '+d.message,'success');
+    setTimeout(()=>location.reload(), 800);
+  } else if(d.bloquee){
+    fermerModal('modalOuvrir');
+    toast('⛔ '+d.error,'error');
+  } else {
+    toast('❌ '+d.error,'error');
+  }
 }
 
 async function cloturerCaisse(){
@@ -660,6 +806,27 @@ async function cloturerCaisse(){
     notes: document.getElementById('cl_notes').value,
   });
   if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
+}
+
+function forceCloturerSession(sessionId, label){
+  document.getElementById('fc_session_id').value    = sessionId;
+  document.getElementById('fc_session_label').value = label;
+  document.getElementById('fc_fond_reel').value     = 0;
+  document.getElementById('fc_notes').value         = '';
+  ouvrirModal('modalForceCloturer');
+}
+
+async function confirmerForceCloturer(){
+  const sessionId = document.getElementById('fc_session_id').value;
+  const notes     = document.getElementById('fc_notes').value.trim();
+  if(!notes){ toast('Le motif est obligatoire','error'); return; }
+  if(!confirm('Forcer la clôture de cette session ? Cette action est irréversible.')) return;
+  const d = await post(`/caisse/force-cloturer/${sessionId}/`, {
+    fond_reel: document.getElementById('fc_fond_reel').value||0,
+    notes,
+  });
+  if(d.success){ fermerModal('modalForceCloturer'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
   else toast('❌ '+d.error,'error');
 }
 

@@ -114,13 +114,14 @@ def enregistrer_entree(request):
             prix_total=prix_total,
             enregistre_par=request.user,
         )
-        # Champs ajoutés par migration — présents seulement si migrate a tourné
+        # Champs ajoutés par migration — vérification via l'introspection Django (compatible tous SGBD)
         from django.db import connection
-        cols = [r[1] for r in connection.cursor().execute('PRAGMA table_info(piscine_accespiscine)').fetchall()]
-        if 'nb_adultes' in cols:
+        with connection.cursor() as _cur:
+            _cols = {col.name for col in connection.introspection.get_table_description(_cur, 'piscine_accespiscine')}
+        if 'nb_adultes' in _cols:
             create_kwargs['nb_adultes'] = nb_adultes
             create_kwargs['nb_enfants'] = nb_enfants
-        if 'reservation_hotel_id' in cols:
+        if 'reservation_hotel_id' in _cols:
             create_kwargs['reservation_hotel'] = reservation_hotel
         acces = AccesPiscine.objects.create(**create_kwargs)
 
@@ -183,13 +184,20 @@ def ajouter_consommation(request, acces_id):
 
         elif type_article == 'plat':
             from restaurant.models import PlatMenu
+            from cuisine.utils import check_stock_availability, process_stock_movement
             plat = get_object_or_404(PlatMenu, id=article_id)
+            # Vérification stock cuisine
+            ok, msg = check_stock_availability(plat, quantite)
+            if not ok:
+                return JsonResponse({'success': False, 'error': f'Stock insuffisant — {msg}'})
             ConsommationPiscine.objects.create(
                 acces=acces,
                 produit=plat.nom,
                 quantite=quantite,
                 prix_unitaire=plat.prix,
             )
+            # Déduire le stock cuisine
+            process_stock_movement(plat, quantite, 'sortie', request.user, f'Piscine #{acces.id}')
             # Lier à la réservation hôtel si résident
             reservation_hotel = getattr(acces, 'reservation_hotel', None)
             if reservation_hotel:

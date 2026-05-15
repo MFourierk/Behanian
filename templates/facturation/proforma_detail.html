@@ -43,13 +43,13 @@
     </div>
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
-{% breadcrumb "Facturation" "facturation:index" "Proformas" "facturation:proforma_list" "Détail proforma" "" %}
+{% breadcrumb "Facturation" "facturation:index" "Proformas" "facturation:proforma_list" proforma.numero "" %}
 
 
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
-    {% if proforma.statut != 'invoiced' and proforma.statut != 'convertie' %}
+    {% if proforma.statut != 'convertie' and proforma.statut != 'annulee' %}
     <button class="btn-p btn-success" onclick="convertirEnFacture()"><i class="fas fa-file-invoice"></i> → Facture</button>
     {% endif %}
   </div>

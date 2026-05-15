@@ -7,14 +7,13 @@ def require_bar_gestion(view_func):
     """Réservé Manager Général et Manager Cuisine — pas les caissiers."""
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        from utils.permissions import get_user_groups
-        groups = get_user_groups(request.user)
-        caissier_groups = ['Caissière / Caissier', 'Caissiere / Caissier']
-        if any(g in caissier_groups for g in groups):
+        from utils.permissions import _is_caissier
+        if _is_caissier(request.user):
             _messages.error(request, "Accès refusé — cette section est réservée à la gestion.")
             return _redirect('bar:tpe')
         return view_func(request, *args, **kwargs)
     return wrapper
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -23,6 +22,9 @@ from django.contrib import messages
 from django.db.models import Sum, Q
 from django.utils import timezone
 from django.http import JsonResponse
+from django.urls import reverse
+
+logger = logging.getLogger(__name__)
 from .models import (
     BonCommandeBar, LigneBonCommandeBar, BoissonBar,
     MouvementStockBar, CategorieBar, UniteVente, Client,
@@ -36,11 +38,8 @@ from cuisine.models import Fournisseur
 @require_module_access('bar')
 def bar_dashboard(request):
     # Les caissiers vont directement au TPE — pas besoin du dashboard
-    from utils.permissions import get_user_groups
-    groups = get_user_groups(request.user)
-    caissier_groups = ['Caissière / Caissier', 'Caissiere / Caissier']
-    if any(g in caissier_groups for g in groups):
-        from django.shortcuts import redirect
+    from utils.permissions import _is_caissier
+    if _is_caissier(request.user):
         return redirect('bar:tpe')
     context = {'page_title': 'Tableau de Bord - Cave'}
     return render(request, 'bar/dashboard.html', context)
@@ -251,7 +250,7 @@ def article_edit(request, pk):
             article.image = request.FILES.get('image')
         article.save()
         messages.success(request, f"Article '{article.nom}' modifié avec succès.")
-        return redirect('/bar/stock/?tab=articles')
+        return redirect(reverse('bar:stock_management') + '?tab=articles')
     context = {'page_title': 'Modifier Article', 'article': article, 'categories': categories, 'unites': unites, 'mode': 'edit'}
     return render(request, 'bar/article_form.html', context)
 
@@ -265,7 +264,7 @@ def article_delete(request, pk):
         article.statut = 'supprime'
         article.save()
         messages.success(request, f"Article '{nom}' supprimé.")
-        return redirect('/bar/stock/?tab=articles')
+        return redirect(reverse('bar:stock_management') + '?tab=articles')
     return render(request, 'bar/article_confirm_delete.html', {'article': article})
 
 
@@ -293,7 +292,7 @@ def article_sommeil(request, pk):
         msg = f"Article '{article.nom}' réactivé."
     article.save()
     messages.success(request, msg)
-    return redirect('/bar/stock/?tab=articles')
+    return redirect(reverse('bar:stock_management') + '?tab=articles')
 
 
 # ===== BONS DE COMMANDE =====
@@ -301,7 +300,7 @@ def article_sommeil(request, pk):
 @require_module_access('bar')
 @require_bar_gestion
 def bon_commande_list(request):
-    return redirect('/bar/stock/?tab=commandes')
+    return redirect(reverse('bar:stock_management') + '?tab=commandes')
 
 
 @require_module_access('bar')
@@ -419,13 +418,13 @@ def bon_commande_edit(request, pk):
 
 
 @require_module_access('bar')
+@require_POST
 def bon_commande_annuler(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
-    if request.method == 'POST':
-        bon.statut = 'annule'
-        bon.save()
-        messages.warning(request, f"Bon {bon.numero} annulé.")
-    return redirect('/bar/stock/?tab=commandes')
+    bon.statut = 'annule'
+    bon.save()
+    messages.warning(request, f"Bon {bon.numero} annulé.")
+    return redirect(reverse('bar:stock_management') + '?tab=commandes')
 
 
 @require_module_access('bar')
@@ -459,7 +458,7 @@ def get_article_prix(request, pk):
 @require_module_access('bar')
 @require_bar_gestion
 def bon_reception_list(request):
-    return redirect('/bar/stock/?tab=reception')
+    return redirect(reverse('bar:stock_management') + '?tab=reception')
 
 
 @require_module_access('bar')
@@ -507,7 +506,7 @@ def bon_reception_create(request):
             _valider_reception(br, request.user)
 
         messages.success(request, f"Bon de réception {br.numero} créé avec succès.")
-        return redirect('/bar/stock/?tab=reception')
+        return redirect(reverse('bar:stock_management') + '?tab=reception')
 
     # Pré-remplir depuis un bon de commande si fourni
     bc_id = request.GET.get('bc', None)
@@ -549,7 +548,7 @@ def bon_reception_valider(request, pk):
             messages.success(request, f"Bon {br.numero} validé. Stock mis à jour.")
         else:
             messages.warning(request, "Ce bon ne peut pas être validé dans son état actuel.")
-    return redirect('/bar/stock/?tab=reception')
+    return redirect(reverse('bar:stock_management') + '?tab=reception')
 
 
 def _valider_reception(br, user):
@@ -597,16 +596,16 @@ def _valider_reception(br, user):
 
 
 @require_module_access('bar')
+@require_POST
 def bon_reception_annuler(request, pk):
     br = get_object_or_404(BonReceptionBar, pk=pk)
-    if request.method == 'POST':
-        if br.statut != 'valide':
-            br.statut = 'annule'
-            br.save()
-            messages.warning(request, f"Bon {br.numero} annulé.")
-        else:
-            messages.error(request, "Impossible d'annuler un bon déjà validé.")
-    return redirect('/bar/stock/?tab=reception')
+    if br.statut != 'valide':
+        br.statut = 'annule'
+        br.save()
+        messages.warning(request, f"Bon {br.numero} annulé.")
+    else:
+        messages.error(request, "Impossible d'annuler un bon déjà validé.")
+    return redirect(reverse('bar:stock_management') + '?tab=reception')
 
 
 @require_module_access('bar')
@@ -662,7 +661,7 @@ def mouvement_create(request):
         except Exception as e:
             messages.error(request, f"Erreur : {str(e)}")
 
-    return redirect('/bar/stock/?tab=mouvements')
+    return redirect(reverse('bar:stock_management') + '?tab=mouvements')
 
 
 # ===== INVENTAIRE =====
@@ -670,7 +669,7 @@ def mouvement_create(request):
 @require_module_access('bar')
 @require_bar_gestion
 def inventaire_list(request):
-    return redirect('/bar/stock/?tab=inventaire')
+    return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
 
 @require_module_access('bar')
@@ -708,7 +707,7 @@ def inventaire_create(request):
             _valider_inventaire(inv, request.user)
 
         messages.success(request, f"Inventaire {inv.numero} créé.")
-        return redirect('/bar/stock/?tab=inventaire')
+        return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
     # Pré-remplir avec tous les articles actifs
     context = {
@@ -736,12 +735,13 @@ def inventaire_detail(request, pk):
 
 
 @require_module_access('bar')
+@require_POST
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
-    if request.method == 'POST' and inv.statut in ['brouillon', 'en_cours']:
+    if inv.statut in ['brouillon', 'en_cours']:
         _valider_inventaire(inv, request.user)
         messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
-    return redirect('/bar/stock/?tab=inventaire')
+    return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
 
 def _valider_inventaire(inv, user):
@@ -769,13 +769,14 @@ def _valider_inventaire(inv, user):
 
 
 @require_module_access('bar')
+@require_POST
 def inventaire_annuler(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
-    if request.method == 'POST' and inv.statut != 'valide':
+    if inv.statut != 'valide':
         inv.statut = 'annule'
         inv.save()
         messages.warning(request, f"Inventaire {inv.numero} annulé.")
-    return redirect('/bar/stock/?tab=inventaire')
+    return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
 
 # ===== GESTION DES CASSES =====
@@ -783,7 +784,7 @@ def inventaire_annuler(request, pk):
 @require_module_access('bar')
 @require_bar_gestion
 def casse_list(request):
-    return redirect('/bar/stock/?tab=casses')
+    return redirect(reverse('bar:stock_management') + '?tab=casses')
 
 
 @require_module_access('bar')
@@ -823,7 +824,7 @@ def casse_create(request):
         else:
             messages.success(request, f"Casse {casse.numero} déclarée. En attente de validation.")
 
-        return redirect('/bar/stock/?tab=casses')
+        return redirect(reverse('bar:stock_management') + '?tab=casses')
 
     context = {
         'page_title': 'Déclarer une Casse / Perte',
@@ -846,12 +847,13 @@ def casse_detail(request, pk):
 
 
 @require_module_access('bar')
+@require_POST
 def casse_valider(request, pk):
     casse = get_object_or_404(CasseBar, pk=pk)
-    if request.method == 'POST' and casse.statut == 'declare':
+    if casse.statut == 'declare':
         _valider_casse(casse, request.user)
         messages.success(request, f"Casse {casse.numero} validée. Stock mis à jour.")
-    return redirect('/bar/stock/?tab=casses')
+    return redirect(reverse('bar:stock_management') + '?tab=casses')
 
 
 def _valider_casse(casse, user):
@@ -871,13 +873,14 @@ def _valider_casse(casse, user):
 
 
 @require_module_access('bar')
+@require_POST
 def casse_annuler(request, pk):
     casse = get_object_or_404(CasseBar, pk=pk)
-    if request.method == 'POST' and casse.statut == 'declare':
+    if casse.statut == 'declare':
         casse.statut = 'annule'
         casse.save()
         messages.warning(request, f"Déclaration {casse.numero} annulée.")
-    return redirect('/bar/stock/?tab=casses')
+    return redirect(reverse('bar:stock_management') + '?tab=casses')
 
 @require_module_access('bar')
 @require_bar_gestion
@@ -957,6 +960,25 @@ def api_vente_create(request):
 
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
+
+        # Vérification stock avant toute transaction
+        manques = []
+        for l in lignes:
+            try:
+                b = BoissonBar.objects.get(pk=int(l['id']))
+                qty = int(l['qty'])
+                if b.quantite_stock < qty:
+                    manques.append(
+                        f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé"
+                    )
+            except BoissonBar.DoesNotExist:
+                manques.append(f"• Article introuvable (id={l['id']})")
+        if manques:
+            return JsonResponse({
+                'ok': False,
+                'error': "Vente bloquée — stock insuffisant :",
+                'details': manques,
+            }, status=400)
 
         # Map mode paiement TPE -> choix Ticket facturation
         MODE_MAP = {
@@ -1085,11 +1107,8 @@ def api_vente_create(request):
             try:
                 boisson = BoissonBar.objects.get(pk=int(l['id']))
                 qty     = int(l['qty'])
-                if boisson.quantite_stock < qty:
-                    erreurs_stock.append(
-                        f"{boisson.nom}: stock insuffisant ({boisson.quantite_stock} dispo, {qty} demande)"
-                    )
-                    # On continue quand même (vente enregistrée)
+                boisson.quantite_stock = max(0, boisson.quantite_stock - qty)
+                boisson.save()
                 MouvementStockBar.objects.create(
                     boisson        = boisson,
                     type_mouvement = 'sortie',

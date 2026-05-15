@@ -1,146 +1,178 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
+{% block title %}Proformas — Facturation{% endblock %}
 
-{% block title %}Proformas{% endblock %}
+{% block extra_css %}
+<style>
+.fac-body{background:#eef1f5;padding:20px 0 50px}
+.panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.ph{padding:14px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc;flex-wrap:wrap;gap:8px}
+.ph h3{font-size:13px;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.tbl-wrap{max-height:560px;overflow-y:auto;overflow-x:auto}
+.tbl-wrap::-webkit-scrollbar{width:6px;height:6px}
+.tbl-wrap::-webkit-scrollbar-track{background:#f1f5f9}
+.tbl-wrap::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.tbl-wrap::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl thead th{position:sticky;top:0;z-index:2}
+.tbl th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:2px solid #d4dce8;background:#f8fafc;text-align:left}
+.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:#f5f8ff}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.b-en_attente{background:#fef3c7;color:#d97706}
+.b-brouillon{background:#f1f5f9;color:#64748b}
+.b-envoyee{background:#dbeafe;color:#1e40af}
+.b-acceptee,.b-validee{background:#dcfce7;color:#15803d}
+.b-refusee{background:#fee2e2;color:#dc2626}
+.b-annulee{background:#fee2e2;color:#dc2626}
+.b-convertie{background:#ede9fe;color:#6d28d9}
+.btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;text-decoration:none;transition:all .12s}
+.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-outline:hover{background:#f0f4ff}
+.btn-primary{background:#2563eb;color:white}
+.btn-primary:hover{background:#1d4ed8}
+.btn-violet{background:#7c3aed;color:white}
+.filter-bar{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid #d4dce8;background:#f8fafc;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{padding:6px 10px;border:1px solid #d4dce8;border-radius:8px;font-size:12px;color:#1a2535;background:white;height:32px}
+.doc-num{font-size:11px;font-weight:700;color:#1a2535;font-family:'Courier New',monospace}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="header-glam facturation-watermark">
+<div class="fac-body"><div class="container-fluid">
+
+  <div class="header-glam facturation-watermark">
     <div class="header-content">
-        <h2>Proformas</h2>
-        <p class="mb-0 opacity-75">Historique des factures proforma</p>
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0">Proformas</h2>
+      <p class="mb-0 opacity-75">Historique des factures proforma</p>
     </div>
-    <div class="header-clock">
-        <span class="time">--:-- GMT</span>
-        <span class="date">Chargement...</span>
+    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+  </div>
+  {% breadcrumb "Facturation" "facturation:index" "Proformas" "" %}
+
+  <div style="display:flex;gap:10px;margin:16px 0">
+    <button class="btn-p btn-primary" onclick="sessionStorage.setItem('facTab','proformas');window.location='{% url 'facturation:index' %}'">
+      <i class="fas fa-plus"></i> Nouveau proforma
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <h3><i class="fas fa-file-alt" style="color:#7c3aed;margin-right:6px"></i>Liste des proformas</h3>
+      <span id="compteur" style="font-size:11px;color:#7a8b9c"></span>
     </div>
-</div>
-{% breadcrumb "Facturation" "facturation:index" "Proformas" "" %}
-
-
-<div style="display:flex;gap:10px;margin-bottom:20px">
-    <a href="{% url 'facturation:proforma_create' %}" class="btn-add-glam">
-        <i class="fas fa-plus mr-2"></i> Nouveau Proforma
-    </a>
-</div>
-
-
-
-<div class="content-section">
-    <div class="card">
-        <div class="card-header">
-            <h3>Liste des proformas</h3>
-        </div>
-        <div class="card-body">
-            {% if proformas %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Numéro</th>
-                                <th>Client</th>
-                                <th>Date</th>
-                                <th>Validité</th>
-                                <th>Total</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for proforma in proformas %}
-                                <tr>
-                                    <td><strong>{{ proforma.numero }}</strong></td>
-                                    <td>{{ proforma.client.nom_complet }}</td>
-                                    <td>{{ proforma.date_creation|date:"d/m/Y" }}</td>
-                                    <td>{{ proforma.date_validite|date:"d/m/Y" }}</td>
-                                    <td>{{ proforma.total|floatformat:0 }} FCFA</td>
-                                    <td>
-                                        <span class="badge badge-{% if proforma.statut == 'accepted' %}success{% elif proforma.statut == 'sent' %}primary{% elif proforma.statut == 'expired' %}danger{% else %}secondary{% endif %}">
-                                            {{ proforma.get_statut_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'facturation:proforma_detail' proforma.pk %}" class="btn btn-sm btn-outline-primary">Détail</a>
-                                        <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn btn-sm btn-outline-secondary">PDF</a>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-muted">Aucun proforma trouvé.</p>
-            {% endif %}
-        </div>
+    <div class="filter-bar">
+      <select id="filtreStatut" onchange="filtrer()">
+        <option value="">Tous statuts</option>
+        <option value="en_attente">En attente</option>
+        <option value="brouillon">Brouillon</option>
+        <option value="envoyee">Envoyée</option>
+        <option value="acceptee">Acceptée</option>
+        <option value="validee">Validée</option>
+        <option value="refusee">Refusée</option>
+        <option value="convertie">Convertie</option>
+        <option value="annulee">Annulée</option>
+      </select>
+      <input type="text" id="filtreClient" placeholder="Rechercher client…" oninput="filtrer()">
+      <input type="month" id="filtreMois" onchange="filtrer()">
+      <button class="btn-p btn-outline" onclick="resetFiltres()" style="height:32px"><i class="fas fa-times"></i> Effacer</button>
     </div>
+    <div class="tbl-wrap">
+      <table class="tbl" id="tableProformas">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Client</th>
+            <th>Créé le</th>
+            <th>Validité</th>
+            <th>Total TTC</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in proformas %}
+        <tr data-statut="{{ p.statut }}" data-client="{{ p.client.nom|default:''|lower }}" data-mois="{{ p.date_creation|date:'Y-m' }}">
+          <td><span class="doc-num">{{ p.numero }}</span></td>
+          <td style="font-weight:600">{{ p.client.nom_complet }}</td>
+          <td style="font-size:11px;color:#4a5b6e">{{ p.date_creation|date:"d/m/Y" }}</td>
+          <td style="font-size:11px;{% if p.statut == 'en_attente' %}color:#d97706;font-weight:600{% endif %}">
+            {{ p.date_validite|date:"d/m/Y" }}
+          </td>
+          <td><strong>{{ p.total|floatformat:0 }} F</strong></td>
+          <td><span class="badge b-{{ p.statut }}">{{ p.get_statut_display }}</span></td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <a href="{% url 'facturation:proforma_detail' p.pk %}" class="btn-p btn-outline" title="Détail"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'facturation:proforma_pdf' p.pk %}" class="btn-p btn-outline" title="PDF" target="_blank"><i class="fas fa-file-pdf" style="color:#dc2626"></i></a>
+              {% if p.statut != 'convertie' and p.statut != 'annulee' %}
+              <button class="btn-p btn-violet" title="Convertir en facture"
+                onclick="convertir({{ p.pk }}, '{{ p.numero }}')"><i class="fas fa-file-invoice"></i></button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:#9aa5b1">
+          <i class="fas fa-file-alt" style="font-size:2rem;display:block;margin-bottom:10px;opacity:.3"></i>
+          Aucun proforma
+        </td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- Modal confirmation conversion -->
+<div id="modalConvertir" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:14px;padding:28px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <h4 style="font-size:15px;font-weight:700;margin:0 0 10px">Convertir en facture</h4>
+    <p id="modalMsg" style="font-size:13px;color:#4a5b6e;margin:0 0 20px"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-p btn-outline" onclick="document.getElementById('modalConvertir').style.display='none'">Annuler</button>
+      <button class="btn-p btn-violet" id="btnConvertirOk">Convertir</button>
+    </div>
+  </div>
 </div>
 
-
-
-<style>
-
-
-.tabs {
-    display: flex;
-    gap: 0;
+<script>
+function filtrer(){
+  const s=document.getElementById('filtreStatut').value;
+  const c=document.getElementById('filtreClient').value.toLowerCase();
+  const m=document.getElementById('filtreMois').value;
+  let v=0;
+  document.querySelectorAll('#tableProformas tbody tr[data-statut]').forEach(tr=>{
+    const ok=(!s||tr.dataset.statut===s)&&(!c||tr.dataset.client.includes(c))&&(!m||tr.dataset.mois===m);
+    tr.style.display=ok?'':'none';
+    if(ok)v++;
+  });
+  document.getElementById('compteur').textContent=v+' proforma(s)';
 }
-
-
-
-
-
-
-
-.card {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    margin-bottom: 20px;
+function resetFiltres(){
+  ['filtreStatut','filtreMois'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('filtreClient').value='';
+  filtrer();
 }
-
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+function convertir(pk, num){
+  document.getElementById('modalMsg').textContent='Convertir le proforma '+num+' en facture ?';
+  const modal = document.getElementById('modalConvertir');
+  modal.style.display='flex';
+  document.getElementById('btnConvertirOk').onclick = async function(){
+    this.disabled=true; this.textContent='…';
+    try{
+      const r = await fetch(`/facturation/proformas/${pk}/to-facture/`,{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}'}});
+      const d = await r.json();
+      if(d.success){ window.location=d.detail_url; }
+      else{ alert('Erreur : '+d.error); this.disabled=false; this.innerHTML='<i class="fas fa-file-invoice"></i> Convertir'; }
+    }catch(e){ alert('Erreur réseau'); this.disabled=false; }
+  };
 }
-
-.card-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-
-.card-body {
-    padding: 20px;
-}
-
-.table {
-    margin-bottom: 0;
-}
-
-.badge {
-    padding: 0.25em 0.4em;
-    font-size: 75%;
-}
-
-.badge-success {
-    color: #fff;
-    background-color: #28a745;
-}
-
-.badge-primary {
-    color: #fff;
-    background-color: #007bff;
-}
-
-.badge-secondary {
-    color: #fff;
-    background-color: #6c757d;
-}
-
-.badge-danger {
-    color: #fff;
-    background-color: #dc3545;
-}
-</style>
+document.addEventListener('DOMContentLoaded',()=>{
+  const t=document.querySelectorAll('#tableProformas tbody tr[data-statut]').length;
+  document.getElementById('compteur').textContent=t+' proforma(s)';
+});
+</script>
 {% endblock %}
