@@ -46,6 +46,8 @@ urlpatterns = [
     # Casses
     path('api/vente/', views.api_vente_create, name='api_vente'),
     path('rapport/stock/', views.rapport_stock_cave, name='rapport_stock'),
+    path('stock/etat-date/', views.etat_stock_date_bar, name='etat_stock_date'),
+    path('mouvements/imprimer/', views.mouvements_print_bar, name='mouvements_print'),
     path('casses/', views.casse_list, name='casse_list'),
     path('casses/nouveau/', views.casse_create, name='casse_create'),
     path('casses/<int:pk>/', views.casse_detail, name='casse_detail'),

@@ -1,0 +1,295 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% load static %}
+
+{% block title %}État du stock à date — Cave{% endblock %}
+
+{% block content %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+    color: white;
+    padding: 24px 28px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(142,68,173,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.page-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+.filter-card {
+    background: white;
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+}
+.filter-card label { font-weight: 600; font-size: 0.85rem; color: #4a5568; display: block; margin-bottom: 4px; }
+.filter-card select, .filter-card input[type=date] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #2d3748;
+    background: #f8fafc;
+}
+.filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.filter-col { flex: 1; min-width: 160px; }
+.btn-purple {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: white;
+    color: #8e44ad;
+    border: 2px solid #8e44ad;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.results-card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.results-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.results-title { font-weight: 700; color: #2c3e50; font-size: 1rem; }
+.results-subtitle { font-size: 0.82rem; color: #6b7280; }
+
+table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+.stock-table th {
+    background: #f8f9fa;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e9ecef;
+}
+.stock-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.stock-table tr:last-child td { border-bottom: none; }
+.stock-table tr:hover td { background: #faf5ff; }
+
+.stock-table .r { text-align: right; }
+.cat-header td { background: #f3e5f5; font-weight: 700; color: #6d28a0; font-size: 0.83rem; padding: 8px 14px; }
+
+.badge-ok    { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.badge-warn  { background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.badge-zero  { background: #fee2e2; color: #b91c1c; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+
+.total-row td { background: #f8f9fa; font-weight: 700; border-top: 2px solid #e9ecef; }
+
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.stat-mini {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    text-align: center;
+}
+.stat-mini .val { font-size: 1.5rem; font-weight: 800; color: #8e44ad; }
+.stat-mini .lbl { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+</style>
+
+<div class="page-header">
+    <div>
+        <h2><i class="fas fa-calendar-check"></i> État du stock à une date</h2>
+        <p>Cave — Reconstituez les niveaux de stock à n'importe quelle date</p>
+    </div>
+    <a href="{% url 'bar:stock_management' %}?tab=mouvements" class="btn-outline" style="color:white;border-color:rgba(255,255,255,0.5);">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+{% breadcrumb "Cave" "bar:dashboard" "Stock" "bar:stock_management" "État à date" "" %}
+
+<!-- Filtre -->
+<div class="filter-card">
+    <form method="get" action="">
+        <div class="filter-row">
+            <div class="filter-col" style="max-width:160px;">
+                <label for="date"><i class="fas fa-calendar"></i> Date du rapport</label>
+                <input type="date" id="date" name="date" value="{{ date_str }}" required>
+            </div>
+            <div class="filter-col">
+                <label for="categorie"><i class="fas fa-tag"></i> Catégorie</label>
+                <select id="categorie" name="categorie">
+                    <option value="">— Toutes les catégories —</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == categorie_id %}selected{% endif %}>{{ cat.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-col">
+                <label for="article"><i class="fas fa-wine-bottle"></i> Article</label>
+                <select id="article" name="article">
+                    <option value="">— Tous les articles —</option>
+                    {% for b in boissons_all %}
+                    <option value="{{ b.id }}" {% if b.id|stringformat:"s" == article_id %}selected{% endif %}>{{ b.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-col" style="max-width:180px;display:flex;gap:8px;">
+                <button type="submit" class="btn-purple" style="flex:1;">
+                    <i class="fas fa-search"></i> Afficher
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if resultats %}
+
+<!-- Stats rapides -->
+<div class="stats-bar">
+    <div class="stat-mini">
+        <div class="val">{{ nb_articles }}</div>
+        <div class="lbl">Articles affichés</div>
+    </div>
+    <div class="stat-mini">
+        <div class="val">{{ valeur_totale|floatformat:0 }} F</div>
+        <div class="lbl">Valeur du stock</div>
+    </div>
+    <div class="stat-mini">
+        <div class="val">{{ date_param|date:"d/m/Y" }}</div>
+        <div class="lbl">Date du rapport</div>
+    </div>
+</div>
+
+<!-- Tableau résultats -->
+<div class="results-card">
+    <div class="results-header">
+        <div>
+            <div class="results-title"><i class="fas fa-table" style="color:#8e44ad;"></i> Stock au {{ date_param|date:"d/m/Y" }}</div>
+            <div class="results-subtitle">{{ nb_articles }} article(s) — Valeur totale : <strong>{{ valeur_totale|floatformat:0 }} FCFA</strong></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a href="?date={{ date_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if article_id %}&article={{ article_id }}{% endif %}&print=1"
+               target="_blank" class="btn-print">
+                <i class="fas fa-print"></i> Imprimer
+            </a>
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="stock-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Article</th>
+                    <th>Catégorie</th>
+                    <th class="r">Stock au {{ date_param|date:"d/m/Y" }}</th>
+                    <th class="r">Prix achat (FCFA)</th>
+                    <th class="r">Valeur (FCFA)</th>
+                    <th style="text-align:center;">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in resultats %}
+                <tr>
+                    <td style="color:#9ca3af;font-size:0.8rem;">{{ forloop.counter }}</td>
+                    <td>
+                        <strong>{{ r.article.nom }}</strong>
+                        {% if r.article.reference %}<br><small style="color:#9ca3af;">{{ r.article.reference }}</small>{% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;color:#6b7280;">{{ r.article.categorie.nom }}</td>
+                    <td class="r" style="font-weight:700;font-size:1rem;
+                        {% if r.stock_a_date <= 0 %}color:#b91c1c;{% elif r.stock_a_date <= r.article.seuil_alerte %}color:#d97706;{% else %}color:#065f46;{% endif %}">
+                        {{ r.stock_a_date }} {{ r.article.unite_affichee }}
+                    </td>
+                    <td class="r" style="color:#4a5568;">{{ r.article.prix_achat|floatformat:0 }}</td>
+                    <td class="r" style="font-weight:600;">{{ r.valeur|floatformat:0 }}</td>
+                    <td style="text-align:center;">
+                        {% if r.stock_a_date <= 0 %}
+                            <span class="badge-zero">Rupture</span>
+                        {% elif r.stock_a_date <= r.article.seuil_alerte %}
+                            <span class="badge-warn">Alerte</span>
+                        {% else %}
+                            <span class="badge-ok">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="5" style="text-align:right;font-size:0.85rem;color:#6b7280;">VALEUR TOTALE DU STOCK</td>
+                    <td class="r" style="font-size:1.05rem;color:#8e44ad;">{{ valeur_totale|floatformat:0 }} FCFA</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{% elif request.GET.date %}
+<div style="background:white;border-radius:14px;padding:40px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <i class="fas fa-wine-bottle" style="font-size:2.5rem;color:#d1d5db;margin-bottom:12px;display:block;"></i>
+    <p style="color:#6b7280;font-size:1rem;">Aucun article trouvé avec ces critères.</p>
+</div>
+{% else %}
+<div style="background:white;border-radius:14px;padding:40px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <i class="fas fa-calendar-check" style="font-size:2.5rem;color:#c4b5fd;margin-bottom:12px;display:block;"></i>
+    <p style="color:#6b7280;font-size:1rem;">Choisissez une date et cliquez sur <strong>Afficher</strong> pour voir le stock à cette date.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Si paramètre print=1, ouvrir la fenêtre d'impression
+{% if request.GET.print %}
+window.onload = function() { window.print(); };
+{% endif %}
+</script>
+{% endblock %}

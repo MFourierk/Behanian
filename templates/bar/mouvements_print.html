@@ -1,0 +1,247 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% load static %}
+
+{% block title %}Mouvements de stock — Cave{% endblock %}
+
+{% block content %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    padding: 24px 28px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(44,62,80,0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.page-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+.filter-card {
+    background: white;
+    border-radius: 14px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+}
+.filter-card label { font-weight: 600; font-size: 0.85rem; color: #4a5568; display: block; margin-bottom: 4px; }
+.filter-card select, .filter-card input[type=date] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #2d3748;
+    background: #f8fafc;
+}
+.filter-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+.filter-col { flex: 1; min-width: 130px; }
+
+.btn-dark  { display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,#2c3e50,#34495e);color:white;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;text-decoration:none; }
+.btn-print { display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:linear-gradient(135deg,#8e44ad,#9b59b6);color:white;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;text-decoration:none; }
+.btn-back  { display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:white;color:#34495e;border:2px solid rgba(255,255,255,0.5);border-radius:10px;font-weight:600;font-size:0.9rem;text-decoration:none; }
+
+.stats-bar { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px; }
+.stat-mini { background:white;border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.05);text-align:center; }
+.stat-mini .val { font-size:1.4rem;font-weight:800; }
+.stat-mini .lbl { font-size:0.78rem;color:#6b7280;margin-top:2px; }
+
+.results-card { background:white;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:20px; }
+.results-header { padding:16px 22px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center; }
+.results-title  { font-weight:700;color:#2c3e50;font-size:1rem; }
+.results-sub    { font-size:0.82rem;color:#6b7280; }
+
+table.mv-table { width:100%;border-collapse:collapse;font-size:0.86rem; }
+.mv-table th { background:#f8f9fa;padding:10px 12px;text-align:left;font-size:0.77rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e9ecef; }
+.mv-table td { padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle; }
+.mv-table tr:last-child td { border-bottom:none; }
+.mv-table tr:hover td { background:#f8fafc; }
+.mv-table .r { text-align:right; }
+
+.badge-entree    { background:#d1fae5;color:#065f46;padding:3px 9px;border-radius:20px;font-size:0.75rem;font-weight:700; }
+.badge-sortie    { background:#fee2e2;color:#b91c1c;padding:3px 9px;border-radius:20px;font-size:0.75rem;font-weight:700; }
+.badge-casse     { background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:20px;font-size:0.75rem;font-weight:700; }
+.badge-inventaire { background:#e0e7ff;color:#3730a3;padding:3px 9px;border-radius:20px;font-size:0.75rem;font-weight:700; }
+
+@media print {
+    .no-print { display: none !important; }
+    .page-header { background: #2c3e50 !important; -webkit-print-color-adjust: exact; }
+    .stats-bar .stat-mini { box-shadow: none; border: 1px solid #e2e8f0; }
+    .results-card { box-shadow: none; }
+}
+</style>
+
+<div class="page-header no-print">
+    <div>
+        <h2><i class="fas fa-print"></i> Mouvements de stock — Cave</h2>
+        <p>Filtrez par période, article ou type et imprimez le rapport</p>
+    </div>
+    <a href="{% url 'bar:stock_management' %}?tab=mouvements" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+{% breadcrumb "Cave" "bar:dashboard" "Stock" "bar:stock_management" "Mouvements" "" %}
+
+<!-- Filtre -->
+<div class="filter-card no-print">
+    <form method="get" action="">
+        <div class="filter-row">
+            <div class="filter-col" style="max-width:150px;">
+                <label><i class="fas fa-calendar-alt"></i> Date début</label>
+                <input type="date" name="date_debut" value="{{ request.GET.date_debut }}">
+            </div>
+            <div class="filter-col" style="max-width:150px;">
+                <label><i class="fas fa-calendar-alt"></i> Date fin</label>
+                <input type="date" name="date_fin" value="{{ request.GET.date_fin }}">
+            </div>
+            <div class="filter-col">
+                <label><i class="fas fa-tag"></i> Catégorie</label>
+                <select name="categorie">
+                    <option value="">— Toutes —</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if cat.id|stringformat:"s" == categorie_id %}selected{% endif %}>{{ cat.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-col">
+                <label><i class="fas fa-wine-bottle"></i> Article</label>
+                <select name="article">
+                    <option value="">— Tous —</option>
+                    {% for b in boissons_all %}
+                    <option value="{{ b.id }}" {% if b.id|stringformat:"s" == article_id %}selected{% endif %}>{{ b.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-col" style="max-width:160px;">
+                <label><i class="fas fa-exchange-alt"></i> Type</label>
+                <select name="type_mouvement">
+                    <option value="">— Tous —</option>
+                    <option value="entree"    {% if type_mv == 'entree'     %}selected{% endif %}>Entrée</option>
+                    <option value="sortie"    {% if type_mv == 'sortie'     %}selected{% endif %}>Sortie</option>
+                    <option value="casse"     {% if type_mv == 'casse'      %}selected{% endif %}>Casse / Perte</option>
+                    <option value="inventaire"{% if type_mv == 'inventaire' %}selected{% endif %}>Ajustement</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+                <button type="submit" class="btn-dark"><i class="fas fa-search"></i> Filtrer</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if mouvements %}
+<!-- Stats -->
+<div class="stats-bar">
+    <div class="stat-mini">
+        <div class="val" style="color:#065f46;">+{{ nb_entrees }}</div>
+        <div class="lbl">Entrées (unités)</div>
+    </div>
+    <div class="stat-mini">
+        <div class="val" style="color:#b91c1c;">-{{ nb_sorties }}</div>
+        <div class="lbl">Sorties (unités)</div>
+    </div>
+    <div class="stat-mini">
+        <div class="val" style="color:#3730a3;">{{ nb_inventaires }}</div>
+        <div class="lbl">Ajustements (unités)</div>
+    </div>
+    <div class="stat-mini">
+        <div class="val" style="color:#8e44ad;">{{ total_mvts }}</div>
+        <div class="lbl">Total mouvements</div>
+    </div>
+</div>
+
+<!-- Tableau -->
+<div class="results-card">
+    <div class="results-header">
+        <div>
+            <div class="results-title"><i class="fas fa-exchange-alt" style="color:#2c3e50;"></i>
+                Journal des mouvements — Cave
+                {% if date_debut or date_fin %}
+                <span style="font-size:0.85rem;color:#6b7280;font-weight:400;margin-left:8px;">
+                    {% if date_debut %}du {{ date_debut|date:"d/m/Y" }}{% endif %}
+                    {% if date_fin %}au {{ date_fin|date:"d/m/Y" }}{% endif %}
+                </span>
+                {% endif %}
+            </div>
+            <div class="results-sub">{{ total_mvts }} mouvement(s)</div>
+        </div>
+        <button onclick="window.print()" class="btn-print no-print">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="mv-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date / Heure</th>
+                    <th>Article</th>
+                    <th>Catégorie</th>
+                    <th>Type</th>
+                    <th class="r">Quantité</th>
+                    <th>Commentaire</th>
+                    <th>Opérateur</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mv in mouvements %}
+                <tr>
+                    <td style="color:#9ca3af;font-size:0.8rem;">{{ forloop.counter }}</td>
+                    <td style="white-space:nowrap;font-size:0.82rem;color:#4a5568;">{{ mv.date|date:"d/m/Y H:i" }}</td>
+                    <td><strong>{{ mv.boisson.nom }}</strong></td>
+                    <td style="font-size:0.82rem;color:#6b7280;">{{ mv.boisson.categorie.nom }}</td>
+                    <td>
+                        {% if mv.type_mouvement == 'entree' %}
+                            <span class="badge-entree"><i class="fas fa-arrow-down"></i> Entrée</span>
+                        {% elif mv.type_mouvement == 'sortie' %}
+                            <span class="badge-sortie"><i class="fas fa-arrow-up"></i> Sortie</span>
+                        {% elif mv.type_mouvement == 'casse' %}
+                            <span class="badge-casse"><i class="fas fa-exclamation-triangle"></i> Casse</span>
+                        {% elif mv.type_mouvement == 'inventaire' %}
+                            <span class="badge-inventaire"><i class="fas fa-clipboard-check"></i> Ajustement</span>
+                        {% else %}
+                            <span>{{ mv.type_mouvement }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="r" style="font-weight:700;
+                        {% if mv.type_mouvement == 'entree' %}color:#065f46;
+                        {% elif mv.type_mouvement in 'sortie,casse' %}color:#b91c1c;
+                        {% else %}color:#3730a3;{% endif %}">
+                        {% if mv.type_mouvement == 'entree' %}+{% elif mv.type_mouvement in 'sortie,casse' %}-{% endif %}{{ mv.quantite }}
+                    </td>
+                    <td style="font-size:0.82rem;color:#6b7280;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                        title="{{ mv.commentaire }}">{{ mv.commentaire|default:"—"|truncatechars:50 }}</td>
+                    <td style="font-size:0.82rem;">
+                        {% if mv.utilisateur %}{{ mv.utilisateur.get_full_name|default:mv.utilisateur.username }}{% else %}&mdash;{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background:#f8f9fa;font-weight:700;border-top:2px solid #e9ecef;">
+                    <td colspan="5" style="text-align:right;color:#6b7280;font-size:0.85rem;">TOTAUX</td>
+                    <td class="r" style="color:#2c3e50;">{{ total_mvts }} mvt(s)</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{% elif request.GET.date_debut or request.GET.date_fin or request.GET.categorie or request.GET.article or request.GET.type_mouvement %}
+<div style="background:white;border-radius:14px;padding:40px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <i class="fas fa-exchange-alt" style="font-size:2.5rem;color:#d1d5db;margin-bottom:12px;display:block;"></i>
+    <p style="color:#6b7280;font-size:1rem;">Aucun mouvement trouvé avec ces critères.</p>
+</div>
+{% else %}
+<div style="background:white;border-radius:14px;padding:40px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
+    <i class="fas fa-print" style="font-size:2.5rem;color:#c4b5fd;margin-bottom:12px;display:block;"></i>
+    <p style="color:#6b7280;font-size:1rem;">Appliquez des filtres et cliquez sur <strong>Filtrer</strong> pour afficher les mouvements à imprimer.</p>
+</div>
+{% endif %}
+
+{% endblock %}

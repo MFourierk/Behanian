@@ -667,6 +667,12 @@
                 <button class="btn-red" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);" onclick="ouvrirModalMouvement('inventaire')">
                     <i class="fas fa-clipboard-list"></i> Ajustement
                 </button>
+                <a href="{% url 'cuisine:etat_stock_date' %}" class="btn-red" style="background:linear-gradient(135deg,#1a6fa8,#2980b9);">
+                    <i class="fas fa-calendar-check"></i> Stock à date
+                </a>
+                <a href="{% url 'cuisine:mouvements_print' %}" class="btn-red" style="background:linear-gradient(135deg,#2c3e50,#34495e);">
+                    <i class="fas fa-print"></i> Imprimer mouvements
+                </a>
             </div>
         </div>
 

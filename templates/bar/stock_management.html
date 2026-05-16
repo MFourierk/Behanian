@@ -773,6 +773,12 @@
                 <button class="btn-purple" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);" onclick="ouvrirModalMouvement('prelevement')">
                     <i class="fas fa-user"></i> Prélèvement
                 </button>
+                <a href="{% url 'bar:etat_stock_date' %}" class="btn-purple" style="background:linear-gradient(135deg,#1a6fa8,#2980b9);">
+                    <i class="fas fa-calendar-check"></i> Stock à date
+                </a>
+                <a href="{% url 'bar:mouvements_print' %}" class="btn-purple" style="background:linear-gradient(135deg,#2c3e50,#34495e);">
+                    <i class="fas fa-print"></i> Imprimer mouvements
+                </a>
             </div>
         </div>
 
