@@ -12,16 +12,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='accespiscine',
-            name='nb_adultes',
-            field=models.IntegerField(default=1),
-        ),
-        migrations.AddField(
-            model_name='accespiscine',
-            name='nb_enfants',
-            field=models.IntegerField(default=0),
-        ),
-        migrations.AddField(
-            model_name='accespiscine',
             name='reservation_hotel',
             field=models.ForeignKey(
                 blank=True, null=True,

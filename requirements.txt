@@ -3,6 +3,9 @@ asgiref==3.11.1
 sqlparse==0.5.5
 tzdata==2026.2
 
+# Variables d'environnement (.env)
+python-dotenv==1.2.2
+
 # Interface et widgets
 django-widget-tweaks==1.5.1
 
@@ -11,6 +14,9 @@ whitenoise==6.12.0
 
 # Serveur de production
 waitress==3.0.2
+
+# Base de données PostgreSQL
+psycopg2-binary==2.9.12
 
 # Export Excel
 openpyxl==3.1.5

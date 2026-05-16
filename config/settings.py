@@ -4,9 +4,13 @@ Django settings for Behanian_Project project.
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Charge le fichier .env s'il existe (développement local et VPS)
+load_dotenv(BASE_DIR / '.env')
 
 # ---------------------------------------------------------------------------
 # SÉCURITÉ — lire depuis les variables d'environnement pour la production.
