@@ -508,38 +508,77 @@ function setType(type){
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
   const pill=document.querySelector('.type-pill.'+type);
   if(pill) pill.classList.add('active');
-  // Afficher sélecteur chambre pour les résidents
   document.getElementById('rowChambre').style.display=type==='heberge'?'block':'none';
   if(type!=='heberge') document.getElementById('entreeChambre').value='';
-  // Masquer composition VIP
   document.getElementById('vipComposition').style.display='none';
+  // Réactiver le bouton valider (peut avoir été bloqué par une pill VIP en rupture)
+  const btnValider = document.querySelector('#modalEntree .btn-primary[onclick="validerEntree()"]');
+  if(btnValider){ btnValider.disabled=false; btnValider.style.opacity=''; btnValider.title=''; }
   updatePrix();
 }
 
-function setVip(forfaitId, nom, prix){
-  vipForfaitId = forfaitId;
-  document.getElementById('entreeType').value='visiteur'; // VIP = visiteur payant
+async function setVip(forfaitId, nom, prix){
+  vipForfaitId = null; // Temporairement null le temps de la vérification
+  document.getElementById('entreeType').value='visiteur';
   document.getElementById('entreeReservationId').value='';
   document.getElementById('rowChambre').style.display='none';
   document.getElementById('entreeChambre').value='';
   // Activer pill VIP
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
-  // Trouver et activer la pill vip correspondante
   document.querySelectorAll('.type-pill.vip').forEach(p=>{
     if(p.getAttribute('onclick')&&p.getAttribute('onclick').includes('setVip('+forfaitId+','))
       p.classList.add('active');
   });
-  // Afficher composition
-  const f=FORFAITS_PISCINE.find(x=>x.id===forfaitId);
-  if(f){
-    const items=document.getElementById('vipItems');
-    items.innerHTML=f.lignes.map(l=>`<div style="padding:3px 0">• ${l.nom} × ${l.quantite}</div>`).join('')||'<div style="color:#b0b8c1">Aucun article</div>';
-    document.getElementById('vipComposition').style.display='block';
+  // Afficher composition avec état de chargement
+  document.getElementById('vipComposition').style.display='block';
+  document.getElementById('vipItems').innerHTML='<div style="color:#7a8b9c;font-style:italic">Vérification des stocks…</div>';
+  document.getElementById('vipComposition').style.background='#fffbeb';
+  document.getElementById('vipComposition').style.borderColor='#fde68a';
+  // Pré-vérification stock via API
+  let dispo = true;
+  try {
+    const r = await fetch(`{% url "piscine:forfait_dispo" 0 %}`.replace('/0/', '/'+forfaitId+'/'));
+    const d = await r.json();
+    dispo = d.disponible;
+    const items = document.getElementById('vipItems');
+    if(d.lignes && d.lignes.length){
+      items.innerHTML = d.lignes.map(l=>{
+        const icon = l.ok ? '✓' : '✗';
+        const color = l.ok ? '#15803d' : '#dc2626';
+        const bg = l.ok ? '' : '';
+        const detail = l.ok ? '' : `<span style="font-size:10px;color:#dc2626;display:block;margin-top:1px">${l.detail}</span>`;
+        return `<div style="padding:4px 0;display:flex;align-items:flex-start;gap:6px">
+          <span style="color:${color};font-weight:700;flex-shrink:0">${icon}</span>
+          <div><span style="color:${color}">${l.nom} × ${l.quantite}</span>${detail}</div>
+        </div>`;
+      }).join('');
+    } else {
+      items.innerHTML='<div style="color:#b0b8c1">Aucun article dans ce forfait</div>';
+    }
+    if(!dispo){
+      document.getElementById('vipComposition').style.background='#fef2f2';
+      document.getElementById('vipComposition').style.borderColor='#fca5a5';
+    }
+  } catch(e) {
+    document.getElementById('vipItems').innerHTML='<div style="color:#7a8b9c;font-style:italic">Impossible de vérifier le stock.</div>';
   }
+  // Activer ou bloquer le bouton selon disponibilité
+  const btnValider = document.querySelector('#modalEntree .btn-primary[onclick="validerEntree()"]');
+  if(btnValider){
+    btnValider.disabled = !dispo;
+    btnValider.style.opacity = dispo ? '' : '0.45';
+    btnValider.title = dispo ? '' : 'Forfait indisponible — rupture de stock sur un article inclus';
+  }
+  if(dispo) vipForfaitId = forfaitId;
   // Mettre à jour le prix
-  const row=document.getElementById('entreePrixRow');
-  row.style.background='#fffbeb';row.style.color='#92400e';row.style.borderColor='#fde68a';
-  row.textContent=`⭐ ${nom} — ${prix.toLocaleString('fr-FR')} F (forfait inclus)`;
+  const row = document.getElementById('entreePrixRow');
+  if(dispo){
+    row.style.background='#fffbeb';row.style.color='#92400e';row.style.borderColor='#fde68a';
+    row.textContent=`⭐ ${nom} — ${prix.toLocaleString('fr-FR')} F (forfait inclus)`;
+  } else {
+    row.style.background='#fef2f2';row.style.color='#dc2626';row.style.borderColor='#fca5a5';
+    row.textContent=`⭐ ${nom} — Indisponible (rupture de stock)`;
+  }
 }
 
 function selectionnerResident(){

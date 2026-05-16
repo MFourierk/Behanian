@@ -10,6 +10,7 @@ urlpatterns = [
     path('sortie/<int:acces_id>/', views.encaisser_sortie, name='sortie'),
     path('tarifs/', views.configurer_tarifs, name='tarifs'),
     path('api/acces/<int:acces_id>/', views.api_acces_detail, name='acces_detail'),
+    path('api/forfait/<int:forfait_id>/dispo/', views.check_forfait_dispo, name='forfait_dispo'),
     path('consommation/<int:conso_id>/modifier/', views.modifier_consommation, name='modifier_conso'),
     path('consommation/<int:conso_id>/supprimer/', views.supprimer_consommation, name='supprimer_conso'),
 ]

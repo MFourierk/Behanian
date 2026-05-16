@@ -75,6 +75,47 @@ def piscine_index(request):
     return render(request, 'piscine/index.html', context)
 
 
+def _verifier_stock_forfait(forfait):
+    """Vérifie que tous les articles d'un forfait sont en stock suffisant.
+    Retourne (True, []) si OK, (False, [liste de problèmes]) sinon.
+    Chaque problème : {'nom', 'type', 'stock', 'requis', 'detail'}
+    """
+    from restaurant.models import PlatMenu
+    from cuisine.utils import check_stock_availability
+    from bar.models import BoissonBar
+
+    problemes = []
+    for ligne in forfait.lignes.select_related('boisson', 'plat').all():
+        if ligne.type_item == 'boisson' and ligne.boisson:
+            b = ligne.boisson
+            if b.quantite_stock < ligne.quantite:
+                problemes.append({
+                    'nom': ligne.nom_affiche,
+                    'type': 'boisson',
+                    'stock': float(b.quantite_stock),
+                    'requis': float(ligne.quantite),
+                    'detail': f"Stock disponible : {int(b.quantite_stock)}, requis : {int(ligne.quantite)}",
+                })
+        elif ligne.type_item == 'plat' and ligne.plat:
+            try:
+                plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
+                if plat_menu:
+                    ok, msg = check_stock_availability(plat_menu, ligne.quantite)
+                    if not ok:
+                        problemes.append({
+                            'nom': ligne.nom_affiche,
+                            'type': 'plat',
+                            'stock': 0,
+                            'requis': float(ligne.quantite),
+                            'detail': msg,
+                        })
+            except Exception:
+                pass
+        elif ligne.type_item == 'autre':
+            pass  # Libellé libre, pas de stock à vérifier
+    return (len(problemes) == 0), problemes
+
+
 @require_module_access('piscine')
 @require_POST
 def enregistrer_entree(request):
@@ -97,10 +138,22 @@ def enregistrer_entree(request):
         if forfait_id:
             from restaurant.models import Forfait
             try:
-                forfait = Forfait.objects.get(pk=forfait_id, module='piscine', disponible=True)
+                forfait = Forfait.objects.prefetch_related('lignes__boisson', 'lignes__plat').get(
+                    pk=forfait_id, module='piscine', disponible=True
+                )
                 prix_total = forfait.prix
             except Forfait.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Forfait VIP introuvable ou indisponible.'})
+            # Pré-vérification stock de tous les articles du forfait
+            dispo, problemes = _verifier_stock_forfait(forfait)
+            if not dispo:
+                details = ' | '.join(p['detail'] for p in problemes)
+                articles = ', '.join(p['nom'] for p in problemes)
+                return JsonResponse({
+                    'success': False,
+                    'error': f"Forfait indisponible — rupture de stock sur : {articles}. {details}",
+                    'problemes': problemes,
+                })
 
         # ── Tarif ordinaire ──────────────────────────────────────────
         elif type_client == 'heberge':
@@ -365,6 +418,36 @@ def encaisser_sortie(request, acces_id):
     except Exception as e:
         import traceback; traceback.print_exc()
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('piscine')
+def check_forfait_dispo(request, forfait_id):
+    """Vérifie la disponibilité de stock pour un forfait VIP (appel AJAX)."""
+    from restaurant.models import Forfait
+    try:
+        forfait = Forfait.objects.prefetch_related('lignes__boisson', 'lignes__plat').get(
+            pk=forfait_id, module='piscine', disponible=True
+        )
+    except Forfait.DoesNotExist:
+        return JsonResponse({'disponible': False, 'problemes': [{'nom': 'Forfait', 'detail': 'Introuvable ou désactivé.'}]})
+
+    dispo, problemes = _verifier_stock_forfait(forfait)
+    # Enrichir avec le statut OK de chaque ligne pour l'affichage
+    lignes_statut = []
+    problemes_noms = {p['nom'] for p in problemes}
+    for ligne in forfait.lignes.select_related('boisson', 'plat').all():
+        nom = ligne.nom_affiche
+        lignes_statut.append({
+            'nom': nom,
+            'quantite': float(ligne.quantite),
+            'ok': nom not in problemes_noms,
+            'detail': next((p['detail'] for p in problemes if p['nom'] == nom), ''),
+        })
+    return JsonResponse({
+        'disponible': dispo,
+        'lignes': lignes_statut,
+        'problemes': problemes,
+    })
 
 
 @require_module_access('piscine')
