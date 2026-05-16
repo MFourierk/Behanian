@@ -1168,33 +1168,77 @@ def rapport_stock_cuisine(request):
     return rapport_stock(request)
 
 
-def _stock_a_date_cuisine(date_str, categorie_id, ingredient_id):
-    """Calcule le stock de chaque ingrédient Cuisine à une date donnée."""
-    from datetime import datetime, time as dt_time
+def _parse_date_cuisine(date_str, fallback=None):
+    from datetime import datetime
+    if fallback is None:
+        fallback = timezone.now().date()
     try:
-        date_param = datetime.strptime(date_str, '%Y-%m-%d').date()
-    except ValueError:
-        date_param = timezone.now().date()
-        date_str = date_param.isoformat()
-    date_fin = timezone.make_aware(datetime.combine(date_param, dt_time(23, 59, 59)))
+        return datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return fallback
+
+
+def _stock_periode_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id):
+    """Calcule l'évolution du stock Cuisine sur une période (ou à une date précise)."""
+    from datetime import datetime, time as dt_time
+    today = timezone.now().date()
+    date_debut = _parse_date_cuisine(date_debut_str, today)
+    date_fin = _parse_date_cuisine(date_fin_str, today)
+    if date_fin < date_debut:
+        date_fin = date_debut
+
+    debut_aware = timezone.make_aware(datetime.combine(date_debut, dt_time(0, 0, 0)))
+    fin_aware = timezone.make_aware(datetime.combine(date_fin, dt_time(23, 59, 59)))
+
     ingredients = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock').order_by('categorie__nom', 'nom')
     if categorie_id:
         ingredients = ingredients.filter(categorie_id=categorie_id)
     if ingredient_id:
         ingredients = ingredients.filter(pk=ingredient_id)
+
     resultats = []
-    valeur_totale = Decimal('0')
+    valeur_totale_fin = Decimal('0')
+    valeur_totale_debut = Decimal('0')
+
     for ing in ingredients:
-        stock = ing.quantite_stock
-        for mv in MouvementStockCuisine.objects.filter(ingredient=ing, date__gt=date_fin):
+        # Stock fin : partir du stock actuel et inverser les mouvements postérieurs à date_fin
+        stock_fin = ing.quantite_stock
+        for mv in MouvementStockCuisine.objects.filter(ingredient=ing, date__gt=fin_aware):
             if mv.type_mouvement in ('entree', 'inventaire'):
-                stock -= mv.quantite
+                stock_fin -= mv.quantite
             else:
-                stock += mv.quantite
-        valeur = stock * (ing.cmup or Decimal('0'))
-        valeur_totale += valeur
-        resultats.append({'ingredient': ing, 'stock_a_date': stock, 'valeur': valeur})
-    return date_param, date_str, resultats, valeur_totale
+                stock_fin += mv.quantite
+
+        # Mouvements sur la période
+        mvts_periode = MouvementStockCuisine.objects.filter(ingredient=ing, date__gte=debut_aware, date__lte=fin_aware)
+        nb_entrees = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'entree')
+        nb_sorties = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'sortie')
+        nb_casses = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'casse')
+        nb_productions = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'production')
+        nb_inventaires = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'inventaire')
+
+        # Stock début = stock_fin - net de la période
+        stock_debut = stock_fin - nb_entrees - nb_inventaires + nb_sorties + nb_casses + nb_productions
+
+        cmup = ing.cmup or Decimal('0')
+        valeur_fin = stock_fin * cmup
+        valeur_debut = stock_debut * cmup
+        valeur_totale_fin += valeur_fin
+        valeur_totale_debut += valeur_debut
+
+        resultats.append({
+            'ingredient': ing,
+            'stock_debut': stock_debut,
+            'nb_entrees': nb_entrees,
+            'nb_sorties': nb_sorties,
+            'nb_casses': nb_casses,
+            'nb_productions': nb_productions,
+            'nb_inventaires': nb_inventaires,
+            'stock_fin': stock_fin,
+            'valeur_fin': valeur_fin,
+            'valeur_debut': valeur_debut,
+        })
+    return date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut
 
 
 def _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv):
@@ -1225,33 +1269,43 @@ def _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_i
 
 @require_module_access('cuisine')
 def etat_stock_date_cuisine(request):
-    """Page de sélection : état du stock à une date donnée — Cuisine"""
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    """Page de sélection : état du stock sur une période — Cuisine"""
+    today = timezone.now().date().isoformat()
+    date_debut_str = request.GET.get('date_debut', today)
+    date_fin_str = request.GET.get('date_fin', today)
     categorie_id = request.GET.get('categorie', '')
     ingredient_id = request.GET.get('ingredient', '')
-    date_param, date_str, resultats, valeur_totale = _stock_a_date_cuisine(date_str, categorie_id, ingredient_id)
+    date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut = _stock_periode_cuisine(
+        date_debut_str, date_fin_str, categorie_id, ingredient_id)
     context = {
-        'page_title': 'État du stock à date — Cuisine',
-        'date_str': date_str,
-        'date_param': date_param,
+        'page_title': 'État du stock — Cuisine',
+        'date_debut': date_debut,
+        'date_fin': date_fin,
+        'date_debut_str': date_debut.isoformat(),
+        'date_fin_str': date_fin.isoformat(),
         'categories': CategorieIngredient.objects.all(),
         'ingredients_all': Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock').order_by('categorie__nom', 'nom'),
         'categorie_id': categorie_id,
         'ingredient_id': ingredient_id,
         'resultats': resultats,
-        'valeur_totale': valeur_totale,
+        'valeur_totale_fin': valeur_totale_fin,
+        'valeur_totale_debut': valeur_totale_debut,
         'nb_articles': len(resultats),
+        'is_single_date': date_debut == date_fin,
     }
     return render(request, 'cuisine/etat_stock_date.html', context)
 
 
 @require_module_access('cuisine')
 def etat_stock_date_cuisine_print(request):
-    """Document d'impression : état du stock à une date — Cuisine"""
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    """Document d'impression : état du stock sur une période — Cuisine"""
+    today = timezone.now().date().isoformat()
+    date_debut_str = request.GET.get('date_debut', today)
+    date_fin_str = request.GET.get('date_fin', today)
     categorie_id = request.GET.get('categorie', '')
     ingredient_id = request.GET.get('ingredient', '')
-    date_param, date_str, resultats, valeur_totale = _stock_a_date_cuisine(date_str, categorie_id, ingredient_id)
+    date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut = _stock_periode_cuisine(
+        date_debut_str, date_fin_str, categorie_id, ingredient_id)
     categorie_nom = ''
     if categorie_id:
         try:
@@ -1265,13 +1319,15 @@ def etat_stock_date_cuisine_print(request):
         except Ingredient.DoesNotExist:
             pass
     context = {
-        'date_param': date_param,
-        'date_str': date_str,
+        'date_debut': date_debut,
+        'date_fin': date_fin,
         'resultats': resultats,
-        'valeur_totale': valeur_totale,
+        'valeur_totale_fin': valeur_totale_fin,
+        'valeur_totale_debut': valeur_totale_debut,
         'nb_articles': len(resultats),
         'categorie_nom': categorie_nom,
         'ingredient_nom': ingredient_nom,
+        'is_single_date': date_debut == date_fin,
     }
     return render(request, 'cuisine/etat_stock_date_print.html', context)
 

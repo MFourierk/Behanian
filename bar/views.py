@@ -51,7 +51,7 @@ def stock_management(request):
     boissons = BoissonBar.objects.filter(statut='actif')
 
     total_articles = boissons.count()
-    valeur_stock = sum(b.prix * b.quantite_stock for b in boissons)
+    valeur_stock = sum(b.prix_achat * b.quantite_stock for b in boissons)
     stock_bas = boissons.filter(quantite_stock__lte=10, quantite_stock__gt=0).count()
     ruptures = boissons.filter(quantite_stock=0).count()
     commandes_en_cours = BonCommandeBar.objects.filter(statut__in=['brouillon', 'confirme', 'envoye', 'partiel']).count()
@@ -893,16 +893,28 @@ def rapport_stock_cave(request):
     return rapport_stock(request)
 
 
-def _stock_a_date_bar(date_str, categorie_id, article_id):
-    """Calcule le stock de chaque article Cave à une date donnée."""
-    from datetime import datetime, time as dt_time
+def _parse_date(date_str, fallback=None):
+    from datetime import datetime
+    if fallback is None:
+        fallback = timezone.now().date()
     try:
-        date_param = datetime.strptime(date_str, '%Y-%m-%d').date()
-    except ValueError:
-        date_param = timezone.now().date()
-        date_str = date_param.isoformat()
+        return datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return fallback
 
-    date_fin = timezone.make_aware(datetime.combine(date_param, dt_time(23, 59, 59)))
+
+def _stock_periode_bar(date_debut_str, date_fin_str, categorie_id, article_id):
+    """Calcule le stock Cave sur une période : stock début, mouvements, stock fin."""
+    from datetime import datetime, time as dt_time
+
+    today = timezone.now().date()
+    date_debut = _parse_date(date_debut_str, today)
+    date_fin = _parse_date(date_fin_str, today)
+    if date_fin < date_debut:
+        date_fin = date_debut
+
+    debut_aware = timezone.make_aware(datetime.combine(date_debut, dt_time(0, 0, 0)))
+    fin_aware = timezone.make_aware(datetime.combine(date_fin, dt_time(23, 59, 59)))
 
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom')
     if categorie_id:
@@ -911,19 +923,46 @@ def _stock_a_date_bar(date_str, categorie_id, article_id):
         articles = articles.filter(pk=article_id)
 
     resultats = []
-    valeur_totale = 0.0
-    for article in articles:
-        stock = article.quantite_stock
-        for mv in MouvementStockBar.objects.filter(boisson=article, date__gt=date_fin):
-            if mv.type_mouvement in ('entree', 'inventaire'):
-                stock -= mv.quantite
-            else:
-                stock += mv.quantite
-        valeur = float(stock) * float(article.prix_achat)
-        valeur_totale += valeur
-        resultats.append({'article': article, 'stock_a_date': stock, 'valeur': valeur})
+    valeur_totale_fin = 0.0
+    valeur_totale_debut = 0.0
 
-    return date_param, date_str, resultats, valeur_totale
+    for article in articles:
+        # Stock à la fin de la période (reconstruit depuis le stock actuel)
+        stock_fin = article.quantite_stock
+        for mv in MouvementStockBar.objects.filter(boisson=article, date__gt=fin_aware):
+            if mv.type_mouvement in ('entree', 'inventaire'):
+                stock_fin -= mv.quantite
+            else:
+                stock_fin += mv.quantite
+
+        # Mouvements durant la période
+        mvts = list(MouvementStockBar.objects.filter(boisson=article, date__gte=debut_aware, date__lte=fin_aware))
+        nb_entrees = sum(mv.quantite for mv in mvts if mv.type_mouvement == 'entree')
+        nb_sorties = sum(mv.quantite for mv in mvts if mv.type_mouvement == 'sortie')
+        nb_casses = sum(mv.quantite for mv in mvts if mv.type_mouvement == 'casse')
+        nb_inventaires = sum(mv.quantite for mv in mvts if mv.type_mouvement == 'inventaire')
+
+        # Stock au début de la période (avant tout mouvement du date_debut)
+        stock_debut = stock_fin - nb_entrees - nb_inventaires + nb_sorties + nb_casses
+
+        valeur_fin = float(stock_fin) * float(article.prix_achat)
+        valeur_debut = float(stock_debut) * float(article.prix_achat)
+        valeur_totale_fin += valeur_fin
+        valeur_totale_debut += valeur_debut
+
+        resultats.append({
+            'article': article,
+            'stock_debut': stock_debut,
+            'nb_entrees': nb_entrees,
+            'nb_sorties': nb_sorties,
+            'nb_casses': nb_casses,
+            'nb_inventaires': nb_inventaires,
+            'stock_fin': stock_fin,
+            'valeur_fin': valeur_fin,
+            'valeur_debut': valeur_debut,
+        })
+
+    return date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut
 
 
 def _mouvements_bar(date_debut_str, date_fin_str, categorie_id, article_id, type_mv):
@@ -956,22 +995,29 @@ def _mouvements_bar(date_debut_str, date_fin_str, categorie_id, article_id, type
 @require_module_access('bar')
 @require_bar_gestion
 def etat_stock_date_bar(request):
-    """Page de sélection : état du stock à une date donnée — Cave"""
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    """Page de sélection : état du stock sur une période — Cave"""
+    today = timezone.now().date().isoformat()
+    date_debut_str = request.GET.get('date_debut', today)
+    date_fin_str = request.GET.get('date_fin', today)
     categorie_id = request.GET.get('categorie', '')
     article_id = request.GET.get('article', '')
-    date_param, date_str, resultats, valeur_totale = _stock_a_date_bar(date_str, categorie_id, article_id)
+    date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut = _stock_periode_bar(
+        date_debut_str, date_fin_str, categorie_id, article_id)
     context = {
-        'page_title': 'État du stock à date — Cave',
-        'date_str': date_str,
-        'date_param': date_param,
+        'page_title': 'État du stock — Cave',
+        'date_debut': date_debut,
+        'date_fin': date_fin,
+        'date_debut_str': date_debut.isoformat(),
+        'date_fin_str': date_fin.isoformat(),
         'categories': CategorieBar.objects.all(),
         'boissons_all': BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom'),
         'categorie_id': categorie_id,
         'article_id': article_id,
         'resultats': resultats,
-        'valeur_totale': valeur_totale,
+        'valeur_totale_fin': valeur_totale_fin,
+        'valeur_totale_debut': valeur_totale_debut,
         'nb_articles': len(resultats),
+        'is_single_date': date_debut == date_fin,
     }
     return render(request, 'bar/etat_stock_date.html', context)
 
@@ -979,11 +1025,14 @@ def etat_stock_date_bar(request):
 @require_module_access('bar')
 @require_bar_gestion
 def etat_stock_date_bar_print(request):
-    """Document d'impression : état du stock à une date — Cave"""
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    """Document d'impression : état du stock sur une période — Cave"""
+    today = timezone.now().date().isoformat()
+    date_debut_str = request.GET.get('date_debut', today)
+    date_fin_str = request.GET.get('date_fin', today)
     categorie_id = request.GET.get('categorie', '')
     article_id = request.GET.get('article', '')
-    date_param, date_str, resultats, valeur_totale = _stock_a_date_bar(date_str, categorie_id, article_id)
+    date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut = _stock_periode_bar(
+        date_debut_str, date_fin_str, categorie_id, article_id)
     categorie_nom = ''
     if categorie_id:
         try:
@@ -997,13 +1046,15 @@ def etat_stock_date_bar_print(request):
         except BoissonBar.DoesNotExist:
             pass
     context = {
-        'date_param': date_param,
-        'date_str': date_str,
+        'date_debut': date_debut,
+        'date_fin': date_fin,
         'resultats': resultats,
-        'valeur_totale': valeur_totale,
+        'valeur_totale_fin': valeur_totale_fin,
+        'valeur_totale_debut': valeur_totale_debut,
         'nb_articles': len(resultats),
         'categorie_nom': categorie_nom,
         'article_nom': article_nom,
+        'is_single_date': date_debut == date_fin,
     }
     return render(request, 'bar/etat_stock_date_print.html', context)
 

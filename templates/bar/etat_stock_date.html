@@ -2,7 +2,7 @@
 {% load breadcrumb %}
 {% load static %}
 
-{% block title %}État du stock à date — Cave{% endblock %}
+{% block title %}État du stock — Cave{% endblock %}
 
 {% block content %}
 <style>
@@ -116,7 +116,7 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
 .stock-table tr:hover td { background: #faf5ff; }
 
 .stock-table .r { text-align: right; }
-.cat-header td { background: #f3e5f5; font-weight: 700; color: #6d28a0; font-size: 0.83rem; padding: 8px 14px; }
+.stock-table .c { text-align: center; }
 
 .badge-ok    { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
 .badge-warn  { background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
@@ -126,7 +126,7 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
 
 .stats-bar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 20px;
 }
@@ -137,14 +137,17 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     text-align: center;
 }
-.stat-mini .val { font-size: 1.5rem; font-weight: 800; color: #8e44ad; }
+.stat-mini .val { font-size: 1.4rem; font-weight: 800; color: #8e44ad; }
 .stat-mini .lbl { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+.hint-tag { font-size: 0.75rem; background: #f3e5f5; color: #7b3fa0; padding: 2px 8px; border-radius: 5px; margin-left: 6px; }
 </style>
 
 <div class="page-header">
     <div>
-        <h2><i class="fas fa-calendar-check"></i> État du stock à une date</h2>
-        <p>Cave — Reconstituez les niveaux de stock à n'importe quelle date</p>
+        <h2><i class="fas fa-calendar-check"></i>
+            {% if is_single_date %}État du stock à une date{% else %}État du stock sur une période{% endif %}
+        </h2>
+        <p>Cave — Reconstituez les niveaux de stock à n'importe quelle date ou sur une période</p>
     </div>
     <a href="{% url 'bar:stock_management' %}?tab=mouvements" class="btn-outline" style="color:white;border-color:rgba(255,255,255,0.5);">
         <i class="fas fa-arrow-left"></i> Retour
@@ -157,8 +160,12 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
     <form method="get" action="">
         <div class="filter-row">
             <div class="filter-col" style="max-width:160px;">
-                <label for="date"><i class="fas fa-calendar"></i> Date du rapport</label>
-                <input type="date" id="date" name="date" value="{{ date_str }}" required>
+                <label for="date_debut"><i class="fas fa-calendar"></i> Date début</label>
+                <input type="date" id="date_debut" name="date_debut" value="{{ date_debut_str }}" required>
+            </div>
+            <div class="filter-col" style="max-width:160px;">
+                <label for="date_fin"><i class="fas fa-calendar"></i> Date fin</label>
+                <input type="date" id="date_fin" name="date_fin" value="{{ date_fin_str }}" required>
             </div>
             <div class="filter-col">
                 <label for="categorie"><i class="fas fa-tag"></i> Catégorie</label>
@@ -178,16 +185,20 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
                     {% endfor %}
                 </select>
             </div>
-            <div class="filter-col" style="max-width:180px;display:flex;gap:8px;">
+            <div class="filter-col" style="max-width:160px;display:flex;gap:8px;">
                 <button type="submit" class="btn-purple" style="flex:1;">
                     <i class="fas fa-search"></i> Afficher
                 </button>
             </div>
         </div>
+        <p style="margin:8px 0 0;font-size:0.8rem;color:#8a9ab0;">
+            <i class="fas fa-info-circle"></i>
+            Pour un état à une date précise, saisissez la même date en début et en fin.
+        </p>
     </form>
 </div>
 
-{% if resultats %}
+{% if request.GET.date_debut %}
 
 <!-- Stats rapides -->
 <div class="stats-bar">
@@ -196,12 +207,18 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
         <div class="lbl">Articles affichés</div>
     </div>
     <div class="stat-mini">
-        <div class="val">{{ valeur_totale|floatformat:0 }} F</div>
-        <div class="lbl">Valeur du stock</div>
+        <div class="val" style="color:#6b7280;">{{ valeur_totale_debut|floatformat:0 }} F</div>
+        <div class="lbl">Valeur stock début</div>
     </div>
     <div class="stat-mini">
-        <div class="val">{{ date_param|date:"d/m/Y" }}</div>
-        <div class="lbl">Date du rapport</div>
+        <div class="val">{{ valeur_totale_fin|floatformat:0 }} F</div>
+        <div class="lbl">Valeur stock fin</div>
+    </div>
+    <div class="stat-mini">
+        <div class="val" style="font-size:1.1rem;">
+            {% if is_single_date %}{{ date_fin|date:"d/m/Y" }}{% else %}{{ date_debut|date:"d/m/Y" }} – {{ date_fin|date:"d/m/Y" }}{% endif %}
+        </div>
+        <div class="lbl">{% if is_single_date %}Date du rapport{% else %}Période{% endif %}</div>
     </div>
 </div>
 
@@ -209,11 +226,18 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
 <div class="results-card">
     <div class="results-header">
         <div>
-            <div class="results-title"><i class="fas fa-table" style="color:#8e44ad;"></i> Stock au {{ date_param|date:"d/m/Y" }}</div>
-            <div class="results-subtitle">{{ nb_articles }} article(s) — Valeur totale : <strong>{{ valeur_totale|floatformat:0 }} FCFA</strong></div>
+            <div class="results-title">
+                <i class="fas fa-table" style="color:#8e44ad;"></i>
+                {% if is_single_date %}
+                    Stock au {{ date_fin|date:"d/m/Y" }}
+                {% else %}
+                    Stock du {{ date_debut|date:"d/m/Y" }} au {{ date_fin|date:"d/m/Y" }}
+                {% endif %}
+            </div>
+            <div class="results-subtitle">{{ nb_articles }} article(s) — Valeur fin : <strong>{{ valeur_totale_fin|floatformat:0 }} FCFA</strong></div>
         </div>
         <div style="display:flex;gap:8px;">
-            <a href="{% url 'bar:etat_stock_date_print' %}?date={{ date_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if article_id %}&article={{ article_id }}{% endif %}"
+            <a href="{% url 'bar:etat_stock_date_print' %}?date_debut={{ date_debut_str }}&date_fin={{ date_fin_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if article_id %}&article={{ article_id }}{% endif %}"
                target="_blank" class="btn-print">
                 <i class="fas fa-print"></i> Ouvrir pour impression
             </a>
@@ -227,10 +251,17 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
                     <th>#</th>
                     <th>Article</th>
                     <th>Catégorie</th>
-                    <th class="r">Stock au {{ date_param|date:"d/m/Y" }}</th>
-                    <th class="r">Prix achat (FCFA)</th>
-                    <th class="r">Valeur (FCFA)</th>
-                    <th style="text-align:center;">Statut</th>
+                    {% if not is_single_date %}
+                    <th class="r">Stock début</th>
+                    <th class="r">Entrées</th>
+                    <th class="r">Sorties</th>
+                    <th class="r">Casses</th>
+                    <th class="r">Ajust.</th>
+                    {% endif %}
+                    <th class="r">Stock {% if is_single_date %}au {{ date_fin|date:"d/m/Y" }}{% else %}fin{% endif %}</th>
+                    <th class="r">P. achat (FCFA)</th>
+                    <th class="r">Valeur fin (FCFA)</th>
+                    <th class="c">Statut</th>
                 </tr>
             </thead>
             <tbody>
@@ -242,16 +273,23 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
                         {% if r.article.reference %}<br><small style="color:#9ca3af;">{{ r.article.reference }}</small>{% endif %}
                     </td>
                     <td style="font-size:0.82rem;color:#6b7280;">{{ r.article.categorie.nom }}</td>
+                    {% if not is_single_date %}
+                    <td class="r" style="color:#6b7280;">{{ r.stock_debut }}</td>
+                    <td class="r" style="color:#16a34a;font-weight:600;">+{{ r.nb_entrees }}</td>
+                    <td class="r" style="color:#c0392b;">-{{ r.nb_sorties }}</td>
+                    <td class="r" style="color:#c0392b;">-{{ r.nb_casses }}</td>
+                    <td class="r" style="color:#3730a3;">{{ r.nb_inventaires }}</td>
+                    {% endif %}
                     <td class="r" style="font-weight:700;font-size:1rem;
-                        {% if r.stock_a_date <= 0 %}color:#b91c1c;{% elif r.stock_a_date <= r.article.seuil_alerte %}color:#d97706;{% else %}color:#065f46;{% endif %}">
-                        {{ r.stock_a_date }} {{ r.article.unite_affichee }}
+                        {% if r.stock_fin <= 0 %}color:#b91c1c;{% elif r.stock_fin <= r.article.seuil_alerte %}color:#d97706;{% else %}color:#065f46;{% endif %}">
+                        {{ r.stock_fin }} {{ r.article.unite_affichee }}
                     </td>
                     <td class="r" style="color:#4a5568;">{{ r.article.prix_achat|floatformat:0 }}</td>
-                    <td class="r" style="font-weight:600;">{{ r.valeur|floatformat:0 }}</td>
-                    <td style="text-align:center;">
-                        {% if r.stock_a_date <= 0 %}
+                    <td class="r" style="font-weight:600;">{{ r.valeur_fin|floatformat:0 }}</td>
+                    <td class="c">
+                        {% if r.stock_fin <= 0 %}
                             <span class="badge-zero">Rupture</span>
-                        {% elif r.stock_a_date <= r.article.seuil_alerte %}
+                        {% elif r.stock_fin <= r.article.seuil_alerte %}
                             <span class="badge-warn">Alerte</span>
                         {% else %}
                             <span class="badge-ok">OK</span>
@@ -262,8 +300,8 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
             </tbody>
             <tfoot>
                 <tr class="total-row">
-                    <td colspan="5" style="text-align:right;font-size:0.85rem;color:#6b7280;">VALEUR TOTALE DU STOCK</td>
-                    <td class="r" style="font-size:1.05rem;color:#8e44ad;">{{ valeur_totale|floatformat:0 }} FCFA</td>
+                    <td colspan="{% if is_single_date %}6{% else %}10{% endif %}" style="text-align:right;font-size:0.85rem;color:#6b7280;">VALEUR TOTALE DU STOCK (FIN)</td>
+                    <td class="r" style="font-size:1.05rem;color:#8e44ad;">{{ valeur_totale_fin|floatformat:0 }} FCFA</td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -271,15 +309,11 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
     </div>
 </div>
 
-{% elif request.GET.date %}
-<div style="background:white;border-radius:14px;padding:40px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
-    <i class="fas fa-wine-bottle" style="font-size:2.5rem;color:#d1d5db;margin-bottom:12px;display:block;"></i>
-    <p style="color:#6b7280;font-size:1rem;">Aucun article trouvé avec ces critères.</p>
-</div>
 {% else %}
 <div style="background:white;border-radius:14px;padding:40px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);">
     <i class="fas fa-calendar-check" style="font-size:2.5rem;color:#c4b5fd;margin-bottom:12px;display:block;"></i>
-    <p style="color:#6b7280;font-size:1rem;">Choisissez une date et cliquez sur <strong>Afficher</strong> pour voir le stock à cette date.</p>
+    <p style="color:#6b7280;font-size:1rem;">Choisissez une période et cliquez sur <strong>Afficher</strong> pour voir l'état du stock.</p>
+    <p style="color:#9ca3af;font-size:0.85rem;">Pour un état à une date précise, saisissez la même date en début et en fin.</p>
 </div>
 {% endif %}
 

@@ -1,17 +1,27 @@
 {% extends 'print_base.html' %}
 {% load static %}
-{% block doc_title %}État du Stock à Date — Cuisine{% endblock %}
+{% block doc_title %}
+  {% if is_single_date %}État du Stock au {{ date_fin|date:"d/m/Y" }} — Cuisine
+  {% else %}État du Stock {{ date_debut|date:"d/m/Y" }}–{{ date_fin|date:"d/m/Y" }} — Cuisine{% endif %}
+{% endblock %}
 
 {% block doc_content %}
 
 <!-- TITRE -->
 <div class="doc-title-band">
   <div>
-    <div class="doc-title-text">État du Stock à Date — Cuisine</div>
-    <div class="doc-title-sub">Département Cuisine · Stock reconstitué au {{ date_param|date:"d/m/Y" }}</div>
+    <div class="doc-title-text">
+      {% if is_single_date %}État du Stock à Date — Cuisine
+      {% else %}État du Stock sur Période — Cuisine{% endif %}
+    </div>
+    <div class="doc-title-sub">
+      Département Cuisine ·
+      {% if is_single_date %}Stock reconstitué au {{ date_fin|date:"d/m/Y" }}
+      {% else %}Période du {{ date_debut|date:"d/m/Y" }} au {{ date_fin|date:"d/m/Y" }}{% endif %}
+    </div>
   </div>
   <div class="doc-title-right">
-    <span class="doc-ref">{{ nb_articles }} article(s)</span>
+    <span class="doc-ref">{{ nb_articles }} ingrédient(s)</span>
   </div>
 </div>
 
@@ -21,11 +31,16 @@
     <div class="meta-box-title">Informations du rapport</div>
     <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
     <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Date du stock</span><span class="meta-val bold" style="color:#c0392b;">{{ date_param|date:"d/m/Y" }}</span></div>
+    {% if is_single_date %}
+    <div class="meta-row"><span class="meta-lbl">Date du stock</span><span class="meta-val bold" style="color:#c0392b;">{{ date_fin|date:"d/m/Y" }}</span></div>
+    {% else %}
+    <div class="meta-row"><span class="meta-lbl">Période début</span><span class="meta-val bold" style="color:#c0392b;">{{ date_debut|date:"d/m/Y" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Période fin</span><span class="meta-val bold" style="color:#c0392b;">{{ date_fin|date:"d/m/Y" }}</span></div>
+    {% endif %}
     <div class="meta-row"><span class="meta-lbl">Nb ingrédients</span><span class="meta-val">{{ nb_articles }}</span></div>
   </div>
   <div class="meta-box">
-    <div class="meta-box-title">Filtres appliqués &amp; Valorisation</div>
+    <div class="meta-box-title">Filtres &amp; Valorisation</div>
     {% if categorie_nom %}
     <div class="meta-row"><span class="meta-lbl">Catégorie</span><span class="meta-val">{{ categorie_nom }}</span></div>
     {% else %}
@@ -34,46 +49,66 @@
     {% if ingredient_nom %}
     <div class="meta-row"><span class="meta-lbl">Ingrédient</span><span class="meta-val">{{ ingredient_nom }}</span></div>
     {% endif %}
-    <div class="meta-row"><span class="meta-lbl">Valeur totale stock</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ valeur_totale|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Méthode de valorisation</span><span class="meta-val">CMUP</span></div>
+    {% if not is_single_date %}
+    <div class="meta-row"><span class="meta-lbl">Valeur stock début</span><span class="meta-val" style="color:#6b7280;">{{ valeur_totale_debut|floatformat:0 }} FCFA</span></div>
+    {% endif %}
+    <div class="meta-row"><span class="meta-lbl">Valeur stock fin</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ valeur_totale_fin|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Méthode</span><span class="meta-val">CMUP (Coût Moyen Pondéré)</span></div>
     <div class="meta-row"><span class="meta-lbl">Établissement</span><span class="meta-val">Complexe Hôtelier Behanian</span></div>
   </div>
 </div>
 
 <!-- TABLEAU STOCK -->
 <div class="content-section">
-  <div class="section-title">Détail du stock par ingrédient — Cuisine au {{ date_param|date:"d/m/Y" }}</div>
+  <div class="section-title">
+    {% if is_single_date %}Détail du stock par ingrédient — Cuisine au {{ date_fin|date:"d/m/Y" }}
+    {% else %}Évolution du stock par ingrédient — Cuisine · {{ date_debut|date:"d/m/Y" }} → {{ date_fin|date:"d/m/Y" }}{% endif %}
+  </div>
   <table class="doc-table">
     <thead>
       <tr>
-        <th style="width:30px">#</th>
+        <th style="width:28px">#</th>
         <th>Ingrédient</th>
-        <th style="width:100px">Catégorie</th>
-        <th style="width:55px">Unité</th>
-        <th class="r" style="width:100px">Stock au {{ date_param|date:"d/m/Y" }}</th>
-        <th class="r" style="width:85px">Seuil alerte</th>
-        <th class="r" style="width:90px">CMUP (FCFA)</th>
-        <th class="r" style="width:110px">Valeur (FCFA)</th>
-        <th class="c" style="width:60px">Statut</th>
+        <th style="width:90px">Catégorie</th>
+        <th style="width:40px">Unité</th>
+        {% if not is_single_date %}
+        <th class="r" style="width:65px">Stk début</th>
+        <th class="r" style="width:55px">Entrées</th>
+        <th class="r" style="width:50px">Sorties</th>
+        <th class="r" style="width:45px">Prod.</th>
+        <th class="r" style="width:45px">Casses</th>
+        <th class="r" style="width:50px">Ajust.</th>
+        {% endif %}
+        <th class="r" style="width:65px">Stk fin</th>
+        <th class="r" style="width:80px">CMUP FCFA</th>
+        <th class="r" style="width:90px">Valeur fin</th>
+        <th class="c" style="width:55px">Statut</th>
       </tr>
     </thead>
     <tbody>
       {% for r in resultats %}
-      <tr {% if r.stock_a_date <= 0 %}style="background:#fff5f5"{% elif r.stock_a_date <= r.ingredient.seuil_alerte and r.ingredient.seuil_alerte > 0 %}style="background:#fffbeb"{% endif %}>
+      <tr {% if r.stock_fin <= 0 %}style="background:#fff5f5"{% elif r.stock_fin <= r.ingredient.seuil_alerte and r.ingredient.seuil_alerte > 0 %}style="background:#fffbeb"{% endif %}>
         <td class="muted">{{ forloop.counter }}</td>
         <td class="bold">{{ r.ingredient.nom }}</td>
         <td style="font-size:10px;color:#6b7a8d">{{ r.ingredient.categorie.nom|default:"—" }}</td>
         <td>{{ r.ingredient.unite_stock.abreviation|default:"—" }}</td>
-        <td class="r bold" style="{% if r.stock_a_date <= 0 %}color:#c0392b{% elif r.stock_a_date <= r.ingredient.seuil_alerte and r.ingredient.seuil_alerte > 0 %}color:#d97706{% else %}color:#16a34a{% endif %}">
-          {{ r.stock_a_date|floatformat:3 }}
+        {% if not is_single_date %}
+        <td class="r" style="color:#6b7a8d;">{{ r.stock_debut|floatformat:3 }}</td>
+        <td class="r" style="color:#16a34a;font-weight:600;">+{{ r.nb_entrees|floatformat:3 }}</td>
+        <td class="r" style="color:#c0392b;">-{{ r.nb_sorties|floatformat:3 }}</td>
+        <td class="r" style="color:#c0392b;">-{{ r.nb_productions|floatformat:3 }}</td>
+        <td class="r" style="color:#c0392b;">-{{ r.nb_casses|floatformat:3 }}</td>
+        <td class="r" style="color:#3730a3;">{{ r.nb_inventaires|floatformat:3 }}</td>
+        {% endif %}
+        <td class="r bold" style="{% if r.stock_fin <= 0 %}color:#c0392b{% elif r.stock_fin <= r.ingredient.seuil_alerte and r.ingredient.seuil_alerte > 0 %}color:#d97706{% else %}color:#16a34a{% endif %}">
+          {{ r.stock_fin|floatformat:3 }}
         </td>
-        <td class="r" style="color:#8a9ab0">{{ r.ingredient.seuil_alerte|floatformat:3 }}</td>
         <td class="r">{{ r.ingredient.cmup|floatformat:0 }}</td>
-        <td class="r bold">{{ r.valeur|floatformat:0 }}</td>
+        <td class="r bold">{{ r.valeur_fin|floatformat:0 }}</td>
         <td class="c" style="font-size:9px">
-          {% if r.stock_a_date <= 0 %}
+          {% if r.stock_fin <= 0 %}
           <span style="background:#fee2e2;color:#dc2626;padding:2px 5px;border-radius:4px;font-weight:700">Rupture</span>
-          {% elif r.stock_a_date <= r.ingredient.seuil_alerte and r.ingredient.seuil_alerte > 0 %}
+          {% elif r.stock_fin <= r.ingredient.seuil_alerte and r.ingredient.seuil_alerte > 0 %}
           <span style="background:#fef3c7;color:#d97706;padding:2px 5px;border-radius:4px;font-weight:700">Alerte</span>
           {% else %}
           <span style="background:#dcfce7;color:#16a34a;padding:2px 5px;border-radius:4px;font-weight:700">OK</span>
@@ -81,31 +116,36 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="9" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient actif</td></tr>
+      <tr><td colspan="{% if is_single_date %}8{% else %}14{% endif %}" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
       {% endfor %}
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="6"></td>
+        <td colspan="{% if is_single_date %}8{% else %}12{% endif %}"></td>
         <td class="total-label">Valeur totale stock</td>
-        <td class="total-val" colspan="2">{{ valeur_totale|floatformat:0 }} FCFA</td>
+        <td class="total-val" colspan="2">{{ valeur_totale_fin|floatformat:0 }} FCFA</td>
       </tr>
     </tfoot>
   </table>
 </div>
 
 <div style="margin:6px 30px;font-size:9px;color:#8a9ab0">
-  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil d'alerte &nbsp;|&nbsp;
+  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil &nbsp;|&nbsp;
   <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#dc2626">Rupture</span> Stock épuisé &nbsp;|&nbsp;
-  Stock reconstitué par inversion des mouvements postérieurs au {{ date_param|date:"d/m/Y" }}
+  {% if is_single_date %}Valorisation CMUP · Stock reconstitué par inversion des mouvements postérieurs au {{ date_fin|date:"d/m/Y" }}
+  {% else %}Valorisation CMUP · Mouvements de la période pris en compte pour le calcul{% endif %}
 </div>
 
 <!-- SIGNATURES -->
 <div class="signatures cols-3">
-  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
   <div class="sig-box"><div class="sig-line">Responsable Cuisine</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
   <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
 </div>
 
 {% endblock %}
-{% block doc_footer_right %}État du stock Cuisine · {{ date_param|date:"d/m/Y" }} · Édité le {% now "d/m/Y H:i" %}{% endblock %}
+{% block doc_footer_right %}
+  {% if is_single_date %}Stock Cuisine au {{ date_fin|date:"d/m/Y" }}
+  {% else %}Stock Cuisine {{ date_debut|date:"d/m/Y" }}–{{ date_fin|date:"d/m/Y" }}{% endif %}
+  · Édité le {% now "d/m/Y H:i" %}
+{% endblock %}
