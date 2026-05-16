@@ -1,0 +1,113 @@
+{% extends 'print_base.html' %}
+{% load static %}
+{% block doc_title %}État du Stock à Date — Cave{% endblock %}
+
+{% block doc_content %}
+
+<!-- TITRE -->
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">État du Stock à Date — Cave</div>
+    <div class="doc-title-sub">Département Cave / Bar · Stock reconstitué au {{ date_param|date:"d/m/Y" }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ nb_articles }} article(s)</span>
+  </div>
+</div>
+
+<!-- META -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations du rapport</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date du stock</span><span class="meta-val bold" style="color:#8e44ad;">{{ date_param|date:"d/m/Y" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb articles</span><span class="meta-val">{{ nb_articles }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Filtres appliqués &amp; Valorisation</div>
+    {% if categorie_nom %}
+    <div class="meta-row"><span class="meta-lbl">Catégorie</span><span class="meta-val">{{ categorie_nom }}</span></div>
+    {% else %}
+    <div class="meta-row"><span class="meta-lbl">Catégorie</span><span class="meta-val" style="color:#8a9ab0;">Toutes</span></div>
+    {% endif %}
+    {% if article_nom %}
+    <div class="meta-row"><span class="meta-lbl">Article</span><span class="meta-val">{{ article_nom }}</span></div>
+    {% endif %}
+    <div class="meta-row"><span class="meta-lbl">Valeur totale stock</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ valeur_totale|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Méthode</span><span class="meta-val">Prix d'achat moyen</span></div>
+    <div class="meta-row"><span class="meta-lbl">Établissement</span><span class="meta-val">Complexe Hôtelier Behanian</span></div>
+  </div>
+</div>
+
+<!-- TABLEAU STOCK -->
+<div class="content-section">
+  <div class="section-title">Détail du stock par article — Cave au {{ date_param|date:"d/m/Y" }}</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Article</th>
+        <th style="width:40px">Réf.</th>
+        <th style="width:100px">Catégorie</th>
+        <th style="width:60px">Unité</th>
+        <th class="r" style="width:100px">Stock au {{ date_param|date:"d/m/Y" }}</th>
+        <th class="r" style="width:85px">Seuil alerte</th>
+        <th class="r" style="width:90px">P. achat (FCFA)</th>
+        <th class="r" style="width:110px">Valeur (FCFA)</th>
+        <th class="c" style="width:60px">Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resultats %}
+      <tr {% if r.stock_a_date <= 0 %}style="background:#fff5f5"{% elif r.stock_a_date <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}style="background:#fffbeb"{% endif %}>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td class="bold">{{ r.article.nom }}</td>
+        <td class="muted" style="font-size:9px;">{{ r.article.reference|default:"—" }}</td>
+        <td style="font-size:10px;color:#6b7a8d">{{ r.article.categorie.nom }}</td>
+        <td>{{ r.article.unite_affichee }}</td>
+        <td class="r bold {% if r.stock_a_date <= 0 %}bold{% endif %}" style="{% if r.stock_a_date <= 0 %}color:#c0392b{% elif r.stock_a_date <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}color:#d97706{% else %}color:#16a34a{% endif %}">
+          {{ r.stock_a_date }}
+        </td>
+        <td class="r" style="color:#8a9ab0">{{ r.article.seuil_alerte }}</td>
+        <td class="r">{{ r.article.prix_achat|floatformat:0 }}</td>
+        <td class="r bold">{{ r.valeur|floatformat:0 }}</td>
+        <td class="c" style="font-size:9px">
+          {% if r.stock_a_date <= 0 %}
+          <span style="background:#fee2e2;color:#dc2626;padding:2px 5px;border-radius:4px;font-weight:700">Rupture</span>
+          {% elif r.stock_a_date <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}
+          <span style="background:#fef3c7;color:#d97706;padding:2px 5px;border-radius:4px;font-weight:700">Alerte</span>
+          {% else %}
+          <span style="background:#dcfce7;color:#16a34a;padding:2px 5px;border-radius:4px;font-weight:700">OK</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7"></td>
+        <td class="total-label">Valeur totale stock</td>
+        <td class="total-val" colspan="2">{{ valeur_totale|floatformat:0 }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div style="margin:6px 30px;font-size:9px;color:#8a9ab0">
+  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil &nbsp;|&nbsp;
+  <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#dc2626">Rupture</span> Stock épuisé &nbsp;|&nbsp;
+  Stock reconstitué par inversion des mouvements postérieurs au {{ date_param|date:"d/m/Y" }}
+</div>
+
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Responsable Cave</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+</div>
+
+{% endblock %}
+{% block doc_footer_right %}État du stock Cave · {{ date_param|date:"d/m/Y" }} · Édité le {% now "d/m/Y H:i" %}{% endblock %}

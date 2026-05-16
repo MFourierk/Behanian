@@ -213,9 +213,9 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
             <div class="results-subtitle">{{ nb_articles }} article(s) — Valeur totale : <strong>{{ valeur_totale|floatformat:0 }} FCFA</strong></div>
         </div>
         <div style="display:flex;gap:8px;">
-            <a href="?date={{ date_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if article_id %}&article={{ article_id }}{% endif %}&print=1"
+            <a href="{% url 'bar:etat_stock_date_print' %}?date={{ date_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if article_id %}&article={{ article_id }}{% endif %}"
                target="_blank" class="btn-print">
-                <i class="fas fa-print"></i> Imprimer
+                <i class="fas fa-print"></i> Ouvrir pour impression
             </a>
         </div>
     </div>
@@ -285,11 +285,4 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
 
 {% endblock %}
 
-{% block extra_js %}
-<script>
-// Si paramètre print=1, ouvrir la fenêtre d'impression
-{% if request.GET.print %}
-window.onload = function() { window.print(); };
-{% endif %}
-</script>
 {% endblock %}

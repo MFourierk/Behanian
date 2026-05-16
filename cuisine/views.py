@@ -1168,35 +1168,22 @@ def rapport_stock_cuisine(request):
     return rapport_stock(request)
 
 
-@require_module_access('cuisine')
-def etat_stock_date_cuisine(request):
-    """État du stock à une date donnée — Cuisine"""
+def _stock_a_date_cuisine(date_str, categorie_id, ingredient_id):
+    """Calcule le stock de chaque ingrédient Cuisine à une date donnée."""
     from datetime import datetime, time as dt_time
-
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
-    categorie_id = request.GET.get('categorie', '')
-    ingredient_id = request.GET.get('ingredient', '')
-
-    categories = CategorieIngredient.objects.all()
-    ingredients_all = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock').order_by('categorie__nom', 'nom')
-
     try:
         date_param = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
         date_param = timezone.now().date()
         date_str = date_param.isoformat()
-
     date_fin = timezone.make_aware(datetime.combine(date_param, dt_time(23, 59, 59)))
-
-    ingredients = ingredients_all
+    ingredients = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock').order_by('categorie__nom', 'nom')
     if categorie_id:
         ingredients = ingredients.filter(categorie_id=categorie_id)
     if ingredient_id:
         ingredients = ingredients.filter(pk=ingredient_id)
-
     resultats = []
     valeur_totale = Decimal('0')
-
     for ing in ingredients:
         stock = ing.quantite_stock
         for mv in MouvementStockCuisine.objects.filter(ingredient=ing, date__gt=date_fin):
@@ -1204,21 +1191,51 @@ def etat_stock_date_cuisine(request):
                 stock -= mv.quantite
             else:
                 stock += mv.quantite
-
         valeur = stock * (ing.cmup or Decimal('0'))
         valeur_totale += valeur
-        resultats.append({
-            'ingredient': ing,
-            'stock_a_date': stock,
-            'valeur': valeur,
-        })
+        resultats.append({'ingredient': ing, 'stock_a_date': stock, 'valeur': valeur})
+    return date_param, date_str, resultats, valeur_totale
 
+
+def _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv):
+    """Retourne la liste des mouvements filtrés — Cuisine."""
+    from datetime import datetime
+    mvts = MouvementStockCuisine.objects.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock', 'utilisateur').order_by('date')
+    date_debut = date_fin_obj = None
+    if date_debut_str:
+        try:
+            date_debut = datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+            mvts = mvts.filter(date__date__gte=date_debut)
+        except ValueError:
+            pass
+    if date_fin_str:
+        try:
+            date_fin_obj = datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+            mvts = mvts.filter(date__date__lte=date_fin_obj)
+        except ValueError:
+            pass
+    if categorie_id:
+        mvts = mvts.filter(ingredient__categorie_id=categorie_id)
+    if ingredient_id:
+        mvts = mvts.filter(ingredient_id=ingredient_id)
+    if type_mv:
+        mvts = mvts.filter(type_mouvement=type_mv)
+    return date_debut, date_fin_obj, list(mvts)
+
+
+@require_module_access('cuisine')
+def etat_stock_date_cuisine(request):
+    """Page de sélection : état du stock à une date donnée — Cuisine"""
+    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    categorie_id = request.GET.get('categorie', '')
+    ingredient_id = request.GET.get('ingredient', '')
+    date_param, date_str, resultats, valeur_totale = _stock_a_date_cuisine(date_str, categorie_id, ingredient_id)
     context = {
         'page_title': 'État du stock à date — Cuisine',
         'date_str': date_str,
         'date_param': date_param,
-        'categories': categories,
-        'ingredients_all': ingredients_all,
+        'categories': CategorieIngredient.objects.all(),
+        'ingredients_all': Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock').order_by('categorie__nom', 'nom'),
         'categorie_id': categorie_id,
         'ingredient_id': ingredient_id,
         'resultats': resultats,
@@ -1229,49 +1246,48 @@ def etat_stock_date_cuisine(request):
 
 
 @require_module_access('cuisine')
-def mouvements_print_cuisine(request):
-    """Impression des mouvements de stock — Cuisine"""
-    from datetime import datetime
+def etat_stock_date_cuisine_print(request):
+    """Document d'impression : état du stock à une date — Cuisine"""
+    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    categorie_id = request.GET.get('categorie', '')
+    ingredient_id = request.GET.get('ingredient', '')
+    date_param, date_str, resultats, valeur_totale = _stock_a_date_cuisine(date_str, categorie_id, ingredient_id)
+    categorie_nom = ''
+    if categorie_id:
+        try:
+            categorie_nom = CategorieIngredient.objects.get(pk=categorie_id).nom
+        except CategorieIngredient.DoesNotExist:
+            pass
+    ingredient_nom = ''
+    if ingredient_id:
+        try:
+            ingredient_nom = Ingredient.objects.get(pk=ingredient_id).nom
+        except Ingredient.DoesNotExist:
+            pass
+    context = {
+        'date_param': date_param,
+        'date_str': date_str,
+        'resultats': resultats,
+        'valeur_totale': valeur_totale,
+        'nb_articles': len(resultats),
+        'categorie_nom': categorie_nom,
+        'ingredient_nom': ingredient_nom,
+    }
+    return render(request, 'cuisine/etat_stock_date_print.html', context)
 
+
+@require_module_access('cuisine')
+def mouvements_print_cuisine(request):
+    """Page de sélection : mouvements de stock — Cuisine"""
     date_debut_str = request.GET.get('date_debut', '')
     date_fin_str = request.GET.get('date_fin', '')
     categorie_id = request.GET.get('categorie', '')
     ingredient_id = request.GET.get('ingredient', '')
     type_mv = request.GET.get('type_mouvement', '')
-
-    mvts = MouvementStockCuisine.objects.select_related(
-        'ingredient', 'ingredient__categorie', 'ingredient__unite_stock', 'utilisateur'
-    ).order_by('date')
-
-    date_debut = None
-    date_fin_obj = None
-
-    if date_debut_str:
-        try:
-            date_debut = datetime.strptime(date_debut_str, '%Y-%m-%d').date()
-            mvts = mvts.filter(date__date__gte=date_debut)
-        except ValueError:
-            pass
-
-    if date_fin_str:
-        try:
-            date_fin_obj = datetime.strptime(date_fin_str, '%Y-%m-%d').date()
-            mvts = mvts.filter(date__date__lte=date_fin_obj)
-        except ValueError:
-            pass
-
-    if categorie_id:
-        mvts = mvts.filter(ingredient__categorie_id=categorie_id)
-    if ingredient_id:
-        mvts = mvts.filter(ingredient_id=ingredient_id)
-    if type_mv:
-        mvts = mvts.filter(type_mouvement=type_mv)
-
-    mvts_list = list(mvts)
+    date_debut, date_fin_obj, mvts_list = _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv)
     nb_entrees = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'entree')
     nb_sorties = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse', 'production'))
     nb_inventaires = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'inventaire')
-
     context = {
         'page_title': 'Mouvements de stock — Cuisine',
         'mouvements': mvts_list,
@@ -1288,6 +1304,46 @@ def mouvements_print_cuisine(request):
         'total_mvts': len(mvts_list),
     }
     return render(request, 'cuisine/mouvements_print.html', context)
+
+
+@require_module_access('cuisine')
+def mouvements_doc_cuisine(request):
+    """Document d'impression : mouvements de stock — Cuisine"""
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str = request.GET.get('date_fin', '')
+    categorie_id = request.GET.get('categorie', '')
+    ingredient_id = request.GET.get('ingredient', '')
+    type_mv = request.GET.get('type_mouvement', '')
+    date_debut, date_fin_obj, mvts_list = _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv)
+    nb_entrees = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'entree')
+    nb_sorties = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse', 'production'))
+    nb_inventaires = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'inventaire')
+    categorie_nom = ''
+    if categorie_id:
+        try:
+            categorie_nom = CategorieIngredient.objects.get(pk=categorie_id).nom
+        except CategorieIngredient.DoesNotExist:
+            pass
+    ingredient_nom = ''
+    if ingredient_id:
+        try:
+            ingredient_nom = Ingredient.objects.get(pk=ingredient_id).nom
+        except Ingredient.DoesNotExist:
+            pass
+    TYPE_LABELS = {'entree': 'Entrées', 'sortie': 'Sorties', 'production': 'Production', 'casse': 'Casses / Pertes', 'inventaire': 'Ajustements'}
+    context = {
+        'mouvements': mvts_list,
+        'date_debut': date_debut,
+        'date_fin': date_fin_obj,
+        'categorie_nom': categorie_nom,
+        'ingredient_nom': ingredient_nom,
+        'type_mv_label': TYPE_LABELS.get(type_mv, 'Tous les types'),
+        'nb_entrees': nb_entrees,
+        'nb_sorties': nb_sorties,
+        'nb_inventaires': nb_inventaires,
+        'total_mvts': len(mvts_list),
+    }
+    return render(request, 'cuisine/mouvements_doc.html', context)
 
 @require_module_access('cuisine')
 def epurer_plats(request):

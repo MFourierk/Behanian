@@ -168,9 +168,10 @@ table.mv-table { width:100%;border-collapse:collapse;font-size:0.86rem; }
             </div>
             <div class="results-sub">{{ total_mvts }} mouvement(s)</div>
         </div>
-        <button onclick="window.print()" class="btn-print no-print">
-            <i class="fas fa-print"></i> Imprimer
-        </button>
+        <a href="{% url 'bar:mouvements_doc' %}?date_debut={{ request.GET.date_debut }}&date_fin={{ request.GET.date_fin }}&categorie={{ categorie_id }}&article={{ article_id }}&type_mouvement={{ type_mv }}"
+           target="_blank" class="btn-print no-print">
+            <i class="fas fa-print"></i> Ouvrir pour impression
+        </a>
     </div>
 
     <div style="overflow-x:auto;">

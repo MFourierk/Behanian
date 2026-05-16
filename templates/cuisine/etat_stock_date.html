@@ -188,9 +188,10 @@ table.stock-table { width:100%;border-collapse:collapse;font-size:0.87rem; }
             <div class="results-sub">{{ nb_articles }} ingrédient(s) — Valeur : <strong>{{ valeur_totale|floatformat:0 }} FCFA</strong></div>
         </div>
         <div style="display:flex;gap:8px;">
-            <button onclick="window.print()" class="btn-print">
-                <i class="fas fa-print"></i> Imprimer
-            </button>
+            <a href="{% url 'cuisine:etat_stock_date_print' %}?date={{ date_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if ingredient_id %}&ingredient={{ ingredient_id }}{% endif %}"
+               target="_blank" class="btn-print">
+                <i class="fas fa-print"></i> Ouvrir pour impression
+            </a>
         </div>
     </div>
 
@@ -255,12 +256,5 @@ table.stock-table { width:100%;border-collapse:collapse;font-size:0.87rem; }
     <p style="color:#6b7280;font-size:1rem;">Choisissez une date et cliquez sur <strong>Afficher</strong> pour voir le stock à cette date.</p>
 </div>
 {% endif %}
-
-<style>
-@media print {
-    .filter-card, nav, .sidebar, header, .btn-print, .page-header { display: none !important; }
-    .results-card { box-shadow: none; }
-}
-</style>
 
 {% endblock %}

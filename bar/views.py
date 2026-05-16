@@ -893,19 +893,9 @@ def rapport_stock_cave(request):
     return rapport_stock(request)
 
 
-@require_module_access('bar')
-@require_bar_gestion
-def etat_stock_date_bar(request):
-    """État du stock à une date donnée — Cave"""
+def _stock_a_date_bar(date_str, categorie_id, article_id):
+    """Calcule le stock de chaque article Cave à une date donnée."""
     from datetime import datetime, time as dt_time
-
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
-    categorie_id = request.GET.get('categorie', '')
-    article_id = request.GET.get('article', '')
-
-    categories = CategorieBar.objects.all()
-    boissons_all = BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom')
-
     try:
         date_param = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
@@ -914,7 +904,7 @@ def etat_stock_date_bar(request):
 
     date_fin = timezone.make_aware(datetime.combine(date_param, dt_time(23, 59, 59)))
 
-    articles = boissons_all
+    articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom')
     if categorie_id:
         articles = articles.filter(categorie_id=categorie_id)
     if article_id:
@@ -922,7 +912,6 @@ def etat_stock_date_bar(request):
 
     resultats = []
     valeur_totale = 0.0
-
     for article in articles:
         stock = article.quantite_stock
         for mv in MouvementStockBar.objects.filter(boisson=article, date__gt=date_fin):
@@ -930,21 +919,54 @@ def etat_stock_date_bar(request):
                 stock -= mv.quantite
             else:
                 stock += mv.quantite
-
         valeur = float(stock) * float(article.prix_achat)
         valeur_totale += valeur
-        resultats.append({
-            'article': article,
-            'stock_a_date': stock,
-            'valeur': valeur,
-        })
+        resultats.append({'article': article, 'stock_a_date': stock, 'valeur': valeur})
 
+    return date_param, date_str, resultats, valeur_totale
+
+
+def _mouvements_bar(date_debut_str, date_fin_str, categorie_id, article_id, type_mv):
+    """Retourne la liste des mouvements filtrés — Cave."""
+    from datetime import datetime
+    mvts = MouvementStockBar.objects.select_related('boisson', 'boisson__categorie', 'utilisateur').order_by('date')
+    date_debut = date_fin_obj = None
+    if date_debut_str:
+        try:
+            date_debut = datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+            mvts = mvts.filter(date__date__gte=date_debut)
+        except ValueError:
+            pass
+    if date_fin_str:
+        try:
+            date_fin_obj = datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+            mvts = mvts.filter(date__date__lte=date_fin_obj)
+        except ValueError:
+            pass
+    if categorie_id:
+        mvts = mvts.filter(boisson__categorie_id=categorie_id)
+    if article_id:
+        mvts = mvts.filter(boisson_id=article_id)
+    if type_mv:
+        mvts = mvts.filter(type_mouvement=type_mv)
+    mvts_list = list(mvts)
+    return date_debut, date_fin_obj, mvts_list
+
+
+@require_module_access('bar')
+@require_bar_gestion
+def etat_stock_date_bar(request):
+    """Page de sélection : état du stock à une date donnée — Cave"""
+    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    categorie_id = request.GET.get('categorie', '')
+    article_id = request.GET.get('article', '')
+    date_param, date_str, resultats, valeur_totale = _stock_a_date_bar(date_str, categorie_id, article_id)
     context = {
         'page_title': 'État du stock à date — Cave',
         'date_str': date_str,
         'date_param': date_param,
-        'categories': categories,
-        'boissons_all': boissons_all,
+        'categories': CategorieBar.objects.all(),
+        'boissons_all': BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom'),
         'categorie_id': categorie_id,
         'article_id': article_id,
         'resultats': resultats,
@@ -956,49 +978,49 @@ def etat_stock_date_bar(request):
 
 @require_module_access('bar')
 @require_bar_gestion
-def mouvements_print_bar(request):
-    """Impression des mouvements de stock — Cave"""
-    from datetime import datetime, time as dt_time
+def etat_stock_date_bar_print(request):
+    """Document d'impression : état du stock à une date — Cave"""
+    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    categorie_id = request.GET.get('categorie', '')
+    article_id = request.GET.get('article', '')
+    date_param, date_str, resultats, valeur_totale = _stock_a_date_bar(date_str, categorie_id, article_id)
+    categorie_nom = ''
+    if categorie_id:
+        try:
+            categorie_nom = CategorieBar.objects.get(pk=categorie_id).nom
+        except CategorieBar.DoesNotExist:
+            pass
+    article_nom = ''
+    if article_id:
+        try:
+            article_nom = BoissonBar.objects.get(pk=article_id).nom
+        except BoissonBar.DoesNotExist:
+            pass
+    context = {
+        'date_param': date_param,
+        'date_str': date_str,
+        'resultats': resultats,
+        'valeur_totale': valeur_totale,
+        'nb_articles': len(resultats),
+        'categorie_nom': categorie_nom,
+        'article_nom': article_nom,
+    }
+    return render(request, 'bar/etat_stock_date_print.html', context)
 
+
+@require_module_access('bar')
+@require_bar_gestion
+def mouvements_print_bar(request):
+    """Page de sélection : mouvements de stock — Cave"""
     date_debut_str = request.GET.get('date_debut', '')
     date_fin_str = request.GET.get('date_fin', '')
     categorie_id = request.GET.get('categorie', '')
     article_id = request.GET.get('article', '')
     type_mv = request.GET.get('type_mouvement', '')
-
-    mvts = MouvementStockBar.objects.select_related(
-        'boisson', 'boisson__categorie', 'utilisateur'
-    ).order_by('date')
-
-    date_debut = None
-    date_fin_obj = None
-
-    if date_debut_str:
-        try:
-            date_debut = datetime.strptime(date_debut_str, '%Y-%m-%d').date()
-            mvts = mvts.filter(date__date__gte=date_debut)
-        except ValueError:
-            pass
-
-    if date_fin_str:
-        try:
-            date_fin_obj = datetime.strptime(date_fin_str, '%Y-%m-%d').date()
-            mvts = mvts.filter(date__date__lte=date_fin_obj)
-        except ValueError:
-            pass
-
-    if categorie_id:
-        mvts = mvts.filter(boisson__categorie_id=categorie_id)
-    if article_id:
-        mvts = mvts.filter(boisson_id=article_id)
-    if type_mv:
-        mvts = mvts.filter(type_mouvement=type_mv)
-
-    mvts_list = list(mvts)
+    date_debut, date_fin_obj, mvts_list = _mouvements_bar(date_debut_str, date_fin_str, categorie_id, article_id, type_mv)
     nb_entrees = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'entree')
     nb_sorties = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse'))
     nb_inventaires = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'inventaire')
-
     context = {
         'page_title': 'Mouvements de stock — Cave',
         'mouvements': mvts_list,
@@ -1015,6 +1037,47 @@ def mouvements_print_bar(request):
         'total_mvts': len(mvts_list),
     }
     return render(request, 'bar/mouvements_print.html', context)
+
+
+@require_module_access('bar')
+@require_bar_gestion
+def mouvements_doc_bar(request):
+    """Document d'impression : mouvements de stock — Cave"""
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str = request.GET.get('date_fin', '')
+    categorie_id = request.GET.get('categorie', '')
+    article_id = request.GET.get('article', '')
+    type_mv = request.GET.get('type_mouvement', '')
+    date_debut, date_fin_obj, mvts_list = _mouvements_bar(date_debut_str, date_fin_str, categorie_id, article_id, type_mv)
+    nb_entrees = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'entree')
+    nb_sorties = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse'))
+    nb_inventaires = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'inventaire')
+    categorie_nom = ''
+    if categorie_id:
+        try:
+            categorie_nom = CategorieBar.objects.get(pk=categorie_id).nom
+        except CategorieBar.DoesNotExist:
+            pass
+    article_nom = ''
+    if article_id:
+        try:
+            article_nom = BoissonBar.objects.get(pk=article_id).nom
+        except BoissonBar.DoesNotExist:
+            pass
+    TYPE_LABELS = {'entree': 'Entrées', 'sortie': 'Sorties', 'casse': 'Casses / Pertes', 'inventaire': 'Ajustements'}
+    context = {
+        'mouvements': mvts_list,
+        'date_debut': date_debut,
+        'date_fin': date_fin_obj,
+        'categorie_nom': categorie_nom,
+        'article_nom': article_nom,
+        'type_mv_label': TYPE_LABELS.get(type_mv, 'Tous les types'),
+        'nb_entrees': nb_entrees,
+        'nb_sorties': nb_sorties,
+        'nb_inventaires': nb_inventaires,
+        'total_mvts': len(mvts_list),
+    }
+    return render(request, 'bar/mouvements_doc.html', context)
 
 
 # ================================================================
