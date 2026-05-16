@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Fiches Techniques - Cuisine BEHANIAN{% endblock %}
 
@@ -144,11 +144,11 @@
 
             <div class="fiche-metrics">
                 <div class="metric">
-                    <div class="metric-val">{{ fiche.nb_portions|floatformat:0 }}</div>
+                    <div class="metric-val">{{ fiche.nb_portions|montant }}</div>
                     <div class="metric-lbl">Portions</div>
                 </div>
                 <div class="metric">
-                    <div class="metric-val">{{ fiche.cout_par_portion|floatformat:0 }} F</div>
+                    <div class="metric-val">{{ fiche.cout_par_portion|montant }} F</div>
                     <div class="metric-lbl">Coût/portion</div>
                 </div>
                 <div class="metric">

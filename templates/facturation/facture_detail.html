@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Facture {{ facture.numero }} — Facturation{% endblock %}
 
@@ -75,7 +75,7 @@
         {% if facture.client and facture.client.telephone %}<div class="meta-row"><span class="meta-lbl">Téléphone</span><span class="meta-val">{{ facture.client.telephone|default:"" }}</span></div>{% endif %}
         {% if facture.client and facture.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ facture.client.email|default:"" }}</span></div>{% endif %}
         {% if facture.client and facture.client.adresse %}<div class="meta-row"><span class="meta-lbl">Adresse</span><span class="meta-val">{{ facture.client.adresse|default:"" }}</span></div>{% endif %}
-        <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a">{{ facture.montant_paye|default:0|floatformat:0 }} F</span></div>
+        <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a">{{ facture.montant_paye|default:0|montant }} F</span></div>
       </div>
     </div>
   </div>
@@ -95,18 +95,18 @@
             <td style="font-weight:600">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}—{% endif %}</td>
             <td style="font-size:11px;color:#7a8b9c">{{ ligne.description|default:"—" }}</td>
             <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
-            <td style="text-align:right">{{ ligne.prix_unitaire|floatformat:0 }} F</td>
-            <td style="text-align:right;font-weight:600">{{ ligne.montant_ht|floatformat:0 }} F</td>
+            <td style="text-align:right">{{ ligne.prix_unitaire|montant }} F</td>
+            <td style="text-align:right;font-weight:600">{{ ligne.montant_ht|montant }} F</td>
           </tr>
           {% empty %}
           <tr><td colspan="6" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
           {% endfor %}
         </tbody>
         <tfoot>
-          <tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ facture.sous_total|floatformat:0 }} F</td></tr>
-          {% if facture.remise > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ facture.remise|floatformat:0 }} F</td></tr>{% endif %}
-          {% if facture.taux_tva > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">TVA {{ facture.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ facture.montant_tva|floatformat:0 }} F</td></tr>{% endif %}
-          <tr class="grand-total"><td colspan="5" style="text-align:right">TOTAL TTC</td><td style="text-align:right;color:#c9a84c!important;font-size:16px!important">{{ facture.total|floatformat:0 }} FCFA</td></tr>
+          <tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ facture.sous_total|montant }} F</td></tr>
+          {% if facture.remise > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ facture.remise|montant }} F</td></tr>{% endif %}
+          {% if facture.taux_tva > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">TVA {{ facture.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ facture.montant_tva|montant }} F</td></tr>{% endif %}
+          <tr class="grand-total"><td colspan="5" style="text-align:right">TOTAL TTC</td><td style="text-align:right;color:#c9a84c!important;font-size:16px!important">{{ facture.total|montant }} FCFA</td></tr>
         </tfoot>
       </table>
     </div>

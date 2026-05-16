@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 
 {% block title %}Fiches Techniques - Cuisine{% endblock %}
 
@@ -136,7 +136,7 @@
                         </td>
                         <td>{{ fiche.plat.categorie.nom|default:"-" }}</td>
                         <td class="text-center">{{ fiche.nombre_portions }}</td>
-                        <td class="text-end">{{ fiche.cout_revient|floatformat:0 }} FCFA</td>
+                        <td class="text-end">{{ fiche.cout_revient|montant }} FCFA</td>
                         <td class="text-center">
                             <button type="button" class="btn btn-sm btn-outline-primary edit-recette-btn" data-bs-toggle="modal" data-bs-target="#editRecetteModal" data-fiche-id="{{ fiche.pk }}">Modifier</button>
                             <a href="{% url 'cuisine:recette_delete' fiche.pk %}" class="btn btn-sm btn-outline-danger">Supprimer</a>

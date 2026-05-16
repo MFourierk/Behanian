@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Avoirs — Facturation{% endblock %}
 
@@ -109,7 +109,7 @@
           <td style="font-size:11px;color:#4a5b6e">{{ a.date_avoir|date:"d/m/Y" }}</td>
           <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#4a5b6e"
               title="{{ a.motif }}">{{ a.motif|truncatewords:6 }}</td>
-          <td style="text-align:right;font-weight:700;color:#dc2626">{{ a.total|floatformat:0 }} F</td>
+          <td style="text-align:right;font-weight:700;color:#dc2626">{{ a.total|montant }} F</td>
           <td><span class="badge b-{{ a.statut }}">{{ a.get_statut_display }}</span></td>
           <td>
             <div style="display:flex;gap:4px">

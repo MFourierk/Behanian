@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
@@ -290,7 +290,7 @@
             </div>
             <div class="stat-card orange">
                 <div class="stat-icon orange"><i class="fas fa-chart-line"></i></div>
-                <div><div class="stat-value">{{ valeur_stock|floatformat:0 }} F</div><div class="stat-label">Valeur du stock</div></div>
+                <div><div class="stat-value">{{ valeur_stock|montant }} F</div><div class="stat-label">Valeur du stock</div></div>
             </div>
             <div class="stat-card red">
                 <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
@@ -424,10 +424,10 @@
                             </td>
                             <td><span class="badge-cat">{{ article.categorie.nom }}</span></td>
                             <td>
-                                <div class="prix-achat-small">{{ article.prix_achat|floatformat:0 }} FCFA</div>
+                                <div class="prix-achat-small">{{ article.prix_achat|montant }} FCFA</div>
                                 {% if article.marge %}<div class="prix-achat-small">Marge : {{ article.marge }}%</div>{% endif %}
                             </td>
-                            <td><span class="prix-tag">{{ article.prix|floatformat:0 }} FCFA</span></td>
+                            <td><span class="prix-tag">{{ article.prix|montant }} FCFA</span></td>
                             <td style="font-size:0.85rem;">{{ article.unite_affichee }}</td>
                             <td>
                                 {% if article.quantite_stock == 0 %}
@@ -569,7 +569,7 @@
                                     </span>
                                 {% else %}—{% endif %}
                             </td>
-                            <td style="font-weight:700;color:#2c3e50;">{{ bon.total|floatformat:0 }} FCFA</td>
+                            <td style="font-weight:700;color:#2c3e50;">{{ bon.total|montant }} FCFA</td>
                             <td>
                                 {% if bon.est_en_retard %}<span class="bc-badge retard">⚠ En retard</span>
                                 {% elif bon.statut == 'brouillon' %}<span class="bc-badge brouillon">Brouillon</span>
@@ -690,7 +690,7 @@
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ br.numero_document_fournisseur|default:"—" }}</td>
                             <td style="font-size:0.88rem;color:#7f8c8d;">{{ br.date_reception|date:"d/m/Y" }}</td>
                             <td style="font-weight:600;color:#2c3e50;">{{ br.nb_articles }}</td>
-                            <td style="font-weight:700;color:#2c3e50;">{{ br.total|floatformat:0 }} FCFA</td>
+                            <td style="font-weight:700;color:#2c3e50;">{{ br.total|montant }} FCFA</td>
                             <td style="font-size:0.85rem;">{% if br.operateur %}{{ br.operateur.get_full_name|default:br.operateur.username }}{% else %}—{% endif %}</td>
                             <td>
                                 {% if br.statut == "brouillon" %}<span class="bc-badge brouillon">Brouillon</span>
@@ -850,7 +850,7 @@
                             </td>
                             <td style="font-weight:600;color:#2c3e50;">
                                 {% if mv.boisson.prix_achat %}
-                                    {{ mv.quantite|floatformat:0 }} × {{ mv.boisson.prix_achat|floatformat:0 }} FCFA
+                                    {{ mv.quantite|montant }} × {{ mv.boisson.prix_achat|montant }} FCFA
                                 {% else %}—{% endif %}
                             </td>
                             <td style="font-size:0.85rem;">{% if mv.utilisateur %}{{ mv.utilisateur.get_full_name|default:mv.utilisateur.username }}{% else %}—{% endif %}</td>
@@ -965,7 +965,7 @@
                                 {% endif %}
                                 {% endwith %}
                             </td>
-                            <td style="font-weight:600;color:#e74c3c;">{{ inv.valeur_ecart_total|floatformat:0 }} FCFA</td>
+                            <td style="font-weight:600;color:#e74c3c;">{{ inv.valeur_ecart_total|montant }} FCFA</td>
                             <td style="font-size:0.85rem;">{% if inv.cree_par %}{{ inv.cree_par.get_full_name|default:inv.cree_par.username }}{% else %}—{% endif %}</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;">
                                 {% if inv.date_validation %}{{ inv.date_validation|date:"d/m/Y" }}{% else %}—{% endif %}
@@ -1026,7 +1026,7 @@
             </div>
             <div class="stat-card red">
                 <div class="stat-icon red"><i class="fas fa-coins"></i></div>
-                <div><div class="stat-value">{{ css_valeur_mois|floatformat:0 }}</div><div class="stat-label">FCFA perdus (mois)</div></div>
+                <div><div class="stat-value">{{ css_valeur_mois|montant }}</div><div class="stat-label">FCFA perdus (mois)</div></div>
             </div>
         </div>
 
@@ -1070,7 +1070,7 @@
                             </td>
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ css.date_casse|date:"d/m/Y" }}</td>
                             <td style="font-weight:600;text-align:center;">{{ css.nb_articles }}</td>
-                            <td style="font-weight:700;color:#e74c3c;">{{ css.total_valeur|floatformat:0 }} FCFA</td>
+                            <td style="font-weight:700;color:#e74c3c;">{{ css.total_valeur|montant }} FCFA</td>
                             <td style="font-size:0.85rem;">{% if css.declare_par %}{{ css.declare_par.get_full_name|default:css.declare_par.username }}{% else %}—{% endif %}</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;max-width:180px;">{{ css.description|default:"—"|truncatechars:50 }}</td>
                             <td>

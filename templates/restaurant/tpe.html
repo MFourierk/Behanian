@@ -978,7 +978,7 @@
           </span>
           {% for cmd in commandes_en_cours_list %}
             {% if cmd.table.id == table.id %}
-            <div class="table-total-en-cours">{{ cmd.total|floatformat:0 }} F</div>
+            <div class="table-total-en-cours">{{ cmd.total|montant }} F</div>
             {% if cmd.nom_client %}<div class="table-client-nom">{{ cmd.nom_client }}</div>{% endif %}
             {% endif %}
           {% endfor %}
@@ -1020,7 +1020,7 @@
           {% endif %}
           <div class="plat-body">
             <div class="plat-nom">{{ plat.nom }}</div>
-            <div class="plat-prix">{{ plat.prix|floatformat:0 }} F</div>
+            <div class="plat-prix">{{ plat.prix|montant }} F</div>
             <div class="plat-temps">⏱ {{ plat.temps_preparation }} min</div>
           </div>
           <span class="plat-stock-badge {% if plat.stock_quantity > 5 %}stock-ok{% elif plat.stock_quantity > 0 %}stock-low{% else %}stock-out{% endif %}">
@@ -1044,7 +1044,7 @@
             <span class="statut-pill s-{{ cmd.statut }}">{{ cmd.get_statut_display }}</span>
           </div>
           <div class="cmd-row-right">
-            <div class="cmd-row-total">{{ cmd.total|floatformat:0 }} F</div>
+            <div class="cmd-row-total">{{ cmd.total|montant }} F</div>
             <div class="cmd-row-temps">{{ cmd.date_creation|timesince }}</div>
             <button class="btn-row-encaisser" onclick="event.stopPropagation(); ouvrirEncaissement({{ cmd.id }})">Encaisser</button>
           </div>
@@ -1106,7 +1106,7 @@
         {% for acc in accompagnements %}
         <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix }}"
                 onclick="selectionnerAcc(this)">
-          {{ acc.nom }} <span style="color:var(--gold-dim)">(+{{ acc.prix|floatformat:0 }}F)</span>
+          {{ acc.nom }} <span style="color:var(--gold-dim)">(+{{ acc.prix|montant }}F)</span>
         </button>
         {% endfor %}
         <button class="acc-pill" data-acc-id="" onclick="selectionnerAcc(this)">Sans accompagnement</button>

@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 {% block title %}Cave — Interface de Vente{% endblock %}
 
@@ -481,7 +481,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
             <div class="bc-nom">{{ b.nom }}</div>
             <div class="bc-footer">
               <div>
-                <div class="bc-prix">{{ b.prix|floatformat:0 }} F</div>
+                <div class="bc-prix">{{ b.prix|montant }} F</div>
                 <div class="bc-unite">/ {{ b.unite_affichee }}</div>
               </div>
               <button class="bc-add" onclick="event.stopPropagation(); ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">+</button>

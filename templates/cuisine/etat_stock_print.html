@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% load static %}
 {% block doc_title %}État du Stock — Cuisine{% endblock %}
 
@@ -25,7 +25,7 @@
   </div>
   <div class="meta-box">
     <div class="meta-box-title">Valorisation du stock</div>
-    <div class="meta-row"><span class="meta-lbl">Valeur totale stock</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ total_valeur|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Valeur totale stock</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ total_valeur|montant }} FCFA</span></div>
     <div class="meta-row"><span class="meta-lbl">Méthode de valorisation</span><span class="meta-val">CMUP</span></div>
     <div class="meta-row"><span class="meta-lbl">Établissement</span><span class="meta-val">Complexe Hôtelier Behanian</span></div>
   </div>
@@ -59,8 +59,8 @@
           {{ ing.quantite_stock|floatformat:3 }}
         </td>
         <td class="r" style="color:#8a9ab0">{{ ing.seuil_alerte|floatformat:3 }}</td>
-        <td class="r">{{ ing.cmup|floatformat:0 }}</td>
-        <td class="r bold">{{ ing.valeur_stock|floatformat:0 }}</td>
+        <td class="r">{{ ing.cmup|montant }}</td>
+        <td class="r bold">{{ ing.valeur_stock|montant }}</td>
         <td style="text-align:center;font-size:9px">
           {% if ing.quantite_stock <= 0 %}
           <span style="background:#fee2e2;color:#dc2626;padding:2px 5px;border-radius:4px;font-weight:700">Rupture</span>
@@ -79,7 +79,7 @@
       <tr>
         <td colspan="6"></td>
         <td class="total-label">Valeur totale stock</td>
-        <td class="total-val" colspan="2">{{ total_valeur|floatformat:0 }} FCFA</td>
+        <td class="total-val" colspan="2">{{ total_valeur|montant }} FCFA</td>
       </tr>
     </tfoot>
   </table>

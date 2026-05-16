@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% block doc_title %}{{ avoir.numero }}{% endblock %}
 
 {% block doc_content %}
@@ -57,17 +57,17 @@
           {% if ligne.description %}<br><span style="font-size:9px;color:#8a9ab0">{{ ligne.description }}</span>{% endif %}
         </td>
         <td class="r">{{ ligne.quantite|floatformat:2 }}</td>
-        <td class="r">{{ ligne.prix_unitaire|floatformat:0 }}</td>
-        <td class="r bold">{{ ligne.montant_ht|floatformat:0 }}</td>
+        <td class="r">{{ ligne.prix_unitaire|montant }}</td>
+        <td class="r bold">{{ ligne.montant_ht|montant }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="5" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucune ligne</td></tr>
       {% endfor %}
     </tbody>
     <tfoot>
-      {% if avoir.remise > 0 %}<tr><td colspan="3"></td><td class="total-label">Remise</td><td class="total-val">- {{ avoir.remise|floatformat:0 }} FCFA</td></tr>{% endif %}
-      {% if avoir.taux_tva > 0 %}<tr><td colspan="3"></td><td class="total-label">TVA {{ avoir.taux_tva }}%</td><td class="total-val">{{ avoir.montant_tva|floatformat:0 }} FCFA</td></tr>{% endif %}
-      <tr><td colspan="3"></td><td class="total-label" style="font-size:13px;font-weight:800">TOTAL AVOIR</td><td class="total-val" style="font-size:14px;color:#7c3aed">{{ avoir.total|floatformat:0 }} FCFA</td></tr>
+      {% if avoir.remise > 0 %}<tr><td colspan="3"></td><td class="total-label">Remise</td><td class="total-val">- {{ avoir.remise|montant }} FCFA</td></tr>{% endif %}
+      {% if avoir.taux_tva > 0 %}<tr><td colspan="3"></td><td class="total-label">TVA {{ avoir.taux_tva }}%</td><td class="total-val">{{ avoir.montant_tva|montant }} FCFA</td></tr>{% endif %}
+      <tr><td colspan="3"></td><td class="total-label" style="font-size:13px;font-weight:800">TOTAL AVOIR</td><td class="total-val" style="font-size:14px;color:#7c3aed">{{ avoir.total|montant }} FCFA</td></tr>
     </tfoot>
   </table>
 </div>

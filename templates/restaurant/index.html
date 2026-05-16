@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static restaurant_extras %}
 {% block title %}Restaurant — Point de Vente{% endblock %}
 
@@ -542,7 +542,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           </span>
           {% for cmd in commandes_en_cours_list %}
             {% if cmd.table.id == table.id %}
-            <div class="table-total">{{ cmd.total|floatformat:0 }} F</div>
+            <div class="table-total">{{ cmd.total|montant }} F</div>
             {% if cmd.nom_client %}<div class="table-client">{{ cmd.nom_client }}</div>{% endif %}
             {% endif %}
           {% endfor %}
@@ -589,7 +589,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               <div class="ac-nom">{{ plat.nom }}</div>
               <div class="ac-footer">
                 <div>
-                  <div class="ac-prix">{{ plat.prix|floatformat:0 }} F</div>
+                  <div class="ac-prix">{{ plat.prix|montant }} F</div>
                   <div class="ac-unite">⏱ {{ plat.temps_preparation }} min</div>
                 </div>
                 <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix|stringformat:'g' }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">+</button>
@@ -622,7 +622,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               <div class="ac-nom">{{ forfait.nom }}</div>
               <div class="ac-footer">
                 <div>
-                  <div class="ac-prix">{{ forfait.prix|floatformat:0 }} F</div>
+                  <div class="ac-prix">{{ forfait.prix|montant }} F</div>
                   <div class="ac-unite">Menu VIP</div>
                 </div>
                 <button class="ac-add" onclick="event.stopPropagation(); ajouterForfait({{ forfait.id }}, '{{ forfait.nom|escapejs }}', {{ forfait.prix|stringformat:'g' }}, {{ forfait.en_stock|yesno:'true,false' }})">+</button>
@@ -667,7 +667,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               <div class="ac-nom">{{ b.nom }}</div>
               <div class="ac-footer">
                 <div>
-                  <div class="ac-prix">{{ b.prix|floatformat:0 }} F</div>
+                  <div class="ac-prix">{{ b.prix|montant }} F</div>
                   <div class="ac-unite">/ {{ b.unite_affichee }}</div>
                 </div>
                 <button class="ac-add" onclick="event.stopPropagation(); ajouterBoisson({{ b.id }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}', {% if b.est_en_rupture %}false{% else %}true{% endif %})">+</button>
@@ -735,7 +735,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <div class="acc-pills-wrap" id="accPills">
         {% for acc in accompagnements %}
         <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix|stringformat:'g' }}" onclick="selectionnerAcc(this)">
-          {{ acc.nom }} <span style="color:rgba(255,255,255,0.4)">(+{{ acc.prix|floatformat:0 }}F)</span>
+          {{ acc.nom }} <span style="color:rgba(255,255,255,0.4)">(+{{ acc.prix|montant }}F)</span>
         </button>
         {% endfor %}
         <button class="acc-pill" data-acc-id="" onclick="selectionnerAcc(this)">Sans accompagnement</button>

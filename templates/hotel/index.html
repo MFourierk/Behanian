@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Hôtel - BEHANIAN{% endblock %}
@@ -327,7 +327,7 @@
                     <div class="ch-client-name">{{ res.client.nom_complet }}</div>
                     <div class="ch-client-info">Départ {{ res.date_depart|date:"d/m/Y" }}</div>
                     {% if res.consommations.count > 0 %}
-                    <div class="ch-client-conso">{{ res.consommations.count }} conso · {{ res.get_montant_services|floatformat:0 }} F</div>
+                    <div class="ch-client-conso">{{ res.consommations.count }} conso · {{ res.get_montant_services|montant }} F</div>
                     {% endif %}
                   </div>
                   {% endif %}{% endfor %}
@@ -340,8 +340,8 @@
                   {% endif %}{% endfor %}
                 {% else %}
                 <div class="ch-prices" style="margin-bottom:10px">
-                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|floatformat:0 }} F</strong></div>
-                  <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|floatformat:0 }} F</strong></div>
+                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|montant }} F</strong></div>
+                  <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|montant }} F</strong></div>
                 </div>
                 {% endif %}
 
@@ -417,8 +417,8 @@
                   <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
                   <td>{{ res.date_depart|date:"d/m/Y" }}</td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
-                  <td>{{ res.prix_total|floatformat:0 }} F</td>
-                  <td>{{ res.avance|floatformat:0 }} F</td>
+                  <td>{{ res.prix_total|montant }} F</td>
+                  <td>{{ res.avance|montant }} F</td>
                   <td>
                     <a href="{% url 'hotel:print_checkin_form' res.id %}" target="_blank" class="btn-hotel sm" title="Imprimer">
                       <i class="fas fa-print"></i>
@@ -499,7 +499,7 @@
                     <div class="check-detail">Ch. {{ res.chambre.numero }} · {{ res.date_arrivee|date:"d/m" }} → {{ res.date_depart|date:"d/m/Y" }}</div>
                     {% if res.consommations.count > 0 %}
                     <div style="font-size:11px;color:#2563eb;margin-top:3px">
-                      {{ res.consommations.count }} consommation{{ res.consommations.count|pluralize }} · {{ res.get_montant_services|floatformat:0 }} F
+                      {{ res.consommations.count }} consommation{{ res.consommations.count|pluralize }} · {{ res.get_montant_services|montant }} F
                     </div>
                     {% endif %}
                   </div>
@@ -538,7 +538,7 @@
                   <td>{{ res.chambre.numero }}</td>
                   <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
                   <td>{{ res.date_depart|date:"d/m/Y" }}</td>
-                  <td>{{ res.prix_total|floatformat:0 }} F</td>
+                  <td>{{ res.prix_total|montant }} F</td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
                 </tr>
                 {% endfor %}
@@ -602,7 +602,7 @@
             </div>
             <div class="rev-row rev-tot">
               <span class="rev-lbl">Total chambres</span>
-              <span class="rev-v" id="rev-chambres">{{ revenus_chambres|floatformat:0 }} F</span>
+              <span class="rev-v" id="rev-chambres">{{ revenus_chambres|montant }} F</span>
             </div>
           </div>
         </div>
@@ -781,7 +781,7 @@
                         <select name="chambre_id" class="form-control" required>
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres_dispo_list %}
-                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit|floatformat:0 }}" data-price-sejour="{{ ch.prix_sejour|floatformat:0 }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|floatformat:0 }} F)</option>
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit|montant }}" data-price-sejour="{{ ch.prix_sejour|montant }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|montant }} F)</option>
                             {% empty %}
                             <option value="" disabled>Aucune chambre disponible (Toutes réservées ou occupées)</option>
                             {% endfor %}
@@ -892,7 +892,7 @@
                         <select name="chambre_id" class="form-control" required>
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres %}
-                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit|floatformat:0 }}" data-price-sejour="{{ ch.prix_sejour|floatformat:0 }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit|montant }}" data-price-sejour="{{ ch.prix_sejour|montant }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -1109,14 +1109,14 @@
           <input type="hidden" name="boisson_id" id="bar-selected-id" value="">
           {% for b in boissons %}
           <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
-               data-prix="{{ b.prix|floatformat:0 }}" data-stock="{{ b.quantite_stock }}"
+               data-prix="{{ b.prix|montant }}" data-stock="{{ b.quantite_stock }}"
                onclick="selectionnerArticle('bar', this)">
             <div style="flex:1">
               <div class="art-nom">{{ b.nom }}</div>
               <div class="art-cat">{{ b.categorie.nom }}</div>
             </div>
             <div style="text-align:right;flex-shrink:0">
-              <div class="art-prix">{{ b.prix|floatformat:0 }} F</div>
+              <div class="art-prix">{{ b.prix|montant }} F</div>
               <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
             </div>
           </div>
@@ -1145,14 +1145,14 @@
           <input type="hidden" name="plat_id" id="resto-selected-id" value="">
           {% for p in plats %}
           <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
-               data-prix="{{ p.prix|floatformat:0 }}"
+               data-prix="{{ p.prix|montant }}"
                onclick="selectionnerArticle('resto', this)">
             <div style="flex:1">
               <div class="art-nom">{{ p.nom }}</div>
               <div class="art-cat">{{ p.categorie.nom }}</div>
             </div>
             <div style="text-align:right">
-              <div class="art-prix">{{ p.prix|floatformat:0 }} F</div>
+              <div class="art-prix">{{ p.prix|montant }} F</div>
             </div>
           </div>
           {% endfor %}
@@ -1166,14 +1166,14 @@
         <div id="espace-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
           <input type="hidden" name="espace_id" id="espace-selected-id" value="">
           {% for e in espaces %}
-          <div class="art-item" data-id="{{ e.id }}" data-prix="{{ e.prix_heure|floatformat:0 }}"
+          <div class="art-item" data-id="{{ e.id }}" data-prix="{{ e.prix_heure|montant }}"
                onclick="selectionnerEspace(this)">
             <div style="flex:1">
               <div class="art-nom">{{ e.nom }}</div>
               <div class="art-cat">{{ e.get_type_display|default:"Espace" }} · {{ e.capacite }} pers.</div>
             </div>
             <div style="text-align:right">
-              <div class="art-prix">{{ e.prix_heure|floatformat:0 }} F/h</div>
+              <div class="art-prix">{{ e.prix_heure|montant }} F/h</div>
             </div>
           </div>
           {% endfor %}

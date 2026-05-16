@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 
 {% block title %}Hôtel - BEHANIAN{% endblock %}
@@ -261,8 +261,8 @@
                   {% if chambre.coffre_fort %}<i class="fas fa-lock" title="Coffre-fort"></i>{% endif %}
                 </div>
                 <div class="ch-prices">
-                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|floatformat:0 }} F</strong></div>
-                  <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|floatformat:0 }} F</strong></div>
+                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|montant }} F</strong></div>
+                  <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|montant }} F</strong></div>
                 </div>
                 <div class="ch-actions">
                   <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
@@ -323,8 +323,8 @@
                   <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
                   <td>{{ res.date_depart|date:"d/m/Y" }}</td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
-                  <td>{{ res.prix_total|floatformat:0 }} F</td>
-                  <td>{{ res.avance|floatformat:0 }} F</td>
+                  <td>{{ res.prix_total|montant }} F</td>
+                  <td>{{ res.avance|montant }} F</td>
                   <td>
                     <a href="{% url 'hotel:print_checkin_form' res.id %}" target="_blank" class="btn-hotel sm" title="Imprimer">
                       <i class="fas fa-print"></i>
@@ -436,7 +436,7 @@
                   <td>{{ res.chambre.numero }}</td>
                   <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
                   <td>{{ res.date_depart|date:"d/m/Y" }}</td>
-                  <td>{{ res.prix_total|floatformat:0 }} F</td>
+                  <td>{{ res.prix_total|montant }} F</td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
                 </tr>
                 {% endfor %}
@@ -494,10 +494,10 @@
         <div class="panel">
           <div class="panel-head"><h3>Revenus du jour</h3></div>
           <div class="rev-block">
-            <div class="rev-row"><span class="rev-lbl">Chambres</span><span class="rev-v">{{ revenus_chambres|floatformat:0|default:"0" }} F</span></div>
-            <div class="rev-row"><span class="rev-lbl">Restaurant</span><span class="rev-v">{{ revenus_restaurant|floatformat:0|default:"0" }} F</span></div>
-            <div class="rev-row"><span class="rev-lbl">Cave</span><span class="rev-v">{{ revenus_cave|floatformat:0|default:"0" }} F</span></div>
-            <div class="rev-row rev-tot"><span class="rev-lbl">Total</span><span class="rev-v">{{ revenus_total|floatformat:0|default:"0" }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Chambres</span><span class="rev-v">{{ revenus_chambres|montant|default:"0" }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Restaurant</span><span class="rev-v">{{ revenus_restaurant|montant|default:"0" }} F</span></div>
+            <div class="rev-row"><span class="rev-lbl">Cave</span><span class="rev-v">{{ revenus_cave|montant|default:"0" }} F</span></div>
+            <div class="rev-row rev-tot"><span class="rev-lbl">Total</span><span class="rev-v">{{ revenus_total|montant|default:"0" }} F</span></div>
           </div>
         </div>
 

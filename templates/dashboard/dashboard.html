@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 {% block title %}Tableau de bord — BEHANIAN{% endblock %}
 
@@ -88,7 +88,7 @@
   <div class="kpi-grid">
     <div class="kpi k-or">
       <div class="klbl">CA du {{ date_ref|date:"d/m/Y" }}</div>
-      <div class="kval" id="kv-ca-jour">{{ ca_jour|floatformat:0 }} F</div>
+      <div class="kval" id="kv-ca-jour">{{ ca_jour|montant }} F</div>
       <div class="ksub">
         {{ nb_tickets_jour }} ticket(s)
         &nbsp;
@@ -101,7 +101,7 @@
     </div>
     <div class="kpi k-vert">
       <div class="klbl">CA Ce mois</div>
-      <div class="kval" id="kv-ca-mois">{{ ca_mois|floatformat:0 }} F</div>
+      <div class="kval" id="kv-ca-mois">{{ ca_mois|montant }} F</div>
       <div class="ksub">{{ today|date:"F Y" }}</div>
     </div>
     {% if 'hotel' in accessible_modules %}
@@ -133,7 +133,7 @@
     </div>
     <div class="kpi k-or" style="border-left-color:#64748b">
       <div class="klbl">Hier</div>
-      <div class="kval">{{ ca_hier|floatformat:0 }} F</div>
+      <div class="kval">{{ ca_hier|montant }} F</div>
       <div class="ksub">Chiffre d'affaires</div>
     </div>
   </div>
@@ -148,15 +148,15 @@
       <div class="bar-chart" id="barChart">
         {% for j in ca_7_jours %}
         <div class="bar-wrap">
-          <div class="bar-val">{% if j.ca > 0 %}{{ j.ca|floatformat:0 }}{% endif %}</div>
-          <div class="bar" style="height:{% if j.ca > 0 %}{{ j.ca|floatformat:0 }}{% else %}4{% endif %}px" data-ca="{{ j.ca }}"></div>
+          <div class="bar-val">{% if j.ca > 0 %}{{ j.ca|montant }}{% endif %}</div>
+          <div class="bar" style="height:{% if j.ca > 0 %}{{ j.ca|montant }}{% else %}4{% endif %}px" data-ca="{{ j.ca }}"></div>
           <div class="bar-lbl">{{ j.jour }}</div>
         </div>
         {% endfor %}
       </div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">
         <span>Total 7j : <strong style="color:var(--dark)">{% for j in ca_7_jours %}{{ j.ca }}{% if not forloop.last %}+{% endif %}{% endfor %} F</strong></span>
-        <span>Moyenne : <strong style="color:var(--dark)">{{ ca_mois|floatformat:0 }} F</strong></span>
+        <span>Moyenne : <strong style="color:var(--dark)">{{ ca_mois|montant }} F</strong></span>
       </div>
     </div>
 
@@ -167,7 +167,7 @@
         <div style="margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
             <span style="font-size:12px;font-weight:600">{{ module }}</span>
-            <span style="font-size:12px;font-weight:700;color:var(--dark)">{{ ca|floatformat:0 }} F</span>
+            <span style="font-size:12px;font-weight:700;color:var(--dark)">{{ ca|montant }} F</span>
           </div>
           <div style="height:6px;background:#f0f3f7;border-radius:3px;overflow:hidden">
             <div style="height:100%;background:var(--gold);border-radius:3px;width:{% if ca_jour > 0 %}{% widthratio ca ca_jour 100 %}%{% else %}0%{% endif %};transition:width .5s"></div>
@@ -279,7 +279,7 @@
               {% elif t.mode_paiement in 'mobile_money,orange_money,wave' %}📱 Mobile
               {% else %}{{ t.mode_paiement }}{% endif %}
             </td>
-            <td style="font-weight:700;color:#16a34a">{{ t.montant_total|floatformat:0 }} F</td>
+            <td style="font-weight:700;color:#16a34a">{{ t.montant_total|montant }} F</td>
             <td style="font-size:11px;color:var(--muted)">
               {{ t.cree_par__first_name|default:"" }} {{ t.cree_par__last_name|default:t.cree_par__username|default:"—" }}
             </td>

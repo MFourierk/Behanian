@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Ticket {{ ticket.numero }} — Facturation{% endblock %}
 
@@ -68,9 +68,9 @@
       </div>
       <div class="meta-box">
         <div class="meta-box-title">Paiement</div>
-        <div class="meta-row"><span class="meta-lbl">Montant total</span><span class="meta-val" style="font-size:16px;color:#2563eb">{{ ticket.montant_total|floatformat:0 }} F</span></div>
-        <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a">{{ ticket.montant_paye|floatformat:0 }} F</span></div>
-        {% if ticket.monnaie_rendue > 0 %}<div class="meta-row"><span class="meta-lbl">Monnaie rendue</span><span class="meta-val">{{ ticket.monnaie_rendue|floatformat:0 }} F</span></div>{% endif %}
+        <div class="meta-row"><span class="meta-lbl">Montant total</span><span class="meta-val" style="font-size:16px;color:#2563eb">{{ ticket.montant_total|montant }} F</span></div>
+        <div class="meta-row"><span class="meta-lbl">Montant payé</span><span class="meta-val" style="color:#16a34a">{{ ticket.montant_paye|montant }} F</span></div>
+        {% if ticket.monnaie_rendue > 0 %}<div class="meta-row"><span class="meta-lbl">Monnaie rendue</span><span class="meta-val">{{ ticket.monnaie_rendue|montant }} F</span></div>{% endif %}
         <div class="meta-row"><span class="meta-lbl">Mode paiement</span><span class="meta-val">{{ ticket.get_mode_paiement_display }}</span></div>
         {% if ticket.client %}<div class="meta-row"><span class="meta-lbl">Client</span><span class="meta-val">{{ ticket.client.nom }}</span></div>{% endif %}
       </div>

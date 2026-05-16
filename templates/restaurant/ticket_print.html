@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <div class="ticket" style="width: 300px; margin: 0 auto; font-family: 'Courier New', Courier, monospace; font-size: 12px;">
     <div style="text-align: center; margin-bottom: 20px;">
         <!-- Logo -->
@@ -38,7 +38,7 @@
         {% for item in items %}
         <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span style="flex: 2;">{{ item.nom }} x{{ item.quantite }}</span>
-            <span style="flex: 1; text-align: right;">{{ item.prix|floatformat:0 }} F</span>
+            <span style="flex: 1; text-align: right;">{{ item.prix|montant }} F</span>
         </div>
         {% endfor %}
     </div>
@@ -46,16 +46,16 @@
     <div style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 5px;">
             <span>TOTAL</span>
-            <span>{{ total|floatformat:0 }} FCFA</span>
+            <span>{{ total|montant }} FCFA</span>
         </div>
         
         <div style="display: flex; justify-content: space-between; margin-top: 10px;">
             <span>Montant Encaissé:</span>
-            <span>{{ encaisse|floatformat:0 }} F</span>
+            <span>{{ encaisse|montant }} F</span>
         </div>
         <div style="display: flex; justify-content: space-between;">
             <span>Reste à rendre:</span>
-            <span>{{ reste|floatformat:0 }} F</span>
+            <span>{{ reste|montant }} F</span>
         </div>
     </div>
 

@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Nouvel Avoir — Facturation{% endblock %}
 
@@ -43,7 +43,7 @@
         <div style="font-size:12px;color:#7a8b9c">{{ facture.client.nom|default:"Client anonyme" }}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:18px;font-weight:700;color:#7c3aed">{{ facture.total|floatformat:0 }} F</div>
+        <div style="font-size:18px;font-weight:700;color:#7c3aed">{{ facture.total|montant }} F</div>
         <div style="font-size:11px;color:#7a8b9c">{{ facture.get_statut_display }}</div>
       </div>
     </div>
@@ -98,7 +98,7 @@
             <label>Montant de l'avoir (FCFA) *</label>
             <input type="number" name="montant" class="fc" placeholder="Ex: 25000" min="0" required
               oninput="updateTotal(this.value)"
-              {% if facture %}value="{{ facture.total|floatformat:0 }}"{% endif %}>
+              {% if facture %}value="{{ facture.total|montant }}"{% endif %}>
           </div>
           <div class="form-row">
             <label>Référence origine</label>

@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Factures — Facturation{% endblock %}
 
@@ -81,10 +81,10 @@
           <td style="font-size:11px;{% if f.date_echeance and f.statut not in 'payee,annulee' %}color:#dc2626;font-weight:600{% endif %}">
             {{ f.date_echeance|date:"d/m/Y"|default:"—" }}
           </td>
-          <td><strong>{{ f.total|floatformat:0 }} F</strong></td>
-          <td style="color:#16a34a;font-weight:600">{{ f.montant_paye|floatformat:0 }} F</td>
+          <td><strong>{{ f.total|montant }} F</strong></td>
+          <td style="color:#16a34a;font-weight:600">{{ f.montant_paye|montant }} F</td>
           <td style="color:#dc2626;font-weight:600">
-            {% if f.total > f.montant_paye %}{{ f.total|add:f.montant_paye|floatformat:0 }} F{% else %}—{% endif %}
+            {% if f.total > f.montant_paye %}{{ f.total|add:f.montant_paye|montant }} F{% else %}—{% endif %}
           </td>
           <td><span class="badge b-{{ f.statut }}">{{ f.get_statut_display }}</span></td>
           <td>

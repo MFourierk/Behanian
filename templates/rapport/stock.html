@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load humanize %}
 {% block title %}Rapport de Stock — BEHANIAN{% endblock %}
@@ -264,18 +264,18 @@ table.articles-table tr:hover { background: #f8f9fa; }
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="sc-label">Valeur totale</div>
-                <div class="sc-value">{{ total_valeur|floatformat:0 }} F</div>
+                <div class="sc-value">{{ total_valeur|montant }} F</div>
                 <div class="sc-sub">{{ total_articles }} article(s)</div>
             </div>
             {% if module_filtre == 'tous' %}
             <div class="stat-card">
                 <div class="sc-label">Cuisine</div>
-                <div class="sc-value">{{ total_valeur_cuisine|floatformat:0 }} F</div>
+                <div class="sc-value">{{ total_valeur_cuisine|montant }} F</div>
                 <div class="sc-sub">Ingrédients</div>
             </div>
             <div class="stat-card">
                 <div class="sc-label">Cave</div>
-                <div class="sc-value">{{ total_valeur_cave|floatformat:0 }} F</div>
+                <div class="sc-value">{{ total_valeur_cave|montant }} F</div>
                 <div class="sc-sub">Boissons</div>
             </div>
             {% endif %}
@@ -385,7 +385,7 @@ table.articles-table tr:hover { background: #f8f9fa; }
                             <span class="alert-chip chip-bas">{{ groupe.nb_bas }} bas</span>
                             {% endif %}
                         </div>
-                        <span class="groupe-valeur">{{ groupe.valeur|floatformat:0 }} F</span>
+                        <span class="groupe-valeur">{{ groupe.valeur|montant }} F</span>
                         <i class="fas fa-chevron-down groupe-toggle open"></i>
                     </div>
                 </div>
@@ -412,7 +412,7 @@ table.articles-table tr:hover { background: #f8f9fa; }
                                 <td class="qte-cell {{ art.etat }}">{{ art.quantite|floatformat:3 }}</td>
                                 <td style="color:#7f8c8d;">{{ art.unite }}</td>
                                 <td>{{ art.cmup|floatformat:2 }} F</td>
-                                <td class="valeur-cell">{{ art.valeur|floatformat:0 }} F</td>
+                                <td class="valeur-cell">{{ art.valeur|montant }} F</td>
                                 <td style="color:#95a5a6;">
                                     {% if art.seuil > 0 %}{{ art.seuil|floatformat:3 }}{% else %}—{% endif %}
                                 </td>
@@ -429,7 +429,7 @@ table.articles-table tr:hover { background: #f8f9fa; }
                     </table>
                     <div class="groupe-footer">
                         <span class="footer-label">Sous-total {{ groupe.categorie }} :</span>
-                        <span class="footer-val">{{ groupe.valeur|floatformat:0 }} FCFA</span>
+                        <span class="footer-val">{{ groupe.valeur|montant }} FCFA</span>
                     </div>
                 </div>
             </div>
@@ -441,13 +441,13 @@ table.articles-table tr:hover { background: #f8f9fa; }
                     <div class="tg-label">Valeur totale du stock</div>
                     <div class="tg-detail">
                         {% if module_filtre == 'tous' %}
-                        <span class="tg-item">Cuisine : {{ total_valeur_cuisine|floatformat:0 }} F</span>
-                        <span class="tg-item">Cave : {{ total_valeur_cave|floatformat:0 }} F</span>
+                        <span class="tg-item">Cuisine : {{ total_valeur_cuisine|montant }} F</span>
+                        <span class="tg-item">Cave : {{ total_valeur_cave|montant }} F</span>
                         {% endif %}
                         <span class="tg-item">{{ total_articles }} articles au total</span>
                     </div>
                 </div>
-                <div class="tg-value">{{ total_valeur|floatformat:0 }} FCFA</div>
+                <div class="tg-value">{{ total_valeur|montant }} FCFA</div>
             </div>
 
         {% else %}

@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Proformas — Facturation{% endblock %}
 
@@ -100,7 +100,7 @@
           <td style="font-size:11px;{% if p.statut == 'en_attente' %}color:#d97706;font-weight:600{% endif %}">
             {{ p.date_validite|date:"d/m/Y" }}
           </td>
-          <td><strong>{{ p.total|floatformat:0 }} F</strong></td>
+          <td><strong>{{ p.total|montant }} F</strong></td>
           <td><span class="badge b-{{ p.statut }}">{{ p.get_statut_display }}</span></td>
           <td>
             <div style="display:flex;gap:4px">

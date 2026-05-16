@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% block doc_title %}Fiche Technique — {{ fiche.nom }}{% endblock %}
 
 {% block doc_content %}
@@ -24,10 +24,10 @@
   </div>
   <div class="meta-box">
     <div class="meta-box-title">Coûts & Marge</div>
-    <div class="meta-row"><span class="meta-lbl">Coût total recette</span><span class="meta-val">{{ fiche.cout_total|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Coût par portion</span><span class="meta-val">{{ fiche.cout_par_portion|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Coût total recette</span><span class="meta-val">{{ fiche.cout_total|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Coût par portion</span><span class="meta-val">{{ fiche.cout_par_portion|montant }} FCFA</span></div>
     {% if fiche.plat %}
-    <div class="meta-row"><span class="meta-lbl">Prix de vente</span><span class="meta-val">{{ fiche.plat.prix_vente|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Prix de vente</span><span class="meta-val">{{ fiche.plat.prix_vente|montant }} FCFA</span></div>
     {% endif %}
     <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ fiche.cree_par.get_full_name|default:fiche.cree_par.username }}</span></div>
   </div>
@@ -53,8 +53,8 @@
         <td class="bold">{{ l.ingredient.nom }}</td>
         <td>{{ l.ingredient.unite_recette.abreviation|default:"—" }}</td>
         <td class="r">{{ l.quantite|floatformat:3 }}</td>
-        <td class="r">{{ l.ingredient.cmup|floatformat:0 }}</td>
-        <td class="r bold">{{ l.cout_ligne|floatformat:0 }}</td>
+        <td class="r">{{ l.ingredient.cmup|montant }}</td>
+        <td class="r bold">{{ l.cout_ligne|montant }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
@@ -64,7 +64,7 @@
       <tr>
         <td colspan="4"></td>
         <td class="total-label">Coût total</td>
-        <td class="total-val">{{ fiche.cout_total|floatformat:0 }} FCFA</td>
+        <td class="total-val">{{ fiche.cout_total|montant }} FCFA</td>
       </tr>
     </tfoot>
   </table>

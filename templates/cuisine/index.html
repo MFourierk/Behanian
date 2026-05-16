@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% block title %}Stock Cuisine - BEHANIAN{% endblock %}
 
 {% block content %}
@@ -63,7 +63,7 @@
         </div>
         <div class="stat-details">
             <span class="stat-label">Valeur Stock</span>
-            <span class="stat-value">{{ valeur_stock|floatformat:0 }} FCFA</span>
+            <span class="stat-value">{{ valeur_stock|montant }} FCFA</span>
         </div>
     </div>
     <div class="stat-card">

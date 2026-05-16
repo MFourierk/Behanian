@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 {% block title %}Piscine — BEHANIAN{% endblock %}
 {% block extra_css %}
@@ -102,14 +102,14 @@
     <div class="kpi vert"><div class="klbl">Présents</div><div class="kval">{{ actuellement }}</div><div class="ksub">actuellement</div></div>
     <div class="kpi orange"><div class="klbl">Visiteurs</div><div class="kval">{{ visiteurs }}</div><div class="ksub">payants</div></div>
     <div class="kpi violet"><div class="klbl">Résidents</div><div class="kval">{{ heberges }}</div><div class="ksub">gratuit hôtel</div></div>
-    <div class="kpi rouge"><div class="klbl">Recette</div><div class="kval">{{ recette_jour|floatformat:0 }} F</div><div class="ksub">entrées + consos</div></div>
+    <div class="kpi rouge"><div class="klbl">Recette</div><div class="kval">{{ recette_jour|montant }} F</div><div class="ksub">entrées + consos</div></div>
   </div>
 
   <!-- Actions rapides -->
   <div style="display:flex;gap:10px;margin-bottom:20px">
     <button class="btn-p btn-primary" onclick="ouvrirEntree('visiteur')"><i class="fas fa-user-plus"></i> Entrée Visiteur</button>
     <button class="btn-p btn-success" onclick="ouvrirEntree('heberge')"><i class="fas fa-hotel"></i> Résident Hôtel (gratuit)</button>
-    <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto"><i class="fas fa-cog"></i> Tarifs : {% if tarif_v_adulte %}Adulte {{ tarif_v_adulte.prix_unitaire|floatformat:0 }} F | Enfant {% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }} F{% else %}—{% endif %}{% else %}Non configuré{% endif %}</button>
+    <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto"><i class="fas fa-cog"></i> Tarifs : {% if tarif_v_adulte %}Adulte {{ tarif_v_adulte.prix_unitaire|montant }} F | Enfant {% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|montant }} F{% else %}—{% endif %}{% else %}Non configuré{% endif %}</button>
   </div>
 
   <div class="main-grid">
@@ -128,15 +128,15 @@
               <td style="font-weight:600">{{ a.nom_client }}</td>
               <td><span class="badge {% if a.type_client == 'visiteur' %}b-visiteur{% else %}b-heberge{% endif %}">{{ a.get_type_client_display }}</span></td>
               <td>{{ a.nombre_personnes }}</td>
-              <td>{{ a.prix_total|floatformat:0 }} F</td>
-              <td>{{ a.consommations.count }} art. — {{ a.total_consommations|floatformat:0 }} F</td>
-              <td style="font-weight:700;color:#2563eb">{{ a.total_general|floatformat:0 }} F</td>
+              <td>{{ a.prix_total|montant }} F</td>
+              <td>{{ a.consommations.count }} art. — {{ a.total_consommations|montant }} F</td>
+              <td style="font-weight:700;color:#2563eb">{{ a.total_general|montant }} F</td>
               <td>{% if a.date_sortie %}<span class="badge" style="background:#f1f5f9;color:#64748b">Sorti</span>{% else %}<span class="badge" style="background:#dcfce7;color:#15803d">Présent</span>{% endif %}</td>
               <td>
                 {% if not a.date_sortie %}
                 <div style="display:flex;gap:4px">
                   <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
-                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
+                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|montant }})"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
                 {% endif %}
               </td>
@@ -169,7 +169,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
-              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})">Sortie</button>
+              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|montant }})">Sortie</button>
             </div>
           </div>
           {% endfor %}
@@ -211,7 +211,7 @@
     <div class="type-pills" id="typePills">
       <div class="type-pill active visiteur" onclick="setType('visiteur')">
         <span class="pill-icon">🧑</span><span class="pill-label">Visiteur</span>
-        <span class="pill-price">{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }} F{% else %}Non défini{% endif %}</span>
+        <span class="pill-price">{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }} F{% else %}Non défini{% endif %}</span>
       </div>
       <div class="type-pill heberge" onclick="setType('heberge')">
         <span class="pill-icon">🏨</span><span class="pill-label">Résident hôtel</span><span class="pill-price">Gratuit</span>
@@ -286,10 +286,10 @@
         <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
         <div id="listBoisson">
           {% for b in boissons %}
-          <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+          <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|montant }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
             <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
             <div style="text-align:right;flex-shrink:0">
-              <div class="art-prix">{{ b.prix|floatformat:0 }} F</div>
+              <div class="art-prix">{{ b.prix|montant }} F</div>
               <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
             </div>
             <div class="art-add-btn">＋</div>
@@ -305,9 +305,9 @@
         <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
         <div id="listPlat">
           {% for p in plats %}
-          <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+          <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|montant }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
             <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
-            <div style="text-align:right;flex-shrink:0"><div class="art-prix">{{ p.prix|floatformat:0 }} F</div></div>
+            <div style="text-align:right;flex-shrink:0"><div class="art-prix">{{ p.prix|montant }} F</div></div>
             <div class="art-add-btn">＋</div>
           </div>{% endfor %}
         </div>
@@ -381,11 +381,11 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row">
         <label>Adulte visiteur (FCFA)</label>
-        <input type="number" id="tarifAdulte" value="{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 5000">
+        <input type="number" id="tarifAdulte" value="{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }}{% endif %}" placeholder="ex: 5000">
       </div>
       <div class="form-row">
         <label>Enfant visiteur (FCFA)</label>
-        <input type="number" id="tarifEnfant" value="{% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 2500">
+        <input type="number" id="tarifEnfant" value="{% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|montant }}{% endif %}" placeholder="ex: 2500">
       </div>
     </div>
     <div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#15803d;margin-bottom:14px">
@@ -471,8 +471,8 @@ function updatePrix(){
     row.style.background='#f0fdf4';row.style.color='#15803d';row.style.borderColor='#bbf7d0';
     row.textContent='🏨 Résident hôtel — Entrée gratuite (adultes et enfants)';
   } else {
-    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
-    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }}{% else %}0{% endif %};
+    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|montant }}{% else %}0{% endif %};
     const total=ta*na+te*ne;
     let detail='';
     if(na>0)detail+=`${na} adulte${na>1?'s':''} × ${ta.toLocaleString('fr-FR')} F`;

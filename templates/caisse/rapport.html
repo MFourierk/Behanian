@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% block doc_title %}Rapport de Caisse — {{ session.opened_at|date:"d/m/Y" }}{% endblock %}
 
 {% block doc_content %}
@@ -21,16 +21,16 @@
     <div class="meta-row"><span class="meta-lbl">Ouverture</span><span class="meta-val">{{ session.opened_at|date:"d/m/Y H:i" }}</span></div>
     {% if session.closed_at %}<div class="meta-row"><span class="meta-lbl">Clôture</span><span class="meta-val">{{ session.closed_at|date:"d/m/Y H:i" }}</span></div>{% endif %}
     <div class="meta-row"><span class="meta-lbl">Durée</span><span class="meta-val">{{ session.duree }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Fond de caisse</span><span class="meta-val">{{ session.fond_caisse|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Fond de caisse</span><span class="meta-val">{{ session.fond_caisse|montant }} FCFA</span></div>
   </div>
   <div class="meta-box">
     <div class="meta-box-title">Récapitulatif</div>
-    <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val bold" style="color:#16a34a">{{ stats.total|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Espèces</span><span class="meta-val">{{ stats.especes|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Mobile Money</span><span class="meta-val">{{ stats.mobile|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Carte bancaire</span><span class="meta-val">{{ stats.carte|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Prélèvement banque</span><span class="meta-val" style="color:#dc2626">- {{ stats.prelevements|floatformat:0 }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Net en caisse</span><span class="meta-val bold">{{ stats.net|floatformat:0 }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val bold" style="color:#16a34a">{{ stats.total|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Espèces</span><span class="meta-val">{{ stats.especes|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Mobile Money</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Carte bancaire</span><span class="meta-val">{{ stats.carte|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Prélèvement banque</span><span class="meta-val" style="color:#dc2626">- {{ stats.prelevements|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Net en caisse</span><span class="meta-val bold">{{ stats.net|montant }} FCFA</span></div>
   </div>
 </div>
 
@@ -41,13 +41,13 @@
     <thead><tr><th>Module</th><th class="r">Montant (FCFA)</th></tr></thead>
     <tbody>
     {% for module, montant in stats.par_module.items %}
-    <tr><td class="bold">{{ module }}</td><td class="r">{{ montant|floatformat:0 }}</td></tr>
+    <tr><td class="bold">{{ module }}</td><td class="r">{{ montant|montant }}</td></tr>
     {% empty %}
     <tr><td colspan="2" style="text-align:center;color:#8a9ab0">Aucune recette</td></tr>
     {% endfor %}
     </tbody>
     <tfoot>
-      <tr><td class="total-label">TOTAL GÉNÉRAL</td><td class="total-val">{{ stats.total|floatformat:0 }} FCFA</td></tr>
+      <tr><td class="total-label">TOTAL GÉNÉRAL</td><td class="total-val">{{ stats.total|montant }} FCFA</td></tr>
     </tfoot>
   </table>
 </div>
@@ -66,7 +66,7 @@
       <td>{{ mv.description|default:"—" }}</td>
       <td style="font-family:monospace;font-size:9px">{{ mv.reference|default:"—" }}</td>
       <td class="r {% if mv.est_entree %}bold{% endif %}" style="color:{% if mv.est_entree %}#16a34a{% else %}#dc2626{% endif %}">
-        {% if mv.est_entree %}+{% else %}-{% endif %}{{ mv.montant|floatformat:0 }}
+        {% if mv.est_entree %}+{% else %}-{% endif %}{{ mv.montant|montant }}
       </td>
     </tr>
     {% endfor %}
@@ -87,7 +87,7 @@
       <td>{{ p.date|date:"H:i" }}</td>
       <td class="bold">{{ p.banque|default:"—" }}</td>
       <td style="font-family:monospace;font-size:9px">{{ p.reference|default:"—" }}</td>
-      <td class="r bold" style="color:#dc2626">{{ p.montant|floatformat:0 }} FCFA</td>
+      <td class="r bold" style="color:#dc2626">{{ p.montant|montant }} FCFA</td>
     </tr>
     {% endfor %}
     </tbody>

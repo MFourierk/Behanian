@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 {% block title %}{{ br.numero }} — Cuisine{% endblock %}
@@ -157,13 +157,13 @@
             <td style="font-weight:600">{{ l.ingredient.nom }}</td>
             <td>{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
             <td class="right">{{ l.quantite_recue|floatformat:3 }}</td>
-            <td class="right">{{ l.prix_unitaire|floatformat:0 }}</td>
-            <td class="right" style="font-weight:700;color:#2563eb">{{ l.total_ligne|floatformat:0 }}</td>
+            <td class="right">{{ l.prix_unitaire|montant }}</td>
+            <td class="right" style="font-weight:700;color:#2563eb">{{ l.total_ligne|montant }}</td>
           </tr>
           {% endfor %}
           <tr class="total-row">
             <td colspan="5" class="right">TOTAL RÉCEPTION</td>
-            <td class="right" style="color:#2563eb;font-size:15px">{{ br.total|floatformat:0 }} FCFA</td>
+            <td class="right" style="color:#2563eb;font-size:15px">{{ br.total|montant }} FCFA</td>
           </tr>
         </tbody>
       </table>

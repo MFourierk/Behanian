@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Épuration Cuisine ↔ Restaurant{% endblock %}
 {% block extra_css %}
@@ -108,7 +108,7 @@
       <tr>
         <td style="font-weight:600;color:var(--rouge)">{{ p.nom }}</td>
         <td style="color:var(--muted)">{{ p.categorie.nom|default:"—" }}</td>
-        <td>{{ p.prix|floatformat:0 }} F</td>
+        <td>{{ p.prix|montant }} F</td>
         <td>
           {% if p.disponible %}
           <span class="badge" style="background:#dcfce7;color:#15803d">Disponible</span>
@@ -135,9 +135,9 @@
       {% with pc=plats_cuisine %}
       <tr>
         <td style="font-weight:600">{{ pr.nom }}</td>
-        <td style="color:var(--vert);font-weight:700">{{ pr.prix|floatformat:0 }} F</td>
+        <td style="color:var(--vert);font-weight:700">{{ pr.prix|montant }} F</td>
         <td style="color:var(--muted)">
-          {% for p in plats_cuisine %}{% if p.nom|lower == pr.nom|lower %}{{ p.prix_vente|floatformat:0 }} F{% endif %}{% endfor %}
+          {% for p in plats_cuisine %}{% if p.nom|lower == pr.nom|lower %}{{ p.prix_vente|montant }} F{% endif %}{% endfor %}
         </td>
         <td>
           {% if pr.disponible %}
@@ -168,7 +168,7 @@
       <tr>
         <td style="font-weight:600;color:var(--orange)">{{ p.nom }}</td>
         <td style="color:var(--muted)">{{ p.categorie.nom|default:"—" }}</td>
-        <td style="font-weight:700">{{ p.prix_vente|floatformat:0 }} F</td>
+        <td style="font-weight:700">{{ p.prix_vente|montant }} F</td>
         <td>
           <span class="badge" style="background:#fffbeb;color:#d97706">{{ p.get_statut_display }}</span>
         </td>

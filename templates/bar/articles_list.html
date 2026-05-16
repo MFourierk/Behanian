@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
@@ -305,10 +305,10 @@
                         </td>
                         <td><span class="badge-categorie">{{ article.categorie.nom }}</span></td>
                         <td>
-                            <div class="prix-achat">{{ article.prix_achat|floatformat:0 }} FCFA</div>
+                            <div class="prix-achat">{{ article.prix_achat|montant }} FCFA</div>
                             {% if article.marge %}<div class="prix-achat">Marge : {{ article.marge }}%</div>{% endif %}
                         </td>
-                        <td><span class="prix-tag">{{ article.prix|floatformat:0 }} FCFA</span></td>
+                        <td><span class="prix-tag">{{ article.prix|montant }} FCFA</span></td>
                         <td style="font-size:0.85rem;">{{ article.unite_affichee }}</td>
                         <td>
                             {% if article.quantite_stock == 0 %}

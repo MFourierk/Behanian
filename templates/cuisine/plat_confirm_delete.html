@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Archiver {{ plat.nom }} - Cuisine BEHANIAN{% endblock %}
 
@@ -51,7 +51,7 @@
             {% if plat.categorie %}<div class="recap-line"><i class="fas fa-tag"></i> {{ plat.categorie.nom }}</div>{% endif %}
             <div class="recap-line">
                 <i class="fas fa-money-bill-wave"></i>
-                <span>Prix de vente : <span class="badge-prix">{{ plat.prix_vente|floatformat:0 }} F</span></span>
+                <span>Prix de vente : <span class="badge-prix">{{ plat.prix_vente|montant }} F</span></span>
             </div>
             {% if plat.fiche_technique %}
             <div class="recap-line">

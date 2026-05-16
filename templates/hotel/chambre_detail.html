@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 
 {% block title %}Détails Chambre {{ chambre.numero }} - Hôtel{% endblock %}
@@ -36,7 +36,7 @@
                         <span class="badge {% if chambre.statut == 'disponible' %}bg-success{% elif chambre.statut == 'occupee' %}bg-danger{% else %}bg-warning{% endif %} p-2" style="font-size: 0.9rem;">
                             {{ chambre.get_statut_display }}
                         </span>
-                        <h3 class="text-warning mb-0">{{ chambre.prix_nuit|floatformat:0 }} F <small class="text-muted" style="font-size: 0.9rem;">/ nuit</small></h3>
+                        <h3 class="text-warning mb-0">{{ chambre.prix_nuit|montant }} F <small class="text-muted" style="font-size: 0.9rem;">/ nuit</small></h3>
                     </div>
                     
                     <h5 class="mb-3">Équipements</h5>

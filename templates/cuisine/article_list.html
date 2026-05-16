@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 
 {% block title %}Gestion du Stock - Cuisine{% endblock %}
@@ -141,7 +141,7 @@
             <div class="stat-card">
                 <div class="icon-container icon-yellow"><i class="fas fa-chart-line"></i></div>
                 <div class="stat-info">
-                    <h3>{{ valeur_stock|floatformat:0 }}</h3>
+                    <h3>{{ valeur_stock|montant }}</h3>
                     <p>Valeur stock</p>
                 </div>
             </div>
@@ -215,8 +215,8 @@
                                 {% endif %}
                             </td>
                             <td>{{ article.seuil_alerte|floatformat:1 }}</td>
-                            <td>{{ article.prix_moyen|floatformat:0 }} FCFA</td>
-                            <td>{{ article.prix_vente|floatformat:0 }} FCFA</td>
+                            <td>{{ article.prix_moyen|montant }} FCFA</td>
+                            <td>{{ article.prix_vente|montant }} FCFA</td>
                             <td>
                                 <a href="#" class="btn-icon edit-btn" data-id="{{ article.id }}" data-url="{% url 'cuisine:article_edit' article.id %}" title="Modifier">
                                     <i class="fas fa-edit text-primary"></i>

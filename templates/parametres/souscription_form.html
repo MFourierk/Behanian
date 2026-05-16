@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Lier {{ forfait.nom }} à un client{% endblock %}
 
@@ -57,7 +57,7 @@
   <!-- Récap du forfait -->
   <div class="forfait-card">
     <div class="nom">{{ forfait.nom }}</div>
-    <div class="prix">{{ forfait.prix|floatformat:0 }} FCFA</div>
+    <div class="prix">{{ forfait.prix|montant }} FCFA</div>
     <div class="meta">
       <span style="background:rgba(255,255,255,.15);padding:2px 10px;border-radius:20px;margin-right:8px">{{ forfait.get_module_display }}</span>
       {{ forfait.lignes.count }} élément(s) inclus
@@ -132,7 +132,7 @@
       <div style="padding:20px">
         <div class="form-group">
           <label>Montant encaissé (FCFA)</label>
-          <input type="number" name="montant_paye" class="form-control" value="{{ forfait.prix|floatformat:0 }}"
+          <input type="number" name="montant_paye" class="form-control" value="{{ forfait.prix|montant }}"
                  min="0" id="montantInput" oninput="updateTotal()" required>
           <div style="font-size:11px;color:var(--muted);margin-top:4px">Par défaut le prix du forfait. Modifiable en cas de remise.</div>
         </div>
@@ -159,7 +159,7 @@
         </div>
         <div class="total-box" id="totalBox">
           <span class="label">💰 Total à encaisser</span>
-          <span class="val" id="totalVal">{{ forfait.prix|floatformat:0 }} F</span>
+          <span class="val" id="totalVal">{{ forfait.prix|montant }} F</span>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -154,17 +154,17 @@
     <!-- TOTAUX -->
     <div class="total-row">
         <span class="total-label">TOTAL</span>
-        <span class="total-val">{{ ticket.montant_total|floatformat:0 }} FCFA</span>
+        <span class="total-val">{{ ticket.montant_total|montant }} FCFA</span>
     </div>
     {% if ticket.montant_paye and ticket.mode_paiement != 'carte_bancaire' %}
     <hr class="sep-dash">
     <div class="paiement-row">
         <span>Reçu :</span>
-        <span>{{ ticket.montant_paye|floatformat:0 }} F</span>
+        <span>{{ ticket.montant_paye|montant }} F</span>
     </div>
     <div class="paiement-row bold">
         <span>Monnaie rendue :</span>
-        <span>{{ ticket.monnaie_rendue|floatformat:0 }} F</span>
+        <span>{{ ticket.monnaie_rendue|montant }} F</span>
     </div>
     {% endif %}
     <hr class="sep-solid">

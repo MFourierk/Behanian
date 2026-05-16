@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Plats & Menus — Paramètres{% endblock %}
 {% block extra_css %}
@@ -63,7 +63,7 @@
           </td>
           <td style="font-weight:600">{{ plat.nom }}</td>
           <td><span style="background:#fff7ed;color:#d35400;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">{{ plat.categorie.nom|default:"—" }}</span></td>
-          <td style="font-weight:700;color:#16a34a">{{ plat.prix|floatformat:0 }} F</td>
+          <td style="font-weight:700;color:#16a34a">{{ plat.prix|montant }} F</td>
           <td style="color:var(--muted)">{{ plat.temps_preparation|default:"—" }} min</td>
           <td>
             {% if plat.disponible %}

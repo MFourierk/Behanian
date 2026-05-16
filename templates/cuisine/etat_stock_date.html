@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
@@ -182,11 +182,11 @@ table.stock-table { width:100%;border-collapse:collapse;font-size:0.87rem; }
         <div class="lbl">Ingrédients affichés</div>
     </div>
     <div class="stat-mini">
-        <div class="val" style="color:#6b7280;font-size:1.1rem;">{{ valeur_totale_debut|floatformat:0 }} F</div>
+        <div class="val" style="color:#6b7280;font-size:1.1rem;">{{ valeur_totale_debut|montant }} F</div>
         <div class="lbl">Valeur stock début (CMUP)</div>
     </div>
     <div class="stat-mini">
-        <div class="val">{{ valeur_totale_fin|floatformat:0 }} F</div>
+        <div class="val">{{ valeur_totale_fin|montant }} F</div>
         <div class="lbl">Valeur stock fin (CMUP)</div>
     </div>
     <div class="stat-mini">
@@ -209,7 +209,7 @@ table.stock-table { width:100%;border-collapse:collapse;font-size:0.87rem; }
                     Stock du {{ date_debut|date:"d/m/Y" }} au {{ date_fin|date:"d/m/Y" }}
                 {% endif %}
             </div>
-            <div class="results-sub">{{ nb_articles }} ingrédient(s) — Valeur fin : <strong>{{ valeur_totale_fin|floatformat:0 }} FCFA</strong></div>
+            <div class="results-sub">{{ nb_articles }} ingrédient(s) — Valeur fin : <strong>{{ valeur_totale_fin|montant }} FCFA</strong></div>
         </div>
         <div style="display:flex;gap:8px;">
             <a href="{% url 'cuisine:etat_stock_date_print' %}?date_debut={{ date_debut_str }}&date_fin={{ date_fin_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if ingredient_id %}&ingredient={{ ingredient_id }}{% endif %}"
@@ -260,8 +260,8 @@ table.stock-table { width:100%;border-collapse:collapse;font-size:0.87rem; }
                         {% if r.stock_fin <= 0 %}color:#b91c1c;{% elif r.stock_fin <= r.ingredient.seuil_alerte %}color:#d97706;{% else %}color:#065f46;{% endif %}">
                         {{ r.stock_fin|floatformat:3 }}
                     </td>
-                    <td class="r" style="color:#4a5568;">{{ r.ingredient.cmup|floatformat:0 }}</td>
-                    <td class="r" style="font-weight:600;">{{ r.valeur_fin|floatformat:0 }}</td>
+                    <td class="r" style="color:#4a5568;">{{ r.ingredient.cmup|montant }}</td>
+                    <td class="r" style="font-weight:600;">{{ r.valeur_fin|montant }}</td>
                     <td class="c">
                         {% if r.stock_fin <= 0 %}
                             <span class="badge-zero">Rupture</span>
@@ -277,7 +277,7 @@ table.stock-table { width:100%;border-collapse:collapse;font-size:0.87rem; }
             <tfoot>
                 <tr class="total-row">
                     <td colspan="{% if is_single_date %}7{% else %}12{% endif %}" style="text-align:right;font-size:0.85rem;color:#6b7280;">VALEUR TOTALE DU STOCK (FIN)</td>
-                    <td class="r" style="font-size:1.05rem;color:#c0392b;">{{ valeur_totale_fin|floatformat:0 }} FCFA</td>
+                    <td class="r" style="font-size:1.05rem;color:#c0392b;">{{ valeur_totale_fin|montant }} FCFA</td>
                     <td></td>
                 </tr>
             </tfoot>

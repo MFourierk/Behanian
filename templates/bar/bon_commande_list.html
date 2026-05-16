@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load humanize %}
 
@@ -38,7 +38,7 @@
                             <td>
                                 <span class="badge badge-{{ bon.statut }}">{{ bon.get_statut_display }}</span>
                             </td>
-                            <td class="text-right font-weight-bold">{{ bon.total|floatformat:0|intcomma }} FCFA</td>
+                            <td class="text-right font-weight-bold">{{ bon.total|montant|intcomma }} FCFA</td>
                             <td class="text-center">
                                 <a href="#" class="btn btn-sm btn-outline-primary">Voir</a>
                                 <a href="#" class="btn btn-sm btn-outline-secondary">Modifier</a>

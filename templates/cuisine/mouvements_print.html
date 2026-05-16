@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
@@ -220,7 +220,7 @@ table.mv-table { width:100%;border-collapse:collapse;font-size:0.86rem; }
                         {% if mv.type_mouvement == 'entree' %}+{% elif mv.type_mouvement in 'sortie,casse,production' %}-{% endif %}{{ mv.quantite|floatformat:3 }}
                     </td>
                     <td class="r" style="font-size:0.82rem;color:#4a5568;">
-                        {% if mv.prix_unitaire %}{{ mv.prix_unitaire|floatformat:0 }}{% else %}&mdash;{% endif %}
+                        {% if mv.prix_unitaire %}{{ mv.prix_unitaire|montant }}{% else %}&mdash;{% endif %}
                     </td>
                     <td style="font-size:0.82rem;color:#6b7280;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
                         title="{{ mv.commentaire }}">{{ mv.commentaire|default:"—"|truncatechars:40 }}</td>

@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -102,7 +102,7 @@
         <div class="border-bottom">
             <div class="row bold" style="font-size: 1.1em;">
                 <span>TOTAL</span>
-                <span>{{ ticket.montant_total|floatformat:0 }} FCFA</span>
+                <span>{{ ticket.montant_total|montant }} FCFA</span>
             </div>
         </div>
         
@@ -113,11 +113,11 @@
             </div>
             <div class="row">
                 <span>Montant Reçu:</span>
-                <span>{{ ticket.montant_paye|floatformat:0 }} F</span>
+                <span>{{ ticket.montant_paye|montant }} F</span>
             </div>
             <div class="row">
                 <span>Reste (Monnaie):</span>
-                <span>{{ ticket.montant_paye|add:ticket.montant_total|floatformat:0 }} F</span> <!-- Erreur de calcul ici dans l'affichage si on veut la monnaie -->
+                <span>{{ ticket.montant_paye|add:ticket.montant_total|montant }} F</span> <!-- Erreur de calcul ici dans l'affichage si on veut la monnaie -->
                 <!-- Le calcul de la monnaie n'est pas stocké explicitement dans le ticket, mais montant_paye est le total versé (donc potentiellement > total) -->
                 <!-- Cependant, dans la vue, on a stocké montant_paye comme étant (avance + solde payé). -->
                 <!-- Si on veut afficher la monnaie rendue, il faudrait stocker le montant TENDU par le client. -->

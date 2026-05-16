@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 
 {% block title %}État du Stock - Cuisine{% endblock %}
@@ -51,7 +51,7 @@
     <div class="card" id="printArea">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3><i class="fas fa-cubes mr-2 text-primary"></i> Stock au {{ target_date|date:"d M Y" }}</h3>
-            <span class="badge badge-success p-2" style="font-size: 1rem;">Valeur Totale: {{ total_valeur|floatformat:0 }} FCFA</span>
+            <span class="badge badge-success p-2" style="font-size: 1rem;">Valeur Totale: {{ total_valeur|montant }} FCFA</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive scrollable">
@@ -76,9 +76,9 @@
                             <td class="text-right font-weight-bold {% if item.quantite <= 0 %}text-danger{% endif %}">
                                 {{ item.quantite|floatformat:2 }}
                             </td>
-                            <td class="text-right text-muted">{{ item.ingredient.prix_moyen|floatformat:0 }}</td>
-                            <td class="text-right text-info">{{ item.ingredient.prix_vente|floatformat:0 }}</td>
-                            <td class="text-right font-weight-bold">{{ item.valeur|floatformat:0 }}</td>
+                            <td class="text-right text-muted">{{ item.ingredient.prix_moyen|montant }}</td>
+                            <td class="text-right text-info">{{ item.ingredient.prix_vente|montant }}</td>
+                            <td class="text-right font-weight-bold">{{ item.valeur|montant }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -89,7 +89,7 @@
                     <tfoot class="bg-light font-weight-bold">
                         <tr>
                             <td colspan="6" class="text-right">TOTAL GÉNÉRAL</td>
-                            <td class="text-right text-success">{{ total_valeur|floatformat:0 }}</td>
+                            <td class="text-right text-success">{{ total_valeur|montant }}</td>
                         </tr>
                     </tfoot>
                 </table>

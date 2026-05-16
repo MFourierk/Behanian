@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% block doc_title %}Reçu {{ res.numero }}{% endblock %}
 
 {% block doc_content %}
@@ -49,28 +49,28 @@
     <tbody>
       <tr>
         <td class="bold">{{ res.espace.nom }} — {{ res.type_evenement }} ({{ duree_label }})</td>
-        <td class="r">{{ res.prix_total|floatformat:0 }}</td>
+        <td class="r">{{ res.prix_total|montant }}</td>
       </tr>
       {% if res.remise > 0 %}
       <tr>
         <td style="color:#16a34a">Remise accordée</td>
-        <td class="r" style="color:#16a34a">- {{ res.remise|floatformat:0 }}</td>
+        <td class="r" style="color:#16a34a">- {{ res.remise|montant }}</td>
       </tr>
       {% endif %}
     </tbody>
     <tfoot>
       <tr>
         <td class="total-label">Montant net à payer</td>
-        <td class="total-val">{{ res.montant_net|floatformat:0 }} FCFA</td>
+        <td class="total-val">{{ res.montant_net|montant }} FCFA</td>
       </tr>
       {% if res.avance > 0 %}
       <tr>
         <td style="text-align:right;font-size:10px;color:#6b7a8d">Avance versée</td>
-        <td class="r" style="font-size:10px;color:#6b7a8d">{{ res.avance|floatformat:0 }} FCFA</td>
+        <td class="r" style="font-size:10px;color:#6b7a8d">{{ res.avance|montant }} FCFA</td>
       </tr>
       <tr>
         <td style="text-align:right;font-weight:700;color:#dc2626">Reste à payer</td>
-        <td class="r bold" style="color:#dc2626">{{ res.get_montant_restant|floatformat:0 }} FCFA</td>
+        <td class="r bold" style="color:#dc2626">{{ res.get_montant_restant|montant }} FCFA</td>
       </tr>
       {% endif %}
     </tfoot>

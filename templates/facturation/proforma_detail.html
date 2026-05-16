@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Proforma {{ proforma.numero }} — Facturation{% endblock %}
 
@@ -96,18 +96,18 @@
             </td>
             <td><span style="background:#f0f3f7;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;color:#3d4f63">{{ ligne.article.service.nom|default:"—" }}</span></td>
             <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
-            <td style="text-align:right">{{ ligne.prix_unitaire|floatformat:0 }} F</td>
-            <td style="text-align:right;font-weight:600">{{ ligne.montant_ht|floatformat:0 }} F</td>
+            <td style="text-align:right">{{ ligne.prix_unitaire|montant }} F</td>
+            <td style="text-align:right;font-weight:600">{{ ligne.montant_ht|montant }} F</td>
           </tr>
           {% empty %}
           <tr><td colspan="6" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
           {% endfor %}
         </tbody>
         <tfoot>
-          <tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ proforma.sous_total|floatformat:0 }} F</td></tr>
-          {% if proforma.remise > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ proforma.remise|floatformat:0 }} F</td></tr>{% endif %}
-          {% if proforma.taux_tva > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">TVA {{ proforma.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ proforma.montant_tva|floatformat:0 }} F</td></tr>{% endif %}
-          <tr class="grand-total"><td colspan="5" style="text-align:right;padding:14px 16px">TOTAL TTC</td><td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important">{{ proforma.total|floatformat:0 }} FCFA</td></tr>
+          <tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ proforma.sous_total|montant }} F</td></tr>
+          {% if proforma.remise > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ proforma.remise|montant }} F</td></tr>{% endif %}
+          {% if proforma.taux_tva > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">TVA {{ proforma.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ proforma.montant_tva|montant }} F</td></tr>{% endif %}
+          <tr class="grand-total"><td colspan="5" style="text-align:right;padding:14px 16px">TOTAL TTC</td><td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important">{{ proforma.total|montant }} FCFA</td></tr>
         </tfoot>
       </table>
     </div>

@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% load static %}
 {% block doc_title %}Journal des Mouvements — Cuisine{% endblock %}
 
@@ -86,7 +86,7 @@
           {% if mv.type_mouvement == 'entree' %}+{% elif mv.type_mouvement == 'sortie' or mv.type_mouvement == 'casse' or mv.type_mouvement == 'production' %}-{% endif %}{{ mv.quantite|floatformat:3 }}
         </td>
         <td class="r" style="font-size:10px;color:#4a5568">
-          {% if mv.prix_unitaire %}{{ mv.prix_unitaire|floatformat:0 }}{% else %}—{% endif %}
+          {% if mv.prix_unitaire %}{{ mv.prix_unitaire|montant }}{% else %}—{% endif %}
         </td>
         <td style="font-size:10px;color:#6b7a8d">{{ mv.commentaire|default:"—"|truncatechars:35 }}</td>
         <td style="font-size:10px">{% if mv.utilisateur %}{{ mv.utilisateur.get_full_name|default:mv.utilisateur.username }}{% else %}—{% endif %}</td>

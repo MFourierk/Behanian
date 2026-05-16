@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Plats / Carte - Cuisine BEHANIAN{% endblock %}
 
@@ -193,16 +193,16 @@
 
                     <div class="plat-metrics">
                         <div class="metric">
-                            <div class="metric-val">{{ plat.prix_vente|floatformat:0 }} F</div>
+                            <div class="metric-val">{{ plat.prix_vente|montant }} F</div>
                             <div class="metric-lbl">Prix vente</div>
                         </div>
                         <div class="metric">
-                            <div class="metric-val">{{ plat.cout_revient|floatformat:0 }} F</div>
+                            <div class="metric-val">{{ plat.cout_revient|montant }} F</div>
                             <div class="metric-lbl">Coût rev.</div>
                         </div>
                         <div class="metric">
                             <div class="metric-val {% if plat.taux_marge >= 60 %}green{% elif plat.taux_marge >= 40 %}{% else %}red{% endif %}">
-                                {{ plat.taux_marge|floatformat:0 }}%
+                                {{ plat.taux_marge|montant }}%
                             </div>
                             <div class="metric-lbl">Marge</div>
                         </div>
@@ -212,10 +212,10 @@
                     <div class="marge-bar-wrap">
                         <div class="marge-bar-label">
                             <span>Marge brute</span>
-                            <span>{{ plat.marge_brute|floatformat:0 }} F</span>
+                            <span>{{ plat.marge_brute|montant }} F</span>
                         </div>
                         <div class="marge-bar">
-                            <div class="marge-bar-fill" style="width:{{ plat.taux_marge|floatformat:0 }}%;background:{% if plat.taux_marge >= 60 %}#27ae60{% elif plat.taux_marge >= 40 %}#f39c12{% else %}#e74c3c{% endif %};"></div>
+                            <div class="marge-bar-fill" style="width:{{ plat.taux_marge|montant }}%;background:{% if plat.taux_marge >= 60 %}#27ae60{% elif plat.taux_marge >= 40 %}#f39c12{% else %}#e74c3c{% endif %};"></div>
                         </div>
                     </div>
                     {% endif %}

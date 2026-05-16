@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -125,7 +125,7 @@
             {% for ligne in avoir.lignes.all %}
             <tr>
                 <td>{{ ligne.article.nom|truncatechars:20 }}</td>
-                <td class="text-right">{{ ligne.quantite|floatformat:0 }}</td>
+                <td class="text-right">{{ ligne.quantite|montant }}</td>
                 <td class="text-right">{{ ligne.montant_total|floatformat:"-2" }}</td>
             </tr>
             {% endfor %}

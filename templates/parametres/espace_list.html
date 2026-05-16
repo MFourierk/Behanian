@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Espaces Événementiels — Paramètres{% endblock %}
 {% block extra_css %}
@@ -58,8 +58,8 @@
           <td><span style="background:#f0fdf4;color:#15803d;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">{{ esp.get_type_espace_display }}</span></td>
           <td>{{ esp.capacite }} <i class="fas fa-users" style="color:var(--muted);font-size:11px"></i></td>
           <td style="color:var(--muted)">{{ esp.superficie|default:"—" }} m²</td>
-          <td style="font-weight:700;color:#16a34a">{{ esp.prix_jour|floatformat:0 }} F</td>
-          <td style="color:var(--muted)">{{ esp.prix_demi_journee|floatformat:0 }} F</td>
+          <td style="font-weight:700;color:#16a34a">{{ esp.prix_jour|montant }} F</td>
+          <td style="color:var(--muted)">{{ esp.prix_demi_journee|montant }} F</td>
           <td>
             <div style="display:flex;gap:5px">
               {% if esp.projecteur %}<span class="equip" title="Projecteur">📽️</span>{% endif %}

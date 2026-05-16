@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 
 {% block title %}Tickets — Facturation{% endblock %}
@@ -112,7 +112,7 @@
       <div class="kpi-icon" style="background:#f0fdf4"><i class="fas fa-coins" style="color:#16a34a"></i></div>
       <div>
         <div class="kpi-lbl">Total encaissé</div>
-        <div class="kpi-val green">{{ stats.total_collected|default:0|floatformat:0 }} F</div>
+        <div class="kpi-val green">{{ stats.total_collected|default:0|montant }} F</div>
       </div>
     </div>
     <div class="kpi">
@@ -121,14 +121,14 @@
         <div class="kpi-lbl">Avoirs sur tickets
           {% if stats.nb_avoirs %}<span style="font-size:10px;background:#fee2e2;color:#dc2626;border-radius:10px;padding:1px 6px;margin-left:4px;font-weight:700">{{ stats.nb_avoirs }}</span>{% endif %}
         </div>
-        <div class="kpi-val red">{% if stats.total_avoirs %}-{% endif %}{{ stats.total_avoirs|default:0|floatformat:0 }} F</div>
+        <div class="kpi-val red">{% if stats.total_avoirs %}-{% endif %}{{ stats.total_avoirs|default:0|montant }} F</div>
       </div>
     </div>
     <div class="kpi">
       <div class="kpi-icon" style="background:#fffbeb"><i class="fas fa-chart-line" style="color:#d97706"></i></div>
       <div>
         <div class="kpi-lbl">Net du jour</div>
-        <div class="kpi-val amber">{{ stats.net_total|default:0|floatformat:0 }} F</div>
+        <div class="kpi-val amber">{{ stats.net_total|default:0|montant }} F</div>
       </div>
     </div>
   </div>
@@ -231,7 +231,7 @@
             <span class="pay-badge pay-{{ ticket.mode_paiement }}">{{ ticket.get_mode_paiement_display }}</span>
           </td>
           <td style="text-align:right;font-weight:700;color:#1a2535;font-size:13px">
-            {{ ticket.montant_total|floatformat:0 }} <span style="font-size:10px;font-weight:400;color:#9aa5b1">F</span>
+            {{ ticket.montant_total|montant }} <span style="font-size:10px;font-weight:400;color:#9aa5b1">F</span>
           </td>
           <td style="font-size:11px;color:#4a5b6e">
             {{ ticket.cree_par.get_full_name|default:ticket.cree_par.username|default:"—" }}
@@ -242,7 +242,7 @@
               <a href="{% url 'facturation:ticket_pdf' ticket.pk %}" class="btn-p btn-outline btn-sm" title="PDF" target="_blank"><i class="fas fa-file-pdf" style="color:#dc2626"></i></a>
               <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn-p btn-outline btn-sm" title="Réimprimer (thermique)" target="_blank"><i class="fas fa-print" style="color:#2563eb"></i></a>
               <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="btn-p btn-danger btn-sm" title="Créer un avoir"
-                 onclick="return confirm('Créer un avoir de {{ ticket.montant_total|floatformat:0 }} F pour le ticket {{ ticket.numero }} ?')">
+                 onclick="return confirm('Créer un avoir de {{ ticket.montant_total|montant }} F pour le ticket {{ ticket.numero }} ?')">
                 <i class="fas fa-undo"></i>
               </a>
             </div>

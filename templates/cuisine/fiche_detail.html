@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 {% block title %}{{ fiche.nom }} — Fiche Technique{% endblock %}
@@ -74,8 +74,8 @@
                 <td style="font-weight:600">{{ l.ingredient.nom }}</td>
                 <td>{{ l.ingredient.unite_recette.abreviation|default:"—" }}</td>
                 <td class="r">{{ l.quantite|floatformat:3 }}</td>
-                <td class="r" style="color:#6b7a8d">{{ l.ingredient.cmup|floatformat:0 }}</td>
-                <td class="r" style="color:#c0392b">{{ l.cout_ligne|floatformat:0 }} F</td>
+                <td class="r" style="color:#6b7a8d">{{ l.ingredient.cmup|montant }}</td>
+                <td class="r" style="color:#c0392b">{{ l.cout_ligne|montant }} F</td>
               </tr>
               {% empty %}
               <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
@@ -85,7 +85,7 @@
               <tr style="background:#f8f9fb">
                 <td colspan="4"></td>
                 <td style="text-align:right;font-weight:700;font-size:11px;padding:10px 12px">TOTAL</td>
-                <td style="text-align:right;font-weight:700;color:#c0392b;padding:10px 12px">{{ fiche.cout_total|floatformat:0 }} F</td>
+                <td style="text-align:right;font-weight:700;color:#c0392b;padding:10px 12px">{{ fiche.cout_total|montant }} F</td>
               </tr>
             </tfoot>
           </table>
@@ -118,10 +118,10 @@
         <div class="fd-card-head"><h3>💰 Coûts & Marge</h3></div>
         <div class="fd-card-body">
           <div class="cout-box">
-            <div class="cout-row"><span class="cout-lbl">Coût total recette</span><span class="cout-val">{{ fiche.cout_total|floatformat:0 }} F</span></div>
-            <div class="cout-row"><span class="cout-lbl">Coût par portion</span><span class="cout-val">{{ fiche.cout_par_portion|floatformat:0 }} F</span></div>
+            <div class="cout-row"><span class="cout-lbl">Coût total recette</span><span class="cout-val">{{ fiche.cout_total|montant }} F</span></div>
+            <div class="cout-row"><span class="cout-lbl">Coût par portion</span><span class="cout-val">{{ fiche.cout_par_portion|montant }} F</span></div>
             {% if fiche.plat %}
-            <div class="cout-row"><span class="cout-lbl">Prix de vente</span><span class="cout-val">{{ fiche.plat.prix_vente|floatformat:0 }} F</span></div>
+            <div class="cout-row"><span class="cout-lbl">Prix de vente</span><span class="cout-val">{{ fiche.plat.prix_vente|montant }} F</span></div>
             <div class="cout-row"><span class="cout-lbl">Marge brute</span>
               <span class="cout-val" style="font-size:16px">
                 {% if fiche.plat.prix_vente and fiche.cout_par_portion %}

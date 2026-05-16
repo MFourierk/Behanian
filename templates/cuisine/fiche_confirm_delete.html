@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Archiver {{ fiche.nom }} - Cuisine BEHANIAN{% endblock %}
 
@@ -43,7 +43,7 @@
             <div class="recap-nom"><i class="fas fa-book-open" style="color:#c0392b;"></i> {{ fiche.nom }}</div>
             {% if fiche.reference %}<div class="recap-line"><i class="fas fa-hashtag"></i> {{ fiche.reference }}</div>{% endif %}
             {% if fiche.categorie %}<div class="recap-line"><i class="fas fa-tag"></i> {{ fiche.categorie.nom }}</div>{% endif %}
-            <div class="recap-line"><i class="fas fa-layer-group"></i> {{ fiche.nb_portions }} portion(s) — {{ fiche.cout_par_portion|floatformat:0 }} F/portion</div>
+            <div class="recap-line"><i class="fas fa-layer-group"></i> {{ fiche.nb_portions }} portion(s) — {{ fiche.cout_par_portion|montant }} F/portion</div>
         </div>
 
         <div class="btn-row">

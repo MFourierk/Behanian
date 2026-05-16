@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 
 {% block title %}Boîte de nuit - BEHANIAN{% endblock %}
 
@@ -272,7 +272,7 @@
     <div class="stat-box">
         <div class="stat-icon">💳</div>
         <h3>Recette</h3>
-        <div class="value">{{ recette_totale|floatformat:0 }} F</div>
+        <div class="value">{{ recette_totale|montant }} F</div>
     </div>
 </div>
 
@@ -309,8 +309,8 @@
                     <td><strong>{{ entree.nom_client }}</strong></td>
                     <td>{{ entree.nombre_personnes }}</td>
                     <td>{{ entree.date_entree|date:"H:i" }}</td>
-                    <td>{{ entree.prix_entree|floatformat:0 }} F</td>
-                    <td><strong>{{ entree.prix_entree|floatformat:0 }} F</strong></td>
+                    <td>{{ entree.prix_entree|montant }} F</td>
+                    <td><strong>{{ entree.prix_entree|montant }} F</strong></td>
                     <td>
                         <button style="padding: 6px 12px; background: #e91e63; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
                             👁️ Voir

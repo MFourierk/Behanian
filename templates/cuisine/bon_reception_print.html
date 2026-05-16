@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% block doc_title %}{{ br.numero }}{% endblock %}
 
 {% block doc_content %}
@@ -56,8 +56,8 @@
         <td class="bold">{{ l.ingredient.nom }}</td>
         <td>{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
         <td class="r">{{ l.quantite_recue|floatformat:3 }}</td>
-        <td class="r">{{ l.prix_unitaire|floatformat:0 }}</td>
-        <td class="r bold">{{ l.total_ligne|floatformat:0 }}</td>
+        <td class="r">{{ l.prix_unitaire|montant }}</td>
+        <td class="r bold">{{ l.total_ligne|montant }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="6" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
@@ -67,7 +67,7 @@
       <tr>
         <td colspan="4"></td>
         <td class="total-label">Total Réception</td>
-        <td class="total-val">{{ br.total|floatformat:0 }} FCFA</td>
+        <td class="total-val">{{ br.total|montant }} FCFA</td>
       </tr>
     </tfoot>
   </table>

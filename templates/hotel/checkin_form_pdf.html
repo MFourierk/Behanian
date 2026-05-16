@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -343,13 +343,13 @@
             <div class="col">
                 <div class="field">
                     <span class="label">Tarif Nuitée / Nightly Rate</span>
-                    <div class="value">{{ reservation.chambre.prix_nuit|floatformat:0 }} FCFA</div>
+                    <div class="value">{{ reservation.chambre.prix_nuit|montant }} FCFA</div>
                 </div>
             </div>
             <div class="col">
                 <div class="field">
                     <span class="label">Coût Total / Total Cost</span>
-                    <div class="value">{{ reservation.prix_total|floatformat:0 }} FCFA</div>
+                    <div class="value">{{ reservation.prix_total|montant }} FCFA</div>
                 </div>
             </div>
         </div>
@@ -363,7 +363,7 @@
             <div class="col">
                 <div class="field">
                     <span class="label">Avance Payée / Advance Paid</span>
-                    <div class="value">{{ reservation.avance|floatformat:0 }} FCFA</div>
+                    <div class="value">{{ reservation.avance|montant }} FCFA</div>
                 </div>
             </div>
         </div>

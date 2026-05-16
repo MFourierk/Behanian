@@ -1,4 +1,4 @@
-{% extends 'print_base.html' %}
+﻿{% extends 'print_base.html' %}
 {% block doc_title %}{{ res.numero }} — Contrat Location{% endblock %}
 
 {% block doc_content %}
@@ -55,17 +55,17 @@
           {{ res.date_debut|date:"d/m/Y" }}
           {% if res.type_duree == 'journee' %} → {{ res.date_fin|date:"d/m/Y" }}{% endif %}
         </td>
-        <td class="r bold">{{ res.prix_total|floatformat:0 }} FCFA</td>
+        <td class="r bold">{{ res.prix_total|montant }} FCFA</td>
       </tr>
     </tbody>
     <tfoot>
       {% if res.remise > 0 %}
-      <tr><td colspan="3"></td><td class="total-label" style="color:#16a34a">Remise accordée</td><td class="total-val" style="color:#16a34a">- {{ res.remise|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td class="total-label" style="color:#16a34a">Remise accordée</td><td class="total-val" style="color:#16a34a">- {{ res.remise|montant }} FCFA</td></tr>
       {% endif %}
-      <tr><td colspan="3"></td><td class="total-label">Montant net</td><td class="total-val">{{ res.montant_net|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td class="total-label">Montant net</td><td class="total-val">{{ res.montant_net|montant }} FCFA</td></tr>
       {% if res.avance > 0 %}
-      <tr><td colspan="3"></td><td class="total-label" style="color:#2563eb">Avance versée</td><td class="total-val" style="color:#2563eb">{{ res.avance|floatformat:0 }} FCFA</td></tr>
-      <tr><td colspan="3"></td><td class="total-label" style="color:#dc2626">Solde restant</td><td class="total-val" style="color:#dc2626">{{ res.get_montant_restant|floatformat:0 }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td class="total-label" style="color:#2563eb">Avance versée</td><td class="total-val" style="color:#2563eb">{{ res.avance|montant }} FCFA</td></tr>
+      <tr><td colspan="3"></td><td class="total-label" style="color:#dc2626">Solde restant</td><td class="total-val" style="color:#dc2626">{{ res.get_montant_restant|montant }} FCFA</td></tr>
       {% endif %}
     </tfoot>
   </table>

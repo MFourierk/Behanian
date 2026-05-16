@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Chambres — Paramètres{% endblock %}
 {% block extra_css %}
@@ -68,8 +68,8 @@
           <td>{{ ch.get_type_chambre_display }}</td>
           <td style="color:var(--muted)">Étage {{ ch.etage|default:"—" }}</td>
           <td>{{ ch.capacite }} <i class="fas fa-user" style="color:var(--muted);font-size:11px"></i></td>
-          <td style="font-weight:600;color:#16a34a">{{ ch.prix_nuit|floatformat:0 }} F</td>
-          <td style="color:var(--muted)">{{ ch.prix_sejour|floatformat:0 }} F</td>
+          <td style="font-weight:600;color:#16a34a">{{ ch.prix_nuit|montant }} F</td>
+          <td style="color:var(--muted)">{{ ch.prix_sejour|montant }} F</td>
           <td>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               {% if ch.wifi %}<span class="equip-icon" title="WiFi">📶</span>{% endif %}

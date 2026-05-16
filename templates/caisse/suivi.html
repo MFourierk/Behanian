@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Suivi de Caisse — BEHANIAN{% endblock %}
 {% block extra_css %}
@@ -41,27 +41,27 @@
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi vert"><div class="klbl">Total 30 jours</div><div class="kval">{{ total_periode|floatformat:0 }} F</div><div class="ksub">Tous modules confondus</div></div>
-    <div class="kpi"><div class="klbl">Hôtel</div><div class="kval">{{ stats_modules.hotel|floatformat:0 }} F</div><div class="ksub">Hébergement & services</div></div>
-    <div class="kpi orange"><div class="klbl">Resto + Cave</div><div class="kval">{{ stats_modules.restaurant|floatformat:0 }} F</div><div class="ksub">+ {{ stats_modules.bar|floatformat:0 }} F Cave</div></div>
-    <div class="kpi violet"><div class="klbl">Piscine</div><div class="kval">{{ stats_modules.piscine|floatformat:0 }} F</div><div class="ksub">Accès & consommations</div></div>
+    <div class="kpi vert"><div class="klbl">Total 30 jours</div><div class="kval">{{ total_periode|montant }} F</div><div class="ksub">Tous modules confondus</div></div>
+    <div class="kpi"><div class="klbl">Hôtel</div><div class="kval">{{ stats_modules.hotel|montant }} F</div><div class="ksub">Hébergement & services</div></div>
+    <div class="kpi orange"><div class="klbl">Resto + Cave</div><div class="kval">{{ stats_modules.restaurant|montant }} F</div><div class="ksub">+ {{ stats_modules.bar|montant }} F Cave</div></div>
+    <div class="kpi violet"><div class="klbl">Piscine</div><div class="kval">{{ stats_modules.piscine|montant }} F</div><div class="ksub">Accès & consommations</div></div>
   </div>
 
   <div class="grid2">
     <div class="panel">
       <div class="ph"><h3>Répartition par module</h3></div>
-      <div class="stat-row"><span class="slbl">🏨 Hôtel</span><span class="sval">{{ stats_modules.hotel|floatformat:0 }} F</span></div>
-      <div class="stat-row"><span class="slbl">🍽️ Restaurant</span><span class="sval">{{ stats_modules.restaurant|floatformat:0 }} F</span></div>
-      <div class="stat-row"><span class="slbl">🍷 Cave</span><span class="sval">{{ stats_modules.bar|floatformat:0 }} F</span></div>
-      <div class="stat-row"><span class="slbl">🏊 Piscine</span><span class="sval">{{ stats_modules.piscine|floatformat:0 }} F</span></div>
-      <div class="stat-row" style="border-top:2px solid #dde3ec"><span class="slbl" style="font-weight:700;color:#1a2535">Total</span><span class="sval" style="color:#2563eb;font-size:15px">{{ total_periode|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">🏨 Hôtel</span><span class="sval">{{ stats_modules.hotel|montant }} F</span></div>
+      <div class="stat-row"><span class="slbl">🍽️ Restaurant</span><span class="sval">{{ stats_modules.restaurant|montant }} F</span></div>
+      <div class="stat-row"><span class="slbl">🍷 Cave</span><span class="sval">{{ stats_modules.bar|montant }} F</span></div>
+      <div class="stat-row"><span class="slbl">🏊 Piscine</span><span class="sval">{{ stats_modules.piscine|montant }} F</span></div>
+      <div class="stat-row" style="border-top:2px solid #dde3ec"><span class="slbl" style="font-weight:700;color:#1a2535">Total</span><span class="sval" style="color:#2563eb;font-size:15px">{{ total_periode|montant }} F</span></div>
     </div>
     <div class="panel">
       <div class="ph"><h3>Répartition par mode de paiement</h3></div>
-      <div class="stat-row"><span class="slbl">💵 Espèces</span><span class="sval">{{ stats_modes.especes|floatformat:0 }} F</span></div>
-      <div class="stat-row"><span class="slbl">📱 Mobile Money</span><span class="sval">{{ stats_modes.mobile_money|floatformat:0 }} F</span></div>
-      <div class="stat-row"><span class="slbl">💳 Carte Bancaire</span><span class="sval">{{ stats_modes.carte_bancaire|floatformat:0 }} F</span></div>
-      <div class="stat-row"><span class="slbl">🏦 Virement</span><span class="sval">{{ stats_modes.virement|floatformat:0 }} F</span></div>
+      <div class="stat-row"><span class="slbl">💵 Espèces</span><span class="sval">{{ stats_modes.especes|montant }} F</span></div>
+      <div class="stat-row"><span class="slbl">📱 Mobile Money</span><span class="sval">{{ stats_modes.mobile_money|montant }} F</span></div>
+      <div class="stat-row"><span class="slbl">💳 Carte Bancaire</span><span class="sval">{{ stats_modes.carte_bancaire|montant }} F</span></div>
+      <div class="stat-row"><span class="slbl">🏦 Virement</span><span class="sval">{{ stats_modes.virement|montant }} F</span></div>
     </div>
   </div>
 

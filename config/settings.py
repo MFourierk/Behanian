@@ -87,6 +87,9 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'utils.context_processors.user_permissions_context',
             ],
+            'builtins': [
+                'dashboard.templatetags.montant_filter',
+            ],
         },
     },
 ]

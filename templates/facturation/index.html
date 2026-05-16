@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 {% block title %}Facturation — BEHANIAN{% endblock %}
 
@@ -105,18 +105,18 @@
   <div class="kpi-grid">
     <div class="kpi k-or">
       <div class="klbl">CA Aujourd'hui</div>
-      <div class="kval">{{ ca_jour|floatformat:0 }} F</div>
+      <div class="kval">{{ ca_jour|montant }} F</div>
       <div class="ksub">{{ nb_tickets_jour }} ticket(s)</div>
     </div>
     <div class="kpi k-vert">
       <div class="klbl">CA Ce mois</div>
-      <div class="kval">{{ ca_mois|floatformat:0 }} F</div>
+      <div class="kval">{{ ca_mois|montant }} F</div>
       <div class="ksub">{{ nb_tickets_mois }} ticket(s)</div>
     </div>
     <div class="kpi k-rouge">
       <div class="klbl">Factures impayées</div>
       <div class="kval">{{ nb_factures_impayees }}</div>
-      <div class="ksub">{{ montant_impaye|floatformat:0 }} F en attente</div>
+      <div class="ksub">{{ montant_impaye|montant }} F en attente</div>
     </div>
     <div class="kpi k-bleu">
       <div class="klbl">Documents</div>
@@ -174,7 +174,7 @@
             {% with total_ca=ca_mois|default:1 %}
             <div class="module-item">
               <div class="module-nom">{{ module }}</div>
-              <div class="module-ca">{{ ca|floatformat:0 }} F</div>
+              <div class="module-ca">{{ ca|montant }} F</div>
               <div class="module-bar-fill" style="background:{% if module == 'Hôtel' %}#2563eb{% elif module == 'Restaurant' %}#d97706{% elif module == 'Cave' %}#7c3aed{% elif module == 'Piscine' %}#0891b2{% else %}#16a34a{% endif %};width:100%"></div>
             </div>
             {% endwith %}
@@ -200,7 +200,7 @@
                 <td><span class="doc-num">{{ t.numero }}</span></td>
                 <td><span class="badge b-{{ t.module }}">{{ t.get_module_display }}</span></td>
                 <td style="font-size:11px;white-space:nowrap">{{ t.date_creation|date:"d/m/Y H:i" }}</td>
-                <td><strong>{{ t.montant_total|floatformat:0 }} F</strong></td>
+                <td><strong>{{ t.montant_total|montant }} F</strong></td>
                 <td style="font-size:11px">
                   {% if t.mode_paiement == 'especes' %}💵 Espèces
                   {% elif t.mode_paiement == 'mobile_money' %}📱 Mobile
@@ -241,7 +241,7 @@
               <div style="font-size:11px;color:var(--muted)">{{ f.client.nom|default:"Client anonyme" }}</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:13px;font-weight:700;color:#dc2626">{{ f.total|floatformat:0 }} F</div>
+              <div style="font-size:13px;font-weight:700;color:#dc2626">{{ f.total|montant }} F</div>
               <span class="badge b-{{ f.statut }}">{{ f.get_statut_display }}</span>
             </div>
           </div>
@@ -263,7 +263,7 @@
               <div style="font-size:11px;color:var(--muted)">{{ p.client.nom|default:"Client anonyme" }}</div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:13px;font-weight:700;color:#2563eb">{{ p.total|floatformat:0 }} F</div>
+              <div style="font-size:13px;font-weight:700;color:#2563eb">{{ p.total|montant }} F</div>
               <button class="btn-p gold" style="font-size:10px;margin-top:3px" onclick="convertirProformaEnFacture({{ p.pk }})">→ Facture</button>
             </div>
           </div>
@@ -302,7 +302,7 @@
             <td><span class="badge b-{{ t.module }}">{{ t.get_module_display }}</span></td>
             <td style="font-size:11px;white-space:nowrap">{{ t.date_creation|date:"d/m/Y H:i" }}</td>
             <td style="font-size:12px">{{ t.client.nom|default:"—" }}</td>
-            <td><strong>{{ t.montant_total|floatformat:0 }} F</strong></td>
+            <td><strong>{{ t.montant_total|montant }} F</strong></td>
             <td style="font-size:11px">
               {% if t.mode_paiement == 'especes' %}💵{% elif t.mode_paiement == 'mobile_money' %}📱{% elif t.mode_paiement == 'carte_bancaire' %}💳{% elif t.mode_paiement == 'orange_money' %}🟠{% elif t.mode_paiement == 'wave' %}🔵{% endif %}
               {{ t.get_mode_paiement_display }}
@@ -343,8 +343,8 @@
             <td style="font-weight:600">{{ f.client.nom|default:"Client anonyme" }}</td>
             <td style="font-size:11px">{{ f.date_facturation|date:"d/m/Y" }}</td>
             <td style="font-size:11px;{% if f.date_echeance < today %}color:#dc2626;font-weight:600{% endif %}">{{ f.date_echeance|date:"d/m/Y"|default:"—" }}</td>
-            <td><strong>{{ f.total|floatformat:0 }} F</strong></td>
-            <td style="color:#16a34a;font-weight:600">{{ f.montant_paye|floatformat:0 }} F</td>
+            <td><strong>{{ f.total|montant }} F</strong></td>
+            <td style="color:#16a34a;font-weight:600">{{ f.montant_paye|montant }} F</td>
             <td><span class="badge b-{{ f.statut }}">{{ f.get_statut_display }}</span></td>
             <td>
               <div style="display:flex;gap:4px">
@@ -381,7 +381,7 @@
             <td style="font-weight:600">{{ p.client.nom|default:"Client anonyme" }}</td>
             <td style="font-size:11px">{{ p.date_creation|date:"d/m/Y" }}</td>
             <td style="font-size:11px">{{ p.date_validite|date:"d/m/Y"|default:"—" }}</td>
-            <td><strong>{{ p.total|floatformat:0 }} F</strong></td>
+            <td><strong>{{ p.total|montant }} F</strong></td>
             <td><span class="badge b-{{ p.statut }}">{{ p.get_statut_display }}</span></td>
             <td>
               <div style="display:flex;gap:4px">
@@ -418,7 +418,7 @@
             <td style="font-weight:600">{{ a.client.nom|default:"—" }}</td>
             <td style="font-size:11px">{{ a.date_avoir|date:"d/m/Y" }}</td>
             <td style="font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.motif|default:"—" }}</td>
-            <td><strong style="color:#7c3aed">{{ a.total|floatformat:0 }} F</strong></td>
+            <td><strong style="color:#7c3aed">{{ a.total|montant }} F</strong></td>
             <td style="font-size:11px">
               {% if a.facture_origine %}<span class="badge b-envoyee">FAC: {{ a.facture_origine.numero }}</span>
               {% elif a.ticket_origine %}<span class="badge b-hotel">TKT: {{ a.ticket_origine.numero }}</span>

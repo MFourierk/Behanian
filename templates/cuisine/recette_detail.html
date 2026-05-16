@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 
 {% block title %}Détail Fiche Technique - {{ fiche.plat.nom }}{% endblock %}
@@ -72,10 +72,10 @@
             <div class="card-header">Analyse des Coûts</div>
             <div class="card-body">
                 <ul class="info-list p-0 m-0">
-                    <li><span class="label">Coût total des articles</span><span class="value">{{ fiche.cout_revient|floatformat:0 }} FCFA</span></li>
-                    <li><span class="label">Coût par portion</span><span class="value"><input type="hidden" id="cout-revient-val" value="{{ fiche.cout_revient_portion }}">{{ fiche.cout_revient_portion|floatformat:0 }} FCFA</span></li>
+                    <li><span class="label">Coût total des articles</span><span class="value">{{ fiche.cout_revient|montant }} FCFA</span></li>
+                    <li><span class="label">Coût par portion</span><span class="value"><input type="hidden" id="cout-revient-val" value="{{ fiche.cout_revient_portion }}">{{ fiche.cout_revient_portion|montant }} FCFA</span></li>
                     <li><span class="label">Marge souhaitée</span><span class="value">{{ fiche.marge_souhaitee }}%</span></li>
-                    <li><span class="label">Prix de vente suggéré</span><span class="value text-success font-weight-bold" id="prix-vente-suggere">{{ fiche.prix_de_vente_suggere|floatformat:0 }} FCFA</span></li>
+                    <li><span class="label">Prix de vente suggéré</span><span class="value text-success font-weight-bold" id="prix-vente-suggere">{{ fiche.prix_de_vente_suggere|montant }} FCFA</span></li>
                 </ul>
             </div>
         </div>
@@ -98,7 +98,7 @@
                         <tr>
                             <td>{{ detail.ingredient.nom }}</td>
                             <td>{{ detail.quantite }} {{ detail.ingredient.get_unite_display }}</td>
-                            <td>{{ detail.cout|floatformat:0 }} FCFA</td>
+                            <td>{{ detail.cout|montant }} FCFA</td>
                         </tr>
                         {% endfor %}
                     </tbody>

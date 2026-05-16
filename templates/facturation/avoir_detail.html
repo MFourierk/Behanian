@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Avoir {{ avoir.numero }} — Facturation{% endblock %}
 
@@ -89,7 +89,7 @@
         {% if avoir.client.email %}<div class="meta-row"><span class="meta-lbl">Email</span><span class="meta-val">{{ avoir.client.email }}</span></div>{% endif %}
         <div class="meta-row">
           <span class="meta-lbl">Montant avoir</span>
-          <span class="meta-val" style="font-size:16px;color:#7c3aed">{{ avoir.total|floatformat:0 }} FCFA</span>
+          <span class="meta-val" style="font-size:16px;color:#7c3aed">{{ avoir.total|montant }} FCFA</span>
         </div>
       </div>
     </div>
@@ -118,8 +118,8 @@
               {% if ligne.description %}<div style="font-size:11px;color:#7a8b9c">{{ ligne.description }}</div>{% endif %}
             </td>
             <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
-            <td style="text-align:right;white-space:nowrap">{{ ligne.prix_unitaire|floatformat:0 }} F</td>
-            <td style="text-align:right;font-weight:700;white-space:nowrap">{{ ligne.montant_ht|floatformat:0 }} F</td>
+            <td style="text-align:right;white-space:nowrap">{{ ligne.prix_unitaire|montant }} F</td>
+            <td style="text-align:right;font-weight:700;white-space:nowrap">{{ ligne.montant_ht|montant }} F</td>
           </tr>
           {% empty %}
           <tr><td colspan="5" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
@@ -129,26 +129,26 @@
           <tr class="total-row">
             <td colspan="3"></td>
             <td style="text-align:right;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;color:#4a5568">Sous-total HT</td>
-            <td style="text-align:right;padding:10px 16px;font-weight:700;white-space:nowrap">{{ avoir.sous_total|floatformat:0 }} FCFA</td>
+            <td style="text-align:right;padding:10px 16px;font-weight:700;white-space:nowrap">{{ avoir.sous_total|montant }} FCFA</td>
           </tr>
           {% if avoir.remise > 0 %}
           <tr class="total-row">
             <td colspan="3"></td>
             <td style="text-align:right;padding:10px 16px;color:#16a34a;font-weight:700">Remise</td>
-            <td style="text-align:right;padding:10px 16px;color:#16a34a;white-space:nowrap">- {{ avoir.remise|floatformat:0 }} FCFA</td>
+            <td style="text-align:right;padding:10px 16px;color:#16a34a;white-space:nowrap">- {{ avoir.remise|montant }} FCFA</td>
           </tr>
           {% endif %}
           {% if avoir.taux_tva > 0 %}
           <tr class="total-row">
             <td colspan="3"></td>
             <td style="text-align:right;padding:10px 16px;font-weight:700">TVA {{ avoir.taux_tva }}%</td>
-            <td style="text-align:right;padding:10px 16px;white-space:nowrap">{{ avoir.montant_tva|floatformat:0 }} FCFA</td>
+            <td style="text-align:right;padding:10px 16px;white-space:nowrap">{{ avoir.montant_tva|montant }} FCFA</td>
           </tr>
           {% endif %}
           <tr class="grand-total">
             <td colspan="3"></td>
             <td style="text-align:right;padding:14px 16px">TOTAL AVOIR</td>
-            <td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important;white-space:nowrap">{{ avoir.total|floatformat:0 }} FCFA</td>
+            <td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important;white-space:nowrap">{{ avoir.total|montant }} FCFA</td>
           </tr>
         </tfoot>
       </table>

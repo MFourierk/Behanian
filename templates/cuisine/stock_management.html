@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
@@ -259,7 +259,7 @@
             </div>
             <div class="stat-card orange">
                 <div class="stat-icon orange"><i class="fas fa-chart-line"></i></div>
-                <div><div class="stat-value">{{ valeur_stock|floatformat:0 }} F</div><div class="stat-label">Valeur du stock</div></div>
+                <div><div class="stat-value">{{ valeur_stock|montant }} F</div><div class="stat-label">Valeur du stock</div></div>
             </div>
             <div class="stat-card orange">
                 <div class="stat-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
@@ -415,8 +415,8 @@
                                 {% endif %}
                             </td>
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ ing.seuil_alerte|floatformat:2 }}</td>
-                            <td style="font-weight:600;color:#2c3e50;">{{ ing.cmup|floatformat:0 }} F</td>
-                            <td style="font-weight:700;color:#c0392b;">{{ ing.valeur_stock|floatformat:0 }} F</td>
+                            <td style="font-weight:600;color:#2c3e50;">{{ ing.cmup|montant }} F</td>
+                            <td style="font-weight:700;color:#c0392b;">{{ ing.valeur_stock|montant }} F</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;">{{ ing.fournisseur_principal.nom|default:"—" }}</td>
                             <td>
                                 <div class="action-group">
@@ -517,7 +517,7 @@
                                     </span>
                                 {% else %}—{% endif %}
                             </td>
-                            <td style="font-weight:700;color:#2c3e50;">{{ bon.total|floatformat:0 }} FCFA</td>
+                            <td style="font-weight:700;color:#2c3e50;">{{ bon.total|montant }} FCFA</td>
                             <td style="font-size:0.82rem;">{{ bon.cree_par.username|default:"—" }}</td>
                             <td>
                                 {% if bon.est_en_retard %}<span class="badge badge-retard">⚠ En retard</span>
