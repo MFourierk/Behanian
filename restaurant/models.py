@@ -191,11 +191,13 @@ class Forfait(models.Model):
     """Forfait = ensemble de plats et/ou boissons vendus à prix fixe."""
 
     MODULE_CHOICES = [
-        ('piscine',  'Piscine'),
-        ('espaces',  'Espaces Événementiels'),
-        ('hotel',    'Hôtel'),
-        ('restaurant','Restaurant'),
-        ('autre',    'Autre'),
+        ('piscine',    'Piscine'),
+        ('hotel',      'Hôtel'),
+        ('restaurant', 'Restaurant'),
+        ('bar',        'Bar / Cave'),
+        ('espaces',    'Espaces Événementiels'),
+        ('caisse',     'Caisse / Accueil'),
+        ('autre',      'Autre'),
     ]
 
     nom           = models.CharField(max_length=200, verbose_name="Nom du forfait")

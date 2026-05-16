@@ -533,7 +533,7 @@ def forfait_create(request):
     if request.method == 'POST':
         f = Forfait.objects.create(
             nom=request.POST['nom'],
-            module='restaurant',
+            module=request.POST.get('module', 'piscine'),
             prix=request.POST['prix'],
             description=request.POST.get('description', ''),
             disponible=request.POST.get('disponible') == 'on',
@@ -557,6 +557,7 @@ def forfait_edit(request, pk):
     modules  = Forfait.MODULE_CHOICES
     if request.method == 'POST':
         forfait.nom         = request.POST['nom']
+        forfait.module      = request.POST.get('module', forfait.module)
         forfait.prix        = request.POST['prix']
         forfait.description = request.POST.get('description', '')
         forfait.disponible  = request.POST.get('disponible') == 'on'

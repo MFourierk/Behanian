@@ -37,7 +37,7 @@
       <h2 style="font-size:1.3rem;font-weight:700;margin:0;color:white">
         {% if mode == 'edit' %}✏️ Modifier : {{ forfait.nom }}{% else %}⭐ Nouveau Menu VIP{% endif %}
       </h2>
-      <p class="mb-0" style="opacity:.7;color:white">Combinaison de plats et boissons à prix fixe — visible dans tous les modules</p>
+      <p class="mb-0" style="opacity:.7;color:white">Combinaison de plats et boissons à prix fixe, affectée à un module spécifique</p>
     </div>
   </div>
   {% breadcrumb "Paramètres" "parametres:parametres_index" "Menus VIP" "parametres:forfait_list" "Formulaire" "" %}
@@ -49,9 +49,20 @@
     <div class="panel">
       <div class="ph"><h3>📋 Informations générales</h3></div>
       <div style="padding:20px">
-        <div class="form-group" style="margin-bottom:16px">
-          <label>Nom du Menu VIP *</label>
-          <input type="text" name="nom" class="form-control" value="{{ forfait.nom|default:'' }}" required placeholder="Ex: Menu VIP Piscine 10 000F">
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Nom du Menu VIP *</label>
+            <input type="text" name="nom" class="form-control" value="{{ forfait.nom|default:'' }}" required placeholder="Ex: Menu VIP Piscine 10 000F">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Module concerné *</label>
+            <select name="module" class="form-control" required>
+              {% for val, label in modules %}
+              <option value="{{ val }}" {% if forfait.module == val %}selected{% elif not forfait and val == 'piscine' %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <div style="margin-top:5px;font-size:11px;color:var(--muted)">Ce forfait sera proposé uniquement dans ce module.</div>
+          </div>
         </div>
         <div class="form-row">
           <div class="form-group">
