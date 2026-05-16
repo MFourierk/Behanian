@@ -13,4 +13,6 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
+import utils.py314_compat  # noqa: F401 — correction compatibilité Python 3.14
+
 application = get_wsgi_application()

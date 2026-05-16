@@ -7,6 +7,7 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    import utils.py314_compat  # noqa: F401 — correction compatibilité Python 3.14
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

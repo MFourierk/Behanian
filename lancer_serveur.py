@@ -8,6 +8,7 @@ import sys
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 if __name__ == '__main__':
+    import utils.py314_compat  # noqa: F401 — correction compatibilité Python 3.14
     from waitress import serve
     import django
     django.setup()
