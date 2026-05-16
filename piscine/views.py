@@ -38,9 +38,14 @@ def piscine_index(request):
         statut='en_cours'
     ).select_related('client', 'chambre').order_by('chambre__numero')
 
-    # Forfaits piscine disponibles
+    # Forfaits piscine disponibles + alertes stock
     from restaurant.models import Forfait
     forfaits_piscine = Forfait.objects.filter(module='piscine', disponible=True).prefetch_related('lignes__boisson', 'lignes__plat')
+    forfaits_alertes = []
+    for _f in forfaits_piscine:
+        _dispo, _pb = _verifier_stock_forfait(_f)
+        if not _dispo:
+            forfaits_alertes.append({'forfait': _f, 'problemes': _pb})
 
     # Boissons et plats pour commandes
     from bar.models import BoissonBar, CategorieBar
@@ -71,6 +76,7 @@ def piscine_index(request):
         'acces_liste': acces_liste,
         'acces_actifs': acces_actifs.select_related().prefetch_related('consommations'),
         'forfaits_piscine': forfaits_piscine,
+        'forfaits_alertes': forfaits_alertes,
     }
     return render(request, 'piscine/index.html', context)
 
@@ -127,6 +133,8 @@ def enregistrer_entree(request):
         nb_adultes   = int(data.get('nb_adultes', 1))
         nb_enfants   = int(data.get('nb_enfants', 0))
         forfait_id   = data.get('forfait_id')
+        # substitutions = {str(ligne_id): {type, id, nom}}
+        substitutions = {str(k): v for k, v in data.get('substitutions', {}).items()}
 
         if not nom_client:
             return JsonResponse({'success': False, 'error': 'Nom du client requis'})
@@ -136,7 +144,9 @@ def enregistrer_entree(request):
         # ── Forfait VIP ──────────────────────────────────────────────
         forfait = None
         if forfait_id:
-            from restaurant.models import Forfait
+            from restaurant.models import Forfait, PlatMenu
+            from bar.models import BoissonBar
+            from cuisine.utils import check_stock_availability
             try:
                 forfait = Forfait.objects.prefetch_related('lignes__boisson', 'lignes__plat').get(
                     pk=forfait_id, module='piscine', disponible=True
@@ -144,15 +154,54 @@ def enregistrer_entree(request):
                 prix_total = forfait.prix
             except Forfait.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Forfait VIP introuvable ou indisponible.'})
-            # Pré-vérification stock de tous les articles du forfait
-            dispo, problemes = _verifier_stock_forfait(forfait)
-            if not dispo:
-                details = ' | '.join(p['detail'] for p in problemes)
-                articles = ', '.join(p['nom'] for p in problemes)
+
+            # Validation stock article par article (original OU substitut)
+            problemes_final = []
+            for ligne in forfait.lignes.select_related('boisson', 'plat').all():
+                sub = substitutions.get(str(ligne.id))
+                if sub:
+                    # Valider le substitut
+                    if sub['type'] == 'boisson':
+                        try:
+                            b_sub = BoissonBar.objects.get(id=sub['id'])
+                            if b_sub.quantite_stock < ligne.quantite:
+                                problemes_final.append(
+                                    f"Substitut « {b_sub.nom} » insuffisant "
+                                    f"(stock : {int(b_sub.quantite_stock)}, requis : {int(ligne.quantite)})"
+                                )
+                        except BoissonBar.DoesNotExist:
+                            problemes_final.append(f"Substitut boisson introuvable (id={sub['id']})")
+                    elif sub['type'] == 'plat':
+                        try:
+                            plat_sub = PlatMenu.objects.get(id=sub['id'])
+                            ok, msg = check_stock_availability(plat_sub, ligne.quantite)
+                            if not ok:
+                                problemes_final.append(f"Substitut « {plat_sub.nom} » : {msg}")
+                        except PlatMenu.DoesNotExist:
+                            problemes_final.append(f"Substitut plat introuvable (id={sub['id']})")
+                else:
+                    # Valider l'article original
+                    if ligne.type_item == 'boisson' and ligne.boisson:
+                        b = ligne.boisson
+                        if b.quantite_stock < ligne.quantite:
+                            problemes_final.append(
+                                f"« {ligne.nom_affiche} » en rupture "
+                                f"(stock : {int(b.quantite_stock)}, requis : {int(ligne.quantite)})"
+                            )
+                    elif ligne.type_item == 'plat' and ligne.plat:
+                        try:
+                            plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
+                            if plat_menu:
+                                ok, msg = check_stock_availability(plat_menu, ligne.quantite)
+                                if not ok:
+                                    problemes_final.append(f"« {ligne.nom_affiche} » : {msg}")
+                        except Exception:
+                            pass
+
+            if problemes_final:
                 return JsonResponse({
                     'success': False,
-                    'error': f"Forfait indisponible — rupture de stock sur : {articles}. {details}",
-                    'problemes': problemes,
+                    'error': 'Stock insuffisant — ' + ' | '.join(problemes_final),
                 })
 
         # ── Tarif ordinaire ──────────────────────────────────────────
@@ -196,33 +245,53 @@ def enregistrer_entree(request):
             from restaurant.models import PlatMenu
             from cuisine.utils import process_stock_movement
             for ligne in forfait.lignes.select_related('boisson', 'plat').all():
-                nom_article = ligne.nom_affiche
-                ConsommationPiscine.objects.create(
-                    acces=acces,
-                    produit=nom_article,
-                    quantite=ligne.quantite,
-                    prix_unitaire=Decimal('0'),
-                    inclus_forfait=True,
-                )
-                # Déduction stock boisson
-                if ligne.type_item == 'boisson' and ligne.boisson:
-                    b = ligne.boisson
-                    b.quantite_stock = max(0, b.quantite_stock - ligne.quantite)
-                    b.save()
-                    MouvementStockBar.objects.create(
-                        boisson=b, type_mouvement='sortie',
-                        quantite=ligne.quantite,
-                        commentaire=f'Menu VIP piscine #{acces.id}',
-                        utilisateur=request.user,
+                sub = substitutions.get(str(ligne.id))
+
+                if sub:
+                    # ── Article de substitution ──
+                    if sub['type'] == 'boisson':
+                        b_sub = BoissonBar.objects.get(id=sub['id'])
+                        nom_article = f"{b_sub.nom} (remplace {ligne.nom_affiche})"
+                        ConsommationPiscine.objects.create(
+                            acces=acces, produit=nom_article,
+                            quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
+                        )
+                        b_sub.quantite_stock = max(0, b_sub.quantite_stock - ligne.quantite)
+                        b_sub.save()
+                        MouvementStockBar.objects.create(
+                            boisson=b_sub, type_mouvement='sortie', quantite=ligne.quantite,
+                            commentaire=f'Menu VIP #{acces.id} (substitut)', utilisateur=request.user,
+                        )
+                    elif sub['type'] == 'plat':
+                        plat_sub = PlatMenu.objects.get(id=sub['id'])
+                        nom_article = f"{plat_sub.nom} (remplace {ligne.nom_affiche})"
+                        ConsommationPiscine.objects.create(
+                            acces=acces, produit=nom_article,
+                            quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
+                        )
+                        process_stock_movement(plat_sub, ligne.quantite, 'sortie', request.user, f'Menu VIP #{acces.id} (substitut)')
+                else:
+                    # ── Article original ──
+                    nom_article = ligne.nom_affiche
+                    ConsommationPiscine.objects.create(
+                        acces=acces, produit=nom_article,
+                        quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
                     )
-                # Déduction stock cuisine (plat)
-                elif ligne.type_item == 'plat' and ligne.plat:
-                    try:
-                        plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
-                        if plat_menu:
-                            process_stock_movement(plat_menu, ligne.quantite, 'sortie', request.user, f'Menu VIP #{acces.id}')
-                    except Exception:
-                        pass  # Ne pas bloquer l'entrée si le stock plat échoue
+                    if ligne.type_item == 'boisson' and ligne.boisson:
+                        b = ligne.boisson
+                        b.quantite_stock = max(0, b.quantite_stock - ligne.quantite)
+                        b.save()
+                        MouvementStockBar.objects.create(
+                            boisson=b, type_mouvement='sortie', quantite=ligne.quantite,
+                            commentaire=f'Menu VIP piscine #{acces.id}', utilisateur=request.user,
+                        )
+                    elif ligne.type_item == 'plat' and ligne.plat:
+                        try:
+                            plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
+                            if plat_menu:
+                                process_stock_movement(plat_menu, ligne.quantite, 'sortie', request.user, f'Menu VIP #{acces.id}')
+                        except Exception:
+                            pass
 
         return JsonResponse({
             'success': True,
@@ -432,15 +501,21 @@ def check_forfait_dispo(request, forfait_id):
         return JsonResponse({'disponible': False, 'problemes': [{'nom': 'Forfait', 'detail': 'Introuvable ou désactivé.'}]})
 
     dispo, problemes = _verifier_stock_forfait(forfait)
-    # Enrichir avec le statut OK de chaque ligne pour l'affichage
-    lignes_statut = []
     problemes_noms = {p['nom'] for p in problemes}
+    lignes_statut = []
     for ligne in forfait.lignes.select_related('boisson', 'plat').all():
         nom = ligne.nom_affiche
+        ok = nom not in problemes_noms
+        stock_dispo = None
+        if ligne.type_item == 'boisson' and ligne.boisson:
+            stock_dispo = float(ligne.boisson.quantite_stock)
         lignes_statut.append({
+            'id': ligne.id,
             'nom': nom,
+            'type': ligne.type_item,
             'quantite': float(ligne.quantite),
-            'ok': nom not in problemes_noms,
+            'ok': ok,
+            'stock_dispo': stock_dispo,
             'detail': next((p['detail'] for p in problemes if p['nom'] == nom), ''),
         })
     return JsonResponse({
