@@ -25,9 +25,6 @@
         <a href="{% url 'cuisine:plat_list' %}" class="btn-add-glam">
             <i class="fas fa-utensils mr-2"></i> Plats / Carte
         </a>
-        <a href="{% url 'cuisine:rapport_stock' %}" class="btn-add-glam" style="background:linear-gradient(135deg,#1a252f,#2c3e50);color:white;border:none;">
-            <i class="fas fa-chart-bar mr-2"></i> Rapport de Stock
-        </a>
     </div>
 </div>
 
@@ -76,16 +73,6 @@
         <div class="stat-details">
             <span class="stat-label">Commandes en cours</span>
             <span class="stat-value">{{ bc_en_cours }}</span>
-        </div>
-    </div>
-    <!-- Carte raccourci rapport -->
-    <div class="stat-card" style="cursor:pointer;border:2px solid #2c3e50;" onclick="window.location.href='{% url 'cuisine:rapport_stock' %}'">
-        <div class="stat-icon" style="background: rgba(44,62,80,0.1); color: #2c3e50;">
-            <i class="fas fa-chart-bar"></i>
-        </div>
-        <div class="stat-details">
-            <span class="stat-label">Rapport de Stock</span>
-            <span class="stat-value" style="font-size:14px;color:#2c3e50;">Voir le rapport →</span>
         </div>
     </div>
 </div>
@@ -169,10 +156,6 @@
                 <a href="{% url 'cuisine:casse_create' %}" class="quick-action">
                     <i class="fas fa-trash-alt"></i>
                     <span>Déclarer casse</span>
-                </a>
-                <a href="{% url 'cuisine:rapport_stock' %}" class="quick-action" style="background:#eaf0fb;">
-                    <i class="fas fa-chart-bar" style="color:#2c3e50;"></i>
-                    <span>Rapport stock</span>
                 </a>
             </div>
         </div>
