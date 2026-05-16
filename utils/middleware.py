@@ -22,8 +22,8 @@ HOME_BY_GROUP = {
     'Caissiere Principale':        'caisse:index',
     'Caissier(ère) Principal(e)':  'caisse:index',
     'Caissier(ere) Principal(e)':  'caisse:index',
-    # Responsable Caisse → Cave TPE directement
-    'Responsable Caisse':          'bar:tpe',
+    # Responsable Caisse → module caisse centrale
+    'Responsable Caisse':          'caisse:index',
     # Caissière TPE
     'Caissiere':                   'bar:tpe',
     'Caissier(e)':                 'bar:tpe',

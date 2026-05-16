@@ -67,7 +67,7 @@ def user_permissions_context(request):
         'Caissiere / Caissier':       'bar:tpe',
         'Caissier(ère) Principal(e)': 'caisse:index',
         'Caissier(ere) Principal(e)': 'caisse:index',
-        'Responsable Caisse':         'bar:tpe',
+        'Responsable Caisse':         'caisse:index',
         'Serveuse/Serveur':           'dashboard:index',
         'Agent de Sécurité':          'dashboard:index',
         'Cuisinier(e)':               'dashboard:index',
