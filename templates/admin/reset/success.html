@@ -1,8 +1,8 @@
 {% extends "admin/base_site.html" %}
-{% block title %}Remise à Zéro Effectuée{% endblock %}
+{% block title %}Remise à Zéro Effectuée — BEHANIAN ERP{% endblock %}
 {% block extrahead %}
 <style>
-.rz{max-width:800px;margin:0 auto;padding:24px 0 60px}
+.rz{max-width:860px;margin:0 auto;padding:24px 0 60px}
 .ok-hero{background:linear-gradient(135deg,#F0FDF4,#DCFCE7);border:2px solid #16A34A;border-radius:14px;padding:28px;margin-bottom:22px;text-align:center}
 .ok-hero .icon{font-size:52px;margin-bottom:10px}
 .ok-hero h1{font-size:22px;font-weight:800;color:#15803D;margin:0 0 6px}
@@ -15,6 +15,7 @@
 .v-card.nok .nb{color:#DC2626}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap}
 .btn-h{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;color:#fff}
+.stitle{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px}
 </style>
 {% endblock %}
 {% block content %}
@@ -23,27 +24,18 @@
     <div class="icon">✅</div>
     <h1>Remise à zéro effectuée avec succès !</h1>
     <p>
-      {% if type_reset == 'partiel' %}Transactions supprimées. Stocks et structure conservés.
-      {% elif type_reset == 'complet' %}Remise complète : stocks et transactions remis à zéro.
-      {% else %}Remise personnalisée effectuée selon votre sélection.{% endif %}
+      {% if type_reset == 'partiel' %}
+        Transactions supprimées, compteurs remis à 0. Stocks et référentiel conservés.
+      {% elif type_reset == 'complet' %}
+        Remise totale : tout supprimé sauf l'infrastructure physique et les superusers.
+      {% else %}
+        Remise personnalisée effectuée selon votre sélection.
+      {% endif %}
     </p>
   </div>
 
-  <div style="font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">
-    Vérification — tous les compteurs doivent être à 0
-  </div>
-  <div class="verif-grid">
-    {% for mod_key, mod_info in modules.items %}
-    {% for sous_key, sous_label in mod_info.sous_modules.items %}
-    {% if sous_key != 'stocks' %}
-    <div class="v-card {% with key=mod_key|add:'__'|add:sous_key %}{% if flat|default_if_none:0 == 0 %}ok{% else %}nok{% endif %}{% endwith %}">
-      <div class="nb">{{ flat|default_if_none:0 }}</div>
-      <div class="lb">{{ sous_label|truncatechars:18 }}</div>
-    </div>
-    {% endif %}
-    {% endfor %}
-    {% endfor %}
-  </div>
+  <div class="stitle">Vérification — tous les compteurs doivent être à 0</div>
+  <div class="verif-grid" id="verifGrid"></div>
 
   <div class="btn-row">
     <a href="{% url 'admin_reset_dashboard' %}" class="btn-h" style="background:#1A2535">🔄 Retour Remise à Zéro</a>
@@ -51,4 +43,38 @@
     <a href="/dashboard/" class="btn-h" style="background:#16A34A">📊 Tableau de bord</a>
   </div>
 </div>
+
+<script>
+const COUNTS  = {{ counts_json|safe }};
+const MODULES = {
+  {% for mod_key, mod_info in modules.items %}
+  "{{ mod_key }}": {
+    label: "{{ mod_info.label }}",
+    icon:  "{{ mod_info.icon }}",
+    sous:  {
+      {% for sous_key, sous_label in mod_info.sous_modules.items %}
+      {% if sous_key != 'stocks' %}
+      "{{ sous_key }}": "{{ sous_label }}",
+      {% endif %}
+      {% endfor %}
+    }
+  },
+  {% endfor %}
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  const grid = document.getElementById('verifGrid');
+  for (const [modKey, modMeta] of Object.entries(MODULES)) {
+    const modCounts = COUNTS[modKey] || {};
+    for (const [sousKey, sousLabel] of Object.entries(modMeta.sous)) {
+      const val = modCounts[sousKey] ?? 0;
+      grid.innerHTML += `
+        <div class="v-card ${val === 0 ? 'ok' : 'nok'}">
+          <div class="nb">${val}</div>
+          <div class="lb">${sousLabel.length > 20 ? sousLabel.substring(0,20)+'…' : sousLabel}</div>
+        </div>`;
+    }
+  }
+});
+</script>
 {% endblock %}

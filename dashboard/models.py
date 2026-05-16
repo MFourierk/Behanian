@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+
 
 class Configuration(models.Model):
     nom_complexe = models.CharField(max_length=255, default="COMPLEXE HOTELIER BEHANIAN")
@@ -27,3 +29,41 @@ class Configuration(models.Model):
     class Meta:
         verbose_name = "Configuration du Complexe"
         verbose_name_plural = "Configuration du Complexe"
+
+
+class JournalReset(models.Model):
+    """Trace immuable de chaque remise à zéro effectuée sur le système."""
+
+    TYPE_CHOICES = [
+        ('partiel',      'Remise Partielle'),
+        ('complet',      'Remise Totale'),
+        ('personnalise', 'Remise Personnalisée'),
+    ]
+
+    date          = models.DateTimeField(auto_now_add=True, verbose_name="Date")
+    utilisateur   = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True,
+        verbose_name="Exécuté par"
+    )
+    type_reset    = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
+    modules       = models.JSONField(default=dict, verbose_name="Modules supprimés")
+    counts_avant  = models.JSONField(default=dict, verbose_name="Comptages avant reset")
+    backup_path   = models.CharField(max_length=500, blank=True, verbose_name="Fichier backup")
+    succes        = models.BooleanField(default=True, verbose_name="Succès")
+    erreur        = models.TextField(blank=True, verbose_name="Message d'erreur")
+
+    class Meta:
+        verbose_name        = "Journal de remise à zéro"
+        verbose_name_plural = "Journal des remises à zéro"
+        ordering            = ['-date']
+
+    def __str__(self):
+        return (
+            f"Reset {self.get_type_reset_display()} — "
+            f"{self.date.strftime('%d/%m/%Y %H:%M')} — "
+            f"{self.utilisateur or 'Système'}"
+        )
+
+    def delete(self, *args, **kwargs):
+        """Le journal est en lecture seule — la suppression est bloquée."""
+        pass

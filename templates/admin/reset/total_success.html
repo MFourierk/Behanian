@@ -1,0 +1,75 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Remise Totale Effectuée — BEHANIAN ERP{% endblock %}
+{% block extrahead %}
+<style>
+.rz{max-width:760px;margin:0 auto;padding:24px 0 60px}
+.ok-hero{background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border:2px solid #DC2626;border-radius:14px;padding:32px;margin-bottom:24px;text-align:center}
+.ok-hero .icon{font-size:56px;margin-bottom:12px}
+.ok-hero h1{font-size:24px;font-weight:800;color:#991B1B;margin:0 0 8px}
+.ok-hero p{color:#7F1D1D;margin:0;font-size:14px;line-height:1.6}
+.info-box{background:#fff;border:1px solid #D4DCE8;border-radius:12px;padding:18px 22px;margin-bottom:16px}
+.info-box h4{font-size:13px;font-weight:700;color:#1A2535;margin:0 0 10px}
+.info-box ul{margin:0;padding-left:18px;font-size:12px;color:#374151;line-height:2}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+.btn-h{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;color:#fff}
+</style>
+{% endblock %}
+{% block content %}
+<div class="rz">
+  <div class="ok-hero">
+    <div class="icon">✅</div>
+    <h1>Remise à zéro totale effectuée</h1>
+    <p>
+      Le système est à présent vierge de toutes données opérationnelles et de référentiel.<br>
+      L'infrastructure physique (chambres, tables, espaces) et les comptes superadmin sont conservés.<br>
+      Un backup JSON a été créé automatiquement dans <code>media/backups/</code>.
+    </p>
+  </div>
+
+  <div class="info-box">
+    <h4>✅ Prochaines étapes recommandées</h4>
+    <ul>
+      <li>Recréer les catégories de menu, boissons et ingrédients</li>
+      <li>Importer les fiches techniques et recettes</li>
+      <li>Recréer les comptes utilisateurs (managers, caissiers, serveurs…)</li>
+      <li>Configurer les tarifs et forfaits</li>
+      <li>Effectuer un inventaire d'ouverture des stocks</li>
+    </ul>
+  </div>
+
+  <div class="info-box">
+    <h4>📊 Vérification des compteurs après remise</h4>
+    <div id="verif" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"></div>
+  </div>
+
+  <div class="btn-row">
+    <a href="/admin/" class="btn-h" style="background:#1A2535">🏠 Administration</a>
+    <a href="{% url 'admin_reset_dashboard' %}" class="btn-h" style="background:#7C3AED">🔄 Remise à Zéro</a>
+    <a href="/dashboard/" class="btn-h" style="background:#16A34A">📊 Tableau de bord</a>
+  </div>
+</div>
+
+<script>
+const COUNTS  = {{ counts_json|safe }};
+const MODULES = {
+  {% for mod_key, mod_info in modules.items %}
+  "{{ mod_key }}": { label: "{{ mod_info.label }}", icon: "{{ mod_info.icon }}" },
+  {% endfor %}
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  const grid = document.getElementById('verif');
+  let allZero = true;
+  for (const [modKey, modMeta] of Object.entries(MODULES)) {
+    const total = Object.values(COUNTS[modKey] || {}).reduce((s,v)=>s+v, 0);
+    if (total > 0) allZero = false;
+    const ok = total === 0;
+    grid.innerHTML += `
+      <div style="background:${ok?'#F0FDF4':'#FEF2F2'};border:1px solid ${ok?'#86EFAC':'#FECACA'};border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:${ok?'#16A34A':'#DC2626'}">${total}</div>
+        <div style="font-size:11px;color:#9CA3AF;font-weight:600">${modMeta.icon} ${modMeta.label}</div>
+      </div>`;
+  }
+});
+</script>
+{% endblock %}

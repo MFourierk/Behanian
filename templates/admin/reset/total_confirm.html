@@ -1,0 +1,169 @@
+{% extends "admin/base_site.html" %}
+{% block title %}🔴 Remise à Zéro Totale — BEHANIAN ERP{% endblock %}
+{% block extrahead %}
+<style>
+:root{--red:#DC2626;--dark:#1A2535;--border:#D4DCE8}
+.rz{max-width:860px;margin:0 auto;padding:24px 0 60px}
+.hero{background:linear-gradient(135deg,#7F1D1D,#991B1B);border-radius:14px;padding:28px 32px;margin-bottom:22px}
+.hero .badge{display:inline-block;background:rgba(255,255,255,.15);color:#FEE2E2;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:12px;border:1px solid rgba(255,255,255,.2)}
+.hero h1{font-size:22px;font-weight:800;color:#fff;margin:0 0 6px}
+.hero p{color:#FCA5A5;margin:0;font-size:13px}
+.warn{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#991B1B}
+.warn ul{margin:8px 0 0;padding-left:20px;line-height:2}
+.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
+.scope-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px}
+.scope-card h4{font-size:13px;font-weight:700;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #F0F3F7}
+.scope-card.del h4{color:#DC2626}
+.scope-card.keep h4{color:#16A34A}
+.scope-card ul{margin:0;padding-left:16px;font-size:12px;color:#374151;line-height:2}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.stat{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px;text-align:center}
+.stat .nb{font-size:22px;font-weight:800;color:#DC2626}
+.stat .lb{font-size:10px;color:#7A8B9C;margin-top:2px;font-weight:600;text-transform:uppercase}
+.form-card{background:#fff;border:2px solid var(--red);border-radius:12px;padding:24px}
+.form-card h3{font-size:15px;font-weight:800;color:var(--red);margin:0 0 18px;padding-bottom:10px;border-bottom:1px solid #FECACA}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:11px;font-weight:700;color:#7A8B9C;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fg input[type=password],.fg input[type=text]{width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:8px;font-size:14px;transition:border-color .2s}
+.fg input:focus{outline:none;border-color:var(--red)}
+.fg .hint{font-size:11px;color:#9CA3AF;margin-top:4px}
+.check-final{display:flex;align-items:flex-start;gap:12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:14px;margin-bottom:20px;cursor:pointer}
+.check-final input{width:20px;height:20px;flex-shrink:0;margin-top:2px;accent-color:#DC2626}
+.check-final span{font-size:13px;color:#7F1D1D;font-weight:600;line-height:1.5}
+.btn-row{display:flex;gap:10px;align-items:center}
+.btn-cancel{padding:10px 20px;border-radius:8px;border:1px solid var(--border);background:#fff;color:#374151;font-size:13px;font-weight:600;text-decoration:none}
+.btn-reset{padding:10px 24px;border-radius:8px;border:none;background:#DC2626;color:#fff;font-size:14px;font-weight:800;cursor:pointer;opacity:.4;transition:opacity .2s}
+.btn-reset.ready{opacity:1}
+.stitle{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="rz">
+
+  <div class="hero">
+    <div class="badge">🔒 CONSOLE ADMIN UNIQUEMENT — SUPERUSER REQUIS</div>
+    <h1>🔴 Remise à Zéro Totale</h1>
+    <p>Cette opération efface l'intégralité des données opérationnelles et du référentiel. Elle est irréversible.</p>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ Ce qui sera irrémédiablement supprimé :</strong>
+    <ul>
+      <li>Toutes les transactions (commandes, réservations, tickets, sessions caisse…)</li>
+      <li>Tous les stocks (boissons, ingrédients — remis à 0)</li>
+      <li>Tout le référentiel : articles, plats, boissons, ingrédients, fiches techniques, catégories, fournisseurs, clients, forfaits</li>
+      <li>Tous les comptes utilisateurs <strong>sauf les superadmins</strong></li>
+    </ul>
+  </div>
+
+  <!-- Périmètre -->
+  <div class="stitle">Périmètre de la remise totale</div>
+  <div class="scope-grid">
+    <div class="scope-card del">
+      <h4>🗑️ Supprimé</h4>
+      <ul>
+        <li>Toutes les transactions (tous modules)</li>
+        <li>Stocks cave et cuisine (→ 0)</li>
+        <li>Articles, Plats, Boissons, Ingrédients</li>
+        <li>Fiches techniques &amp; Recettes</li>
+        <li>Catégories, Fournisseurs, Clients</li>
+        <li>Forfaits / Menus VIP</li>
+        <li>Événements boîte de nuit</li>
+        <li>Utilisateurs (non-superusers)</li>
+      </ul>
+    </div>
+    <div class="scope-card keep">
+      <h4>✅ Conservé (infrastructure)</h4>
+      <ul>
+        <li>Chambres hôtel (statut → disponible)</li>
+        <li>Tables restaurant (statut → libre)</li>
+        <li>Tables bar &amp; boîte de nuit</li>
+        <li>Espaces événementiels</li>
+        <li>Tarifs piscine</li>
+        <li>Configuration du complexe</li>
+        <li>Comptes superadmin</li>
+        <li>Structure Django (modèles, migrations)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Statistiques actuelles -->
+  <div class="stitle">Transactions actuelles qui seront supprimées</div>
+  <div class="stat-grid" id="statGrid">
+    <div class="stat"><div class="nb" id="st-total">{{ total }}</div><div class="lb">Total</div></div>
+    <div class="stat"><div class="nb" id="st-tickets">0</div><div class="lb">Tickets</div></div>
+    <div class="stat"><div class="nb" id="st-reservations">0</div><div class="lb">Réservations</div></div>
+    <div class="stat"><div class="nb" id="st-sessions">0</div><div class="lb">Sessions caisse</div></div>
+  </div>
+
+  <!-- Triple confirmation -->
+  <div class="form-card">
+    <h3>🔐 Triple confirmation requise</h3>
+
+    <form method="POST" action="{% url 'admin:total_reset_execute' %}" id="totalResetForm">
+      {% csrf_token %}
+
+      <div class="fg">
+        <label>Mot de passe administrateur</label>
+        <input type="password" name="password_admin" id="f_pwd"
+               placeholder="Votre mot de passe de connexion Django" required autocomplete="off">
+        <div class="hint">Votre mot de passe superadmin</div>
+      </div>
+
+      <div class="fg">
+        <label>Code de confirmation</label>
+        <input type="text" name="code_confirmation" id="f_code"
+               placeholder="Saisir : RESET TOTAL"
+               required autocomplete="off"
+               style="text-transform:uppercase;letter-spacing:2px"
+               oninput="this.value=this.value.toUpperCase(); checkReady()">
+        <div class="hint">Saisissez exactement : <strong>RESET TOTAL</strong> en majuscules</div>
+      </div>
+
+      <label class="check-final">
+        <input type="checkbox" name="confirm_checkbox" id="f_chk" onchange="checkReady()">
+        <span>Je confirme avoir effectué une sauvegarde externe et comprends que cette action est irréversible et supprimera l'ensemble des données opérationnelles du système.</span>
+      </label>
+
+      {% if messages %}
+        {% for msg in messages %}
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;margin-bottom:14px;color:#991B1B;font-size:13px">
+          ❌ {{ msg }}
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="btn-row">
+        <a href="{% url 'admin_reset_dashboard' %}" class="btn-cancel">← Annuler</a>
+        <button type="submit" class="btn-reset" id="btnReset" disabled>
+          💣 Exécuter la remise totale
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+const COUNTS = {{ counts_json|safe }};
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('st-tickets').textContent     = (COUNTS.facturation || {}).tickets || 0;
+  document.getElementById('st-reservations').textContent = (COUNTS.hotel || {}).reservations || 0;
+  document.getElementById('st-sessions').textContent    = (COUNTS.caisse || {}).sessions || 0;
+});
+
+function checkReady() {
+  const code = document.getElementById('f_code').value;
+  const chk  = document.getElementById('f_chk').checked;
+  const btn  = document.getElementById('btnReset');
+  if (code === 'RESET TOTAL' && chk) {
+    btn.disabled = false;
+    btn.classList.add('ready');
+  } else {
+    btn.disabled = true;
+    btn.classList.remove('ready');
+  }
+}
+</script>
+{% endblock %}

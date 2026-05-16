@@ -1,15 +1,20 @@
 {% extends "admin/index.html" %}
 {% block content %}
 {{ block.super }}
-<div style="margin-top:24px;padding:20px;background:linear-gradient(135deg,#1A2535,#2D3F55);border-radius:12px;display:flex;align-items:center;justify-content:space-between">
+<div style="margin-top:28px;background:linear-gradient(135deg,#1A2535,#2D3F55);border-radius:14px;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
   <div>
-    <div style="font-size:13px;font-weight:700;color:#C9A84C;margin-bottom:4px">⚙️ ADMINISTRATION SYSTÈME</div>
-    <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">🔄 Remise à Zéro des données</div>
+    <div style="font-size:11px;font-weight:700;color:#C9A84C;margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px">⚙️ Administration Système</div>
+    <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">🔄 Remise à Zéro des Données</div>
     <div style="font-size:13px;color:#8B9DBB">Supprimer les transactions de test et réinitialiser les numérotations</div>
   </div>
-  <div style="display:flex;gap:10px">
-    <a href="/system/reset/" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;background:#C9A84C;color:#1A2535;border-radius:10px;font-weight:800;font-size:14px;text-decoration:none">
-      🔄 Remise à Zéro
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="/system/reset/"
+       style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:#F59E0B;color:#1A2535;border-radius:10px;font-weight:800;font-size:13px;text-decoration:none">
+      🟡 Remise Partielle
+    </a>
+    <a href="{% url 'admin:total_reset_confirm' %}"
+       style="display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:#DC2626;color:#fff;border-radius:10px;font-weight:800;font-size:13px;text-decoration:none">
+      🔴 Remise Totale
     </a>
   </div>
 </div>

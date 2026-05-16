@@ -15,3 +15,8 @@ media/
 
 # Notes personnelles
 Gitinfo.txt
+
+# Fichiers temporaires de migration de données
+data_export.json
+user_groups_backup.json
+temp_check_cuisine_stock.py

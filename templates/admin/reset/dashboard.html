@@ -1,110 +1,150 @@
 {% extends "admin/base_site.html" %}
-{% block title %}Remise à Zéro — BEHANIAN Admin{% endblock %}
+{% block title %}Remise à Zéro — BEHANIAN ERP{% endblock %}
 {% block extrahead %}
 <style>
 :root{--gold:#C9A84C;--dark:#1A2535;--border:#D4DCE8}
-.rz{max-width:980px;margin:0 auto;padding:24px 0 60px}
+.rz{max-width:1020px;margin:0 auto;padding:24px 0 60px}
 .hero{background:linear-gradient(135deg,#1A2535,#2D3F55);border-radius:14px;padding:28px 32px;margin-bottom:22px}
 .hero .badge{display:inline-block;background:rgba(201,168,76,.2);color:var(--gold);padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:12px;border:1px solid rgba(201,168,76,.3)}
 .hero h1{font-size:22px;font-weight:800;color:#fff;margin:0 0 6px}
 .hero p{color:#8B9DBB;margin:0;font-size:13px}
 .warn{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:11px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;color:#991B1B}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
 .kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;border-top:3px solid}
-.kpi .nb{font-size:26px;font-weight:800;color:var(--dark)}
+.kpi .nb{font-size:24px;font-weight:800;color:var(--dark)}
 .kpi .lb{font-size:11px;color:#7A8B9C;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-.mod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px}
+.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
 .mod{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px;display:flex;gap:12px}
 .mod-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
 .mod-name{font-weight:700;font-size:13px;color:var(--dark);margin:0 0 3px}
 .mod-desc{font-size:11px;color:#9CA3AF;margin:0 0 8px}
 .pills{display:flex;flex-wrap:wrap;gap:4px}
 .pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
-.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.act-total{margin-bottom:14px}
 .act{border-radius:14px;padding:22px;text-decoration:none;display:block;border:2px solid;transition:all .15s}
 .act:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
 .act.partiel{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border-color:#F59E0B}
-.act.complet{background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border-color:#EF4444}
 .act.custom{background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-color:#7C3AED}
+.act.complet{background:linear-gradient(135deg,#FEF2F2,#FEE2E2);border-color:#EF4444;display:flex;align-items:center;gap:20px}
 .act h3{font-size:15px;font-weight:800;margin:0 0 8px}
 .act.partiel h3{color:#B45309}
-.act.complet h3{color:#991B1B}
 .act.custom h3{color:#5B21B6}
+.act.complet h3{color:#991B1B;margin:0 0 6px}
 .act p{font-size:12px;margin:0 0 14px;line-height:1.5}
 .act.partiel p{color:#78350F}
-.act.complet p{color:#7F1D1D}
 .act.custom p{color:#4C1D95}
+.act.complet p{color:#7F1D1D;margin:0}
 .act ul{margin:0 0 16px;padding-left:14px;font-size:11px;line-height:1.8}
 .act.partiel ul{color:#78350F}
-.act.complet ul{color:#7F1D1D}
 .act.custom ul{color:#4C1D95}
-.btn-act{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-weight:700;font-size:12px;color:#fff;text-decoration:none}
+.btn-act{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-weight:700;font-size:12px;color:#fff;text-decoration:none;flex-shrink:0}
 .stitle{font-size:11px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px}
+.lock-badge{display:inline-flex;align-items:center;gap:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;flex-shrink:0}
 </style>
 {% endblock %}
 {% block content %}
 <div class="rz">
+
   <div class="hero">
     <div class="badge">⚙️ ADMINISTRATION SYSTÈME — SUPERUSER UNIQUEMENT</div>
-    <h1>🔄 Remise à Zéro — BEHANIAN</h1>
-    <p>Supprime les transactions de test et réinitialise les numérotations. Choisissez le type de remise ou sélectionnez précisément les modules.</p>
+    <h1>🔄 Remise à Zéro — BEHANIAN ERP</h1>
+    <p>Supprimez les transactions et réinitialisez les numérotations. La remise totale est accessible depuis ce panneau admin uniquement.</p>
   </div>
 
-  <div class="warn"><span style="font-size:17px">⚠️</span><div><strong>Ces actions sont irréversibles.</strong> Effectuez une sauvegarde avant toute opération.</div></div>
+  <div class="warn">
+    <span style="font-size:17px">⚠️</span>
+    <div><strong>Ces actions sont irréversibles.</strong> Un backup JSON est automatiquement créé avant chaque remise dans <code>media/backups/</code>.</div>
+  </div>
 
   <!-- KPIs -->
   <div class="stitle">Transactions actuelles en base</div>
-  <div class="kpis">
-    <div class="kpi" style="border-top-color:#1A2535"><div class="nb">{{ total }}</div><div class="lb">Total</div></div>
-    <div class="kpi" style="border-top-color:#1D4ED8"><div class="nb">{{ flat.facturation__tickets|default:0 }}</div><div class="lb">Tickets</div></div>
-    <div class="kpi" style="border-top-color:#D35400"><div class="nb">{{ flat.restaurant__commandes|default:0 }}</div><div class="lb">Commandes</div></div>
-    <div class="kpi" style="border-top-color:#2563EB"><div class="nb">{{ flat.hotel__reservations|default:0 }}</div><div class="lb">Réservations</div></div>
+  <div class="kpis" id="kpiGrid">
+    <div class="kpi" style="border-top-color:#1A2535"><div class="nb" id="kpi-total">{{ total }}</div><div class="lb">Total transactions</div></div>
+    <div class="kpi" style="border-top-color:#1D4ED8"><div class="nb" id="kpi-tickets">0</div><div class="lb">Tickets</div></div>
+    <div class="kpi" style="border-top-color:#D35400"><div class="nb" id="kpi-commandes">0</div><div class="lb">Commandes resto</div></div>
+    <div class="kpi" style="border-top-color:#2563EB"><div class="nb" id="kpi-reservations">0</div><div class="lb">Réservations hôtel</div></div>
+    <div class="kpi" style="border-top-color:#16A34A"><div class="nb" id="kpi-sessions">0</div><div class="lb">Sessions caisse</div></div>
   </div>
 
   <!-- Modules -->
   <div class="stitle">Détail par module</div>
-  <div class="mod-grid">
-    {% for mod_key, mod_info in modules.items %}
-    <div class="mod">
-      <div class="mod-ic" style="background:{{ mod_info.light }};color:{{ mod_info.color }}">{{ mod_info.icon }}</div>
-      <div style="flex:1;min-width:0">
-        <div class="mod-name">{{ mod_info.label }}</div>
-        <div class="mod-desc">{{ mod_info.description }}</div>
-        <div class="pills">
-          {% for sous_key, sous_label in mod_info.sous_modules.items %}
-          {% with val=flat|default_if_none:0 %}
-          <span class="pill" style="background:{{ mod_info.light }};color:{{ mod_info.color }}">
-            {{ sous_label }}: {{ flat|dictsort:"0"|first }}
-          </span>
-          {% endwith %}
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+  <div class="mod-grid" id="modGrid"></div>
 
   <!-- Actions -->
   <div class="stitle">Choisir une action</div>
   <div class="actions">
     <a href="{% url 'admin_reset_confirm' 'partiel' %}" class="act partiel">
       <h3>🟡 Remise Partielle</h3>
-      <p>Transactions supprimées. Stocks conservés.</p>
-      <ul><li>Tous les modules cochés</li><li>Stocks cave/cuisine préservés</li></ul>
+      <p>Transactions supprimées, compteurs remis à 0. Stocks, utilisateurs et configuration conservés.</p>
+      <ul>
+        <li>Toutes les commandes, réservations, tickets, sessions</li>
+        <li>Mouvements de stock (pas les niveaux de stock)</li>
+        <li>Boîte de nuit, piscine, espaces événementiels</li>
+      </ul>
       <span class="btn-act" style="background:#F59E0B">Configurer →</span>
-    </a>
-    <a href="{% url 'admin_reset_confirm' 'complet' %}" class="act complet">
-      <h3>🔴 Remise Complète</h3>
-      <p>Tout supprimé, stocks à 0. Structure seule conservée.</p>
-      <ul><li>Tous les modules cochés</li><li>Stocks remis à 0</li></ul>
-      <span class="btn-act" style="background:#EF4444">Configurer →</span>
     </a>
     <a href="{% url 'admin_reset_confirm' 'personnalise' %}" class="act custom">
       <h3>🟣 Remise Personnalisée</h3>
-      <p>Sélectionnez précisément les modules et sous-éléments à effacer.</p>
-      <ul><li>Choix module par module</li><li>Choix sous-élément par sous-élément</li></ul>
+      <p>Sélectionnez précisément les modules et sous-éléments à supprimer.</p>
+      <ul>
+        <li>Choix module par module</li>
+        <li>Choix sous-élément par sous-élément</li>
+        <li>Aperçu des comptages avant exécution</li>
+      </ul>
       <span class="btn-act" style="background:#7C3AED">Choisir →</span>
     </a>
   </div>
+
+  <!-- Remise Totale — Admin only -->
+  <div class="stitle">Remise totale (admin console uniquement)</div>
+  <a href="{% url 'admin:total_reset_confirm' %}" class="act complet act-total">
+    <div style="font-size:36px">🔴</div>
+    <div style="flex:1">
+      <h3>Remise à Zéro Totale</h3>
+      <p>Efface <strong>tout</strong> : transactions, stocks, articles, plats, boissons, ingrédients, utilisateurs (sauf superusers). Ne conserve que l'infrastructure physique (chambres, tables, espaces) et la configuration.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <span class="lock-badge">🔒 Admin uniquement</span>
+      <span class="btn-act" style="background:#EF4444">Accéder →</span>
+    </div>
+  </a>
+
 </div>
+
+<script>
+const COUNTS = {{ counts_json|safe }};
+const MODULES_META = {
+  {% for mod_key, mod_info in modules.items %}
+  "{{ mod_key }}": {label:"{{ mod_info.label }}", icon:"{{ mod_info.icon }}", color:"{{ mod_info.color }}", light:"{{ mod_info.light }}"},
+  {% endfor %}
+};
+
+// KPIs
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('kpi-tickets').textContent     = (COUNTS.facturation || {}).tickets || 0;
+  document.getElementById('kpi-commandes').textContent   = (COUNTS.restaurant  || {}).commandes || 0;
+  document.getElementById('kpi-reservations').textContent= (COUNTS.hotel       || {}).reservations || 0;
+  document.getElementById('kpi-sessions').textContent    = (COUNTS.caisse      || {}).sessions || 0;
+
+  // Modules détail
+  const grid = document.getElementById('modGrid');
+  for (const [modKey, modData] of Object.entries(COUNTS)) {
+    const meta = MODULES_META[modKey] || {};
+    const total = Object.entries(modData).filter(([k]) => k !== 'stocks').reduce((s,[,v])=>s+v,0);
+    const pills = Object.entries(modData).map(([k,v]) =>
+      `<span class="pill" style="background:${meta.light||'#F3F4F6'};color:${meta.color||'#374151'}">${k}: ${v}</span>`
+    ).join('');
+    grid.innerHTML += `
+      <div class="mod">
+        <div class="mod-ic" style="background:${meta.light||'#F3F4F6'};color:${meta.color||'#374151'}">${meta.icon||'📦'}</div>
+        <div style="flex:1;min-width:0">
+          <div class="mod-name">${meta.label||modKey}</div>
+          <div style="font-size:12px;font-weight:700;color:${total>0?'#DC2626':'#16A34A'};margin-bottom:6px">${total} enregistrement(s)</div>
+          <div class="pills">${pills}</div>
+        </div>
+      </div>`;
+  }
+});
+</script>
 {% endblock %}
