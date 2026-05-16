@@ -31,9 +31,15 @@
 .type-pill{flex:1;padding:12px;border-radius:10px;border:2px solid #d4dce8;background:white;cursor:pointer;text-align:center;transition:all .15s}
 .type-pill.active.visiteur{border-color:#2563eb;background:#eff6ff}
 .type-pill.active.heberge{border-color:#16a34a;background:#f0fdf4}
+.type-pill.active.vip{border-color:#d97706;background:#fffbeb}
 .type-pill .pill-icon{font-size:1.4rem;display:block;margin-bottom:4px}
 .type-pill .pill-label{font-size:12px;font-weight:600;color:#1a2535}
 .type-pill .pill-price{font-size:11px;color:#7a8b9c;margin-top:2px}
+/* Payment choice (residents) */
+.payment-choice{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:10px;border:2px solid #d4dce8;background:white;cursor:pointer;transition:all .15s;font-size:12px;font-weight:600;color:#1a2535}
+.payment-choice.active.chambre{border-color:#16a34a;background:#f0fdf4}
+.payment-choice.active.direct{border-color:#2563eb;background:#eff6ff}
+.badge-vip{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;margin-left:4px}
 /* Article list */
 .art-list{max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px}
 .art-item{display:flex;align-items:center;padding:9px 14px;cursor:pointer;border-bottom:1px solid #f0f3f7;transition:background .1s}
@@ -136,7 +142,7 @@
                 {% if not a.date_sortie %}
                 <div style="display:flex;gap:4px">
                   <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
-                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|montant }})"><i class="fas fa-sign-out-alt"></i></button>
+                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
                 {% endif %}
               </td>
@@ -169,7 +175,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
-              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|montant }})">Sortie</button>
+              <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})">Sortie</button>
             </div>
           </div>
           {% endfor %}
@@ -213,9 +219,20 @@
         <span class="pill-icon">🧑</span><span class="pill-label">Visiteur</span>
         <span class="pill-price">{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }} F{% else %}Non défini{% endif %}</span>
       </div>
+      {% for f in forfaits_piscine %}
+      <div class="type-pill vip" onclick="setVip({{ f.id }}, '{{ f.nom|escapejs }}', {{ f.prix }})">
+        <span class="pill-icon">⭐</span><span class="pill-label">{{ f.nom }}</span>
+        <span class="pill-price">{{ f.prix|montant }} F</span>
+      </div>
+      {% endfor %}
       <div class="type-pill heberge" onclick="setType('heberge')">
         <span class="pill-icon">🏨</span><span class="pill-label">Résident hôtel</span><span class="pill-price">Gratuit</span>
       </div>
+    </div>
+
+    <div id="vipComposition" style="display:none;margin-bottom:12px;padding:12px;background:#fffbeb;border-radius:10px;border:1px solid #fde68a">
+      <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">⭐ Articles inclus dans le forfait :</div>
+      <div id="vipItems" style="font-size:12px;color:#78350f"></div>
     </div>
 
     <div id="rowChambre" style="display:none;margin-bottom:12px">
@@ -286,7 +303,7 @@
         <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
         <div id="listBoisson">
           {% for b in boissons %}
-          <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|montant }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+          <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
             <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
             <div style="text-align:right;flex-shrink:0">
               <div class="art-prix">{{ b.prix|montant }} F</div>
@@ -305,7 +322,7 @@
         <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
         <div id="listPlat">
           {% for p in plats %}
-          <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|montant }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+          <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
             <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
             <div style="text-align:right;flex-shrink:0"><div class="art-prix">{{ p.prix|montant }} F</div></div>
             <div class="art-add-btn">＋</div>
@@ -353,20 +370,56 @@
 
     <div id="sortieDetail" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px"></div>
 
-    <div class="form-row">
-      <label>Mode de paiement</label>
-      <select id="sortieMode" onchange="piscineModeChange(this)">
-        <option value="especes">Espèces</option>
-        <option value="mobile_money">Mobile Money</option>
-        <option value="carte_bancaire">Carte Bancaire</option>
+    <!-- Choix chambre / direct pour résidents -->
+    <div id="sortieChoixResident" style="display:none;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:#3d4f63;margin-bottom:8px">Mode de règlement :</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="payment-choice active chambre" id="choixChambre" onclick="setPaymentChoice('chambre')">
+          <span style="font-size:1.3rem">🏨</span>
+          <span>Chambre</span>
+          <span style="font-size:10px;color:#7a8b9c;font-weight:400">Note automatique</span>
+        </button>
+        <button class="payment-choice direct" id="choixDirect" onclick="setPaymentChoice('direct')">
+          <span style="font-size:1.3rem">💵</span>
+          <span>Paiement direct</span>
+          <span style="font-size:10px;color:#7a8b9c;font-weight:400">Espèces / Mobile / Carte</span>
+        </button>
+      </div>
+    </div>
 
-      </select>
+    <div id="sortiePaiementDirect" style="display:none">
+      <div class="form-row">
+        <label>Mode de paiement</label>
+        <select id="sortieMode">
+          <option value="especes">Espèces</option>
+          <option value="mobile_money">Mobile Money</option>
+          <option value="carte_bancaire">Carte Bancaire</option>
+        </select>
+      </div>
+      <div class="form-row" id="sortieRecuRow">
+        <label>Montant reçu (FCFA)</label>
+        <input type="number" id="sortieRecu" placeholder="0">
+      </div>
+      <div id="sortieRendu" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
     </div>
-    <div class="form-row" id="sortieRecuRow">
-      <label>Montant reçu (FCFA)</label>
-      <input type="number" id="sortieRecu" placeholder="0">
+
+    <!-- Paiement direct non-résident -->
+    <div id="sortiePaiementNonResident">
+      <div class="form-row">
+        <label>Mode de paiement</label>
+        <select id="sortieModeNR">
+          <option value="especes">Espèces</option>
+          <option value="mobile_money">Mobile Money</option>
+          <option value="carte_bancaire">Carte Bancaire</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Montant reçu (FCFA)</label>
+        <input type="number" id="sortieRecuNR" placeholder="0">
+      </div>
+      <div id="sortieRenduNR" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
     </div>
-    <div id="sortieRendu" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
+
     <div style="display:flex;gap:8px">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalSortie')">Annuler</button>
       <button class="btn-p btn-primary" style="flex:2" onclick="validerSortie()"><i class="fas fa-sign-out-alt"></i> Encaisser & Sortir</button>
@@ -381,11 +434,11 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row">
         <label>Adulte visiteur (FCFA)</label>
-        <input type="number" id="tarifAdulte" value="{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }}{% endif %}" placeholder="ex: 5000">
+        <input type="number" id="tarifAdulte" value="{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 5000">
       </div>
       <div class="form-row">
         <label>Enfant visiteur (FCFA)</label>
-        <input type="number" id="tarifEnfant" value="{% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|montant }}{% endif %}" placeholder="ex: 2500">
+        <input type="number" id="tarifEnfant" value="{% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% endif %}" placeholder="ex: 2500">
       </div>
     </div>
     <div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#15803d;margin-bottom:14px">
@@ -405,6 +458,18 @@ let artSelType = null;
 let artSelPrix = 0;
 filtrerB._cat = ''; filtrerP._cat = '';
 
+// Données forfaits VIP (injectées depuis Django)
+const FORFAITS_PISCINE = [
+  {% for f in forfaits_piscine %}{
+    id: {{ f.id }},
+    nom: "{{ f.nom|escapejs }}",
+    prix: {{ f.prix }},
+    lignes: [{% for l in f.lignes.all %}{ nom: "{{ l.nom_affiche|escapejs }}", quantite: {{ l.quantite }} }{% if not forloop.last %},{% endif %}{% endfor %}]
+  }{% if not forloop.last %},{% endif %}{% endfor %}
+];
+
+let vipForfaitId = null; // ID du forfait VIP sélectionné, null sinon
+
 function fermerModal(id){ document.getElementById(id).classList.remove('open'); }
 function ouvrirModalTarif(){ document.getElementById('modalTarif').classList.add('open'); }
 
@@ -413,6 +478,7 @@ function ouvrirEntree(type){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
   document.getElementById('entreeType').value=type;
+  vipForfaitId = null;
   setType(type);
   document.getElementById('modalEntree').classList.add('open');
 }
@@ -420,6 +486,7 @@ function ouvrirEntree(type){
 function ouvrirEntreeResident(resId, nom, chambre){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
+  vipForfaitId = null;
   setType('heberge');
   // Présélectionner la chambre
   const sel=document.getElementById('entreeChambre');
@@ -435,14 +502,44 @@ function ouvrirEntreeResident(resId, nom, chambre){
 }
 
 function setType(type){
+  vipForfaitId = null;
   document.getElementById('entreeType').value=type;
   document.getElementById('entreeReservationId').value='';
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
-  document.querySelector('.type-pill.'+type).classList.add('active');
+  const pill=document.querySelector('.type-pill.'+type);
+  if(pill) pill.classList.add('active');
   // Afficher sélecteur chambre pour les résidents
   document.getElementById('rowChambre').style.display=type==='heberge'?'block':'none';
   if(type!=='heberge') document.getElementById('entreeChambre').value='';
+  // Masquer composition VIP
+  document.getElementById('vipComposition').style.display='none';
   updatePrix();
+}
+
+function setVip(forfaitId, nom, prix){
+  vipForfaitId = forfaitId;
+  document.getElementById('entreeType').value='visiteur'; // VIP = visiteur payant
+  document.getElementById('entreeReservationId').value='';
+  document.getElementById('rowChambre').style.display='none';
+  document.getElementById('entreeChambre').value='';
+  // Activer pill VIP
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+  // Trouver et activer la pill vip correspondante
+  document.querySelectorAll('.type-pill.vip').forEach(p=>{
+    if(p.getAttribute('onclick')&&p.getAttribute('onclick').includes('setVip('+forfaitId+','))
+      p.classList.add('active');
+  });
+  // Afficher composition
+  const f=FORFAITS_PISCINE.find(x=>x.id===forfaitId);
+  if(f){
+    const items=document.getElementById('vipItems');
+    items.innerHTML=f.lignes.map(l=>`<div style="padding:3px 0">• ${l.nom} × ${l.quantite}</div>`).join('')||'<div style="color:#b0b8c1">Aucun article</div>';
+    document.getElementById('vipComposition').style.display='block';
+  }
+  // Mettre à jour le prix
+  const row=document.getElementById('entreePrixRow');
+  row.style.background='#fffbeb';row.style.color='#92400e';row.style.borderColor='#fde68a';
+  row.textContent=`⭐ ${nom} — ${prix.toLocaleString('fr-FR')} F (forfait inclus)`;
 }
 
 function selectionnerResident(){
@@ -463,6 +560,7 @@ function changeNb(cat,d){
 }
 
 function updatePrix(){
+  if(vipForfaitId) return; // Prix VIP géré par setVip()
   const type=document.getElementById('entreeType').value;
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
@@ -471,8 +569,8 @@ function updatePrix(){
     row.style.background='#f0fdf4';row.style.color='#15803d';row.style.borderColor='#bbf7d0';
     row.textContent='🏨 Résident hôtel — Entrée gratuite (adultes et enfants)';
   } else {
-    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }}{% else %}0{% endif %};
-    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|montant }}{% else %}0{% endif %};
+    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
     const total=ta*na+te*ne;
     let detail='';
     if(na>0)detail+=`${na} adulte${na>1?'s':''} × ${ta.toLocaleString('fr-FR')} F`;
@@ -485,15 +583,17 @@ function updatePrix(){
 async function validerEntree(){
   const nom=document.getElementById('entreeNom').value.trim();
   const type=document.getElementById('entreeType').value;
-  if(!nom){alert('Veuillez saisir le nom du client.');return;}
+  if(!nom){piscineNotif('Veuillez saisir le nom du client.','error');return;}
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
-  if(type!=='heberge'&&na<1&&ne<1){alert('Veuillez indiquer au moins 1 personne.');return;}
+  if(type!=='heberge'&&na<1&&ne<1){piscineNotif('Veuillez indiquer au moins 1 personne.','error');return;}
   if(type==='heberge'){
     const resId=document.getElementById('entreeReservationId').value;
-    if(!resId){alert('Veuillez sélectionner la chambre du résident.');return;}
+    if(!resId){piscineNotif('Veuillez sélectionner la chambre du résident.','error');return;}
   }
-  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value})});
+  const payload={nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value};
+  if(vipForfaitId) payload.forfait_id=vipForfaitId;
+  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
   const d=await r.json();
   if(d.success){fermerModal('modalEntree');location.reload();}
   else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
@@ -529,18 +629,24 @@ async function chargerEnCours(){
   }
   let html='';
   d.consommations.forEach(c=>{
-    html+=`<div id="enCours_${c.id}" style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #dde3ec;border-radius:10px;margin-bottom:8px;background:white">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:#1a2535">${c.produit}</div>
-        <div style="font-size:11px;color:#7a8b9c">${c.prix.toLocaleString('fr-FR')} F/u</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:4px">
+    const isVip=c.inclus_forfait;
+    const badgeVip=isVip?'<span class="badge-vip">VIP</span>':'';
+    const prixLabel=isVip?'<span style="color:#d97706;font-size:11px">Inclus forfait</span>':`<span style="font-size:11px;color:#7a8b9c">${c.prix.toLocaleString('fr-FR')} F/u</span>`;
+    const totalLabel=isVip?'<span style="font-size:12px;color:#d97706;font-weight:600">Inclus</span>':`<div id="total_${c.id}" style="font-size:12px;font-weight:700;color:#2563eb;min-width:65px;text-align:right">${c.total.toLocaleString('fr-FR')} F</div>`;
+    const ctrlsQty=isVip?'':`<div style="display:flex;align-items:center;gap:4px">
         <button onclick="modifConso(${c.id},-1)" style="width:26px;height:26px;border-radius:6px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:14px">−</button>
         <span id="qty_${c.id}" style="font-size:14px;font-weight:700;min-width:24px;text-align:center">${c.quantite}</span>
         <button onclick="modifConso(${c.id},1)" style="width:26px;height:26px;border-radius:6px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:14px">+</button>
+      </div>`;
+    const btnRetirer=isVip?'':`<button onclick="suppConso(${c.id})" style="background:#fee2e2;border:none;color:#dc2626;cursor:pointer;font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px">Retirer</button>`;
+    html+=`<div id="enCours_${c.id}" style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid ${isVip?'#fde68a':'#dde3ec'};border-radius:10px;margin-bottom:8px;background:${isVip?'#fffbeb':'white'}">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:#1a2535">${c.produit}${badgeVip}</div>
+        ${prixLabel}
       </div>
-      <div id="total_${c.id}" style="font-size:12px;font-weight:700;color:#2563eb;min-width:65px;text-align:right">${c.total.toLocaleString('fr-FR')} F</div>
-      <button onclick="suppConso(${c.id})" style="background:#fee2e2;border:none;color:#dc2626;cursor:pointer;font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px">Retirer</button>
+      ${ctrlsQty}
+      ${totalLabel}
+      ${btnRetirer}
     </div>`;
   });
   liste.innerHTML=html;
@@ -720,107 +826,110 @@ async function validerCommande(){
   }
 }
 
-// ═══ FONCTIONS UNIVERSELLES PAIEMENT PISCINE ═══
-function piscineModeChange(sel) {
-  const isChambre = sel.value === 'chambre';
-  const recuRow = document.getElementById('sortieRecuRow');
-  if (recuRow) recuRow.style.display = isChambre ? 'none' : '';
-  document.getElementById('sortieRendu').style.display = 'none';
-}
-
-let _piscineAccesData = null; // Données de l'accès en cours de sortie
+// ═══ SORTIE / PAIEMENT ═══
+let _sortieIsHeberge = false;
+let _sortieTotal = 0;
+let _sortiePayChoice = 'chambre'; // 'chambre' | 'direct'
 
 function piscineOuvrirRecuDepot(chambreNom, module, lignes, total) {
   const params = new URLSearchParams({
-    module: module,
-    chambre: chambreNom,
-    lignes: JSON.stringify(lignes),
-    total: total,
+    module: module, chambre: chambreNom,
+    lignes: JSON.stringify(lignes), total: total,
   });
   const w = window.open('/facturation/receipt/depot/?' + params.toString(), '_blank', 'width=380,height=580');
   if (w) w.focus();
 }
 
-async function piscineMettreEnChambre() {
-  const id = document.getElementById('sortieAccesId').value;
-  const r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/', '/' + id + '/'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-    body: JSON.stringify({ mode_paiement: 'chambre', montant_recu: 0, sur_chambre: true })
-  });
-  const d = await r.json();
-  if (!d.success) { piscineNotif(d.error || 'Une erreur est survenue. Veuillez réessayer.', 'error'); return; }
-  fermerModal('modalSortie');
-  // Afficher reçu de dépôt avec choix impression
-  piscineOuvrirRecuDepot(d.chambre_nom, 'Piscine', d.lignes, d.total);
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:#dcfce7;color:#15803d;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid #bbf7d0';
-  t.textContent = '✓ ' + d.message;
-  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
-  setTimeout(() => location.reload(), 600);
+function setPaymentChoice(choice){
+  _sortiePayChoice = choice;
+  document.getElementById('choixChambre').className='payment-choice'+(choice==='chambre'?' active chambre':'');
+  document.getElementById('choixDirect').className='payment-choice'+(choice==='direct'?' active direct':'');
+  document.getElementById('sortiePaiementDirect').style.display=choice==='direct'?'block':'none';
+  if(choice==='direct'){
+    document.getElementById('sortieRecu').value=_sortieTotal;
+    document.getElementById('sortieRendu').style.display='none';
+  }
 }
 
-async function ouvrirSortie(id,nom,prixEntree){
+function _calcRendu(recuEl, totalV, renduEl){
+  const recu=parseFloat(recuEl.value)||0;
+  if(recu>=totalV){
+    renduEl.style.display='block';renduEl.style.background='#f0fdf4';renduEl.style.color='#15803d';renduEl.style.border='1px solid #bbf7d0';
+    renduEl.textContent='Monnaie à rendre : '+(recu-totalV).toLocaleString('fr-FR')+' F';
+  } else if(recu>0){
+    renduEl.style.display='block';renduEl.style.background='#fef2f2';renduEl.style.color='#dc2626';renduEl.style.border='1px solid #fecaca';
+    renduEl.textContent='Manque : '+(totalV-recu).toLocaleString('fr-FR')+' F';
+  } else renduEl.style.display='none';
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('sortieRecu').addEventListener('input',function(){
+    _calcRendu(this, _sortieTotal, document.getElementById('sortieRendu'));
+  });
+  document.getElementById('sortieRecuNR').addEventListener('input',function(){
+    _calcRendu(this, _sortieTotal, document.getElementById('sortieRenduNR'));
+  });
+});
+
+async function ouvrirSortie(id, nom, prixEntree){
   document.getElementById('sortieAccesId').value=id;
   document.getElementById('sortieNom').textContent=nom;
   // Charger détails
   const r=await fetch(`{% url "piscine:acces_detail" 0 %}`.replace('/0/','/'+id+'/'));
   const d=await r.json();
+  _sortieTotal = d.total;
+  _sortieIsHeberge = d.is_heberge || false;
+  // Construire le récapitulatif
   const det=document.getElementById('sortieDetail');
-  let html=`<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Entrée (${d.nb} pers.)</span><span>${parseFloat(d.entree).toLocaleString('fr-FR')} F</span></div>`;
+  const entreeLabel = d.forfait_nom ? `⭐ ${d.forfait_nom}` : `Entrée (${d.nb} pers.)`;
+  let html=`<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>${entreeLabel}</span><span>${parseFloat(d.entree).toLocaleString('fr-FR')} F</span></div>`;
   if(d.consommations.length){
     html+='<div style="font-size:11px;color:#7a8b9c;margin:6px 0">Consommations :</div>';
-    d.consommations.forEach(c=>html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>${c.produit} x${c.quantite}</span><span>${c.total.toLocaleString('fr-FR')} F</span></div>`);
+    d.consommations.forEach(c=>{
+      const label=c.inclus_forfait?`${c.produit} x${c.quantite} <span class="badge-vip">VIP</span>`:`${c.produit} x${c.quantite}`;
+      const mont=c.inclus_forfait?'Inclus':c.total.toLocaleString('fr-FR')+' F';
+      html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>${label}</span><span style="color:${c.inclus_forfait?'#d97706':'inherit'}">${mont}</span></div>`;
+    });
   }
   html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:8px;padding-top:8px;font-weight:700;color:#1a2535"><span>Total</span><span style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
   det.innerHTML=html;
-  document.getElementById('sortieRecu').value=d.total;
-  // Ajouter/retirer option "Mettre en chambre" selon type client
-  const isHeberge = d.is_heberge || false;
-  const sel = document.getElementById('sortieMode');
-  const existOpt = document.getElementById('sortieOptChambre');
-  if (isHeberge && !existOpt) {
-    const opt = document.createElement('option');
-    opt.value = 'chambre'; opt.id = 'sortieOptChambre';
-    opt.textContent = '🏨 Mettre en chambre';
-    sel.appendChild(opt);
-  } else if (!isHeberge && existOpt) {
-    existOpt.remove();
+  // Gérer affichage selon type
+  document.getElementById('sortieChoixResident').style.display=_sortieIsHeberge?'block':'none';
+  document.getElementById('sortiePaiementNonResident').style.display=_sortieIsHeberge?'none':'block';
+  document.getElementById('sortiePaiementDirect').style.display='none';
+  if(_sortieIsHeberge){
+    setPaymentChoice('chambre');
+  } else {
+    document.getElementById('sortieRecuNR').value=d.total;
+    document.getElementById('sortieRenduNR').style.display='none';
   }
-  sel.value = isHeberge ? 'chambre' : 'especes';
-  piscineModeChange(sel);
-  document.getElementById('sortieRendu').style.display = 'none';
   document.getElementById('modalSortie').classList.add('open');
 }
 
-document.getElementById('sortieRecu').addEventListener('input',function(){
-  const recu=parseFloat(this.value)||0;
-  const total=parseFloat(document.getElementById('sortieRecu').placeholder)||0;
-  // Lire le total depuis le détail
-  const totalEl=document.querySelector('#sortieDetail span[style*="2563eb"]');
-  if(!totalEl)return;
-  const t=parseFloat(totalEl.textContent.replace(/\s/g,'').replace(',','.').replace('F',''))||0;
-  const rendu=document.getElementById('sortieRendu');
-  if(recu>=t){rendu.style.display='block';rendu.style.background='#f0fdf4';rendu.style.color='#15803d';rendu.style.border='1px solid #bbf7d0';rendu.textContent='Monnaie à rendre : '+(recu-t).toLocaleString('fr-FR')+' F';}
-  else if(recu>0){rendu.style.display='block';rendu.style.background='#fef2f2';rendu.style.color='#dc2626';rendu.style.border='1px solid #fecaca';rendu.textContent='Manque : '+(t-recu).toLocaleString('fr-FR')+' F';}
-  else rendu.style.display='none';
-});
-
 async function validerSortie(){
   const id=document.getElementById('sortieAccesId').value;
-  const mode=document.getElementById('sortieMode').value;
-  const recu=parseFloat(document.getElementById('sortieRecu').value)||0;
-  const surChambre = mode === 'chambre';
-  const r=await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({mode_paiement:mode,montant_recu:surChambre?0:recu,sur_chambre:surChambre})});
+  let mode, recu, surChambre;
+  if(_sortieIsHeberge){
+    surChambre = _sortiePayChoice === 'chambre';
+    mode = surChambre ? 'chambre' : document.getElementById('sortieMode').value;
+    recu = surChambre ? 0 : parseFloat(document.getElementById('sortieRecu').value)||0;
+  } else {
+    surChambre = false;
+    mode = document.getElementById('sortieModeNR').value;
+    recu = parseFloat(document.getElementById('sortieRecuNR').value)||0;
+  }
+  const r=await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{
+    method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+    body:JSON.stringify({mode_paiement:mode,montant_recu:recu,sur_chambre:surChambre})
+  });
   const d=await r.json();
   if(d.success){
     fermerModal('modalSortie');
     if(surChambre){
-      // Ouvrir reçu de dépôt
       piscineOuvrirRecuDepot(d.chambre_nom,'Piscine',d.lignes,d.total);
     } else if(d.ticket_html){const w=window.open('','_blank','width=420,height=720');if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}}
     setTimeout(()=>location.reload(),800);
-  } else alert(d.error||'Erreur');
+  } else piscineNotif(d.error||'Erreur','error');
 }
 
 async function sauvegarderTarif(){

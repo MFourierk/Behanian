@@ -21,6 +21,11 @@ class AccesPiscine(models.Model):
         verbose_name="Réservation hôtel liée"
     )
     enregistre_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    forfait = models.ForeignKey(
+        'restaurant.Forfait', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='acces_piscine',
+        verbose_name="Forfait VIP souscrit"
+    )
 
     @property
     def nombre_personnes(self):
@@ -58,11 +63,12 @@ class TarifPiscine(models.Model):
 
 
 class ConsommationPiscine(models.Model):
-    acces         = models.ForeignKey(AccesPiscine, on_delete=models.CASCADE, related_name='consommations')
-    produit       = models.CharField(max_length=100)
-    quantite      = models.IntegerField(default=1)
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
-    date_creation = models.DateTimeField(auto_now_add=True)
+    acces          = models.ForeignKey(AccesPiscine, on_delete=models.CASCADE, related_name='consommations')
+    produit        = models.CharField(max_length=100)
+    quantite       = models.IntegerField(default=1)
+    prix_unitaire  = models.DecimalField(max_digits=10, decimal_places=2)
+    date_creation  = models.DateTimeField(auto_now_add=True)
+    inclus_forfait = models.BooleanField(default=False, verbose_name="Inclus dans forfait VIP")
 
     def get_total(self):
         return self.quantite * self.prix_unitaire

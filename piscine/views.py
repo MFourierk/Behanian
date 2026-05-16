@@ -38,6 +38,10 @@ def piscine_index(request):
         statut='en_cours'
     ).select_related('client', 'chambre').order_by('chambre__numero')
 
+    # Forfaits piscine disponibles
+    from restaurant.models import Forfait
+    forfaits_piscine = Forfait.objects.filter(module='piscine', disponible=True).prefetch_related('lignes__boisson', 'lignes__plat')
+
     # Boissons et plats pour commandes
     from bar.models import BoissonBar, CategorieBar
     from restaurant.models import PlatMenu, CategorieMenu
@@ -66,6 +70,7 @@ def piscine_index(request):
         'cats_resto': cats_resto,
         'acces_liste': acces_liste,
         'acces_actifs': acces_actifs.select_related().prefetch_related('consommations'),
+        'forfaits_piscine': forfaits_piscine,
     }
     return render(request, 'piscine/index.html', context)
 
@@ -73,32 +78,44 @@ def piscine_index(request):
 @require_module_access('piscine')
 @require_POST
 def enregistrer_entree(request):
-    """Enregistrer une entrée piscine."""
+    """Enregistrer une entrée piscine (ordinaire, VIP ou résident)."""
     try:
-        data = json.loads(request.body)
+        data         = json.loads(request.body)
         type_client  = data.get('type_client', 'visiteur')
         nom_client   = data.get('nom_client', '').strip()
-        nb_adultes   = int(data.get('nb_adultes', 0))
+        nb_adultes   = int(data.get('nb_adultes', 1))
         nb_enfants   = int(data.get('nb_enfants', 0))
-        if type_client != 'heberge' and nb_adultes < 1 and nb_enfants < 1:
-            return JsonResponse({'success': False, 'error': 'Veuillez indiquer au moins 1 personne.'})
+        forfait_id   = data.get('forfait_id')
 
         if not nom_client:
             return JsonResponse({'success': False, 'error': 'Nom du client requis'})
+        if type_client != 'heberge' and nb_adultes < 1 and nb_enfants < 1:
+            return JsonResponse({'success': False, 'error': 'Veuillez indiquer au moins 1 personne.'})
 
-        # Calcul prix
-        if type_client == 'heberge':
+        # ── Forfait VIP ──────────────────────────────────────────────
+        forfait = None
+        if forfait_id:
+            from restaurant.models import Forfait
+            try:
+                forfait = Forfait.objects.get(pk=forfait_id, module='piscine', disponible=True)
+                prix_total = forfait.prix
+            except Forfait.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Forfait VIP introuvable ou indisponible.'})
+
+        # ── Tarif ordinaire ──────────────────────────────────────────
+        elif type_client == 'heberge':
             prix_total = Decimal('0')
         else:
             t_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
             t_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
             if not t_adulte:
                 return JsonResponse({'success': False, 'error': 'Tarif adulte non configuré.'})
-            prix_adulte = (t_adulte.prix_unitaire * nb_adultes) if nb_adultes else Decimal('0')
-            prix_enfant = (t_enfant.prix_unitaire * nb_enfants) if t_enfant and nb_enfants else Decimal('0')
-            prix_total  = prix_adulte + prix_enfant
+            prix_total = (
+                (t_adulte.prix_unitaire * nb_adultes if nb_adultes else Decimal('0')) +
+                (t_enfant.prix_unitaire * nb_enfants if t_enfant and nb_enfants else Decimal('0'))
+            )
 
-        # Lier à la réservation hôtel si résident
+        # ── Réservation hôtel ─────────────────────────────────────────
         reservation_hotel = None
         reservation_id = data.get('reservation_id')
         if type_client == 'heberge' and reservation_id:
@@ -108,32 +125,64 @@ def enregistrer_entree(request):
             except HotelReservation.DoesNotExist:
                 pass
 
-        create_kwargs = dict(
+        # ── Créer l'accès ─────────────────────────────────────────────
+        acces = AccesPiscine.objects.create(
             nom_client=nom_client,
             type_client=type_client,
+            nb_adultes=nb_adultes,
+            nb_enfants=nb_enfants,
             prix_total=prix_total,
             enregistre_par=request.user,
+            reservation_hotel=reservation_hotel,
+            forfait=forfait,
         )
-        # Champs ajoutés par migration — vérification via l'introspection Django (compatible tous SGBD)
-        from django.db import connection
-        with connection.cursor() as _cur:
-            _cols = {col.name for col in connection.introspection.get_table_description(_cur, 'piscine_accespiscine')}
-        if 'nb_adultes' in _cols:
-            create_kwargs['nb_adultes'] = nb_adultes
-            create_kwargs['nb_enfants'] = nb_enfants
-        if 'reservation_hotel_id' in _cols:
-            create_kwargs['reservation_hotel'] = reservation_hotel
-        acces = AccesPiscine.objects.create(**create_kwargs)
+
+        # ── Articles inclus dans le forfait VIP ───────────────────────
+        if forfait:
+            from bar.models import BoissonBar, MouvementStockBar
+            from restaurant.models import PlatMenu
+            from cuisine.utils import process_stock_movement
+            for ligne in forfait.lignes.select_related('boisson', 'plat').all():
+                nom_article = ligne.nom_affiche
+                ConsommationPiscine.objects.create(
+                    acces=acces,
+                    produit=nom_article,
+                    quantite=ligne.quantite,
+                    prix_unitaire=Decimal('0'),
+                    inclus_forfait=True,
+                )
+                # Déduction stock boisson
+                if ligne.type_item == 'boisson' and ligne.boisson:
+                    b = ligne.boisson
+                    b.quantite_stock = max(0, b.quantite_stock - ligne.quantite)
+                    b.save()
+                    MouvementStockBar.objects.create(
+                        boisson=b, type_mouvement='sortie',
+                        quantite=ligne.quantite,
+                        commentaire=f'Menu VIP piscine #{acces.id}',
+                        utilisateur=request.user,
+                    )
+                # Déduction stock cuisine (plat)
+                elif ligne.type_item == 'plat' and ligne.plat:
+                    try:
+                        plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
+                        if plat_menu:
+                            process_stock_movement(plat_menu, ligne.quantite, 'sortie', request.user, f'Menu VIP #{acces.id}')
+                    except Exception:
+                        pass  # Ne pas bloquer l'entrée si le stock plat échoue
 
         return JsonResponse({
             'success': True,
             'acces_id': acces.id,
             'nom': acces.nom_client,
             'type': acces.get_type_client_display(),
+            'forfait': forfait.nom if forfait else None,
             'prix': float(prix_total),
-            'message': f"Entrée enregistrée — {nom_client} ({acces.get_type_client_display()})"
+            'message': f"Entrée enregistrée — {nom_client}"
+            + (f" · {forfait.nom}" if forfait else "")
         })
     except Exception as e:
+        import traceback; traceback.print_exc()
         return JsonResponse({'success': False, 'error': str(e)})
 
 
@@ -244,8 +293,8 @@ def encaisser_sortie(request, acces_id):
         total_conso = sum(c.get_total() for c in acces.consommations.all())
         total       = acces.prix_total + total_conso
 
-        # Validation montant seulement si paiement direct visiteur
-        if not sur_chambre and montant_recu < total and acces.type_client == 'visiteur':
+        # Validation montant pour tout paiement direct
+        if not sur_chambre and montant_recu < total:
             return JsonResponse({'success': False, 'error': f'Montant insuffisant. Total : {int(total)} F'})
 
         # Marquer sortie
@@ -354,7 +403,8 @@ def api_acces_detail(request, acces_id):
     acces = get_object_or_404(AccesPiscine, id=acces_id)
     consommations = [
         {'id': c.id, 'produit': c.produit, 'quantite': c.quantite,
-         'prix': float(c.prix_unitaire), 'total': float(c.get_total())}
+         'prix': float(c.prix_unitaire), 'total': float(c.get_total()),
+         'inclus_forfait': c.inclus_forfait}
         for c in acces.consommations.all()
     ]
     total_conso = sum(c.get_total() for c in acces.consommations.all())
@@ -366,6 +416,7 @@ def api_acces_detail(request, acces_id):
         'nb_adultes': acces.nb_adultes,
         'nb_enfants': acces.nb_enfants,
         'entree': float(acces.prix_total),
+        'forfait_nom': acces.forfait.nom if acces.forfait else None,
         'consommations': consommations,
         'total_conso': float(total_conso),
         'total': float(acces.prix_total + total_conso),
