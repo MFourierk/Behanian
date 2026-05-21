@@ -419,11 +419,8 @@ def personnel_create(request):
             )
 
             if groupe_nom:
-                try:
-                    groupe = Group.objects.get(name=groupe_nom)
-                    user.groups.add(groupe)
-                except Group.DoesNotExist:
-                    pass
+                groupe, _ = Group.objects.get_or_create(name=groupe_nom)
+                user.groups.add(groupe)
 
             return JsonResponse({
                 'success': True,
@@ -452,11 +449,8 @@ def personnel_update(request, pk):
             groupe_nom = data.get('groupe', '')
             if groupe_nom:
                 user.groups.clear()
-                try:
-                    groupe = Group.objects.get(name=groupe_nom)
-                    user.groups.add(groupe)
-                except Group.DoesNotExist:
-                    pass
+                groupe, _ = Group.objects.get_or_create(name=groupe_nom)
+                user.groups.add(groupe)
 
             return JsonResponse({'success': True, 'message': f'{user.get_full_name()} mis à jour'})
         except Exception as e:
@@ -490,6 +484,22 @@ def personnel_delete(request, pk):
     nom = user.get_full_name() or user.username
     user.delete()
     return JsonResponse({'success': True, 'message': f'{nom} supprimé définitivement'})
+
+
+@require_manager
+@require_POST
+def initialiser_groupes(request):
+    """Crée tous les groupes métier définis dans GROUPES_METIER s'ils n'existent pas."""
+    crees = []
+    for nom, _ in GROUPES_METIER:
+        _, created = Group.objects.get_or_create(name=nom)
+        if created:
+            crees.append(nom)
+    if crees:
+        messages.success(request, f"{len(crees)} groupe(s) créé(s) : {', '.join(crees)}")
+    else:
+        messages.info(request, "Tous les groupes métier existent déjà.")
+    return redirect('parametres:personnel_list')
 
 
 @require_manager

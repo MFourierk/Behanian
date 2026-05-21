@@ -54,8 +54,14 @@
 {% breadcrumb "Paramètres" "parametres:parametres_index" "Personnel" "" %}
 
 
-  <div style="display:flex;gap:10px;margin-bottom:20px">
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
     <button class="btn-a btn-or" onclick="ouvrirModal('modalCreer')"><i class="fas fa-user-plus"></i> Nouveau membre</button>
+    <form method="post" action="{% url 'parametres:initialiser_groupes' %}" style="margin:0">
+      {% csrf_token %}
+      <button type="submit" class="btn-a btn-outline" title="Crée automatiquement tous les postes métier manquants dans la base de données">
+        <i class="fas fa-layer-group"></i> Initialiser les postes
+      </button>
+    </form>
   </div>
 
   <!-- STATS PAR DÉPARTEMENT -->

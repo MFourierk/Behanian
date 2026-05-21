@@ -61,6 +61,7 @@ urlpatterns = [
     path('personnel/<int:pk>/toggle/', views.personnel_toggle, name='personnel_toggle'),
     path('personnel/<int:pk>/reset-password/', views.personnel_reset_password, name='personnel_reset_password'),
     path('personnel/<int:pk>/supprimer/', views.personnel_delete, name='personnel_delete'),
+    path('personnel/initialiser-groupes/', views.initialiser_groupes, name='initialiser_groupes'),
 
     # Forfaits
     path('forfaits/', views.forfait_list, name='forfait_list'),
