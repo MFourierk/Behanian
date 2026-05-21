@@ -284,6 +284,26 @@
         });
     }
     </script>
+    <script>
+    // Auto-wrap toutes les tables sans conteneur scrollable pour le responsive mobile
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('table').forEach(function(t) {
+            var p = t.parentElement;
+            if (!p) return;
+            var skip = p.classList.contains('table-responsive') ||
+                       p.classList.contains('tbl-wrap') ||
+                       p.classList.contains('tbl-responsive-auto') ||
+                       p.style.overflowX === 'auto' || p.style.overflowX === 'scroll' ||
+                       p.style.overflow  === 'auto' || p.style.overflow  === 'scroll';
+            if (!skip) {
+                var w = document.createElement('div');
+                w.className = 'tbl-responsive-auto';
+                p.insertBefore(w, t);
+                w.appendChild(t);
+            }
+        });
+    });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

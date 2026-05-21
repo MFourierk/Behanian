@@ -18,6 +18,16 @@ body {
     background: #f5f6fa;
     display: flex;
     min-height: 100vh;
+    overflow-x: hidden; /* empêche le débordement horizontal global */
+}
+
+img { max-width: 100%; height: auto; }
+
+/* Wrapper scrollable auto-injecté sur les tables sans conteneur */
+.tbl-responsive-auto {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
 }
 
 /* Masquer les alertes système (désactivé à la demande) */
@@ -796,9 +806,25 @@ button i, a.btn i, a[class*="btn"] i, .tab-btn i,
     /* Grilles réservations restaurant */
     .form-grid { grid-template-columns: 1fr !important; }
 
-    /* Tableaux-grilles cuisine (lignes commande) : scroll horizontal */
+    /* Tableaux — scroll horizontal universel */
     .lignes-header, .ligne-row { overflow-x: auto; min-width: 600px; }
-    .tbl-wrap, [style*="overflow-x:auto"] { overflow-x: auto !important; }
+    .tbl-wrap, .tbl-responsive-auto,
+    [style*="overflow-x:auto"], [style*="overflow-x: auto"] {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    table { font-size: 12px; }
+    table th, table td { padding: 6px 8px; white-space: nowrap; }
+    table th:last-child, table td:last-child { white-space: normal; }
+
+    /* Formulaires : inputs toujours dans leur conteneur */
+    input, select, textarea { max-width: 100% !important; box-sizing: border-box; }
+
+    /* Grilles 2-col de formulaires → 1 col */
+    .form-row, .form-row-2, .row-2col { grid-template-columns: 1fr !important; }
+
+    /* Boutons d'action groupés */
+    .btn-group-mobile, .action-btns { flex-wrap: wrap; gap: 6px; }
 
     /* Panel headers : wrap sur mobile */
     .ph { flex-wrap: wrap; gap: 8px; }
