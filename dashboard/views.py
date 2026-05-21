@@ -208,6 +208,23 @@ def direction_view(request):
 
     mouvements_combines.sort(key=lambda x: x['date'], reverse=True)
 
+    # ── Fond de caisse & sessions ──────────────────────────────
+    sessions_jour = []
+    stats_caisse_jour = {}
+    solde_veille_dir = 0
+    try:
+        from caisse.models import CaisseSession
+        from caisse.views import get_stats_jour, get_solde_veille
+        today_local = timezone.localdate()
+        sessions_jour = list(
+            CaisseSession.objects.filter(date_session=today_local)
+            .select_related('user').order_by('-opened_at')
+        )
+        stats_caisse_jour = get_stats_jour(today_local)
+        solde_veille_dir, _ = get_solde_veille()
+    except Exception:
+        pass
+
     context = {
         **stats,
         'today': today,
@@ -221,6 +238,9 @@ def direction_view(request):
         'cuisine_alertes': cuisine_alertes,
         'total_cuisine': len(cuisine_ingredients),
         'mouvements_combines': mouvements_combines[:40],
+        'sessions_jour': sessions_jour,
+        'stats_caisse_jour': stats_caisse_jour,
+        'solde_veille_dir': solde_veille_dir,
     }
     return render(request, 'dashboard/direction.html', context)
 
