@@ -1,0 +1,438 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Vue Direction — BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+:root{--gold:#c9a84c;--dark:#1a2535;--border:#d4dce8;--light:#eef1f5;--muted:#7a8b9c;--text:#3d4f63}
+
+/* KPI cards */
+.dir-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:22px}
+.kpi-card{background:white;border:1px solid var(--border);border-radius:12px;padding:14px 16px;border-top:3px solid var(--border)}
+.kpi-card .kv{font-size:26px;font-weight:700;color:var(--dark);line-height:1}
+.kpi-card .kl{font-size:11px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.5px}
+.kpi-card .ks{font-size:11px;margin-top:3px}
+.k-gold{border-top-color:#c9a84c}.k-bleu{border-top-color:#2563eb}.k-vert{border-top-color:#16a34a}
+.k-rouge{border-top-color:#dc2626}.k-orange{border-top-color:#d97706}.k-violet{border-top-color:#7c3aed}
+
+/* Tabs */
+.dir-tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:18px}
+.dir-tab{padding:9px 18px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:6px 6px 0 0}
+.dir-tab:hover{color:var(--dark);background:#f8fafc}
+.dir-tab.active{color:var(--dark);border-bottom-color:#c9a84c;background:#fffbf0}
+.dir-pane{display:none}.dir-pane.active{display:block}
+
+/* Panel */
+.panel{background:white;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.ph{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:12px;font-weight:700;color:var(--dark);margin:0;text-transform:uppercase;letter-spacing:.6px}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#4a5b6e;border-bottom:1px solid var(--border);background:#f8fafc;text-align:left;white-space:nowrap}
+.tbl td{padding:10px 14px;border-bottom:1px solid #f0f3f7;color:var(--dark);vertical-align:middle}
+.tbl tr:hover td{background:#f8fafb}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.b-ok{background:#dcfce7;color:#15803d}.b-alerte{background:#fef9c3;color:#a16207}.b-rupture{background:#fee2e2;color:#b91c1c}
+.b-entree{background:#dcfce7;color:#15803d}.b-sortie{background:#fef3c7;color:#b45309}
+.b-casse{background:#fee2e2;color:#b91c1c}.b-inventaire{background:#dbeafe;color:#1d4ed8}
+.b-production{background:#f3e8ff;color:#6b21a8}.b-cave{background:#f3e8ff;color:#7c3aed}.b-cuisine{background:#fff7ed;color:#c2410c}
+
+/* Action buttons */
+.btn-a{padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;text-decoration:none;transition:all .12s}
+.btn-or{background:#c9a84c;color:#1a2535}.btn-bleu{background:#2563eb;color:white}.btn-outline{background:white;color:var(--text);border:1px solid var(--border)}
+.btn-sm{padding:4px 8px;font-size:10px;border-radius:6px}
+
+/* Search filter */
+.filter-bar{display:flex;gap:8px;align-items:center;padding:10px 16px;background:#f8fafc;border-bottom:1px solid var(--border)}
+.filter-bar input,.filter-bar select{padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--dark)}
+.filter-bar input{width:200px}
+
+/* Module links */
+.mod-links{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px}
+.mod-link{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px;text-decoration:none;display:flex;align-items:center;gap:10px;transition:all .15s}
+.mod-link:hover{background:#f0f4ff;border-color:#2563eb}
+.mod-link .icon{font-size:22px;width:36px;text-align:center}
+.mod-link .info .title{font-size:13px;font-weight:700;color:var(--dark)}
+.mod-link .info .sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Responsive */
+@media(max-width:1100px){.dir-kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:768px){
+  .dir-kpis{grid-template-columns:repeat(2,1fr)!important}
+  .mod-links{grid-template-columns:1fr 1fr!important}
+  .dir-tab{padding:7px 10px;font-size:12px}
+}
+@media(max-width:480px){
+  .dir-kpis{grid-template-columns:1fr!important}
+  .mod-links{grid-template-columns:1fr!important}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="background:linear-gradient(135deg,#1a2535,#2d3f55);padding:24px;border-radius:14px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div>
+    <h2 style="color:white;font-size:1.5rem;font-weight:700;margin:0">Vue Direction</h2>
+    <p style="color:rgba(255,255,255,.7);margin:4px 0 0;font-size:13px">Tableau de bord consolidé — Stocks · Mouvements · Statistiques</p>
+  </div>
+  <div class="header-clock" style="text-align:right"><span class="time" style="color:white">--:-- GMT</span><br><span class="date" style="color:rgba(255,255,255,.7);font-size:11px">Chargement...</span></div>
+</div>
+{% breadcrumb "Dashboard" "dashboard:index" "Vue Direction" "" %}
+
+<!-- KPI CARDS -->
+<div class="dir-kpis">
+  <div class="kpi-card k-gold">
+    <div class="kv">{{ ca_jour|floatformat:0 }} <span style="font-size:13px;font-weight:400">FCFA</span></div>
+    <div class="kl">💰 CA du jour</div>
+    <div class="ks" style="color:{% if ca_jour >= ca_hier %}#15803d{% else %}#dc2626{% endif %}">
+      vs hier : {{ ca_hier|floatformat:0 }} FCFA
+    </div>
+  </div>
+  <div class="kpi-card k-bleu">
+    <div class="kv">{{ ca_mois|floatformat:0 }} <span style="font-size:13px;font-weight:400">FCFA</span></div>
+    <div class="kl">📅 CA du mois</div>
+    <div class="ks" style="color:var(--muted)">{{ nb_tickets_jour }} ticket(s) aujourd'hui</div>
+  </div>
+  <div class="kpi-card {% if bar_ruptures > 0 %}k-rouge{% elif bar_alertes > 0 %}k-orange{% else %}k-vert{% endif %}">
+    <div class="kv">{{ bar_ruptures|add:bar_alertes }}</div>
+    <div class="kl">🍷 Alertes Cave</div>
+    <div class="ks">{{ bar_ruptures }} rupture(s) · {{ bar_alertes }} alerte(s)</div>
+  </div>
+  <div class="kpi-card {% if cuisine_ruptures > 0 %}k-rouge{% elif cuisine_alertes > 0 %}k-orange{% else %}k-vert{% endif %}">
+    <div class="kv">{{ cuisine_ruptures|add:cuisine_alertes }}</div>
+    <div class="kl">🍽️ Alertes Cuisine</div>
+    <div class="ks">{{ cuisine_ruptures }} rupture(s) · {{ cuisine_alertes }} alerte(s)</div>
+  </div>
+  <div class="kpi-card k-violet">
+    <div class="kv">{{ taux_occupation }}<span style="font-size:16px;font-weight:400">%</span></div>
+    <div class="kl">🏨 Occupation Hôtel</div>
+    <div class="ks" style="color:var(--muted)">{{ chambres_occupees }} / {{ total_chambres }} chambres</div>
+  </div>
+  <div class="kpi-card {% if caisse_ouverte %}k-vert{% else %}k-rouge{% endif %}">
+    <div class="kv" style="font-size:18px">{% if caisse_ouverte %}🟢 Ouverte{% else %}🔴 Fermée{% endif %}</div>
+    <div class="kl">🏦 Caisse</div>
+    <div class="ks" style="color:var(--muted)">{{ caisse_type|default:"—" }}</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="dir-tabs">
+  <button class="dir-tab active" onclick="showTab('global',this)">📊 Vue globale</button>
+  <button class="dir-tab" onclick="showTab('cave',this)">🍷 Cave <span style="background:#f3e8ff;color:#7c3aed;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ total_bar }}</span></button>
+  <button class="dir-tab" onclick="showTab('cuisine',this)">🍽️ Cuisine <span style="background:#fff7ed;color:#c2410c;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ total_cuisine }}</span></button>
+  <button class="dir-tab" onclick="showTab('mouvements',this)">📋 Mouvements <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ mouvements_combines|length }}</span></button>
+</div>
+
+<!-- ─── TAB 1 : VUE GLOBALE ─────────────────────────────────── -->
+<div class="dir-pane active" id="pane-global">
+
+  <!-- Accès rapides modules -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="ph"><h3>🔗 Accès rapides — Gestion des stocks et modules</h3></div>
+    <div class="mod-links">
+      <a href="{% url 'bar:stock_management' %}" class="mod-link">
+        <div class="icon">🍷</div>
+        <div class="info"><div class="title">Stock Cave</div><div class="sub">Gérer articles, commandes, réceptions</div></div>
+      </a>
+      <a href="{% url 'cuisine:stock_management' %}" class="mod-link">
+        <div class="icon">🍽️</div>
+        <div class="info"><div class="title">Stock Cuisine</div><div class="sub">Ingrédients, BC, réceptions, inventaire</div></div>
+      </a>
+      <a href="{% url 'hotel:index' %}" class="mod-link">
+        <div class="icon">🏨</div>
+        <div class="info"><div class="title">Hôtel</div><div class="sub">Chambres, réservations, check-in/out</div></div>
+      </a>
+      <a href="{% url 'caisse:index' %}" class="mod-link">
+        <div class="icon">🏦</div>
+        <div class="info"><div class="title">Caisse</div><div class="sub">Sessions, mouvements, historique</div></div>
+      </a>
+      <a href="{% url 'piscine:index' %}" class="mod-link">
+        <div class="icon">🏊</div>
+        <div class="info"><div class="title">Piscine</div><div class="sub">Entrées, forfaits VIP, consommations</div></div>
+      </a>
+      <a href="{% url 'restaurant:index' %}" class="mod-link">
+        <div class="icon">🍴</div>
+        <div class="info"><div class="title">Restaurant</div><div class="sub">Commandes, tables, réservations</div></div>
+      </a>
+      <a href="{% url 'espaces_evenementiels:index' %}" class="mod-link">
+        <div class="icon">🎪</div>
+        <div class="info"><div class="title">Espaces</div><div class="sub">Événements, locations, planification</div></div>
+      </a>
+      <a href="{% url 'facturation:index' %}" class="mod-link">
+        <div class="icon">📄</div>
+        <div class="info"><div class="title">Facturation</div><div class="sub">Factures, avoirs, historique tickets</div></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- CA par module -->
+  {% if ca_par_module %}
+  <div class="panel">
+    <div class="ph"><h3>💰 Chiffre d'Affaires par module — {{ date_ref|date:"d/m/Y" }}</h3></div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+      {% for label, ca in ca_par_module.items %}
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:9px;padding:12px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:var(--dark)">{{ ca|floatformat:0 }}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tickets récents -->
+  {% if tickets_recents %}
+  <div class="panel">
+    <div class="ph"><h3>🧾 Derniers tickets</h3></div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th>N°</th><th>Module</th><th>Montant</th><th>Paiement</th><th>Heure</th><th>Créé par</th>
+      </tr></thead>
+      <tbody>
+      {% for t in tickets_recents %}
+      <tr>
+        <td style="font-family:monospace;font-size:11px">{{ t.numero }}</td>
+        <td><span class="badge b-cave" style="text-transform:capitalize">{{ t.module }}</span></td>
+        <td style="font-weight:700">{{ t.montant_total|floatformat:0 }} FCFA</td>
+        <td style="text-transform:capitalize">{{ t.mode_paiement }}</td>
+        <td style="color:var(--muted)">{{ t.date_creation|date:"H:i" }}</td>
+        <td>{{ t.cree_par__first_name }} {{ t.cree_par__last_name|default:t.cree_par__username }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ─── TAB 2 : STOCK CAVE ─────────────────────────────────── -->
+<div class="dir-pane" id="pane-cave">
+  <div class="panel">
+    <div class="ph">
+      <h3>🍷 Stock Cave — {{ total_bar }} article(s)
+        <span style="margin-left:8px">
+          {% if bar_ruptures %}<span class="badge b-rupture">{{ bar_ruptures }} rupture(s)</span>{% endif %}
+          {% if bar_alertes %}<span class="badge b-alerte" style="margin-left:4px">{{ bar_alertes }} alerte(s)</span>{% endif %}
+        </span>
+      </h3>
+      <div style="display:flex;gap:8px">
+        <a href="{% url 'bar:stock_management' %}" class="btn-a btn-or"><i class="fas fa-boxes-stacked"></i> Gérer les stocks</a>
+        <a href="{% url 'bar:articles_list' %}" class="btn-a btn-outline"><i class="fas fa-list"></i> Tous les articles</a>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="filterCave" placeholder="Rechercher un article…" oninput="filtrerTable('tableCave','filterCave','filterCaveCat')">
+      <select id="filterCaveCat" onchange="filtrerTable('tableCave','filterCave','filterCaveCat')">
+        <option value="">Toutes catégories</option>
+        {% regroup bar_articles by categorie.nom as cats %}
+        {% for c in cats %}<option value="{{ c.grouper }}">{{ c.grouper }}</option>{% endfor %}
+      </select>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-left:4px">
+        <input type="checkbox" id="filterCaveAlerte" onchange="filtrerAlertes('tableCave','filterCaveAlerte')"> Alertes seulement
+      </label>
+    </div>
+    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+    <table class="tbl" id="tableCave">
+      <thead><tr>
+        <th>Article</th><th>Catégorie</th><th>Stock actuel</th><th>Seuil alerte</th><th>Statut</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% for a in bar_articles %}
+      <tr data-nom="{{ a.nom|lower }}" data-cat="{{ a.categorie.nom }}" data-alerte="{% if a.est_en_rupture or a.est_stock_bas %}1{% else %}0{% endif %}">
+        <td style="font-weight:600">{{ a.nom }}</td>
+        <td style="color:var(--muted)">{{ a.categorie.nom }}</td>
+        <td>
+          <span style="font-size:14px;font-weight:700;color:{% if a.est_en_rupture %}#b91c1c{% elif a.est_stock_bas %}#a16207{% else %}#15803d{% endif %}">
+            {{ a.quantite_stock }}
+          </span>
+          <span style="font-size:11px;color:var(--muted)"> {{ a.unite_standard }}</span>
+        </td>
+        <td style="color:var(--muted)">{{ a.seuil_alerte }}</td>
+        <td>
+          {% if a.est_en_rupture %}
+          <span class="badge b-rupture">❌ Rupture</span>
+          {% elif a.est_stock_bas %}
+          <span class="badge b-alerte">⚠️ Alerte</span>
+          {% else %}
+          <span class="badge b-ok">✅ OK</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'bar:article_edit' a.pk %}" class="btn-a btn-outline btn-sm"><i class="fas fa-edit"></i> Modifier</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Aucun article</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TAB 3 : STOCK CUISINE ─────────────────────────────── -->
+<div class="dir-pane" id="pane-cuisine">
+  <div class="panel">
+    <div class="ph">
+      <h3>🍽️ Stock Cuisine — {{ total_cuisine }} ingrédient(s)
+        <span style="margin-left:8px">
+          {% if cuisine_ruptures %}<span class="badge b-rupture">{{ cuisine_ruptures }} rupture(s)</span>{% endif %}
+          {% if cuisine_alertes %}<span class="badge b-alerte" style="margin-left:4px">{{ cuisine_alertes }} alerte(s)</span>{% endif %}
+        </span>
+      </h3>
+      <div style="display:flex;gap:8px">
+        <a href="{% url 'cuisine:stock_management' %}" class="btn-a btn-or"><i class="fas fa-boxes-stacked"></i> Gérer les stocks</a>
+        <a href="{% url 'cuisine:ingredient_list' %}" class="btn-a btn-outline"><i class="fas fa-list"></i> Tous les ingrédients</a>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="filterCuis" placeholder="Rechercher un ingrédient…" oninput="filtrerTable('tableCuisine','filterCuis','filterCuisCat')">
+      <select id="filterCuisCat" onchange="filtrerTable('tableCuisine','filterCuis','filterCuisCat')">
+        <option value="">Toutes catégories</option>
+        {% regroup cuisine_ingredients by categorie.nom as ccats %}
+        {% for c in ccats %}<option value="{{ c.grouper|default:'' }}">{{ c.grouper|default:"Sans catégorie" }}</option>{% endfor %}
+      </select>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-left:4px">
+        <input type="checkbox" id="filterCuisAlerte" onchange="filtrerAlertes('tableCuisine','filterCuisAlerte')"> Alertes seulement
+      </label>
+    </div>
+    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+    <table class="tbl" id="tableCuisine">
+      <thead><tr>
+        <th>Ingrédient</th><th>Catégorie</th><th>Stock actuel</th><th>Unité</th><th>Seuil alerte</th><th>Statut</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% for i in cuisine_ingredients %}
+      <tr data-nom="{{ i.nom|lower }}" data-cat="{{ i.categorie.nom|default:'' }}" data-alerte="{% if i.est_en_rupture or i.est_stock_bas %}1{% else %}0{% endif %}">
+        <td style="font-weight:600">{{ i.nom }}</td>
+        <td style="color:var(--muted)">{{ i.categorie.nom|default:"—" }}</td>
+        <td>
+          <span style="font-size:14px;font-weight:700;color:{% if i.est_en_rupture %}#b91c1c{% elif i.est_stock_bas %}#a16207{% else %}#15803d{% endif %}">
+            {{ i.quantite_stock|floatformat:2 }}
+          </span>
+        </td>
+        <td style="color:var(--muted)">{{ i.unite_stock.nom|default:"—" }}</td>
+        <td style="color:var(--muted)">{{ i.seuil_alerte|floatformat:2 }}</td>
+        <td>
+          {% if i.est_en_rupture %}
+          <span class="badge b-rupture">❌ Rupture</span>
+          {% elif i.est_stock_bas %}
+          <span class="badge b-alerte">⚠️ Alerte</span>
+          {% else %}
+          <span class="badge b-ok">✅ OK</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'cuisine:ingredient_edit' i.pk %}" class="btn-a btn-outline btn-sm"><i class="fas fa-edit"></i> Modifier</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Aucun ingrédient</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TAB 4 : MOUVEMENTS ─────────────────────────────────── -->
+<div class="dir-pane" id="pane-mouvements">
+  <div class="panel">
+    <div class="ph">
+      <h3>📋 Mouvements récents — {{ mouvements_combines|length }} dernier(s)</h3>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="filterMvt" placeholder="Rechercher article…" oninput="filtrerMvt()">
+      <select id="filterMvtSource" onchange="filtrerMvt()">
+        <option value="">Tous les modules</option>
+        <option value="cave">🍷 Cave</option>
+        <option value="cuisine">🍽️ Cuisine</option>
+      </select>
+      <select id="filterMvtType" onchange="filtrerMvt()">
+        <option value="">Tous les types</option>
+        <option value="entree">Entrée</option>
+        <option value="sortie">Sortie</option>
+        <option value="casse">Casse</option>
+        <option value="inventaire">Inventaire</option>
+        <option value="production">Production</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto;max-height:560px;overflow-y:auto">
+    <table class="tbl" id="tableMvt">
+      <thead><tr>
+        <th>Module</th><th>Article / Ingrédient</th><th>Type</th><th>Quantité</th><th>Date & Heure</th><th>Utilisateur</th><th>Commentaire</th>
+      </tr></thead>
+      <tbody>
+      {% for m in mouvements_combines %}
+      <tr data-source="{{ m.source }}" data-type="{{ m.type_code }}" data-nom="{{ m.nom|lower }}">
+        <td><span class="badge b-{{ m.source }}">{% if m.source == 'cave' %}🍷 Cave{% else %}🍽️ Cuisine{% endif %}</span></td>
+        <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ m.nom }}">{{ m.nom }}</td>
+        <td><span class="badge b-{{ m.type_code }}">{{ m.type }}</span></td>
+        <td style="font-weight:700;text-align:right">
+          <span style="color:{% if m.type_code == 'entree' or m.type_code == 'inventaire' %}#15803d{% else %}#b91c1c{% endif %}">
+            {% if m.type_code == 'entree' or m.type_code == 'inventaire' %}+{% else %}-{% endif %}{{ m.quantite }}
+          </span>
+        </td>
+        <td style="color:var(--muted);white-space:nowrap">{{ m.date|date:"d/m H:i" }}</td>
+        <td style="color:var(--muted)">{% if m.user %}{{ m.user.get_full_name|default:m.user.username }}{% else %}—{% endif %}</td>
+        <td style="font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ m.commentaire|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Aucun mouvement enregistré</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.dir-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.dir-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pane-' + id).classList.add('active');
+}
+
+function filtrerTable(tableId, inputId, selectId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  const cat = document.getElementById(selectId).value;
+  document.querySelectorAll('#' + tableId + ' tbody tr[data-nom]').forEach(tr => {
+    const nomOk  = !q   || tr.dataset.nom.includes(q);
+    const catOk  = !cat || tr.dataset.cat === cat;
+    tr.style.display = (nomOk && catOk) ? '' : 'none';
+  });
+}
+
+function filtrerAlertes(tableId, cbId) {
+  const alerteOnly = document.getElementById(cbId).checked;
+  document.querySelectorAll('#' + tableId + ' tbody tr[data-nom]').forEach(tr => {
+    if (alerteOnly && tr.dataset.alerte !== '1') {
+      tr.style.display = 'none';
+    } else if (tr.style.display === 'none' && !alerteOnly) {
+      tr.style.display = '';
+    }
+  });
+}
+
+function filtrerMvt() {
+  const q   = document.getElementById('filterMvt').value.toLowerCase();
+  const src = document.getElementById('filterMvtSource').value;
+  const typ = document.getElementById('filterMvtType').value;
+  document.querySelectorAll('#tableMvt tbody tr[data-source]').forEach(tr => {
+    const ok = (!q   || tr.dataset.nom.includes(q))
+            && (!src || tr.dataset.source === src)
+            && (!typ || tr.dataset.type === typ);
+    tr.style.display = ok ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

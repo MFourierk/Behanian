@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
@@ -151,6 +151,78 @@ def dashboard_view(request):
         'variation': f"+{round(((stats["ca_jour"]-stats["ca_hier"])/stats["ca_hier"]*100) if stats["ca_hier"] else 0)}%",
     }
     return render(request, 'dashboard/dashboard.html', context)
+
+
+@login_required
+def direction_view(request):
+    """Vue consolidée Direction — stocks, mouvements et stats de tous les modules."""
+    from utils.permissions import _is_manager
+    from django.contrib import messages
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        messages.error(request, "Accès réservé à la Direction et aux Managers.")
+        return redirect('dashboard:index')
+
+    today = timezone.now().date()
+    modules = get_accessible_modules(request.user)
+    stats = _get_dashboard_stats(request.user, modules)
+
+    bar_articles, bar_ruptures, bar_alertes = [], 0, 0
+    cuisine_ingredients, cuisine_ruptures, cuisine_alertes = [], 0, 0
+    mouvements_combines = []
+
+    try:
+        from bar.models import BoissonBar, MouvementStockBar
+        bar_articles = list(
+            BoissonBar.objects.filter(statut='actif')
+            .select_related('categorie').order_by('categorie__nom', 'nom')
+        )
+        bar_ruptures = sum(1 for a in bar_articles if a.est_en_rupture())
+        bar_alertes  = sum(1 for a in bar_articles if a.est_stock_bas())
+        for m in MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')[:30]:
+            mouvements_combines.append({
+                'source': 'cave', 'nom': m.boisson.nom,
+                'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
+                'quantite': m.quantite, 'date': m.date,
+                'user': m.utilisateur, 'commentaire': m.commentaire or '',
+            })
+    except Exception:
+        pass
+
+    try:
+        from cuisine.models import Ingredient, MouvementStockCuisine
+        cuisine_ingredients = list(
+            Ingredient.objects.filter(statut=True)
+            .select_related('categorie', 'unite_stock').order_by('nom')
+        )
+        cuisine_ruptures = sum(1 for i in cuisine_ingredients if i.est_en_rupture())
+        cuisine_alertes  = sum(1 for i in cuisine_ingredients if i.est_stock_bas())
+        for m in MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')[:30]:
+            mouvements_combines.append({
+                'source': 'cuisine', 'nom': m.ingredient.nom,
+                'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
+                'quantite': m.quantite, 'date': m.date,
+                'user': m.utilisateur, 'commentaire': m.commentaire or '',
+            })
+    except Exception:
+        pass
+
+    mouvements_combines.sort(key=lambda x: x['date'], reverse=True)
+
+    context = {
+        **stats,
+        'today': today,
+        'accessible_modules': modules,
+        'bar_articles': bar_articles,
+        'bar_ruptures': bar_ruptures,
+        'bar_alertes': bar_alertes,
+        'total_bar': len(bar_articles),
+        'cuisine_ingredients': cuisine_ingredients,
+        'cuisine_ruptures': cuisine_ruptures,
+        'cuisine_alertes': cuisine_alertes,
+        'total_cuisine': len(cuisine_ingredients),
+        'mouvements_combines': mouvements_combines[:40],
+    }
+    return render(request, 'dashboard/direction.html', context)
 
 
 @login_required
