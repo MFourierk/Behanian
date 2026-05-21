@@ -12,8 +12,8 @@ django-widget-tweaks==1.5.1
 # Fichiers statiques (production)
 whitenoise==6.12.0
 
-# Serveur de production
-waitress==3.0.2
+# Serveur de production (Linux/Ubuntu)
+gunicorn==23.0.0
 
 # Base de données PostgreSQL
 psycopg2-binary==2.9.12

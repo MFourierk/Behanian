@@ -500,7 +500,7 @@ const FORFAITS_PISCINE = [
   }{% if not forloop.last %},{% endif %}{% endfor %}
 ];
 // Articles disponibles pour substitution (avec stock)
-const BOISSONS_SUB = [{% for b in boissons %}{id:{{ b.pk }},nom:"{{ b.nom|escapejs }}",stock:{{ b.quantite_stock }},cat:"{{ b.categorie.nom|escapejs }}"},{% endfor %}];
+const BOISSONS_SUB = [{% for b in boissons %}{id:{{ b.pk }},nom:"{{ b.nom|escapejs }}",stock:{{ b.quantite_stock|floatformat:0 }},cat:"{{ b.categorie.nom|escapejs }}"},{% endfor %}];
 const PLATS_SUB    = [{% for p in plats %}{id:{{ p.pk }},nom:"{{ p.nom|escapejs }}",cat:"{{ p.categorie.nom|escapejs }}"},{% endfor %}];
 
 let vipForfaitId = null;
