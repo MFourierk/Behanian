@@ -6,7 +6,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('piscine', '0005_add_reservation_hotel_field'),
-        ('restaurant', '0001_initial'),
+        ('restaurant', '0013_forfait_ligneforfait'),
     ]
 
     operations = [
