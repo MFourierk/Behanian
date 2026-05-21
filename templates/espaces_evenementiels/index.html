@@ -84,6 +84,24 @@
 .enc-total .lbl{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
 .enc-total .amt{font-size:34px;font-weight:700;color:#c9a84c}
 .enc-total .sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px}
+
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .tabs { width:100% !important; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tab  { flex-shrink:0; }
+  .esp-grid { grid-template-columns: 1fr !important; }
+  .cal-grid { grid-template-columns: repeat(7,1fr); font-size:10px; }
+  .cal-day  { min-height:54px; padding:3px; }
+  .cal-day-num { font-size:10px; }
+  .cal-event { font-size:8px; padding:1px 3px; }
+  .salle-legend { display:none; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr !important; }
+  .kval { font-size:20px !important; }
+  .cal-grid { font-size:9px; }
+  .cal-day  { min-height:40px; }
+}
 </style>
 {% endblock %}
 
