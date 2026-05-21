@@ -24,13 +24,15 @@
 textarea.fc{resize:vertical;min-height:70px}
 .fg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 /* Photo */
-.photo-zone{border:2px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.photo-zone:hover{border-color:#c0392b;background:#fdf5f5}
-.photo-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-.photo-zone .icon{font-size:2.5rem;margin-bottom:8px;opacity:.3}
-.photo-zone p{font-size:11px;color:#8a9ab0;margin:0}
+.photo-zone{border:2px dashed #c0392b;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;background:#fdf5f5;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.photo-zone:hover{background:#fae8e8;border-color:#a93226}
+.photo-zone .icon{font-size:2rem;opacity:.6}
+.photo-zone p{font-size:12px;color:#c0392b;font-weight:600;margin:0}
+.photo-zone small{font-size:10px;color:#8a9ab0}
+.btn-photo-choisir{margin-top:8px;padding:7px 18px;border-radius:8px;border:none;background:#c0392b;color:white;font-size:12px;font-weight:700;cursor:pointer;pointer-events:none}
 .photo-preview{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;display:none}
 .photo-del{display:none;margin-top:8px;font-size:11px;color:#c0392b;cursor:pointer;background:none;border:none;padding:0}
+.photo-change{display:none;margin-top:8px;font-size:11px;color:#2980b9;cursor:pointer;background:none;border:none;padding:0;margin-right:10px}
 /* Ingrédients */
 .ing-table{width:100%;border-collapse:collapse;font-size:12px}
 .ing-table th{padding:7px 10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#7a8b9c;border-bottom:1px solid #e2e8f0;text-align:left}
@@ -209,12 +211,18 @@ textarea.fc{resize:vertical;min-height:70px}
           <div class="pf-card-body" id="photo-area">
             {% if plat.image %}
             <img src="{{ plat.image.url }}" class="photo-preview" id="photo-preview" style="display:block">
-            <button type="button" class="photo-del" id="photo-del-btn" style="display:block" onclick="platSupprimerPhoto()">✕ Supprimer la photo</button>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <button type="button" style="font-size:11px;color:#2980b9;cursor:pointer;background:none;border:none;padding:0" onclick="document.getElementById('photo-input').click()">✎ Changer la photo</button>
+              <span style="color:#ddd">|</span>
+              <button type="button" style="font-size:11px;color:#c0392b;cursor:pointer;background:none;border:none;padding:0" id="photo-del-btn" onclick="platSupprimerPhoto()">✕ Supprimer</button>
+            </div>
             <input type="checkbox" name="image-clear" id="image-clear" style="display:none">
             {% else %}
             <div class="photo-zone" id="photo-zone" onclick="document.getElementById('photo-input').click()">
               <div class="icon">📷</div>
-              <p>Cliquez pour choisir une photo<br><span style="font-size:10px;opacity:.6">JPG, PNG — recommandé 16:9</span></p>
+              <p>Cliquez pour ajouter une photo</p>
+              <small>JPG, PNG — recommandé format 16:9</small>
+              <button type="button" class="btn-photo-choisir">Choisir un fichier</button>
             </div>
             <img src="" class="photo-preview" id="photo-preview">
             <button type="button" class="photo-del" id="photo-del-btn" onclick="platSupprimerPhoto()">✕ Supprimer</button>
@@ -324,31 +332,51 @@ function platPreviewPhoto(input) {
 
 function platSupprimerPhoto() {
   document.getElementById('photo-input').value = '';
-  const preview = document.getElementById('photo-preview');
-  const zone    = document.getElementById('photo-zone');
-  const delBtn  = document.getElementById('photo-del-btn');
-  const clear   = document.getElementById('image-clear');
+  const preview  = document.getElementById('photo-preview');
+  const zone     = document.getElementById('photo-zone');
+  const delBtn   = document.getElementById('photo-del-btn');
+  const clear    = document.getElementById('image-clear');
+  const photoArea = document.getElementById('photo-area');
+  // Réinitialiser : montrer la zone upload
   preview.style.display = 'none';
-  if (zone) zone.style.display = 'flex';
-  if (delBtn) delBtn.style.display = 'none';
   if (clear) clear.checked = true;
+  // Remplacer le contenu de photo-area par la zone upload vierge
+  if (photoArea && !zone) {
+    photoArea.innerHTML = `
+      <div class="photo-zone" id="photo-zone" onclick="document.getElementById('photo-input').click()">
+        <div class="icon">📷</div>
+        <p>Cliquez pour ajouter une photo</p>
+        <small>JPG, PNG — recommandé format 16:9</small>
+        <button type="button" class="btn-photo-choisir">Choisir un fichier</button>
+      </div>
+      <img src="" class="photo-preview" id="photo-preview">
+      <input type="checkbox" name="image-clear" id="image-clear" checked style="display:none">
+      <input type="file" name="image" id="photo-input" accept="image/*" style="display:none" onchange="platPreviewPhoto(this)">`;
+    const newZone = document.getElementById('photo-zone');
+    if (newZone) newZone.addEventListener('drop', handlePhotoDrop);
+  } else if (zone) {
+    zone.style.display = 'flex';
+    if (delBtn) delBtn.style.display = 'none';
+  }
 }
 
 // Drag & drop
+function handlePhotoDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    document.getElementById('photo-input').files = dt.files;
+    platPreviewPhoto(document.getElementById('photo-input'));
+  }
+}
 const zone = document.getElementById('photo-zone');
 if (zone) {
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      document.getElementById('photo-input').files = dt.files;
-      platPreviewPhoto(document.getElementById('photo-input'));
-    }
-  });
+  zone.addEventListener('drop', handlePhotoDrop);
 }
 
 document.addEventListener('DOMContentLoaded', platUpdateCout);
