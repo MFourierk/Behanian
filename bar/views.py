@@ -208,7 +208,9 @@ def article_create(request):
             mode_prix=request.POST.get('mode_prix', 'manuel'),
             prix_achat=request.POST.get('prix_achat', 0) or 0,
             marge=request.POST.get('marge', 0) or 0,
-            prix=request.POST.get('prix', 0) or 0,
+            prix=request.POST.get('prix_calcule', 0) or 0
+                if request.POST.get('mode_prix') == 'marge'
+                else request.POST.get('prix_manuel', 0) or 0,
             unite_standard=request.POST.get('unite_standard', 'bouteille'),
             unite_personnalisee_id=request.POST.get('unite_personnalisee') or None,
             seuil_alerte=request.POST.get('seuil_alerte', 10) or 10,
@@ -239,7 +241,8 @@ def article_edit(request, pk):
         article.mode_prix = request.POST.get('mode_prix', 'manuel')
         article.prix_achat = request.POST.get('prix_achat', 0) or 0
         article.marge = request.POST.get('marge', 0) or 0
-        article.prix = request.POST.get('prix', 0) or 0
+        mode = request.POST.get('mode_prix', 'manuel')
+        article.prix = (request.POST.get('prix_calcule', 0) or 0) if mode == 'marge' else (request.POST.get('prix_manuel', 0) or 0)
         article.unite_standard = request.POST.get('unite_standard', 'bouteille')
         article.unite_personnalisee_id = request.POST.get('unite_personnalisee') or None
         article.seuil_alerte = request.POST.get('seuil_alerte', 10) or 10
