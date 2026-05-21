@@ -5,8 +5,8 @@
 <style>
 .esp-body{background:#eef1f5;padding:20px 0 40px}
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.kpi{background:white;border:1px solid #d4dce8;border-radius:12px;padding:16px;border-left:4px solid #d4dce8}
-.kpi.k-bleu{border-left-color:#2563eb}.kpi.k-vert{border-left-color:#16a34a}.kpi.k-or{border-left-color:#c9a84c}.kpi.k-rouge{border-left-color:#dc2626}
+.kpi{background:#f8fafc;border:1px solid #d4dce8;border-radius:12px;padding:16px 18px;border-top:3px solid #d4dce8}
+.kpi.k-bleu{border-top-color:#2563eb}.kpi.k-vert{border-top-color:#16a34a}.kpi.k-or{border-top-color:#c9a84c}.kpi.k-rouge{border-top-color:#dc2626}
 .klbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7a8b9c;margin-bottom:6px}
 .kval{font-size:26px;font-weight:700;color:#1a2535;line-height:1}
 .ksub{font-size:11px;color:#7a8b9c;margin-top:4px}
@@ -86,7 +86,7 @@
 .enc-total .sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px}
 
 @media (max-width: 768px) {
-  .kpi-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .kpi-grid { grid-template-columns: 1fr !important; }
   .tabs { width:100% !important; overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .tab  { flex-shrink:0; }
   .esp-grid { grid-template-columns: 1fr !important; }
