@@ -94,33 +94,36 @@
         <tbody>
         {% for u in utilisateurs %}
         {% with groupe=u.groups.first %}
-        <tr data-nom="{{ u.get_full_name|lower }}" data-groupe="{{ groupe.name|default:'' }}">
+        <tr data-nom="{{ u.get_full_name|lower }}" data-groupe="{{ groupe.name|default:'' }}"{% if u.is_superuser %} style="opacity:.45;background:#f1f5f9;pointer-events:none"{% endif %}>
           <td>
-            <div class="avatar av-{% if groupe.name in 'Directeur Général,Manager Général(e)' %}direction{% elif 'Hôtel' in groupe.name|default:'' or 'Réceptionniste' in groupe.name|default:'' %}hotel{% elif 'Caisse' in groupe.name|default:'' %}caisse{% elif 'Cuisine' in groupe.name|default:'' %}cuisine{% elif 'Serveur' in groupe.name|default:'' or 'Serveuse' in groupe.name|default:'' %}restaurant{% elif 'Sécurité' in groupe.name|default:'' %}securite{% else %}autre{% endif %}">
+            <div class="avatar av-{% if groupe.name in 'Directeur Général,Manager Général(e)' %}direction{% elif 'Hôtel' in groupe.name|default:'' or 'Réceptionniste' in groupe.name|default:'' %}hotel{% elif 'Caisse' in groupe.name|default:'' %}caisse{% elif 'Cuisine' in groupe.name|default:'' %}cuisine{% elif 'Serveur' in groupe.name|default:'' or 'Serveuse' in groupe.name|default:'' %}restaurant{% elif 'Sécurité' in groupe.name|default:'' %}securite{% else %}autre{% endif %}" {% if u.is_superuser %}style="background:#94a3b8"{% endif %}>
               {{ u.first_name|first|default:u.username|first|upper }}
             </div>
           </td>
           <td>
             <div style="font-weight:700">{{ u.get_full_name|default:u.username }}</div>
-            {% if u.is_superuser %}<span style="font-size:10px;color:#dc2626;font-weight:600">⭐ Super Admin</span>{% endif %}
+            {% if u.is_superuser %}<span style="font-size:10px;color:#64748b;font-weight:600">🔒 Compte protégé</span>{% endif %}
           </td>
           <td style="font-family:monospace;color:var(--muted)">{{ u.username }}</td>
           <td>
             {% if groupe %}
             <span class="groupe-tag">{{ groupe.name }}</span>
             {% else %}
-            <span style="color:var(--muted);font-size:11px">Aucun poste</span>
+            <span style="color:var(--muted);font-size:11px">—</span>
             {% endif %}
           </td>
           <td style="font-size:11px;color:var(--muted)">{{ u.email|default:"—" }}</td>
           <td>
-            {% if u.is_active %}
+            {% if u.is_superuser %}
+            <span class="badge" style="background:#f1f5f9;color:#64748b">🔒 Admin</span>
+            {% elif u.is_active %}
             <span class="badge" style="background:#dcfce7;color:#15803d">✅ Actif</span>
             {% else %}
             <span class="badge" style="background:#fee2e2;color:#dc2626">❌ Inactif</span>
             {% endif %}
           </td>
           <td>
+            {% if not u.is_superuser %}
             <div style="display:flex;gap:5px">
               <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Modifier" onclick="ouvrirModifier({{ u.pk }},'{{ u.username }}','{{ u.first_name }}','{{ u.last_name }}','{{ u.email }}','{{ groupe.name|default:'' }}')">
                 <i class="fas fa-edit"></i>
@@ -128,15 +131,16 @@
               <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Réinitialiser mot de passe" onclick="ouvrirResetPwd({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
                 <i class="fas fa-key"></i>
               </button>
-              {% if not u.is_superuser %}
               <button class="btn-a {% if u.is_active %}btn-rouge{% else %}btn-vert{% endif %}" style="padding:5px 8px;font-size:11px" title="{% if u.is_active %}Désactiver{% else %}Activer{% endif %}" onclick="toggleUser({{ u.pk }}, this)">
                 <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}"></i>
               </button>
               <button class="btn-a" style="padding:5px 8px;font-size:11px;background:#7f1d1d;color:white" title="Supprimer définitivement" onclick="ouvrirSupprimer({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
                 <i class="fas fa-trash"></i>
               </button>
-              {% endif %}
             </div>
+            {% else %}
+            <span style="font-size:11px;color:#94a3b8;font-style:italic">Accès via /admin/</span>
+            {% endif %}
           </td>
         </tr>
         {% endwith %}
