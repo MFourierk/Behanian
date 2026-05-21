@@ -132,6 +132,9 @@
               <button class="btn-a {% if u.is_active %}btn-rouge{% else %}btn-vert{% endif %}" style="padding:5px 8px;font-size:11px" title="{% if u.is_active %}Désactiver{% else %}Activer{% endif %}" onclick="toggleUser({{ u.pk }}, this)">
                 <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}"></i>
               </button>
+              <button class="btn-a" style="padding:5px 8px;font-size:11px;background:#7f1d1d;color:white" title="Supprimer définitivement" onclick="ouvrirSupprimer({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
+                <i class="fas fa-trash"></i>
+              </button>
               {% endif %}
             </div>
           </td>
@@ -218,6 +221,26 @@
     <div style="display:flex;gap:10px">
       <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalModifier')">Annuler</button>
       <button class="btn-a btn-bleu" style="flex:2;justify-content:center" onclick="modifierMembre()"><i class="fas fa-save"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUPPRIMER -->
+<div class="modal-ov" id="modalSupprimer">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-head">
+      <h3><i class="fas fa-trash" style="color:#dc2626;margin-right:8px"></i>Supprimer le membre</h3>
+      <button class="close-btn" onclick="fermerModal('modalSupprimer')">×</button>
+    </div>
+    <input type="hidden" id="del_pk">
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:#7f1d1d">
+      <strong>⚠️ Action irréversible.</strong><br>
+      Supprimer définitivement : <strong id="del_nom"></strong> ?<br>
+      <span style="font-size:11px;opacity:.8">Toutes les données associées seront déliées.</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalSupprimer')">Annuler</button>
+      <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="supprimerMembre()"><i class="fas fa-trash"></i> Supprimer définitivement</button>
     </div>
   </div>
 </div>
@@ -333,6 +356,19 @@ async function toggleUser(pk, btn){
     toast('✅ '+d.message,'success');
     setTimeout(()=>location.reload(),800);
   } else toast('❌ '+d.error,'error');
+}
+
+function ouvrirSupprimer(pk, nom){
+  document.getElementById('del_pk').value = pk;
+  document.getElementById('del_nom').textContent = nom;
+  ouvrirModal('modalSupprimer');
+}
+
+async function supprimerMembre(){
+  const pk = document.getElementById('del_pk').value;
+  const d = await post(`/parametres/personnel/${pk}/supprimer/`, {});
+  if(d.success){ fermerModal('modalSupprimer'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
 }
 </script>
 {% endblock %}

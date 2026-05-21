@@ -74,7 +74,7 @@ ALLOWED_PATHS = {
 }
 
 # Chemins toujours accessibles (authentifié)
-ALWAYS_ALLOWED = ['/users/', '/static/', '/media/', '/dashboard/', '/admin/']
+ALWAYS_ALLOWED = ['/users/', '/static/', '/media/', '/dashboard/']
 
 
 class StrictGroupAccessMiddleware:

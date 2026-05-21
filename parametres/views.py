@@ -479,6 +479,20 @@ def personnel_toggle(request, pk):
 
 
 @require_manager
+@require_POST
+def personnel_delete(request, pk):
+    """Supprimer un utilisateur (interdit pour superadmin et soi-même)."""
+    user = get_object_or_404(User, pk=pk)
+    if user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Impossible de supprimer le Super Administrateur'})
+    if user == request.user:
+        return JsonResponse({'success': False, 'error': 'Impossible de supprimer votre propre compte'})
+    nom = user.get_full_name() or user.username
+    user.delete()
+    return JsonResponse({'success': True, 'message': f'{nom} supprimé définitivement'})
+
+
+@require_manager
 def personnel_reset_password(request, pk):
     """Réinitialiser le mot de passe d'un utilisateur."""
     user = get_object_or_404(User, pk=pk)

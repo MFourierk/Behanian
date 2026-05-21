@@ -60,6 +60,7 @@ urlpatterns = [
     path('personnel/<int:pk>/modifier/', views.personnel_update, name='personnel_update'),
     path('personnel/<int:pk>/toggle/', views.personnel_toggle, name='personnel_toggle'),
     path('personnel/<int:pk>/reset-password/', views.personnel_reset_password, name='personnel_reset_password'),
+    path('personnel/<int:pk>/supprimer/', views.personnel_delete, name='personnel_delete'),
 
     # Forfaits
     path('forfaits/', views.forfait_list, name='forfait_list'),

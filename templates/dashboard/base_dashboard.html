@@ -104,6 +104,12 @@
                 <span class="nav-text">Paramétrage</span>
             </a>
             {% endif %}
+            {% if user.is_superuser %}
+            <a href="/admin/" class="nav-item {% if '/admin/' in request.path %}active{% endif %}">
+                <span class="nav-item-icon"><i class="fas fa-screwdriver-wrench"></i></span>
+                <span class="nav-text">Administration</span>
+            </a>
+            {% endif %}
         </nav>
 
         <div class="user-section">
