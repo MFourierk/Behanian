@@ -83,7 +83,7 @@
     {% breadcrumb "Cuisine" "cuisine:index" "Fiches Techniques" "cuisine:fiche_list" "Modifier Fiche" "" %}
     {% endif %}
 
-    <form method="post" id="fiche-form">
+    <form method="post" enctype="multipart/form-data" id="fiche-form">
         {% csrf_token %}
         <div class="layout">
             <!-- Colonne principale -->
@@ -122,6 +122,18 @@
                             <div class="form-group">
                                 <label>Description / Méthode de préparation</label>
                                 <textarea name="description" class="form-control" placeholder="Décrivez la méthode, les étapes clés, les points de contrôle qualité...">{{ fiche.description|default:'' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-grid full" style="margin-top:14px;">
+                            <div class="form-group">
+                                <label>Photo de la recette</label>
+                                {% if fiche.image %}
+                                <div style="margin-bottom:8px;">
+                                    <img src="{{ fiche.image.url }}" alt="Photo actuelle" style="max-height:120px;border-radius:10px;border:1px solid #e9ecef;">
+                                    <div style="margin-top:4px;font-size:0.8rem;color:#7f8c8d;">Photo actuelle — sélectionnez un nouveau fichier pour la remplacer</div>
+                                </div>
+                                {% endif %}
+                                <input type="file" name="image" class="form-control" accept="image/*">
                             </div>
                         </div>
                     </div>

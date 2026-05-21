@@ -491,6 +491,8 @@ def fiche_create(request):
             statut=request.POST.get('statut', 'actif'),
             cree_par=request.user,
         )
+        if request.FILES.get('image'):
+            fiche.image = request.FILES['image']
         fiche.save()
         # Lignes
         ing_ids  = request.POST.getlist('ingredient_id[]')
@@ -529,6 +531,8 @@ def fiche_edit(request, pk):
         fiche.temps_preparation = request.POST.get('temps_preparation') or 0
         fiche.temps_cuisson     = request.POST.get('temps_cuisson') or 0
         fiche.statut            = request.POST.get('statut', 'actif')
+        if request.FILES.get('image'):
+            fiche.image = request.FILES['image']
         fiche.save()
         # Reconstruire les lignes
         fiche.lignes.all().delete()
