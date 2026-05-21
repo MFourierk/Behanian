@@ -233,6 +233,29 @@
 @media (max-width: 768px) {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .check-layout-new { grid-template-columns: 1fr; }
+
+  /* Onglets : scroll horizontal au lieu d'être coupés */
+  .nav-tabs-hotel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+  }
+  .nav-tab-hotel { flex-shrink: 0; }
+
+  /* Grille chambres : cartes plus petites */
+  .chambres-grid-new { grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); padding: 12px; gap: 10px; }
+  .ch-img { height: 90px; }
+
+  /* Table réservations : scroll */
+  .table-new th, .table-new td { padding: 8px 10px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .chambres-grid-new { grid-template-columns: 1fr 1fr; }
+  .nav-tabs-hotel { gap: 6px; }
+  .nav-tab-hotel { padding: 6px 12px; font-size: 12px; }
 }
 </style>
 {% endblock %}
