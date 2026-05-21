@@ -22,8 +22,8 @@ HOME_BY_GROUP = {
     'Caissiere Principale':        'caisse:index',
     'Caissier(ère) Principal(e)':  'caisse:index',
     'Caissier(ere) Principal(e)':  'caisse:index',
-    # Responsable Caisse → module caisse centrale
-    'Responsable Caisse':          'caisse:index',
+    # Chef caissier(e) → module caisse centrale
+    'Chef caissier(e)':            'caisse:index',
     # Caissière TPE
     'Caissiere':                   'bar:tpe',
     'Caissier(e)':                 'bar:tpe',
@@ -58,8 +58,8 @@ ALLOWED_PATHS = {
     'Caissiere Principale':        _CAISSE_PLUS_TPE,
     'Caissier(ère) Principal(e)':  _CAISSE_PLUS_TPE,
     'Caissier(ere) Principal(e)':  _CAISSE_PLUS_TPE,
-    # Responsable Caisse — caisse centrale + tous TPE (bar géré par require_bar_gestion)
-    'Responsable Caisse':          _CAISSE_PLUS_TPE,
+    # Chef caissier(e) — caisse centrale + tous TPE (bar géré par require_bar_gestion)
+    'Chef caissier(e)':            _CAISSE_PLUS_TPE,
     # Caissière — TPE uniquement (PAS /caisse/)
     'Caissiere':                   _TPE,
     'Caissier(e)':                 _TPE,

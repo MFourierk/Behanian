@@ -36,9 +36,9 @@ _CAISSIERE_PRINCIPALE = [
     GROUPE_CAISSIERE_PRINCIPALE,
     # Variantes anciens formats
     'Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)',
-    # Responsable Caisse : accès complet (restaurant+bar+piscine+espaces+caisse)
+    # Chef caissier(e) : accès complet (restaurant+bar+piscine+espaces+caisse)
     # mais bloqué de la gestion bar (Cave TPE uniquement) via _is_caissier()
-    'Responsable Caisse',
+    'Chef caissier(e)',
 ]
 _CAISSIERE = [
     GROUPE_CAISSIERE,
@@ -48,7 +48,7 @@ _CAISSIERE = [
     'Caissier(E)',
 ]
 # Groupes bloqués de la gestion/stock/rapports bar (TPE bar uniquement)
-_BAR_TPE_SEULEMENT = _CAISSIERE + ['Responsable Caisse']
+_BAR_TPE_SEULEMENT = _CAISSIERE + ['Chef caissier(e)']
 _RECEPTIONNISTE = [
     GROUPE_RECEPTIONNISTE,
     'Réceptionniste',       # nom réel en base avec accent

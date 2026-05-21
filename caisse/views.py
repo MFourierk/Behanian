@@ -105,7 +105,7 @@ def index(request):
         user_groups = list(request.user.groups.values_list('name', flat=True))
         if 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
             user_type = 'hotel'
-        elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Responsable Caisse']):
+        elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Chef caissier(e)']):
             user_type = 'module'
 
     stats = get_stats_jour(today, type_caisse=user_type)
@@ -133,7 +133,7 @@ def index(request):
     can_open_caisse = (
         request.user.is_superuser or
         any(g in list(request.user.groups.values_list('name', flat=True)) for g in [
-            'Responsable Caisse', 'Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)',
+            'Chef caissier(e)', 'Caissier(ère) Principal(e)', 'Caissier(ere) Principal(e)',
             'Manager Général(e)', 'Manager General(e)',
             'Réceptionniste', 'Receptionniste', 'Responsable Hôtel',
             'Caissière / Caissier', 'Caissiere / Caissier',
@@ -158,7 +158,7 @@ def index(request):
 
 # Groupes autorisés à ouvrir la caisse centrale
 GROUPES_CAISSE_CENTRALE = [
-    'Responsable Caisse',
+    'Chef caissier(e)',
     'Caissier(ère) Principal(e)',
     'Caissier(ere) Principal(e)',
     'Manager Général(e)',

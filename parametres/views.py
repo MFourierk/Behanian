@@ -370,7 +370,7 @@ GROUPES_METIER = [
     ('Manager Général(e)',   '👑 Direction'),
     ('Responsable Hôtel',    '🏨 Hôtel'),
     ('Réceptionniste',       '🏨 Hôtel'),
-    ('Responsable Caisse',   '💰 Caisse'),
+    ('Chef caissier(e)',      '💰 Caisse'),
     ('Caissier(e)',          '💰 Caisse'),
     ('Manager Cuisine',      '🍽️ Cuisine'),
     ('Cuisinier(e)',         '🍽️ Cuisine'),
