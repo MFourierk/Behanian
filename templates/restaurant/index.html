@@ -481,11 +481,81 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .toast.success { background: linear-gradient(135deg, #166534, #16a34a); }
 .toast.error   { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
 .toast.info    { background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet)); }
+
+/* ===== RESPONSIVE MOBILE ===== */
+@media (max-width: 768px) {
+  .tpe-wrap {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    height: calc(100vh - 56px);
+    overflow: hidden;
+  }
+
+  /* Un seul panneau visible à la fois */
+  .panel-catalogue,
+  .panel-ticket {
+    position: absolute;
+    top: 56px; left: 0; right: 0; bottom: 0;
+    transition: transform 0.3s ease;
+    width: 100%;
+    height: calc(100vh - 56px);
+  }
+  .panel-catalogue { transform: translateX(0); z-index: 10; }
+  .panel-ticket    { transform: translateX(100%); z-index: 10; }
+
+  /* Quand le ticket est affiché */
+  .tpe-wrap.show-ticket .panel-catalogue { transform: translateX(-100%); }
+  .tpe-wrap.show-ticket .panel-ticket    { transform: translateX(0); }
+
+  /* Bouton flottant "Voir panier" */
+  .btn-mobile-panier {
+    display: flex;
+    position: fixed;
+    bottom: 20px; right: 16px;
+    z-index: 200;
+    align-items: center; gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+    color: white; border: none; border-radius: 50px;
+    font-size: 0.88rem; font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 6px 20px rgba(124,58,237,0.45);
+    cursor: pointer;
+  }
+  .btn-mobile-panier .nb { background: var(--cave-gold); color: var(--cave-deep); border-radius: 50%; width: 20px; height: 20px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+
+  /* Bouton retour catalogue */
+  .btn-mobile-retour {
+    display: flex;
+    align-items: center; gap: 6px;
+    padding: 7px 14px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: white; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Masquer le bouton flottant quand ticket visible */
+  .tpe-wrap.show-ticket .btn-mobile-panier { display: none; }
+
+  /* Articles grid plus compact */
+  .articles-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .ac-img-wrap   { height: 85px; }
+  .articles-scroll { padding: 10px 14px 80px; }
+
+  .cat-header { padding: 10px 14px 0; }
+  .sub-filters { padding: 10px 14px 0; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="tpe-wrap">
+<div class="tpe-wrap" id="tpeWrap">
+
+  <!-- Bouton flottant mobile : afficher le panier -->
+  <button class="btn-mobile-panier" id="btnMobilePanier" onclick="toggleMobilePanel(true)" style="display:none">
+    <i class="fas fa-shopping-cart"></i> Panier
+    <span class="nb" id="mobileCartCount">0</span>
+  </button>
 
   <!-- ========== PANNEAU GAUCHE ========== -->
   <div class="panel-catalogue">
@@ -691,6 +761,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
     <div class="ticket-header">
       <div class="ticket-header-top">
+        <button class="btn-mobile-retour" id="btnMobileRetour" onclick="toggleMobilePanel(false)" style="display:none"><i class="fas fa-arrow-left"></i> Catalogue</button>
         <h3><i class="fas fa-receipt" style="font-size:0.9rem;margin-right:6px;"></i>Ticket en cours</h3>
         <span class="ticket-num" id="ticketNum">T-001</span>
       </div>
@@ -1160,6 +1231,7 @@ async function modifierQty(ligneId, delta) {
 
 // ── RENDER TICKET ──
 function renderTicket() {
+  _majMobileCartBadge();
   const t = tickets[ticketActifId];
   const container = document.getElementById('lignesContainer');
   const empty = document.getElementById('ticketEmpty');
@@ -1625,5 +1697,31 @@ function fermerConfirmChambre() {
   window._lastChambreDetail = null;
   window._lastChambreTotal = null;
 }
+
+// ── Toggle mobile catalogue / panier ──────────────────
+function toggleMobilePanel(showTicket) {
+  const wrap = document.getElementById('tpeWrap');
+  if (showTicket) wrap.classList.add('show-ticket');
+  else            wrap.classList.remove('show-ticket');
+}
+
+function _initMobileUI() {
+  if (window.innerWidth > 768) return;
+  document.getElementById('btnMobilePanier').style.display = 'flex';
+  document.getElementById('btnMobileRetour').style.display = 'flex';
+}
+
+// Met à jour le badge panier sur le bouton flottant
+function _majMobileCartBadge() {
+  const t = tickets && ticketActifId ? tickets[ticketActifId] : null;
+  const count = t ? t.lignes.length : 0;
+  const el = document.getElementById('mobileCartCount');
+  if (el) el.textContent = count;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  _initMobileUI();
+  window.addEventListener('resize', _initMobileUI);
+});
 </script>
 {% endblock %}
