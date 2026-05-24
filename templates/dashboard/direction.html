@@ -127,8 +127,6 @@
 <!-- TABS -->
 <div class="dir-tabs">
   <button class="dir-tab active" onclick="showTab('global',this)">📊 Vue globale</button>
-  <button class="dir-tab" onclick="showTab('cave',this)">🍷 Cave <span style="background:#f3e8ff;color:#7c3aed;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ total_bar }}</span></button>
-  <button class="dir-tab" onclick="showTab('cuisine',this)">🍽️ Cuisine <span style="background:#fff7ed;color:#c2410c;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ total_cuisine }}</span></button>
   <button class="dir-tab" onclick="showTab('mouvements',this)">📋 Mouvements <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ mouvements_combines|length }}</span></button>
 </div>
 
@@ -268,137 +266,7 @@
   {% endif %}
 </div>
 
-<!-- ─── TAB 2 : STOCK CAVE ─────────────────────────────────── -->
-<div class="dir-pane" id="pane-cave">
-  <div class="panel">
-    <div class="ph">
-      <h3>🍷 Stock Cave — {{ total_bar }} article(s)
-        <span style="margin-left:8px">
-          {% if bar_ruptures %}<span class="badge b-rupture">{{ bar_ruptures }} rupture(s)</span>{% endif %}
-          {% if bar_alertes %}<span class="badge b-alerte" style="margin-left:4px">{{ bar_alertes }} alerte(s)</span>{% endif %}
-        </span>
-      </h3>
-      <div style="display:flex;gap:8px">
-        <a href="{% url 'bar:stock_management' %}" class="btn-a btn-or"><i class="fas fa-boxes-stacked"></i> Gérer les stocks</a>
-        <a href="{% url 'bar:articles_list' %}" class="btn-a btn-outline"><i class="fas fa-list"></i> Tous les articles</a>
-      </div>
-    </div>
-    <div class="filter-bar">
-      <input type="text" id="filterCave" placeholder="Rechercher un article…" oninput="filtrerTable('tableCave','filterCave','filterCaveCat')">
-      <select id="filterCaveCat" onchange="filtrerTable('tableCave','filterCave','filterCaveCat')">
-        <option value="">Toutes catégories</option>
-        {% regroup bar_articles by categorie.nom as cats %}
-        {% for c in cats %}<option value="{{ c.grouper }}">{{ c.grouper }}</option>{% endfor %}
-      </select>
-      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-left:4px">
-        <input type="checkbox" id="filterCaveAlerte" onchange="filtrerAlertes('tableCave','filterCaveAlerte')"> Alertes seulement
-      </label>
-    </div>
-    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
-    <table class="tbl" id="tableCave">
-      <thead><tr>
-        <th>Article</th><th>Catégorie</th><th>Stock actuel</th><th>Seuil alerte</th><th>Statut</th><th>Actions</th>
-      </tr></thead>
-      <tbody>
-      {% for a in bar_articles %}
-      <tr data-nom="{{ a.nom|lower }}" data-cat="{{ a.categorie.nom }}" data-alerte="{% if a.est_en_rupture or a.est_stock_bas %}1{% else %}0{% endif %}">
-        <td style="font-weight:600">{{ a.nom }}</td>
-        <td style="color:var(--muted)">{{ a.categorie.nom }}</td>
-        <td>
-          <span style="font-size:14px;font-weight:700;color:{% if a.est_en_rupture %}#b91c1c{% elif a.est_stock_bas %}#a16207{% else %}#15803d{% endif %}">
-            {{ a.quantite_stock }}
-          </span>
-          <span style="font-size:11px;color:var(--muted)"> {{ a.unite_standard }}</span>
-        </td>
-        <td style="color:var(--muted)">{{ a.seuil_alerte }}</td>
-        <td>
-          {% if a.est_en_rupture %}
-          <span class="badge b-rupture">❌ Rupture</span>
-          {% elif a.est_stock_bas %}
-          <span class="badge b-alerte">⚠️ Alerte</span>
-          {% else %}
-          <span class="badge b-ok">✅ OK</span>
-          {% endif %}
-        </td>
-        <td>
-          <a href="{% url 'bar:article_edit' a.pk %}" class="btn-a btn-outline btn-sm"><i class="fas fa-edit"></i> Modifier</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Aucun article</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    </div>
-  </div>
-</div>
-
-<!-- ─── TAB 3 : STOCK CUISINE ─────────────────────────────── -->
-<div class="dir-pane" id="pane-cuisine">
-  <div class="panel">
-    <div class="ph">
-      <h3>🍽️ Stock Cuisine — {{ total_cuisine }} ingrédient(s)
-        <span style="margin-left:8px">
-          {% if cuisine_ruptures %}<span class="badge b-rupture">{{ cuisine_ruptures }} rupture(s)</span>{% endif %}
-          {% if cuisine_alertes %}<span class="badge b-alerte" style="margin-left:4px">{{ cuisine_alertes }} alerte(s)</span>{% endif %}
-        </span>
-      </h3>
-      <div style="display:flex;gap:8px">
-        <a href="{% url 'cuisine:stock_management' %}" class="btn-a btn-or"><i class="fas fa-boxes-stacked"></i> Gérer les stocks</a>
-        <a href="{% url 'cuisine:ingredient_list' %}" class="btn-a btn-outline"><i class="fas fa-list"></i> Tous les ingrédients</a>
-      </div>
-    </div>
-    <div class="filter-bar">
-      <input type="text" id="filterCuis" placeholder="Rechercher un ingrédient…" oninput="filtrerTable('tableCuisine','filterCuis','filterCuisCat')">
-      <select id="filterCuisCat" onchange="filtrerTable('tableCuisine','filterCuis','filterCuisCat')">
-        <option value="">Toutes catégories</option>
-        {% regroup cuisine_ingredients by categorie.nom as ccats %}
-        {% for c in ccats %}<option value="{{ c.grouper|default:'' }}">{{ c.grouper|default:"Sans catégorie" }}</option>{% endfor %}
-      </select>
-      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-left:4px">
-        <input type="checkbox" id="filterCuisAlerte" onchange="filtrerAlertes('tableCuisine','filterCuisAlerte')"> Alertes seulement
-      </label>
-    </div>
-    <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
-    <table class="tbl" id="tableCuisine">
-      <thead><tr>
-        <th>Ingrédient</th><th>Catégorie</th><th>Stock actuel</th><th>Unité</th><th>Seuil alerte</th><th>Statut</th><th>Actions</th>
-      </tr></thead>
-      <tbody>
-      {% for i in cuisine_ingredients %}
-      <tr data-nom="{{ i.nom|lower }}" data-cat="{{ i.categorie.nom|default:'' }}" data-alerte="{% if i.est_en_rupture or i.est_stock_bas %}1{% else %}0{% endif %}">
-        <td style="font-weight:600">{{ i.nom }}</td>
-        <td style="color:var(--muted)">{{ i.categorie.nom|default:"—" }}</td>
-        <td>
-          <span style="font-size:14px;font-weight:700;color:{% if i.est_en_rupture %}#b91c1c{% elif i.est_stock_bas %}#a16207{% else %}#15803d{% endif %}">
-            {{ i.quantite_stock|floatformat:2 }}
-          </span>
-        </td>
-        <td style="color:var(--muted)">{{ i.unite_stock.nom|default:"—" }}</td>
-        <td style="color:var(--muted)">{{ i.seuil_alerte|floatformat:2 }}</td>
-        <td>
-          {% if i.est_en_rupture %}
-          <span class="badge b-rupture">❌ Rupture</span>
-          {% elif i.est_stock_bas %}
-          <span class="badge b-alerte">⚠️ Alerte</span>
-          {% else %}
-          <span class="badge b-ok">✅ OK</span>
-          {% endif %}
-        </td>
-        <td>
-          <a href="{% url 'cuisine:ingredient_edit' i.pk %}" class="btn-a btn-outline btn-sm"><i class="fas fa-edit"></i> Modifier</a>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Aucun ingrédient</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    </div>
-  </div>
-</div>
-
-<!-- ─── TAB 4 : MOUVEMENTS ─────────────────────────────────── -->
+<!-- ─── TAB 2 : MOUVEMENTS ─────────────────────────────────── -->
 <div class="dir-pane" id="pane-mouvements">
   <div class="panel">
     <div class="ph">

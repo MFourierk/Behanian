@@ -166,18 +166,15 @@ def direction_view(request):
     modules = get_accessible_modules(request.user)
     stats = _get_dashboard_stats(request.user, modules)
 
-    bar_articles, bar_ruptures, bar_alertes = [], 0, 0
-    cuisine_ingredients, cuisine_ruptures, cuisine_alertes = [], 0, 0
+    bar_ruptures, bar_alertes = 0, 0
+    cuisine_ruptures, cuisine_alertes = 0, 0
     mouvements_combines = []
 
     try:
         from bar.models import BoissonBar, MouvementStockBar
-        bar_articles = list(
-            BoissonBar.objects.filter(statut='actif')
-            .select_related('categorie').order_by('categorie__nom', 'nom')
-        )
-        bar_ruptures = sum(1 for a in bar_articles if a.est_en_rupture())
-        bar_alertes  = sum(1 for a in bar_articles if a.est_stock_bas())
+        bar_qs = BoissonBar.objects.filter(statut='actif')
+        bar_ruptures = sum(1 for a in bar_qs if a.est_en_rupture())
+        bar_alertes  = sum(1 for a in bar_qs if a.est_stock_bas())
         for m in MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')[:30]:
             mouvements_combines.append({
                 'source': 'cave', 'nom': m.boisson.nom,
@@ -190,12 +187,9 @@ def direction_view(request):
 
     try:
         from cuisine.models import Ingredient, MouvementStockCuisine
-        cuisine_ingredients = list(
-            Ingredient.objects.filter(statut=True)
-            .select_related('categorie', 'unite_stock').order_by('nom')
-        )
-        cuisine_ruptures = sum(1 for i in cuisine_ingredients if i.est_en_rupture())
-        cuisine_alertes  = sum(1 for i in cuisine_ingredients if i.est_stock_bas())
+        cuisine_qs = Ingredient.objects.filter(statut=True)
+        cuisine_ruptures = sum(1 for i in cuisine_qs if i.est_en_rupture())
+        cuisine_alertes  = sum(1 for i in cuisine_qs if i.est_stock_bas())
         for m in MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')[:30]:
             mouvements_combines.append({
                 'source': 'cuisine', 'nom': m.ingredient.nom,
@@ -229,14 +223,10 @@ def direction_view(request):
         **stats,
         'today': today,
         'accessible_modules': modules,
-        'bar_articles': bar_articles,
         'bar_ruptures': bar_ruptures,
         'bar_alertes': bar_alertes,
-        'total_bar': len(bar_articles),
-        'cuisine_ingredients': cuisine_ingredients,
         'cuisine_ruptures': cuisine_ruptures,
         'cuisine_alertes': cuisine_alertes,
-        'total_cuisine': len(cuisine_ingredients),
         'mouvements_combines': mouvements_combines[:40],
         'sessions_jour': sessions_jour,
         'stats_caisse_jour': stats_caisse_jour,
