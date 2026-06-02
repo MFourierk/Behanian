@@ -56,6 +56,7 @@
 
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
     <button class="btn-a btn-or" onclick="ouvrirModal('modalCreer')"><i class="fas fa-user-plus"></i> Nouveau membre</button>
+    <button class="btn-a btn-bleu" onclick="ouvrirModal('modalCreerGroupe')"><i class="fas fa-tag"></i> Nouveau poste terrain</button>
     <form method="post" action="{% url 'parametres:initialiser_groupes' %}" style="margin:0">
       {% csrf_token %}
       <button type="submit" class="btn-a btn-outline" title="Crée automatiquement tous les postes métier manquants dans la base de données">
@@ -81,6 +82,7 @@
         <select id="filtreGroupe" onchange="filtrer()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px">
           <option value="">Tous les postes</option>
           {% for g in groupes %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}
+          {% for g in groupes_custom %}<option value="{{ g.name }}">{{ g.name }}</option>{% endfor %}
         </select>
       </div>
     </div>
@@ -160,7 +162,7 @@
 
   <!-- GROUPES / POSTES -->
   <div class="panel">
-    <div class="ph"><h3>🏷️ Postes disponibles</h3></div>
+    <div class="ph"><h3>🏷️ Postes système</h3></div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px">
       {% for nom, dept in groupes_metier %}
       <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px">
@@ -174,7 +176,56 @@
     </div>
   </div>
 
+  <!-- GROUPES TERRAIN PERSONNALISÉS -->
+  {% if groupes_custom %}
+  <div class="panel">
+    <div class="ph">
+      <h3>🏷️ Postes terrain personnalisés <span style="font-size:12px;font-weight:400;color:var(--muted)">(aucun accès application)</span></h3>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px">
+      {% for g in groupes_custom %}
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px">
+        <div style="font-size:13px;font-weight:600;color:var(--dark)">{{ g.name }}</div>
+        <div style="font-size:11px;color:#ea580c">{{ g.user_set.count }} membre(s)</div>
+        {% if g.user_set.count == 0 %}
+        <form method="post" action="{% url 'parametres:groupe_delete' g.pk %}" style="margin:0" onsubmit="return confirm('Supprimer le poste « {{ g.name }} » ?')">
+          {% csrf_token %}
+          <button type="submit" style="font-size:10px;padding:3px 8px;border-radius:6px;border:none;background:#fee2e2;color:#dc2626;cursor:pointer;font-weight:600">
+            <i class="fas fa-trash"></i> Supprimer
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
 </div></div>
+
+<!-- MODAL CRÉER GROUPE TERRAIN -->
+<div class="modal-ov" id="modalCreerGroupe">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3><i class="fas fa-tag" style="color:#2563eb;margin-right:8px"></i>Nouveau poste terrain</h3>
+      <button class="close-btn" onclick="fermerModal('modalCreerGroupe')">×</button>
+    </div>
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px;margin-bottom:14px;font-size:12px;color:#92400e">
+      <i class="fas fa-info-circle"></i> Ce poste n'aura <strong>aucun accès à l'application</strong>. Il est destiné au personnel terrain (gardiens, agents, techniciens…) qui n'utilisent pas le logiciel.
+    </div>
+    <form method="post" action="{% url 'parametres:groupe_create' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <label>Nom du poste *</label>
+        <input type="text" name="nom" class="fc" placeholder="Ex: Gardien de nuit, Agent d'entretien…" required>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button type="button" class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalCreerGroupe')">Annuler</button>
+        <button type="submit" class="btn-a btn-bleu" style="flex:2;justify-content:center"><i class="fas fa-check"></i> Créer le poste</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- MODAL CRÉER -->
 <div class="modal-ov" id="modalCreer">
@@ -195,6 +246,9 @@
         <option value="">— Sélectionner un poste —</option>
         {% for nom, dept in groupes_metier %}
         <option value="{{ nom }}">{{ dept }} · {{ nom }}</option>
+        {% endfor %}
+        {% for g in groupes_custom %}
+        <option value="{{ g.name }}">🏷️ Terrain · {{ g.name }}</option>
         {% endfor %}
       </select>
     </div>
@@ -224,6 +278,9 @@
         <option value="">— Aucun —</option>
         {% for nom, dept in groupes_metier %}
         <option value="{{ nom }}">{{ dept }} · {{ nom }}</option>
+        {% endfor %}
+        {% for g in groupes_custom %}
+        <option value="{{ g.name }}">🏷️ Terrain · {{ g.name }}</option>
         {% endfor %}
       </select>
     </div>

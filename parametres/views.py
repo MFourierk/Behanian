@@ -1,4 +1,4 @@
-from utils.permissions import require_module_access, require_manager
+from utils.permissions import require_module_access, require_manager, require_chambre_access, _is_responsable_hotel
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -14,8 +14,14 @@ from bar.models import BoissonBar, CategorieBar, TableBar
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
-@require_manager
+@login_required
 def parametres_index(request):
+    from utils.permissions import _is_manager
+    if _is_responsable_hotel(request.user):
+        return redirect('parametres:chambre_list')
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        messages.error(request, "Accès refusé — réservé aux managers.")
+        return redirect('dashboard:index')
     return render(request, 'parametres/index.html')
 
 # --- BAR : BOISSONS ---
@@ -139,40 +145,40 @@ class TableBarDeleteView(DeleteView):
 
 
 # --- HOTEL : CHAMBRES ---
-@method_decorator(login_required, name='dispatch')
+@method_decorator(require_chambre_access, name='dispatch')
 class ChambreListView(ListView):
     model = Chambre
     template_name = 'parametres/chambre_list.html'
     context_object_name = 'chambres'
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(require_chambre_access, name='dispatch')
 class ChambreCreateView(CreateView):
     model = Chambre
     template_name = 'parametres/chambre_form.html'
     fields = '__all__'
     success_url = reverse_lazy('parametres:chambre_list')
-    
+
     def form_valid(self, form):
         messages.success(self.request, "Chambre créée avec succès.")
         return super().form_valid(form)
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(require_chambre_access, name='dispatch')
 class ChambreUpdateView(UpdateView):
     model = Chambre
     template_name = 'parametres/chambre_form.html'
     fields = '__all__'
     success_url = reverse_lazy('parametres:chambre_list')
-    
+
     def form_valid(self, form):
         messages.success(self.request, "Chambre modifiée avec succès.")
         return super().form_valid(form)
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(require_chambre_access, name='dispatch')
 class ChambreDeleteView(DeleteView):
     model = Chambre
     template_name = 'parametres/chambre_confirm_delete.html'
     success_url = reverse_lazy('parametres:chambre_list')
-    
+
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, "Chambre supprimée avec succès.")
         return super().delete(request, *args, **kwargs)
@@ -382,11 +388,15 @@ GROUPES_METIER = [
 @require_manager
 def personnel_list(request):
     utilisateurs = User.objects.all().prefetch_related('groups').order_by('last_name', 'first_name')
-    groupes = Group.objects.filter(name__in=[g[0] for g in GROUPES_METIER]).order_by('name')
+    noms_systeme = {g[0] for g in GROUPES_METIER}
+    groupes = Group.objects.filter(name__in=noms_systeme).order_by('name')
+    groupes_custom = Group.objects.exclude(name__in=noms_systeme).order_by('name')
     context = {
         'utilisateurs': utilisateurs,
         'groupes': groupes,
+        'groupes_custom': groupes_custom,
         'groupes_metier': GROUPES_METIER,
+        'noms_systeme': noms_systeme,
     }
     return render(request, 'parametres/personnel_list.html', context)
 
@@ -484,6 +494,43 @@ def personnel_delete(request, pk):
     nom = user.get_full_name() or user.username
     user.delete()
     return JsonResponse({'success': True, 'message': f'{nom} supprimé définitivement'})
+
+
+@require_manager
+@require_POST
+def groupe_create(request):
+    """Crée un groupe terrain personnalisé (sans accès à l'application)."""
+    nom = request.POST.get('nom', '').strip()
+    noms_systeme = {g[0] for g in GROUPES_METIER}
+    if not nom:
+        messages.error(request, "Le nom du poste est requis.")
+    elif nom in noms_systeme:
+        messages.error(request, f"« {nom} » est un poste système — utilisez « Initialiser les postes ».")
+    else:
+        _, created = Group.objects.get_or_create(name=nom)
+        if created:
+            messages.success(request, f"Poste « {nom} » créé. Il n'aura aucun accès à l'application.")
+        else:
+            messages.info(request, f"Le poste « {nom} » existe déjà.")
+    return redirect('parametres:personnel_list')
+
+
+@require_manager
+@require_POST
+def groupe_delete(request, pk):
+    """Supprime un groupe terrain personnalisé (protège les groupes système)."""
+    groupe = get_object_or_404(Group, pk=pk)
+    noms_systeme = {g[0] for g in GROUPES_METIER}
+    if groupe.name in noms_systeme:
+        messages.error(request, f"« {groupe.name} » est un poste système et ne peut pas être supprimé.")
+        return redirect('parametres:personnel_list')
+    if groupe.user_set.exists():
+        messages.error(request, f"Impossible de supprimer « {groupe.name} » : {groupe.user_set.count()} membre(s) y sont rattachés.")
+        return redirect('parametres:personnel_list')
+    nom = groupe.name
+    groupe.delete()
+    messages.success(request, f"Poste « {nom} » supprimé.")
+    return redirect('parametres:personnel_list')
 
 
 @require_manager

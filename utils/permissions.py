@@ -52,7 +52,11 @@ _BAR_TPE_SEULEMENT = _CAISSIERE + ['Chef caissier(e)']
 _RECEPTIONNISTE = [
     GROUPE_RECEPTIONNISTE,
     'Réceptionniste',       # nom réel en base avec accent
-    'Responsable Hôtel',    # rôle similaire (accueil/réception)
+]
+
+# Responsable Hôtel : module hôtel + gestion des chambres dans paramètres
+_RESPONSABLE_HOTEL = [
+    'Responsable Hôtel',
 ]
 _UTILISATEUR_SIMPLE = [
     GROUPE_UTILISATEUR_SIMPLE,
@@ -67,6 +71,7 @@ _RULES = [
     (_MANAGERS,              ['*']),
     (['Manager Cuisine'],     ['cuisine']),
     (_RECEPTIONNISTE,         ['hotel']),
+    (_RESPONSABLE_HOTEL,      ['hotel', 'parametres']),
     # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale)
     (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse']),
     # Caissière : TPE uniquement, PAS de caisse centrale
@@ -182,12 +187,28 @@ def _is_receptionniste(user):
     g = get_user_groups(user)
     return any(x in g for x in _RECEPTIONNISTE)
 
+def _is_responsable_hotel(user):
+    g = get_user_groups(user)
+    return any(x in g for x in _RESPONSABLE_HOTEL)
+
 def _is_manager_cuisine(user):
     g = get_user_groups(user)
     return 'Manager Cuisine' in g
 
 def _is_manager_general(user):
     return _is_manager(user)
+
+
+def require_chambre_access(view_func):
+    """Autorise managers ET Responsable Hôtel sur les vues chambres du module paramètres."""
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if _is_manager(request.user) or _is_responsable_hotel(request.user) or request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        messages.error(request, "Accès refusé — réservé aux managers et au Responsable Hôtel.")
+        return redirect('dashboard:index')
+    return wrapper
 
 
 def require_gestion_access(module):
