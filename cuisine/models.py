@@ -575,14 +575,15 @@ class InventaireCuisine(models.Model):
             return False
         for ligne in self.lignes.all():
             ecart = ligne.quantite_physique - ligne.quantite_theorique
-            if ecart != 0:
-                MouvementStockCuisine.objects.create(
-                    ingredient     = ligne.ingredient,
-                    type_mouvement = 'inventaire',
-                    quantite       = ecart,
-                    commentaire    = f"Inventaire {self.numero}",
-                    utilisateur    = user,
-                )
+            label = 'Excédent' if ecart > 0 else ('Manquant' if ecart < 0 else 'Conforme')
+            # Créer un mouvement pour TOUTES les lignes (traçabilité complète)
+            MouvementStockCuisine.objects.create(
+                ingredient     = ligne.ingredient,
+                type_mouvement = 'inventaire',
+                quantite       = ecart,
+                commentaire    = f"Inventaire {self.numero} — {label} (compté: {ligne.quantite_physique})",
+                utilisateur    = user,
+            )
             ligne.ingredient.quantite_stock = ligne.quantite_physique
             ligne.ingredient.save()
         self.statut          = 'valide'
