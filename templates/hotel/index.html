@@ -376,6 +376,12 @@
                       <i class="fas fa-sign-in-alt"></i> Check-in
                     </button>
                   </div>
+                  <form method="post" action="{% url 'hotel:chambre_maintenance' chambre.id %}" style="margin-top:6px">
+                    {% csrf_token %}
+                    <button type="submit" class="ch-btn" style="width:100%;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa" onclick="return confirm('Mettre la chambre {{ chambre.numero }} en maintenance ?')">
+                      <i class="fas fa-tools"></i> Mettre en maintenance
+                    </button>
+                  </form>
                   {% elif chambre.statut == 'occupee' %}
                     {% for res in sejours_en_cours %}{% if res.chambre.id == chambre.id %}
                     <button class="ch-btn success" onclick="openServiceModal({{ res.id }}, '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
@@ -396,7 +402,13 @@
                     {% endif %}{% endfor %}
                   {% elif chambre.statut == 'maintenance' %}
                   <div class="ch-actions-row">
-                    <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn" style="width:100%">Voir détails</a>
+                    <a href="{% url 'hotel:chambre_detail' chambre.id %}" class="ch-btn">Détails</a>
+                    <form method="post" action="{% url 'hotel:chambre_maintenance' chambre.id %}" style="margin:0;flex:1">
+                      {% csrf_token %}
+                      <button type="submit" class="ch-btn success" style="width:100%" onclick="return confirm('Remettre la chambre {{ chambre.numero }} disponible ?')">
+                        <i class="fas fa-check-circle"></i> Remettre disponible
+                      </button>
+                    </form>
                   </div>
                   {% endif %}
                 </div>

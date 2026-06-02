@@ -178,6 +178,24 @@ def chambre_detail(request, chambre_id):
     context = {'chambre': chambre}
     return render(request, 'hotel/chambre_detail.html', context)
 
+
+@require_module_access('hotel')
+@require_POST
+def chambre_toggle_maintenance(request, chambre_id):
+    """Bascule une chambre entre disponible et maintenance."""
+    chambre = get_object_or_404(Chambre, id=chambre_id)
+    if chambre.statut in ('occupee', 'reservation'):
+        messages.error(request, f"Chambre {chambre.numero} : impossible de changer le statut — chambre {'occupée' if chambre.statut == 'occupee' else 'avec réservation active'}.")
+        return redirect('hotel:index')
+    if chambre.statut == 'maintenance':
+        chambre.statut = 'disponible'
+        messages.success(request, f"Chambre {chambre.numero} remise disponible.")
+    else:
+        chambre.statut = 'maintenance'
+        messages.warning(request, f"Chambre {chambre.numero} mise en maintenance.")
+    chambre.save()
+    return redirect('hotel:index')
+
 @require_module_access('hotel')
 @require_POST
 @transaction.atomic
