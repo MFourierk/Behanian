@@ -80,6 +80,26 @@
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 
+  <!-- BANNER ARCHITECTURE CAISSE -->
+  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:#1e40af;line-height:1.7">
+    <div style="font-weight:700;font-size:13px;margin-bottom:6px"><i class="fas fa-info-circle"></i> Architecture du système de caisse</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <strong>Caisse Centrale (ce module) :</strong><br>
+        Ouverture · Clôture · Fond de caisse · Versements · Prélèvements banque · Dépenses
+      </div>
+      <div>
+        <strong>Caisses indépendantes (modules) :</strong><br>
+        🏨 Hôtel &nbsp;·&nbsp; 🍽️ Restaurant &nbsp;·&nbsp; 🍷 Cave &nbsp;·&nbsp; 🏊 Piscine &nbsp;·&nbsp; 🎪 Espaces<br>
+        <span style="color:#2563eb">→ Leurs transactions remontent automatiquement ici</span>
+      </div>
+    </div>
+    <div style="margin-top:6px;padding-top:6px;border-top:1px solid #bfdbfe;color:#1d4ed8">
+      <i class="fas fa-exchange-alt"></i> <strong>Versements :</strong> les caisses des modules versent régulièrement leur recette à la caisse centrale en cours de journée.
+      &nbsp;|&nbsp; <i class="fas fa-lock"></i> <strong>La clôture de fin de journée est obligatoire</strong> pour positionner le solde de veille du lendemain.
+    </div>
+  </div>
+
   <!-- STATUT CAISSE -->
   {% if session_active %}
   <div class="caisse-status open">
@@ -92,11 +112,7 @@
       <button class="btn-a btn-or" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus-circle"></i> Mouvement</button>
       <button class="btn-a btn-bleu" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-university"></i> Banque</button>
       <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport</button>
-      {% if session_active.type_caisse == 'centrale' %}
-      <button class="btn-a btn-dark" id="btnSync" onclick="syncCentrale()"><i class="fas fa-sync-alt"></i> Synchroniser</button>
-      {% else %}
-      <button class="btn-a btn-violet" onclick="ouvrirModal('modalVersement')"><i class="fas fa-exchange-alt"></i> Verser à la caisse</button>
-      {% endif %}
+      <button class="btn-a btn-dark" id="btnSync" onclick="syncCentrale()"><i class="fas fa-sync-alt"></i> Synchroniser modules</button>
       <button class="btn-a btn-rouge" onclick="ouvrirModal('modalCloturer')"><i class="fas fa-lock"></i> Clôturer</button>
     </div>
   </div>

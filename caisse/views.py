@@ -72,20 +72,20 @@ def get_stats_jour(date=None, type_caisse=None):
 
 
 def get_solde_veille():
-    """Retourne le solde restant après la dernière clôture."""
-    last = CaisseSession.objects.filter(is_open=False).order_by('-closed_at').first()
+    """Retourne le solde restant après la dernière clôture de la caisse centrale."""
+    last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
     if not last:
         return 0, None
     solde = last.fond_caisse_reel + last.total_especes - last.prelevement_banque
     return int(solde), last
 
 
-def _session_non_cloturee_precedente(type_caisse):
-    """Retourne la session ouverte d'un jour antérieur, ou None."""
+def _session_centrale_non_cloturee():
+    """Retourne la session centrale ouverte d'un jour antérieur, ou None."""
     today = timezone.localdate()
     return CaisseSession.objects.filter(
         is_open=True,
-        type_caisse=type_caisse,
+        type_caisse='centrale',
         date_session__lt=today,
     ).order_by('-date_session').first()
 
@@ -124,9 +124,10 @@ def index(request):
 
     solde_veille, last_session = get_solde_veille()
 
-    # Sessions non clôturées des jours précédents (alerte manager)
+    # Sessions centrales non clôturées des jours précédents (alerte manager)
     sessions_bloquantes = CaisseSession.objects.filter(
         is_open=True,
+        type_caisse='centrale',
         date_session__lt=today,
     ).select_related('user').order_by('-date_session')
 
@@ -167,15 +168,8 @@ GROUPES_CAISSE_CENTRALE = [
 
 
 def _get_type_caisse(user):
-    """Retourne le type de caisse attendu selon le rôle de l'utilisateur."""
-    if user.is_superuser:
-        return 'centrale'
-    groups = list(user.groups.values_list('name', flat=True))
-    if any(g in groups for g in GROUPES_CAISSE_CENTRALE):
-        return 'centrale'
-    if any(g in groups for g in ['Réceptionniste', 'Receptionniste', 'Responsable Hôtel']):
-        return 'hotel'
-    return 'module'
+    """Seule la caisse centrale est ouverte/clôturée. Tous les utilisateurs autorisés ouvrent la centrale."""
+    return 'centrale'
 
 
 @require_module_access('caisse')
@@ -194,15 +188,15 @@ def ouvrir_caisse(request):
             'error': f'Votre caisse {session_existante.get_type_caisse_display()} est déjà ouverte (depuis {session_existante.opened_at.strftime("%H:%M")})',
         })
 
-    # 2. Bloquer si une session du même type n'a pas été clôturée hier ou avant
-    session_ancienne = _session_non_cloturee_precedente(type_attendu)
+    # 2. Bloquer si la caisse centrale du jour précédent n'a pas été clôturée
+    session_ancienne = _session_centrale_non_cloturee()
     if session_ancienne:
         return JsonResponse({
             'success': False,
             'error': (
-                f'⛔ Ouverture impossible : la caisse du {session_ancienne.date_session.strftime("%d/%m/%Y")} '
-                f'({session_ancienne.user.get_full_name() or session_ancienne.user.username}) '
-                f'n\'a pas été clôturée. Un manager doit la forcer-clôturer avant de continuer.'
+                f'⛔ Ouverture impossible : la caisse centrale du {session_ancienne.date_session.strftime("%d/%m/%Y")} '
+                f'n\'a pas été clôturée. La clôture de fin de journée est obligatoire pour '
+                f'positionner le solde de veille. Veuillez clôturer cette session avant d\'ouvrir une nouvelle journée.'
             ),
             'session_bloquante_id': session_ancienne.pk,
             'bloquee': True,
