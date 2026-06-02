@@ -479,53 +479,106 @@
   <p>Ingrédients · Fiches techniques · Plats · Fournisseurs · Stocks · Inventaires</p>
 </div>
 
-<h2>Gestion des ingrédients</h2>
-<p>Allez dans <strong>🍽️ Cuisine → Stock → Ingrédients</strong>.</p>
+<h2>Ordre de création obligatoire</h2>
+<div class="important">
+  Le module Cuisine suit un ordre logique strict :<br><br>
+  <strong>① Créer les ingrédients</strong> → <strong>② Créer la fiche technique</strong> → <strong>③ Créer le plat</strong><br><br>
+  ⚠️ <strong>Aucun plat ne sera visible dans le module Restaurant tant que sa fiche technique n'a pas été créée.</strong> Le plat peut exister dans Cuisine mais sans fiche technique il n'est pas opérationnel pour le service.
+</div>
 
-<h3>Ajouter un ingrédient</h3>
+<h2>Étape 1 — Créer les ingrédients</h2>
+<p>Les ingrédients sont la base de tout. Avant de créer une recette ou un plat, tous les ingrédients qui le composent doivent être enregistrés dans le système.</p>
+<p>Allez dans <strong>🍽️ Cuisine → Stock → Ingrédients</strong>, puis cliquez sur <strong>Nouvel ingrédient</strong>.</p>
+
+<table>
+  <tr><th>Champ</th><th>Ce qu'il faut saisir</th><th>Pourquoi c'est important</th></tr>
+  <tr>
+    <td><strong>Nom</strong></td>
+    <td>Le nom exact de l'ingrédient<br><em>Ex : Farine de blé, Huile de palme, Poitrine de bœuf</em></td>
+    <td>Ce nom apparaîtra dans toutes les fiches techniques et dans les alertes de stock. Soyez précis pour éviter les doublons.</td>
+  </tr>
+  <tr>
+    <td><strong>Catégorie</strong></td>
+    <td>Le groupe auquel appartient l'ingrédient<br><em>Ex : Viandes, Légumes, Épices, Produits laitiers</em></td>
+    <td>Permet de retrouver rapidement les ingrédients et de filtrer les rapports de stock par famille de produits.</td>
+  </tr>
+  <tr>
+    <td><strong>Unité de stock</strong></td>
+    <td>L'unité dans laquelle on mesure et stocke cet ingrédient<br><em>Ex : kg, L, pièce, sachet, boîte</em></td>
+    <td>Toutes les entrées et sorties de stock se feront dans cette unité. Choisissez l'unité la plus pratique pour les quantités utilisées en cuisine.</td>
+  </tr>
+  <tr>
+    <td><strong>Prix unitaire moyen</strong></td>
+    <td>Le prix d'achat moyen pour une unité<br><em>Ex : 1 500 F/kg pour la farine</em></td>
+    <td>Sert au calcul automatique du coût de revient des fiches techniques. Si le prix change, mettez-le à jour pour que les coûts restent fiables.</td>
+  </tr>
+  <tr>
+    <td><strong>Seuil d'alerte</strong></td>
+    <td>La quantité minimale à ne pas dépasser sans réapprovisionner<br><em>Ex : 5 kg pour la farine</em></td>
+    <td>Dès que le stock passe en dessous de ce seuil, une alerte apparaît en orange sur le Dashboard et dans le module Cuisine. Fixez ce seuil en fonction de votre consommation journalière.</td>
+  </tr>
+</table>
 <ol class="steps">
-  <li>Cliquez sur <strong>Nouvel ingrédient</strong></li>
-  <li>Remplissez : Nom, Catégorie, Unité de stock, Prix unitaire moyen, Seuil d'alerte</li>
+  <li>Remplissez tous les champs du tableau ci-dessus</li>
+  <li>Laissez le stock initial à <strong>0</strong> — il sera mis à jour lors de la première réception de marchandise</li>
   <li>Cliquez sur <strong>Enregistrer</strong></li>
+  <li>Répétez l'opération pour chaque ingrédient utilisé en cuisine</li>
 </ol>
+<div class="note">Les ingrédients en stock bas apparaissent en <strong style="color:#d97706">orange</strong> et ceux en rupture en <strong style="color:#dc2626">rouge</strong>. Le nombre d'alertes est visible en permanence sur le Dashboard.</div>
 
 <h3>Enregistrer un mouvement de stock</h3>
+<p>À chaque entrée (livraison) ou sortie (consommation, perte) d'ingrédient :</p>
 <ol class="steps">
   <li>Cliquez sur <strong>Mouvement de stock</strong></li>
-  <li>Choisissez le type : <em>Entrée</em> (réception) ou <em>Sortie</em> (consommation, perte)</li>
-  <li>Sélectionnez l'ingrédient, la quantité et le motif</li>
+  <li>Choisissez le type :<br>
+    &nbsp;&nbsp;• <em>Entrée</em> — réception d'une livraison fournisseur<br>
+    &nbsp;&nbsp;• <em>Sortie</em> — consommation en cuisine, perte, périmé
+  </li>
+  <li>Sélectionnez l'ingrédient dans la liste</li>
+  <li>Entrez la quantité (dans l'unité définie pour cet ingrédient)</li>
+  <li>Indiquez le motif pour garder une traçabilité</li>
   <li>Cliquez sur <strong>Enregistrer</strong></li>
 </ol>
-<div class="note">Les ingrédients en stock bas ou en rupture apparaissent en orange ou rouge. Le nombre d'alertes est visible sur le Dashboard.</div>
 
-<h2>Fiches techniques (recettes standardisées)</h2>
-<p>Une fiche technique est la recette officielle d'un plat : ingrédients, quantités, méthode. Le logiciel calcule automatiquement le coût de revient.</p>
+<h2>Étape 2 — Créer la fiche technique</h2>
+<p>La fiche technique est la recette officielle et standardisée d'un plat. Elle indique précisément quels ingrédients utiliser, en quelle quantité et comment préparer le plat. C'est à partir de cette fiche que le logiciel calcule automatiquement le coût de revient.</p>
+<div class="important">La fiche technique est obligatoire. Sans elle, le plat ne sera pas visible dans le module Restaurant et ne pourra pas être commandé par les serveurs.</div>
 
-<h3>Créer une fiche technique</h3>
 <ol class="steps">
   <li>Allez dans <strong>Cuisine → Fiches Techniques</strong></li>
   <li>Cliquez sur <strong>Nouvelle Fiche</strong></li>
-  <li>Renseignez : Nom de la recette, Catégorie, Nombre de portions, Temps de préparation, Méthode de préparation</li>
-  <li>Ajoutez une <strong>photo</strong> (optionnel) : cliquez sur la zone rouge pour sélectionner une image</li>
-  <li>Ajoutez les <strong>ingrédients</strong> un par un avec les quantités</li>
-  <li>Le <strong>coût de revient</strong> s'affiche automatiquement à droite</li>
+  <li><strong>Nom de la recette</strong> — donnez le même nom que le plat tel qu'il apparaîtra sur le menu</li>
+  <li><strong>Catégorie</strong> — classez la recette (Entrée, Plat principal, Dessert, Boisson…)</li>
+  <li><strong>Nombre de portions</strong> — pour combien de personnes cette recette est-elle prévue ? Le coût de revient sera calculé par portion</li>
+  <li><strong>Temps de préparation</strong> — durée estimée en minutes (utile pour l'organisation du service)</li>
+  <li><strong>Méthode de préparation</strong> — décrivez les étapes de préparation. Ce texte sera visible par l'équipe cuisine</li>
+  <li><strong>Photo</strong> (optionnel) — cliquez sur la zone pour sélectionner une image de la recette</li>
+  <li>Ajoutez les <strong>ingrédients</strong> un par un :<br>
+    &nbsp;&nbsp;• Sélectionnez l'ingrédient dans la liste<br>
+    &nbsp;&nbsp;• Entrez la quantité utilisée pour le nombre de portions indiqué<br>
+    &nbsp;&nbsp;• Le sous-coût s'affiche automatiquement
+  </li>
+  <li>Le <strong>coût de revient total et par portion</strong> se calcule automatiquement au fur et à mesure</li>
   <li>Cliquez sur <strong>Créer la fiche</strong></li>
 </ol>
-<div class="tip">Le prix de vente suggéré affiché correspond à 3 fois le coût de revient par portion (coefficient standard restauration).</div>
+<div class="tip">Le prix de vente suggéré correspond à 3 fois le coût de revient par portion — c'est le coefficient standard en restauration. Vous pouvez l'ajuster librement lors de la création du plat.</div>
 
-<h2>Gestion des plats</h2>
-<p>Les plats sont les articles vendus au restaurant. Chaque plat est directement synchronisé avec le menu du Restaurant.</p>
+<h2>Étape 3 — Créer le plat</h2>
+<p>Le plat est l'article que les serveurs commandent pour les clients. Il s'appuie sur une fiche technique existante.</p>
+<div class="important">⚠️ Un plat sans fiche technique n'apparaîtra pas dans le module Restaurant. Créez toujours la fiche technique en premier.</div>
 
-<h3>Créer un plat</h3>
 <ol class="steps">
   <li>Allez dans <strong>Cuisine → Plats</strong></li>
   <li>Cliquez sur <strong>Nouveau Plat</strong></li>
-  <li>Renseignez : Nom, Catégorie, Prix de vente, Description</li>
-  <li>Ajoutez une <strong>photo</strong> : cliquez sur la zone rouge pour sélectionner une image</li>
-  <li>Ajoutez les <strong>ingrédients</strong> de la composition</li>
+  <li><strong>Nom</strong> — le nom tel qu'il s'affichera sur l'écran des serveurs</li>
+  <li><strong>Catégorie</strong> — classez le plat pour organiser le menu</li>
+  <li><strong>Prix de vente</strong> — le prix facturé au client (en FCFA)</li>
+  <li><strong>Description</strong> — une courte description pour informer les serveurs et les clients</li>
+  <li><strong>Photo</strong> — cliquez sur la zone rouge pour sélectionner une image (recommandé pour que les serveurs identifient facilement le plat)</li>
+  <li>Liez la <strong>fiche technique</strong> correspondante</li>
   <li>Cliquez sur <strong>Créer le plat</strong></li>
 </ol>
-<div class="tip">Le plat est automatiquement ajouté au menu du Restaurant dès sa création.</div>
+<div class="tip">Dès sa création avec une fiche technique associée, le plat est automatiquement disponible dans le module Restaurant pour les serveurs.</div>
 
 <h2>Bons de commande fournisseurs</h2>
 <ol class="steps">
