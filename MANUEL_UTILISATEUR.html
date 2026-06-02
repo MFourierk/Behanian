@@ -339,36 +339,55 @@
   <p>Ouverture &amp; clôture de session · Encaissements · Mouvements · Prélèvements · Rapports</p>
 </div>
 
-<h2>Principe de la caisse</h2>
-<p>Chaque journée commence par l'<strong>ouverture</strong> d'une session de caisse et se termine par sa <strong>clôture</strong>. Tous les paiements de la journée sont enregistrés dans la session active.</p>
+<h2>Architecture du système de caisse</h2>
+<table>
+  <tr><th>Caisse Centrale (module 💰 Caisse)</th><th>Caisses des modules (indépendantes)</th></tr>
+  <tr>
+    <td>Ouverture · Clôture · Fond de caisse<br>Versements · Prélèvements banque<br>Dépenses · Rapports</td>
+    <td>🏨 Hôtel &nbsp;·&nbsp; 🍽️ Restaurant &nbsp;·&nbsp; 🍷 Cave<br>🏊 Piscine &nbsp;·&nbsp; 🎪 Espaces<br><em>Leurs transactions remontent automatiquement dans la caisse centrale</em></td>
+  </tr>
+</table>
+<div class="important">Seul(e) le/la Chef caissier(e) ouvre et clôture la caisse centrale. Les versements des autres caisses se font physiquement en cours de journée et sont enregistrés par le/la Chef caissier(e).</div>
 
 <h2>Ouvrir la caisse</h2>
+<div class="important">Si la caisse de la veille n'a pas été clôturée, l'ouverture est bloquée. Il faut d'abord clôturer la session précédente pour que le solde de veille soit correctement positionné.</div>
 <ol class="steps">
   <li>Accédez au module <strong>💰 Caisse</strong></li>
   <li>Cliquez sur <strong>Ouvrir la caisse</strong></li>
-  <li>Choisissez le type de caisse :<br>
-    &nbsp;&nbsp;• <em>Caisse centrale</em> : caisse principale du complexe<br>
-    &nbsp;&nbsp;• <em>Caisse hôtel</em> : dédiée à la réception<br>
-    &nbsp;&nbsp;• <em>Caisse module</em> : pour un service spécifique
-  </li>
-  <li>Entrez le <strong>fond de caisse</strong> (montant en espèces présent au début de la journée)</li>
+  <li>Entrez le <strong>fond de caisse</strong> — c'est le montant physique présent dans la caisse au début de la journée (généralement le solde de veille affiché)</li>
+  <li>Ajoutez une note si nécessaire</li>
   <li>Cliquez sur <strong>Ouvrir</strong></li>
 </ol>
-<div class="important">Une seule session de caisse centrale peut être ouverte à la fois.</div>
 
-<h2>Tableau de bord de la caisse</h2>
-<p>Une fois ouverte, le tableau affiche :</p>
+<h2>Tableau de bord et suivi des versements</h2>
+<p>Le tableau de bord affiche en temps réel :</p>
 <ul>
-  <li><strong>Total encaissé</strong> par mode de paiement (espèces, carte, virement, chambre)</li>
-  <li><strong>Mouvements</strong> — entrées et sorties de la journée</li>
-  <li><strong>Prélèvements</strong> banque effectués</li>
-  <li><strong>Sessions</strong> ouvertes dans les modules (restaurant, hôtel…)</li>
+  <li><strong>Recettes par module</strong> — total encaissé par chaque service</li>
+  <li><strong>Suivi versements par module</strong> — état de chaque caisse indépendante :</li>
 </ul>
+<table>
+  <tr><th>Statut</th><th>Signification</th></tr>
+  <tr><td>⏳ En attente</td><td>Des transactions ont été faites mais aucun versement physique reçu</td></tr>
+  <tr><td>🔄 Partiel</td><td>Un versement partiel a été reçu, un solde reste à verser</td></tr>
+  <tr><td>✅ Soldé</td><td>Tout le montant encaissé a été versé à la caisse centrale</td></tr>
+</table>
+<p>Ce tableau se met à jour automatiquement toutes les 30 secondes. Cliquez sur <strong>Actualiser</strong> pour un rafraîchissement immédiat.</p>
+
+<h2>Enregistrer un versement de module</h2>
+<p>Quand un(e) caissier(e) de module (restaurant, piscine, etc.) apporte physiquement ses recettes :</p>
+<ol class="steps">
+  <li>Cliquez sur <strong>Mouvement</strong></li>
+  <li>Type : <em>Versement module</em></li>
+  <li>Sélectionnez le module concerné (Restaurant, Cave, Piscine…)</li>
+  <li>Entrez le montant remis physiquement</li>
+  <li>Cliquez sur <strong>Enregistrer</strong></li>
+</ol>
+<div class="tip">Le tableau de suivi se mettra à jour et affichera le solde restant pour ce module.</div>
 
 <h2>Enregistrer un mouvement manuel</h2>
 <p>Pour une dépense ou un remboursement non lié à une vente :</p>
 <ol class="steps">
-  <li>Cliquez sur <strong>Nouveau mouvement</strong></li>
+  <li>Cliquez sur <strong>Mouvement</strong></li>
   <li>Choisissez le type : <em>Dépense</em> / <em>Remboursement</em> / <em>Ajustement</em></li>
   <li>Entrez le montant et un motif explicite</li>
   <li>Cliquez sur <strong>Enregistrer</strong></li>
@@ -377,42 +396,66 @@
 <h2>Prélèvement banque</h2>
 <p>Quand vous transférez des espèces vers la banque en cours de journée :</p>
 <ol class="steps">
-  <li>Cliquez sur <strong>Prélèvement banque</strong></li>
-  <li>Entrez le montant prélevé</li>
+  <li>Cliquez sur <strong>Banque</strong></li>
+  <li>Entrez le montant prélevé et la référence du bordereau</li>
   <li>Confirmez</li>
 </ol>
 <div class="tip">Ce montant est déduit du solde espèces mais reste comptabilisé dans le CA de la journée.</div>
 
-<h2>Clôturer la caisse</h2>
-<p>En fin de journée :</p>
+<h2>Clôturer la caisse — processus en 3 étapes</h2>
+<p>La clôture se déroule en trois étapes guidées. Cliquez sur <strong>Clôturer</strong> pour démarrer.</p>
+<div class="important">La clôture ne peut jamais être bloquée — elle s'effectue toujours, quelle que soit la situation. Elle est obligatoire en fin de journée : sans clôture, il est impossible d'ouvrir la caisse le lendemain.</div>
+
+<h3>① Vérification</h3>
+<p>Cette étape affiche le résumé complet de la journée et signale les versements en attente.</p>
+<ul>
+  <li><strong>Résumé</strong> : total encaissé, espèces, mobile/carte, fond initial</li>
+  <li><strong>Alerte versements</strong> : si des modules ont des soldes non versés, un avertissement orange s'affiche avec le détail par module. <em>La clôture reste possible — l'écart sera noté dans le rapport.</em></li>
+</ul>
+<p>Cliquez sur <strong>Suivant →</strong> pour passer au billetage.</p>
+
+<h3>② Billetage</h3>
+<p>Comptez physiquement toutes les coupures présentes dans la caisse et saisissez le nombre de chaque billet et pièce.</p>
+<table>
+  <tr><th>Coupure</th><th>Saisir</th><th>Résultat</th></tr>
+  <tr><td>10 000 F · 5 000 F · 2 000 F · 1 000 F · 500 F</td><td>Nombre de billets</td><td rowspan="2">Sous-total calculé automatiquement<br><strong>Total billetage = fond réel compté</strong></td></tr>
+  <tr><td>250 F · 200 F · 100 F · 50 F · 25 F</td><td>Nombre de pièces</td></tr>
+</table>
+<p>Le <strong>Total billetage</strong> est automatiquement reporté comme fond réel compté. Cliquez sur <strong>Suivant →</strong>.</p>
+
+<h3>③ Finalisation</h3>
+<p>Dernière étape avant la clôture définitive.</p>
 <ol class="steps">
-  <li>Cliquez sur <strong>Clôturer la session</strong></li>
-  <li>Comptez physiquement l'argent dans la caisse et entrez le <strong>fond réel compté</strong></li>
-  <li>Le logiciel calcule l'<strong>écart</strong> automatiquement</li>
-  <li>Ajoutez des notes si nécessaire (explication d'un écart…)</li>
-  <li>Cliquez sur <strong>Clôturer</strong></li>
-  <li>Imprimez le <strong>rapport de caisse</strong></li>
+  <li>Vérifiez le <strong>fond réel compté</strong> (pré-rempli depuis le billetage — modifiable si besoin)</li>
+  <li>L'<strong>écart</strong> est calculé automatiquement : <em>Fond théorique − Fond compté</em></li>
+  <li>Si un prélèvement banque a été effectué ce soir, entrez le montant et la référence bordereau</li>
+  <li>Ajoutez des <strong>notes</strong> si nécessaire (explication d'un écart, incident…)</li>
+  <li>Cliquez sur <strong>Confirmer la clôture</strong></li>
+  <li>Imprimez le <strong>rapport de caisse</strong> pour archivage et signature</li>
 </ol>
 
 <table>
   <tr><th colspan="2">Formule du fond théorique</th></tr>
-  <tr><td>Fond initial</td><td>Montant au début de journée</td></tr>
-  <tr><td>+ Encaissements espèces</td><td>Paiements en espèces reçus</td></tr>
-  <tr><td>− Dépenses espèces</td><td>Mouvements de sortie</td></tr>
-  <tr><td>− Prélèvements banque</td><td>Virements vers la banque</td></tr>
-  <tr><td><strong>= Fond théorique</strong></td><td><strong>Ce qu'il devrait y avoir</strong></td></tr>
+  <tr><td>Fond initial</td><td>Montant saisi à l'ouverture</td></tr>
+  <tr><td>+ Encaissements espèces</td><td>Paiements en espèces reçus dans la journée</td></tr>
+  <tr><td>− Prélèvements banque</td><td>Virements vers la banque effectués dans la journée</td></tr>
+  <tr><td><strong>= Fond théorique</strong></td><td><strong>Ce qui devrait être dans la caisse</strong></td></tr>
+  <tr><td>− Fond réel compté (billetage)</td><td>Ce qui est physiquement dans la caisse</td></tr>
+  <tr><td><strong>= Écart</strong></td><td><strong>Positif = excédent · Négatif = manquant</strong></td></tr>
 </table>
 
 <h2>Rapport de caisse</h2>
 <p>Le rapport imprimable contient : fond initial et final, total par mode de paiement, liste de tous les mouvements, prélèvements banque, écart et ligne de signature Chef caissier(e).</p>
 
-<h2>Forcer la clôture d'une session bloquante <em>(Chef caissier uniquement)</em></h2>
-<p>Si une session d'un module (restaurant, hôtel…) empêche l'ouverture de la caisse centrale :</p>
+<h2>Forcer la clôture d'une session bloquante <em>(Manager uniquement)</em></h2>
+<p>Si une session de caisse centrale d'un jour précédent est restée ouverte par erreur :</p>
 <ol class="steps">
   <li>Repérez la session bloquante dans le tableau de bord caisse</li>
   <li>Cliquez sur <strong>Forcer la clôture</strong></li>
+  <li>Saisissez obligatoirement un <strong>motif</strong> (ce motif est enregistré dans le rapport)</li>
   <li>Confirmez</li>
 </ol>
+<div class="important">La clôture forcée est une action exceptionnelle réservée aux managers. Elle doit rester rare et toujours justifiée.</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
