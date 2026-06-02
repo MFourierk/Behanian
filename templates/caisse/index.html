@@ -268,7 +268,7 @@
         <div class="panel" id="panel-reconciliation">
           <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
             <h3>⚖️ Suivi versements par module</h3>
-            <button onclick="rafraichirReconciliation()" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted)">
+            <button onclick="rafraichirReconciliation(true)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted)">
               <i class="fas fa-sync-alt"></i> Actualiser
             </button>
           </div>
@@ -964,7 +964,10 @@ async function syncCentrale(){
   else toast('❌ '+d.error,'error');
 }
 
-async function rafraichirReconciliation(){
+// Auto-refresh réconciliation toutes les 30s
+setInterval(rafraichirReconciliation, 30000);
+
+async function rafraichirReconciliation(manuel=false){
   try {
     const r = await fetch("{% url 'caisse:api_reconciliation' %}");
     const d = await r.json();
@@ -996,8 +999,8 @@ async function rafraichirReconciliation(){
       tfoot.children[3].textContent = rec.grand_solde.toLocaleString('fr-FR') + ' F';
       tfoot.children[3].style.color = rec.grand_solde <= 0 ? '#16a34a' : '#dc2626';
     }
-    toast('✅ Réconciliation actualisée', 'success');
-  } catch(e){ toast('❌ Erreur actualisation', 'error'); }
+    if(manuel) toast('✅ Réconciliation actualisée', 'success');
+  } catch(e){ if(manuel) toast('❌ Erreur actualisation', 'error'); }
 }
 </script>
 {% endblock %}
