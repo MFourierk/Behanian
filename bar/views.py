@@ -748,22 +748,25 @@ def inventaire_valider(request, pk):
 
 
 def _valider_inventaire(inv, user):
-    """Valider inventaire → créer mouvements d'ajustement pour chaque écart"""
+    """Valider inventaire → créer mouvements d'ajustement et corriger le stock."""
     for ligne in inv.lignes.all():
-        ecart = ligne.ecart_quantite
+        ecart = ligne.ecart_quantite  # positif = excédent, négatif = manquant
         if ecart != 0:
-            # Créer un mouvement d'ajustement
+            label = 'Excédent' if ecart > 0 else 'Manquant'
+            # Passer l'écart signé : le hook MouvementStockBar.save()
+            # fait stock += quantite pour type='inventaire',
+            # donc un écart négatif soustrait, positif ajoute.
             MouvementStockBar.objects.create(
                 boisson=ligne.article,
                 type_mouvement='inventaire',
-                quantite=int(abs(ecart)),
-                commentaire=f"Ajustement inventaire {inv.numero} — écart: {'+' if ecart > 0 else ''}{ecart}",
+                quantite=int(ecart),
+                commentaire=f"Inventaire {inv.numero} — {label} : {'+' if ecart > 0 else ''}{ecart}",
                 utilisateur=user,
             )
-            # Mettre à jour le stock directement si mouvement négatif
-            if ecart < 0:
-                ligne.article.quantite_stock += int(ecart)  # ecart est négatif
-                ligne.article.save()
+            # Garantir que le stock est exactement la quantité comptée
+            ligne.article.refresh_from_db()
+            ligne.article.quantite_stock = int(ligne.quantite_comptee)
+            ligne.article.save()
 
     inv.statut = 'valide'
     inv.date_validation = timezone.now()

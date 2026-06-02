@@ -168,8 +168,12 @@
                 <div class="lbl">Articles</div>
             </div>
             <div class="resume-stat">
-                <div class="val" id="res-ecarts">0</div>
-                <div class="lbl">Écarts détectés</div>
+                <div class="val" id="res-manquants" style="color:#ff8a80;">0</div>
+                <div class="lbl">⬇ Manquants</div>
+            </div>
+            <div class="resume-stat">
+                <div class="val" id="res-excedents" style="color:#69f0ae;">0</div>
+                <div class="lbl">⬆ Excédents</div>
             </div>
             <div class="resume-stat">
                 <div class="val" id="res-valeur">0 FCFA</div>
@@ -197,13 +201,13 @@ function majEcartInv(el) {
 
     const ecartCell = row.querySelector('.ecart-cell');
     if (ecart > 0) {
-        ecartCell.textContent = '+' + ecart;
+        ecartCell.textContent = '⬆ Excédent +' + ecart;
         ecartCell.className = 'ecart-cell ecart-pos';
     } else if (ecart < 0) {
-        ecartCell.textContent = ecart;
+        ecartCell.textContent = '⬇ Manquant ' + ecart;
         ecartCell.className = 'ecart-cell ecart-neg';
     } else {
-        ecartCell.textContent = '0';
+        ecartCell.textContent = '✓ Conforme';
         ecartCell.className = 'ecart-cell ecart-zero';
     }
 
@@ -213,16 +217,19 @@ function majEcartInv(el) {
 }
 
 function majResume() {
-    let nbEcarts = 0, valeurTotale = 0;
+    let nbManquants = 0, nbExcedents = 0, valeurTotale = 0;
     document.querySelectorAll('.inv-row').forEach(row => {
         if (row.style.display === 'none') return;
         const theorique = parseFloat(row.querySelector('.qte-theorique').value) || 0;
-        const comptee = parseFloat(row.querySelector('.qte-comptee').value) || 0;
-        const prix = parseFloat(row.querySelector('.prix-inv').value) || 0;
-        const ecart = comptee - theorique;
-        if (ecart !== 0) { nbEcarts++; valeurTotale += Math.abs(ecart * prix); }
+        const comptee   = parseFloat(row.querySelector('.qte-comptee').value) || 0;
+        const prix      = parseFloat(row.querySelector('.prix-inv').value) || 0;
+        const ecart     = comptee - theorique;
+        if (ecart < 0) nbManquants++;
+        if (ecart > 0) nbExcedents++;
+        if (ecart !== 0) valeurTotale += Math.abs(ecart * prix);
     });
-    document.getElementById('res-ecarts').textContent = nbEcarts;
+    document.getElementById('res-manquants').textContent = nbManquants;
+    document.getElementById('res-excedents').textContent = nbExcedents;
     document.getElementById('res-valeur').textContent = valeurTotale.toLocaleString('fr-FR') + ' FCFA';
 }
 

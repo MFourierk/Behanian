@@ -139,6 +139,23 @@
 
         <input type="hidden" name="valider" id="valider-input" value="0">
 
+        <!-- Résumé écarts -->
+        <div id="resume-cuisine" style="position:sticky;bottom:16px;background:linear-gradient(135deg,#c0392b,#e74c3c);color:white;padding:14px 24px;border-radius:12px;display:flex;gap:32px;align-items:center;justify-content:space-between;margin:0 0 12px;box-shadow:0 6px 20px rgba(192,57,43,0.35);flex-wrap:wrap">
+            <div style="display:flex;gap:32px">
+                <div style="text-align:center">
+                    <div style="font-size:1.4rem;font-weight:800;color:#ff8a80" id="rc-manquants">0</div>
+                    <div style="font-size:0.78rem;opacity:.85">⬇ Manquants</div>
+                </div>
+                <div style="text-align:center">
+                    <div style="font-size:1.4rem;font-weight:800;color:#69f0ae" id="rc-excedents">0</div>
+                    <div style="font-size:0.78rem;opacity:.85">⬆ Excédents</div>
+                </div>
+            </div>
+            <div style="font-size:0.82rem;opacity:.85;max-width:300px">
+                La validation ajustera le stock à la quantité physique comptée pour chaque article en écart.
+            </div>
+        </div>
+
         <div class="form-actions">
             <a href="{% url 'cuisine:stock_management' %}?tab=inventaire" class="btn-cancel"><i class="fas fa-times"></i> Annuler</a>
             <button type="submit" class="btn-draft" onclick="document.getElementById('valider-input').value='0'">
@@ -154,12 +171,37 @@
 <script>
 function calcEcart(input) {
     const row = input.closest('tr');
-    const theo = parseFloat(row.querySelector('.theo-val').value) || 0;
-    const phys = parseFloat(input.value) || 0;
+    const theo  = parseFloat(row.querySelector('.theo-val').value) || 0;
+    const phys  = parseFloat(input.value) || 0;
     const ecart = phys - theo;
-    const cell = row.querySelector('.ecart-cell');
-    cell.textContent = (ecart >= 0 ? '+' : '') + ecart.toFixed(3);
-    cell.className = 'ecart-cell ' + (ecart > 0 ? 'ecart-positif' : ecart < 0 ? 'ecart-negatif' : 'ecart-zero');
+    const cell  = row.querySelector('.ecart-cell');
+    if (ecart > 0) {
+        cell.textContent  = '⬆ Excédent +' + ecart.toFixed(3);
+        cell.className    = 'ecart-cell ecart-positif';
+    } else if (ecart < 0) {
+        cell.textContent  = '⬇ Manquant ' + ecart.toFixed(3);
+        cell.className    = 'ecart-cell ecart-negatif';
+    } else {
+        cell.textContent  = '✓ Conforme';
+        cell.className    = 'ecart-cell ecart-zero';
+    }
+    majResumeCuisine();
+}
+
+function majResumeCuisine() {
+    let nbM = 0, nbE = 0;
+    document.querySelectorAll('.inv-row').forEach(row => {
+        const theo  = parseFloat(row.querySelector('.theo-val').value) || 0;
+        const phys  = parseFloat(row.querySelector('.physique-input').value) || 0;
+        const ecart = phys - theo;
+        if (ecart < 0) nbM++;
+        if (ecart > 0) nbE++;
+    });
+    const bar = document.getElementById('resume-cuisine');
+    if (bar) {
+        document.getElementById('rc-manquants').textContent = nbM;
+        document.getElementById('rc-excedents').textContent = nbE;
+    }
 }
 
 function copierTheorique() {
