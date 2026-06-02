@@ -448,14 +448,28 @@
 <p>Le rapport imprimable contient : fond initial et final, total par mode de paiement, liste de tous les mouvements, prélèvements banque, écart et ligne de signature Chef caissier(e).</p>
 
 <h2>Forcer la clôture d'une session bloquante <em>(Manager uniquement)</em></h2>
-<p>Si une session de caisse centrale d'un jour précédent est restée ouverte par erreur :</p>
+
+<h3>Quand survient ce cas ?</h3>
+<p>La clôture forcée n'intervient que dans un cas précis :</p>
+<ul>
+  <li>La Chef caissière du jour précédent a <strong>oublié de clôturer</strong> en fin de journée</li>
+  <li>Le lendemain, une <strong>autre caissière</strong> prend le relais et tente d'ouvrir la caisse</li>
+  <li>Le système <strong>bloque l'ouverture</strong> car la session de la veille est encore ouverte</li>
+  <li>Cette nouvelle caissière ne peut pas clôturer elle-même la session d'une autre personne</li>
+  <li>→ <strong>Un manager doit forcer la clôture</strong> pour débloquer la situation</li>
+</ul>
+
+<div class="tip"><strong>Si c'est la même caissière</strong> qui revient le lendemain après avoir oublié de clôturer, le bouton Clôturer s'affiche normalement pour elle — la clôture forcée n'est pas nécessaire dans ce cas.</div>
+
+<h3>Comment procéder ?</h3>
 <ol class="steps">
-  <li>Repérez la session bloquante dans le tableau de bord caisse</li>
+  <li>Repérez la session bloquante affichée dans le tableau de bord caisse</li>
   <li>Cliquez sur <strong>Forcer la clôture</strong></li>
-  <li>Saisissez obligatoirement un <strong>motif</strong> (ce motif est enregistré dans le rapport)</li>
+  <li>Saisissez obligatoirement un <strong>motif</strong> — exemple : <em>"Oubli de clôture du lundi — caissière absente"</em> (ce motif est enregistré dans le rapport)</li>
   <li>Confirmez</li>
+  <li>La session précédente est clôturée, la nouvelle caissière peut maintenant ouvrir la journée</li>
 </ol>
-<div class="important">La clôture forcée est une action exceptionnelle réservée aux managers. Elle doit rester rare et toujours justifiée.</div>
+<div class="important">La clôture forcée est une action exceptionnelle réservée aux managers. Elle doit rester rare et toujours justifiée par écrit dans le motif.</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
