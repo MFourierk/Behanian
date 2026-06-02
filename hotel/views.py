@@ -143,12 +143,14 @@ def hotel_index(request):
     except Group.DoesNotExist:
         serveurs_restaurant = AuthUser.objects.none()
 
+    from utils.permissions import _is_receptionniste
     context = {
         'total_chambres': total_chambres,
         'chambres_disponibles': chambres_disponibles,
         'chambres_occupees': chambres_occupees,
         'chambres_maintenance': chambres_maintenance,
         'chambres_reservees': chambres_reservees,
+        'peut_gerer_maintenance': not _is_receptionniste(request.user),
         'chambres': chambres,
         'reservations_attente': reservations_attente,
         'reservations_confirmees': reservations_confirmees,
@@ -182,7 +184,11 @@ def chambre_detail(request, chambre_id):
 @require_module_access('hotel')
 @require_POST
 def chambre_toggle_maintenance(request, chambre_id):
-    """Bascule une chambre entre disponible et maintenance."""
+    """Bascule une chambre entre disponible et maintenance. Interdit aux réceptionnistes."""
+    from utils.permissions import _is_receptionniste
+    if _is_receptionniste(request.user):
+        messages.error(request, "Action réservée au Responsable Hôtel et aux managers.")
+        return redirect('hotel:index')
     chambre = get_object_or_404(Chambre, id=chambre_id)
     if chambre.statut in ('occupee', 'reservation'):
         messages.error(request, f"Chambre {chambre.numero} : impossible de changer le statut — chambre {'occupée' if chambre.statut == 'occupee' else 'avec réservation active'}.")
