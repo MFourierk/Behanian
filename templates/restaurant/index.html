@@ -1355,7 +1355,7 @@ async function annulerTicket() {
     const d = await r.json();
     if (!d.success) { toast('❌ ' + d.message, 'error'); return; }
     // Mettre à jour la carte table en libre
-    if (t.tableId) majTableCard(t.tableId, 'livre', 0, '');
+    if (t.tableId) majTableCard(t.tableId, 'disponible', 0, '');
     // Réinitialiser le ticket local
     t.lignes = []; t.total = 0; t.commandeDbId = null; t.tableId = null; t.tableNum = null; t.client = '';
     tableSelActif = null;
