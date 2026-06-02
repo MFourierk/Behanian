@@ -318,5 +318,31 @@
     });
     </script>
     {% block extra_js %}{% endblock %}
+    <script>
+    /* Auto-scroll pour tous les conteneurs de tableaux sans max-height fixe */
+    (function() {
+        /* Sélecteurs connus qui wrappent des tableaux */
+        var selectors = [
+            'div[style*="overflow-x:auto"]',
+            'div[style*="overflow-x: auto"]',
+            'div.table-responsive',
+            'div[style*="overflow:auto"]',
+        ];
+        var seen = new WeakSet();
+        selectors.forEach(function(sel) {
+            document.querySelectorAll(sel).forEach(function(div) {
+                if (seen.has(div)) return;
+                seen.add(div);
+                /* Ne pas toucher les divs qui ont déjà une hauteur max */
+                var style = div.getAttribute('style') || '';
+                var hasMaxH = style.includes('max-height') || div.style.maxHeight;
+                var hasTable = div.querySelector('table');
+                if (!hasMaxH && hasTable) {
+                    div.classList.add('tbl-scroll-auto');
+                }
+            });
+        });
+    })();
+    </script>
 </body>
 </html>

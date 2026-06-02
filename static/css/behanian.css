@@ -5,6 +5,24 @@
  */
 
 /* ============================================================
+   TABLEAUX SCROLLABLES — hauteur fixe + ascenseur vertical
+   Classe utilitaire appliquée automatiquement via JS (base_dashboard.html)
+   ============================================================ */
+.tbl-scroll-auto {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+/* Entêtes collantes dans les conteneurs scrollables */
+.tbl-scroll-auto thead th,
+.tbl-scroll-auto .inv-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+}
+
+/* ============================================================
    RESET & BASE
    ============================================================ */
 * {
