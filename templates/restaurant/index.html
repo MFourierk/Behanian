@@ -581,6 +581,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="nav-tab" data-view="boissons" onclick="switchView(this)">
           🍷 Boissons
         </button>
+        <button class="nav-tab" data-view="accompagnements" onclick="switchView(this)">
+          🥗 Accompagnements
+        </button>
         <a href="{% url 'restaurant:reservation_list' %}" class="nav-tab" style="text-decoration:none;">
           📅 Réservations
         </a>
@@ -754,6 +757,49 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
     </div>
 
+    <!-- ── VUE : ACCOMPAGNEMENTS ── -->
+    <div class="view-panel" id="view-accompagnements">
+      <div style="padding:12px 22px 0; flex-shrink:0;">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchAccompagnements" placeholder="Rechercher un accompagnement…" oninput="filtrerArticles('accompagnements')">
+        </div>
+      </div>
+      <div class="articles-scroll" style="margin-top:12px;">
+        <div class="articles-grid" id="accompagnementsGrid">
+          {% for acc in accompagnements %}
+          <div class="article-card {% if not acc.en_stock %}rupture{% endif %}"
+               data-type="accompagnement"
+               data-id="{{ acc.id }}"
+               data-nom="{{ acc.nom|lower }}"
+               onclick="ajouterArticle('plat', {{ acc.id }}, '{{ acc.nom|escapejs }}', {{ acc.prix|stringformat:'g' }}, '{{ acc.categorie.nom|escapejs }}', {{ acc.en_stock|yesno:'true,false' }})">
+            <div class="ac-img-wrap">
+              {% if acc.image %}<img src="{{ acc.image.url }}" alt="{{ acc.nom }}">{% else %}🥗{% endif %}
+              <span class="ac-stock-badge {% if acc.stock_quantity > 5 %}ok{% elif acc.stock_quantity > 0 %}bas{% else %}rupture{% endif %}">
+                {% if acc.stock_quantity > 50 %}✓{% elif acc.stock_quantity > 0 %}{{ acc.stock_quantity }}{% else %}—{% endif %}
+              </span>
+            </div>
+            <div class="ac-body">
+              <div class="ac-nom">{{ acc.nom }}</div>
+              <div class="ac-footer">
+                <div>
+                  <div class="ac-prix">{% if acc.prix > 0 %}+{{ acc.prix|montant }} F{% else %}Inclus{% endif %}</div>
+                </div>
+                <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ acc.id }}, '{{ acc.nom|escapejs }}', {{ acc.prix|stringformat:'g' }}, '{{ acc.categorie.nom|escapejs }}', {{ acc.en_stock|yesno:'true,false' }})">+</button>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
+            <i class="fas fa-leaf" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
+            Aucun accompagnement disponible.<br>
+            <small>Créez des plats marqués "Accompagnement" dans le module Cuisine.</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
   </div><!-- /panel-catalogue -->
 
   <!-- ========== PANNEAU DROIT — TICKET ========== -->
@@ -800,18 +846,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <div id="lignesContainer"></div>
     </div>
 
-    <!-- Accompagnements -->
-    <div class="acc-panel" id="accPanel">
-      <div class="acc-panel-titre">Choisir accompagnement</div>
-      <div class="acc-pills-wrap" id="accPills">
-        {% for acc in accompagnements %}
-        <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix|stringformat:'g' }}" onclick="selectionnerAcc(this)">
-          {{ acc.nom }} <span style="color:rgba(255,255,255,0.4)">(+{{ acc.prix|montant }}F)</span>
-        </button>
-        {% endfor %}
-        <button class="acc-pill" data-acc-id="" onclick="selectionnerAcc(this)">Sans accompagnement</button>
-      </div>
-    </div>
 
     <!-- Footer -->
     <div class="ticket-footer">
@@ -984,7 +1018,6 @@ let modePaiement  = 'especes';
 let chambreLieeId  = null;
 let chambreLieeNom = null;
 let tableSelActif = null;
-let pendingPlatData = null;
 
 // ── UTILITAIRES ──
 function toast(msg, type='info') {
@@ -1058,12 +1091,15 @@ function filtrerSousCategorie(btn, type) {
 }
 
 function filtrerArticles(type) {
-  const searchId = type === 'plats' ? 'searchPlats' : 'searchBoissons';
-  const filterId = type === 'plats' ? 'platsFilters' : 'boissonsFilters';
-  const gridId   = type === 'plats' ? 'platsGrid' : 'boissonsGrid';
-  const q   = document.getElementById(searchId).value.toLowerCase();
-  const cat = document.querySelector('#' + filterId + ' .sub-btn.active')?.dataset.cat || 'tout';
-  document.querySelectorAll('#' + gridId + ' .article-card').forEach(card => {
+  const map = {
+    plats:          { search:'searchPlats',          filter:'platsFilters',          grid:'platsGrid' },
+    boissons:       { search:'searchBoissons',        filter:'boissonsFilters',        grid:'boissonsGrid' },
+    accompagnements:{ search:'searchAccompagnements', filter:null,                     grid:'accompagnementsGrid' },
+  };
+  const cfg = map[type] || map.plats;
+  const q   = document.getElementById(cfg.search)?.value.toLowerCase() || '';
+  const cat = cfg.filter ? (document.querySelector('#'+cfg.filter+' .sub-btn.active')?.dataset.cat || 'tout') : 'tout';
+  document.querySelectorAll('#'+cfg.grid+' .article-card').forEach(card => {
     const matchQ = card.dataset.nom.includes(q);
     const matchC = cat === 'tout' || card.dataset.cat === cat;
     card.style.display = (matchQ && matchC) ? '' : 'none';
@@ -1088,30 +1124,11 @@ function verifierTable() {
   return true;
 }
 
-// ── AJOUTER PLAT (cuisine) ──
+// ── AJOUTER PLAT ou ACCOMPAGNEMENT (direct, sans panel intermédiaire) ──
 function ajouterArticle(type, id, nom, prix, categorie, enStock) {
   if (!verifierTable()) return;
-  if (!enStock) { toast(`❌ <strong>${nom}</strong> — stock insuffisant, ce plat ne peut pas être servi.`, 'error'); return; }
-
-  const accPills = document.querySelectorAll('#accPills .acc-pill[data-acc-id]');
-  if (accPills.length > 0) {
-    pendingPlatData = { type:'plat', id, nom, prix };
-    document.getElementById('accPanel').classList.add('open');
-    document.querySelectorAll('.acc-pill').forEach(p => p.classList.remove('selected'));
-    return;
-  }
+  if (!enStock) { toast(`❌ <strong>${nom}</strong> — stock insuffisant.`, 'error'); return; }
   _envoyerPlat(id, nom, prix, null);
-}
-
-function selectionnerAcc(btn) {
-  document.querySelectorAll('.acc-pill').forEach(p => p.classList.remove('selected'));
-  btn.classList.add('selected');
-  document.getElementById('accPanel').classList.remove('open');
-  if (!pendingPlatData) return;
-  const { id, nom, prix } = pendingPlatData;
-  const accId = btn.dataset.accId || null;
-  pendingPlatData = null;
-  _envoyerPlat(id, nom, prix, accId);
 }
 
 async function _envoyerPlat(platId, nom, prix, accId) {
