@@ -167,13 +167,23 @@ class TableBar(models.Model):
 
 class MouvementStockBar(models.Model):
     TYPE_MOUVEMENT = [
-        ('entree', 'Entrée (Achat/Réception)'),
-        ('sortie', 'Sortie (Vente)'),
-        ('casse', 'Casse / Perte'),
-        ('inventaire', "Ajustement d'inventaire"),
+        ('entree',               'Entrée (Achat/Réception)'),
+        ('sortie',               'Sortie (Vente)'),
+        ('casse',                'Casse / Perte'),
+        ('inventaire_excedent',  'Inventaire — Excédent'),
+        ('inventaire_manquant',  'Inventaire — Manquant'),
+        ('inventaire',           "Inventaire — Conforme"),
     ]
+
+    # Types qui augmentent le stock
+    TYPES_ENTREE = {'entree', 'inventaire_excedent'}
+    # Types qui diminuent le stock
+    TYPES_SORTIE = {'sortie', 'casse', 'inventaire_manquant'}
+    # Types sans impact sur le stock
+    TYPES_NEUTRES = {'inventaire'}
+
     boisson = models.ForeignKey(BoissonBar, on_delete=models.CASCADE, related_name='mouvements')
-    type_mouvement = models.CharField(max_length=20, choices=TYPE_MOUVEMENT)
+    type_mouvement = models.CharField(max_length=30, choices=TYPE_MOUVEMENT)
     quantite = models.IntegerField(verbose_name="Quantité")
     date = models.DateTimeField(auto_now_add=True)
     commentaire = models.TextField(blank=True, null=True)
@@ -182,8 +192,8 @@ class MouvementStockBar(models.Model):
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
-        if is_new:
-            if self.type_mouvement in ['entree', 'inventaire']:
+        if is_new and self.type_mouvement not in self.TYPES_NEUTRES:
+            if self.type_mouvement in self.TYPES_ENTREE:
                 self.boisson.quantite_stock += self.quantite
             else:
                 self.boisson.quantite_stock -= self.quantite

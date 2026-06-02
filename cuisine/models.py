@@ -155,14 +155,21 @@ class Ingredient(models.Model):
 
 class MouvementStockCuisine(models.Model):
     TYPE_MOUVEMENT = [
-        ('entree',     'Entrée (Réception)'),
-        ('sortie',     'Sortie (Consommation)'),
-        ('casse',      'Casse / Perte'),
-        ('inventaire', "Ajustement d'inventaire"),
-        ('production', 'Consommation production'),
+        ('entree',               'Entrée (Réception)'),
+        ('sortie',               'Sortie (Consommation)'),
+        ('casse',                'Casse / Perte'),
+        ('production',           'Consommation production'),
+        ('inventaire_excedent',  'Inventaire — Excédent'),
+        ('inventaire_manquant',  'Inventaire — Manquant'),
+        ('inventaire',           'Inventaire — Conforme'),
     ]
+
+    TYPES_ENTREE  = {'entree', 'inventaire_excedent'}
+    TYPES_SORTIE  = {'sortie', 'casse', 'production', 'inventaire_manquant'}
+    TYPES_NEUTRES = {'inventaire'}
+
     ingredient      = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='mouvements')
-    type_mouvement  = models.CharField(max_length=20, choices=TYPE_MOUVEMENT)
+    type_mouvement  = models.CharField(max_length=30, choices=TYPE_MOUVEMENT)
     quantite        = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Quantité")
     prix_unitaire   = models.DecimalField(max_digits=10, decimal_places=4, default=0, verbose_name="Prix unitaire")
     commentaire     = models.TextField(blank=True, null=True)
@@ -172,9 +179,9 @@ class MouvementStockCuisine(models.Model):
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
-        if is_new:
+        if is_new and self.type_mouvement not in self.TYPES_NEUTRES:
             ing = self.ingredient
-            if self.type_mouvement in ['entree', 'inventaire']:
+            if self.type_mouvement in self.TYPES_ENTREE:
                 ing.quantite_stock += self.quantite
             else:
                 ing.quantite_stock -= self.quantite
@@ -575,13 +582,25 @@ class InventaireCuisine(models.Model):
             return False
         for ligne in self.lignes.all():
             ecart = ligne.quantite_physique - ligne.quantite_theorique
-            label = 'Excédent' if ecart > 0 else ('Manquant' if ecart < 0 else 'Conforme')
-            # Créer un mouvement pour TOUTES les lignes (traçabilité complète)
+            if ecart > 0:
+                type_mv = 'inventaire_excedent'
+                qte     = ecart
+            elif ecart < 0:
+                type_mv = 'inventaire_manquant'
+                qte     = abs(ecart)
+            else:
+                type_mv = 'inventaire'
+                qte     = 0
+
             MouvementStockCuisine.objects.create(
                 ingredient     = ligne.ingredient,
-                type_mouvement = 'inventaire',
-                quantite       = ecart,
-                commentaire    = f"Inventaire {self.numero} — {label} (compté: {ligne.quantite_physique})",
+                type_mouvement = type_mv,
+                quantite       = qte,
+                commentaire    = (
+                    f"Inventaire {self.numero} — "
+                    f"Théorique: {ligne.quantite_theorique} → Compté: {ligne.quantite_physique}"
+                    + (f" (écart: {'+' if ecart > 0 else ''}{ecart})" if ecart != 0 else " (conforme)")
+                ),
                 utilisateur    = user,
             )
             ligne.ingredient.quantite_stock = ligne.quantite_physique

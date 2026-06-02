@@ -686,7 +686,9 @@
                 <option value="entree">Entrées</option>
                 <option value="sortie">Sorties</option>
                 <option value="casse">Casses</option>
-                <option value="inventaire">Ajustements</option>
+                <option value="inventaire_excedent">Inventaire — Excédent</option>
+                <option value="inventaire_manquant">Inventaire — Manquant</option>
+                <option value="inventaire">Inventaire — Conforme</option>
                 <option value="production">Production</option>
             </select>
         </div>
@@ -717,14 +719,12 @@
                                     <span style="background:#fef3e2;color:#e67e22;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-exclamation-triangle"></i> Casse</span>
                                 {% elif mv.type_mouvement == 'production' %}
                                     <span style="background:#f3e5f5;color:#8e44ad;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-utensils"></i> Production</span>
+                                {% elif mv.type_mouvement == 'inventaire_excedent' %}
+                                    <span style="background:#e8f4fd;color:#2980b9;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Inventaire ⬆ Excédent</span>
+                                {% elif mv.type_mouvement == 'inventaire_manquant' %}
+                                    <span style="background:#fdecea;color:#c0392b;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Inventaire ⬇ Manquant</span>
                                 {% elif mv.type_mouvement == 'inventaire' %}
-                                    {% if mv.quantite > 0 %}
-                                    <span style="background:#e8f4fd;color:#2980b9;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Inventaire ⬆</span>
-                                    {% elif mv.quantite < 0 %}
-                                    <span style="background:#fdecea;color:#c0392b;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Inventaire ⬇</span>
-                                    {% else %}
-                                    <span style="background:#f1f5f9;color:#7f8c8d;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Inventaire ✓</span>
-                                    {% endif %}
+                                    <span style="background:#f1f5f9;color:#7f8c8d;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Inventaire ✓ Conforme</span>
                                 {% else %}
                                     <span style="background:#e8f4fd;color:#3498db;padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;"><i class="fas fa-clipboard-list"></i> Ajustement</span>
                                 {% endif %}
@@ -734,16 +734,10 @@
                                 <div style="font-size:0.78rem;color:#7f8c8d;">{{ mv.ingredient.reference|default:"" }}</div>
                             </td>
                             <td>
-                                {% if mv.type_mouvement == 'inventaire' %}
-                                    {% if mv.quantite > 0 %}
+                                {% if mv.type_mouvement == 'entree' or mv.type_mouvement == 'inventaire_excedent' %}
                                     <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|floatformat:3 }}</span>
-                                    {% elif mv.quantite < 0 %}
-                                    <span style="color:#e74c3c;font-weight:700;">{{ mv.quantite|floatformat:3 }}</span>
-                                    {% else %}
-                                    <span style="color:#7f8c8d;font-weight:700;">0</span>
-                                    {% endif %}
-                                {% elif mv.type_mouvement == 'entree' %}
-                                    <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|floatformat:3 }}</span>
+                                {% elif mv.type_mouvement == 'inventaire' %}
+                                    <span style="color:#7f8c8d;font-weight:700;">—</span>
                                 {% else %}
                                     <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|floatformat:3 }}</span>
                                 {% endif %}

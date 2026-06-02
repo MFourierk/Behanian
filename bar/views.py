@@ -751,17 +751,28 @@ def _valider_inventaire(inv, user):
     """Valider inventaire → créer mouvements d'ajustement et corriger le stock."""
     for ligne in inv.lignes.all():
         ecart = ligne.ecart_quantite  # positif = excédent, négatif = manquant
-        label = 'Excédent' if ecart > 0 else ('Manquant' if ecart < 0 else 'Conforme')
-        # Créer un mouvement pour TOUTES les lignes (traçabilité complète)
-        # quantite signée : hook MouvementStockBar.save() fait stock += quantite
+        if ecart > 0:
+            type_mv = 'inventaire_excedent'
+            qte     = int(ecart)
+        elif ecart < 0:
+            type_mv = 'inventaire_manquant'
+            qte     = int(abs(ecart))
+        else:
+            type_mv = 'inventaire'
+            qte     = 0
+
         MouvementStockBar.objects.create(
-            boisson=ligne.article,
-            type_mouvement='inventaire',
-            quantite=int(ecart),
-            commentaire=f"Inventaire {inv.numero} — {label} : {'+' if ecart > 0 else ''}{ecart} (compté: {ligne.quantite_comptee})",
-            utilisateur=user,
+            boisson       = ligne.article,
+            type_mouvement= type_mv,
+            quantite      = qte,
+            commentaire   = (
+                f"Inventaire {inv.numero} — "
+                f"Théorique: {ligne.quantite_theorique} → Compté: {ligne.quantite_comptee}"
+                + (f" (écart: {'+' if ecart > 0 else ''}{ecart})" if ecart != 0 else " (conforme)")
+            ),
+            utilisateur   = user,
         )
-        # Garantir que le stock est exactement la quantité comptée
+        # Forcer le stock à la valeur comptée physiquement
         ligne.article.refresh_from_db()
         ligne.article.quantite_stock = int(ligne.quantite_comptee)
         ligne.article.save()
