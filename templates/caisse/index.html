@@ -113,7 +113,7 @@
       <button class="btn-a btn-bleu" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-university"></i> Banque</button>
       <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport</button>
       <button class="btn-a btn-dark" id="btnSync" onclick="syncCentrale()"><i class="fas fa-sync-alt"></i> Synchroniser modules</button>
-      <button class="btn-a btn-rouge" onclick="ouvrirModal('modalCloturer')"><i class="fas fa-lock"></i> Clôturer</button>
+      <button class="btn-a btn-rouge" onclick="ouvrirModalCloturer()"><i class="fas fa-lock"></i> Clôturer</button>
     </div>
   </div>
   {% else %}
@@ -605,51 +605,128 @@
 
 <!-- MODAL CLÔTURER -->
 <div class="modal-ov" id="modalCloturer">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:560px">
     <div class="modal-head">
-      <h3><i class="fas fa-lock" style="color:#dc2626;margin-right:8px"></i>Clôturer la caisse</h3>
+      <h3><i class="fas fa-lock" style="color:#dc2626;margin-right:8px"></i>Clôture de caisse</h3>
       <button class="close-btn" onclick="fermerModal('modalCloturer')">×</button>
     </div>
-    <!-- Récapitulatif session -->
-    <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">Résumé de la session</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div>Total encaissé : <strong>{{ stats.total|montant }} F</strong></div>
-        <div>Espèces : <strong>{{ stats.especes|montant }} F</strong></div>
-        <div>Mobile / Carte : <strong>{{ stats.mobile|montant }} F</strong></div>
-        <div>Fond initial : <strong>{% if session_active %}{{ session_active.fond_caisse|montant }}{% else %}0{% endif %} F</strong></div>
+
+    <!-- INDICATEUR D'ÉTAPES -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:20px">
+      <div id="step-ind-1" style="flex:1;text-align:center;padding:8px 4px;border-radius:8px 0 0 8px;font-size:11px;font-weight:700;background:#dc2626;color:white">① Vérification</div>
+      <div id="step-ind-2" style="flex:1;text-align:center;padding:8px 4px;font-size:11px;font-weight:700;background:#f1f5f9;color:#94a3b8">② Billetage</div>
+      <div id="step-ind-3" style="flex:1;text-align:center;padding:8px 4px;border-radius:0 8px 8px 0;font-size:11px;font-weight:700;background:#f1f5f9;color:#94a3b8">③ Finalisation</div>
+    </div>
+
+    <!-- ÉTAPE 1 : VÉRIFICATION -->
+    <div id="clot-step-1">
+      <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">📊 Résumé de la journée</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+          <div>Total encaissé : <strong>{{ stats.total|montant }} F</strong></div>
+          <div>Espèces : <strong>{{ stats.especes|montant }} F</strong></div>
+          <div>Mobile / Carte : <strong>{{ stats.mobile|montant }} F</strong></div>
+          <div>Fond initial : <strong>{% if session_active %}{{ session_active.fond_caisse|montant }}{% else %}0{% endif %} F</strong></div>
+        </div>
+      </div>
+      <!-- Alerte versements incomplets -->
+      <div id="alerte-versements" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-weight:700;color:#9a3412;font-size:12px;margin-bottom:6px"><i class="fas fa-exclamation-triangle"></i> Versements en attente</div>
+        <div id="alerte-versements-detail" style="font-size:12px;color:#92400e;line-height:1.7"></div>
+        <div style="font-size:11px;color:#9a3412;margin-top:6px;font-style:italic">⚠️ La clôture peut quand même être effectuée. Ces soldes seront reportés dans le rapport.</div>
+      </div>
+      <div style="background:#eff6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#1e40af;margin-bottom:14px">
+        <i class="fas fa-info-circle"></i> <strong>Étape 1/3 :</strong> Vérifiez le résumé du jour et les versements en attente. Cliquez sur <em>Suivant</em> pour procéder au billetage.
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalCloturer')">Annuler</button>
+        <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="allerEtape(2)">Suivant <i class="fas fa-arrow-right"></i></button>
       </div>
     </div>
-    <div class="form-row">
-      <label>Espèces comptées physiquement (FCFA) *</label>
-      <input type="number" id="cl_fond_reel" class="fc" placeholder="Montant physiquement compté" min="0" value="0" oninput="calculerEcart()">
-    </div>
-    <div class="form-row">
-      <label>Prélèvement banque à cette clôture (FCFA)</label>
-      <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0" oninput="calculerEcart()">
-    </div>
-    <!-- Calcul écart en temps réel -->
-    <div id="ecart_box" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="color:var(--muted)">Solde théorique (fond + espèces − prélèv.)</span>
-        <strong id="ecart_theorique">—</strong>
+
+    <!-- ÉTAPE 2 : BILLETAGE -->
+    <div id="clot-step-2" style="display:none">
+      <div style="background:#eff6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#1e40af;margin-bottom:12px">
+        <i class="fas fa-info-circle"></i> <strong>Étape 2/3 :</strong> Comptez les billets et pièces dans la caisse. Le total se calcule automatiquement.
       </div>
-      <div style="display:flex;justify-content:space-between">
-        <span style="color:var(--muted)">Écart (théorique − compté)</span>
-        <strong id="ecart_val" style="font-size:14px">—</strong>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px" id="tbl-billetage">
+          <thead>
+            <tr style="background:#f8fafc">
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Coupure</th>
+              <th style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border)">Nombre</th>
+              <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--border)">Sous-total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for val in billetage_vals %}
+            <tr class="billet-row" data-val="{{ val }}">
+              <td style="padding:7px 10px;font-weight:600;border-bottom:1px solid #f1f5f9">{{ val|floatformat:0 }} F</td>
+              <td style="padding:4px 10px;border-bottom:1px solid #f1f5f9">
+                <input type="number" class="billet-nb" min="0" value="0"
+                  style="width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:13px;font-weight:600"
+                  oninput="recalculerBilletage()">
+              </td>
+              <td style="padding:7px 10px;text-align:right;font-family:monospace;border-bottom:1px solid #f1f5f9" class="billet-subtotal">0 F</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc">
+              <td colspan="2" style="padding:10px;font-weight:700;font-size:13px">TOTAL BILLETAGE</td>
+              <td style="padding:10px;text-align:right;font-weight:800;font-size:16px;color:#dc2626;font-family:monospace" id="billetage-total">0 F</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:12px;display:flex;justify-content:space-between;align-items:center">
+        <span>Montant retenu comme fond réel compté :</span>
+        <strong id="billetage-retenu" style="font-size:15px;color:#15803d;font-family:monospace">0 F</strong>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="allerEtape(1)"><i class="fas fa-arrow-left"></i> Retour</button>
+        <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="allerEtape(3)">Suivant <i class="fas fa-arrow-right"></i></button>
       </div>
     </div>
-    <div class="form-row">
-      <label>Banque / Référence bordereau</label>
-      <input type="text" id="cl_banque" class="fc" placeholder="Ex: SGBCI — Bordereau N°123">
-    </div>
-    <div class="form-row">
-      <label>Notes de clôture</label>
-      <textarea id="cl_notes" class="fc" rows="2" style="resize:vertical"></textarea>
-    </div>
-    <div style="display:flex;gap:10px">
-      <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="fermerModal('modalCloturer')">Annuler</button>
-      <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="cloturerCaisse()"><i class="fas fa-lock"></i> Confirmer la clôture</button>
+
+    <!-- ÉTAPE 3 : FINALISATION -->
+    <div id="clot-step-3" style="display:none">
+      <div style="background:#eff6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#1e40af;margin-bottom:12px">
+        <i class="fas fa-info-circle"></i> <strong>Étape 3/3 :</strong> Renseignez si un prélèvement banque a été effectué, ajoutez vos notes et confirmez la clôture.
+      </div>
+      <div class="form-row">
+        <label>Espèces comptées (issues du billetage)</label>
+        <input type="number" id="cl_fond_reel" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-weight:700;font-size:15px">
+        <span style="font-size:11px;color:#2563eb;margin-top:4px;display:block"><i class="fas fa-link"></i> Automatiquement rempli depuis le billetage — modifiable si besoin</span>
+      </div>
+      <div class="form-row">
+        <label>Prélèvement banque à cette clôture (FCFA)</label>
+        <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0" oninput="calculerEcart()">
+      </div>
+      <!-- Calcul écart en temps réel -->
+      <div id="ecart_box" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Contrôle de caisse</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--muted)">Fond initial + Espèces encaissées − Prélèv.</span>
+          <strong id="ecart_theorique">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--muted)">Écart (théorique − billetage)</span>
+          <strong id="ecart_val" style="font-size:14px">—</strong>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Banque / Référence bordereau</label>
+        <input type="text" id="cl_banque" class="fc" placeholder="Ex: SGBCI — Bordereau N°123">
+      </div>
+      <div class="form-row">
+        <label>Notes de clôture</label>
+        <textarea id="cl_notes" class="fc" rows="2" style="resize:vertical" placeholder="Observations, incidents, commentaires…"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-a btn-outline" style="flex:1;justify-content:center" onclick="allerEtape(2)"><i class="fas fa-arrow-left"></i> Retour</button>
+        <button class="btn-a btn-rouge" style="flex:2;justify-content:center" onclick="cloturerCaisse()"><i class="fas fa-lock"></i> Confirmer la clôture</button>
+      </div>
     </div>
   </div>
 </div>
@@ -875,13 +952,79 @@ async function ouvrirCaisse(){
   }
 }
 
+// ── WIZARD CLÔTURE ─────────────────────────────────────────────────────────
+function allerEtape(n){
+  [1,2,3].forEach(i => {
+    document.getElementById('clot-step-'+i).style.display = i===n ? '' : 'none';
+    const ind = document.getElementById('step-ind-'+i);
+    if(i === n){
+      ind.style.background = '#dc2626'; ind.style.color = 'white';
+    } else {
+      ind.style.background = '#f1f5f9'; ind.style.color = '#94a3b8';
+    }
+  });
+  if(n === 3) calculerEcart();
+}
+
+function ouvrirModalCloturer(){
+  // Reset wizard
+  allerEtape(1);
+  document.getElementById('cl_fond_reel').value = 0;
+  document.getElementById('cl_prelev').value    = 0;
+  document.getElementById('cl_banque').value    = '';
+  document.getElementById('cl_notes').value     = '';
+  // Reset billetage
+  document.querySelectorAll('.billet-nb').forEach(i => i.value = 0);
+  recalculerBilletage();
+  // Vérifier versements incomplets
+  verifierVersementsAvantClot();
+  ouvrirModal('modalCloturer');
+}
+
+async function verifierVersementsAvantClot(){
+  try {
+    const r = await fetch("{% url 'caisse:api_reconciliation' %}");
+    const d = await r.json();
+    if(!d.success) return;
+    const incomplets = d.reconciliation.lignes.filter(l => l.total_tx > 0 && l.solde > 0);
+    const box = document.getElementById('alerte-versements');
+    const detail = document.getElementById('alerte-versements-detail');
+    if(incomplets.length){
+      box.style.display = '';
+      detail.innerHTML = incomplets.map(l =>
+        `<div>${l.emoji} <strong>${l.label}</strong> : ${l.total_tx.toLocaleString('fr-FR')} F encaissés — `+
+        `${l.total_verse.toLocaleString('fr-FR')} F versés — `+
+        `<strong style="color:#dc2626">${l.solde.toLocaleString('fr-FR')} F restants</strong></div>`
+      ).join('');
+    } else {
+      box.style.display = 'none';
+    }
+  } catch(e){}
+}
+
+const BILLETAGE_VALS = [10000,5000,2000,1000,500,250,200,100,50,25];
+function recalculerBilletage(){
+  let total = 0;
+  document.querySelectorAll('.billet-row').forEach(row => {
+    const val = parseInt(row.dataset.val);
+    const nb  = parseInt(row.querySelector('.billet-nb').value) || 0;
+    const sub = val * nb;
+    row.querySelector('.billet-subtotal').textContent = sub.toLocaleString('fr-FR') + ' F';
+    total += sub;
+  });
+  document.getElementById('billetage-total').textContent  = total.toLocaleString('fr-FR') + ' F';
+  document.getElementById('billetage-retenu').textContent = total.toLocaleString('fr-FR') + ' F';
+  document.getElementById('cl_fond_reel').value = total;
+  calculerEcart();
+}
+
 async function cloturerCaisse(){
-  if(!confirm('Confirmer la clôture de caisse ?')) return;
+  if(!confirm('Confirmer la clôture définitive de la caisse centrale ?')) return;
   const d = await post("{% url 'caisse:cloturer' %}", {
-    fond_reel: document.getElementById('cl_fond_reel').value||0,
+    fond_reel:          document.getElementById('cl_fond_reel').value||0,
     prelevement_banque: document.getElementById('cl_prelev').value||0,
-    banque: document.getElementById('cl_banque').value,
-    notes: document.getElementById('cl_notes').value,
+    banque:             document.getElementById('cl_banque').value,
+    notes:              document.getElementById('cl_notes').value,
   });
   if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
   else toast('❌ '+d.error,'error');
