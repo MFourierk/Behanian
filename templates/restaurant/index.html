@@ -883,6 +883,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="btn-attente" onclick="mettreEnAttente()">
         <i class="fas fa-pause-circle"></i> Mettre en attente
       </button>
+      <button class="btn-attente" id="btnAnnulerTicket" onclick="annulerTicket()" style="display:none;background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.3)">
+        <i class="fas fa-times-circle"></i> Annuler le ticket
+      </button>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Encaisser la commande
       </button>
@@ -1253,12 +1256,14 @@ function renderTicket() {
   const container = document.getElementById('lignesContainer');
   const empty = document.getElementById('ticketEmpty');
 
+  const btnAnnuler = document.getElementById('btnAnnulerTicket');
   if (!t || !t.lignes.length) {
     empty.style.display = 'flex'; container.innerHTML = '';
     document.getElementById('nbArticlesLabel').textContent = '0 article(s)';
     document.getElementById('sousTotal').textContent = '0 F';
     document.getElementById('totalDisplay').textContent = '0 F';
     document.getElementById('btnValider').disabled = true;
+    if (btnAnnuler) btnAnnuler.style.display = 'none';
     return;
   }
 
@@ -1285,6 +1290,7 @@ function renderTicket() {
   document.getElementById('sousTotal').textContent = formatF(total);
   document.getElementById('totalDisplay').textContent = formatF(total);
   document.getElementById('btnValider').disabled = false;
+  if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
   t.total = total;
 
   const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
@@ -1334,6 +1340,31 @@ function chargerTicket(tid) {
   modePaiement = t.paiement || 'especes';
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
   renderTicket();
+}
+
+async function annulerTicket() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) { toast('❌ Aucune commande enregistrée à annuler', 'error'); return; }
+  if (!confirm(`Annuler le ticket ${t.nom} et libérer la table ?\nCette action est irréversible.`)) return;
+  try {
+    const r = await fetch("{% url 'restaurant:annuler_commande' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ commande_id: t.commandeDbId, motif: 'Désistement client' }),
+    });
+    const d = await r.json();
+    if (!d.success) { toast('❌ ' + d.message, 'error'); return; }
+    // Mettre à jour la carte table en libre
+    if (t.tableId) majTableCard(t.tableId, 'livre', 0, '');
+    // Réinitialiser le ticket local
+    t.lignes = []; t.total = 0; t.commandeDbId = null; t.tableId = null; t.tableNum = null; t.client = '';
+    tableSelActif = null;
+    document.getElementById('tableSelbadge').style.display = 'none';
+    document.getElementById('inputClient').value = '';
+    document.getElementById('ticketNum').textContent = t.nom;
+    renderTicket();
+    toast('✅ Ticket annulé — table libérée', 'success');
+  } catch(e) { toast('❌ Erreur réseau', 'error'); }
 }
 
 function mettreEnAttente() {
