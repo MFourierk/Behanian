@@ -264,6 +264,68 @@
           </div>
         </div>
 
+        <!-- RÉCONCILIATION TRANSACTIONS vs VERSEMENTS -->
+        <div class="panel" id="panel-reconciliation">
+          <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
+            <h3>⚖️ Suivi versements par module</h3>
+            <button onclick="rafraichirReconciliation()" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--muted)">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="tbl" id="tbl-reconciliation">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th style="text-align:right">Total transactions</th>
+                  <th style="text-align:right">Total versé</th>
+                  <th style="text-align:right">Solde à verser</th>
+                  <th style="text-align:center">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for ligne in reconciliation.lignes %}
+              <tr>
+                <td style="font-weight:600">{{ ligne.emoji }} {{ ligne.label }}</td>
+                <td style="text-align:right;font-family:monospace">{{ ligne.total_tx|montant }} F</td>
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.total_verse > 0 %}#16a34a{% else %}var(--muted){% endif %}">
+                  {{ ligne.total_verse|montant }} F
+                </td>
+                <td style="text-align:right;font-family:monospace;font-weight:700;color:{% if ligne.solde <= 0 %}#16a34a{% elif ligne.solde == ligne.total_tx %}#dc2626{% else %}#d97706{% endif %}">
+                  {{ ligne.solde|montant }} F
+                </td>
+                <td style="text-align:center">
+                  {% if ligne.total_tx == 0 %}
+                    <span style="font-size:11px;color:var(--muted)">— Aucune activité</span>
+                  {% elif ligne.complet %}
+                    <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>
+                  {% elif ligne.total_verse == 0 %}
+                    <span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>
+                  {% else %}
+                    <span style="background:#fef3c7;color:#d97706;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">🔄 Partiel</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr style="background:#f1f5f9;font-weight:700">
+                  <td>TOTAL</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_total_tx|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace;color:#16a34a">{{ reconciliation.grand_total_verse|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace;color:{% if reconciliation.grand_solde <= 0 %}#16a34a{% else %}#dc2626{% endif %}">
+                    {{ reconciliation.grand_solde|montant }} F
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div style="padding:8px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
+            <i class="fas fa-info-circle"></i> "Versé" = montants physiquement remis à la caisse centrale. Enregistrez un versement via le bouton <strong>Mouvement → Versement module</strong>.
+          </div>
+        </div>
+
         <!-- Derniers tickets -->
         <div class="panel">
           <div class="ph"><h3>🧾 Dernières transactions</h3></div>
@@ -897,9 +959,45 @@ async function syncCentrale(){
   const btn = document.getElementById('btnSync');
   if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Sync...'; }
   const d = await post("{% url 'caisse:sync' %}", {});
-  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Synchroniser'; }
+  if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt"></i> Synchroniser modules'; }
   if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
   else toast('❌ '+d.error,'error');
+}
+
+async function rafraichirReconciliation(){
+  try {
+    const r = await fetch("{% url 'caisse:api_reconciliation' %}");
+    const d = await r.json();
+    if(!d.success) return;
+    const rec = d.reconciliation;
+    const tbody = document.querySelector('#tbl-reconciliation tbody');
+    if(!tbody) return;
+    tbody.innerHTML = rec.lignes.map(l => {
+      const couleurSolde = l.solde <= 0 ? '#16a34a' : (l.total_verse === 0 ? '#dc2626' : '#d97706');
+      const couleurVerse = l.total_verse > 0 ? '#16a34a' : '#94a3b8';
+      let badge = '';
+      if(l.total_tx === 0) badge = '<span style="font-size:11px;color:#94a3b8">— Aucune activité</span>';
+      else if(l.complet) badge = '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>';
+      else if(l.total_verse === 0) badge = '<span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>';
+      else badge = '<span style="background:#fef3c7;color:#d97706;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">🔄 Partiel</span>';
+      return `<tr>
+        <td style="font-weight:600">${l.emoji} ${l.label}</td>
+        <td style="text-align:right;font-family:monospace">${l.total_tx.toLocaleString('fr-FR')} F</td>
+        <td style="text-align:right;font-family:monospace;color:${couleurVerse}">${l.total_verse.toLocaleString('fr-FR')} F</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurSolde}">${l.solde.toLocaleString('fr-FR')} F</td>
+        <td style="text-align:center">${badge}</td>
+      </tr>`;
+    }).join('');
+    // Mise à jour du pied de tableau
+    const tfoot = document.querySelector('#tbl-reconciliation tfoot tr');
+    if(tfoot){
+      tfoot.children[1].textContent = rec.grand_total_tx.toLocaleString('fr-FR') + ' F';
+      tfoot.children[2].textContent = rec.grand_total_verse.toLocaleString('fr-FR') + ' F';
+      tfoot.children[3].textContent = rec.grand_solde.toLocaleString('fr-FR') + ' F';
+      tfoot.children[3].style.color = rec.grand_solde <= 0 ? '#16a34a' : '#dc2626';
+    }
+    toast('✅ Réconciliation actualisée', 'success');
+  } catch(e){ toast('❌ Erreur actualisation', 'error'); }
 }
 </script>
 {% endblock %}

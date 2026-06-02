@@ -12,6 +12,62 @@ from facturation.models import Ticket
 from .models import CaisseSession, MouvementCaisse, PrelevementBanque
 
 
+# ── Modules à réconcilier (ticket_module, caisse_module, label, emoji) ─────
+MODULES_RECONCILIATION = [
+    ('hotel',      'hotel',    'Hôtel',        '🏨'),
+    ('restaurant', 'restaurant','Restaurant',  '🍽️'),
+    ('cave',       'cave',     'Cave / Bar',   '🍷'),
+    ('piscine',    'piscine',  'Piscine',      '🏊'),
+    ('espace',     'espaces',  'Espaces',      '🎪'),
+]
+
+
+def get_reconciliation_jour(date=None):
+    """
+    Retourne par module : total transactions du jour, total versé manuellement,
+    solde restant à verser.
+    """
+    if date is None:
+        date = timezone.localdate()
+
+    lignes = []
+    grand_total_tx = 0
+    grand_total_verse = 0
+
+    for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
+        total_tx = int(
+            Ticket.objects.filter(date_creation__date=date, module=ticket_mod)
+            .aggregate(s=Sum('montant_total'))['s'] or 0
+        )
+        total_verse = int(
+            MouvementCaisse.objects.filter(
+                date__date=date,
+                type='versement',
+                module=caisse_mod,
+                valide=True,
+            ).exclude(reference__startswith='CONSOLIDATION')
+            .aggregate(s=Sum('montant'))['s'] or 0
+        )
+        solde = total_tx - total_verse
+        lignes.append({
+            'label':       label,
+            'emoji':       emoji,
+            'total_tx':    total_tx,
+            'total_verse': total_verse,
+            'solde':       solde,
+            'complet':     solde <= 0,
+        })
+        grand_total_tx    += total_tx
+        grand_total_verse += total_verse
+
+    return {
+        'lignes':             lignes,
+        'grand_total_tx':     grand_total_tx,
+        'grand_total_verse':  grand_total_verse,
+        'grand_solde':        grand_total_tx - grand_total_verse,
+    }
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def _dec(val, default=0):
@@ -141,6 +197,8 @@ def index(request):
         ])
     )
 
+    reconciliation = get_reconciliation_jour(today)
+
     context = {
         'today': today,
         'session_active': session_active,
@@ -153,6 +211,7 @@ def index(request):
         'solde_veille': solde_veille,
         'last_session': last_session,
         'sessions_bloquantes': sessions_bloquantes,
+        'reconciliation': reconciliation,
     }
     return render(request, 'caisse/index.html', context)
 
@@ -541,6 +600,14 @@ def sync_centrale(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
+def api_reconciliation(request):
+    """API JSON — état des transactions vs versements par module pour le jour."""
+    today = timezone.localdate()
+    data = get_reconciliation_jour(today)
+    return JsonResponse({'success': True, 'reconciliation': data})
 
 
 @require_manager

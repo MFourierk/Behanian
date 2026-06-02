@@ -15,4 +15,5 @@ urlpatterns = [
     path('historique/', views.historique, name='historique'),
     path('sync/', views.sync_centrale, name='sync'),
     path('api/stats/', views.api_stats_jour, name='api_stats'),
+    path('api/reconciliation/', views.api_reconciliation, name='api_reconciliation'),
 ]
