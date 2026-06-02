@@ -783,7 +783,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               <div class="ac-nom">{{ acc.nom }}</div>
               <div class="ac-footer">
                 <div>
-                  <div class="ac-prix">{% if acc.prix > 0 %}+{{ acc.prix|montant }} F{% else %}Inclus{% endif %}</div>
+                  <div class="ac-prix">{{ acc.prix|montant }} F</div>
                 </div>
                 <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ acc.id }}, '{{ acc.nom|escapejs }}', {{ acc.prix|stringformat:'g' }}, '{{ acc.categorie.nom|escapejs }}', {{ acc.en_stock|yesno:'true,false' }})">+</button>
               </div>
