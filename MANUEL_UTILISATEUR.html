@@ -479,106 +479,226 @@
   <p>Ingrédients · Fiches techniques · Plats · Fournisseurs · Stocks · Inventaires</p>
 </div>
 
-<h2>Ordre de création obligatoire</h2>
+<h2>Comprendre le fonctionnement du module Cuisine</h2>
+<p>Le module Cuisine est conçu pour vous aider à <strong>contrôler vos coûts</strong> et à <strong>ne pas vendre à perte</strong>. Pour cela, le logiciel a besoin que vous lui disiez avec précision combien coûte chaque ingrédient et en quelle quantité vous l'utilisez. Une fois ces informations saisies, il calcule automatiquement combien vous coûte chaque plat, et vous indique un prix de vente conseillé.</p>
 <div class="important">
-  Le module Cuisine suit un ordre logique strict :<br><br>
-  <strong>① Créer les ingrédients</strong> → <strong>② Créer la fiche technique</strong> → <strong>③ Créer le plat</strong><br><br>
-  ⚠️ <strong>Aucun plat ne sera visible dans le module Restaurant tant que sa fiche technique n'a pas été créée.</strong> Le plat peut exister dans Cuisine mais sans fiche technique il n'est pas opérationnel pour le service.
+  Le module Cuisine suit un ordre logique strict. Il faut respecter cet ordre :<br><br>
+  <strong>① Créer les ingrédients</strong> → <strong>② Créer la fiche technique (la recette)</strong> → <strong>③ Créer le plat (ce que le client commande)</strong><br><br>
+  ⚠️ <strong>Aucun plat ne sera visible dans le module Restaurant tant que sa fiche technique n'a pas été créée.</strong>
 </div>
 
 <h2>Étape 1 — Créer les ingrédients</h2>
-<p>Les ingrédients sont la base de tout. Avant de créer une recette ou un plat, tous les ingrédients qui le composent doivent être enregistrés dans le système.</p>
+<p>Un ingrédient, c'est tout ce que vous achetez pour cuisiner : la farine, la viande, les frites surgelées, l'huile, les épices… Avant de créer une recette, vous devez enregistrer chaque ingrédient dans le logiciel avec ses informations d'achat.</p>
 <p>Allez dans <strong>🍽️ Cuisine → Stock → Ingrédients</strong>, puis cliquez sur <strong>Nouvel ingrédient</strong>.</p>
 
-<table>
-  <tr><th>Champ</th><th>Ce qu'il faut saisir</th><th>Pourquoi c'est important</th></tr>
-  <tr>
-    <td><strong>Nom</strong></td>
-    <td>Le nom exact de l'ingrédient<br><em>Ex : Farine de blé, Huile de palme, Poitrine de bœuf</em></td>
-    <td>Ce nom apparaîtra dans toutes les fiches techniques et dans les alertes de stock. Soyez précis pour éviter les doublons.</td>
-  </tr>
-  <tr>
-    <td><strong>Catégorie</strong></td>
-    <td>Le groupe auquel appartient l'ingrédient<br><em>Ex : Viandes, Légumes, Épices, Produits laitiers</em></td>
-    <td>Permet de retrouver rapidement les ingrédients et de filtrer les rapports de stock par famille de produits.</td>
-  </tr>
-  <tr>
-    <td><strong>Unité de stock</strong></td>
-    <td>L'unité dans laquelle on mesure et stocke cet ingrédient<br><em>Ex : kg, L, pièce, sachet, boîte</em></td>
-    <td>Toutes les entrées et sorties de stock se feront dans cette unité. Choisissez l'unité la plus pratique pour les quantités utilisées en cuisine.</td>
-  </tr>
-  <tr>
-    <td><strong>Prix unitaire moyen</strong></td>
-    <td>Le prix d'achat moyen pour une unité<br><em>Ex : 1 500 F/kg pour la farine</em></td>
-    <td>Sert au calcul automatique du coût de revient des fiches techniques. Si le prix change, mettez-le à jour pour que les coûts restent fiables.</td>
-  </tr>
-  <tr>
-    <td><strong>Seuil d'alerte</strong></td>
-    <td>La quantité minimale à ne pas dépasser sans réapprovisionner<br><em>Ex : 5 kg pour la farine</em></td>
-    <td>Dès que le stock passe en dessous de ce seuil, une alerte apparaît en orange sur le Dashboard et dans le module Cuisine. Fixez ce seuil en fonction de votre consommation journalière.</td>
-  </tr>
-</table>
-<ol class="steps">
-  <li>Remplissez tous les champs du tableau ci-dessus</li>
-  <li>Laissez le stock initial à <strong>0</strong> — il sera mis à jour lors de la première réception de marchandise</li>
-  <li>Cliquez sur <strong>Enregistrer</strong></li>
-  <li>Répétez l'opération pour chaque ingrédient utilisé en cuisine</li>
-</ol>
-<div class="note">Les ingrédients en stock bas apparaissent en <strong style="color:#d97706">orange</strong> et ceux en rupture en <strong style="color:#dc2626">rouge</strong>. Le nombre d'alertes est visible en permanence sur le Dashboard.</div>
+<h3>Description de chaque champ — avec exemples concrets</h3>
 
-<h3>Enregistrer un mouvement de stock</h3>
-<p>À chaque entrée (livraison) ou sortie (consommation, perte) d'ingrédient :</p>
+<h4>① Nom</h4>
+<p>C'est le nom de l'ingrédient tel qu'il apparaîtra dans le système.</p>
+<div class="tip">Soyez précis et cohérent. Évitez les abréviations. Si vous avez plusieurs types de farine (de blé, de maïs…), donnez des noms distincts.<br>
+<strong>Bon exemple :</strong> <em>Frites surgelées McCain</em> &nbsp;|&nbsp; <em>Huile de palme raffinée</em> &nbsp;|&nbsp; <em>Poitrine de bœuf locale</em></div>
+
+<h4>② Catégorie</h4>
+<p>C'est le groupe dans lequel vous classez l'ingrédient. Cette catégorie n'a pas d'impact sur les calculs — elle sert uniquement à retrouver rapidement les articles dans les listes.</p>
+<div class="tip"><strong>Exemples de catégories :</strong> Viandes &amp; Poissons · Féculents &amp; Céréales · Légumes &amp; Fruits · Huiles &amp; Matières grasses · Épices &amp; Condiments · Boissons &amp; Produits laitiers · Surgélés</div>
+
+<h4>③ Unité de stock — <em>Comment vous l'achetez et le stockez</em></h4>
+<p>C'est l'unité dans laquelle vous recevez et stockez cet ingrédient. C'est la "grande unité", celle du fournisseur.</p>
+<table>
+  <tr><th>Ce que vous achetez</th><th>Unité de stock à saisir</th></tr>
+  <tr><td>Un sac de riz de 25 kg</td><td>Sac</td></tr>
+  <tr><td>Un carton de frites surgelées</td><td>Carton</td></tr>
+  <tr><td>Un bidon d'huile de 5 litres</td><td>Bidon</td></tr>
+  <tr><td>Un plateau de 30 œufs</td><td>Plateau</td></tr>
+  <tr><td>Un kilogramme de viande</td><td>Kilogramme (kg)</td></tr>
+</table>
+
+<h4>④ Unité recette — <em>Comment vous l'utilisez en cuisine</em></h4>
+<p>C'est la "petite unité", celle que vous utilisez quand vous cuisinez. Dans votre fiche technique, vous direz par exemple "j'utilise 2 portions de frites par assiette" — la portion, c'est votre unité recette.</p>
+<table>
+  <tr><th>Unité de stock</th><th>Unité recette</th><th>Explication</th></tr>
+  <tr><td>Carton de frites</td><td>Portion</td><td>Vous servez des portions de frites, pas des cartons</td></tr>
+  <tr><td>Sac de riz 25 kg</td><td>Kilogramme (kg)</td><td>Vous pesez le riz en kg pour chaque recette</td></tr>
+  <tr><td>Bidon d'huile 5L</td><td>Centilitre (cl)</td><td>Vous versez des cl d'huile dans les plats</td></tr>
+  <tr><td>Plateau de 30 œufs</td><td>Œuf</td><td>Vous utilisez des œufs à l'unité</td></tr>
+</table>
+
+<h4>⑤ Facteur de conversion — <em>Combien de petites unités dans une grande unité</em></h4>
+<p>C'est le nombre qui permet au logiciel de faire la correspondance entre l'unité de stock et l'unité recette. C'est la clé du calcul des coûts.</p>
+<div class="important">
+<strong>Formule simple :</strong> Facteur de conversion = Combien d'unités recette contient 1 unité de stock<br><br>
+<strong>Exemple :</strong> 1 carton de frites = 4 sachets = 32 portions → Facteur = <strong>32</strong><br>
+<strong>Exemple :</strong> 1 sac de riz 25 kg = 25 kg → Facteur = <strong>25</strong><br>
+<strong>Exemple :</strong> 1 bidon d'huile 5L = 500 cl → Facteur = <strong>500</strong><br>
+<strong>Exemple :</strong> 1 plateau de 30 œufs = 30 œufs → Facteur = <strong>30</strong>
+</div>
+
+<h4>⑥ Prix d'achat — <em>Le prix que vous payez pour 1 unité de stock</em></h4>
+<p>C'est le montant que vous payez au fournisseur pour acheter <strong>une seule unité de stock</strong> (pas une unité recette).</p>
+<div class="tip">
+<strong>Exemple :</strong> Le carton de frites coûte 13 500 FCFA → saisissez <strong>13 500</strong><br>
+Le sac de riz 25 kg coûte 18 750 FCFA → saisissez <strong>18 750</strong><br>
+Le bidon d'huile 5L coûte 6 500 FCFA → saisissez <strong>6 500</strong>
+</div>
+<p>Grâce au facteur de conversion, le logiciel calculera automatiquement le coût par unité recette :<br>
+<em>Prix par portion de frites = 13 500 ÷ 32 = <strong>421,87 FCFA</strong></em></p>
+
+<h4>⑦ Seuil d'alerte — <em>Le niveau de stock minimum avant de commander</em></h4>
+<p>C'est la quantité en dessous de laquelle vous devez absolument commander. Quand le stock descend en dessous de ce seuil, une alerte apparaît en orange sur le tableau de bord.</p>
+<div class="tip">
+Calculez ce seuil en fonction de votre consommation quotidienne et du délai de livraison de votre fournisseur.<br>
+<strong>Exemple :</strong> Vous utilisez 2 cartons de frites par jour et votre fournisseur livre en 2 jours → Seuil d'alerte = <strong>4 cartons</strong>
+</div>
+
+<h4>⑧ Stock maximum — <em>La quantité maximale que vous pouvez stocker</em></h4>
+<p>C'est la quantité au-delà de laquelle vous ne devez pas stocker, soit parce que vous n'avez pas la place, soit parce que les produits pourraient se périmer. Ce champ est indicatif — il vous aide à éviter les achats excessifs.</p>
+<div class="tip"><strong>Exemple :</strong> Votre congélateur peut contenir au maximum 10 cartons de frites → Stock maximum = <strong>10</strong></div>
+
+<h3>Exemple complet — Les frites surgelées pas à pas</h3>
+<div class="note" style="background:#f0f9ff;border-color:#0ea5e9;">
+<strong>Situation :</strong> Vous achetez des frites surgelées par carton à <strong>13 500 FCFA</strong>. Chaque carton contient <strong>4 sachets</strong>. Chaque sachet permet de préparer <strong>8 portions</strong> de frites. Vous servez <strong>1 portion</strong> par assiette.<br><br>
+<strong>Question clé :</strong> Combien me coûte réellement une portion de frites ?<br>
+<em>Réponse :</em> 13 500 ÷ 4 ÷ 8 = <strong>421,87 FCFA par portion</strong><br><br>
+<strong>Ce que vous saisissez dans le logiciel :</strong>
+<table style="margin-top:8px">
+  <tr><th>Champ</th><th>Valeur à saisir</th><th>Pourquoi</th></tr>
+  <tr><td>Nom</td><td>Frites surgelées</td><td>Le nom de l'ingrédient</td></tr>
+  <tr><td>Catégorie</td><td>Surgélés</td><td>Classement</td></tr>
+  <tr><td>Unité de stock</td><td>Carton</td><td>Vous l'achetez par carton</td></tr>
+  <tr><td>Unité recette</td><td>Portion</td><td>Vous servez des portions</td></tr>
+  <tr><td>Facteur de conversion</td><td><strong>32</strong></td><td>1 carton = 4 sachets × 8 portions = 32 portions</td></tr>
+  <tr><td>Prix d'achat</td><td><strong>13 500</strong></td><td>Prix du carton chez le fournisseur</td></tr>
+  <tr><td>Seuil d'alerte</td><td>2</td><td>Commander quand il reste 2 cartons</td></tr>
+  <tr><td>Stock maximum</td><td>10</td><td>Capacité du congélateur</td></tr>
+</table>
+<br>
+<strong>Résultat automatique calculé par le logiciel :</strong><br>
+Coût par portion = 13 500 ÷ 32 = <strong>421,87 FCFA</strong><br>
+Ce coût apparaîtra dans vos fiches techniques dès que vous ajouterez les frites à une recette.
+</div>
+
+<h3>Autres exemples pratiques</h3>
+<table>
+  <tr><th>Ingrédient</th><th>Unité stock</th><th>Prix achat</th><th>Unité recette</th><th>Facteur</th><th>Coût / unité recette</th></tr>
+  <tr><td>Riz parfumé</td><td>Sac 25 kg</td><td>18 750 F</td><td>kg</td><td>25</td><td>750 F/kg</td></tr>
+  <tr><td>Huile de palme</td><td>Bidon 5L</td><td>6 500 F</td><td>cl</td><td>500</td><td>13 F/cl</td></tr>
+  <tr><td>Œufs</td><td>Plateau 30</td><td>4 500 F</td><td>Œuf</td><td>30</td><td>150 F/œuf</td></tr>
+  <tr><td>Viande de bœuf</td><td>kg</td><td>4 500 F</td><td>kg</td><td>1</td><td>4 500 F/kg</td></tr>
+  <tr><td>Lait concentré</td><td>Boîte 397g</td><td>850 F</td><td>gramme</td><td>397</td><td>2,14 F/g</td></tr>
+</table>
+<div class="note">Quand l'unité de stock et l'unité recette sont <strong>identiques</strong> (ex : vous achetez en kg et utilisez en kg), le facteur de conversion est simplement <strong>1</strong>.</div>
+
+<h3>Enregistrer les mouvements de stock</h3>
+<p>À chaque livraison ou utilisation d'un ingrédient, vous devez enregistrer un mouvement pour que le stock reste à jour.</p>
 <ol class="steps">
   <li>Cliquez sur <strong>Mouvement de stock</strong></li>
-  <li>Choisissez le type :<br>
-    &nbsp;&nbsp;• <em>Entrée</em> — réception d'une livraison fournisseur<br>
-    &nbsp;&nbsp;• <em>Sortie</em> — consommation en cuisine, perte, périmé
+  <li>Choisissez le type de mouvement :<br>
+    &nbsp;&nbsp;• <strong>Entrée</strong> — vous venez de recevoir une livraison de ce produit<br>
+    &nbsp;&nbsp;• <strong>Sortie</strong> — vous avez utilisé, perdu ou jeté une quantité de ce produit
   </li>
-  <li>Sélectionnez l'ingrédient dans la liste</li>
-  <li>Entrez la quantité (dans l'unité définie pour cet ingrédient)</li>
-  <li>Indiquez le motif pour garder une traçabilité</li>
+  <li>Sélectionnez l'ingrédient concerné dans la liste</li>
+  <li>Entrez la quantité <em>(toujours dans l'unité de stock — ex : 3 cartons, pas 96 portions)</em></li>
+  <li>Indiquez un commentaire court pour garder une trace</li>
   <li>Cliquez sur <strong>Enregistrer</strong></li>
 </ol>
+<div class="note">Les ingrédients en stock bas apparaissent en <strong style="color:#d97706">orange</strong> et ceux en rupture totale en <strong style="color:#dc2626">rouge</strong>. Ces alertes sont visibles sur le tableau de bord principal.</div>
 
 <h2>Étape 2 — Créer la fiche technique</h2>
-<p>La fiche technique est la recette officielle et standardisée d'un plat. Elle indique précisément quels ingrédients utiliser, en quelle quantité et comment préparer le plat. C'est à partir de cette fiche que le logiciel calcule automatiquement le coût de revient.</p>
-<div class="important">La fiche technique est obligatoire. Sans elle, le plat ne sera pas visible dans le module Restaurant et ne pourra pas être commandé par les serveurs.</div>
+<h3>Qu'est-ce qu'une fiche technique ?</h3>
+<p>Une fiche technique, c'est la <strong>recette officielle</strong> d'un plat, écrite de manière standardisée. Elle dit exactement :</p>
+<ul>
+  <li>Quels ingrédients utiliser</li>
+  <li>En quelle quantité</li>
+  <li>Comment les préparer</li>
+  <li>Pour combien de personnes</li>
+</ul>
+<p>C'est grâce à cette fiche que le logiciel peut calculer <strong>combien vous coûte exactement un plat</strong> et vous dire si votre prix de vente est rentable.</p>
+<div class="important">La fiche technique est <strong>obligatoire</strong>. Sans elle, le plat n'apparaîtra pas dans le module Restaurant et les serveurs ne pourront pas le commander pour les clients.</div>
 
+<h3>Description de chaque champ</h3>
+
+<h4>① Nom de la recette</h4>
+<p>Donnez exactement le même nom que celui que vous utiliserez pour le plat au restaurant. C'est le nom qui servira de référence dans tout le système.</p>
+<div class="tip"><strong>Exemple :</strong> "Riz sauce graine au poulet" · "Brochettes de bœuf et frites" · "Salade de crevettes"</div>
+
+<h4>② Catégorie</h4>
+<p>Classez la recette dans la bonne catégorie du menu. Cela aide à organiser l'écran des serveurs par section.</p>
+<div class="tip"><strong>Exemples :</strong> Entrées · Plats de résistance · Grillades · Accompagnements · Desserts · Boissons chaudes</div>
+
+<h4>③ Nombre de portions — <em>Le champ le plus important</em></h4>
+<p>C'est pour <strong>combien de clients</strong> vous préparez cette recette en une seule fois.</p>
+<p>Si vous préparez une grande marmite de riz pour 10 personnes, le nombre de portions est <strong>10</strong>. Le logiciel divisera automatiquement le coût total de tous les ingrédients par 10 pour vous donner le coût par portion (= coût par client).</p>
+<div class="note" style="background:#f0f9ff;border-color:#0ea5e9;">
+<strong>Exemple concret — Brochettes et frites :</strong><br>
+Votre recette prépare <strong>1 assiette</strong> (1 portion) avec :<br>
+&nbsp;&nbsp;• 2 brochettes de bœuf (100g de viande) → coût : 450 F<br>
+&nbsp;&nbsp;• 1 portion de frites → coût : 421,87 F<br>
+&nbsp;&nbsp;• Huile et épices → coût : 120 F<br>
+<strong>Coût total de la recette : 991,87 F</strong><br>
+Nombre de portions : 1<br>
+→ <strong>Coût par portion : 991,87 F</strong><br>
+→ Prix de vente conseillé (×3) : <strong>2 975 F</strong> (arrondi à 3 000 F)
+</div>
+
+<h4>④ Temps de préparation et temps de cuisson</h4>
+<p>Indiquez le temps en <strong>minutes</strong> pour préparer et cuire ce plat. Ces informations aident l'équipe cuisine à s'organiser, surtout quand plusieurs commandes arrivent en même temps. Si la cuisson dure 30 minutes, le chef sait qu'il doit commencer à temps.</p>
+<div class="tip"><strong>Exemple :</strong> Temps de préparation : 10 min (couper, mariner) · Temps de cuisson : 25 min (cuire au grill)</div>
+
+<h4>⑤ Méthode de préparation</h4>
+<p>Décrivez ici les étapes de préparation. Ce texte est visible par toute l'équipe cuisine. Il garantit que n'importe quel cuisinier peut préparer le plat exactement de la même façon, même en l'absence du chef.</p>
+<div class="tip">Soyez clair et précis : "1. Couper la viande en morceaux de 3 cm. 2. Mariner 30 min dans sel, poivre, ail. 3. Enfiler sur brochettes. 4. Griller 12 min en retournant à mi-cuisson."</div>
+
+<h4>⑥ Ajouter les ingrédients à la fiche</h4>
+<p>C'est ici que vous indiquez quels ingrédients vous utilisez et en quelle quantité. La quantité est toujours exprimée en <strong>unité recette</strong> (la petite unité que vous avez définie pour chaque ingrédient).</p>
+<div class="note" style="background:#f0f9ff;border-color:#0ea5e9;">
+<strong>Exemple — Ajouter les frites à la fiche "Brochettes et frites" (1 portion) :</strong><br>
+&nbsp;&nbsp;• Ingrédient sélectionné : <em>Frites surgelées</em><br>
+&nbsp;&nbsp;• Quantité : <strong>1</strong> (car vous servez 1 portion de frites par assiette)<br>
+&nbsp;&nbsp;• Le logiciel affiche automatiquement : Coût = <strong>421,87 FCFA</strong><br><br>
+<em>C'est le logiciel qui fait le calcul : 1 portion × 421,87 FCFA/portion = 421,87 FCFA. Vous n'avez rien à calculer vous-même.</em>
+</div>
+
+<h4>⑦ Coût de revient — calculé automatiquement</h4>
+<p>Au fur et à mesure que vous ajoutez les ingrédients, le logiciel affiche en temps réel :</p>
+<ul>
+  <li><strong>Coût total de la recette</strong> — la somme de tous les ingrédients</li>
+  <li><strong>Coût par portion</strong> — le coût total divisé par le nombre de portions</li>
+  <li><strong>Prix de vente conseillé</strong> — le coût par portion multiplié par 3 (coefficient restauration standard)</li>
+</ul>
+<div class="important">Le prix de vente conseillé est une recommandation. Si le logiciel dit 2 975 FCFA et que vous voulez vendre à 3 000 FCFA, c'est vous qui décidez du prix final lors de la création du plat. Mais ne vendez jamais en dessous du coût de revient — sinon vous perdez de l'argent à chaque vente.</div>
+
+<h3>Procédure de création d'une fiche technique</h3>
 <ol class="steps">
   <li>Allez dans <strong>Cuisine → Fiches Techniques</strong></li>
   <li>Cliquez sur <strong>Nouvelle Fiche</strong></li>
-  <li><strong>Nom de la recette</strong> — donnez le même nom que le plat tel qu'il apparaîtra sur le menu</li>
-  <li><strong>Catégorie</strong> — classez la recette (Entrée, Plat principal, Dessert, Boisson…)</li>
-  <li><strong>Nombre de portions</strong> — pour combien de personnes cette recette est-elle prévue ? Le coût de revient sera calculé par portion</li>
-  <li><strong>Temps de préparation</strong> — durée estimée en minutes (utile pour l'organisation du service)</li>
-  <li><strong>Méthode de préparation</strong> — décrivez les étapes de préparation. Ce texte sera visible par l'équipe cuisine</li>
-  <li><strong>Photo</strong> (optionnel) — cliquez sur la zone pour sélectionner une image de la recette</li>
-  <li>Ajoutez les <strong>ingrédients</strong> un par un :<br>
-    &nbsp;&nbsp;• Sélectionnez l'ingrédient dans la liste<br>
-    &nbsp;&nbsp;• Entrez la quantité utilisée pour le nombre de portions indiqué<br>
-    &nbsp;&nbsp;• Le sous-coût s'affiche automatiquement
-  </li>
-  <li>Le <strong>coût de revient total et par portion</strong> se calcule automatiquement au fur et à mesure</li>
+  <li>Saisissez le <strong>nom de la recette</strong></li>
+  <li>Choisissez la <strong>catégorie</strong></li>
+  <li>Entrez le <strong>nombre de portions</strong> que prépare cette recette</li>
+  <li>Indiquez les <strong>temps de préparation et de cuisson</strong> en minutes</li>
+  <li>Rédigez la <strong>méthode de préparation</strong> (étapes)</li>
+  <li>Ajoutez une <strong>photo</strong> si vous en avez une (cliquez sur la zone rouge)</li>
+  <li>Ajoutez les ingrédients un par un : <em>sélectionner → entrer la quantité en unité recette → vérifier le coût affiché</em></li>
+  <li>Vérifiez que le <strong>coût par portion</strong> affiché est cohérent avec votre prix de vente prévu</li>
   <li>Cliquez sur <strong>Créer la fiche</strong></li>
 </ol>
-<div class="tip">Le prix de vente suggéré correspond à 3 fois le coût de revient par portion — c'est le coefficient standard en restauration. Vous pouvez l'ajuster librement lors de la création du plat.</div>
+<div class="tip">Le prix de vente conseillé = coût par portion × 3. Ce multiplicateur ×3 est la règle standard en restauration : 1/3 pour les ingrédients, 1/3 pour les charges (personnel, électricité…), 1/3 de marge bénéficiaire.</div>
 
 <h2>Étape 3 — Créer le plat</h2>
-<p>Le plat est l'article que les serveurs commandent pour les clients. Il s'appuie sur une fiche technique existante.</p>
-<div class="important">⚠️ Un plat sans fiche technique n'apparaîtra pas dans le module Restaurant. Créez toujours la fiche technique en premier.</div>
+<p>Une fois la fiche technique créée, vous créez le plat. C'est l'article que les serveurs voient sur leur écran TPE pour prendre les commandes des clients.</p>
+<div class="important">⚠️ Si vous créez un plat sans lui associer de fiche technique, ce plat n'apparaîtra pas dans le module Restaurant. Créez TOUJOURS la fiche technique en premier.</div>
 
 <ol class="steps">
   <li>Allez dans <strong>Cuisine → Plats</strong></li>
   <li>Cliquez sur <strong>Nouveau Plat</strong></li>
-  <li><strong>Nom</strong> — le nom tel qu'il s'affichera sur l'écran des serveurs</li>
-  <li><strong>Catégorie</strong> — classez le plat pour organiser le menu</li>
-  <li><strong>Prix de vente</strong> — le prix facturé au client (en FCFA)</li>
-  <li><strong>Description</strong> — une courte description pour informer les serveurs et les clients</li>
-  <li><strong>Photo</strong> — cliquez sur la zone rouge pour sélectionner une image (recommandé pour que les serveurs identifient facilement le plat)</li>
-  <li>Liez la <strong>fiche technique</strong> correspondante</li>
+  <li><strong>Nom du plat</strong> — le nom affiché sur l'écran des serveurs (ex : "Brochettes et frites")</li>
+  <li><strong>Catégorie</strong> — classe le plat dans le menu des serveurs</li>
+  <li><strong>Prix de vente</strong> — le montant que vous facturez au client en FCFA. Consultez le prix conseillé dans la fiche technique</li>
+  <li><strong>Description courte</strong> — quelques mots pour que le serveur sache ce qu'il commande (ex : "2 brochettes de bœuf grillées, frites maison, sauce piment")</li>
+  <li><strong>Photo</strong> — une image aide le serveur à identifier le plat visuellement. Cliquez sur la zone rouge pour en ajouter une</li>
+  <li>Sélectionnez la <strong>fiche technique</strong> correspondante dans la liste</li>
   <li>Cliquez sur <strong>Créer le plat</strong></li>
 </ol>
-<div class="tip">Dès sa création avec une fiche technique associée, le plat est automatiquement disponible dans le module Restaurant pour les serveurs.</div>
+<div class="tip">Dès sa création, le plat est automatiquement disponible dans le module Restaurant pour les serveurs. Ils le verront dans l'onglet "Plats" du TPE.</div>
 
 <h2>Bons de commande fournisseurs</h2>
 <ol class="steps">
