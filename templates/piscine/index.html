@@ -63,7 +63,7 @@
 .acces-card{padding:12px 16px;border-bottom:1px solid #dde3ec;display:flex;align-items:center;gap:10px}
 .acces-card:last-child{border-bottom:none}
 .acces-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.av-v{background:#dbeafe;color:#1e40af}.av-h{background:#dcfce7;color:#15803d}
+.av-v{background:#dbeafe;color:#1e40af}.av-h{background:#dcfce7;color:#15803d}.av-vip{background:linear-gradient(135deg,#d97706,#f59e0b);color:white}
 .acces-info{flex:1}
 .acces-nom{font-size:13px;font-weight:600;color:#1a2535}
 .acces-det{font-size:11px;color:#7a8b9c;margin-top:1px}
@@ -146,10 +146,22 @@
   </div>
 
   <!-- Actions rapides -->
-  <div style="display:flex;gap:10px;margin-bottom:20px">
-    <button class="btn-p btn-primary" onclick="ouvrirEntree('visiteur')"><i class="fas fa-user-plus"></i> Entrée Visiteur</button>
-    <button class="btn-p btn-success" onclick="ouvrirEntree('heberge')"><i class="fas fa-hotel"></i> Résident Hôtel (gratuit)</button>
-    <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto"><i class="fas fa-cog"></i> Tarifs : {% if tarif_v_adulte %}Adulte {{ tarif_v_adulte.prix_unitaire|montant }} F | Enfant {% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|montant }} F{% else %}—{% endif %}{% else %}Non configuré{% endif %}</button>
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <button class="btn-p btn-primary" onclick="ouvrirEntree('visiteur')">
+      <i class="fas fa-user-plus"></i> Entrée Visiteur
+    </button>
+    <button class="btn-p btn-success" onclick="ouvrirEntree('heberge')">
+      <i class="fas fa-hotel"></i> Résident Hôtel
+    </button>
+    {% for f in forfaits_piscine %}
+    <button class="btn-p" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:white;border:none"
+            onclick="ouvrirEntreeVip({{ f.id }}, '{{ f.nom|escapejs }}', {{ f.prix }})">
+      ⭐ {{ f.nom }} — {{ f.prix|montant }} F
+    </button>
+    {% endfor %}
+    <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto;font-size:11px">
+      <i class="fas fa-cog"></i> Tarifs
+    </button>
   </div>
 
   <div class="main-grid">
@@ -160,12 +172,15 @@
       {% if acces_liste %}
       <div style="overflow-x:auto">
         <table class="tbl">
-          <thead><tr><th>Client</th><th>Type</th><th>Pers.</th><th>Entrée</th><th>Conso.</th><th>Total</th><th>Statut</th><th>Action</th></tr></thead>
+          <thead><tr><th>Référence</th><th>Type</th><th>Pers.</th><th>Entrée</th><th>Conso.</th><th>Total</th><th>Statut</th><th>Action</th></tr></thead>
           <tbody>
             {% for a in acces_liste %}
             {% with conso_total=a.consommations.all %}
             <tr>
-              <td style="font-weight:600">{{ a.nom_client }}</td>
+              <td>
+                <div style="font-weight:600">{{ a.nom_client }}</div>
+                {% if a.forfait %}<span style="font-size:10px;background:#fef3c7;color:#d97706;padding:2px 7px;border-radius:20px;font-weight:600">⭐ {{ a.forfait.nom }}</span>{% endif %}
+              </td>
               <td><span class="badge {% if a.type_client == 'visiteur' %}b-visiteur{% else %}b-heberge{% endif %}">{{ a.get_type_client_display }}</span></td>
               <td>{{ a.nombre_personnes }}</td>
               <td>{{ a.prix_total|montant }} F</td>
@@ -200,12 +215,15 @@
         {% if acces_actifs %}
           {% for a in acces_actifs %}
           <div class="acces-card">
-            <div class="acces-av {% if a.type_client == 'visiteur' %}av-v{% else %}av-h{% endif %}">
-              {% if a.type_client == 'visiteur' %}V{% else %}H{% endif %}
+            <div class="acces-av {% if a.forfait %}av-vip{% elif a.type_client == 'visiteur' %}av-v{% else %}av-h{% endif %}">
+              {% if a.forfait %}⭐{% elif a.type_client == 'visiteur' %}V{% else %}H{% endif %}
             </div>
             <div class="acces-info">
               <div class="acces-nom">{{ a.nom_client }}</div>
-              <div class="acces-det">{{ a.nombre_personnes }} pers. · {{ a.date_entree|date:"H:i" }} · {{ a.consommations.count }} conso.</div>
+              <div class="acces-det">
+                {% if a.forfait %}<span style="color:#d97706;font-weight:600">{{ a.forfait.nom }}</span> · {% endif %}
+                {{ a.nombre_personnes }} pers. · {{ a.date_entree|date:"H:i" }} · {{ a.consommations.count }} conso.
+              </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
@@ -279,10 +297,6 @@
         </option>
         {% endfor %}
       </select>
-    </div>
-    <div class="form-row">
-      <label>Nom du client <span style="color:#dc2626">*</span></label>
-      <input type="text" id="entreeNom" placeholder="Nom et prénom">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row">
@@ -520,6 +534,16 @@ function ouvrirEntree(type){
   document.getElementById('modalEntree').classList.add('open');
 }
 
+function ouvrirEntreeVip(forfaitId, nom, prix){
+  document.getElementById('entreeAdultes').value=1;
+  document.getElementById('entreeEnfants').value=0;
+  vipForfaitId = null; vipSubstitutions = {}; vipRuptureIds = new Set();
+  setType('visiteur');
+  document.getElementById('modalEntree').classList.add('open');
+  // Sélectionner automatiquement ce forfait VIP
+  setTimeout(() => setVip(forfaitId, nom, prix), 100);
+}
+
 function ouvrirEntreeResident(resId, nom, chambre){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
@@ -533,7 +557,6 @@ function ouvrirEntreeResident(resId, nom, chambre){
       break;
     }
   }
-  document.getElementById('entreeNom').value=nom;
   document.getElementById('entreeReservationId').value=resId;
   document.getElementById('modalEntree').classList.add('open');
 }
@@ -733,17 +756,15 @@ function updatePrix(){
 }
 
 async function validerEntree(){
-  const nom=document.getElementById('entreeNom').value.trim();
   const type=document.getElementById('entreeType').value;
-  if(!nom){piscineNotif('Veuillez saisir le nom du client.','error');return;}
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
-  if(type!=='heberge'&&na<1&&ne<1){piscineNotif('Veuillez indiquer au moins 1 personne.','error');return;}
+  if(type!=='heberge'&&!vipForfaitId&&na<1&&ne<1){piscineNotif('Veuillez indiquer au moins 1 personne.','error');return;}
   if(type==='heberge'){
     const resId=document.getElementById('entreeReservationId').value;
     if(!resId){piscineNotif('Veuillez sélectionner la chambre du résident.','error');return;}
   }
-  const payload={nom_client:nom,type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value};
+  const payload={type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value};
   if(vipForfaitId){
     payload.forfait_id = vipForfaitId;
     if(Object.keys(vipSubstitutions).length) payload.substitutions = vipSubstitutions;

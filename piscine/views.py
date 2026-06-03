@@ -124,20 +124,27 @@ def _verifier_stock_forfait(forfait):
 
 @require_module_access('piscine')
 @require_POST
+def _generer_reference_entree(type_client, forfait=None, reservation=None):
+    """Génère une référence professionnelle pour l'entrée piscine."""
+    today = timezone.localdate()
+    nb_today = AccesPiscine.objects.filter(date_entree__date=today).count() + 1
+    if type_client == 'heberge' and reservation:
+        return f"Ch.{reservation.chambre.numero} — {reservation.client.nom_complet}"
+    if forfait:
+        return f"VIP · {forfait.nom} — N°{nb_today:03d}"
+    return f"Entrée N°{nb_today:03d}"
+
+
 def enregistrer_entree(request):
     """Enregistrer une entrée piscine (ordinaire, VIP ou résident)."""
     try:
         data         = json.loads(request.body)
         type_client  = data.get('type_client', 'visiteur')
-        nom_client   = data.get('nom_client', '').strip()
         nb_adultes   = int(data.get('nb_adultes', 1))
         nb_enfants   = int(data.get('nb_enfants', 0))
         forfait_id   = data.get('forfait_id')
-        # substitutions = {str(ligne_id): {type, id, nom}}
         substitutions = {str(k): v for k, v in data.get('substitutions', {}).items()}
 
-        if not nom_client:
-            return JsonResponse({'success': False, 'error': 'Nom du client requis'})
         if type_client != 'heberge' and nb_adultes < 1 and nb_enfants < 1:
             return JsonResponse({'success': False, 'error': 'Veuillez indiquer au moins 1 personne.'})
 
@@ -227,6 +234,9 @@ def enregistrer_entree(request):
             except HotelReservation.DoesNotExist:
                 pass
 
+        # ── Référence automatique (pas de saisie nom client) ──────────
+        nom_client = _generer_reference_entree(type_client, forfait=forfait, reservation=reservation_hotel)
+
         # ── Créer l'accès ─────────────────────────────────────────────
         acces = AccesPiscine.objects.create(
             nom_client=nom_client,
@@ -297,11 +307,11 @@ def enregistrer_entree(request):
             'success': True,
             'acces_id': acces.id,
             'nom': acces.nom_client,
+            'reference': acces.nom_client,
             'type': acces.get_type_client_display(),
             'forfait': forfait.nom if forfait else None,
             'prix': float(prix_total),
-            'message': f"Entrée enregistrée — {nom_client}"
-            + (f" · {forfait.nom}" if forfait else "")
+            'message': f"Entrée enregistrée — {acces.nom_client}"
         })
     except Exception as e:
         import traceback; traceback.print_exc()
