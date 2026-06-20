@@ -184,12 +184,21 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 # ---------------------------------------------------------------------------
 
 if not DEBUG:
-    SECURE_SSL_REDIRECT          = True
-    SECURE_HSTS_SECONDS          = 31536000   # 1 an
+    # Nginx termine le SSL — Django ne doit pas rediriger lui-même
+    SECURE_SSL_REDIRECT          = False
+    # Indique à Django que le proxy (nginx) transmet du HTTPS
+    SECURE_PROXY_SSL_HEADER      = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_SECONDS          = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD          = True
     SESSION_COOKIE_SECURE        = True
     CSRF_COOKIE_SECURE           = True
+    # Domaines autorisés pour les requêtes POST (login, formulaires)
+    CSRF_TRUSTED_ORIGINS         = [
+        'https://app.behanian.com',
+        'https://behanian.com',
+        'https://www.behanian.com',
+    ]
 
 
 # ---------------------------------------------------------------------------
