@@ -236,3 +236,5 @@ AXES_FAILURE_LIMIT = 5          # nombre de tentatives autorisées
 AXES_COOLOFF_TIME = 1           # durée du blocage en heures
 AXES_LOCKOUT_PARAMETERS = ['ip_address', 'username']
 AXES_RESET_ON_SUCCESS = True    # réinitialise le compteur après connexion réussie
+
+AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'
