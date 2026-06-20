@@ -525,7 +525,6 @@ function fermerModal(id){ document.getElementById(id).classList.remove('open'); 
 function ouvrirModalTarif(){ document.getElementById('modalTarif').classList.add('open'); }
 
 function ouvrirEntree(type){
-  document.getElementById('entreeNom').value='';
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
   document.getElementById('entreeType').value=type;
@@ -721,7 +720,6 @@ function selectionnerResident(){
   const sel=document.getElementById('entreeChambre');
   const opt=sel.options[sel.selectedIndex];
   if(opt.value){
-    document.getElementById('entreeNom').value=opt.dataset.nom;
     document.getElementById('entreeReservationId').value=opt.value;
   }
 }
