@@ -1,0 +1,1197 @@
+[
+{
+  "model": "cuisine.fournisseur",
+  "pk": 1,
+  "fields": {
+    "nom": "SAN GEL",
+    "type_fournisseur": "grossiste",
+    "personne_contact": "Jean-Pierre",
+    "telephone": "+2250103337309",
+    "telephone2": "",
+    "email": "",
+    "adresse": "yopougon sable",
+    "ville": "Abidjan",
+    "notes": "",
+    "actif": true,
+    "date_creation": "2026-03-21T20:03:19.985Z",
+    "date_modification": "2026-03-21T20:03:19.985Z"
+  }
+},
+{
+  "model": "cuisine.fournisseur",
+  "pk": 2,
+  "fields": {
+    "nom": "Marché Central",
+    "type_fournisseur": "grossiste",
+    "personne_contact": "Affoué",
+    "telephone": "0102030405",
+    "telephone2": "",
+    "email": "",
+    "adresse": "",
+    "ville": "Abidjan",
+    "notes": "",
+    "actif": true,
+    "date_creation": "2026-03-22T00:16:24.374Z",
+    "date_modification": "2026-03-22T00:16:24.374Z"
+  }
+},
+{
+  "model": "cuisine.categorieingredient",
+  "pk": 1,
+  "fields": {
+    "nom": "Volaille",
+    "ordre": 1,
+    "icone": "fa-box"
+  }
+},
+{
+  "model": "cuisine.categorieingredient",
+  "pk": 2,
+  "fields": {
+    "nom": "Garniture",
+    "ordre": 2,
+    "icone": "fa-box"
+  }
+},
+{
+  "model": "cuisine.categorieingredient",
+  "pk": 3,
+  "fields": {
+    "nom": "Viande",
+    "ordre": 3,
+    "icone": "fa-box"
+  }
+},
+{
+  "model": "cuisine.categorieingredient",
+  "pk": 4,
+  "fields": {
+    "nom": "Poisson",
+    "ordre": 4,
+    "icone": "fa-box"
+  }
+},
+{
+  "model": "cuisine.categorieingredient",
+  "pk": 5,
+  "fields": {
+    "nom": "Crustacé",
+    "ordre": 5,
+    "icone": "fa-box"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 1,
+  "fields": {
+    "nom": "Kilogramme",
+    "abreviation": "Kg",
+    "type_unite": "masse"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 2,
+  "fields": {
+    "nom": "Litres",
+    "abreviation": "L",
+    "type_unite": "volume"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 3,
+  "fields": {
+    "nom": "Unités",
+    "abreviation": "Pièce",
+    "type_unite": "piece"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 4,
+  "fields": {
+    "nom": "Carton",
+    "abreviation": "crt",
+    "type_unite": "autre"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 5,
+  "fields": {
+    "nom": "Coquille",
+    "abreviation": "Coq",
+    "type_unite": "piece"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 6,
+  "fields": {
+    "nom": "Demi",
+    "abreviation": "1/2",
+    "type_unite": "autre"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 7,
+  "fields": {
+    "nom": "Portion",
+    "abreviation": "Portion",
+    "type_unite": "autre"
+  }
+},
+{
+  "model": "cuisine.uniteingredient",
+  "pk": 8,
+  "fields": {
+    "nom": "Entier",
+    "abreviation": "Entier",
+    "type_unite": "piece"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 1,
+  "fields": {
+    "reference": "ING-001",
+    "nom": "Poulet de chair entier",
+    "categorie": 1,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "3500.00",
+    "cmup": "3500.0000",
+    "quantite_stock": "20.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": null,
+    "statut": true,
+    "date_creation": "2026-03-19T14:51:21.417Z",
+    "date_modification": "2026-03-21T21:12:42.121Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 2,
+  "fields": {
+    "reference": "ING-002",
+    "nom": "Poulet de chair entier X",
+    "categorie": 1,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "3500.00",
+    "cmup": "3500.0000",
+    "quantite_stock": "20.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": null,
+    "statut": true,
+    "date_creation": "2026-03-19T14:52:18.929Z",
+    "date_modification": "2026-03-21T21:12:42.174Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 3,
+  "fields": {
+    "reference": "ING-003",
+    "nom": "Poulet de chair entier XX",
+    "categorie": 1,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "3500.00",
+    "cmup": "3500.0000",
+    "quantite_stock": "20.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": null,
+    "statut": true,
+    "date_creation": "2026-03-19T14:53:58.065Z",
+    "date_modification": "2026-03-21T21:12:42.227Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 4,
+  "fields": {
+    "reference": "ING-004",
+    "nom": "Attiéké",
+    "categorie": 2,
+    "description": "",
+    "unite_stock": 7,
+    "unite_recette": 7,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "125.00",
+    "cmup": "125.0000",
+    "quantite_stock": "160.000",
+    "seuil_alerte": "20.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-03-22T00:18:15.955Z",
+    "date_modification": "2026-03-22T00:18:43.517Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 5,
+  "fields": {
+    "reference": "ING-005",
+    "nom": "Pintade",
+    "categorie": 1,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "5000.00",
+    "cmup": "5000.0000",
+    "quantite_stock": "49.500",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 1,
+    "statut": true,
+    "date_creation": "2026-04-01T13:24:25.645Z",
+    "date_modification": "2026-04-29T17:15:31.643Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 6,
+  "fields": {
+    "reference": "ING-006",
+    "nom": "Agouti",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "2300.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "5.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-09T15:00:10.601Z",
+    "date_modification": "2026-04-13T10:17:02.504Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 7,
+  "fields": {
+    "reference": "ING-007",
+    "nom": "Poulet Pondeuse ",
+    "categorie": 1,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "4000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-09T16:27:49.887Z",
+    "date_modification": "2026-04-13T10:14:34.072Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 8,
+  "fields": {
+    "reference": "ING-008",
+    "nom": "Agouti X",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "2300.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "5.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:19:01.190Z",
+    "date_modification": "2026-04-13T10:19:01.190Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 9,
+  "fields": {
+    "reference": "ING-009",
+    "nom": "Rat",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "4000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:25:51.263Z",
+    "date_modification": "2026-04-13T10:25:51.263Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 10,
+  "fields": {
+    "reference": "ING-010",
+    "nom": "Rat X",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "4000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:26:41.480Z",
+    "date_modification": "2026-04-13T10:26:41.480Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 11,
+  "fields": {
+    "reference": "ING-011",
+    "nom": "Rat palmiste",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "3500.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:28:14.776Z",
+    "date_modification": "2026-04-13T10:28:14.776Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 12,
+  "fields": {
+    "reference": "ING-012",
+    "nom": "Poisson carpe",
+    "categorie": 4,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "1500.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "20.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 1,
+    "statut": true,
+    "date_creation": "2026-04-13T10:31:01.036Z",
+    "date_modification": "2026-04-13T10:31:01.036Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 13,
+  "fields": {
+    "reference": "ING-013",
+    "nom": "Poisson carpe x",
+    "categorie": 4,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "1500.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "20.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 1,
+    "statut": true,
+    "date_creation": "2026-04-13T10:31:38.979Z",
+    "date_modification": "2026-04-13T10:31:38.979Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 14,
+  "fields": {
+    "reference": "ING-014",
+    "nom": "Filet de boeuf ",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 7,
+    "unite_recette": 7,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "3500.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:35:32.559Z",
+    "date_modification": "2026-04-13T10:35:32.559Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 15,
+  "fields": {
+    "reference": "ING-015",
+    "nom": "Hérisson",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "18000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "5.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:37:19.489Z",
+    "date_modification": "2026-04-13T10:37:19.489Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 16,
+  "fields": {
+    "reference": "ING-016",
+    "nom": "Escargot",
+    "categorie": 5,
+    "description": "",
+    "unite_stock": 5,
+    "unite_recette": 5,
+    "facteur_conversion": "3.000000",
+    "prix_achat": "3000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "30.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:49:01.386Z",
+    "date_modification": "2026-04-13T11:08:18.641Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 17,
+  "fields": {
+    "reference": "ING-017",
+    "nom": "Pangolin",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "13000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:54:33.036Z",
+    "date_modification": "2026-04-13T10:54:33.036Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 18,
+  "fields": {
+    "reference": "ING-018",
+    "nom": "Pangolin x",
+    "categorie": 3,
+    "description": "",
+    "unite_stock": 8,
+    "unite_recette": 8,
+    "facteur_conversion": "1.000000",
+    "prix_achat": "13000.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "10.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 2,
+    "statut": true,
+    "date_creation": "2026-04-13T10:55:17.415Z",
+    "date_modification": "2026-04-13T10:55:17.415Z"
+  }
+},
+{
+  "model": "cuisine.ingredient",
+  "pk": 19,
+  "fields": {
+    "reference": "ING-019",
+    "nom": "Pomme de terre",
+    "categorie": 2,
+    "description": "",
+    "unite_stock": 4,
+    "unite_recette": 7,
+    "facteur_conversion": "32.000000",
+    "prix_achat": "13500.00",
+    "cmup": "0.0000",
+    "quantite_stock": "0.000",
+    "seuil_alerte": "64.000",
+    "stock_max": "0.000",
+    "fournisseur_principal": 1,
+    "statut": true,
+    "date_creation": "2026-04-13T10:59:55.734Z",
+    "date_modification": "2026-04-23T13:27:39.407Z"
+  }
+},
+{
+  "model": "cuisine.categorieplat",
+  "pk": 1,
+  "fields": {
+    "nom": "Hors-d’œuvre / Entrée",
+    "ordre": 1,
+    "icone": "fa-utensils"
+  }
+},
+{
+  "model": "cuisine.categorieplat",
+  "pk": 3,
+  "fields": {
+    "nom": "Plats principaux",
+    "ordre": 2,
+    "icone": "fa-utensils"
+  }
+},
+{
+  "model": "cuisine.categorieplat",
+  "pk": 4,
+  "fields": {
+    "nom": "Accompagnements",
+    "ordre": 3,
+    "icone": "fa-utensils"
+  }
+},
+{
+  "model": "cuisine.categorieplat",
+  "pk": 5,
+  "fields": {
+    "nom": "Desserts",
+    "ordre": 4,
+    "icone": "fa-utensils"
+  }
+},
+{
+  "model": "cuisine.categorieplat",
+  "pk": 6,
+  "fields": {
+    "nom": "Garnitures",
+    "ordre": 0,
+    "icone": "fa-utensils"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 1,
+  "fields": {
+    "nom": "Poulet de chair choukouya",
+    "reference": "FT-POU-0001",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-03-21T22:36:11.365Z",
+    "date_modification": "2026-03-21T22:36:11.365Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 2,
+  "fields": {
+    "nom": "Poulet de chair choukouya",
+    "reference": "FT-POU-0002",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-03-21T23:23:18.758Z",
+    "date_modification": "2026-03-21T23:23:18.758Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 3,
+  "fields": {
+    "nom": "Attiéké",
+    "reference": "FT-ATT-0003",
+    "categorie": 1,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 0,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-03-22T00:19:23.518Z",
+    "date_modification": "2026-03-22T00:19:23.518Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 4,
+  "fields": {
+    "nom": "Attiéké",
+    "reference": "FT-ATT-0004",
+    "categorie": 4,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 0,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-03-22T00:28:07.717Z",
+    "date_modification": "2026-03-22T00:28:07.717Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 5,
+  "fields": {
+    "nom": "Pintade braisée entier",
+    "reference": "FT-PIN-0005",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-01T13:33:17.524Z",
+    "date_modification": "2026-04-01T13:36:40.809Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 6,
+  "fields": {
+    "nom": "Pintade soupe entier",
+    "reference": "FT-PIN-0006",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-01T13:35:41.364Z",
+    "date_modification": "2026-04-01T13:37:04.629Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 7,
+  "fields": {
+    "nom": "Pintade sautée entier",
+    "reference": "FT-PIN-0007",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 0,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-01T13:47:21.426Z",
+    "date_modification": "2026-04-23T15:15:02.872Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 8,
+  "fields": {
+    "nom": "Pintade braisée 1/2",
+    "reference": "FT-PIN-0008",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-02T11:45:54.193Z",
+    "date_modification": "2026-04-13T10:12:51.668Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 9,
+  "fields": {
+    "nom": "Pintade soupe 1/2",
+    "reference": "FT-PIN-0009",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-02T12:03:55.236Z",
+    "date_modification": "2026-04-02T13:37:51.130Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 10,
+  "fields": {
+    "nom": "Poulet de chair choukouya ",
+    "reference": "FT-POU-0010",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-02T13:36:37.528Z",
+    "date_modification": "2026-04-02T13:36:37.528Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 11,
+  "fields": {
+    "nom": "Poulet pondeuse braisé demi",
+    "reference": "FT-POU-0011",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-09T16:35:41.028Z",
+    "date_modification": "2026-04-09T16:35:41.028Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 12,
+  "fields": {
+    "nom": "Agouti Braisé Entier ",
+    "reference": "FT-AGO-0012",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 30,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-13T10:20:34.423Z",
+    "date_modification": "2026-04-13T10:20:34.423Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 13,
+  "fields": {
+    "nom": "Agouti Braisé Portion",
+    "reference": "FT-AGO-0013",
+    "categorie": 3,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 15,
+    "temps_cuisson": 0,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-13T10:24:02.312Z",
+    "date_modification": "2026-04-13T10:24:02.312Z"
+  }
+},
+{
+  "model": "cuisine.fichetechnique",
+  "pk": 14,
+  "fields": {
+    "nom": "Frites ",
+    "reference": "FT-FRI-0014",
+    "categorie": 6,
+    "description": "",
+    "nb_portions": "1.0",
+    "temps_preparation": 5,
+    "temps_cuisson": 5,
+    "statut": "actif",
+    "image": "",
+    "cree_par": null,
+    "date_creation": "2026-04-13T11:06:06.704Z",
+    "date_modification": "2026-04-23T13:28:28.280Z"
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 1,
+  "fields": {
+    "fiche": 1,
+    "ingredient": 1,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 2,
+  "fields": {
+    "fiche": 2,
+    "ingredient": 1,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 3,
+  "fields": {
+    "fiche": 3,
+    "ingredient": 4,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 4,
+  "fields": {
+    "fiche": 4,
+    "ingredient": 4,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 7,
+  "fields": {
+    "fiche": 5,
+    "ingredient": 5,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 8,
+  "fields": {
+    "fiche": 6,
+    "ingredient": 5,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 9,
+  "fields": {
+    "fiche": 7,
+    "ingredient": 5,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 15,
+  "fields": {
+    "fiche": 10,
+    "ingredient": 1,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 16,
+  "fields": {
+    "fiche": 9,
+    "ingredient": 5,
+    "quantite": "0.500",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 17,
+  "fields": {
+    "fiche": 11,
+    "ingredient": 7,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 18,
+  "fields": {
+    "fiche": 8,
+    "ingredient": 5,
+    "quantite": "0.500",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 19,
+  "fields": {
+    "fiche": 12,
+    "ingredient": 6,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 20,
+  "fields": {
+    "fiche": 13,
+    "ingredient": 6,
+    "quantite": "0.200",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.lignefichetechnique",
+  "pk": 22,
+  "fields": {
+    "fiche": 14,
+    "ingredient": 19,
+    "quantite": "1.000",
+    "notes_ligne": ""
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 4,
+  "fields": {
+    "nom": "Attiéké",
+    "reference": "PLT-ATT-0003",
+    "categorie": 4,
+    "description_carte": "",
+    "fiche_technique": 4,
+    "prix_vente": "500.00",
+    "statut": "disponible",
+    "image": "plats/Attiéké.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-03-22T00:19:23.512Z",
+    "date_modification": "2026-03-22T00:28:07.711Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 5,
+  "fields": {
+    "nom": "Pintade braisée entier",
+    "reference": "PLT-PIN-0005",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 5,
+    "prix_vente": "12000.00",
+    "statut": "archive",
+    "image": "plats/Pintade_braisée.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-01T13:33:17.516Z",
+    "date_modification": "2026-04-01T13:49:15.766Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 6,
+  "fields": {
+    "nom": "Pintade soupe entier",
+    "reference": "PLT-PIN-0006",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 6,
+    "prix_vente": "12000.00",
+    "statut": "disponible",
+    "image": "plats/Pintade_soupe.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-01T13:35:41.358Z",
+    "date_modification": "2026-04-01T13:37:04.622Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 7,
+  "fields": {
+    "nom": "Pintade sautée entier",
+    "reference": "PLT-PIN-0007",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 7,
+    "prix_vente": "12000.00",
+    "statut": "disponible",
+    "image": "plats/Pintade_sauté.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-01T13:47:21.421Z",
+    "date_modification": "2026-04-01T13:47:21.421Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 8,
+  "fields": {
+    "nom": "Pintade braisée 1/2",
+    "reference": "PLT-PIN-0008",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 8,
+    "prix_vente": "6000.00",
+    "statut": "disponible",
+    "image": "plats/Pintade_braisée_XacnvTO.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-02T11:45:54.166Z",
+    "date_modification": "2026-04-13T10:12:51.661Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 9,
+  "fields": {
+    "nom": "Pintade soupe 1/2",
+    "reference": "PLT-PIN-0009",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 9,
+    "prix_vente": "6000.00",
+    "statut": "disponible",
+    "image": "plats/Pintade_soupe_RCJIItx.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-02T12:03:55.219Z",
+    "date_modification": "2026-04-02T13:37:51.123Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 10,
+  "fields": {
+    "nom": "Poulet de chair choukouya ",
+    "reference": "PLT-POU-0010",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 10,
+    "prix_vente": "8000.00",
+    "statut": "disponible",
+    "image": "plats/Poulet_de_chaiir_Choukouya.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-02T13:36:37.521Z",
+    "date_modification": "2026-04-02T13:36:37.521Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 11,
+  "fields": {
+    "nom": "Poulet pondeuse braisé demi",
+    "reference": "PLT-POU-0011",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 11,
+    "prix_vente": "4500.00",
+    "statut": "disponible",
+    "image": "plats/Pondeuse_demi_braisé.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-09T16:35:41.020Z",
+    "date_modification": "2026-04-09T16:35:41.020Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 12,
+  "fields": {
+    "nom": "Agouti Braisé Entier ",
+    "reference": "PLT-AGO-0012",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 12,
+    "prix_vente": "40000.00",
+    "statut": "disponible",
+    "image": "plats/Agouti_braisé_xx.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-13T10:20:34.367Z",
+    "date_modification": "2026-04-13T10:20:34.367Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 13,
+  "fields": {
+    "nom": "Agouti Braisé Portion",
+    "reference": "PLT-AGO-0013",
+    "categorie": 3,
+    "description_carte": "",
+    "fiche_technique": 13,
+    "prix_vente": "10000.00",
+    "statut": "disponible",
+    "image": "plats/Agouti_braisé_xx_08WTDAZ.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-13T10:24:02.304Z",
+    "date_modification": "2026-04-13T10:24:02.304Z"
+  }
+},
+{
+  "model": "cuisine.plat",
+  "pk": 14,
+  "fields": {
+    "nom": "Frites ",
+    "reference": "PLT-FRI-0014",
+    "categorie": 6,
+    "description_carte": "",
+    "fiche_technique": 14,
+    "prix_vente": "1000.00",
+    "statut": "disponible",
+    "image": "plats/Frites.png",
+    "ordre_carte": 0,
+    "date_creation": "2026-04-13T11:06:06.697Z",
+    "date_modification": "2026-04-23T13:28:28.274Z"
+  }
+}
+]

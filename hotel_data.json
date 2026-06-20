@@ -1,0 +1,1239 @@
+[
+{
+  "model": "hotel.chambre",
+  "pk": 1,
+  "fields": {
+    "numero": "001",
+    "type_chambre": "standard",
+    "etage": 1,
+    "capacite": 2,
+    "prix_nuit": 15000,
+    "prix_sejour": 20000,
+    "statut": "disponible",
+    "image": "chambres/Chambre_standard_0xI6Zjt.png",
+    "description": "",
+    "wifi": true,
+    "climatisation": true,
+    "television": true,
+    "minibar": false,
+    "machine_a_cafe": false,
+    "baignoire": false,
+    "coffre_fort": false,
+    "date_creation": "2026-03-12T23:58:26.536Z",
+    "date_modification": "2026-05-04T11:42:33.914Z"
+  }
+},
+{
+  "model": "hotel.chambre",
+  "pk": 2,
+  "fields": {
+    "numero": "002",
+    "type_chambre": "standard",
+    "etage": 1,
+    "capacite": 2,
+    "prix_nuit": 15000,
+    "prix_sejour": 20000,
+    "statut": "disponible",
+    "image": "chambres/Screenshot_2026-02-06_215654.png",
+    "description": "",
+    "wifi": true,
+    "climatisation": true,
+    "television": true,
+    "minibar": false,
+    "machine_a_cafe": false,
+    "baignoire": false,
+    "coffre_fort": false,
+    "date_creation": "2026-03-18T22:11:45.939Z",
+    "date_modification": "2026-04-23T14:57:59.503Z"
+  }
+},
+{
+  "model": "hotel.client",
+  "pk": 1,
+  "fields": {
+    "nom": "Kouadio Michel-fourier",
+    "prenom": "KONAN",
+    "telephone": "0748223983",
+    "email": null,
+    "piece_identite": "CNI",
+    "numero_piece": null,
+    "date_naissance": null,
+    "nationalite": null,
+    "adresse": null,
+    "ville": "Abidjan",
+    "pays": "Côte d'Ivoire",
+    "date_creation": "2026-03-18T21:33:46.244Z"
+  }
+},
+{
+  "model": "hotel.client",
+  "pk": 2,
+  "fields": {
+    "nom": "Kassi",
+    "prenom": "Tino",
+    "telephone": "0103337309",
+    "email": null,
+    "piece_identite": "CNI",
+    "numero_piece": "C6758493028",
+    "date_naissance": null,
+    "nationalite": "Ivoirienne",
+    "adresse": "01 BP 1804 Abj",
+    "ville": "Cote d'Ivoire",
+    "pays": "Côte d’Ivoire",
+    "date_creation": "2026-03-18T22:23:36.677Z"
+  }
+},
+{
+  "model": "hotel.client",
+  "pk": 3,
+  "fields": {
+    "nom": "ekoun",
+    "prenom": "Fulgence",
+    "telephone": "0102030405",
+    "email": null,
+    "piece_identite": "CNI",
+    "numero_piece": "C0102030405",
+    "date_naissance": "1989-01-01",
+    "nationalite": "Ivoirienne",
+    "adresse": null,
+    "ville": null,
+    "pays": null,
+    "date_creation": "2026-04-23T13:21:57.966Z"
+  }
+},
+{
+  "model": "hotel.client",
+  "pk": 4,
+  "fields": {
+    "nom": "Dje",
+    "prenom": "Philippe",
+    "telephone": "0505040310",
+    "email": null,
+    "piece_identite": "CNI",
+    "numero_piece": "C0102030406",
+    "date_naissance": "1988-10-02",
+    "nationalite": "Ivoirienne",
+    "adresse": null,
+    "ville": null,
+    "pays": null,
+    "date_creation": "2026-04-23T14:33:48.745Z"
+  }
+},
+{
+  "model": "hotel.client",
+  "pk": 5,
+  "fields": {
+    "nom": "Bamba",
+    "prenom": "Ali",
+    "telephone": "0777865990",
+    "email": null,
+    "piece_identite": "CNI",
+    "numero_piece": null,
+    "date_naissance": null,
+    "nationalite": "",
+    "adresse": null,
+    "ville": null,
+    "pays": null,
+    "date_creation": "2026-04-23T14:47:54.266Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 1,
+  "fields": {
+    "chambre": 1,
+    "client": 1,
+    "date_arrivee": "2026-03-19",
+    "date_depart": "2026-04-23",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": "Yakro",
+    "destination": "Bouake",
+    "statut": "terminee",
+    "prix_total": 525000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-03-18T21:33:46.246Z",
+    "date_modification": "2026-04-23T13:02:38.836Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 2,
+  "fields": {
+    "chambre": 2,
+    "client": 2,
+    "date_arrivee": "2026-03-18",
+    "date_depart": "2026-03-18",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": "Yakro",
+    "destination": "Bouake",
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-03-18T22:23:36.695Z",
+    "date_modification": "2026-03-18T23:31:11.564Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 3,
+  "fields": {
+    "chambre": 1,
+    "client": 2,
+    "date_arrivee": "2026-03-18",
+    "date_depart": "2026-03-19",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": "Yakro",
+    "destination": "Yakro",
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-03-18T22:24:45.832Z",
+    "date_modification": "2026-03-18T22:26:32.950Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 4,
+  "fields": {
+    "chambre": 2,
+    "client": 3,
+    "date_arrivee": "2026-04-23",
+    "date_depart": "2026-04-24",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": null,
+    "destination": null,
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-04-23T13:21:57.977Z",
+    "date_modification": "2026-04-23T13:34:40.859Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 5,
+  "fields": {
+    "chambre": 1,
+    "client": 4,
+    "date_arrivee": "2026-04-23",
+    "date_depart": "2026-04-24",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": null,
+    "destination": null,
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-04-23T14:33:48.757Z",
+    "date_modification": "2026-04-23T14:39:34.107Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 6,
+  "fields": {
+    "chambre": 2,
+    "client": 5,
+    "date_arrivee": "2026-04-23",
+    "date_depart": "2026-04-24",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": null,
+    "destination": null,
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-04-23T14:47:54.272Z",
+    "date_modification": "2026-04-23T14:57:59.501Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 7,
+  "fields": {
+    "chambre": 1,
+    "client": 3,
+    "date_arrivee": "2026-04-23",
+    "date_depart": "2026-04-24",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": null,
+    "destination": null,
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-04-23T15:17:28.654Z",
+    "date_modification": "2026-04-23T15:21:03.741Z"
+  }
+},
+{
+  "model": "hotel.reservation",
+  "pk": 8,
+  "fields": {
+    "chambre": 1,
+    "client": 3,
+    "date_arrivee": "2026-04-29",
+    "date_depart": "2026-04-30",
+    "type_sejour": "nuitee",
+    "nombre_adultes": 1,
+    "nombre_enfants": 0,
+    "provenance": null,
+    "destination": null,
+    "statut": "terminee",
+    "prix_total": 15000,
+    "avance": 0,
+    "mode_paiement": "especes",
+    "commentaire": null,
+    "creee_par": null,
+    "date_creation": "2026-04-29T17:14:20.131Z",
+    "date_modification": "2026-04-29T17:18:43.523Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 1,
+  "fields": {
+    "reservation": 2,
+    "type_service": "bar",
+    "boisson": 6,
+    "plat": null,
+    "espace": null,
+    "nom": "Baileys Cream Liqueur 1,5L",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-03-18T23:04:24.777Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 2,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-20T15:10:26Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 3,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Castel Beer 65Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-20T15:10:26Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 4,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Coca cola can 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-20T15:10:26Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 5,
+  "fields": {
+    "reservation": 1,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Restaurant] Baileys Cream Liqueur 1,5L",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-03-21T19:51:32.607Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 6,
+  "fields": {
+    "reservation": 1,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Restaurant] Mangoustan's Rhum 70Cl",
+    "quantite": 2,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-03-21T19:52:26.347Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 7,
+  "fields": {
+    "reservation": 1,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Restaurant] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-21T19:53:00.251Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 8,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-21T19:54:49.045Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 9,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-21T19:55:29.664Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 10,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-21T19:56:06.937Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 11,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-21T19:56:33.041Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 12,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-24T13:54:23.731Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 13,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 4,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Castel Beer 65Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-24T13:54:23.949Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 14,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 12,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Champagne Moet & Chandon 70CL",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-03-24T13:55:08.049Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 15,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Eau Céleste",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-24T13:55:54.638Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 16,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 2,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Pressea fresh Mangue Coco 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-24T13:55:54.718Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 17,
+  "fields": {
+    "reservation": 1,
+    "type_service": "bar",
+    "boisson": 3,
+    "plat": null,
+    "espace": null,
+    "nom": "[Cave] Coca cola can 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-24T13:55:54.797Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 18,
+  "fields": {
+    "reservation": 1,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Restaurant] Poulet de chair choukouya",
+    "quantite": 1,
+    "prix_unitaire": "8500.00",
+    "date_ajout": "2026-03-24T13:57:24.238Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 19,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-24T14:08:48.055Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 20,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Poulet de chair choukouya",
+    "quantite": 1,
+    "prix_unitaire": "8000.00",
+    "date_ajout": "2026-03-24T14:08:48.109Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 21,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 6,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Baileys Cream Liqueur 1,5L",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-03-24T14:53:28.047Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 22,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Poulet de chair choukouya",
+    "quantite": 1,
+    "prix_unitaire": "8000.00",
+    "date_ajout": "2026-03-24T14:53:28.101Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 23,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 6,
+    "espace": null,
+    "nom": "[Piscine] Attiéké",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-24T14:53:28.152Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 24,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-24T15:18:53.753Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 25,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Eau Céleste",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-24T15:18:53.814Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 26,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 6,
+    "espace": null,
+    "nom": "[Piscine] Attiéké",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-03-24T15:18:53.832Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 27,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Poulet de chair choukouya",
+    "quantite": 1,
+    "prix_unitaire": "8000.00",
+    "date_ajout": "2026-03-24T15:18:53.851Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 28,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 4,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Castel Beer 65Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-24T15:38:13.103Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 29,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 7,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine] Get 27 Liqueur 70Cl",
+    "quantite": 1,
+    "prix_unitaire": "10000.00",
+    "date_ajout": "2026-03-24T15:38:13.178Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 31,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#10] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-03-24T16:01:00.013Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 32,
+  "fields": {
+    "reservation": 1,
+    "type_service": "espace",
+    "boisson": null,
+    "plat": null,
+    "espace": 1,
+    "nom": "[Espace] Terrasse Panorama — Réunion",
+    "quantite": 1,
+    "prix_unitaire": "60000.00",
+    "date_ajout": "2026-03-24T16:26:54.170Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 33,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 4,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#12] Castel Beer 65Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-03T13:07:22.268Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 34,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": 6,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#12] Baileys Cream Liqueur 1,5L",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-04-03T13:07:22.355Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 35,
+  "fields": {
+    "reservation": 1,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 12,
+    "espace": null,
+    "nom": "[Piscine#12] Pintade braisée 1/2",
+    "quantite": 1,
+    "prix_unitaire": "6000.00",
+    "date_ajout": "2026-04-03T13:07:22.405Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 36,
+  "fields": {
+    "reservation": 4,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 19,
+    "espace": null,
+    "nom": "Agouti Braisé Entier ",
+    "quantite": 1,
+    "prix_unitaire": "40000.00",
+    "date_ajout": "2026-04-23T13:22:26.344Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 37,
+  "fields": {
+    "reservation": 4,
+    "type_service": "bar",
+    "boisson": 3,
+    "plat": null,
+    "espace": null,
+    "nom": "Coca cola can 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T13:22:56.425Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 38,
+  "fields": {
+    "reservation": 4,
+    "type_service": "bar",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "Eau Céleste",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T13:23:13.685Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 39,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#14] Beaufort Lager 33Cl",
+    "quantite": 3,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-23T13:24:27.523Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 40,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#14] Eau Céleste",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T13:24:27.581Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 41,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 21,
+    "espace": null,
+    "nom": "[Piscine#14] Frites ",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-23T13:24:27.601Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 42,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 19,
+    "espace": null,
+    "nom": "[Piscine#14] Agouti Braisé Entier ",
+    "quantite": 1,
+    "prix_unitaire": "40000.00",
+    "date_ajout": "2026-04-23T13:24:27.619Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 43,
+  "fields": {
+    "reservation": 5,
+    "type_service": "bar",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "Beaufort Lager 33Cl",
+    "quantite": 2,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-23T14:35:52.924Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 44,
+  "fields": {
+    "reservation": 5,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 11,
+    "espace": null,
+    "nom": "Pintade sautée entier",
+    "quantite": 1,
+    "prix_unitaire": "12000.00",
+    "date_ajout": "2026-04-23T14:36:24.453Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 45,
+  "fields": {
+    "reservation": 5,
+    "type_service": "bar",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "Eau Céleste",
+    "quantite": 3,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T14:36:48.778Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 46,
+  "fields": {
+    "reservation": 5,
+    "type_service": "bar",
+    "boisson": 8,
+    "plat": null,
+    "espace": null,
+    "nom": "Mangoustan's Rhum 70Cl",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-04-23T14:37:03.178Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 47,
+  "fields": {
+    "reservation": 5,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 6,
+    "espace": null,
+    "nom": "Attiéké",
+    "quantite": 3,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T14:37:20.229Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 48,
+  "fields": {
+    "reservation": 6,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 11,
+    "espace": null,
+    "nom": "Pintade sautée entier",
+    "quantite": 1,
+    "prix_unitaire": "12000.00",
+    "date_ajout": "2026-04-23T14:48:23.955Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 49,
+  "fields": {
+    "reservation": 6,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 6,
+    "espace": null,
+    "nom": "Attiéké",
+    "quantite": 2,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T14:48:37.252Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 50,
+  "fields": {
+    "reservation": 6,
+    "type_service": "bar",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "Eau Céleste",
+    "quantite": 4,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T14:49:04.947Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 51,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 6,
+    "espace": null,
+    "nom": "[Piscine#14] Attiéké",
+    "quantite": 2,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T14:51:08.830Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 52,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": null,
+    "plat": 12,
+    "espace": null,
+    "nom": "[Piscine#14] Pintade braisée 1/2",
+    "quantite": 1,
+    "prix_unitaire": "6000.00",
+    "date_ajout": "2026-04-23T14:51:08.852Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 53,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#14] Beaufort Lager 33Cl",
+    "quantite": 1,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-23T14:51:08.936Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 54,
+  "fields": {
+    "reservation": 4,
+    "type_service": "piscine",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#14] Eau Céleste",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T14:51:08.989Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 55,
+  "fields": {
+    "reservation": 7,
+    "type_service": "bar",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "Beaufort Lager 33Cl",
+    "quantite": 2,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-23T15:18:57.599Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 56,
+  "fields": {
+    "reservation": 7,
+    "type_service": "bar",
+    "boisson": 1,
+    "plat": null,
+    "espace": null,
+    "nom": "Eau Céleste",
+    "quantite": 3,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T15:19:14.274Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 57,
+  "fields": {
+    "reservation": 7,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 11,
+    "espace": null,
+    "nom": "Pintade sautée entier",
+    "quantite": 1,
+    "prix_unitaire": "12000.00",
+    "date_ajout": "2026-04-23T15:19:34.712Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 58,
+  "fields": {
+    "reservation": 7,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 6,
+    "espace": null,
+    "nom": "Attiéké",
+    "quantite": 3,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-23T15:19:50.294Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 59,
+  "fields": {
+    "reservation": 7,
+    "type_service": "piscine",
+    "boisson": 5,
+    "plat": null,
+    "espace": null,
+    "nom": "[Piscine#15] Beaufort Lager 33Cl",
+    "quantite": 2,
+    "prix_unitaire": "1000.00",
+    "date_ajout": "2026-04-23T15:20:32.862Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 60,
+  "fields": {
+    "reservation": 8,
+    "type_service": "bar",
+    "boisson": 6,
+    "plat": null,
+    "espace": null,
+    "nom": "Baileys Cream Liqueur 1,5L",
+    "quantite": 1,
+    "prix_unitaire": "20000.00",
+    "date_ajout": "2026-04-29T17:14:46.944Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 61,
+  "fields": {
+    "reservation": 8,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": 12,
+    "espace": null,
+    "nom": "[Restaurant] Pintade braisée 1/2",
+    "quantite": 1,
+    "prix_unitaire": "6000.00",
+    "date_ajout": "2026-04-29T17:16:05.235Z"
+  }
+},
+{
+  "model": "hotel.consommation",
+  "pk": 62,
+  "fields": {
+    "reservation": 8,
+    "type_service": "restaurant",
+    "boisson": null,
+    "plat": null,
+    "espace": null,
+    "nom": "[Restaurant] Eau Céleste",
+    "quantite": 1,
+    "prix_unitaire": "500.00",
+    "date_ajout": "2026-04-29T17:16:05.235Z"
+  }
+}
+]

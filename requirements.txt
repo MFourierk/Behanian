@@ -38,3 +38,6 @@ zopfli==0.4.1
 
 # Images
 pillow==12.2.0
+
+# Sécurité — protection contre les attaques par force brute
+django-axes==8.3.1

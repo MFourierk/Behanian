@@ -56,6 +56,9 @@ INSTALLED_APPS = [
     'caisse',
     'facturation',
     'parametres',
+
+     # Sécurité
+    'axes',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +68,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     # Middlewares maison — après AuthenticationMiddleware (besoin de request.user)
     'utils.middleware.StrictGroupAccessMiddleware',
     'caisse.middleware.CaisseOuverteMiddleware',
@@ -217,3 +221,18 @@ CSRF_USE_SESSIONS    = False   # Token dans cookie (défaut Django, compatible A
 # ---------------------------------------------------------------------------
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+
+# ---------------------------------------------------------------------------
+# Sécurité — django-axes (protection contre les attaques par force brute)
+# ---------------------------------------------------------------------------
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+AXES_FAILURE_LIMIT = 5          # nombre de tentatives autorisées
+AXES_COOLOFF_TIME = 1           # durée du blocage en heures
+AXES_LOCKOUT_PARAMETERS = ['ip_address', 'username']
+AXES_RESET_ON_SUCCESS = True    # réinitialise le compteur après connexion réussie

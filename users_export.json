@@ -1,0 +1,188 @@
+﻿[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$b8tuclOjP8vbHNpQaZ7A1V$I+VYXRh74HNP/urRdlyHY3+oFxAyjn3uOTpGvQMJt48=",
+    "last_login": "2026-05-16T15:08:00.897Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@example.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-03-11T14:30:24.638Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 32,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$PWKJq18ilu8eX5jol8gFPb$jAjLEV2n9rQWnMBxH23ZgP22MrIuvUgEqAkcJGDUA7A=",
+    "last_login": "2026-05-16T11:47:30.367Z",
+    "is_superuser": false,
+    "username": "Sow",
+    "first_name": "Mariam",
+    "last_name": "Sow",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-13T14:46:27Z",
+    "groups": [
+      41
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 33,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$9OQSaO8CVrdovzTv7mZz81$AH6Az111qNehuxl1vPlz2APE4CuNQyA9WFSKPqshzLI=",
+    "last_login": "2026-05-16T11:48:18.620Z",
+    "is_superuser": false,
+    "username": "Jeanne",
+    "first_name": "Jeanne",
+    "last_name": "Konan",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-13T14:47:37Z",
+    "groups": [
+      42
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 34,
+  "fields": {
+    "password": "!tduRWZwkwQSVRhnfm4btBrkKRJRpfjPJ3mfpCMXp",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "Fred",
+    "first_name": "Fred",
+    "last_name": "Kassi",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-13T14:49:45Z",
+    "groups": [
+      43
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 35,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$JpLZjHflpyyDJupZvdV5ID$RGwijMEH3epixyykSfv7QZjz6FkEJV/69FZcW+82l6I=",
+    "last_login": "2026-05-16T11:50:09.745Z",
+    "is_superuser": false,
+    "username": "Annique",
+    "first_name": "Annique",
+    "last_name": "Kore",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-13T14:50:35Z",
+    "groups": [
+      44
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 36,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$bYv6larwWxngf9VB3PCfPN$A17D7Y+6GokPH0tsl8ADcG4POEx59n7e4Uf2SK3rIVo=",
+    "last_login": "2026-05-16T11:48:54.124Z",
+    "is_superuser": false,
+    "username": "John",
+    "first_name": "John",
+    "last_name": "Mensah",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-03-18T23:36:20Z",
+    "groups": [
+      45
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 37,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$9G2sU3SERZo1j8Z07NDDcW$rO5o36EMze5wl8PMCRgRPuJCjYiWA+Ju2QYTRoyuT3I=",
+    "last_login": "2026-05-16T11:49:20.017Z",
+    "is_superuser": false,
+    "username": "Edwige",
+    "first_name": "Edwige",
+    "last_name": "KONAN",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-11T11:01:16Z",
+    "groups": [
+      46
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 41,
+  "fields": {
+    "name": "Manager G�n�ral(e)",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 42,
+  "fields": {
+    "name": "Manager Cuisine",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 43,
+  "fields": {
+    "name": "Serveuse/Serveur",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 44,
+  "fields": {
+    "name": "Caissier(e)",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 45,
+  "fields": {
+    "name": "R�ceptionniste",
+    "permissions": []
+  }
+},
+{
+  "model": "auth.group",
+  "pk": 46,
+  "fields": {
+    "name": "Responsable Caisse",
+    "permissions": []
+  }
+}
+]
