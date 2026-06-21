@@ -122,8 +122,6 @@ def _verifier_stock_forfait(forfait):
     return (len(problemes) == 0), problemes
 
 
-@require_module_access('piscine')
-@require_POST
 def _generer_reference_entree(type_client, forfait=None, reservation=None):
     """Génère une référence professionnelle pour l'entrée piscine."""
     today = timezone.localdate()
