@@ -133,7 +133,7 @@
           <td>
             {% if not u.is_superuser %}
             <div style="display:flex;gap:5px">
-              <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Modifier" onclick="ouvrirModifier({{ u.pk }},'{{ u.username }}','{{ u.first_name }}','{{ u.last_name }}','{{ u.email }}','{{ groupe.name|default:'' }}')">
+              <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Modifier" onclick="ouvrirModifier({{ u.pk }},'{{ u.username|escapejs }}','{{ u.first_name|escapejs }}','{{ u.last_name|escapejs }}','{{ u.email|escapejs }}','{{ groupe.name|default:''|escapejs }}')">
                 <i class="fas fa-edit"></i>
               </button>
               <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Réinitialiser mot de passe" onclick="ouvrirResetPwd({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
