@@ -404,8 +404,22 @@
       </div>
     </div>
 
-    <!-- Boutons fixe en bas -->
-    <div style="flex-shrink:0;display:flex;gap:8px;padding:12px 20px;border-top:1px solid #e8edf5;background:white">
+    <!-- Sélecteur serveur + boutons -->
+    <div style="flex-shrink:0;border-top:1px solid #e8edf5;background:#f8fafc;padding:10px 20px">
+      <label style="font-size:11px;font-weight:700;color:#3d4f63;display:block;margin-bottom:5px">
+        <i class="fas fa-user-tie" style="color:#7c3aed;margin-right:4px"></i> Serveur / Serveuse assigné(e)
+      </label>
+      <select id="cmdServeur" style="width:100%;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;font-size:13px;color:#1a2535;background:white">
+        <option value="">— Non assigné —</option>
+        {% for agent in personnel %}
+        <option value="{{ agent.pk }}"
+          {% if agent.pk == request.user.pk %}selected{% endif %}>
+          {{ agent.get_full_name|default:agent.username }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="flex-shrink:0;display:flex;gap:8px;padding:10px 20px;border-top:1px solid #e8edf5;background:white">
       <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalCommande')">Fermer</button>
       <button class="btn-p btn-success" style="flex:2" onclick="validerCommande()"><i class="fas fa-check"></i> Envoyer la commande</button>
     </div>
@@ -813,6 +827,7 @@ async function chargerEnCours(){
   d.consommations.forEach(c=>{
     const isVip=c.inclus_forfait;
     const badgeVip=isVip?'<span class="badge-vip">VIP</span>':'';
+    const serveurLabel=c.serveur?`<span style="font-size:10px;color:#7c3aed;font-weight:600"><i class="fas fa-user-tie"></i> ${c.serveur}</span>`:'';
     const prixLabel=isVip?'<span style="color:#d97706;font-size:11px">Inclus forfait</span>':`<span style="font-size:11px;color:#7a8b9c">${c.prix.toLocaleString('fr-FR')} F/u</span>`;
     const totalLabel=isVip?'<span style="font-size:12px;color:#d97706;font-weight:600">Inclus</span>':`<div id="total_${c.id}" style="font-size:12px;font-weight:700;color:#2563eb;min-width:65px;text-align:right">${c.total.toLocaleString('fr-FR')} F</div>`;
     const ctrlsQty=isVip?'':`<div style="display:flex;align-items:center;gap:4px">
@@ -824,7 +839,7 @@ async function chargerEnCours(){
     html+=`<div id="enCours_${c.id}" style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid ${isVip?'#fde68a':'#dde3ec'};border-radius:10px;margin-bottom:8px;background:${isVip?'#fffbeb':'white'}">
       <div style="flex:1">
         <div style="font-size:13px;font-weight:600;color:#1a2535">${c.produit}${badgeVip}</div>
-        ${prixLabel}
+        <div style="display:flex;gap:8px;align-items:center;margin-top:2px">${prixLabel}${serveurLabel}</div>
       </div>
       ${ctrlsQty}
       ${totalLabel}
@@ -989,11 +1004,14 @@ function piscineNotif(msg, type='success') {
 async function validerCommande(){
   if(panier.length===0){ piscineNotif('Le panier est vide.','error'); return; }
   const id=document.getElementById('cmdAccesId').value;
+  const serveurId=document.getElementById('cmdServeur').value;
   const url=`{% url "piscine:consommation" 0 %}`.replace('/0/','/'+id+'/');
   let erreurs=[], succès=0;
   for(const item of panier){
+    const payload={type:item.type,id:item.id,quantite:item.qty};
+    if(serveurId) payload.serveur_id=serveurId;
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({type:item.type,id:item.id,quantite:item.qty})});
+      body:JSON.stringify(payload)});
     const d=await r.json();
     if(!d.success) erreurs.push('• ' + item.nom + ' : ' + (d.error||'Erreur'));
     else succès++;

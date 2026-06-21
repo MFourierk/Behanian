@@ -1,6 +1,7 @@
 from utils.permissions import require_module_access
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
@@ -60,6 +61,9 @@ def piscine_index(request):
         date_entree__date=today
     ).prefetch_related('consommations').order_by('-date_entree')
 
+    # Personnel actif pour assignation serveur
+    personnel = User.objects.filter(is_active=True, is_superuser=False).order_by('first_name', 'last_name')
+
     context = {
         'entrees_jour': entrees_jour,
         'actuellement': acces_actifs.count(),
@@ -77,6 +81,7 @@ def piscine_index(request):
         'acces_actifs': acces_actifs.select_related().prefetch_related('consommations'),
         'forfaits_piscine': forfaits_piscine,
         'forfaits_alertes': forfaits_alertes,
+        'personnel': personnel,
     }
     return render(request, 'piscine/index.html', context)
 
@@ -327,6 +332,13 @@ def ajouter_consommation(request, acces_id):
         type_article = data.get('type')  # 'boisson' ou 'plat'
         article_id   = data.get('id')
         quantite     = int(data.get('quantite', 1))
+        serveur_id   = data.get('serveur_id')
+        serveur_obj  = None
+        if serveur_id:
+            try:
+                serveur_obj = User.objects.get(pk=serveur_id, is_active=True)
+            except User.DoesNotExist:
+                pass
 
         if type_article == 'boisson':
             from bar.models import BoissonBar, MouvementStockBar
@@ -338,6 +350,7 @@ def ajouter_consommation(request, acces_id):
                 produit=boisson.nom,
                 quantite=quantite,
                 prix_unitaire=boisson.prix,
+                serveur=serveur_obj,
             )
             boisson.quantite_stock = max(0, boisson.quantite_stock - quantite)
             boisson.save()
@@ -374,6 +387,7 @@ def ajouter_consommation(request, acces_id):
                 produit=plat.nom,
                 quantite=quantite,
                 prix_unitaire=plat.prix,
+                serveur=serveur_obj,
             )
             # Déduire le stock cuisine
             process_stock_movement(plat, quantite, 'sortie', request.user, f'Piscine #{acces.id}')
@@ -589,8 +603,9 @@ def api_acces_detail(request, acces_id):
     consommations = [
         {'id': c.id, 'produit': c.produit, 'quantite': c.quantite,
          'prix': float(c.prix_unitaire), 'total': float(c.get_total()),
-         'inclus_forfait': c.inclus_forfait}
-        for c in acces.consommations.all()
+         'inclus_forfait': c.inclus_forfait,
+         'serveur': c.serveur.get_full_name() or c.serveur.username if c.serveur else None}
+        for c in acces.consommations.select_related('serveur').all()
     ]
     total_conso = sum(c.get_total() for c in acces.consommations.all())
     return JsonResponse({
