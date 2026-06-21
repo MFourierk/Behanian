@@ -212,6 +212,7 @@
 .art-stock { font-size:11px;color:#7a8b9c;margin-top:1px; }
 .art-stock.low { color:#dc2626; }
 .art-item.hidden { display:none; }
+.art-item.panier-added { background:#d1fae5;border-left:3px solid #10b981;transition:background 0.15s; }
 
 /* ── TABS CONTENT ── */
 .tab-content-hotel { display: none; }
@@ -1104,7 +1105,7 @@
 
 <!-- MODAL ADD SERVICE -->
 <div id="modalAddService" class="modal">
-  <div class="modal-content" style="width:520px;padding:24px">
+  <div class="modal-content" style="width:560px;padding:24px;max-height:92vh;overflow-y:auto">
 
     <!-- En-tête -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -1113,176 +1114,186 @@
     </div>
     <div id="service-room-info" style="font-size:13px;color:#2563eb;font-weight:500;margin-bottom:16px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe"></div>
 
-    <form id="formAddService" action="" method="POST">
-      <input type="hidden" id="service-res-id" value="">
-      {% csrf_token %}
+    {% csrf_token %}
+    <input type="hidden" id="service-res-id" value="">
 
-      <!-- SERVEUR -->
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:12px;font-weight:700;color:#3d4f63;margin-bottom:5px">
-          <i class="fas fa-user-tie" style="color:#7c3aed;margin-right:4px"></i> Serveur / Serveuse
-        </label>
-        <select name="serveur_id" id="svc-serveur" style="width:100%;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;font-size:13px;color:#1a2535;background:white">
-          <option value="">— Non assigné —</option>
-          {% for agent in personnel_actif %}
-          <option value="{{ agent.pk }}"{% if agent.pk == request.user.pk %} selected{% endif %}>
-            {{ agent.get_full_name|default:agent.username }}
-          </option>
-          {% endfor %}
-        </select>
+    <!-- SERVEUR -->
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:700;color:#3d4f63;margin-bottom:5px">
+        <i class="fas fa-user-tie" style="color:#7c3aed;margin-right:4px"></i> Serveur / Serveuse
+      </label>
+      <select id="svc-serveur" style="width:100%;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;font-size:13px;color:#1a2535;background:white">
+        <option value="">— Non assigné —</option>
+        {% for agent in personnel_actif %}
+        <option value="{{ agent.pk }}"{% if agent.pk == request.user.pk %} selected{% endif %}>
+          {{ agent.get_full_name|default:agent.username }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- TYPE PILLS -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button type="button" class="svc-pill active" data-type="bar" onclick="setServiceType('bar')">🍸 Boissons</button>
+      <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')">🍽️ Plats</button>
+      <button type="button" class="svc-pill" data-type="espace" onclick="setServiceType('espace')">🎪 Espaces</button>
+      <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')">⚙️ Autre</button>
+      <button type="button" class="svc-pill" data-type="encours" onclick="setServiceType('encours')" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">📋 En cours</button>
+    </div>
+
+    <!-- BOISSONS -->
+    <div id="field-bar" class="service-field">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="bar-cats">
+        <button type="button" class="cat-pill active" onclick="filtrerBoissons(this, '')">Tout</button>
+        {% regroup boissons by categorie.nom as boissons_by_cat %}
+        {% for cat in boissons_by_cat %}
+        <button type="button" class="cat-pill" onclick="filtrerBoissons(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
+        {% endfor %}
       </div>
-
-      <!-- TYPE PILLS -->
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <input type="hidden" name="type_service" id="service-type-val" value="bar">
-        <button type="button" class="svc-pill active" data-type="bar" onclick="setServiceType('bar')">🍸 Boissons</button>
-        <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')">🍽️ Plats</button>
-        <button type="button" class="svc-pill" data-type="espace" onclick="setServiceType('espace')">🎪 Espaces</button>
-        <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')">⚙️ Autre</button>
-        <button type="button" class="svc-pill" data-type="encours" onclick="setServiceType('encours')" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">📋 En cours</button>
+      <div style="position:relative;margin-bottom:10px">
+        <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
+        <input type="text" id="bar-search" placeholder="Rechercher une boisson..." oninput="filtrerBoissons(null,null)"
+          style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
       </div>
-
-      <!-- BOISSONS -->
-      <div id="field-bar" class="service-field">
-        <!-- Filtre catégorie -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="bar-cats">
-          <button type="button" class="cat-pill active" onclick="filtrerBoissons(this, '')">Tout</button>
-          {% regroup boissons by categorie.nom as boissons_by_cat %}
-          {% for cat in boissons_by_cat %}
-          <button type="button" class="cat-pill" onclick="filtrerBoissons(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
-          {% endfor %}
-        </div>
-        <!-- Recherche -->
-        <div style="position:relative;margin-bottom:10px">
-          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
-          <input type="text" id="bar-search" placeholder="Rechercher une boisson..." oninput="filtrerBoissons(null,null)"
-            style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
-        </div>
-        <!-- Liste articles -->
-        <div id="bar-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
-          <input type="hidden" name="boisson_id" id="bar-selected-id" value="">
-          {% for b in boissons %}
-          <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
-               data-prix="{{ b.prix }}" data-stock="{{ b.quantite_stock }}"
-               onclick="selectionnerArticle('bar', this)">
-            <div style="flex:1">
-              <div class="art-nom">{{ b.nom }}</div>
-              <div class="art-cat">{{ b.categorie.nom }}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <div class="art-prix">{{ b.prix|montant }} F</div>
-              <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
-            </div>
+      <div id="bar-list" style="max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
+        {% for b in boissons %}
+        <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
+             data-nom="{{ b.nom|escapejs }}" data-prix="{{ b.prix }}" data-stock="{{ b.quantite_stock }}"
+             onclick="ajouterAuPanier('bar', this)">
+          <div style="flex:1">
+            <div class="art-nom">{{ b.nom }}</div>
+            <div class="art-cat">{{ b.categorie.nom }}</div>
           </div>
-          {% endfor %}
-        </div>
-        <div id="bar-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
-      </div>
-
-      <!-- PLATS -->
-      <div id="field-restaurant" class="service-field" style="display:none">
-        <!-- Filtre catégorie -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="resto-cats">
-          <button type="button" class="cat-pill active" onclick="filtrerPlats(this, '')">Tout</button>
-          {% regroup plats by categorie.nom as plats_by_cat %}
-          {% for cat in plats_by_cat %}
-          <button type="button" class="cat-pill" onclick="filtrerPlats(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
-          {% endfor %}
-        </div>
-        <!-- Recherche -->
-        <div style="position:relative;margin-bottom:10px">
-          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
-          <input type="text" id="resto-search" placeholder="Rechercher un plat..." oninput="filtrerPlats(null,null)"
-            style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
-        </div>
-        <div id="resto-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
-          <input type="hidden" name="plat_id" id="resto-selected-id" value="">
-          {% for p in plats %}
-          <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
-               data-prix="{{ p.prix }}"
-               onclick="selectionnerArticle('resto', this)">
-            <div style="flex:1">
-              <div class="art-nom">{{ p.nom }}</div>
-              <div class="art-cat">{{ p.categorie.nom }}</div>
-            </div>
-            <div style="text-align:right">
-              <div class="art-prix">{{ p.prix|montant }} F</div>
-            </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="art-prix">{{ b.prix|montant }} F</div>
+            <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
           </div>
-          {% endfor %}
         </div>
-        <div id="resto-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
+        {% endfor %}
       </div>
+      <div style="font-size:11px;color:#7a8b9c;margin-top:6px">Cliquez sur un article pour l'ajouter au panier — recliquez pour augmenter la quantité.</div>
+    </div>
 
-      <!-- ESPACE LOCATION -->
-      <div id="field-espace" class="service-field" style="display:none">
-        {% if espaces %}
-        <div id="espace-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
-          <input type="hidden" name="espace_id" id="espace-selected-id" value="">
-          {% for e in espaces %}
-          <div class="art-item" data-id="{{ e.id }}" data-prix="{{ e.prix_heure }}"
-               onclick="selectionnerEspace(this)">
-            <div style="flex:1">
-              <div class="art-nom">{{ e.nom }}</div>
-              <div class="art-cat">{{ e.get_type_display|default:"Espace" }} · {{ e.capacite }} pers.</div>
-            </div>
-            <div style="text-align:right">
-              <div class="art-prix">{{ e.prix_heure|montant }} F/h</div>
-            </div>
+    <!-- PLATS -->
+    <div id="field-restaurant" class="service-field" style="display:none">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="resto-cats">
+        <button type="button" class="cat-pill active" onclick="filtrerPlats(this, '')">Tout</button>
+        {% regroup plats by categorie.nom as plats_by_cat %}
+        {% for cat in plats_by_cat %}
+        <button type="button" class="cat-pill" onclick="filtrerPlats(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
+        {% endfor %}
+      </div>
+      <div style="position:relative;margin-bottom:10px">
+        <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
+        <input type="text" id="resto-search" placeholder="Rechercher un plat..." oninput="filtrerPlats(null,null)"
+          style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
+      </div>
+      <div id="resto-list" style="max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
+        {% for p in plats %}
+        <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
+             data-nom="{{ p.nom|escapejs }}" data-prix="{{ p.prix }}"
+             onclick="ajouterAuPanier('restaurant', this)">
+          <div style="flex:1">
+            <div class="art-nom">{{ p.nom }}</div>
+            <div class="art-cat">{{ p.categorie.nom }}</div>
           </div>
-          {% endfor %}
+          <div style="text-align:right">
+            <div class="art-prix">{{ p.prix|montant }} F</div>
+          </div>
         </div>
-        <div id="espace-selected-info" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d;font-weight:500"></div>
-        <div style="margin-top:8px;font-size:11px;color:#7a8b9c">La quantité correspond au nombre d'heures de location.</div>
-        {% else %}
-        <div style="text-align:center;padding:30px;color:#b0b8c1;font-size:13px">Aucun espace disponible actuellement.</div>
-        {% endif %}
+        {% endfor %}
       </div>
+      <div style="font-size:11px;color:#7a8b9c;margin-top:6px">Cliquez sur un plat pour l'ajouter au panier — recliquez pour augmenter la quantité.</div>
+    </div>
 
-      <!-- AUTRE -->
-      <div id="field-autre" class="service-field" style="display:none">
-        <div class="form-group">
-          <label>Description</label>
-          <input type="text" name="description" class="form-control" placeholder="Ex: Blanchisserie, Taxi, Room service…">
+    <!-- ESPACE LOCATION -->
+    <div id="field-espace" class="service-field" style="display:none">
+      {% if espaces %}
+      <div id="espace-list" style="max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px;margin-bottom:10px">
+        <input type="hidden" id="espace-selected-id" value="">
+        {% for e in espaces %}
+        <div class="art-item" data-id="{{ e.id }}" data-nom="{{ e.nom|escapejs }}" data-prix="{{ e.prix_heure }}"
+             onclick="selectionnerEspace(this)">
+          <div style="flex:1">
+            <div class="art-nom">{{ e.nom }}</div>
+            <div class="art-cat">{{ e.get_type_display|default:"Espace" }} · {{ e.capacite }} pers.</div>
+          </div>
+          <div style="text-align:right">
+            <div class="art-prix">{{ e.prix_heure|montant }} F/h</div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Prix Unitaire (FCFA)</label>
-          <input type="number" name="prix" class="form-control">
-        </div>
+        {% endfor %}
       </div>
-
-      <!-- EN COURS -->
-      <div id="field-encours" class="service-field" style="display:none">
-        <div style="font-size:12px;color:#5a6b7c;margin-bottom:8px">Dépenses actuelles du client — modifiables avant le check-out.</div>
-        <div id="hotel-encours-list" style="max-height:260px;overflow-y:auto">
-          <div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Chargement...</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:12px;font-weight:600;color:#3d4f63;white-space:nowrap">Nb d'heures :</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" onclick="changerQtyEspace(-1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #d4dce8;background:white;font-size:14px;cursor:pointer">−</button>
+          <input type="number" id="svc-espace-qty" value="1" min="1" style="width:52px;text-align:center;border:1px solid #d4dce8;border-radius:8px;padding:5px;font-size:14px;font-weight:600">
+          <button type="button" onclick="changerQtyEspace(1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #d4dce8;background:white;font-size:14px;cursor:pointer">+</button>
         </div>
-        <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between">
-          <span style="font-size:12px;font-weight:600;color:#3d4f63">Total consommations</span>
-          <span id="hotel-encours-total" style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
-        </div>
-      </div>
-
-      <!-- Quantité -->
-      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e8edf5">
-        <label style="font-size:13px;font-weight:600;color:#1a2535;white-space:nowrap;margin:0">Quantité</label>
-        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
-          <button type="button" onclick="changerQty(-1)" style="width:32px;height:32px;border-radius:8px;border:1px solid #d4dce8;background:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3d4f63">−</button>
-          <input type="number" name="quantite" id="svc-qty" value="1" min="1" style="width:52px;text-align:center;border:1px solid #d4dce8;border-radius:8px;padding:6px;font-size:14px;font-weight:600;color:#1a2535">
-          <button type="button" onclick="changerQty(1)" style="width:32px;height:32px;border-radius:8px;border:1px solid #d4dce8;background:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3d4f63">+</button>
-        </div>
-      </div>
-
-      <!-- Total estimé -->
-      <div id="svc-total-row" style="display:none;margin-top:8px;text-align:right;font-size:13px;color:#2563eb;font-weight:600"></div>
-
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button type="button" onclick="closeModal('modalAddService')" class="btn-hotel" style="flex:1">Annuler</button>
-        <button type="submit" class="btn-hotel primary" style="flex:2">
-          <i class="fas fa-plus"></i> Ajouter à la commande
+        <button type="button" onclick="ajouterEspaceAuPanier()"
+                style="padding:7px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">
+          + Ajouter au panier
         </button>
       </div>
-    </form>
+      {% else %}
+      <div style="text-align:center;padding:30px;color:#b0b8c1;font-size:13px">Aucun espace disponible actuellement.</div>
+      {% endif %}
+    </div>
+
+    <!-- AUTRE -->
+    <div id="field-autre" class="service-field" style="display:none">
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="autre-desc" class="form-control" placeholder="Ex: Blanchisserie, Taxi, Room service…">
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label>Prix Unitaire (FCFA)</label>
+          <input type="number" id="autre-prix" class="form-control" min="0">
+        </div>
+        <div class="form-group" style="width:80px">
+          <label>Qté</label>
+          <input type="number" id="autre-qty" class="form-control" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <button type="button" onclick="ajouterAutreAuPanier()"
+                  style="padding:9px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+            + Ajouter au panier
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EN COURS -->
+    <div id="field-encours" class="service-field" style="display:none">
+      <div style="font-size:12px;color:#5a6b7c;margin-bottom:8px">Dépenses actuelles du client — modifiables avant le check-out.</div>
+      <div id="hotel-encours-list" style="max-height:260px;overflow-y:auto">
+        <div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Chargement...</div>
+      </div>
+      <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between">
+        <span style="font-size:12px;font-weight:600;color:#3d4f63">Total consommations</span>
+        <span id="hotel-encours-total" style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
+      </div>
+    </div>
+
+    <!-- PANIER -->
+    <div id="panier-section" style="display:none;margin-top:14px;border:2px solid #2563eb33;border-radius:12px;padding:12px;background:#f0f6ff">
+      <div style="font-size:12px;font-weight:700;color:#1a2535;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        🛒 Panier
+        <span id="panier-badge" style="background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px">0</span>
+      </div>
+      <div id="panier-items"></div>
+      <div id="panier-total-row" style="text-align:right;padding-top:8px;border-top:1px solid #bfdbfe;font-size:14px;font-weight:700;color:#2563eb;margin-top:4px"></div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button type="button" onclick="closeModal('modalAddService')" class="btn-hotel" style="flex:1">Annuler</button>
+      <button type="button" onclick="soumettreCommande()" class="btn-hotel primary" style="flex:2" id="btn-soumettre-commande">
+        <i class="fas fa-check"></i> Confirmer la commande
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1667,47 +1678,180 @@
             });
     }
 
+    let panier = [];
+
     function openServiceModal(resId, clientName, roomNum) {
         document.getElementById('service-room-info').textContent = 'Client : ' + clientName + '  —  Chambre ' + roomNum;
         document.getElementById('service-res-id').value = resId;
-        const form = document.getElementById('formAddService');
-        const urlTemplate = "{% url 'hotel:ajouter_consommation' 0 %}";
-        form.action = urlTemplate.replace('0', resId);
-        // Reset complet
+        // Reset panier et UI
+        panier = [];
+        renderPanier();
         setServiceType('bar');
-        document.getElementById('svc-qty').value = 1;
-        document.getElementById('svc-total-row').style.display = 'none';
-        document.getElementById('bar-selected-id').value = '';
-        document.getElementById('bar-selected-info').style.display = 'none';
-        document.getElementById('resto-selected-id').value = '';
-        document.getElementById('resto-selected-info').style.display = 'none';
         const espaceSel = document.getElementById('espace-selected-id');
-        if (espaceSel) { espaceSel.value = ''; document.getElementById('espace-selected-info').style.display = 'none'; }
+        if (espaceSel) espaceSel.value = '';
+        document.querySelectorAll('#espace-list .art-item').forEach(i => i.classList.remove('selected'));
+        document.getElementById('svc-espace-qty').value = 1;
+        document.getElementById('autre-desc').value = '';
+        document.getElementById('autre-prix').value = '';
+        document.getElementById('autre-qty').value = 1;
         document.getElementById('bar-search').value = '';
         document.getElementById('resto-search').value = '';
-        document.querySelectorAll('.art-item').forEach(i => { i.classList.remove('selected','hidden'); });
+        document.querySelectorAll('.art-item').forEach(i => i.classList.remove('selected','hidden','panier-added'));
         filtrerBoissons._cat = ''; filtrerPlats._cat = '';
         document.querySelectorAll('#bar-cats .cat-pill, #resto-cats .cat-pill').forEach(p => p.classList.remove('active'));
-        const firstCats = document.querySelectorAll('#bar-cats .cat-pill, #resto-cats .cat-pill');
-        if (firstCats[0]) firstCats[0].classList.add('active');
+        document.querySelectorAll('#bar-cats .cat-pill:first-child, #resto-cats .cat-pill:first-child').forEach(p => p.classList.add('active'));
         openModal('modalAddService');
     }
 
     function setServiceType(type) {
-        document.getElementById('service-type-val').value = type;
         document.querySelectorAll('.service-field').forEach(el => el.style.display = 'none');
         document.getElementById('field-' + type).style.display = 'block';
         document.querySelectorAll('.svc-pill').forEach(p => p.classList.remove('active'));
         document.querySelector(`.svc-pill[data-type="${type}"]`).classList.add('active');
-        document.getElementById('svc-total-row').style.display = 'none';
-        // Masquer bouton Ajouter sur l'onglet En cours
-        const btnAjouter = document.querySelector('#modalAddService button[type="submit"]');
-        const qtySection = document.getElementById('svc-qty')?.closest('div[style*="display:flex"]');
+        const btnSoumettre = document.getElementById('btn-soumettre-commande');
         if (type === 'encours') {
-            if (btnAjouter) btnAjouter.style.display = 'none';
+            if (btnSoumettre) btnSoumettre.style.display = 'none';
             chargerHotelEnCours();
         } else {
-            if (btnAjouter) btnAjouter.style.display = '';
+            if (btnSoumettre) btnSoumettre.style.display = '';
+        }
+    }
+
+    function ajouterAuPanier(type, el) {
+        const id = parseInt(el.dataset.id);
+        const nom = el.dataset.nom || el.querySelector('.art-nom').textContent.trim();
+        const prix = parseFloat(el.dataset.prix) || 0;
+        const icon = type === 'bar' ? '🍸' : '🍽️';
+        const existing = panier.find(i => i.type === type && i.id === id);
+        if (existing) {
+            existing.qty++;
+        } else {
+            panier.push({type, id, nom, prix, qty: 1, icon});
+        }
+        // Indicateur visuel bref
+        el.classList.add('panier-added');
+        setTimeout(() => el.classList.remove('panier-added'), 500);
+        renderPanier();
+    }
+
+    function selectionnerEspace(el) {
+        document.querySelectorAll('#espace-list .art-item').forEach(i => i.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('espace-selected-id').value = el.dataset.id;
+    }
+
+    function changerQtyEspace(delta) {
+        const input = document.getElementById('svc-espace-qty');
+        input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+    }
+
+    function ajouterEspaceAuPanier() {
+        const id = parseInt(document.getElementById('espace-selected-id').value);
+        if (!id) { alert('Sélectionnez d\'abord un espace.'); return; }
+        const el = document.querySelector(`#espace-list .art-item[data-id="${id}"]`);
+        const nom = el.dataset.nom || el.querySelector('.art-nom').textContent.trim();
+        const prix = parseFloat(el.dataset.prix) || 0;
+        const qty = Math.max(1, parseInt(document.getElementById('svc-espace-qty').value) || 1);
+        const existing = panier.find(i => i.type === 'espace' && i.id === id);
+        if (existing) { existing.qty = qty; }
+        else { panier.push({type: 'espace', id, nom, prix, qty, icon: '🎪'}); }
+        renderPanier();
+    }
+
+    function ajouterAutreAuPanier() {
+        const desc = document.getElementById('autre-desc').value.trim();
+        const prix = parseFloat(document.getElementById('autre-prix').value) || 0;
+        const qty  = Math.max(1, parseInt(document.getElementById('autre-qty').value) || 1);
+        if (!desc) { alert('Saisissez une description.'); return; }
+        if (!prix)  { alert('Saisissez un prix.'); return; }
+        panier.push({type: 'autre', id: null, nom: desc, prix, qty, icon: '⚙️'});
+        document.getElementById('autre-desc').value = '';
+        document.getElementById('autre-prix').value = '';
+        document.getElementById('autre-qty').value = 1;
+        renderPanier();
+    }
+
+    function modifPanierQty(idx, delta) {
+        const item = panier[idx];
+        const newQty = item.qty + delta;
+        if (newQty <= 0) {
+            panier.splice(idx, 1);
+        } else {
+            item.qty = newQty;
+        }
+        renderPanier();
+    }
+
+    function retirerDuPanier(idx) {
+        panier.splice(idx, 1);
+        renderPanier();
+    }
+
+    function renderPanier() {
+        const section = document.getElementById('panier-section');
+        const itemsDiv = document.getElementById('panier-items');
+        const badge   = document.getElementById('panier-badge');
+        const totalRow = document.getElementById('panier-total-row');
+        const totalArticles = panier.reduce((s, i) => s + i.qty, 0);
+        if (badge) badge.textContent = totalArticles;
+        if (panier.length === 0) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        if (section) section.style.display = 'block';
+        let total = 0, html = '';
+        panier.forEach((item, idx) => {
+            const sous = item.prix * item.qty;
+            total += sous;
+            html += `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:4px;background:white">
+              <div style="flex:1;min-width:0;overflow:hidden">
+                <span style="font-size:12px;font-weight:600;color:#1a2535">${item.icon} ${item.nom}</span>
+                <span style="font-size:11px;color:#7a8b9c;margin-left:6px">${item.prix.toLocaleString('fr-FR')} F/u</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+                <button type="button" onclick="modifPanierQty(${idx},-1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px;line-height:1">−</button>
+                <span style="font-size:13px;font-weight:700;min-width:20px;text-align:center">${item.qty}</span>
+                <button type="button" onclick="modifPanierQty(${idx},1)" style="width:22px;height:22px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px;line-height:1">+</button>
+              </div>
+              <div style="font-size:12px;font-weight:700;color:#2563eb;min-width:65px;text-align:right;flex-shrink:0">${sous.toLocaleString('fr-FR')} F</div>
+              <button type="button" onclick="retirerDuPanier(${idx})" title="Retirer" style="background:#fee2e2;border:none;color:#dc2626;cursor:pointer;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0">×</button>
+            </div>`;
+        });
+        if (itemsDiv) itemsDiv.innerHTML = html;
+        if (totalRow) totalRow.innerHTML = `Total : <strong>${total.toLocaleString('fr-FR')} F</strong>`;
+    }
+
+    async function soumettreCommande() {
+        if (panier.length === 0) { alert('Le panier est vide — ajoutez au moins un article.'); return; }
+        const resId     = document.getElementById('service-res-id').value;
+        const serveurId = document.getElementById('svc-serveur').value;
+        const btn = document.getElementById('btn-soumettre-commande');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Envoi en cours…';
+        const urlTemplate = "{% url 'hotel:ajouter_consommation' 0 %}";
+        const url = urlTemplate.replace('0', resId);
+        try {
+            const r = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({items: panier, serveur_id: serveurId || null})
+            });
+            const d = await r.json();
+            if (d.success) {
+                closeModal('modalAddService');
+                location.reload();
+            } else {
+                alert(d.error || 'Erreur lors de la commande');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
+            }
+        } catch(e) {
+            alert('Erreur réseau — réessayez.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
         }
     }
 
@@ -1811,63 +1955,6 @@
     }
     filtrerPlats._cat = '';
 
-    function selectionnerEspace(el) {
-        document.querySelectorAll('#espace-list .art-item').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
-        document.getElementById('espace-selected-id').value = el.dataset.id;
-        const info = document.getElementById('espace-selected-info');
-        info.style.display = 'block';
-        info.innerHTML = '✓ ' + el.querySelector('.art-nom').textContent + ' sélectionné';
-        majTotal(parseFloat(el.dataset.prix) || 0);
-    }
-
-    function selectionnerArticle(type, el) {
-        const list = type === 'bar' ? '#bar-list' : '#resto-list';
-        document.querySelectorAll(list + ' .art-item').forEach(i => i.classList.remove('selected'));
-        el.classList.add('selected');
-        const id = el.dataset.id;
-        const prix = parseFloat(el.dataset.prix) || 0;
-        const nom = el.querySelector('.art-nom').textContent;
-        if (type === 'bar') {
-            document.getElementById('bar-selected-id').value = id;
-            const info = document.getElementById('bar-selected-info');
-            info.style.display = 'block';
-            info.innerHTML = '✓ ' + nom + ' sélectionné';
-        } else {
-            document.getElementById('resto-selected-id').value = id;
-            const info = document.getElementById('resto-selected-info');
-            info.style.display = 'block';
-            info.innerHTML = '✓ ' + nom + ' sélectionné';
-        }
-        // Mettre à jour le total
-        majTotal(prix);
-    }
-
-    function majTotal(prix) {
-        const qty = parseInt(document.getElementById('svc-qty').value) || 1;
-        const total = prix * qty;
-        const row = document.getElementById('svc-total-row');
-        if (total > 0) {
-            row.style.display = 'block';
-            row.textContent = 'Total estimé : ' + total.toLocaleString('fr-FR') + ' F';
-        }
-    }
-
-    function changerQty(delta) {
-        const input = document.getElementById('svc-qty');
-        const val = Math.max(1, (parseInt(input.value) || 1) + delta);
-        input.value = val;
-        // Recalculer total
-        const selected = document.querySelector('#bar-list .art-item.selected, #resto-list .art-item.selected');
-        if (selected) majTotal(parseFloat(selected.dataset.prix) || 0);
-    }
-
-    function toggleServiceFields() {
-        const type = document.getElementById('service-type-val').value;
-        document.querySelectorAll('.service-field').forEach(el => el.style.display = 'none');
-        const panel = document.getElementById('field-' + type);
-        if (panel) panel.style.display = 'block';
-    }
 
     function setupPriceCalculation(modalId) {
         const form = document.querySelector('#' + modalId + ' form');

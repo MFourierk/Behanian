@@ -795,72 +795,96 @@ def finalize_checkout(request, ticket_id):
 @require_module_access('hotel')
 @transaction.atomic
 def ajouter_consommation(request, reservation_id):
-    """Ajouter un service/consommation à une réservation"""
-    if request.method == 'POST':
-        reservation = get_object_or_404(Reservation, id=reservation_id)
-        type_service = request.POST.get('type_service')
-        quantite = int(request.POST.get('quantite', 1))
-        
-        conso = Consommation(reservation=reservation, type_service=type_service, quantite=quantite)
+    """Ajouter un ou plusieurs services/consommations à une réservation (JSON multi-items)"""
+    if request.method != 'POST':
+        return redirect(f"{reverse('hotel:index')}?tab=checkinout")
 
-        # Serveur assigné (optionnel)
-        serveur_id = request.POST.get('serveur_id')
-        if serveur_id:
-            from django.contrib.auth.models import User as AuthUser
-            try:
-                conso.serveur = AuthUser.objects.get(pk=serveur_id, is_active=True)
-            except AuthUser.DoesNotExist:
-                pass
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Requête invalide'}, status=400)
+
+    items = data.get('items', [])
+    if not items:
+        return JsonResponse({'success': False, 'error': 'Panier vide'}, status=400)
+
+    # Résoudre le serveur une seule fois pour toute la commande
+    serveur = None
+    serveur_id = data.get('serveur_id')
+    if serveur_id:
+        from django.contrib.auth.models import User as AuthUser
+        try:
+            serveur = AuthUser.objects.get(pk=serveur_id, is_active=True)
+        except AuthUser.DoesNotExist:
+            pass
+
+    errors = []
+    created = 0
+
+    for item in items:
+        type_service = item.get('type')
+        quantite = max(1, int(item.get('qty', 1)))
+        item_id = item.get('id')
+
+        conso = Consommation(
+            reservation=reservation,
+            type_service=type_service,
+            quantite=quantite,
+            serveur=serveur,
+        )
 
         try:
             if type_service == 'bar':
-                boisson_id = request.POST.get('boisson_id')
-                boisson = get_object_or_404(BoissonBar, id=boisson_id)
+                boisson = get_object_or_404(BoissonBar, id=item_id)
                 if boisson.quantite_stock < quantite:
-                    messages.error(request, f"Stock insuffisant pour {boisson.nom} (Reste: {boisson.quantite_stock})")
-                    return redirect(f"{reverse('hotel:index')}?tab=checkinout")
-                
+                    errors.append(f"Stock insuffisant pour {boisson.nom} (reste : {boisson.quantite_stock})")
+                    continue
                 conso.boisson = boisson
                 conso.nom = boisson.nom
                 conso.prix_unitaire = boisson.prix
-                
+                conso.save()
+
             elif type_service == 'restaurant':
                 from cuisine.utils import check_stock_availability, process_stock_movement
-                plat_id = request.POST.get('plat_id')
-                plat = get_object_or_404(PlatMenu, id=plat_id)
+                plat = get_object_or_404(PlatMenu, id=item_id)
                 ok, msg = check_stock_availability(plat, quantite)
                 if not ok:
-                    messages.error(request, f'Stock insuffisant pour {plat.nom} — {msg}')
-                    return redirect(f"{reverse('hotel:index')}?tab=checkinout")
+                    errors.append(f"Stock insuffisant pour {plat.nom} — {msg}")
+                    continue
                 conso.plat = plat
                 conso.nom = plat.nom
                 conso.prix_unitaire = plat.prix
+                conso.save()
+                process_stock_movement(plat, quantite, 'sortie', request.user,
+                                       f'Hotel Chambre {reservation.chambre.numero}')
 
             elif type_service == 'espace':
-                espace_id = request.POST.get('espace_id')
-                espace = get_object_or_404(EspaceEvenementiel, id=espace_id)
+                espace = get_object_or_404(EspaceEvenementiel, id=item_id)
                 conso.espace = espace
                 conso.nom = espace.nom
-                conso.prix_unitaire = espace.prix_heure # Facturation à l'heure par défaut
-                
+                conso.prix_unitaire = espace.prix_heure
+                conso.save()
+
             elif type_service == 'autre':
-                conso.nom = request.POST.get('description')
-                conso.prix_unitaire = Decimal(request.POST.get('prix'))
-                
-            conso.save()  # Déclenche la gestion du stock bar via MouvementStockBar.save()
-            # Déduction stock cuisine pour les plats restaurant
-            if type_service == 'restaurant' and conso.plat:
-                from cuisine.utils import process_stock_movement
-                process_stock_movement(
-                    conso.plat, quantite, 'sortie', request.user,
-                    f'Hotel Chambre {reservation.chambre.numero}'
-                )
-            messages.success(request, "Service ajouté avec succès.")
-            
+                conso.nom = item.get('nom', '')
+                conso.prix_unitaire = Decimal(str(item.get('prix', 0)))
+                conso.save()
+
+            else:
+                errors.append(f"Type inconnu : {type_service}")
+                continue
+
+            created += 1
+
         except Exception as e:
-            messages.error(request, f"Erreur lors de l'ajout du service: {str(e)}")
-        
-    return redirect(f"{reverse('hotel:index')}?tab=checkinout")
+            errors.append(str(e))
+
+    if created == 0 and errors:
+        return JsonResponse({'success': False, 'error' : ' | '.join(errors)})
+
+    return JsonResponse({'success': True, 'created': created, 'warnings': errors})
 
 
 @require_module_access('hotel')
