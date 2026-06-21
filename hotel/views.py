@@ -837,6 +837,7 @@ def ajouter_consommation(request, reservation_id):
 
         try:
             if type_service == 'bar':
+                from bar.models import MouvementStockBar
                 boisson = get_object_or_404(BoissonBar, id=item_id)
                 if boisson.quantite_stock < quantite:
                     errors.append(f"Stock insuffisant pour {boisson.nom} (reste : {boisson.quantite_stock})")
@@ -845,6 +846,11 @@ def ajouter_consommation(request, reservation_id):
                 conso.nom = boisson.nom
                 conso.prix_unitaire = boisson.prix
                 conso.save()
+                MouvementStockBar.objects.create(
+                    boisson=boisson, type_mouvement='sortie', quantite=quantite,
+                    commentaire=f'Hotel Chambre {reservation.chambre.numero}',
+                    utilisateur=request.user,
+                )
 
             elif type_service == 'restaurant':
                 from cuisine.utils import check_stock_availability, process_stock_movement

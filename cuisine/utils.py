@@ -48,7 +48,7 @@ def process_stock_movement(plat, quantity, movement_type, user, reference=""):
         return
 
     fiche = plat.fiche_technique
-    type_mvt = 'production' if movement_type == 'sortie' else 'inventaire'
+    type_mvt = 'production' if movement_type == 'sortie' else 'inventaire_excedent'
 
     for ligne in fiche.lignes.select_related('ingredient').all():
         qte = ligne.quantite * quantity

@@ -961,8 +961,6 @@ def ajouter_boisson_commande(request):
                 )
 
             # Décrémenter stock Cave
-            boisson.quantite_stock = max(0, boisson.quantite_stock - 1)
-            boisson.save()
             MouvementStockBar.objects.create(
                 boisson=boisson,
                 type_mouvement='sortie',
@@ -1077,8 +1075,6 @@ def ajouter_forfait_commande(request):
                             f"Forfait {forfait.nom} — Commande #{commande.id}"
                         )
                 elif lf.boisson:
-                    lf.boisson.quantite_stock = max(0, lf.boisson.quantite_stock - lf.quantite)
-                    lf.boisson.save()
                     from bar.models import MouvementStockBar
                     MouvementStockBar.objects.create(
                         boisson=lf.boisson,

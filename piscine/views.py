@@ -269,8 +269,6 @@ def enregistrer_entree(request):
                             acces=acces, produit=nom_article,
                             quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
                         )
-                        b_sub.quantite_stock = max(0, b_sub.quantite_stock - ligne.quantite)
-                        b_sub.save()
                         MouvementStockBar.objects.create(
                             boisson=b_sub, type_mouvement='sortie', quantite=ligne.quantite,
                             commentaire=f'Menu VIP #{acces.id} (substitut)', utilisateur=request.user,
@@ -292,8 +290,6 @@ def enregistrer_entree(request):
                     )
                     if ligne.type_item == 'boisson' and ligne.boisson:
                         b = ligne.boisson
-                        b.quantite_stock = max(0, b.quantite_stock - ligne.quantite)
-                        b.save()
                         MouvementStockBar.objects.create(
                             boisson=b, type_mouvement='sortie', quantite=ligne.quantite,
                             commentaire=f'Menu VIP piscine #{acces.id}', utilisateur=request.user,
@@ -343,8 +339,8 @@ def ajouter_consommation(request, acces_id):
         if type_article == 'boisson':
             from bar.models import BoissonBar, MouvementStockBar
             boisson = get_object_or_404(BoissonBar, id=article_id)
-            if boisson.est_en_rupture:
-                return JsonResponse({'success': False, 'error': f'{boisson.nom} est en rupture de stock'})
+            if boisson.quantite_stock < quantite:
+                return JsonResponse({'success': False, 'error': f'Stock insuffisant pour {boisson.nom} (reste : {boisson.quantite_stock})'})
             ConsommationPiscine.objects.create(
                 acces=acces,
                 produit=boisson.nom,
@@ -352,8 +348,6 @@ def ajouter_consommation(request, acces_id):
                 prix_unitaire=boisson.prix,
                 serveur=serveur_obj,
             )
-            boisson.quantite_stock = max(0, boisson.quantite_stock - quantite)
-            boisson.save()
             MouvementStockBar.objects.create(
                 boisson=boisson, type_mouvement='sortie',
                 quantite=quantite, commentaire=f'Piscine #{acces.id}',

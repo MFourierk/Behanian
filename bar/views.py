@@ -1311,11 +1311,9 @@ def api_vente_create(request):
                         prix_unitaire=Decimal(str(l['prix'])),
                         serveur=serveur_obj,
                     )
-                    # Décrémenter stock quand même
+                    # Décrémenter stock
                     if boisson_obj:
                         qty = int(l['qty'])
-                        boisson_obj.quantite_stock = max(0, boisson_obj.quantite_stock - qty)
-                        boisson_obj.save()
                         MouvementStockBar.objects.create(
                             boisson=boisson_obj, type_mouvement='sortie',
                             quantite=qty, commentaire=f'Cave → Chambre {reservation.chambre.numero}',
@@ -1370,8 +1368,6 @@ def api_vente_create(request):
             try:
                 boisson = BoissonBar.objects.get(pk=int(l['id']))
                 qty     = int(l['qty'])
-                boisson.quantite_stock = max(0, boisson.quantite_stock - qty)
-                boisson.save()
                 MouvementStockBar.objects.create(
                     boisson        = boisson,
                     type_mouvement = 'sortie',
