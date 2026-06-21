@@ -249,7 +249,7 @@
             <div class="acces-det">Ch. {{ res.chambre.numero }} · Départ {{ res.date_depart|date:"d/m" }}</div>
           </div>
           <button class="btn-p btn-success" style="padding:5px 10px;font-size:11px"
-            onclick="ouvrirEntreeResident('{{ res.id }}', '{{ res.client.nom_complet }}', '{{ res.chambre.numero }}')">
+            onclick="ouvrirEntreeResident('{{ res.id }}', '{{ res.client.nom_complet|escapejs }}', '{{ res.chambre.numero }}')">
             <i class="fas fa-swimming-pool"></i>
           </button>
         </div>

@@ -136,13 +136,13 @@
               <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Modifier" onclick="ouvrirModifier({{ u.pk }},'{{ u.username|escapejs }}','{{ u.first_name|escapejs }}','{{ u.last_name|escapejs }}','{{ u.email|escapejs }}','{{ groupe.name|default:''|escapejs }}')">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Réinitialiser mot de passe" onclick="ouvrirResetPwd({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
+              <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Réinitialiser mot de passe" onclick="ouvrirResetPwd({{ u.pk }},'{{ u.get_full_name|default:u.username|escapejs }}')">
                 <i class="fas fa-key"></i>
               </button>
               <button class="btn-a {% if u.is_active %}btn-rouge{% else %}btn-vert{% endif %}" style="padding:5px 8px;font-size:11px" title="{% if u.is_active %}Désactiver{% else %}Activer{% endif %}" onclick="toggleUser({{ u.pk }}, this)">
                 <i class="fas fa-{% if u.is_active %}ban{% else %}check{% endif %}"></i>
               </button>
-              <button class="btn-a" style="padding:5px 8px;font-size:11px;background:#7f1d1d;color:white" title="Supprimer définitivement" onclick="ouvrirSupprimer({{ u.pk }},'{{ u.get_full_name|default:u.username }}')">
+              <button class="btn-a" style="padding:5px 8px;font-size:11px;background:#7f1d1d;color:white" title="Supprimer définitivement" onclick="ouvrirSupprimer({{ u.pk }},'{{ u.get_full_name|default:u.username|escapejs }}')">
                 <i class="fas fa-trash"></i>
               </button>
             </div>

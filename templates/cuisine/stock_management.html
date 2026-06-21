@@ -421,8 +421,8 @@
                             <td>
                                 <div class="action-group">
                                     <a href="{% url 'cuisine:ingredient_edit' ing.pk %}" class="btn-action btn-edit" title="Modifier"><i class="fas fa-pencil-alt"></i></a>
-                                    <button class="btn-action btn-ok" title="Entrée stock" onclick="ouvrirModalMouvement('entree', {{ ing.pk }}, '{{ ing.nom }}')"><i class="fas fa-plus"></i></button>
-                                    <button class="btn-action btn-del" title="Sortie stock" onclick="ouvrirModalMouvement('sortie', {{ ing.pk }}, '{{ ing.nom }}')"><i class="fas fa-minus"></i></button>
+                                    <button class="btn-action btn-ok" title="Entrée stock" onclick="ouvrirModalMouvement('entree', {{ ing.pk }}, '{{ ing.nom|escapejs }}')"><i class="fas fa-plus"></i></button>
+                                    <button class="btn-action btn-del" title="Sortie stock" onclick="ouvrirModalMouvement('sortie', {{ ing.pk }}, '{{ ing.nom|escapejs }}')"><i class="fas fa-minus"></i></button>
                                 </div>
                             </td>
                         </tr>

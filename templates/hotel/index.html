@@ -1163,7 +1163,7 @@
           <input type="hidden" name="boisson_id" id="bar-selected-id" value="">
           {% for b in boissons %}
           <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
-               data-prix="{{ b.prix|montant }}" data-stock="{{ b.quantite_stock }}"
+               data-prix="{{ b.prix }}" data-stock="{{ b.quantite_stock }}"
                onclick="selectionnerArticle('bar', this)">
             <div style="flex:1">
               <div class="art-nom">{{ b.nom }}</div>
@@ -1199,7 +1199,7 @@
           <input type="hidden" name="plat_id" id="resto-selected-id" value="">
           {% for p in plats %}
           <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
-               data-prix="{{ p.prix|montant }}"
+               data-prix="{{ p.prix }}"
                onclick="selectionnerArticle('resto', this)">
             <div style="flex:1">
               <div class="art-nom">{{ p.nom }}</div>
@@ -1220,7 +1220,7 @@
         <div id="espace-list" style="max-height:220px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
           <input type="hidden" name="espace_id" id="espace-selected-id" value="">
           {% for e in espaces %}
-          <div class="art-item" data-id="{{ e.id }}" data-prix="{{ e.prix_heure|montant }}"
+          <div class="art-item" data-id="{{ e.id }}" data-prix="{{ e.prix_heure }}"
                onclick="selectionnerEspace(this)">
             <div style="flex:1">
               <div class="art-nom">{{ e.nom }}</div>
