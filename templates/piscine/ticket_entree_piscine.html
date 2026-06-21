@@ -1,0 +1,166 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket Piscine {{ acces.nom_client }}</title>
+    <style>
+        @page { size: 80mm auto; margin: 3mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            background: #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 90vh;
+        }
+        .ticket {
+            width: 300px;
+            background: white;
+            padding: 14px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+        }
+        .center { text-align: center; }
+        .bold   { font-weight: bold; }
+        .sep-solid { border: none; border-top: 2px solid #000; margin: 7px 0; }
+        .sep-dash  { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+        .meta-row  { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; }
+        .meta-label{ font-weight: bold; }
+
+        /* Numéro d'entrée en grand */
+        .numero-bloc {
+            text-align: center;
+            padding: 12px 0 8px;
+        }
+        .numero-label {
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #555;
+        }
+        .numero-val {
+            font-size: 42px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #000;
+            line-height: 1.1;
+            margin-top: 4px;
+        }
+        .numero-instruction {
+            font-size: 10px;
+            color: #555;
+            margin-top: 6px;
+            font-style: italic;
+            border: 1px dashed #999;
+            padding: 5px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .footer { margin-top: 10px; font-size: 9px; text-align: center; line-height: 1.6; }
+
+        .no-print { text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        .btn-imprimer {
+            padding: 10px 24px; font-size: 15px; font-weight: bold;
+            background: #1a1225; color: #c9a84c;
+            border: 2px solid #c9a84c; border-radius: 8px; cursor: pointer;
+        }
+        .btn-imprimer:hover { background: #c9a84c; color: #1a1225; }
+        .btn-fermer {
+            padding: 10px 24px; font-size: 15px; font-weight: bold;
+            background: #6c757d; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .ticket { box-shadow: none; width: 100%; padding: 4px; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="ticket">
+
+    <!-- EN-TÊTE -->
+    <div class="center">
+        <img src="{% static 'images/Logo.png' %}" alt="Logo"
+             style="width:50px;height:50px;object-fit:contain;margin-bottom:4px"
+             onerror="this.style.display='none'">
+        <div style="font-size:13px;font-weight:bold;letter-spacing:1px">COMPLEXE HÔTELIER BEHANIAN</div>
+        <div style="font-size:9px;font-style:italic;margin-top:2px">Piscine</div>
+        <div style="font-size:9px;margin-top:2px">Yopougon Beago — Tél: 07 58 29 11 10</div>
+    </div>
+    <hr class="sep-solid">
+
+    <!-- META -->
+    <div class="meta-row">
+        <span class="meta-label">Date :</span>
+        <span>{{ acces.date_entree|date:"d/m/Y" }}</span>
+    </div>
+    <div class="meta-row">
+        <span class="meta-label">Heure :</span>
+        <span>{{ acces.date_entree|date:"H:i" }} GMT</span>
+    </div>
+    <div class="meta-row">
+        <span class="meta-label">Type :</span>
+        <span>{% if acces.type_client == 'heberge' %}Résident Hôtel{% elif acces.forfait %}VIP — {{ acces.forfait.nom }}{% else %}Visiteur{% endif %}</span>
+    </div>
+    <div class="meta-row">
+        <span class="meta-label">Personnes :</span>
+        <span>
+            {% if acces.nb_adultes %}{{ acces.nb_adultes }} adulte{% if acces.nb_adultes > 1 %}s{% endif %}{% endif %}
+            {% if acces.nb_enfants %} · {{ acces.nb_enfants }} enfant{% if acces.nb_enfants > 1 %}s{% endif %}{% endif %}
+        </span>
+    </div>
+    {% if acces.reservation_hotel %}
+    <div class="meta-row">
+        <span class="meta-label">Chambre :</span>
+        <span>Ch. {{ acces.reservation_hotel.chambre.numero }} — {{ acces.reservation_hotel.client.nom_complet }}</span>
+    </div>
+    {% endif %}
+    <div class="meta-row">
+        <span class="meta-label">Entrée :</span>
+        <span>{% if acces.prix_total > 0 %}{{ acces.prix_total|floatformat:0 }} FCFA{% else %}Gratuite{% endif %}</span>
+    </div>
+    {% if acces.enregistre_par %}
+    <div class="meta-row">
+        <span class="meta-label">Agent :</span>
+        <span>{{ acces.enregistre_par.get_full_name|default:acces.enregistre_par.username }}</span>
+    </div>
+    {% endif %}
+
+    <hr class="sep-dash">
+
+    <!-- NUMÉRO EN GRAND -->
+    <div class="numero-bloc">
+        <div class="numero-label">Votre numéro d'entrée</div>
+        <div class="numero-val">{{ numero_affiche }}</div>
+        <div class="numero-instruction">
+            Présentez ce ticket<br>pour toute commande
+        </div>
+    </div>
+
+    <hr class="sep-solid">
+
+    <!-- PIED DE PAGE -->
+    <div class="footer">
+        Merci de votre visite<br>
+        <strong>Conservez ce ticket</strong>
+    </div>
+</div>
+
+<div class="no-print">
+    <button class="btn-imprimer" onclick="window.print()">🖨️ &nbsp; IMPRIMER</button>
+    <button class="btn-fermer"   onclick="window.close()">FERMER</button>
+</div>
+
+<script>
+    window.addEventListener('load', function(){ window.print(); });
+</script>
+</body>
+</html>

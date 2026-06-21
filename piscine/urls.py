@@ -13,4 +13,5 @@ urlpatterns = [
     path('api/forfait/<int:forfait_id>/dispo/', views.check_forfait_dispo, name='forfait_dispo'),
     path('consommation/<int:conso_id>/modifier/', views.modifier_consommation, name='modifier_conso'),
     path('consommation/<int:conso_id>/supprimer/', views.supprimer_consommation, name='supprimer_conso'),
+    path('entree/<int:acces_id>/ticket/', views.ticket_entree, name='ticket_entree'),
 ]

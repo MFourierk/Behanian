@@ -188,12 +188,13 @@
               <td style="font-weight:700;color:#2563eb">{{ a.total_general|montant }} F</td>
               <td>{% if a.date_sortie %}<span class="badge" style="background:#f1f5f9;color:#64748b">Sorti</span>{% else %}<span class="badge" style="background:#dcfce7;color:#15803d">Présent</span>{% endif %}</td>
               <td>
-                {% if not a.date_sortie %}
                 <div style="display:flex;gap:4px">
-                  <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
-                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
+                  <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" title="Réimprimer le ticket" onclick="window.open('{% url 'piscine:ticket_entree' 0 %}'.replace('/0/','/'+'{{ a.id }}'+'/'), '_blank','width=400,height=620')"><i class="fas fa-print"></i></button>
+                  {% if not a.date_sortie %}
+                  <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" title="Commander" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
+                  <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" title="Sortie / Encaisser" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
+                  {% endif %}
                 </div>
-                {% endif %}
               </td>
             </tr>
             {% endwith %}
@@ -228,6 +229,7 @@
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
               <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})">Sortie</button>
+              <button class="btn-p btn-outline" style="padding:3px 6px;font-size:9px;color:#7a8b9c" title="Réimprimer le ticket" onclick="window.open('{% url 'piscine:ticket_entree' 0 %}'.replace('/0/','/'+'{{ a.id }}'+'/'), '_blank','width=400,height=620')"><i class="fas fa-print"></i></button>
             </div>
           </div>
           {% endfor %}
@@ -769,7 +771,13 @@ async function validerEntree(){
   }
   const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
   const d=await r.json();
-  if(d.success){fermerModal('modalEntree');location.reload();}
+  if(d.success){
+    fermerModal('modalEntree');
+    // Ouvrir le ticket d'entrée pour impression immédiate
+    const ticketUrl = '{% url "piscine:ticket_entree" 0 %}'.replace('/0/', '/' + d.acces_id + '/');
+    window.open(ticketUrl, '_blank', 'width=400,height=620,scrollbars=yes');
+    setTimeout(()=>location.reload(), 600);
+  }
   else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
 }
 

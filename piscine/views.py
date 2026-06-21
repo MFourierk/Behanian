@@ -534,6 +534,25 @@ def check_forfait_dispo(request, forfait_id):
 
 
 @require_module_access('piscine')
+def ticket_entree(request, acces_id):
+    """Affiche le ticket d'entrée piscine (impression immédiate)."""
+    acces = get_object_or_404(AccesPiscine, id=acces_id)
+    # Extraire le numéro d'ordre depuis nom_client (ex: "Entrée N°003" → "003")
+    import re
+    m = re.search(r'N°\s*(\d+)', acces.nom_client)
+    if m:
+        numero_affiche = 'N°' + m.group(1)
+    elif acces.type_client == 'heberge' and acces.reservation_hotel:
+        numero_affiche = 'Ch.' + str(acces.reservation_hotel.chambre.numero)
+    else:
+        numero_affiche = 'N°' + str(acces.pk).zfill(3)
+    return render(request, 'piscine/ticket_entree_piscine.html', {
+        'acces': acces,
+        'numero_affiche': numero_affiche,
+    })
+
+
+@require_module_access('piscine')
 @require_POST
 def configurer_tarifs(request):
     """Configurer les tarifs piscine."""
