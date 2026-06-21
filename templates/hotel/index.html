@@ -1117,6 +1117,21 @@
       <input type="hidden" id="service-res-id" value="">
       {% csrf_token %}
 
+      <!-- SERVEUR -->
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;font-weight:700;color:#3d4f63;margin-bottom:5px">
+          <i class="fas fa-user-tie" style="color:#7c3aed;margin-right:4px"></i> Serveur / Serveuse
+        </label>
+        <select name="serveur_id" id="svc-serveur" style="width:100%;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;font-size:13px;color:#1a2535;background:white">
+          <option value="">— Non assigné —</option>
+          {% for agent in personnel_actif %}
+          <option value="{{ agent.pk }}"{% if agent.pk == request.user.pk %} selected{% endif %}>
+            {{ agent.get_full_name|default:agent.username }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
       <!-- TYPE PILLS -->
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <input type="hidden" name="type_service" id="service-type-val" value="bar">
@@ -1726,7 +1741,10 @@
                     html += `<div id="hc_${c.id}" style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #dde3ec;border-radius:8px;margin-bottom:6px;background:white">
                         <div style="flex:1;min-width:0">
                             <div style="font-size:12px;font-weight:600;color:#1a2535">${typeIcon} ${c.nom}</div>
-                            <div style="font-size:10px;color:#7a8b9c">${c.prix.toLocaleString('fr-FR')} F/u · ${c.type_label}</div>
+                            <div style="font-size:10px;color:#7a8b9c;display:flex;gap:8px;align-items:center;margin-top:2px">
+                              <span>${c.prix.toLocaleString('fr-FR')} F/u · ${c.type_label}</span>
+                              ${c.serveur ? `<span style="color:#7c3aed;font-weight:600"><i class="fas fa-user-tie"></i> ${c.serveur}</span>` : ''}
+                            </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:3px">
                             <button onclick="modifHotelConso(${c.id},-1)" style="width:24px;height:24px;border-radius:5px;border:1px solid #d4dce8;background:white;cursor:pointer;font-size:13px">−</button>

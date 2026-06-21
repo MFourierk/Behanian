@@ -214,6 +214,10 @@ class Consommation(models.Model):
     quantite = models.IntegerField(default=1)
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
     date_ajout = models.DateTimeField(auto_now_add=True)
+    serveur = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consommations_hotel', verbose_name="Serveur/Serveuse"
+    )
     
     class Meta:
         verbose_name = "Consommation"

@@ -591,9 +591,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         </select>
         <input type="text" id="inputRef" placeholder="Table / Chambre / Nom..." oninput="majTicketMeta()">
         <select id="selectServeur" onchange="majTicketMeta()">
-          <option value="">🧑‍🍳 Serveur</option>
+          <option value="" data-id="">🧑‍🍳 Serveur</option>
           {% for user in serveurs %}
-          <option value="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</option>
+          <option value="{{ user.get_full_name|default:user.username }}" data-id="{{ user.pk }}">{{ user.get_full_name|default:user.username }}</option>
           {% endfor %}
         </select>
         <div class="caissier-info">
@@ -783,7 +783,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 // STATE
 // ============================================================
 let tickets = {
-  1: { id: 1, nom: 'T-001', espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' }
+  1: { id: 1, nom: 'T-001', espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes' }
 };
 let ticketActifId = 1;
 let ticketCounter = 1;
@@ -915,7 +915,9 @@ function changerQty(index, delta) {
 function majTicketMeta() {
   tickets[ticketActifId].espace  = document.getElementById('selectEspace').value;
   tickets[ticketActifId].ref     = document.getElementById('inputRef').value;
-  tickets[ticketActifId].serveur = document.getElementById('selectServeur').value;
+  const selSrv = document.getElementById('selectServeur');
+  tickets[ticketActifId].serveur    = selSrv.value;
+  tickets[ticketActifId].serveur_id = selSrv.options[selSrv.selectedIndex]?.dataset?.id || null;
 }
 
 // ============================================================
@@ -925,7 +927,7 @@ function nouveauTicket() {
   ticketCounter++;
   const tid = ticketCounter; // capturer la valeur locale pour la closure
   const nom = `T-${String(tid).padStart(3, '0')}`;
-  tickets[tid] = { id: tid, nom, espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' };
+  tickets[tid] = { id: tid, nom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes' };
   ticketActifId = tid;
 
   const container = document.getElementById('ticketsAttente');
@@ -1085,7 +1087,7 @@ async function mettreOnChambre() {
     const payload = {
       ticket_nom: t.nom, lignes: t.lignes.map(l=>({id:l.id,nom:l.nom,prix:l.prix,qty:l.qty})),
       total, paiement: 'chambre', espace: t.espace, ref: t.ref,
-      serveur: serveurVal, montant_recu: 0, reservation_id: chambreLieeId,
+      serveur: serveurVal, serveur_id: t.serveur_id || null, montant_recu: 0, reservation_id: chambreLieeId,
       sur_chambre: true,
     };
     const resp = await fetch("{% url 'bar:api_vente' %}", {
@@ -1159,6 +1161,7 @@ async function confirmerPaiement() {
       espace       : t.espace,
       ref          : t.ref,
       serveur      : t.serveur || '',
+      serveur_id   : t.serveur_id || null,
       montant_recu   : montantRecu,
       reservation_id : chambreLieeId || (modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : ''),
     };

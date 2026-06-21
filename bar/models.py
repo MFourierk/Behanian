@@ -187,7 +187,11 @@ class MouvementStockBar(models.Model):
     quantite = models.IntegerField(verbose_name="Quantité")
     date = models.DateTimeField(auto_now_add=True)
     commentaire = models.TextField(blank=True, null=True)
-    utilisateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    utilisateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='mouvements_bar')
+    serveur = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ventes_bar', verbose_name="Serveur/Serveuse"
+    )
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None

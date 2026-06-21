@@ -1210,6 +1210,14 @@ def api_vente_create(request):
         ticket_nom   = data.get('ticket_nom', 'T-???')
         montant_recu = Decimal(str(data.get('montant_recu', total)))
         serveur_nom  = data.get('serveur', '')
+        serveur_id   = data.get('serveur_id')
+        serveur_obj  = None
+        if serveur_id:
+            from django.contrib.auth.models import User as AuthUser
+            try:
+                serveur_obj = AuthUser.objects.get(pk=int(serveur_id), is_active=True)
+            except (AuthUser.DoesNotExist, ValueError):
+                pass
 
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
@@ -1301,6 +1309,7 @@ def api_vente_create(request):
                         nom=f"[Cave] {l['nom']}",
                         quantite=int(l['qty']),
                         prix_unitaire=Decimal(str(l['prix'])),
+                        serveur=serveur_obj,
                     )
                     # Décrémenter stock quand même
                     if boisson_obj:
@@ -1310,7 +1319,7 @@ def api_vente_create(request):
                         MouvementStockBar.objects.create(
                             boisson=boisson_obj, type_mouvement='sortie',
                             quantite=qty, commentaire=f'Cave → Chambre {reservation.chambre.numero}',
-                            utilisateur=request.user
+                            utilisateur=request.user, serveur=serveur_obj,
                         )
                 # Retourner succès sans ticket
                 return JsonResponse({'ok': True, 'ticket_numero': 'CHAMBRE', 'total': float(total), 'erreurs_stock': []})
@@ -1350,6 +1359,7 @@ def api_vente_create(request):
                         nom=f"[Cave] {l['nom']}",
                         quantite=int(l['qty']),
                         prix_unitaire=Decimal(str(l['prix'])),
+                        serveur=serveur_obj,
                     )
             except Exception as e:
                 pass  # Ne pas bloquer la vente si erreur liaison
@@ -1368,6 +1378,7 @@ def api_vente_create(request):
                     quantite       = qty,
                     commentaire    = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -'),
                     utilisateur    = request.user,
+                    serveur        = serveur_obj,
                 )
             except BoissonBar.DoesNotExist:
                 erreurs_stock.append(f"Article id={l['id']} introuvable")

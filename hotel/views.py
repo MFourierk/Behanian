@@ -137,6 +137,7 @@ def hotel_index(request):
     # Réceptionnistes et serveurs
     from django.contrib.auth.models import User as AuthUser, Group
     receptionnistes = AuthUser.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    personnel_actif = AuthUser.objects.filter(is_active=True, is_superuser=False).order_by('first_name', 'last_name')
     try:
         grp_serveurs = Group.objects.get(name='Serveuse/Serveur')
         serveurs_restaurant = AuthUser.objects.filter(groups=grp_serveurs, is_active=True).order_by('first_name', 'last_name')
@@ -169,6 +170,7 @@ def hotel_index(request):
         'activite_recente': activite_recente,
         'receptionnistes': receptionnistes,
         'serveurs_restaurant': serveurs_restaurant,
+        'personnel_actif': personnel_actif,
     }
     
     return render(request, 'hotel/index.html', context)
@@ -800,7 +802,16 @@ def ajouter_consommation(request, reservation_id):
         quantite = int(request.POST.get('quantite', 1))
         
         conso = Consommation(reservation=reservation, type_service=type_service, quantite=quantite)
-        
+
+        # Serveur assigné (optionnel)
+        serveur_id = request.POST.get('serveur_id')
+        if serveur_id:
+            from django.contrib.auth.models import User as AuthUser
+            try:
+                conso.serveur = AuthUser.objects.get(pk=serveur_id, is_active=True)
+            except AuthUser.DoesNotExist:
+                pass
+
         try:
             if type_service == 'bar':
                 boisson_id = request.POST.get('boisson_id')
@@ -858,7 +869,7 @@ def api_consommations_reservation(request, reservation_id):
     from .models import Reservation, Consommation
     reservation = get_object_or_404(Reservation, id=reservation_id)
     data = []
-    for c in reservation.consommations.all().order_by('-date_ajout'):
+    for c in reservation.consommations.select_related('serveur').all().order_by('-date_ajout'):
         data.append({
             'id': c.id,
             'nom': c.nom,
@@ -867,6 +878,7 @@ def api_consommations_reservation(request, reservation_id):
             'quantite': c.quantite,
             'prix': float(c.prix_unitaire),
             'total': float(c.total),
+            'serveur': c.serveur.get_full_name() or c.serveur.username if c.serveur else None,
         })
     return JsonResponse({'consommations': data})
 
