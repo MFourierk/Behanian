@@ -809,38 +809,141 @@ Nombre de portions : 1<br>
 
 <h2>Module Piscine</h2>
 
-<h3>Enregistrer une entrée</h3>
+<div class="tip">
+  <strong>Comment ça marche en résumé :</strong> chaque client qui entre reçoit un <strong>ticket avec un numéro</strong> (ex : N°003). Ce numéro est son identifiant pendant toute sa présence. Pour prendre une commande, le staff cherche ce numéro dans la liste à l'écran et y ajoute les articles. À la sortie, on encaisse tout (entrée + consommations).
+</div>
+
+<h3>Les 3 types d'entrée</h3>
+<table class="example-table" style="margin-bottom:16px">
+  <thead><tr><th>Bouton à l'écran</th><th>Pour qui ?</th><th>Prix</th><th>Identification</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Entrée Visiteur</strong></td>
+      <td>Toute personne extérieure à l'hôtel</td>
+      <td>Tarif adulte / enfant (configuré par le Manager)</td>
+      <td>Ticket N°001, N°002…</td>
+    </tr>
+    <tr>
+      <td><strong>⭐ Bouton VIP</strong> (ex : « Pool Party »)</td>
+      <td>Visiteur avec forfait tout-compris</td>
+      <td>Prix du forfait</td>
+      <td>Ticket VIP · N°001…</td>
+    </tr>
+    <tr>
+      <td><strong>Résident Hôtel</strong></td>
+      <td>Client actuellement en séjour à l'hôtel</td>
+      <td>Gratuit</td>
+      <td>Ch.12 — Nom du client</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Étape 1 — Enregistrer l'entrée d'un visiteur ordinaire</h3>
 <ol class="steps">
-  <li>Accédez au module <strong>🏊 Piscine</strong></li>
-  <li>Cliquez sur <strong>Nouvelle entrée</strong></li>
-  <li>Choisissez le type de visiteur :<br>
-    &nbsp;&nbsp;• <em>Visiteur ordinaire</em> — tarif adulte ou enfant<br>
-    &nbsp;&nbsp;• <em>Résident hôtel</em> — tarif préférentiel<br>
-    &nbsp;&nbsp;• <em>Forfait VIP</em> — package avec boissons et services inclus
-  </li>
-  <li>Entrez le nom du visiteur</li>
+  <li>Cliquez sur le bouton bleu <strong>Entrée Visiteur</strong></li>
+  <li>Indiquez le nombre d'<strong>adultes</strong> et d'<strong>enfants</strong> avec les boutons + et −<br>
+      <em>Le prix se calcule automatiquement selon les tarifs configurés</em></li>
   <li>Cliquez sur <strong>Enregistrer l'entrée</strong></li>
+  <li>Une fenêtre s'ouvre avec le <strong>ticket d'entrée</strong> — imprimez-le et remettez-le au client</li>
+</ol>
+<div class="tip">⚠️ Ne fermez pas la fenêtre du ticket avant d'avoir cliqué sur <strong>IMPRIMER</strong>. Si le ticket se ferme accidentellement, vous pouvez le réimprimer via le bouton 🖨️ dans la liste.</div>
+
+<h3>Étape 1 bis — Entrée d'un résident hôtel</h3>
+<ol class="steps">
+  <li>Cliquez sur le bouton vert <strong>Résident Hôtel</strong><br>
+      <em>Ou cliquez directement sur le bouton 🏊 à côté du nom du résident dans le panneau de droite</em></li>
+  <li>Dans la liste déroulante, sélectionnez la <strong>chambre du résident</strong></li>
+  <li>Cliquez sur <strong>Enregistrer l'entrée</strong> — entrée gratuite</li>
+  <li>Le ticket s'imprime avec le numéro de chambre comme référence</li>
 </ol>
 
-<h3>Ajouter des consommations à un accès piscine</h3>
+<h3>Étape 1 ter — Entrée avec un forfait VIP</h3>
 <ol class="steps">
-  <li>Retrouvez l'accès actif dans la liste</li>
-  <li>Cliquez sur <strong>Ajouter une consommation</strong></li>
-  <li>Sélectionnez boisson ou plat, puis la quantité</li>
-  <li>Cliquez sur <strong>Ajouter</strong></li>
+  <li>Cliquez sur le <strong>bouton doré</strong> correspondant au forfait (ex : « Pool Party — 25 000 F »)</li>
+  <li>Le logiciel vérifie automatiquement que tous les articles du forfait sont en stock</li>
+  <li>Si tout est disponible : les articles inclus apparaissent en vert ✓ — cliquez sur <strong>Enregistrer</strong></li>
+  <li>Si un article manque : un message en rouge apparaît avec la liste des articles en rupture. Vous pouvez choisir un <strong>article de remplacement</strong> dans le menu déroulant avant de valider</li>
 </ol>
+<div class="tip">Les articles inclus dans le forfait VIP sont déjà enregistrés à l'entrée. Ils apparaissent avec le badge <strong>VIP</strong> dans le détail des consommations et ne sont pas facturables en plus.</div>
 
-<h3>Encaisser la sortie</h3>
+<h3>Le ticket d'entrée — comment identifier le client</h3>
+<p>À chaque entrée enregistrée, le logiciel génère un <strong>numéro unique</strong> pour ce client (ex : <strong>N°003</strong>). Ce numéro est imprimé en grand sur le ticket.</p>
+<table class="example-table">
+  <thead><tr><th>Situation</th><th>Ce que le client présente</th><th>Ce que le staff fait</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Le client veut commander une boisson</td>
+      <td>Montre son ticket avec <strong>N°003</strong></td>
+      <td>Cherche N°003 dans la liste → clique sur l'icône 🍽️ → ajoute l'article</td>
+    </tr>
+    <tr>
+      <td>Le client a perdu son ticket</td>
+      <td>—</td>
+      <td>Cherche dans la liste par heure d'entrée ou nombre de personnes → clique sur 🖨️ pour réimprimer</td>
+    </tr>
+    <tr>
+      <td>Le client part sans passer en caisse</td>
+      <td>—</td>
+      <td>Impossible de sortir sans encaissement : le statut reste "Présent" jusqu'à la clôture</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Étape 2 — Prendre une commande (boissons / plats)</h3>
 <ol class="steps">
-  <li>Retrouvez l'accès actif dans la liste</li>
-  <li>Cliquez sur <strong>Encaisser la sortie</strong></li>
-  <li>Vérifiez le total (entrée + consommations)</li>
-  <li>Choisissez le mode de paiement</li>
-  <li>Confirmez — le ticket est généré</li>
+  <li>Dans la liste <strong>"Accès du jour"</strong> ou <strong>"Présents actuellement"</strong>, retrouvez le numéro du client</li>
+  <li>Cliquez sur l'icône <strong>🍽️</strong> (fourchette) sur la ligne du client</li>
+  <li>Une fenêtre de catalogue s'ouvre avec deux onglets :<br>
+      &nbsp;&nbsp;• <strong>🍸 Boissons</strong> — filtrez par catégorie ou recherchez par nom<br>
+      &nbsp;&nbsp;• <strong>🍽️ Plats</strong> — filtrez par catégorie<br>
+      &nbsp;&nbsp;• <strong>✏️ En cours</strong> — voir et modifier les articles déjà commandés</li>
+  <li>Cliquez sur un article pour l'ajouter au panier. Cliquez plusieurs fois pour augmenter la quantité</li>
+  <li>Le total du panier s'affiche en bas</li>
+  <li>Cliquez sur <strong>Envoyer la commande</strong></li>
 </ol>
+<div class="tip">Vous pouvez ajouter plusieurs commandes au même client tout au long de sa présence. Chaque commande s'accumule sur son total.</div>
+
+<h3>Modifier ou annuler une commande déjà passée</h3>
+<ol class="steps">
+  <li>Ouvrez la fenêtre de commande du client (bouton 🍽️)</li>
+  <li>Cliquez sur l'onglet <strong>✏️ En cours</strong></li>
+  <li>Pour <strong>changer la quantité</strong> : utilisez les boutons + et − à côté de l'article</li>
+  <li>Pour <strong>retirer un article</strong> : cliquez sur le bouton rouge <strong>Retirer</strong></li>
+</ol>
+<div class="tip">Les articles VIP (inclus dans le forfait) ne peuvent pas être modifiés — ils sont en lecture seule dans l'onglet En cours.</div>
+
+<h3>Étape 3 — Encaisser la sortie</h3>
+<ol class="steps">
+  <li>Dans la liste, cliquez sur le bouton bleu <strong>Sortie</strong> (icône porte de sortie)</li>
+  <li>Un récapitulatif s'affiche : entrée + liste des consommations + <strong>total à payer</strong></li>
+  <li><strong>Pour un visiteur ordinaire :</strong><br>
+      &nbsp;&nbsp;• Choisissez le mode de paiement : <em>Espèces / Mobile Money / Carte bancaire</em><br>
+      &nbsp;&nbsp;• Saisissez le <strong>montant remis</strong> par le client<br>
+      &nbsp;&nbsp;• Le logiciel calcule automatiquement la <strong>monnaie à rendre</strong><br>
+      &nbsp;&nbsp;• Cliquez sur <strong>Encaisser &amp; Sortir</strong> — un ticket de caisse s'imprime</li>
+  <li><strong>Pour un résident hôtel :</strong> deux options apparaissent :<br>
+      &nbsp;&nbsp;• 🏨 <strong>Chambre</strong> — le total est ajouté à la note de la chambre, rien à encaisser maintenant. Un reçu de dépôt s'imprime pour information<br>
+      &nbsp;&nbsp;• 💵 <strong>Paiement direct</strong> — le résident paie immédiatement (comme un visiteur ordinaire)</li>
+</ol>
+<div class="tip"><strong>Important :</strong> si un résident a payé en chambre mais change d'avis et veut payer directement, choisissez <strong>Paiement direct</strong> — le logiciel retire automatiquement les consommations de sa note chambre et crée un ticket de caisse à la place.</div>
 
 <h3>Configurer les tarifs <em>(Managers uniquement)</em></h3>
-<p>Via <strong>Piscine → Configurer les tarifs</strong> : tarif adulte visiteur, enfant visiteur, adulte hébergé, enfant hébergé.</p>
+<ol class="steps">
+  <li>Cliquez sur le bouton ⚙️ <strong>Tarifs</strong> en haut à droite de l'écran Piscine</li>
+  <li>Saisissez le tarif <strong>adulte visiteur</strong> et le tarif <strong>enfant visiteur</strong> en FCFA</li>
+  <li>Cliquez sur <strong>Enregistrer</strong></li>
+</ol>
+<p>Les résidents hôtel (adultes et enfants) entrent toujours <strong>gratuitement</strong> — ce tarif ne peut pas être modifié.</p>
+
+<h3>Créer et gérer les forfaits VIP <em>(Managers uniquement)</em></h3>
+<p>Les forfaits VIP sont créés depuis <strong>⚙️ Paramètres → Forfaits</strong>. Pour chaque forfait, vous définissez :</p>
+<ul style="margin:8px 0 8px 20px;line-height:2">
+  <li><strong>Nom</strong> : ex. « Pool Party », « Détente Premium »</li>
+  <li><strong>Prix</strong> : montant global du forfait</li>
+  <li><strong>Articles inclus</strong> : boissons et/ou plats inclus dans le prix</li>
+  <li><strong>Module</strong> : sélectionnez « Piscine » pour que le forfait apparaisse sur l'écran piscine</li>
+</ul>
+<div class="tip">Si le stock d'un article du forfait est épuisé, le forfait apparaît en rouge sur l'écran d'accueil Piscine avec un message d'alerte. Vous pouvez toujours proposer le forfait avec un article de remplacement.</div>
 
 <h2>Module Espaces Événementiels</h2>
 
