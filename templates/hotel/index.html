@@ -820,7 +820,7 @@
                         <select name="chambre_id" class="form-control" required>
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres_dispo_list %}
-                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit|montant }}" data-price-sejour="{{ ch.prix_sejour|montant }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|montant }} F)</option>
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|montant }} F)</option>
                             {% empty %}
                             <option value="" disabled>Aucune chambre disponible (Toutes réservées ou occupées)</option>
                             {% endfor %}
@@ -931,7 +931,7 @@
                         <select name="chambre_id" class="form-control" required>
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres %}
-                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit|montant }}" data-price-sejour="{{ ch.prix_sejour|montant }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -1590,16 +1590,8 @@
         const totalGeneral = room + services;
         const resteAPayer  = Math.max(0, totalGeneral - avanceV);
 
-        const fmt = (v) => v.toLocaleString('fr-FR') + ' F';
+        document.getElementById('montantEncaisse').value = resteAPayer;
 
-        document.getElementById('breakdown-room').textContent     = fmt(room);
-        document.getElementById('breakdown-services').textContent = fmt(servicesHorsPiscine);
-        document.getElementById('breakdown-piscine').textContent  = fmt(piscine);
-        // Masquer ligne piscine si 0
-        document.getElementById('breakdown-piscine-row').style.display = piscine > 0 ? 'flex' : 'none';
-        document.getElementById('breakdown-total').textContent    = fmt(resteAPayer);
-        document.getElementById('montantEncaisse').value          = resteAPayer;
-        
         // Afficher l'état de chargement
         document.getElementById('checkout-loading').style.display = 'block';
         document.getElementById('formCheckout').style.display = 'none';
