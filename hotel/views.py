@@ -968,8 +968,9 @@ def api_consommations_reservation(request, reservation_id):
 
 @require_module_access('hotel')
 @require_POST
+@transaction.atomic
 def api_modifier_consommation(request, conso_id):
-    """Modifier la quantité d'une consommation hôtel."""
+    """Modifier la quantité d'une consommation hôtel et ajuster le stock."""
     from .models import Consommation
     try:
         conso = get_object_or_404(Consommation, id=conso_id)
@@ -977,6 +978,35 @@ def api_modifier_consommation(request, conso_id):
         new_qty = int(data.get('quantite', 1))
         if new_qty < 1:
             return JsonResponse({'success': False, 'error': 'Quantité invalide'})
+
+        delta = new_qty - conso.quantite
+        if delta != 0:
+            ref = f'Hotel modif consommation #{conso_id}'
+            if conso.type_service == 'bar' and conso.boisson:
+                from bar.models import MouvementStockBar
+                if delta > 0:
+                    # Vérifier stock disponible avant d'augmenter
+                    if conso.boisson.quantite_stock < delta:
+                        return JsonResponse({'success': False, 'error': f'Stock insuffisant pour {conso.boisson.nom} (reste : {conso.boisson.quantite_stock})'})
+                MouvementStockBar.objects.create(
+                    boisson=conso.boisson,
+                    type_mouvement='sortie' if delta > 0 else 'entree',
+                    quantite=abs(delta),
+                    commentaire=ref,
+                    utilisateur=request.user,
+                )
+            elif conso.type_service == 'restaurant' and conso.plat:
+                from cuisine.utils import check_stock_availability, process_stock_movement
+                if delta > 0:
+                    ok, msg = check_stock_availability(conso.plat, delta)
+                    if not ok:
+                        return JsonResponse({'success': False, 'error': msg})
+                process_stock_movement(
+                    conso.plat, abs(delta),
+                    'sortie' if delta > 0 else 'entree',
+                    request.user, ref
+                )
+
         conso.quantite = new_qty
         conso.save()
         return JsonResponse({'success': True})
@@ -986,11 +1016,27 @@ def api_modifier_consommation(request, conso_id):
 
 @require_module_access('hotel')
 @require_POST
+@transaction.atomic
 def api_supprimer_consommation(request, conso_id):
-    """Supprimer une consommation hôtel."""
+    """Supprimer une consommation hôtel et restaurer le stock."""
     from .models import Consommation
     try:
         conso = get_object_or_404(Consommation, id=conso_id)
+        ref = f'Hotel annulation consommation #{conso_id}'
+
+        if conso.type_service == 'bar' and conso.boisson:
+            from bar.models import MouvementStockBar
+            MouvementStockBar.objects.create(
+                boisson=conso.boisson,
+                type_mouvement='entree',
+                quantite=conso.quantite,
+                commentaire=ref,
+                utilisateur=request.user,
+            )
+        elif conso.type_service == 'restaurant' and conso.plat:
+            from cuisine.utils import process_stock_movement
+            process_stock_movement(conso.plat, conso.quantite, 'entree', request.user, ref)
+
         conso.delete()
         return JsonResponse({'success': True})
     except Exception as e:
