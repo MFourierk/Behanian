@@ -695,97 +695,150 @@ def checkout_reservation(request, reservation_id):
         
         contenu = services_html
         
-        # 4. Créer la ligne de paiement (Ticket)
-        # Note: On ne change pas encore le statut de la réservation. 
-        # La validation finale se fait après impression du ticket.
-        
+        # 4. Stocker les données en session — le Ticket ne sera créé en facturation
+        #    qu'après confirmation de l'impression (finalize_checkout).
         mode_paiement = request.POST.get('mode_paiement', 'especes')
         if mode_paiement == 'mobile_money':
             operateur = request.POST.get('operateur_momo')
             if operateur:
                 mode_paiement = operateur
 
-        # Réceptionniste (depuis le champ readonly du formulaire) et Serveur
         receptionniste_nom = request.POST.get('serveur', '').strip() or request.user.get_full_name() or request.user.username
         serveur_nom = request.POST.get('serveur_resto', '').strip()
         if not serveur_nom:
             messages.error(request, "Veuillez sélectionner un serveur/serveuse avant de valider le check-out.")
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
+        montant_total = reservation.get_total_general()
+        request.session[f'hotel_checkout_{reservation.id}'] = {
+            'contenu': contenu,
+            'mode_paiement': mode_paiement,
+            'montant_paye': str(montant_paye + reservation.avance),
+            'montant_total': str(montant_total),
+            'f_client_id': f_client.id if f_client else None,
+            'serveur_nom': serveur_nom,
+            'receptionniste_nom': receptionniste_nom,
+        }
+        return redirect('hotel:ticket_preview', reservation_id=reservation.id)
+
+    return redirect(reverse('hotel:index') + '?tab=historique')
+
+@require_module_access('hotel')
+def ticket_preview(request, reservation_id):
+    """Prévisualisation du ticket avant clôture — le Ticket n'existe pas encore en facturation."""
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    data = request.session.get(f'hotel_checkout_{reservation_id}')
+    if not data:
+        messages.error(request, "Session expirée. Recommencez le check-out.")
+        return redirect(reverse('hotel:index') + '?tab=checkinout')
+
+    # Objet factice pour le template ticket_print_thermal.html
+    class TicketPreview:
+        est_duplicata = False
+        imprime = False
+        module = 'hotel'
+        cree_par = request.user
+
+        def __init__(self, d, user):
+            from django.utils import timezone as tz
+            self.date_creation = tz.now()
+            self.numero = '— En cours —'
+            self.montant_total = Decimal(d['montant_total'])
+            self.montant_paye  = Decimal(d['montant_paye'])
+            self.mode_paiement = d['mode_paiement']
+            self.contenu       = d['contenu']
+            self.client        = None
+            if d.get('f_client_id'):
+                try:
+                    from facturation.models import Client as FC
+                    self.client = FC.objects.get(pk=d['f_client_id'])
+                except Exception:
+                    pass
+
+        def get_module_display(self):
+            return 'Hôtel'
+
+        def get_mode_paiement_display(self):
+            labels = {
+                'especes': 'Espèces', 'mobile_money': 'Mobile Money',
+                'orange_money': 'Orange Money', 'wave': 'Wave',
+                'moov_money': 'Moov Money', 'mtn_money': 'MTN Mobile Money',
+                'carte_bancaire': 'Carte Bancaire', 'carte': 'Carte Bancaire',
+                'cheque': 'Chèque', 'virement': 'Virement',
+            }
+            return labels.get(self.mode_paiement, self.mode_paiement)
+
+        @property
+        def monnaie_rendue(self):
+            try:
+                diff = self.montant_paye - self.montant_total
+                return diff if diff > 0 else 0
+            except Exception:
+                return 0
+
+    preview = TicketPreview(data, request.user)
+    finalize_url = reverse('hotel:finalize_checkout', kwargs={'reservation_id': reservation_id})
+
+    return render(request, 'facturation/ticket_print_thermal.html', {
+        'ticket': preview,
+        'serveur': data.get('serveur_nom', ''),
+        'receptionniste': data.get('receptionniste_nom', ''),
+        'finalize_url': finalize_url,
+    })
+
+
+@require_module_access('hotel')
+@transaction.atomic
+def finalize_checkout(request, reservation_id):
+    """Clôturer le check-out : crée le Ticket en facturation (imprime=True) et libère la chambre."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Méthode non autorisée'}, status=405)
+
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+
+    if reservation.statut == 'terminee':
+        return JsonResponse({'status': 'success', 'message': 'Déjà clôturé'})
+
+    data = request.session.get(f'hotel_checkout_{reservation_id}')
+    if not data:
+        return JsonResponse({'status': 'error', 'message': 'Session expirée — recommencez le check-out'})
+
+    try:
+        f_client = None
+        if data.get('f_client_id'):
+            from facturation.models import Client as FacturationClient
+            try:
+                f_client = FacturationClient.objects.get(pk=data['f_client_id'])
+            except Exception:
+                pass
+
+        # Créer le Ticket uniquement maintenant, après confirmation impression
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(),
             module='hotel',
             objet_id=reservation.id,
             client=f_client,
-            montant_total=reservation.get_total_general(),
-            montant_paye=montant_paye + reservation.avance,
-            mode_paiement=mode_paiement,
+            montant_total=Decimal(data['montant_total']),
+            montant_paye=Decimal(data['montant_paye']),
+            mode_paiement=data['mode_paiement'],
             cree_par=request.user,
-            contenu=contenu
+            contenu=data['contenu'],
+            imprime=True,
+            date_impression=timezone.now(),
         )
 
-        messages.success(request, "Paiement enregistré. Veuillez imprimer le ticket pour clôturer le séjour.")
-        request.session[f'ticket_{ticket.id}_serveur'] = serveur_nom
-        request.session[f'ticket_{ticket.id}_receptionniste'] = receptionniste_nom
-        return redirect('hotel:ticket_print', ticket_id=ticket.id)
-        
-    return redirect(reverse('hotel:index') + '?tab=historique')
-
-@require_module_access('hotel')
-def ticket_print(request, ticket_id):
-    """Afficher le ticket pour impression"""
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    serveur = request.session.get(f'ticket_{ticket_id}_serveur', '')
-    receptionniste = request.session.get(f'ticket_{ticket_id}_receptionniste', '')
-    return render(request, 'facturation/ticket_print_thermal.html', {
-        'ticket': ticket,
-        'serveur': serveur,
-        'receptionniste': receptionniste,
-    })
-
-@require_module_access('hotel')
-@transaction.atomic
-def finalize_checkout(request, ticket_id):
-    """Finaliser le check-out (libérer la chambre) après impression"""
-    ticket = get_object_or_404(Ticket, id=ticket_id)
-    
-    # On vérifie si c'est bien un ticket d'hôtel
-    if ticket.module != 'hotel':
-        return JsonResponse({'status': 'error', 'message': 'Ticket invalide'}, status=400)
-        
-    try:
-        if not ticket.objet_id:
-             return JsonResponse({'status': 'error', 'message': 'Ticket sans réservation associée'}, status=400)
-
-        reservation = Reservation.objects.get(id=ticket.objet_id)
-        
-        # Si déjà terminée, on ne fait rien mais on met à jour le ticket
-        if reservation.statut == 'terminee':
-            # Assurer que le ticket est marqué imprimé
-            if not ticket.imprime:
-                ticket.imprime = True
-                ticket.date_impression = timezone.now()
-                ticket.save()
-            return JsonResponse({'status': 'success', 'message': 'Déjà clôturé'})
-            
-        # Mise à jour statuts
         reservation.statut = 'terminee'
         reservation.save()
-        
-        # Libérer la chambre
+
         if reservation.chambre:
             reservation.chambre.statut = 'disponible'
             reservation.chambre.save()
-        
-        # Marquer le ticket comme imprimé
-        ticket.imprime = True
-        ticket.date_impression = timezone.now()
-        ticket.save()
-        
+
+        # Nettoyer la session
+        request.session.pop(f'hotel_checkout_{reservation_id}', None)
+
         return JsonResponse({'status': 'success', 'message': 'Séjour clôturé avec succès'})
-        
-    except Reservation.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Réservation introuvable'}, status=404)
+
     except Exception as e:
         import traceback
         traceback.print_exc()

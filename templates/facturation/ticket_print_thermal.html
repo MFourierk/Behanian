@@ -252,21 +252,21 @@ function handleClose() {
 }
 
 function handlePrint() {
-    {% if ticket.module == 'hotel' and not ticket.imprime %}
+    {% if finalize_url %}
+    // Prévisualisation checkout hôtel : créer le ticket et clôturer après impression
     if (confirm("Voulez-vous clôturer la transaction et libérer la chambre ?")) {
         window.print();
-        fetch("{% url 'hotel:finalize_checkout' ticket.id %}")
+        fetch("{{ finalize_url }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {
-                try {
-                    if (window.opener && !window.opener.closed) {
-                        window.opener.location.href = "{% url 'facturation:ticket_list' %}";
-                        window.close();
-                    } else {
-                        window.location.href = "{% url 'facturation:ticket_list' %}";
-                    }
-                } catch(e) { window.location.href = "{% url 'facturation:ticket_list' %}"; }
+                window.location.href = "{% url 'hotel:index' %}?tab=historique";
             } else { alert("Erreur: " + data.message); }
         })
         .catch(e => alert("Erreur serveur: " + e.message));
