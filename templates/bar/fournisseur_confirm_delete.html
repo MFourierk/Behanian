@@ -1,0 +1,54 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Désactiver Fournisseur - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .danger-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); max-width: 540px; margin: 60px auto; overflow: hidden; }
+    .danger-header { background: linear-gradient(135deg, #1a2535, #2c3e50); color: white; padding: 24px 28px; display: flex; align-items: center; gap: 14px; }
+    .danger-header i { font-size: 2rem; color: #e74c3c; }
+    .danger-header h3 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+    .danger-body { padding: 28px; }
+    .danger-body p { color: #555; font-size: 0.95rem; line-height: 1.6; margin-bottom: 12px; }
+    .fournisseur-name { font-size: 1.15rem; font-weight: 700; color: #1a2535; border-left: 4px solid #c9a84c; padding: 10px 16px; background: #fdf6e3; border-radius: 0 8px 8px 0; margin: 16px 0; }
+    .danger-footer { padding: 20px 28px; background: #fafafa; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel { padding: 10px 20px; border-radius: 10px; border: 2px solid #e9ecef; background: white; font-weight: 600; cursor: pointer; color: #7f8c8d; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-cancel:hover { border-color: #1a2535; color: #1a2535; }
+    .btn-danger { padding: 10px 20px; border-radius: 10px; border: none; background: #e74c3c; font-weight: 700; cursor: pointer; color: white; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(231,76,60,0.3); transition: all 0.2s; }
+    .btn-danger:hover { background: #c0392b; transform: translateY(-2px); }
+</style>
+
+<div class="container-fluid py-4">
+    {% breadcrumb "Cave" "bar:boisson_list" "Fournisseurs" "bar:fournisseur_list" "Désactiver" "" %}
+
+    <div class="danger-card">
+        <div class="danger-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <h3>Désactiver ce fournisseur ?</h3>
+                <div style="font-size:0.85rem;opacity:0.75;">Le fournisseur sera masqué mais ses données conservées.</div>
+            </div>
+        </div>
+        <div class="danger-body">
+            <p>Vous êtes sur le point de désactiver le fournisseur suivant :</p>
+            <div class="fournisseur-name">
+                <i class="fas fa-truck" style="color:#c9a84c;margin-right:8px;"></i>
+                {{ fournisseur.nom }}
+                {% if fournisseur.ville %}<span style="font-weight:400;color:#7f8c8d;font-size:0.9rem;"> — {{ fournisseur.ville }}</span>{% endif %}
+            </div>
+            <p>Les bons de commande et réceptions associés à ce fournisseur ne seront <strong>pas supprimés</strong>. Le fournisseur sera simplement masqué des listes actives.</p>
+        </div>
+        <div class="danger-footer">
+            <a href="{% url 'bar:fournisseur_list' %}" class="btn-cancel">
+                <i class="fas fa-arrow-left"></i> Annuler
+            </a>
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger">
+                    <i class="fas fa-ban"></i> Désactiver
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

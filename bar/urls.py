@@ -17,6 +17,12 @@ urlpatterns = [
     path('articles/<int:pk>/sommeil/', views.article_sommeil, name='article_sommeil'),
     path('articles/<int:pk>/prix/', views.get_article_prix, name='article_prix_ajax'),
 
+    # Fournisseurs
+    path('fournisseurs/', views.fournisseur_list, name='fournisseur_list'),
+    path('fournisseurs/nouveau/', views.fournisseur_create, name='fournisseur_create'),
+    path('fournisseurs/<int:pk>/modifier/', views.fournisseur_edit, name='fournisseur_edit'),
+    path('fournisseurs/<int:pk>/supprimer/', views.fournisseur_delete, name='fournisseur_delete'),
+
     # Bons de commande
     path('commandes/', views.bon_commande_list, name='bon_commande_list'),
     path('commandes/nouveau/', views.bon_commande_create, name='bon_commande_create'),

@@ -32,7 +32,7 @@ from .models import (
     InventaireBar, LigneInventaireBar,
     CasseBar, LigneCasseBar
 )
-from cuisine.models import Fournisseur
+from .models import FournisseurBar
 
 
 @require_module_access('bar')
@@ -132,7 +132,7 @@ def stock_management(request):
         'bc_brouillons': bc_brouillons,
         'bc_en_cours': bc_en_cours,
         'bc_en_retard': bc_en_retard,
-        'fournisseurs': Fournisseur.objects.all(),
+        'fournisseurs': FournisseurBar.objects.filter(actif=True).order_by('nom'),
         'clients': Client.objects.filter(actif=True),
         'bc_type': bc_type,
         'bc_statut': bc_statut,
@@ -310,7 +310,7 @@ def bon_commande_list(request):
 @require_bar_gestion
 def bon_commande_create(request):
     type_commande = request.GET.get('type', 'achat')
-    fournisseurs = Fournisseur.objects.all()
+    fournisseurs = FournisseurBar.objects.filter(actif=True).order_by('nom')
     clients = Client.objects.filter(actif=True)
     articles = BoissonBar.objects.exclude(statut='supprime')
 
@@ -375,7 +375,7 @@ def bon_commande_detail(request, pk):
 @require_bar_gestion
 def bon_commande_edit(request, pk):
     bon = get_object_or_404(BonCommandeBar, pk=pk)
-    fournisseurs = Fournisseur.objects.all()
+    fournisseurs = FournisseurBar.objects.filter(actif=True).order_by('nom')
     clients = Client.objects.filter(actif=True)
     articles = BoissonBar.objects.exclude(statut='supprime')
 
@@ -418,6 +418,89 @@ def bon_commande_edit(request, pk):
         'mode': 'edit',
     }
     return render(request, 'bar/bon_commande_form.html', context)
+
+
+@require_module_access('bar')
+def fournisseur_list(request):
+    from .models import FournisseurBar
+    fournisseurs = FournisseurBar.objects.filter(actif=True).order_by('nom')
+    q = request.GET.get('q', '')
+    if q:
+        fournisseurs = fournisseurs.filter(
+            models.Q(nom__icontains=q) | models.Q(personne_contact__icontains=q) | models.Q(ville__icontains=q)
+        )
+    return render(request, 'bar/fournisseur_list.html', {
+        'fournisseurs': fournisseurs,
+        'q': q,
+        'nb_grossistes': FournisseurBar.objects.filter(actif=True, type_fournisseur='grossiste').count(),
+        'nb_producteurs': FournisseurBar.objects.filter(actif=True, type_fournisseur='producteur').count(),
+        'nb_commandes_actives': BonCommandeBar.objects.filter(
+            statut__in=['brouillon', 'confirme', 'envoye', 'partiel']
+        ).count(),
+        'active_nav': 'fournisseurs',
+    })
+
+
+@require_module_access('bar')
+def fournisseur_create(request):
+    from .models import FournisseurBar
+    if request.method == 'POST':
+        f = FournisseurBar(
+            nom=request.POST.get('nom', '').strip(),
+            type_fournisseur=request.POST.get('type_fournisseur', 'grossiste'),
+            personne_contact=request.POST.get('personne_contact', ''),
+            telephone=request.POST.get('telephone', ''),
+            telephone2=request.POST.get('telephone2', ''),
+            email=request.POST.get('email', ''),
+            adresse=request.POST.get('adresse', ''),
+            ville=request.POST.get('ville', ''),
+            notes=request.POST.get('notes', ''),
+        )
+        f.save()
+        messages.success(request, f"Fournisseur « {f.nom} » créé.")
+        return redirect('bar:fournisseur_list')
+    return render(request, 'bar/fournisseur_form.html', {
+        'page_title': 'Nouveau Fournisseur',
+        'mode': 'create',
+        'active_nav': 'fournisseurs',
+    })
+
+
+@require_module_access('bar')
+def fournisseur_edit(request, pk):
+    from .models import FournisseurBar
+    f = get_object_or_404(FournisseurBar, pk=pk)
+    if request.method == 'POST':
+        f.nom              = request.POST.get('nom', '').strip()
+        f.type_fournisseur = request.POST.get('type_fournisseur', 'grossiste')
+        f.personne_contact = request.POST.get('personne_contact', '')
+        f.telephone        = request.POST.get('telephone', '')
+        f.telephone2       = request.POST.get('telephone2', '')
+        f.email            = request.POST.get('email', '')
+        f.adresse          = request.POST.get('adresse', '')
+        f.ville            = request.POST.get('ville', '')
+        f.notes            = request.POST.get('notes', '')
+        f.save()
+        messages.success(request, f"Fournisseur « {f.nom} » modifié.")
+        return redirect('bar:fournisseur_list')
+    return render(request, 'bar/fournisseur_form.html', {
+        'fournisseur': f,
+        'page_title': f'Modifier — {f.nom}',
+        'mode': 'edit',
+        'active_nav': 'fournisseurs',
+    })
+
+
+@require_module_access('bar')
+def fournisseur_delete(request, pk):
+    from .models import FournisseurBar
+    f = get_object_or_404(FournisseurBar, pk=pk)
+    if request.method == 'POST':
+        f.actif = False
+        f.save()
+        messages.success(request, f"Fournisseur « {f.nom} » désactivé.")
+        return redirect('bar:fournisseur_list')
+    return render(request, 'bar/fournisseur_confirm_delete.html', {'fournisseur': f})
 
 
 @require_module_access('bar')
@@ -467,7 +550,7 @@ def bon_reception_list(request):
 @require_module_access('bar')
 @require_bar_gestion
 def bon_reception_create(request):
-    fournisseurs = Fournisseur.objects.all()
+    fournisseurs = FournisseurBar.objects.filter(actif=True).order_by('nom')
     articles = BoissonBar.objects.exclude(statut='supprime')
     bons_commande = BonCommandeBar.objects.filter(
         type_commande='achat',

@@ -1,0 +1,196 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% block title %}Fournisseurs Cave - BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+    .page-header { background: linear-gradient(135deg, #1a2535 0%, #2c3e50 100%); color: white; padding: 28px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(26,37,53,0.3); display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden; }
+    .page-header::after { content: '🚚'; position: absolute; right: -10px; bottom: -30px; font-size: 130px; opacity: 0.06; pointer-events: none; }
+    .page-header h2 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+    .page-header p  { margin: 4px 0 0; opacity: 0.75; font-size: 0.95rem; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 14px; border-left: 4px solid transparent; }
+    .stat-card.gold   { border-left-color: #c9a84c; }
+    .stat-card.green  { border-left-color: #27ae60; }
+    .stat-card.blue   { border-left-color: #3498db; }
+    .stat-card.orange { border-left-color: #e67e22; }
+    .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-icon.gold   { background: #fdf6e3; color: #c9a84c; }
+    .stat-icon.green  { background: #eafaf1; color: #27ae60; }
+    .stat-icon.blue   { background: #e8f4fd; color: #3498db; }
+    .stat-icon.orange { background: #fef3e2; color: #e67e22; }
+    .stat-value { font-size: 1.7rem; font-weight: 700; color: #2c3e50; line-height: 1; }
+    .stat-label { font-size: 0.82rem; color: #7f8c8d; margin-top: 3px; }
+
+    .toolbar { background: white; border-radius: 14px; padding: 14px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+    .search-box { position: relative; flex: 1; min-width: 220px; }
+    .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #adb5bd; }
+    .search-box input { width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1px solid #e9ecef; background: #f8f9fa; font-size: 0.9rem; }
+    .search-box input:focus { outline: none; border-color: #1a2535; background: white; box-shadow: 0 0 0 3px rgba(26,37,53,0.1); }
+    .filter-select { padding: 10px 14px; border-radius: 10px; border: 1px solid #e9ecef; background: #f8f9fa; font-size: 0.9rem; color: #495057; cursor: pointer; }
+    .btn-gold { background: linear-gradient(135deg, #1a2535, #2c3e50); color: #c9a84c; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(26,37,53,0.3); transition: all 0.2s; border: 2px solid #c9a84c; }
+    .btn-gold:hover { background: #c9a84c; color: #1a2535; }
+
+    .fournisseur-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+    .fournisseur-card { background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; border-top: 4px solid #c9a84c; }
+    .fournisseur-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .card-header-f { padding: 18px 20px 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .card-nom { font-size: 1.05rem; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
+    .badge-type { padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #fdf6e3; color: #c9a84c; }
+    .badge-type.grossiste   { background: #fdf6e3; color: #b8860b; }
+    .badge-type.producteur  { background: #eafaf1; color: #27ae60; }
+    .badge-type.importateur { background: #e8f4fd; color: #3498db; }
+    .badge-type.distributeur{ background: #fef3e2; color: #e67e22; }
+    .badge-type.autre       { background: #f5f5f5; color: #7f8c8d; }
+    .card-body-f { padding: 0 20px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .card-info-line { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #555; }
+    .card-info-line i { width: 16px; color: #c9a84c; font-size: 0.8rem; flex-shrink: 0; }
+    .card-info-line span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-footer-f { padding: 12px 20px; background: #fafafa; border-top: 1px solid #f0f0f0; display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-action { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; }
+    .btn-edit { background: #e8f4fd; color: #3498db; }
+    .btn-edit:hover { background: #3498db; color: white; }
+    .btn-del  { background: #fdecea; color: #e74c3c; }
+    .btn-del:hover  { background: #e74c3c; color: white; }
+    .nb-commandes { font-size: 0.78rem; color: #7f8c8d; margin-right: auto; align-self: center; }
+
+    .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .empty-state i { font-size: 3rem; color: #d4af37; margin-bottom: 15px; display: block; }
+    .empty-state p { color: #7f8c8d; margin-bottom: 20px; }
+</style>
+
+<div class="container-fluid py-4">
+
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-truck mr-2"></i> Fournisseurs Cave</h2>
+            <p>Gérez vos fournisseurs de boissons et spiritueux.</p>
+        </div>
+        <div class="header-clock"><span class="time"></span><span class="date"></span></div>
+    </div>
+
+    {% include 'bar/_gestion_nav.html' with active_nav='fournisseurs' %}
+
+    {% breadcrumb "Cave" "bar:boisson_list" "Fournisseurs" "" %}
+
+    <div class="stats-row">
+        <div class="stat-card gold">
+            <div class="stat-icon gold"><i class="fas fa-truck"></i></div>
+            <div><div class="stat-value">{{ fournisseurs.count }}</div><div class="stat-label">Fournisseurs actifs</div></div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-icon green"><i class="fas fa-industry"></i></div>
+            <div><div class="stat-value">{{ nb_producteurs }}</div><div class="stat-label">Producteurs</div></div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-icon orange"><i class="fas fa-boxes"></i></div>
+            <div><div class="stat-value">{{ nb_grossistes }}</div><div class="stat-label">Grossistes</div></div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-icon blue"><i class="fas fa-shopping-cart"></i></div>
+            <div><div class="stat-value">{{ nb_commandes_actives }}</div><div class="stat-label">Commandes en cours</div></div>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Rechercher par nom, contact, ville..." oninput="filtrer()" value="{{ q }}">
+        </div>
+        <select id="filter-type" class="filter-select" onchange="filtrer()">
+            <option value="">Tous les types</option>
+            <option value="grossiste">Grossiste</option>
+            <option value="producteur">Producteur</option>
+            <option value="importateur">Importateur</option>
+            <option value="distributeur">Distributeur</option>
+            <option value="autre">Autre</option>
+        </select>
+        <a href="{% url 'bar:fournisseur_create' %}" class="btn-gold">
+            <i class="fas fa-plus"></i> Nouveau Fournisseur
+        </a>
+    </div>
+
+    <div class="fournisseur-grid" id="fournisseur-grid">
+        {% for f in fournisseurs %}
+        <div class="fournisseur-card"
+             data-nom="{{ f.nom|lower }}"
+             data-contact="{{ f.personne_contact|lower }}"
+             data-ville="{{ f.ville|lower }}"
+             data-type="{{ f.type_fournisseur }}">
+            <div class="card-header-f">
+                <div>
+                    <div class="card-nom">{{ f.nom }}</div>
+                    {% if f.personne_contact %}
+                    <div style="font-size:0.82rem;color:#7f8c8d;margin-top:2px;">
+                        <i class="fas fa-user" style="font-size:0.75rem;"></i> {{ f.personne_contact }}
+                    </div>
+                    {% endif %}
+                </div>
+                <span class="badge-type {{ f.type_fournisseur }}">{{ f.get_type_fournisseur_display }}</span>
+            </div>
+
+            <div class="card-body-f">
+                {% if f.telephone %}
+                <div class="card-info-line">
+                    <i class="fas fa-phone"></i>
+                    <span>{{ f.telephone }}{% if f.telephone2 %} &nbsp;/&nbsp; {{ f.telephone2 }}{% endif %}</span>
+                </div>
+                {% endif %}
+                {% if f.email %}
+                <div class="card-info-line">
+                    <i class="fas fa-envelope"></i>
+                    <span><a href="mailto:{{ f.email }}" style="color:#3498db;text-decoration:none;">{{ f.email }}</a></span>
+                </div>
+                {% endif %}
+                {% if f.ville or f.adresse %}
+                <div class="card-info-line">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{% if f.ville %}{{ f.ville }}{% endif %}{% if f.adresse and f.ville %} — {% endif %}{% if f.adresse %}{{ f.adresse|truncatechars:40 }}{% endif %}</span>
+                </div>
+                {% endif %}
+                {% if f.notes %}
+                <div class="card-info-line" style="color:#7f8c8d;font-style:italic;">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>{{ f.notes|truncatechars:60 }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-footer-f">
+                <span class="nb-commandes">
+                    <i class="fas fa-file-alt" style="color:#c9a84c;"></i>
+                    {{ f.boncommandebar_set.count }} commande(s)
+                </span>
+                <a href="{% url 'bar:fournisseur_edit' f.pk %}" class="btn-action btn-edit" title="Modifier">
+                    <i class="fas fa-pencil-alt"></i>
+                </a>
+                <a href="{% url 'bar:fournisseur_delete' f.pk %}" class="btn-action btn-del" title="Désactiver">
+                    <i class="fas fa-trash-alt"></i>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state" style="grid-column:1/-1;">
+            <i class="fas fa-truck"></i>
+            <p>Aucun fournisseur cave enregistré.</p>
+            <a href="{% url 'bar:fournisseur_create' %}" class="btn-gold" style="display:inline-flex;">
+                <i class="fas fa-plus"></i> Ajouter le premier fournisseur
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function filtrer() {
+    const q    = document.getElementById('search-input').value.toLowerCase();
+    const type = document.getElementById('filter-type').value;
+    document.querySelectorAll('.fournisseur-card').forEach(card => {
+        const matchQ    = !q || card.dataset.nom.includes(q) || card.dataset.contact.includes(q) || card.dataset.ville.includes(q);
+        const matchType = !type || card.dataset.type === type;
+        card.style.display = (matchQ && matchType) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

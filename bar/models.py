@@ -1,10 +1,39 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from cuisine.models import Fournisseur
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
+
+
+class FournisseurBar(models.Model):
+    TYPE_CHOICES = [
+        ('grossiste',    'Grossiste'),
+        ('producteur',   'Producteur / Importateur'),
+        ('importateur',  'Importateur'),
+        ('distributeur', 'Distributeur'),
+        ('autre',        'Autre'),
+    ]
+    nom               = models.CharField(max_length=200, verbose_name="Raison sociale")
+    type_fournisseur  = models.CharField(max_length=20, choices=TYPE_CHOICES, default='grossiste', verbose_name="Type")
+    personne_contact  = models.CharField(max_length=200, blank=True, verbose_name="Contact")
+    telephone         = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
+    telephone2        = models.CharField(max_length=20, blank=True, verbose_name="Téléphone 2")
+    email             = models.EmailField(blank=True, verbose_name="E-mail")
+    adresse           = models.TextField(blank=True, verbose_name="Adresse")
+    ville             = models.CharField(max_length=100, blank=True, verbose_name="Ville")
+    notes             = models.TextField(blank=True, verbose_name="Notes internes")
+    actif             = models.BooleanField(default=True, verbose_name="Actif")
+    date_creation     = models.DateTimeField(auto_now_add=True, null=True)
+    date_modification = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        verbose_name = "Fournisseur (Cave)"
+        verbose_name_plural = "Fournisseurs (Cave)"
+        ordering = ['nom']
+
+    def __str__(self):
+        return self.nom
 
 
 class CategorieBar(models.Model):
@@ -247,7 +276,7 @@ class BonCommandeBar(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
 
     # Tiers
-    fournisseur = models.ForeignKey(Fournisseur, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Fournisseur")
+    fournisseur = models.ForeignKey(FournisseurBar, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Fournisseur")
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Client")
 
     # Dates
@@ -348,7 +377,7 @@ class BonReceptionBar(models.Model):
         verbose_name="Bon de commande lié"
     )
     fournisseur = models.ForeignKey(
-        Fournisseur, on_delete=models.SET_NULL,
+        FournisseurBar, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name="Fournisseur"
     )
     numero_document_fournisseur = models.CharField(

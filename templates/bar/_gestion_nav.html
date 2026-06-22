@@ -12,10 +12,9 @@
         <span>Inventaires</span>
         <span class="badge-bientot">Bientôt</span>
     </a>
-    <a href="#" class="nav-tab disabled">
+    <a href="{% url 'bar:fournisseur_list' %}" class="nav-tab {% if active_nav == 'fournisseurs' %}active{% endif %}">
         <i class="fas fa-truck"></i>
         <span>Fournisseurs</span>
-        <span class="badge-bientot">Bientôt</span>
     </a>
     <a href="#" class="nav-tab disabled">
         <i class="fas fa-map-marker-alt"></i>
