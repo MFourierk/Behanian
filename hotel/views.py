@@ -982,18 +982,15 @@ def api_modifier_consommation(request, conso_id):
         delta = new_qty - conso.quantite
         if delta != 0:
             ref = f'Hotel modif consommation #{conso_id}'
-            if conso.type_service == 'bar' and conso.boisson:
-                from bar.models import MouvementStockBar
+            if conso.type_service == 'bar' and conso.boisson_id:
+                from bar.models import BoissonBar
+                from django.db.models import F
                 if delta > 0:
-                    # Vérifier stock disponible avant d'augmenter
-                    if conso.boisson.quantite_stock < delta:
-                        return JsonResponse({'success': False, 'error': f'Stock insuffisant pour {conso.boisson.nom} (reste : {conso.boisson.quantite_stock})'})
-                MouvementStockBar.objects.create(
-                    boisson=conso.boisson,
-                    type_mouvement='sortie' if delta > 0 else 'entree',
-                    quantite=abs(delta),
-                    commentaire=ref,
-                    utilisateur=request.user,
+                    boisson = BoissonBar.objects.get(pk=conso.boisson_id)
+                    if boisson.quantite_stock < delta:
+                        return JsonResponse({'success': False, 'error': f'Stock insuffisant pour {boisson.nom} (reste : {boisson.quantite_stock})'})
+                BoissonBar.objects.filter(pk=conso.boisson_id).update(
+                    quantite_stock=F('quantite_stock') - delta
                 )
             elif conso.type_service == 'restaurant' and conso.plat:
                 from cuisine.utils import check_stock_availability, process_stock_movement
@@ -1024,14 +1021,11 @@ def api_supprimer_consommation(request, conso_id):
         conso = get_object_or_404(Consommation, id=conso_id)
         ref = f'Hotel annulation consommation #{conso_id}'
 
-        if conso.type_service == 'bar' and conso.boisson:
-            from bar.models import MouvementStockBar
-            MouvementStockBar.objects.create(
-                boisson=conso.boisson,
-                type_mouvement='entree',
-                quantite=conso.quantite,
-                commentaire=ref,
-                utilisateur=request.user,
+        if conso.type_service == 'bar' and conso.boisson_id:
+            from bar.models import BoissonBar
+            from django.db.models import F
+            BoissonBar.objects.filter(pk=conso.boisson_id).update(
+                quantite_stock=F('quantite_stock') + conso.quantite
             )
         elif conso.type_service == 'restaurant' and conso.plat:
             from cuisine.utils import process_stock_movement
