@@ -256,8 +256,6 @@
     </div>
 {% breadcrumb "Cave" "bar:dashboard" "Gestion du stock" "" %}
 
-    {% include 'bar/_gestion_nav.html' with active_nav='stock' %}
-
     <!-- ONGLETS -->
     <div class="tabs-nav">
         <button class="tab-btn active" onclick="showTab('dashboard', this)">
@@ -281,6 +279,9 @@
         <button class="tab-btn" onclick="showTab('casses', this)">
             <i class="fas fa-exclamation-triangle"></i> Gestion des casses
         </button>
+        <a href="{% url 'bar:fournisseur_list' %}" class="tab-btn" style="text-decoration:none;">
+            <i class="fas fa-truck"></i> Fournisseurs
+        </a>
     </div>
 
     <!-- ===== ONGLET : TABLEAU DE BORD ===== -->
