@@ -268,6 +268,7 @@
       <button class="close-btn" onclick="fermerModal('modalModifier')">×</button>
     </div>
     <input type="hidden" id="mod_pk">
+    <div class="form-row"><label>Identifiant (login) *</label><input type="text" id="mod_username" class="fc" autocomplete="off" placeholder="Ex: jean.dupont"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-row"><label>Prénom</label><input type="text" id="mod_prenom" class="fc"></div>
       <div class="form-row"><label>Nom</label><input type="text" id="mod_nom" class="fc"></div>
@@ -379,6 +380,7 @@ async function creerMembre(){
 
 function ouvrirModifier(pk, username, prenom, nom, email, groupe){
   document.getElementById('mod_pk').value = pk;
+  document.getElementById('mod_username').value = username;
   document.getElementById('mod_prenom').value = prenom;
   document.getElementById('mod_nom').value = nom;
   document.getElementById('mod_email').value = email;
@@ -388,7 +390,10 @@ function ouvrirModifier(pk, username, prenom, nom, email, groupe){
 
 async function modifierMembre(){
   const pk = document.getElementById('mod_pk').value;
+  const username = document.getElementById('mod_username').value.trim();
+  if(!username){ toast('❌ L\'identifiant (login) est obligatoire','error'); return; }
   const d = await post(`/parametres/personnel/${pk}/modifier/`, {
+    username:   username,
     first_name: document.getElementById('mod_prenom').value,
     last_name:  document.getElementById('mod_nom').value,
     email:      document.getElementById('mod_email').value,

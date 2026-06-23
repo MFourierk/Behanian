@@ -450,6 +450,11 @@ def personnel_update(request, pk):
         try:
             data = json.loads(request.body) if request.content_type and 'application/json' in request.content_type else request.POST.dict()
             
+            new_username = data.get('username', '').strip()
+            if new_username and new_username != user.username:
+                if User.objects.filter(username=new_username).exclude(pk=user.pk).exists():
+                    return JsonResponse({'success': False, 'error': f"L'identifiant '{new_username}' est déjà utilisé"})
+                user.username = new_username
             user.first_name = data.get('first_name', user.first_name).strip()
             user.last_name  = data.get('last_name', user.last_name).strip()
             user.email      = data.get('email', user.email).strip()
