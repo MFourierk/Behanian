@@ -222,7 +222,7 @@ def article_create(request):
             article.image = request.FILES.get('image')
         article.save()
         messages.success(request, f"Article '{article.nom}' créé avec succès.")
-        return redirect('bar:stock_management' + '?tab=articles')
+        return redirect(reverse('bar:stock_management') + '?tab=articles')
     context = {'page_title': 'Nouvel Article', 'categories': categories, 'unites': unites, 'mode': 'create'}
     return render(request, 'bar/article_form.html', context)
 
