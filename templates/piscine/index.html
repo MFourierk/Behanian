@@ -1135,7 +1135,9 @@ async function validerSortie(){
 async function sauvegarderTarif(){
   const a=parseFloat(document.getElementById('tarifAdulte').value)||0;
   const e=parseFloat(document.getElementById('tarifEnfant').value)||0;
-  if(!a){alert('Veuillez saisir le tarif adulte.');return;}
+  if(!a){piscineNotif('Veuillez saisir le tarif adulte.','error');return;}
+  const msg=`Confirmer les nouveaux tarifs ?\n\n• Adulte visiteur : ${a.toLocaleString()} FCFA\n• Enfant visiteur : ${e>0?e.toLocaleString()+' FCFA':'Gratuit'}\n\nCette action remplacera les tarifs actuels.`;
+  if(!confirm(msg))return;
   const r=await fetch('{% url "piscine:tarifs" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({adulte:a,enfant:e})});
   const d=await r.json();
   if(d.success){fermerModal('modalTarif');location.reload();}
