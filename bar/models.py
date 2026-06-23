@@ -226,11 +226,15 @@ class MouvementStockBar(models.Model):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         if is_new and self.type_mouvement not in self.TYPES_NEUTRES:
+            from django.db.models import F
             if self.type_mouvement in self.TYPES_ENTREE:
-                self.boisson.quantite_stock += self.quantite
+                BoissonBar.objects.filter(pk=self.boisson_id).update(
+                    quantite_stock=F('quantite_stock') + self.quantite
+                )
             else:
-                self.boisson.quantite_stock -= self.quantite
-            self.boisson.save()
+                BoissonBar.objects.filter(pk=self.boisson_id).update(
+                    quantite_stock=F('quantite_stock') - self.quantite
+                )
 
     class Meta:
         verbose_name = "Mouvement de stock (Bar)"

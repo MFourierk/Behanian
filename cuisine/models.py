@@ -180,12 +180,15 @@ class MouvementStockCuisine(models.Model):
         is_new = self.pk is None
         super().save(*args, **kwargs)
         if is_new and self.type_mouvement not in self.TYPES_NEUTRES:
-            ing = self.ingredient
+            from django.db.models import F
             if self.type_mouvement in self.TYPES_ENTREE:
-                ing.quantite_stock += self.quantite
+                Ingredient.objects.filter(pk=self.ingredient_id).update(
+                    quantite_stock=F('quantite_stock') + self.quantite
+                )
             else:
-                ing.quantite_stock -= self.quantite
-            ing.save()
+                Ingredient.objects.filter(pk=self.ingredient_id).update(
+                    quantite_stock=F('quantite_stock') - self.quantite
+                )
 
     class Meta:
         verbose_name        = "Mouvement de stock (Cuisine)"
