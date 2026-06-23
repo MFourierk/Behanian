@@ -768,7 +768,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
     <div class="modal-actions">
       <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
-      <button class="modal-btn-confirm" onclick="confirmerPaiement()">
+      <button class="modal-btn-confirm" id="btnConfirmerPaiement" onclick="confirmerPaiement()">
         <i class="fas fa-check mr-2"></i> Confirmer & Imprimer
       </button>
     </div>
@@ -1121,7 +1121,10 @@ function payerMaintenant() {
   _ouvrirModalPaiementNormal();
 }
 
+let _paiementEnCours = false;
 async function confirmerPaiement() {
+  if (_paiementEnCours) return;
+  _paiementEnCours = true;
   const t     = tickets[ticketActifId];
   const total = getTotal();
   let montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
@@ -1147,10 +1150,9 @@ async function confirmerPaiement() {
     if (modePaiement !== 'chambre' && montantRecu < total) { toast('Montant reçu insuffisant', 'error'); return; }
   }
 
-  // Désactiver le bouton pendant l'envoi
-  const btnConfirm = document.querySelector('.modal-btn-confirm');
-  btnConfirm.disabled = true;
-  btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...';
+  // Désactiver le bouton pendant l'envoi (id précis pour éviter le mauvais querySelector)
+  const btnConfirm = document.getElementById('btnConfirmerPaiement');
+  if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...'; }
 
   try {
     const payload = {
@@ -1179,8 +1181,8 @@ async function confirmerPaiement() {
 
     if (!data.ok) {
       afficherErreurStock(data);
-      btnConfirm.disabled = false;
-      btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer';
+      if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
+      _paiementEnCours = false;
       return;
     }
 
@@ -1220,8 +1222,9 @@ async function confirmerPaiement() {
 
   } catch(err) {
     toast(`Erreur réseau : ${err.message}`, 'error');
-    btnConfirm.disabled = false;
-    btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer';
+    if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
+  } finally {
+    _paiementEnCours = false;
   }
 }
 
