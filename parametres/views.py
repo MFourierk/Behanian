@@ -381,6 +381,7 @@ GROUPES_METIER = [
     ('Manager Cuisine',      '🍽️ Cuisine'),
     ('Cuisinier(e)',         '🍽️ Cuisine'),
     ('Serveuse/Serveur',     '🍽️ Restaurant'),
+    ('Responsable Cave',     '🍷 Cave'),
     ('Agent de Sécurité',    '🔒 Sécurité'),
 ]
 

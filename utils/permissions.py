@@ -9,6 +9,7 @@ Groupes canoniques (sans accents pour éviter les conflits d'encodage en base) :
   Caissiere Principale→ tous les caisses (restaurant, bar, piscine, espaces, caisse centrale)
   Caissiere           → caisses TPE uniquement (restaurant, bar, piscine, espaces) – PAS caisse centrale
   Utilisateur Simple  → aucun accès interface (gardiens, serveurs, agents)
+  Responsable Cave    → module Cave complet (articles, stock, inventaire, commandes, fournisseurs)
 """
 from functools import wraps
 from django.shortcuts import redirect
@@ -24,6 +25,7 @@ GROUPE_RECEPTIONNISTE     = 'Receptionniste'
 GROUPE_CAISSIERE_PRINCIPALE = 'Caissiere Principale'
 GROUPE_CAISSIERE          = 'Caissiere'
 GROUPE_UTILISATEUR_SIMPLE = 'Utilisateur Simple'
+GROUPE_RESPONSABLE_CAVE   = 'Responsable Cave'
 
 # Noms alternatifs (anciens groupes en base + rétrocompatibilité complète)
 _MANAGERS = [
@@ -58,6 +60,11 @@ _RECEPTIONNISTE = [
 _RESPONSABLE_HOTEL = [
     'Responsable Hôtel',
 ]
+
+# Responsable Cave : module Cave complet (stock, articles, inventaire, commandes, fournisseurs)
+_RESPONSABLE_CAVE = [
+    GROUPE_RESPONSABLE_CAVE,
+]
 _UTILISATEUR_SIMPLE = [
     GROUPE_UTILISATEUR_SIMPLE,
     'Serveuse/Serveur',
@@ -72,6 +79,8 @@ _RULES = [
     (['Manager Cuisine'],     ['cuisine']),
     (_RECEPTIONNISTE,         ['hotel']),
     (_RESPONSABLE_HOTEL,      ['hotel', 'parametres']),
+    # Responsable Cave : accès complet au module Cave (stock, articles, inventaire, commandes, fournisseurs)
+    (_RESPONSABLE_CAVE,       ['bar']),
     # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale)
     (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse']),
     # Caissière : TPE uniquement, PAS de caisse centrale
