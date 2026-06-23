@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
@@ -47,9 +47,9 @@
     </div>
 
     {% if mode == 'create' %}
-        {% breadcrumb "Cave" "bar:boisson_list" "Fournisseurs" "bar:fournisseur_list" "Nouveau Fournisseur" "" %}
+        {% breadcrumb "Cave" "bar:stock_management" "Fournisseurs" "bar:fournisseur_list" "Nouveau Fournisseur" "" %}
     {% else %}
-        {% breadcrumb "Cave" "bar:boisson_list" "Fournisseurs" "bar:fournisseur_list" "Modifier" "" %}
+        {% breadcrumb "Cave" "bar:stock_management" "Fournisseurs" "bar:fournisseur_list" "Modifier" "" %}
     {% endif %}
 
     <form method="post">
