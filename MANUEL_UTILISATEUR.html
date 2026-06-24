@@ -91,7 +91,7 @@
   <div class="logo-text">COMPLEXE HÔTELIER BEHANIAN</div>
   <div class="subtitle">Manuel Utilisateur — Logiciel de Gestion</div>
   <div class="tagline">Guide complet pour tous les membres du personnel</div>
-  <div class="version">Version 1.0 &nbsp;·&nbsp; Mai 2026 &nbsp;·&nbsp; Usage interne uniquement</div>
+  <div class="version">Version 2.0 &nbsp;·&nbsp; Juin 2026 &nbsp;·&nbsp; Usage interne uniquement</div>
 </div>
 
 <!-- TABLE DES MATIÈRES -->
@@ -105,9 +105,10 @@
     <li><a href="#s5">Chef caissier(e) &amp; Caissier(e)</a></li>
     <li><a href="#s6">Manager Cuisine &amp; Cuisinier(e)</a></li>
     <li><a href="#s7">Serveuse / Serveur</a></li>
-    <li><a href="#s8">Piscine &amp; Espaces Événementiels</a></li>
-    <li><a href="#s9">Facturation</a></li>
-    <li><a href="#s10">Questions fréquentes</a></li>
+    <li><a href="#s8">Responsable Cave</a></li>
+    <li><a href="#s9">Piscine &amp; Espaces Événementiels</a></li>
+    <li><a href="#s10">Facturation</a></li>
+    <li><a href="#s11">Questions fréquentes</a></li>
   </ol>
 </div>
 
@@ -222,21 +223,23 @@
   <tr><td>Manager Général(e)</td><td>Tous les modules</td></tr>
   <tr><td>Responsable Hôtel</td><td>Hôtel, Facturation</td></tr>
   <tr><td>Réceptionniste</td><td>Hôtel</td></tr>
-  <tr><td>Chef caissier(e)</td><td>Caisse + tous les modules en lecture</td></tr>
-  <tr><td>Caissier(e)</td><td>Caisse</td></tr>
+  <tr><td>Chef caissier(e)</td><td>Caisse, Restaurant, Cave (TPE), Piscine, Espaces</td></tr>
+  <tr><td>Caissier(e)</td><td>Restaurant, Cave (TPE uniquement), Piscine, Espaces</td></tr>
   <tr><td>Manager Cuisine</td><td>Cuisine, Restaurant</td></tr>
   <tr><td>Cuisinier(e)</td><td>Cuisine</td></tr>
   <tr><td>Serveuse/Serveur</td><td>Restaurant</td></tr>
-  <tr><td>Agent de Sécurité</td><td>Accès limité</td></tr>
+  <tr><td><strong>Responsable Cave</strong></td><td><strong>Cave — gestion complète (articles, stock, inventaire, commandes, fournisseurs)</strong></td></tr>
+  <tr><td>Agent de Sécurité</td><td>Aucun accès interface</td></tr>
 </table>
 
 <h3>Autres actions sur un compte</h3>
 <ul>
-  <li><strong>✏️ Modifier</strong> : changer nom, email, groupe</li>
+  <li><strong>✏️ Modifier</strong> : changer prénom, nom, email, groupe et <strong>identifiant de connexion (login)</strong></li>
   <li><strong>🔑 Réinitialiser le mot de passe</strong> : définir un nouveau mot de passe</li>
   <li><strong>Activer / Désactiver</strong> : bloquer temporairement l'accès sans supprimer le compte</li>
   <li><strong>🗑️ Supprimer</strong> : suppression définitive et irréversible</li>
 </ul>
+<div class="tip">Pour changer l'identifiant de connexion d'un membre (par exemple corriger une faute de frappe ou changer de nom marital), cliquez sur ✏️ Modifier, modifiez le champ <strong>Identifiant (login)</strong> et enregistrez. Le membre devra utiliser son nouvel identifiant à sa prochaine connexion.</div>
 <div class="important">Le compte superadmin est protégé. Il ne peut pas être modifié, désactivé ou supprimé depuis cette interface.</div>
 
 <h2>Paramétrage des modules</h2>
@@ -821,7 +824,121 @@ Nombre de portions : 1<br>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="section-role">
 <div class="role-header">
-  <h1 id="s8">8. Piscine &amp; Espaces Événementiels</h1>
+  <h1 id="s8">8. Responsable Cave</h1>
+  <p>Articles &amp; catalogue · Gestion de stock · Inventaires · Bons de commande · Réceptions · Fournisseurs · Casses</p>
+</div>
+
+<h2>Comprendre le module Cave</h2>
+<p>Le module Cave gère tout ce qui concerne les boissons du complexe : la vente TPE (réalisée par les caissiers), mais aussi la <strong>gestion complète du stock</strong> — réceptions fournisseurs, inventaires, déclarations de casse et suivi en temps réel. Le Responsable Cave supervise ce stock au quotidien.</p>
+
+<div class="important">Le stock Cave se met à jour <strong>automatiquement</strong> à chaque vente validée. N'entrez jamais de sortie de stock manuelle pour une vente : cela entraînerait une double déduction.</div>
+
+<h2>Naviguer dans le module Cave</h2>
+<p>Depuis le menu, cliquez sur <strong>🍷 Cave</strong>. Vous arrivez sur la page principale de gestion. En haut de page, des onglets permettent d'accéder aux différentes sections :</p>
+<table>
+  <tr><th>Onglet</th><th>Ce que vous y faites</th></tr>
+  <tr><td><strong>Stock</strong></td><td>Vue d'ensemble du stock : quantités, alertes rupture et stock bas</td></tr>
+  <tr><td><strong>Articles</strong></td><td>Gérer le catalogue des boissons (créer, modifier, supprimer)</td></tr>
+  <tr><td><strong>Mouvements</strong></td><td>Historique de tous les mouvements de stock (entrées, sorties, ventes)</td></tr>
+  <tr><td><strong>Inventaire</strong></td><td>Réaliser un inventaire physique et corriger les écarts</td></tr>
+  <tr><td><strong>Commandes</strong></td><td>Créer et suivre les bons de commande fournisseurs</td></tr>
+  <tr><td><strong>Réceptions</strong></td><td>Valider les livraisons et mettre le stock à jour</td></tr>
+  <tr><td><strong>Casses</strong></td><td>Déclarer les pertes, casses et produits abîmés</td></tr>
+  <tr><td><strong>Fournisseurs</strong></td><td>Gérer le répertoire des fournisseurs de la cave</td></tr>
+</table>
+
+<h2>Créer un article (boisson)</h2>
+<p>Avant de pouvoir vendre ou stocker une boisson, elle doit être enregistrée dans le catalogue.</p>
+<ol class="steps">
+  <li>Allez dans l'onglet <strong>Articles</strong>, puis cliquez sur <strong>Nouvel article</strong></li>
+  <li>Renseignez le <strong>nom</strong> de la boisson (ex : « Heineken 65cl », « Coca-Cola 50cl »)</li>
+  <li>Sélectionnez la <strong>catégorie</strong> : Bière, Spiritueux, Soft, Vin, Cocktail…</li>
+  <li>Choisissez l'<strong>unité de vente</strong> : Bouteille, Verre, Cannette, Litre…</li>
+  <li>Saisissez le <strong>prix de vente</strong> en FCFA — c'est le prix affiché sur le TPE caisse</li>
+  <li>Indiquez le <strong>prix d'achat</strong> (optionnel, pour le calcul de marge)</li>
+  <li>Définissez le <strong>seuil d'alerte stock</strong> — en dessous de ce niveau, une alerte orange apparaît sur le tableau de bord</li>
+  <li>Ajoutez une <strong>photo</strong> si disponible (aide les caissiers à identifier rapidement l'article)</li>
+  <li>Cliquez sur <strong>Enregistrer</strong></li>
+</ol>
+<div class="tip">L'article est immédiatement disponible dans le TPE Cave après enregistrement. Les caissiers le voient dans la bonne catégorie.</div>
+
+<h2>Tableau de bord du stock</h2>
+<p>L'onglet <strong>Stock</strong> affiche en un coup d'œil l'état de toutes vos boissons :</p>
+<ul>
+  <li><strong>Vert</strong> : stock suffisant</li>
+  <li><strong>Orange</strong> : stock bas — en dessous du seuil d'alerte, commande à préparer</li>
+  <li><strong>Rouge</strong> : rupture — plus de stock disponible</li>
+</ul>
+<div class="tip">Ces alertes remontent également sur le tableau de bord principal visible par la Direction.</div>
+
+<h2>Réceptionner une livraison (Bon de réception)</h2>
+<p>À chaque livraison d'un fournisseur, vous devez enregistrer un bon de réception pour que le stock soit mis à jour.</p>
+<ol class="steps">
+  <li>Allez dans l'onglet <strong>Réceptions</strong>, puis cliquez sur <strong>Nouvelle réception</strong></li>
+  <li>Sélectionnez le <strong>fournisseur</strong> concerné</li>
+  <li>Si vous avez un bon de commande existant, liez-le en le sélectionnant dans la liste</li>
+  <li>Ajoutez les articles reçus avec les <strong>quantités réellement livrées</strong> — comparez toujours avec le bon de livraison physique</li>
+  <li>Indiquez le <strong>numéro de bon de livraison</strong> du fournisseur pour la traçabilité</li>
+  <li>Cliquez sur <strong>Valider la réception</strong></li>
+</ol>
+<div class="tip">Le stock des articles est mis à jour automatiquement dès la validation. Vous voyez immédiatement les nouvelles quantités dans l'onglet Stock.</div>
+<div class="important">Ne validez jamais une réception sans avoir physiquement compté les articles reçus. En cas d'écart avec le bon de commande, notez les vraies quantités livrées — pas celles commandées.</div>
+
+<h2>Commander auprès d'un fournisseur</h2>
+<ol class="steps">
+  <li>Allez dans l'onglet <strong>Commandes</strong>, puis cliquez sur <strong>Nouveau bon de commande</strong></li>
+  <li>Sélectionnez le <strong>fournisseur</strong></li>
+  <li>Ajoutez les articles à commander avec les quantités souhaitées</li>
+  <li>Cliquez sur <strong>Enregistrer</strong> — le bon passe en statut <em>En attente</em></li>
+  <li>Imprimez ou transmettez le bon de commande au fournisseur</li>
+</ol>
+<div class="tip">Consultez l'onglet Stock avant de commander : les articles en orange ou rouge sont ceux qui nécessitent un réapprovisionnement urgent.</div>
+
+<h2>Réaliser un inventaire</h2>
+<p>L'inventaire permet de corriger les écarts entre le stock théorique (calculé par le logiciel) et le stock physique réel. À faire régulièrement, idéalement chaque semaine.</p>
+<ol class="steps">
+  <li>Allez dans l'onglet <strong>Inventaire</strong>, puis cliquez sur <strong>Nouvel inventaire</strong></li>
+  <li>Pour chaque article, saisissez la <strong>quantité physiquement comptée</strong> dans votre cave</li>
+  <li>Le logiciel calcule automatiquement les écarts (positif = excédent, négatif = manquant)</li>
+  <li>Vérifiez les écarts importants avant de valider</li>
+  <li>Cliquez sur <strong>Valider l'inventaire</strong> — le stock est ajusté aux quantités réelles</li>
+</ol>
+<div class="note">Après validation, l'inventaire est enregistré avec la date et l'heure. Vous pouvez consulter l'historique des inventaires passés pour suivre les tendances.</div>
+
+<h2>Déclarer une casse ou une perte</h2>
+<p>Bouteille cassée, produit périmé, vol constaté : toute perte doit être déclarée pour maintenir le stock exact.</p>
+<ol class="steps">
+  <li>Allez dans l'onglet <strong>Casses</strong>, puis cliquez sur <strong>Nouvelle casse</strong></li>
+  <li>Sélectionnez l'article concerné</li>
+  <li>Indiquez la <strong>quantité perdue</strong></li>
+  <li>Sélectionnez le <strong>motif</strong> : Casse accidentelle / Péremption / Vol / Autre</li>
+  <li>Ajoutez un <strong>commentaire</strong> descriptif (ex : « 3 bouteilles tombées lors du rangement »)</li>
+  <li>Cliquez sur <strong>Enregistrer</strong> — le stock est diminué en conséquence</li>
+</ol>
+<div class="important">Déclarez les casses dès qu'elles surviennent. Ne les accumulez pas en fin de semaine — un stock incorrect fausse les alertes et les rapports.</div>
+
+<h2>Gérer les fournisseurs</h2>
+<ol class="steps">
+  <li>Allez dans l'onglet <strong>Fournisseurs</strong></li>
+  <li>Cliquez sur <strong>Nouveau fournisseur</strong></li>
+  <li>Renseignez : nom de la société, contact, téléphone, email, adresse</li>
+  <li>Cliquez sur <strong>Enregistrer</strong></li>
+</ol>
+<div class="tip">Un fournisseur bien renseigné (avec téléphone et email) vous permet de retrouver rapidement qui contacter en cas de rupture urgente.</div>
+
+<h2>Consulter l'historique des mouvements</h2>
+<p>L'onglet <strong>Mouvements</strong> affiche tous les mouvements de stock avec la date, l'article, la quantité et la source (vente, réception, casse, inventaire). Utilisez les filtres pour analyser :</p>
+<ul>
+  <li>La consommation d'un article particulier sur une période</li>
+  <li>Les ventes réalisées par un serveur/serveuse spécifique</li>
+  <li>Les entrées d'un fournisseur donné</li>
+</ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="section-role">
+<div class="role-header">
+  <h1 id="s9">9. Piscine &amp; Espaces Événementiels</h1>
   <p>Entrées piscine · Consommations · Tarifs · Réservations d'espaces · Contrats</p>
 </div>
 
@@ -948,9 +1065,12 @@ Nombre de portions : 1<br>
 <h3>Configurer les tarifs <em>(Managers uniquement)</em></h3>
 <ol class="steps">
   <li>Cliquez sur le bouton ⚙️ <strong>Tarifs</strong> en haut à droite de l'écran Piscine</li>
-  <li>Saisissez le tarif <strong>adulte visiteur</strong> et le tarif <strong>enfant visiteur</strong> en FCFA</li>
+  <li>Saisissez le tarif <strong>adulte visiteur</strong> et le tarif <strong>enfant visiteur</strong> en FCFA (laissez 0 pour gratuit)</li>
   <li>Cliquez sur <strong>Enregistrer</strong></li>
+  <li>Une fenêtre de <strong>confirmation</strong> s'affiche avec le récapitulatif des nouveaux tarifs — vérifiez les montants avant de confirmer</li>
+  <li>Cliquez sur <strong>OK</strong> pour appliquer, ou <strong>Annuler</strong> pour revenir sans modifier</li>
 </ol>
+<div class="important">Cette confirmation protège contre les modifications accidentelles des tarifs. Lisez toujours le récapitulatif avant de valider — les nouveaux tarifs s'appliquent immédiatement à toutes les nouvelles entrées.</div>
 <p>Les résidents hôtel (adultes et enfants) entrent toujours <strong>gratuitement</strong> — ce tarif ne peut pas être modifié.</p>
 
 <h3>Créer et gérer les forfaits VIP <em>(Managers uniquement)</em></h3>
@@ -1000,7 +1120,7 @@ Nombre de portions : 1<br>
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="section-role">
 <div class="role-header">
-  <h1 id="s9">9. Facturation</h1>
+  <h1 id="s10">10. Facturation</h1>
   <p>Tickets · Factures · Devis (proformas) · Avoirs · Exports PDF</p>
 </div>
 
@@ -1045,7 +1165,7 @@ Nombre de portions : 1<br>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <div class="section-role">
-<h1 id="s10">10. Questions fréquentes</h1>
+<h1 id="s11">11. Questions fréquentes</h1>
 
 <table>
   <tr>
@@ -1097,7 +1217,7 @@ Nombre de portions : 1<br>
 
 <hr>
 <div class="footer">
-  <p>Manuel Utilisateur — Complexe Hôtelier BEHANIAN &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; Mai 2026</p>
+  <p>Manuel Utilisateur — Complexe Hôtelier BEHANIAN &nbsp;·&nbsp; Version 2.0 &nbsp;·&nbsp; Juin 2026</p>
   <p>Document interne — Ne pas diffuser à l'extérieur du complexe</p>
 </div>
 
