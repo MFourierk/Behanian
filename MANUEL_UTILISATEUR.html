@@ -1074,14 +1074,72 @@ Nombre de portions : 1<br>
 <p>Les résidents hôtel (adultes et enfants) entrent toujours <strong>gratuitement</strong> — ce tarif ne peut pas être modifié.</p>
 
 <h3>Créer et gérer les forfaits VIP <em>(Managers uniquement)</em></h3>
-<p>Les forfaits VIP sont créés depuis <strong>⚙️ Paramètres → Forfaits</strong>. Pour chaque forfait, vous définissez :</p>
-<ul style="margin:8px 0 8px 20px;line-height:2">
-  <li><strong>Nom</strong> : ex. « Pool Party », « Détente Premium »</li>
-  <li><strong>Prix</strong> : montant global du forfait</li>
-  <li><strong>Articles inclus</strong> : boissons et/ou plats inclus dans le prix</li>
-  <li><strong>Module</strong> : sélectionnez « Piscine » pour que le forfait apparaisse sur l'écran piscine</li>
+
+<div class="important">
+  <strong>Avant de commencer :</strong> les articles inclus dans le forfait (boissons, plats) doivent déjà exister dans le système.<br>
+  → Les boissons se créent dans <strong>🍷 Cave → Articles</strong><br>
+  → Les plats se créent dans <strong>🍽️ Cuisine → Plats</strong> (avec leur fiche technique)
+</div>
+
+<h4>Étape 1 — Accéder à la gestion des forfaits</h4>
+<ol class="steps">
+  <li>Allez dans <strong>⚙️ Paramètres</strong> (menu de gauche)</li>
+  <li>Cliquez sur l'onglet ou le lien <strong>Forfaits</strong></li>
+  <li>Cliquez sur <strong>Nouveau forfait</strong></li>
+</ol>
+
+<h4>Étape 2 — Renseigner les informations du forfait</h4>
+<table>
+  <tr><th>Champ</th><th>Ce qu'il faut saisir</th><th>Exemple</th></tr>
+  <tr><td><strong>Nom</strong></td><td>Le nom affiché sur le bouton doré à l'écran Piscine</td><td>Pool Party · Détente Premium</td></tr>
+  <tr><td><strong>Module</strong></td><td><strong>Obligatoirement « Piscine »</strong> — sinon le forfait n'apparaîtra pas sur l'écran piscine</td><td>Piscine</td></tr>
+  <tr><td><strong>Prix</strong></td><td>Le montant total facturé au client en FCFA</td><td>25 000</td></tr>
+  <tr><td><strong>Description</strong></td><td>Texte libre visible par le staff (ce que comprend le forfait)</td><td>Entrée + 2 boissons + 1 plat</td></tr>
+  <tr><td><strong>Disponible</strong></td><td><strong>Doit être coché</strong> pour que le forfait s'affiche à l'écran. Décocher pour le masquer temporairement sans le supprimer</td><td>✅ Coché</td></tr>
+  <tr><td><strong>Image</strong></td><td>Photo illustrant le forfait (optionnel)</td><td>—</td></tr>
+</table>
+
+<h4>Étape 3 — Ajouter les articles inclus dans le forfait</h4>
+<p>C'est ici que vous indiquez ce que le client reçoit dans son forfait. Chaque ligne est un article inclus dans le prix.</p>
+<ol class="steps">
+  <li>Cliquez sur <strong>Ajouter un article</strong></li>
+  <li>Choisissez le <strong>type</strong> :
+    <ul>
+      <li><em>Boisson cave</em> — sélectionnez dans la liste des boissons enregistrées</li>
+      <li><em>Plat cuisine</em> — sélectionnez dans la liste des plats du menu</li>
+      <li><em>Libellé libre</em> — pour une prestation sans article lié (ex : « Accès vestiaire »)</li>
+    </ul>
+  </li>
+  <li>Indiquez la <strong>quantité</strong> incluse (ex : 2 pour 2 bouteilles d'eau)</li>
+  <li>Répétez pour chaque article du forfait</li>
+</ol>
+<div class="tip"><strong>Exemple — Pool Party à 25 000 FCFA :</strong><br>
+• 1× Eau minérale 50cl (boisson cave)<br>
+• 1× Jus de fruit frais (boisson cave)<br>
+• 1× Plat du jour piscine (plat cuisine)<br>
+→ Ces 3 articles sont automatiquement décomptés du stock à chaque entrée VIP enregistrée.</div>
+
+<h4>Étape 4 — Enregistrer et vérifier</h4>
+<ol class="steps">
+  <li>Cliquez sur <strong>Enregistrer</strong></li>
+  <li>Allez sur l'écran <strong>🏊 Piscine</strong> et vérifiez que le <strong>bouton doré</strong> du forfait apparaît bien en haut de page</li>
+</ol>
+
+<div class="note">
+  <strong>Le forfait n'apparaît pas sur l'écran Piscine ?</strong> Vérifiez ces 3 points :<br>
+  ① Le champ <strong>Module</strong> est bien réglé sur <strong>Piscine</strong> (pas « Bar », « Hôtel »…)<br>
+  ② La case <strong>Disponible</strong> est bien <strong>cochée</strong><br>
+  ③ Le forfait contient <strong>au moins un article</strong> — un forfait vide ne s'affiche pas
+</div>
+
+<h4>Modifier ou désactiver un forfait</h4>
+<ul>
+  <li><strong>Modifier</strong> : Paramètres → Forfaits → cliquez sur l'icône ✏️ — vous pouvez changer le nom, le prix, les articles inclus</li>
+  <li><strong>Désactiver temporairement</strong> : décochez la case <strong>Disponible</strong> — le bouton disparaît de l'écran Piscine mais le forfait est conservé pour être réactivé plus tard</li>
+  <li><strong>Supprimer</strong> : cliquez sur 🗑️ — suppression définitive</li>
 </ul>
-<div class="tip">Si le stock d'un article du forfait est épuisé, le forfait apparaît en rouge sur l'écran d'accueil Piscine avec un message d'alerte. Vous pouvez toujours proposer le forfait avec un article de remplacement.</div>
+
+<div class="tip">Si le stock d'un article du forfait est épuisé, le forfait apparaît en <strong>rouge</strong> sur l'écran Piscine avec un message d'alerte. Le staff peut proposer le forfait avec un article de remplacement — sélectionnable dans le menu déroulant qui apparaît automatiquement.</div>
 
 <h2>Module Espaces Événementiels</h2>
 
