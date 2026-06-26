@@ -182,6 +182,15 @@ def enregistrer_entree(request):
                     pk=forfait_id, module='piscine', disponible=True
                 )
                 prix_total = forfait.prix
+                # Le forfait VIP couvre 1 adulte ; adultes suppl. et enfants au tarif standard
+                extras_adultes = max(0, nb_adultes - 1)
+                if extras_adultes > 0 or nb_enfants > 0:
+                    t_adulte_vip = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
+                    t_enfant_vip = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
+                    if extras_adultes > 0 and t_adulte_vip:
+                        prix_total += t_adulte_vip.prix_unitaire * extras_adultes
+                    if nb_enfants > 0 and t_enfant_vip:
+                        prix_total += t_enfant_vip.prix_unitaire * nb_enfants
             except Forfait.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Forfait VIP introuvable ou indisponible.'})
 

@@ -552,6 +552,8 @@ const BOISSONS_SUB = [{% for b in boissons %}{id:{{ b.pk }},nom:"{{ b.nom|escape
 const PLATS_SUB    = [{% for p in plats %}{id:{{ p.pk }},nom:"{{ p.nom|escapejs }}",cat:"{{ p.categorie.nom|escapejs }}"},{% endfor %}];
 
 let vipForfaitId = null;
+let vipForfaitNom = '';
+let vipForfaitPrix = 0;
 let vipSubstitutions = {};  // {ligne_id: {type, id, nom}}
 let vipRuptureIds = new Set(); // ligne_ids en rupture non résolus
 
@@ -562,7 +564,7 @@ function ouvrirEntree(type){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
   document.getElementById('entreeType').value=type;
-  vipForfaitId = null; vipSubstitutions = {}; vipRuptureIds = new Set();
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipSubstitutions = {}; vipRuptureIds = new Set();
   setType(type);
   document.getElementById('modalEntree').classList.add('open');
 }
@@ -570,7 +572,7 @@ function ouvrirEntree(type){
 function ouvrirEntreeVip(forfaitId, nom, prix){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
-  vipForfaitId = null; vipSubstitutions = {}; vipRuptureIds = new Set();
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipSubstitutions = {}; vipRuptureIds = new Set();
   setType('visiteur');
   document.getElementById('modalEntree').classList.add('open');
   // Sélectionner automatiquement ce forfait VIP
@@ -580,7 +582,7 @@ function ouvrirEntreeVip(forfaitId, nom, prix){
 function ouvrirEntreeResident(resId, nom, chambre){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
-  vipForfaitId = null;
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0;
   setType('heberge');
   // Présélectionner la chambre
   const sel=document.getElementById('entreeChambre');
@@ -595,7 +597,7 @@ function ouvrirEntreeResident(resId, nom, chambre){
 }
 
 function setType(type){
-  vipForfaitId = null;
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0;
   document.getElementById('entreeType').value=type;
   document.getElementById('entreeReservationId').value='';
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
@@ -612,6 +614,7 @@ function setType(type){
 
 async function setVip(forfaitId, nom, prix){
   vipForfaitId = null;
+  vipForfaitNom = nom; vipForfaitPrix = prix;
   vipSubstitutions = {};
   vipRuptureIds = new Set();
   document.getElementById('entreeType').value='visiteur';
@@ -658,10 +661,7 @@ async function setVip(forfaitId, nom, prix){
     _setBtnValider(false, 'Erreur de vérification');
   }
 
-  // Prix
-  const row = document.getElementById('entreePrixRow');
-  row.style.background='#fffbeb'; row.style.color='#92400e'; row.style.borderColor='#fde68a';
-  row.textContent=`⭐ ${nom} — ${prix.toLocaleString('fr-FR')} F (forfait inclus)`;
+  updatePrix();
 }
 
 function _renderLigneForfait(l){
@@ -768,11 +768,23 @@ function changeNb(cat,d){
 }
 
 function updatePrix(){
-  if(vipForfaitId) return; // Prix VIP géré par setVip()
   const type=document.getElementById('entreeType').value;
   const na=parseInt(document.getElementById('entreeAdultes').value)||0;
   const ne=parseInt(document.getElementById('entreeEnfants').value)||0;
   const row=document.getElementById('entreePrixRow');
+  if(vipForfaitPrix>0){
+    const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+    const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+    const extrasA=Math.max(0,na-1);
+    const total=vipForfaitPrix+extrasA*ta+ne*te;
+    let detail=`⭐ ${vipForfaitNom} — ${vipForfaitPrix.toLocaleString('fr-FR')} F`;
+    if(extrasA>0)detail+=` + ${extrasA} adulte${extrasA>1?'s':''} × ${ta.toLocaleString('fr-FR')} F`;
+    if(ne>0)detail+=` + ${ne} enfant${ne>1?'s':''} × ${te.toLocaleString('fr-FR')} F`;
+    if(extrasA>0||ne>0)detail+=` = ${total.toLocaleString('fr-FR')} F`;
+    row.style.background='#fffbeb';row.style.color='#92400e';row.style.borderColor='#fde68a';
+    row.textContent=detail;
+    return;
+  }
   if(type==='heberge'){
     row.style.background='#f0fdf4';row.style.color='#15803d';row.style.borderColor='#bbf7d0';
     row.textContent='🏨 Résident hôtel — Entrée gratuite (adultes et enfants)';
