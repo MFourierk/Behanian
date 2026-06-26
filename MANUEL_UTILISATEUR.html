@@ -4,25 +4,211 @@
 <meta charset="UTF-8">
 <title>Manuel Utilisateur — Complexe Hôtelier BEHANIAN</title>
 <style>
-  @page { margin: 2cm 2.5cm; }
+  @page { margin: 0; }
+  @page :first { margin: 0; }
   @media print {
     .no-print { display: none; }
+    .cover-page { page-break-after: always; margin: 0 !important; }
     h1 { page-break-before: avoid; }
     h2 { page-break-after: avoid; page-break-before: always; }
     h2:first-of-type { page-break-before: avoid; }
     table { page-break-inside: avoid; }
     .section-role { page-break-before: always; }
+    .container { padding: 20px 40px; }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.6; background: #fff; }
-  .container { max-width: 900px; margin: 0 auto; padding: 30px 40px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 40px 30px; }
 
-  /* COUVERTURE */
-  .cover { text-align: center; padding: 60px 20px 50px; border-bottom: 3px solid #c0392b; margin-bottom: 40px; }
-  .cover .logo-text { font-size: 28pt; font-weight: 900; color: #c0392b; letter-spacing: 2px; }
-  .cover .subtitle { font-size: 15pt; color: #555; margin-top: 8px; }
-  .cover .version { margin-top: 20px; font-size: 10pt; color: #888; }
-  .cover .tagline { margin-top: 30px; font-size: 12pt; color: #333; font-style: italic; }
+  /* ══════════════════════════════════════════
+     PAGE DE GARDE
+  ══════════════════════════════════════════ */
+  .cover-page {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #1a2535 0%, #0f1720 60%, #1a2535 100%);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0;
+  }
+
+  /* Décorations géométriques */
+  .cover-page::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 420px; height: 420px;
+    border-radius: 50%;
+    background: rgba(192,57,43,0.12);
+    pointer-events: none;
+  }
+  .cover-page::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -60px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: rgba(192,57,43,0.08);
+    pointer-events: none;
+  }
+
+  /* Bande rouge verticale gauche */
+  .cover-accent-bar {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 8px;
+    background: linear-gradient(to bottom, #c0392b, #922b21, #c0392b);
+  }
+
+  /* ZONE HAUTE */
+  .cover-top {
+    padding: 60px 60px 40px 80px;
+    flex: 0 0 auto;
+  }
+  .cover-eyebrow {
+    font-size: 9pt;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 10px;
+  }
+  .cover-hotel-name {
+    font-size: 13pt;
+    font-weight: 400;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 4px;
+  }
+  .cover-brand {
+    font-size: 52pt;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .cover-tagline {
+    margin-top: 12px;
+    font-size: 11pt;
+    font-style: italic;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+  }
+
+  /* SÉPARATEUR */
+  .cover-divider {
+    margin: 0 60px 0 80px;
+    height: 2px;
+    background: linear-gradient(to right, #c0392b, rgba(192,57,43,0.1));
+    flex: 0 0 auto;
+  }
+
+  /* ZONE CENTRALE */
+  .cover-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 50px 60px 30px 80px;
+  }
+  .cover-doc-label {
+    font-size: 8.5pt;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #c0392b;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+  .cover-doc-title {
+    font-size: 34pt;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.3);
+  }
+  .cover-doc-subtitle {
+    margin-top: 10px;
+    font-size: 13pt;
+    color: rgba(255,255,255,0.55);
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+
+  /* GRILLE MODULES */
+  .cover-modules {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 20px;
+    max-width: 580px;
+  }
+  .cover-module-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .cover-module-item .mod-icon { font-size: 14pt; }
+  .cover-module-item .mod-name {
+    font-size: 8.5pt;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.75);
+  }
+
+  /* ZONE BASSE */
+  .cover-bottom {
+    flex: 0 0 auto;
+    padding: 30px 60px 50px 80px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .cover-meta { display: flex; flex-direction: column; gap: 4px; }
+  .cover-version-badge {
+    display: inline-block;
+    background: #c0392b;
+    color: white;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .cover-date {
+    font-size: 9.5pt;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 1px;
+  }
+  .cover-contact {
+    text-align: right;
+  }
+  .cover-address-line {
+    font-size: 8.5pt;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.8;
+  }
+  .cover-confidential-badge {
+    margin-top: 8px;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.3);
+    font-size: 7.5pt;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+  }
 
   /* TABLE DES MATIÈRES */
   .toc { background: #f8f5f0; border-left: 4px solid #c0392b; padding: 20px 24px; border-radius: 0 8px 8px 0; margin-bottom: 40px; }
@@ -84,15 +270,53 @@
 
 <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimer / Exporter PDF</button>
 
-<div class="container">
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE DE GARDE (hors container — pleine page)
+═══════════════════════════════════════════════════════════ -->
+<div class="cover-page">
+  <div class="cover-accent-bar"></div>
 
-<!-- COUVERTURE -->
-<div class="cover">
-  <div class="logo-text">COMPLEXE HÔTELIER BEHANIAN</div>
-  <div class="subtitle">Manuel Utilisateur — Logiciel de Gestion</div>
-  <div class="tagline">Guide complet pour tous les membres du personnel</div>
-  <div class="version">Version 2.0 &nbsp;·&nbsp; Juin 2026 &nbsp;·&nbsp; Usage interne uniquement</div>
+  <div class="cover-top">
+    <div class="cover-eyebrow">Système de gestion hôtelière intégrée</div>
+    <div class="cover-hotel-name">Complexe Hôtelier</div>
+    <div class="cover-brand">BEHANIAN</div>
+    <div class="cover-tagline">Votre confort, notre priorité</div>
+  </div>
+
+  <div class="cover-divider"></div>
+
+  <div class="cover-main">
+    <div class="cover-doc-label">■ Document officiel</div>
+    <div class="cover-doc-title">Manuel<br>Utilisateur</div>
+    <div class="cover-doc-subtitle">Guide complet pour tous les membres du personnel</div>
+
+    <div class="cover-modules">
+      <div class="cover-module-item"><span class="mod-icon">🏨</span><span class="mod-name">Hôtel</span></div>
+      <div class="cover-module-item"><span class="mod-icon">🍴</span><span class="mod-name">Restaurant</span></div>
+      <div class="cover-module-item"><span class="mod-icon">🍽️</span><span class="mod-name">Cuisine</span></div>
+      <div class="cover-module-item"><span class="mod-icon">🍷</span><span class="mod-name">Cave</span></div>
+      <div class="cover-module-item"><span class="mod-icon">🏊</span><span class="mod-name">Piscine</span></div>
+      <div class="cover-module-item"><span class="mod-icon">📅</span><span class="mod-name">Espaces</span></div>
+      <div class="cover-module-item"><span class="mod-icon">💰</span><span class="mod-name">Caisse</span></div>
+      <div class="cover-module-item"><span class="mod-icon">📄</span><span class="mod-name">Facturation</span></div>
+      <div class="cover-module-item"><span class="mod-icon">⚙️</span><span class="mod-name">Paramètres</span></div>
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <div class="cover-meta">
+      <span class="cover-version-badge">Version 2.0</span>
+      <span class="cover-date">Juin 2026</span>
+    </div>
+    <div class="cover-contact">
+      <div class="cover-address-line">Yopougon Beago, à 2 000 m du Palais de justice</div>
+      <div class="cover-address-line">Tél : 07 58 29 11 10 &nbsp;/&nbsp; 01 43 09 76 16</div>
+      <div class="cover-confidential-badge">Document confidentiel — usage interne</div>
+    </div>
+  </div>
 </div>
+
+<div class="container">
 
 <!-- TABLE DES MATIÈRES -->
 <div class="toc">
