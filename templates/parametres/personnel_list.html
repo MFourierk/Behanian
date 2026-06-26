@@ -55,7 +55,7 @@
 
 
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
-    <button class="btn-a btn-or" onclick="ouvrirModal('modalCreer')"><i class="fas fa-user-plus"></i> Nouveau membre</button>
+    <button class="btn-a btn-or" onclick="ouvrirCreer()"><i class="fas fa-user-plus"></i> Nouveau membre</button>
     <button class="btn-a btn-bleu" onclick="ouvrirModal('modalCreerGroupe')"><i class="fas fa-tag"></i> Nouveau poste terrain</button>
     <form method="post" action="{% url 'parametres:initialiser_groupes' %}" style="margin:0">
       {% csrf_token %}
@@ -135,6 +135,9 @@
             <div style="display:flex;gap:5px">
               <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Modifier" onclick="ouvrirModifier({{ u.pk }},'{{ u.username|escapejs }}','{{ u.first_name|escapejs }}','{{ u.last_name|escapejs }}','{{ u.email|escapejs }}','{{ groupe.name|default:''|escapejs }}')">
                 <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-a btn-bleu" style="padding:5px 8px;font-size:11px" title="Dupliquer ce profil" onclick="ouvrirDupliquer('{{ groupe.name|default:''|escapejs }}','{{ u.get_full_name|default:u.username|escapejs }}')">
+                <i class="fas fa-copy"></i>
               </button>
               <button class="btn-a btn-outline" style="padding:5px 8px;font-size:11px" title="Réinitialiser mot de passe" onclick="ouvrirResetPwd({{ u.pk }},'{{ u.get_full_name|default:u.username|escapejs }}')">
                 <i class="fas fa-key"></i>
@@ -344,6 +347,30 @@ const CSRF = '{{ csrf_token }}';
 
 function ouvrirModal(id){document.getElementById(id).classList.add('open');}
 function fermerModal(id){document.getElementById(id).classList.remove('open');}
+
+function ouvrirCreer(){
+  document.getElementById('cr_prenom').value='';
+  document.getElementById('cr_nom').value='';
+  document.getElementById('cr_username').value='';
+  document.getElementById('cr_password').value='';
+  document.getElementById('cr_email').value='';
+  document.getElementById('cr_groupe').value='';
+  document.querySelector('#modalCreer .modal-head h3').innerHTML='<i class="fas fa-user-plus" style="color:#16a34a;margin-right:8px"></i>Nouveau membre du personnel';
+  onCrGroupeChange();
+  ouvrirModal('modalCreer');
+}
+
+function ouvrirDupliquer(groupe, source){
+  document.getElementById('cr_prenom').value='';
+  document.getElementById('cr_nom').value='';
+  document.getElementById('cr_username').value='';
+  document.getElementById('cr_password').value='';
+  document.getElementById('cr_email').value='';
+  document.getElementById('cr_groupe').value=groupe;
+  document.querySelector('#modalCreer .modal-head h3').innerHTML='<i class="fas fa-copy" style="color:#2563eb;margin-right:8px"></i>Dupliquer · <span style="color:#2563eb">' + groupe + '</span>';
+  onCrGroupeChange();
+  ouvrirModal('modalCreer');
+}
 
 function toast(msg, type='info'){
   const colors={success:'background:#dcfce7;color:#15803d',error:'background:#fee2e2;color:#dc2626',info:'background:#dbeafe;color:#1e40af'};
