@@ -1,0 +1,162 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+{% breadcrumb "Cave" "bar:stock_management" "Gestion de stock" "bar:stock_management" bon.numero "" %}
+<style>
+    .page-header { background: linear-gradient(135deg, #2980b9 0%, #2471a3 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(41,128,185,0.25); }
+    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+    .back-link { display:inline-flex; align-items:center; gap:6px; color:#2980b9; font-weight:600; margin-bottom:16px; text-decoration:none; }
+    .back-link:hover { color:#1a6fa3; }
+    .detail-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .card-title { font-weight: 700; color: #2980b9; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #d6eaf8; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+    .meta-item { background: #f4f9fd; border: 1px solid #aed6f1; border-radius: 10px; padding: 14px; }
+    .meta-label { font-size: 0.75rem; font-weight: 600; color: #2980b9; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .meta-value { font-size: 1.05rem; font-weight: 700; color: #2c3e50; }
+    .bc-table { width: 100%; border-collapse: collapse; }
+    .bc-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.78rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; text-align: left; }
+    .bc-table th.r { text-align: right; }
+    .bc-table th.c { text-align: center; }
+    .bc-table td { padding: 9px 14px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; font-size: 0.9rem; }
+    .bc-table td.r { text-align: right; }
+    .bc-table td.c { text-align: center; }
+    .bc-table tr:hover { background: #f4f9fd; }
+    .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; text-transform:uppercase; }
+    .badge-brouillon { background:#fef3c7; color:#92400e; }
+    .badge-confirme  { background:#dbeafe; color:#1e40af; }
+    .badge-envoye    { background:#ede9fe; color:#6d28d9; }
+    .badge-partiel   { background:#fce7f3; color:#9d174d; }
+    .badge-recu, .badge-livre { background:#dcfce7; color:#15803d; }
+    .badge-facture   { background:#dcfce7; color:#15803d; }
+    .badge-annule    { background:#fee2e2; color:#b91c1c; }
+    .tag-solde    { background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600; }
+    .tag-reliquat { background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:600; }
+    .btn-action { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-size:0.88rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; }
+    .btn-modifier { background:#2980b9; color:white; }
+    .btn-modifier:hover { background:#1a6fa3; }
+    .btn-annuler { background:#e74c3c; color:white; }
+    .btn-annuler:hover { background:#c0392b; }
+    .btn-back { background:#ecf0f1; color:#2c3e50; }
+    .btn-back:hover { background:#dde1e4; }
+    .actions-row { display:flex; gap:10px; flex-wrap:wrap; }
+    .total-row td { background:#d6eaf8; font-weight:700; border-top:2px solid #aed6f1; padding:10px 14px; }
+    .total-row td.r { text-align:right; color:#2980b9; font-size:1rem; }
+    .alerte-retard { background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:12px 16px; margin-bottom:16px; color:#856404; font-weight:600; font-size:0.9rem; }
+</style>
+
+<a href="{% url 'bar:stock_management' %}?tab=commandes" class="back-link">← Retour Commandes</a>
+
+<div class="page-header">
+    <h2>{{ bon.numero }}</h2>
+    <p>
+        {% if bon.type_commande == 'achat' %}Commande Fournisseur{% else %}Commande Client{% endif %}
+        — <span class="badge badge-{{ bon.statut }}">{{ bon.get_statut_display }}</span>
+        {% if bon.est_en_retard %}<span style="background:#ffc107;color:#856404;padding:2px 10px;border-radius:10px;font-size:0.78rem;margin-left:8px;">⚠ En retard</span>{% endif %}
+    </p>
+</div>
+
+{% if bon.est_en_retard %}
+<div class="alerte-retard">⚠️ Ce bon est en retard — date de livraison prévue : {{ bon.date_livraison_prevue|date:"d/m/Y" }}</div>
+{% endif %}
+
+<!-- Meta -->
+<div class="meta-grid">
+    <div class="meta-item">
+        <div class="meta-label">{% if bon.type_commande == 'achat' %}Fournisseur{% else %}Client{% endif %}</div>
+        <div class="meta-value">{{ bon.tiers_nom }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Date commande</div>
+        <div class="meta-value">{{ bon.date_commande|date:"d/m/Y" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Livraison prévue</div>
+        <div class="meta-value">{{ bon.date_livraison_prevue|date:"d/m/Y"|default:"Non définie" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Créé par</div>
+        <div class="meta-value">{{ bon.cree_par.get_full_name|default:bon.cree_par.username|default:"—" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Montant total</div>
+        <div class="meta-value" style="color:#2980b9;">{{ bon.total|montant }} FCFA</div>
+    </div>
+    {% if bon.date_reception_effective %}
+    <div class="meta-item">
+        <div class="meta-label">Date réception effective</div>
+        <div class="meta-value">{{ bon.date_reception_effective|date:"d/m/Y" }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Lignes -->
+<div class="detail-card">
+    <div class="card-title">Articles commandés</div>
+    <table class="bc-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Article</th>
+                <th class="r">Qté commandée</th>
+                <th class="r">Qté reçue / livrée</th>
+                <th class="r">Reliquat</th>
+                <th class="r">Prix unit. (FCFA)</th>
+                <th class="r">Total (FCFA)</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in lignes %}
+            <tr>
+                <td style="color:#95a5a6;font-size:0.8rem;">{{ forloop.counter }}</td>
+                <td style="font-weight:600;">{{ l.article.nom }}</td>
+                <td class="r">{{ l.quantite_commandee|floatformat:0 }}</td>
+                <td class="r">{{ l.quantite_recue|floatformat:0 }}</td>
+                <td class="c">
+                    {% if l.est_solde %}
+                        <span class="tag-solde">Soldé</span>
+                    {% else %}
+                        <span class="tag-reliquat">{{ l.reliquat|floatformat:0 }}</span>
+                    {% endif %}
+                </td>
+                <td class="r">{{ l.prix_unitaire|montant }}</td>
+                <td class="r" style="font-weight:700;">{{ l.total_ligne|montant }}</td>
+                <td style="color:#7f8c8d;font-size:0.85rem;">{{ l.notes_ligne|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" style="text-align:center;padding:20px;color:#95a5a6;font-style:italic">Aucun article</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="6" style="text-align:right;font-size:0.88rem;color:#7f8c8d;">Total commande</td>
+                <td class="r">{{ bon.total|montant }} FCFA</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+{% if bon.notes %}
+<div class="detail-card" style="padding:16px 24px;">
+    <div class="card-title">Notes / Observations</div>
+    <p style="color:#4a4a6a;">{{ bon.notes }}</p>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="actions-row">
+    {% if bon.statut not in 'recu,livre,facture,annule' %}
+    <a href="{% url 'bar:bon_commande_edit' bon.pk %}" class="btn-action btn-modifier">✏ Modifier</a>
+    <form method="post" action="{% url 'bar:bon_commande_annuler' bon.pk %}" onsubmit="return confirm('Annuler ce bon de commande ?');">
+        {% csrf_token %}
+        <button type="submit" class="btn-action btn-annuler">✕ Annuler</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'bar:stock_management' %}?tab=commandes" class="btn-action btn-back">← Retour</a>
+</div>
+{% endblock %}
