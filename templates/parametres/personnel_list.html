@@ -239,18 +239,24 @@
       <div class="form-row"><label>Nom *</label><input type="text" id="cr_nom" class="fc" placeholder="Nom de famille"></div>
     </div>
     <div class="form-row"><label>Identifiant (login) *</label><input type="text" id="cr_username" class="fc" placeholder="Ex: jean.dupont" autocomplete="off"></div>
-    <div class="form-row"><label>Mot de passe *</label><input type="password" id="cr_password" class="fc" placeholder="Minimum 4 caractères" autocomplete="new-password"></div>
     <div class="form-row">
       <label>Poste / Groupe *</label>
-      <select id="cr_groupe" class="fc">
-        <option value="">— Sélectionner un poste —</option>
+      <select id="cr_groupe" class="fc" onchange="onCrGroupeChange()">
+        <option value="" data-acces="oui">— Sélectionner un poste —</option>
         {% for nom, dept in groupes_metier %}
-        <option value="{{ nom }}">{{ dept }} · {{ nom }}</option>
+        <option value="{{ nom }}" data-acces="{% if nom in groupes_sans_acces %}non{% else %}oui{% endif %}">{{ dept }} · {{ nom }}</option>
         {% endfor %}
         {% for g in groupes_custom %}
-        <option value="{{ g.name }}">🏷️ Terrain · {{ g.name }}</option>
+        <option value="{{ g.name }}" data-acces="non">🏷️ Terrain · {{ g.name }}</option>
         {% endfor %}
       </select>
+    </div>
+    <div id="cr_pwd_row" class="form-row">
+      <label>Mot de passe *</label>
+      <input type="password" id="cr_password" class="fc" placeholder="Minimum 4 caractères" autocomplete="new-password">
+    </div>
+    <div id="cr_sans_acces_info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:10px">
+      <i class="fas fa-info-circle"></i> Ce poste n'a pas accès à l'application — aucun mot de passe requis. Le compte servira uniquement à identifier l'employé dans le système (commandes, suivi…).
     </div>
     <div class="form-row"><label>Email</label><input type="email" id="cr_email" class="fc" placeholder="email@example.com"></div>
     <div style="display:flex;gap:10px">
@@ -365,18 +371,33 @@ function filtrer(){
   });
 }
 
+function _crGroupeSansAcces(){
+  const sel = document.getElementById('cr_groupe');
+  const opt = sel.options[sel.selectedIndex];
+  return opt && opt.dataset.acces === 'non';
+}
+
+function onCrGroupeChange(){
+  const sansAcces = _crGroupeSansAcces();
+  document.getElementById('cr_pwd_row').style.display       = sansAcces ? 'none' : '';
+  document.getElementById('cr_sans_acces_info').style.display = sansAcces ? ''     : 'none';
+  if(sansAcces) document.getElementById('cr_password').value = '';
+}
+
 async function creerMembre(){
-  const prenom = document.getElementById('cr_prenom').value.trim();
-  const nom    = document.getElementById('cr_nom').value.trim();
-  const uname  = document.getElementById('cr_username').value.trim();
-  const pwd    = document.getElementById('cr_password').value;
-  const groupe = document.getElementById('cr_groupe').value;
+  const prenom    = document.getElementById('cr_prenom').value.trim();
+  const nom       = document.getElementById('cr_nom').value.trim();
+  const uname     = document.getElementById('cr_username').value.trim();
+  const pwd       = document.getElementById('cr_password').value;
+  const groupe    = document.getElementById('cr_groupe').value;
+  const sansAcces = _crGroupeSansAcces();
   if(!prenom||!nom){toast('Prénom et nom requis','error');return;}
   if(!uname){toast('Identifiant requis','error');return;}
-  if(!pwd||pwd.length<4){toast('Mot de passe trop court','error');return;}
   if(!groupe){toast('Poste requis','error');return;}
+  if(!sansAcces && (!pwd || pwd.length < 4)){toast('Mot de passe trop court (minimum 4 caractères)','error');return;}
   const d = await post("{% url 'parametres:personnel_create' %}", {
-    first_name:prenom, last_name:nom, username:uname, password:pwd,
+    first_name:prenom, last_name:nom, username:uname,
+    password: sansAcces ? '' : pwd,
     groupe, email:document.getElementById('cr_email').value
   });
   if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }

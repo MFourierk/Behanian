@@ -385,6 +385,14 @@ GROUPES_METIER = [
     ('Agent de Sécurité',    '🔒 Sécurité'),
 ]
 
+# Groupes sans accès à l'application — pas de connexion possible, mot de passe inutile
+GROUPES_SANS_ACCES = frozenset([
+    'Serveuse/Serveur',
+    'Agent de Sécurité',
+    'Cuisinier(e)',
+    'Utilisateur Simple',
+])
+
 
 @require_manager
 def personnel_list(request):
@@ -398,6 +406,7 @@ def personnel_list(request):
         'groupes_custom': groupes_custom,
         'groupes_metier': GROUPES_METIER,
         'noms_systeme': noms_systeme,
+        'groupes_sans_acces': GROUPES_SANS_ACCES,
     }
     return render(request, 'parametres/personnel_list.html', context)
 
@@ -415,8 +424,19 @@ def personnel_create(request):
             password   = data.get('password', '').strip()
             groupe_nom = data.get('groupe', '')
 
-            if not username or not password:
-                return JsonResponse({'success': False, 'error': 'Username et mot de passe requis'})
+            if not username:
+                return JsonResponse({'success': False, 'error': 'Identifiant requis'})
+
+            # Le mot de passe n'est requis que pour les comptes avec accès à l'application.
+            # Les groupes terrain (serveurs, agents, cuisiniers…) et les groupes personnalisés
+            # n'ont pas accès à l'interface — leur compte reçoit un mot de passe inutilisable.
+            noms_systeme = {g[0] for g in GROUPES_METIER}
+            sans_acces = groupe_nom in GROUPES_SANS_ACCES or groupe_nom not in noms_systeme
+
+            if not sans_acces and not password:
+                return JsonResponse({'success': False, 'error': 'Mot de passe requis pour ce type de compte'})
+            if password and len(password) < 4:
+                return JsonResponse({'success': False, 'error': 'Mot de passe trop court (minimum 4 caractères)'})
 
             if User.objects.filter(username=username).exists():
                 return JsonResponse({'success': False, 'error': f"L'identifiant '{username}' existe déjà"})
@@ -426,7 +446,7 @@ def personnel_create(request):
                 first_name=first_name,
                 last_name=last_name,
                 email=email,
-                password=password,
+                password=password if password else None,
             )
 
             if groupe_nom:
