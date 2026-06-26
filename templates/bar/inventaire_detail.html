@@ -28,7 +28,7 @@
     .ecart-ok { color: #95a5a6; }
     .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; text-transform:uppercase; }
     .badge-brouillon { background:#fef3c7; color:#92400e; }
-    .badge-en_cours  { background:#dbeafe; color:#1e40af; }
+    .badge-en_cours  { background:#fef3c7; color:#92400e; }
     .badge-valide    { background:#dcfce7; color:#15803d; }
     .badge-annule    { background:#fee2e2; color:#b91c1c; }
     .ecart-summary { background: #fff9f0; border: 1px solid #f6d860; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
@@ -165,7 +165,7 @@
 
 <!-- Actions -->
 <div class="actions-row">
-    {% if inv.statut in 'brouillon,en_cours' %}
+    {% if inv.statut == 'brouillon' %}
     <a href="{% url 'bar:inventaire_edit' inv.pk %}" class="btn-action btn-continuer">✏ Continuer l'inventaire</a>
     <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" onsubmit="return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités comptées.');">
         {% csrf_token %}

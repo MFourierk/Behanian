@@ -474,8 +474,7 @@ class LigneBonReceptionBar(models.Model):
 class InventaireBar(models.Model):
     """Session d'inventaire physique de la Cave"""
     STATUT_CHOICES = [
-        ('brouillon', 'Brouillon'),
-        ('en_cours',  'En cours'),
+        ('brouillon', 'En cours'),
         ('valide',    'Validé'),
         ('annule',    'Annulé'),
     ]

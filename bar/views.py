@@ -154,7 +154,7 @@ def stock_management(request):
         # Inventaires
         'inventaires': InventaireBar.objects.select_related('cree_par').all()[:20],
         'inv_total': InventaireBar.objects.count(),
-        'inv_en_cours': InventaireBar.objects.filter(statut__in=['brouillon','en_cours']).count(),
+        'inv_en_cours': InventaireBar.objects.filter(statut='brouillon').count(),
         'inv_valides': InventaireBar.objects.filter(statut='valide').count(),
         # Mouvements
         'mouvements': mouvements,
@@ -773,8 +773,9 @@ def inventaire_create(request):
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
 
     if request.method == 'POST':
+        statut_post = request.POST.get('statut', 'brouillon')
         inv = InventaireBar(
-            statut=request.POST.get('statut', 'brouillon'),
+            statut='valide' if statut_post == 'valide' else 'brouillon',
             notes=request.POST.get('notes', ''),
             cree_par=request.user,
         )
@@ -823,7 +824,8 @@ def inventaire_edit(request, pk):
     articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
 
     if request.method == 'POST':
-        inv.statut = request.POST.get('statut', inv.statut)
+        statut_post = request.POST.get('statut', 'brouillon')
+        inv.statut = 'valide' if statut_post == 'valide' else 'brouillon'
         inv.notes = request.POST.get('notes', inv.notes)
         inv.save()
 
@@ -894,7 +896,7 @@ def inventaire_detail(request, pk):
 @require_POST
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
-    if inv.statut in ['brouillon', 'en_cours']:
+    if inv.statut == 'brouillon':
         _valider_inventaire(inv, request.user)
         messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
     return redirect(reverse('bar:stock_management') + '?tab=inventaire')

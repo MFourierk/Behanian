@@ -63,17 +63,10 @@
         {% csrf_token %}
 
         <!-- En-tête -->
+        <input type="hidden" name="statut" id="statut-input" value="brouillon">
         <div class="form-card">
             <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations</div>
             <div class="form-grid">
-                <div class="form-group">
-                    <label>Statut</label>
-                    <select name="statut">
-                        <option value="brouillon" {% if mode == 'edit' and inv.statut == 'brouillon' %}selected{% endif %}>Brouillon (continuer plus tard)</option>
-                        <option value="en_cours" {% if mode == 'edit' and inv.statut == 'en_cours' %}selected{% endif %}>En cours</option>
-                        <option value="valide">Valider maintenant (ajuste le stock)</option>
-                    </select>
-                </div>
                 <div class="form-group">
                     <label>Notes</label>
                     <input type="text" name="notes" value="{% if mode == 'edit' %}{{ inv.notes }}{% endif %}" placeholder="Ex: Inventaire mensuel Mars 2026">
@@ -180,10 +173,12 @@
                 <div class="lbl">Valeur totale écarts</div>
             </div>
             <div style="display:flex;gap:10px;">
-                <a href="{% url 'bar:stock_management' %}" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
-                <button type="submit" class="btn-save"><i class="fas fa-save"></i> Enregistrer</button>
-                <button type="submit" class="btn-save btn-valider" onclick="document.querySelector('[name=statut]').value='valide';return confirm('Valider et ajuster le stock immédiatement ?')">
-                    <i class="fas fa-check"></i> Valider & Ajuster
+                <a href="{% url 'bar:stock_management' %}?tab=inventaire" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+                <button type="submit" class="btn-save" onclick="document.getElementById('statut-input').value='brouillon';">
+                    <i class="fas fa-save"></i> Enregistrer (continuer plus tard)
+                </button>
+                <button type="submit" class="btn-save btn-valider" onclick="document.getElementById('statut-input').value='valide';return confirm('Valider et ajuster le stock immédiatement ?');">
+                    <i class="fas fa-check"></i> Valider &amp; Ajuster le stock
                 </button>
             </div>
         </div>

@@ -987,8 +987,7 @@
                                 {% if inv.date_validation %}{{ inv.date_validation|date:"d/m/Y" }}{% else %}—{% endif %}
                             </td>
                             <td>
-                                {% if inv.statut == "brouillon" %}<span class="bc-badge brouillon">Brouillon</span>
-                                {% elif inv.statut == "en_cours" %}<span class="bc-badge envoye">En cours</span>
+                                {% if inv.statut == "brouillon" %}<span class="bc-badge envoye">En cours</span>
                                 {% elif inv.statut == "valide" %}<span class="bc-badge recu">✓ Validé</span>
                                 {% elif inv.statut == "annule" %}<span class="bc-badge annule">Annulé</span>
                                 {% endif %}
@@ -996,7 +995,7 @@
                             <td>
                                 <div class="action-group">
                                     <a href="{% url 'bar:inventaire_detail' inv.pk %}" class="btn-action" style="background:#f3e5f5;color:#8e44ad;" title="Voir détail"><i class="fas fa-eye"></i></a>
-                                    {% if inv.statut in "brouillon,en_cours" %}
+                                    {% if inv.statut == "brouillon" %}
                                     <a href="{% url 'bar:inventaire_edit' inv.pk %}" class="btn-action" style="background:#e8f4fd;color:#3498db;" title="Continuer la saisie"><i class="fas fa-edit"></i></a>
                                     <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" style="display:inline;" onsubmit="return confirm('Valider et ajuster le stock ?')">
                                         {% csrf_token %}
