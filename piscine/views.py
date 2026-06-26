@@ -56,10 +56,12 @@ def piscine_index(request):
     from restaurant.models import Forfait
     forfaits_piscine = Forfait.objects.filter(module='piscine', disponible=True).prefetch_related('lignes__boisson', 'lignes__plat')
     forfaits_alertes = []
+    forfaits_rupture_ids = set()  # IDs des forfaits en rupture de stock
     for _f in forfaits_piscine:
         _dispo, _pb = _verifier_stock_forfait(_f)
         if not _dispo:
             forfaits_alertes.append({'forfait': _f, 'problemes': _pb})
+            forfaits_rupture_ids.add(_f.id)
 
     # Boissons et plats pour commandes
     from bar.models import BoissonBar, CategorieBar
@@ -94,6 +96,7 @@ def piscine_index(request):
         'acces_actifs': acces_actifs.select_related().prefetch_related('consommations'),
         'forfaits_piscine': forfaits_piscine,
         'forfaits_alertes': forfaits_alertes,
+        'forfaits_rupture_ids': forfaits_rupture_ids,
         'personnel': personnel,
     }
     return render(request, 'piscine/index.html', context)

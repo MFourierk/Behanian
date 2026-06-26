@@ -154,10 +154,17 @@
       <i class="fas fa-hotel"></i> Résident Hôtel
     </button>
     {% for f in forfaits_piscine %}
+    {% if f.id in forfaits_rupture_ids %}
+    <button class="btn-p" style="background:#9ca3af;color:white;border:none;cursor:not-allowed;opacity:0.6" disabled
+            title="Rupture de stock — ce menu VIP n'est pas disponible">
+      ⭐ {{ f.nom }} — <span style="font-size:10px;font-weight:700">RUPTURE</span>
+    </button>
+    {% else %}
     <button class="btn-p" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:white;border:none"
             onclick="ouvrirEntreeVip({{ f.id }}, '{{ f.nom|escapejs }}', {{ f.prix }})">
       ⭐ {{ f.nom }} — {{ f.prix|montant }} F
     </button>
+    {% endif %}
     {% endfor %}
     <button class="btn-p btn-outline" onclick="ouvrirModalTarif()" style="margin-left:auto;font-size:11px">
       <i class="fas fa-cog"></i> Tarifs
@@ -274,10 +281,19 @@
         <span class="pill-price">{% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|montant }} F{% else %}Non défini{% endif %}</span>
       </div>
       {% for f in forfaits_piscine %}
+      {% if f.id in forfaits_rupture_ids %}
+      <div class="type-pill vip" style="opacity:0.45;cursor:not-allowed;border-color:#9ca3af;background:#f3f4f6"
+           title="Rupture de stock">
+        <span class="pill-icon">⭐</span>
+        <span class="pill-label" style="color:#9ca3af">{{ f.nom }}</span>
+        <span class="pill-price" style="color:#dc2626;font-weight:700">Rupture</span>
+      </div>
+      {% else %}
       <div class="type-pill vip" onclick="setVip({{ f.id }}, '{{ f.nom|escapejs }}', {{ f.prix }})">
         <span class="pill-icon">⭐</span><span class="pill-label">{{ f.nom }}</span>
         <span class="pill-price">{{ f.prix|montant }} F</span>
       </div>
+      {% endif %}
       {% endfor %}
       <div class="type-pill heberge" onclick="setType('heberge')">
         <span class="pill-icon">🏨</span><span class="pill-label">Résident hôtel</span><span class="pill-price">Gratuit</span>
