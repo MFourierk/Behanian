@@ -455,7 +455,7 @@ def personnel_create(request):
 
             return JsonResponse({
                 'success': True,
-                'message': f'{first_name} {last_name} créé avec succès',
+                'message': f'{(first_name + " " + last_name).strip() or username} créé avec succès',
                 'user_id': user.pk,
             })
         except Exception as e:

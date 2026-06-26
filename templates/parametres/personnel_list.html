@@ -235,8 +235,8 @@
       <button class="close-btn" onclick="fermerModal('modalCreer')">×</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="form-row"><label>Prénom *</label><input type="text" id="cr_prenom" class="fc" placeholder="Prénom"></div>
-      <div class="form-row"><label>Nom *</label><input type="text" id="cr_nom" class="fc" placeholder="Nom de famille"></div>
+      <div class="form-row"><label>Prénom</label><input type="text" id="cr_prenom" class="fc" placeholder="Prénom"></div>
+      <div class="form-row"><label>Nom</label><input type="text" id="cr_nom" class="fc" placeholder="Nom de famille"></div>
     </div>
     <div class="form-row"><label>Identifiant (login) *</label><input type="text" id="cr_username" class="fc" placeholder="Ex: jean.dupont" autocomplete="off"></div>
     <div class="form-row">
@@ -391,7 +391,6 @@ async function creerMembre(){
   const pwd       = document.getElementById('cr_password').value;
   const groupe    = document.getElementById('cr_groupe').value;
   const sansAcces = _crGroupeSansAcces();
-  if(!prenom||!nom){toast('Prénom et nom requis','error');return;}
   if(!uname){toast('Identifiant requis','error');return;}
   if(!groupe){toast('Poste requis','error');return;}
   if(!sansAcces && (!pwd || pwd.length < 4)){toast('Mot de passe trop court (minimum 4 caractères)','error');return;}
