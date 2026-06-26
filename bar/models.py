@@ -500,7 +500,7 @@ class InventaireBar(models.Model):
 
     @property
     def nb_ecarts(self):
-        return self.lignes.filter(ecart_quantite__ne=0).count() if hasattr(self.lignes, 'filter') else sum(1 for l in self.lignes.all() if l.ecart_quantite != 0)
+        return sum(1 for l in self.lignes.all() if l.ecart_quantite != 0)
 
     @property
     def valeur_ecart_total(self):
