@@ -469,7 +469,22 @@ def encaisser_sortie(request, acces_id):
         acces.save()
 
         nb_total = acces.nb_adultes + acces.nb_enfants
-        label_entree = f'Menu VIP {acces.forfait.nom}' if acces.forfait else f'Entrée piscine x{nb_total}'
+
+        # Build itemized entry lines (VIP broken into forfait + extras)
+        if acces.forfait:
+            from piscine.models import TarifPiscine
+            t_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
+            t_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
+            extras_adultes = max(0, acces.nb_adultes - 1)
+            label_entree = f'Menu VIP {acces.forfait.nom}'
+            lignes_entree = [{'nom': label_entree, 'total': float(acces.forfait.prix)}]
+            if extras_adultes > 0 and t_adulte:
+                lignes_entree.append({'nom': f'Entrée Adulte × {extras_adultes}', 'total': float(t_adulte.prix_unitaire * extras_adultes)})
+            if acces.nb_enfants > 0 and t_enfant:
+                lignes_entree.append({'nom': f'Entrée Enfant × {acces.nb_enfants}', 'total': float(t_enfant.prix_unitaire * acces.nb_enfants)})
+        else:
+            label_entree = f'Entrée piscine x{nb_total}'
+            lignes_entree = [{'nom': label_entree, 'total': float(acces.prix_total)}]
 
         # Mode CHAMBRE : ajouter les consos à la réservation hôtel sans créer ticket séparé
         if sur_chambre and acces.reservation_hotel:
@@ -484,7 +499,7 @@ def encaisser_sortie(request, acces_id):
                 )
             # Les consos sont déjà sur la chambre via ajouter_consommation
             # Générer reçu de dépôt
-            lignes = [{'nom': label_entree, 'total': float(acces.prix_total)}]
+            lignes = list(lignes_entree)
             for c in acces.consommations.all():
                 lignes.append({'nom': f'{c.produit} x{c.quantite}', 'total': float(c.get_total())})
             return JsonResponse({
@@ -507,7 +522,9 @@ def encaisser_sortie(request, acces_id):
             ).delete()
 
         # Créer ticket facturation
-        contenu = f'<div class="row"><span class="item-name">{label_entree}</span><span class="item-price">{int(acces.prix_total):,} F</span></div>'
+        contenu = ''
+        for le in lignes_entree:
+            contenu += f'<div class="row"><span class="item-name">{le["nom"]}</span><span class="item-price">{int(le["total"]):,} F</span></div>'
         for c in acces.consommations.all():
             contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
 
