@@ -46,6 +46,7 @@ urlpatterns = [
     path('inventaire/', views.inventaire_list, name='inventaire_list'),
     path('inventaire/nouveau/', views.inventaire_create, name='inventaire_create'),
     path('inventaire/<int:pk>/', views.inventaire_detail, name='inventaire_detail'),
+    path('inventaire/<int:pk>/modifier/', views.inventaire_edit, name='inventaire_edit'),
     path('inventaire/<int:pk>/valider/', views.inventaire_valider, name='inventaire_valider'),
     path('inventaire/<int:pk>/annuler/', views.inventaire_annuler, name='inventaire_annuler'),
 

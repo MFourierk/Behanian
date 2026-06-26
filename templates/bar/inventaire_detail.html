@@ -34,6 +34,8 @@
     .ecart-summary { background: #fff9f0; border: 1px solid #f6d860; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
     .ecart-summary h4 { color: #e67e22; font-size: 0.9rem; margin-bottom: 10px; }
     .btn-action { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-size:0.88rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; }
+    .btn-continuer { background:#8e44ad; color:white; }
+    .btn-continuer:hover { background:#6c3483; }
     .btn-valider { background:#27ae60; color:white; }
     .btn-valider:hover { background:#219a52; }
     .btn-annuler { background:#e74c3c; color:white; }
@@ -164,6 +166,7 @@
 <!-- Actions -->
 <div class="actions-row">
     {% if inv.statut in 'brouillon,en_cours' %}
+    <a href="{% url 'bar:inventaire_edit' inv.pk %}" class="btn-action btn-continuer">✏ Continuer l'inventaire</a>
     <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" onsubmit="return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités comptées.');">
         {% csrf_token %}
         <button type="submit" class="btn-action btn-valider">✔ Valider l'inventaire</button>

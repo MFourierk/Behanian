@@ -47,10 +47,10 @@
 <div class="container-fluid py-4">
     <div class="form-header">
         <div>
-            <h2><i class="fas fa-clipboard-list mr-2"></i> Nouvel Inventaire</h2>
-            <p>Comptage physique des stocks cuisine — les écarts seront ajustés automatiquement</p>
-</div>
-</div>
+            <h2><i class="fas fa-clipboard-list mr-2"></i> {{ page_title|default:"Nouvel Inventaire" }}</h2>
+            <p>Comptage physique des stocks cuisine — les écarts seront ajustés automatiquement{% if mode == 'edit' %} · {{ inv.numero }}{% endif %}</p>
+        </div>
+    </div>
 {% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "Inventaire" "" %}
 
 
@@ -67,11 +67,11 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Date de l'inventaire *</label>
-                        <input type="date" name="date_inventaire" value="{% now 'Y-m-d' %}" required>
+                        <input type="date" name="date_inventaire" value="{% if mode == 'edit' %}{{ inv.date_inventaire|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
                     </div>
                     <div class="form-group">
                         <label>Notes / Observations</label>
-                        <input type="text" name="notes" placeholder="Ex: Inventaire mensuel, après service...">
+                        <input type="text" name="notes" value="{% if mode == 'edit' %}{{ inv.notes }}{% endif %}" placeholder="Ex: Inventaire mensuel, après service...">
                     </div>
                 </div>
             </div>
@@ -120,7 +120,7 @@
                                 </td>
                                 <td>
                                     <input type="number" name="quantite_physique[]" class="physique-input"
-                                        step="0.001" min="0" value="0" placeholder="0.000"
+                                        step="0.001" min="0" value="{% if mode == 'edit' %}{{ ing.qte_physique_init }}{% else %}0{% endif %}" placeholder="0.000"
                                         oninput="calcEcart(this)"
                                         style="width:120px;padding:8px 10px;border-radius:8px;border:1.5px solid #e9ecef;background:#f8f9fa;font-size:0.92rem;text-align:right;">
                                 </td>

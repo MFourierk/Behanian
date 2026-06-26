@@ -1,0 +1,159 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+
+{% block title %}{{ page_title }} - Cuisine BEHANIAN{% endblock %}
+
+{% block content %}
+{% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" inv.numero "" %}
+<style>
+    .page-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(192,57,43,0.25); }
+    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+    .back-link { display:inline-flex; align-items:center; gap:6px; color:#c0392b; font-weight:600; margin-bottom:16px; text-decoration:none; }
+    .back-link:hover { color:#922b21; }
+    .detail-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .card-title { font-weight: 700; color: #c0392b; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #fdecea; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 20px; }
+    .meta-item { background: #fef9f9; border: 1px solid #f5c6c6; border-radius: 10px; padding: 14px; }
+    .meta-label { font-size: 0.75rem; font-weight: 600; color: #c0392b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .meta-value { font-size: 1.05rem; font-weight: 700; color: #2c3e50; }
+    .inv-table { width: 100%; border-collapse: collapse; }
+    .inv-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.78rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; text-align: left; }
+    .inv-table th.r { text-align: right; }
+    .inv-table td { padding: 9px 14px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; font-size: 0.9rem; }
+    .inv-table td.r { text-align: right; }
+    .inv-table tr:hover { background: #fef9f9; }
+    .ecart-pos { color: #27ae60; font-weight: 700; }
+    .ecart-neg { color: #e74c3c; font-weight: 700; }
+    .ecart-ok { color: #95a5a6; }
+    .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; text-transform:uppercase; }
+    .badge-brouillon { background:#fef3c7; color:#92400e; }
+    .badge-valide    { background:#dcfce7; color:#15803d; }
+    .badge-annule    { background:#fee2e2; color:#b91c1c; }
+    .ecart-summary { background:#fff9f0; border:1px solid #f6d860; border-radius:12px; padding:16px 20px; margin-bottom:20px; }
+    .ecart-summary h4 { color:#e67e22; font-size:0.9rem; margin-bottom:10px; }
+    .btn-action { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-size:0.88rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; }
+    .btn-continuer { background:#c0392b; color:white; }
+    .btn-continuer:hover { background:#922b21; }
+    .btn-valider { background:#27ae60; color:white; }
+    .btn-valider:hover { background:#219a52; }
+    .btn-back { background:#ecf0f1; color:#2c3e50; }
+    .btn-back:hover { background:#dde1e4; }
+    .actions-row { display:flex; gap:10px; flex-wrap:wrap; }
+    .tfoot-total td { background:#fdecea; font-weight:700; border-top:2px solid #f5c6c6; padding:10px 14px; }
+    .tfoot-total td.r { text-align:right; color:#c0392b; font-size:1rem; }
+</style>
+
+<a href="{% url 'cuisine:stock_management' %}?tab=inventaire" class="back-link">← Retour Inventaires</a>
+
+<div class="page-header">
+    <h2>Inventaire {{ inv.numero }}</h2>
+    <p>Inventaire physique Cuisine — <span class="badge badge-{{ inv.statut }}">{{ inv.get_statut_display }}</span></p>
+</div>
+
+<!-- Meta -->
+<div class="meta-grid">
+    <div class="meta-item">
+        <div class="meta-label">Numéro</div>
+        <div class="meta-value">{{ inv.numero }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Date inventaire</div>
+        <div class="meta-value">{{ inv.date_inventaire|date:"d/m/Y" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Créé par</div>
+        <div class="meta-value">{{ inv.cree_par.get_full_name|default:inv.cree_par.username|default:"—" }}</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Lignes</div>
+        <div class="meta-value">{{ lignes|length }} ingrédient(s)</div>
+    </div>
+    <div class="meta-item">
+        <div class="meta-label">Écarts</div>
+        <div class="meta-value">{{ ecarts|length }} écart(s)</div>
+    </div>
+    {% if inv.statut == 'valide' %}
+    <div class="meta-item">
+        <div class="meta-label">Validé par</div>
+        <div class="meta-value">{{ inv.valide_par.get_full_name|default:inv.valide_par.username|default:"—" }}</div>
+    </div>
+    {% endif %}
+</div>
+
+{% if ecarts %}
+<div class="ecart-summary">
+    <h4>⚠️ {{ ecarts|length }} écart(s) détecté(s)</h4>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        {% for l in ecarts %}
+        <span style="background:white;border:1px solid #f6d860;border-radius:8px;padding:4px 10px;font-size:0.82rem;font-weight:600;">
+            {{ l.ingredient.nom }} :
+            <span class="{% if l.ecart > 0 %}ecart-pos{% else %}ecart-neg{% endif %}">
+                {% if l.ecart > 0 %}+{% endif %}{{ l.ecart|floatformat:3 }}
+            </span>
+        </span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Lignes -->
+<div class="detail-card">
+    <div class="card-title">Détail des ingrédients inventoriés</div>
+    <table class="inv-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Ingrédient</th>
+                <th>Catégorie</th>
+                <th>Unité</th>
+                <th class="r">Qté théorique</th>
+                <th class="r">Qté physique</th>
+                <th class="r">Écart</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in lignes %}
+            <tr>
+                <td style="color:#95a5a6;font-size:0.8rem;">{{ forloop.counter }}</td>
+                <td style="font-weight:600;">{{ l.ingredient.nom }}</td>
+                <td style="color:#7f8c8d;font-size:0.85rem;">{{ l.ingredient.categorie.nom|default:"—" }}</td>
+                <td style="font-size:0.85rem;">{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
+                <td class="r">{{ l.quantite_theorique|floatformat:3 }}</td>
+                <td class="r">{{ l.quantite_physique|floatformat:3 }}</td>
+                <td class="r">
+                    {% if l.ecart > 0 %}
+                        <span class="ecart-pos">+{{ l.ecart|floatformat:3 }}</span>
+                    {% elif l.ecart < 0 %}
+                        <span class="ecart-neg">{{ l.ecart|floatformat:3 }}</span>
+                    {% else %}
+                        <span class="ecart-ok">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#95a5a6;font-style:italic">Aucun ingrédient</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if inv.notes %}
+<div class="detail-card" style="padding:16px 24px;">
+    <div class="card-title">Observations</div>
+    <p style="color:#4a4a6a;">{{ inv.notes }}</p>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="actions-row">
+    {% if inv.statut == 'brouillon' %}
+    <a href="{% url 'cuisine:inventaire_edit' inv.pk %}" class="btn-action btn-continuer">✏ Continuer l'inventaire</a>
+    <form method="post" action="{% url 'cuisine:inventaire_valider' inv.pk %}" onsubmit="return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités physiques comptées.');">
+        {% csrf_token %}
+        <button type="submit" class="btn-action btn-valider">✔ Valider l'inventaire</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'cuisine:stock_management' %}?tab=inventaire" class="btn-action btn-back">← Retour</a>
+</div>
+{% endblock %}

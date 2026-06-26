@@ -51,7 +51,7 @@
     <div class="page-header">
         <div>
             <h2><i class="fas fa-clipboard-list mr-2"></i> {{ page_title }}</h2>
-            <p>Cave BEHANIAN — Comptage physique des stocks</p>
+            <p>Cave BEHANIAN — Comptage physique des stocks{% if mode == 'edit' %} · {{ inv.numero }}{% endif %}</p>
         </div>
         <div style="text-align:right;">
             <div style="font-size:1.3rem;font-weight:700;">{{ articles|length }} articles</div>
@@ -69,14 +69,14 @@
                 <div class="form-group">
                     <label>Statut</label>
                     <select name="statut">
-                        <option value="brouillon">Brouillon (continuer plus tard)</option>
-                        <option value="en_cours">En cours</option>
+                        <option value="brouillon" {% if mode == 'edit' and inv.statut == 'brouillon' %}selected{% endif %}>Brouillon (continuer plus tard)</option>
+                        <option value="en_cours" {% if mode == 'edit' and inv.statut == 'en_cours' %}selected{% endif %}>En cours</option>
                         <option value="valide">Valider maintenant (ajuste le stock)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Notes</label>
-                    <input type="text" name="notes" placeholder="Ex: Inventaire mensuel Mars 2026">
+                    <input type="text" name="notes" value="{% if mode == 'edit' %}{{ inv.notes }}{% endif %}" placeholder="Ex: Inventaire mensuel Mars 2026">
                 </div>
             </div>
         </div>
@@ -135,7 +135,7 @@
                             <td>
                                 <input type="number" name="quantite_comptee[]"
                                     class="qte-comptee"
-                                    value="{{ art.quantite_stock }}"
+                                    value="{% if mode == 'edit' %}{{ art.qte_comptee_init }}{% else %}{{ art.quantite_stock }}{% endif %}"
                                     min="0" step="1"
                                     oninput="majEcartInv(this)"
                                     style="width:90px;">
@@ -143,7 +143,7 @@
                             <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;">0</td>
                             <td>
                                 <input type="number" name="prix_unitaire[]"
-                                    value="{{ art.prix_achat|montant }}"
+                                    value="{% if mode == 'edit' %}{{ art.prix_inv_init }}{% else %}{{ art.prix_achat }}{% endif %}"
                                     min="0" step="1"
                                     class="prix-inv"
                                     oninput="majEcartInv(this)"
@@ -151,7 +151,7 @@
                             </td>
                             <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:#e74c3c;">0 FCFA</td>
                             <td>
-                                <input type="text" name="notes_ligne[]" placeholder="Note..." style="width:100px;font-size:0.82rem;">
+                                <input type="text" name="notes_ligne[]" value="{% if mode == 'edit' %}{{ art.notes_ligne_init }}{% endif %}" placeholder="Note..." style="width:100px;font-size:0.82rem;">
                             </td>
                         </tr>
                         {% endfor %}

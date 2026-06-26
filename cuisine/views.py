@@ -955,6 +955,75 @@ def inventaire_create(request):
 
 
 @require_module_access('cuisine')
+def inventaire_detail(request, pk):
+    inv = get_object_or_404(InventaireCuisine, pk=pk)
+    lignes = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
+    ecarts = [l for l in lignes if l.ecart != 0]
+    valeur_ecart_total = sum(abs(l.valeur_ecart) for l in ecarts)
+    context = {
+        'page_title': f'Inventaire {inv.numero}',
+        'inv': inv,
+        'lignes': lignes,
+        'ecarts': ecarts,
+        'valeur_ecart_total': valeur_ecart_total,
+    }
+    return render(request, 'cuisine/inventaire_detail.html', context)
+
+
+@require_module_access('cuisine')
+def inventaire_edit(request, pk):
+    inv = get_object_or_404(InventaireCuisine, pk=pk)
+    if inv.statut == 'valide':
+        messages.error(request, "Un inventaire validé ne peut plus être modifié.")
+        return redirect(f'/cuisine/inventaire/{pk}/')
+
+    ingredients = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock')
+
+    if request.method == 'POST':
+        inv.date_inventaire = request.POST.get('date_inventaire') or inv.date_inventaire
+        inv.notes = request.POST.get('notes', inv.notes)
+        inv.save()
+
+        inv.lignes.all().delete()
+        ing_ids = request.POST.getlist('ingredient_id[]')
+        th_list = request.POST.getlist('quantite_theorique[]')
+        ph_list = request.POST.getlist('quantite_physique[]')
+
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id:
+                LigneInventaireCuisine.objects.create(
+                    inventaire=inv,
+                    ingredient_id=ing_id,
+                    quantite_theorique=th_list[i] if th_list[i] else 0,
+                    quantite_physique=ph_list[i] if ph_list[i] else 0,
+                )
+
+        if request.POST.get('valider') == '1':
+            inv.valider(request.user)
+            messages.success(request, f"Inventaire {inv.numero} validé.")
+        else:
+            messages.success(request, f"Inventaire {inv.numero} mis à jour.")
+        return redirect('/cuisine/stock/?tab=inventaire')
+
+    # Pré-remplir avec valeurs existantes
+    lignes_dict = {l.ingredient_id: l for l in inv.lignes.all()}
+    for ing in ingredients:
+        ligne = lignes_dict.get(ing.pk)
+        if ligne:
+            ing.qte_physique_init = ligne.quantite_physique
+        else:
+            ing.qte_physique_init = 0
+
+    context = {
+        'page_title': f'Continuer {inv.numero}',
+        'ingredients': ingredients,
+        'mode': 'edit',
+        'inv': inv,
+    }
+    return render(request, 'cuisine/inventaire_form.html', context)
+
+
+@require_module_access('cuisine')
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
     if request.method == 'POST':

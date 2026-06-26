@@ -997,6 +997,7 @@
                                 <div class="action-group">
                                     <a href="{% url 'bar:inventaire_detail' inv.pk %}" class="btn-action" style="background:#f3e5f5;color:#8e44ad;" title="Voir détail"><i class="fas fa-eye"></i></a>
                                     {% if inv.statut in "brouillon,en_cours" %}
+                                    <a href="{% url 'bar:inventaire_edit' inv.pk %}" class="btn-action" style="background:#e8f4fd;color:#3498db;" title="Continuer la saisie"><i class="fas fa-edit"></i></a>
                                     <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" style="display:inline;" onsubmit="return confirm('Valider et ajuster le stock ?')">
                                         {% csrf_token %}
                                         <button type="submit" class="btn-action btn-copy" title="Valider"><i class="fas fa-check"></i></button>

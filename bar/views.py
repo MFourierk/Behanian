@@ -814,6 +814,68 @@ def inventaire_create(request):
 
 @require_module_access('bar')
 @require_bar_gestion
+def inventaire_edit(request, pk):
+    inv = get_object_or_404(InventaireBar, pk=pk)
+    if inv.statut == 'valide':
+        messages.error(request, "Un inventaire validé ne peut plus être modifié.")
+        return redirect(reverse('bar:inventaire_detail', args=[pk]))
+
+    articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
+
+    if request.method == 'POST':
+        inv.statut = request.POST.get('statut', inv.statut)
+        inv.notes = request.POST.get('notes', inv.notes)
+        inv.save()
+
+        inv.lignes.all().delete()
+        article_ids     = request.POST.getlist('article_id[]')
+        qtes_comptees   = request.POST.getlist('quantite_comptee[]')
+        qtes_theoriques = request.POST.getlist('quantite_theorique[]')
+        prix_list       = request.POST.getlist('prix_unitaire[]')
+        notes_list      = request.POST.getlist('notes_ligne[]')
+
+        for i, art_id in enumerate(article_ids):
+            if art_id:
+                LigneInventaireBar.objects.create(
+                    inventaire=inv,
+                    article_id=art_id,
+                    quantite_theorique=qtes_theoriques[i] if qtes_theoriques[i] else 0,
+                    quantite_comptee=qtes_comptees[i] if qtes_comptees[i] else 0,
+                    prix_unitaire=prix_list[i] if prix_list[i] else 0,
+                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
+                )
+
+        if inv.statut == 'valide':
+            _valider_inventaire(inv, request.user)
+            messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
+        else:
+            messages.success(request, f"Inventaire {inv.numero} mis à jour.")
+        return redirect(reverse('bar:stock_management') + '?tab=inventaire')
+
+    # Pré-remplir chaque article avec les valeurs déjà saisies
+    lignes_dict = {l.article_id: l for l in inv.lignes.select_related('article').all()}
+    for art in articles:
+        ligne = lignes_dict.get(art.pk)
+        if ligne:
+            art.qte_comptee_init  = ligne.quantite_comptee
+            art.prix_inv_init     = ligne.prix_unitaire
+            art.notes_ligne_init  = ligne.notes_ligne
+        else:
+            art.qte_comptee_init  = art.quantite_stock
+            art.prix_inv_init     = art.prix_achat
+            art.notes_ligne_init  = ''
+
+    context = {
+        'page_title': f'Continuer {inv.numero}',
+        'articles': articles,
+        'mode': 'edit',
+        'inv': inv,
+    }
+    return render(request, 'bar/inventaire_form.html', context)
+
+
+@require_module_access('bar')
+@require_bar_gestion
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     lignes = inv.lignes.select_related('article').order_by('article__categorie__nom', 'article__nom')
