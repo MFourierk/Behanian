@@ -558,38 +558,40 @@ def bon_reception_create(request):
     ).order_by('-date_commande')
 
     if request.method == 'POST':
-        bon_commande_id = request.POST.get('bon_commande') or None
-        br = BonReceptionBar(
-            bon_commande_id=bon_commande_id,
-            fournisseur_id=request.POST.get('fournisseur') or None,
-            numero_document_fournisseur=request.POST.get('numero_document_fournisseur', ''),
-            operateur=request.user,
-            date_reception=request.POST.get('date_reception') or timezone.now().date(),
-            statut=request.POST.get('statut', 'brouillon'),
-            notes=request.POST.get('notes', ''),
-        )
-        br.save()
+        from django.db import transaction
+        with transaction.atomic():
+            bon_commande_id = request.POST.get('bon_commande') or None
+            br = BonReceptionBar(
+                bon_commande_id=bon_commande_id,
+                fournisseur_id=request.POST.get('fournisseur') or None,
+                numero_document_fournisseur=request.POST.get('numero_document_fournisseur', ''),
+                operateur=request.user,
+                date_reception=request.POST.get('date_reception') or timezone.now().date(),
+                statut=request.POST.get('statut', 'brouillon'),
+                notes=request.POST.get('notes', ''),
+            )
+            br.save()
 
-        article_ids = request.POST.getlist('article_id[]')
-        qtes_commandees = request.POST.getlist('quantite_commandee[]')
-        qtes_recues = request.POST.getlist('quantite_recue[]')
-        prix_list = request.POST.getlist('prix_unitaire[]')
-        notes_list = request.POST.getlist('notes_ligne[]')
+            article_ids = request.POST.getlist('article_id[]')
+            qtes_commandees = request.POST.getlist('quantite_commandee[]')
+            qtes_recues = request.POST.getlist('quantite_recue[]')
+            prix_list = request.POST.getlist('prix_unitaire[]')
+            notes_list = request.POST.getlist('notes_ligne[]')
 
-        for i, art_id in enumerate(article_ids):
-            if art_id and qtes_recues[i]:
-                LigneBonReceptionBar.objects.create(
-                    bon=br,
-                    article_id=art_id,
-                    quantite_commandee=qtes_commandees[i] if qtes_commandees[i] else 0,
-                    quantite_recue=qtes_recues[i],
-                    prix_unitaire=prix_list[i] if prix_list[i] else 0,
-                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
-                )
+            for i, art_id in enumerate(article_ids):
+                if art_id and qtes_recues[i]:
+                    LigneBonReceptionBar.objects.create(
+                        bon=br,
+                        article_id=art_id,
+                        quantite_commandee=qtes_commandees[i] if qtes_commandees[i] else 0,
+                        quantite_recue=qtes_recues[i],
+                        prix_unitaire=prix_list[i] if prix_list[i] else 0,
+                        notes_ligne=notes_list[i] if i < len(notes_list) else '',
+                    )
 
-        # Si statut = validé → mettre à jour le stock
-        if br.statut == 'valide':
-            _valider_reception(br, request.user)
+            # Si statut = validé → mettre à jour le stock
+            if br.statut == 'valide':
+                _valider_reception(br, request.user)
 
         messages.success(request, f"Bon de réception {br.numero} créé avec succès.")
         return redirect(reverse('bar:stock_management') + '?tab=reception')
