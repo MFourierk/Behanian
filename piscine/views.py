@@ -1,4 +1,4 @@
-from utils.permissions import require_module_access
+from utils.permissions import require_module_access, user_has_access
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -10,6 +10,19 @@ from django.db import models as db_models
 from .models import AccesPiscine, TarifPiscine, ConsommationPiscine
 from decimal import Decimal
 import json
+
+
+def _json_piscine_access_required(view_func):
+    """Décorateur pour endpoints AJAX piscine — retourne JSON 403 au lieu d'un redirect."""
+    from functools import wraps
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'success': False, 'error': 'Session expirée — veuillez recharger la page.'}, status=403)
+        if not user_has_access(request.user, 'piscine'):
+            return JsonResponse({'success': False, 'error': 'Accès refusé au module piscine.'}, status=403)
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 
 @require_module_access('piscine')
@@ -138,6 +151,8 @@ def _generer_reference_entree(type_client, forfait=None, reservation=None):
     return f"Entrée N°{nb_today:03d}"
 
 
+@require_POST
+@_json_piscine_access_required
 def enregistrer_entree(request):
     """Enregistrer une entrée piscine (ordinaire, VIP ou résident)."""
     try:

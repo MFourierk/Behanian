@@ -615,6 +615,7 @@ async function setVip(forfaitId, nom, prix){
 
   try {
     const r = await fetch(`{% url "piscine:forfait_dispo" 0 %}`.replace('/0/','/'+forfaitId+'/'));
+    if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
 
     if(d.lignes && d.lignes.length){
@@ -783,16 +784,33 @@ async function validerEntree(){
     payload.forfait_id = vipForfaitId;
     if(Object.keys(vipSubstitutions).length) payload.substitutions = vipSubstitutions;
   }
-  const r=await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
-  const d=await r.json();
+  const btnVal = document.querySelector('#modalEntree .btn-primary[onclick="validerEntree()"]');
+  if(btnVal){ btnVal.disabled=true; btnVal.textContent='Enregistrement…'; }
+  let r, d;
+  try {
+    r = await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
+    if(!r.ok){
+      let errMsg = 'Erreur serveur (' + r.status + ')';
+      if(r.status === 403) errMsg = 'Session expirée — rechargez la page (F5).';
+      piscineNotif(errMsg, 'error');
+      if(btnVal){ btnVal.disabled=false; btnVal.innerHTML='<i class="fas fa-check"></i> Enregistrer l\'entrée'; }
+      return;
+    }
+    d = await r.json();
+  } catch(e) {
+    piscineNotif('Erreur de connexion — vérifiez le réseau et rechargez la page.', 'error');
+    if(btnVal){ btnVal.disabled=false; btnVal.innerHTML='<i class="fas fa-check"></i> Enregistrer l\'entrée'; }
+    return;
+  }
   if(d.success){
     fermerModal('modalEntree');
-    // Ouvrir le ticket d'entrée pour impression immédiate
     const ticketUrl = '{% url "piscine:ticket_entree" 0 %}'.replace('/0/', '/' + d.acces_id + '/');
     window.open(ticketUrl, '_blank', 'width=400,height=620,scrollbars=yes');
     setTimeout(()=>location.reload(), 600);
+  } else {
+    piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
+    if(btnVal){ btnVal.disabled=false; btnVal.innerHTML='<i class="fas fa-check"></i> Enregistrer l\'entrée'; }
   }
-  else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
 }
 
 // ── Panier ──
@@ -816,8 +834,15 @@ function setTab(tab){
 
 async function chargerEnCours(){
   const id = document.getElementById('cmdAccesId').value;
-  const r = await fetch(`{% url "piscine:acces_detail" 0 %}`.replace('/0/','/'+id+'/'));
-  const d = await r.json();
+  let r, d;
+  try {
+    r = await fetch(`{% url "piscine:acces_detail" 0 %}`.replace('/0/','/'+id+'/'));
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch(e) {
+    document.getElementById('enCoursList').innerHTML='<div style="text-align:center;color:#dc2626;font-size:12px;padding:20px">Erreur de chargement — rechargez la page.</div>';
+    return;
+  }
   const liste = document.getElementById('enCoursList');
   if(!d.consommations||d.consommations.length===0){
     liste.innerHTML='<div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Aucune consommation enregistrée</div>';
@@ -855,24 +880,36 @@ async function chargerEnCours(){
 async function modifConso(id, delta){
   const qtyEl=document.getElementById('qty_'+id);
   const nouvelleQty=Math.max(1,parseInt(qtyEl.textContent)+delta);
-  const r=await fetch('{% url "piscine:modifier_conso" 0 %}'.replace('/0/','/'+id+'/'),{
-    method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body:JSON.stringify({quantite:nouvelleQty})
-  });
-  const d=await r.json();
+  let r, d;
+  try {
+    r = await fetch('{% url "piscine:modifier_conso" 0 %}'.replace('/0/','/'+id+'/'),{
+      method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({quantite:nouvelleQty})
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch(e) {
+    piscineNotif('Erreur de connexion — rechargez la page.', 'error'); return;
+  }
   if(d.success){ chargerEnCours(); }
-  else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
+  else piscineNotif(d.error||'Une erreur est survenue.','error');
 }
 
 async function suppConso(id){
   if(!confirm('Retirer cet article ?')) return;
-  const r=await fetch('{% url "piscine:supprimer_conso" 0 %}'.replace('/0/','/'+id+'/'),{
-    method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body:JSON.stringify({})
-  });
-  const d=await r.json();
+  let r, d;
+  try {
+    r = await fetch('{% url "piscine:supprimer_conso" 0 %}'.replace('/0/','/'+id+'/'),{
+      method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({})
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch(e) {
+    piscineNotif('Erreur de connexion — rechargez la page.', 'error'); return;
+  }
   if(d.success){ chargerEnCours(); }
-  else piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
+  else piscineNotif(d.error||'Une erreur est survenue.','error');
 }
 
 function ouvrirCommande(id, nom){
@@ -1010,9 +1047,14 @@ async function validerCommande(){
   for(const item of panier){
     const payload={type:item.type,id:item.id,quantite:item.qty};
     if(serveurId) payload.serveur_id=serveurId;
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify(payload)});
-    const d=await r.json();
+    let r, d;
+    try {
+      r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF}, body:JSON.stringify(payload)});
+      if(!r.ok){ erreurs.push('• ' + item.nom + ' : Erreur serveur (' + r.status + ')'); continue; }
+      d = await r.json();
+    } catch(e) {
+      erreurs.push('• ' + item.nom + ' : Erreur de connexion'); continue;
+    }
     if(!d.success) erreurs.push('• ' + item.nom + ' : ' + (d.error||'Erreur'));
     else succès++;
   }
@@ -1074,9 +1116,15 @@ document.addEventListener('DOMContentLoaded', function(){
 async function ouvrirSortie(id, nom, prixEntree){
   document.getElementById('sortieAccesId').value=id;
   document.getElementById('sortieNom').textContent=nom;
-  // Charger détails
-  const r=await fetch(`{% url "piscine:acces_detail" 0 %}`.replace('/0/','/'+id+'/'));
-  const d=await r.json();
+  let r, d;
+  try {
+    r = await fetch(`{% url "piscine:acces_detail" 0 %}`.replace('/0/','/'+id+'/'));
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch(e) {
+    piscineNotif('Impossible de charger les détails de sortie — rechargez la page.', 'error');
+    return;
+  }
   _sortieTotal = d.total;
   _sortieIsHeberge = d.is_heberge || false;
   // Construire le récapitulatif
@@ -1118,11 +1166,21 @@ async function validerSortie(){
     mode = document.getElementById('sortieModeNR').value;
     recu = parseFloat(document.getElementById('sortieRecuNR').value)||0;
   }
-  const r=await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{
-    method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body:JSON.stringify({mode_paiement:mode,montant_recu:recu,sur_chambre:surChambre})
-  });
-  const d=await r.json();
+  let r, d;
+  try {
+    r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{
+      method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body:JSON.stringify({mode_paiement:mode,montant_recu:recu,sur_chambre:surChambre})
+    });
+    if(!r.ok){
+      piscineNotif(r.status===403?'Session expirée — rechargez la page (F5).':'Erreur serveur ('+r.status+').','error');
+      return;
+    }
+    d = await r.json();
+  } catch(e) {
+    piscineNotif('Erreur de connexion — vérifiez le réseau.', 'error');
+    return;
+  }
   if(d.success){
     fermerModal('modalSortie');
     if(surChambre){
@@ -1138,8 +1196,14 @@ async function sauvegarderTarif(){
   if(!a){piscineNotif('Veuillez saisir le tarif adulte.','error');return;}
   const msg=`Confirmer les nouveaux tarifs ?\n\n• Adulte visiteur : ${a.toLocaleString()} FCFA\n• Enfant visiteur : ${e>0?e.toLocaleString()+' FCFA':'Gratuit'}\n\nCette action remplacera les tarifs actuels.`;
   if(!confirm(msg))return;
-  const r=await fetch('{% url "piscine:tarifs" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({adulte:a,enfant:e})});
-  const d=await r.json();
+  let r, d;
+  try {
+    r = await fetch('{% url "piscine:tarifs" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify({adulte:a,enfant:e})});
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    d = await r.json();
+  } catch(e) {
+    piscineNotif('Erreur de connexion — rechargez la page.', 'error'); return;
+  }
   if(d.success){fermerModal('modalTarif');location.reload();}
   else piscineNotif(d.error || 'Une erreur est survenue.', 'error');
 }
