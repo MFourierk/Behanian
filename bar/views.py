@@ -646,11 +646,12 @@ def _valider_reception(br, user):
 
         # Calcul CMUP
         if qte > 0 and prix > 0:
+            from decimal import Decimal
             valeur_actuelle = article.quantite_stock * article.prix_achat
-            valeur_nouvelle = float(qte) * float(prix)
+            valeur_nouvelle = Decimal(str(qte)) * Decimal(str(prix))
             nouvelle_qte = article.quantite_stock + int(qte)
             if nouvelle_qte > 0:
-                article.prix_achat = (valeur_actuelle + valeur_nouvelle) / nouvelle_qte
+                article.prix_achat = (valeur_actuelle + valeur_nouvelle) / Decimal(str(nouvelle_qte))
 
         # Mise à jour stock
         MouvementStockBar.objects.create(
