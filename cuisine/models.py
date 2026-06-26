@@ -186,8 +186,10 @@ class MouvementStockCuisine(models.Model):
                     quantite_stock=F('quantite_stock') + self.quantite
                 )
             else:
+                from django.db.models.functions import Greatest
+                from django.db.models import Value
                 Ingredient.objects.filter(pk=self.ingredient_id).update(
-                    quantite_stock=F('quantite_stock') - self.quantite
+                    quantite_stock=Greatest(F('quantite_stock') - self.quantite, Value(0))
                 )
 
     class Meta:

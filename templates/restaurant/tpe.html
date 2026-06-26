@@ -1747,9 +1747,19 @@ function toast(msg, type = 'info') {
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = 'toast ' + type;
-  t.textContent = msg;
+  t.style.cssText += ';display:flex;align-items:flex-start;gap:8px;max-width:460px';
+  const txt = document.createElement('span');
+  txt.style.flex = '1';
+  txt.innerHTML = msg;
+  const btn = document.createElement('button');
+  btn.textContent = '×';
+  btn.style.cssText = 'background:none;border:none;font-size:20px;line-height:1;cursor:pointer;padding:0;opacity:.55;margin-top:-3px;flex-shrink:0';
+  t.appendChild(txt);
+  t.appendChild(btn);
   c.appendChild(t);
-  setTimeout(() => t.remove(), 3300);
+  const duree = type === 'error' ? 8000 : 3300;
+  const timer = setTimeout(() => t.remove(), duree);
+  btn.addEventListener('click', () => { clearTimeout(timer); t.style.opacity='0'; t.style.transition='opacity .25s'; setTimeout(()=>t.remove(),250); });
 }
 
 // ─── INIT : créer un ticket vide au démarrage ───

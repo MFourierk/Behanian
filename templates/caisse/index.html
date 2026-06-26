@@ -904,8 +904,13 @@ function setTab(name, el){
 function toast(msg, type='info'){
   const colors = {success:'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0',error:'background:#fee2e2;color:#dc2626;border:1px solid #fecaca',info:'background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe'};
   const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15)`;
-  t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 3500);
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;${colors[type]||colors.info};padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.15);display:flex;align-items:flex-start;gap:8px;max-width:460px;line-height:1.55`;
+  const txt=document.createElement('span');txt.style.flex='1';txt.innerHTML=msg;
+  const btn=document.createElement('button');btn.textContent='×';btn.style.cssText='background:none;border:none;font-size:20px;line-height:1;cursor:pointer;padding:0;opacity:.55;margin-top:-3px;flex-shrink:0';
+  t.appendChild(txt);t.appendChild(btn);document.body.appendChild(t);
+  const duree=type==='error'?8000:3500;
+  const timer=setTimeout(()=>t.remove(),duree);
+  btn.addEventListener('click',()=>{clearTimeout(timer);t.style.opacity='0';t.style.transition='opacity .25s';setTimeout(()=>t.remove(),250);});
 }
 
 async function post(url, data){

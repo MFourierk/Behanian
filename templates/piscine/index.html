@@ -1052,7 +1052,6 @@ function supprimerPanier(idx){
 }
 
 function piscineNotif(msg, type='success') {
-  /* Notification stylée — remplace les alert() */
   const colors = {
     success: {bg:'#dcfce7', color:'#15803d', border:'#bbf7d0', icon:'✓'},
     error:   {bg:'#fee2e2', color:'#991b1b', border:'#fca5a5', icon:'⚠️'},
@@ -1060,10 +1059,19 @@ function piscineNotif(msg, type='success') {
   };
   const c = colors[type] || colors.info;
   const div = document.createElement('div');
-  div.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;background:${c.bg};color:${c.color};padding:14px 20px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid ${c.border};max-width:360px;box-shadow:0 4px 12px rgba(0,0,0,.12);line-height:1.5`;
-  div.innerHTML = `<strong>${c.icon} ${msg}</strong>`;
+  div.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;background:${c.bg};color:${c.color};padding:14px 16px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid ${c.border};max-width:460px;box-shadow:0 4px 16px rgba(0,0,0,.18);line-height:1.65;display:flex;align-items:flex-start;gap:10px`;
+  const txt = document.createElement('div');
+  txt.style.flex = '1';
+  txt.innerHTML = `<strong>${c.icon}</strong>&nbsp;${msg}`;
+  const btn = document.createElement('button');
+  btn.textContent = '×';
+  btn.style.cssText = `background:none;border:none;font-size:22px;line-height:1;color:${c.color};cursor:pointer;padding:0;opacity:.55;margin-top:-4px;flex-shrink:0`;
+  div.appendChild(txt);
+  div.appendChild(btn);
   document.body.appendChild(div);
-  setTimeout(() => { div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(), 400); }, 3500);
+  const duree = type === 'error' ? 8000 : 3500;
+  const timer = setTimeout(() => { div.style.transition='opacity .4s'; div.style.opacity='0'; setTimeout(()=>div.remove(), 400); }, duree);
+  btn.addEventListener('click', () => { clearTimeout(timer); div.style.transition='opacity .25s'; div.style.opacity='0'; setTimeout(()=>div.remove(), 250); });
 }
 
 async function validerCommande(){

@@ -232,8 +232,10 @@ class MouvementStockBar(models.Model):
                     quantite_stock=F('quantite_stock') + self.quantite
                 )
             else:
+                from django.db.models.functions import Greatest
+                from django.db.models import Value
                 BoissonBar.objects.filter(pk=self.boisson_id).update(
-                    quantite_stock=F('quantite_stock') - self.quantite
+                    quantite_stock=Greatest(F('quantite_stock') - self.quantite, Value(0))
                 )
 
     class Meta:
