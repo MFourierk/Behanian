@@ -822,8 +822,6 @@ async function validerEntree(){
   }
   if(d.success){
     fermerModal('modalEntree');
-    const ticketUrl = '{% url "piscine:ticket_entree" 0 %}'.replace('/0/', '/' + d.acces_id + '/');
-    window.open(ticketUrl, '_blank', 'width=400,height=620,scrollbars=yes');
     setTimeout(()=>location.reload(), 600);
   } else {
     piscineNotif(d.error||'Une erreur est survenue. Veuillez réessayer.','error');
