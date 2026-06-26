@@ -1,0 +1,198 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+{% load humanize %}
+
+{% block title %}{{ page_title }} — Cave BEHANIAN{% endblock %}
+
+{% block content %}
+{% breadcrumb "Cave" "bar:stock_management" "Réceptions" "bar:stock_management" br.numero "" %}
+
+<style>
+.page-header {
+    background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+    color: white; padding: 24px 30px; border-radius: 18px;
+    margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.page-header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+.page-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.88rem; }
+
+.card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.section-title { font-weight: 700; color: #8e44ad; font-size: 0.88rem; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #f3e5f5; }
+
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.meta-item label { display: block; font-size: 0.78rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+.meta-item span  { font-size: 0.95rem; font-weight: 600; color: #1a1a2e; }
+
+/* Badge statut */
+.badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:.8rem; font-weight:700; }
+.badge-brouillon { background:#f1f5f9; color:#64748b; }
+.badge-en_cours  { background:#dbeafe; color:#1d4ed8; }
+.badge-valide    { background:#dcfce7; color:#15803d; }
+.badge-annule    { background:#fee2e2; color:#dc2626; }
+
+/* Tableau lignes */
+.tbl { width:100%; border-collapse:collapse; font-size:.9rem; }
+.tbl thead th { background:#f8f9fa; padding:10px 14px; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#555; border-bottom:2px solid #e9ecef; text-align:left; }
+.tbl thead th.r { text-align:right; }
+.tbl tbody td { padding:11px 14px; border-bottom:1px solid #f0f3f7; vertical-align:middle; }
+.tbl tbody td.r { text-align:right; font-weight:600; }
+.tbl tbody tr:hover td { background:#f9f0ff; }
+.ecart-pos { color:#16a34a; font-weight:700; }
+.ecart-neg { color:#dc2626; font-weight:700; }
+.ecart-zero{ color:#94a3b8; }
+
+/* Total bas */
+.total-row { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:14px 0 0; border-top:2px solid #e9ecef; margin-top:6px; }
+.total-row .lbl { font-size:.9rem; color:#555; font-weight:600; }
+.total-row .val { font-size:1.3rem; font-weight:800; color:#8e44ad; }
+
+/* Boutons */
+.btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; font-size:.88rem; font-weight:600; border:none; cursor:pointer; text-decoration:none; transition:all .15s; }
+.btn-violet { background:#8e44ad; color:white; }
+.btn-violet:hover { background:#7d3c98; color:white; }
+.btn-outline { background:white; color:#555; border:1px solid #d1d5db; }
+.btn-outline:hover { background:#f3f4f6; }
+.btn-green  { background:#16a34a; color:white; }
+.btn-green:hover  { background:#15803d; color:white; }
+.btn-red    { background:#dc2626; color:white; }
+.btn-red:hover    { background:#b91c1c; color:white; }
+</style>
+
+<!-- EN-TÊTE -->
+<div class="page-header">
+    <div>
+        <h2><i class="fas fa-truck-loading"></i> {{ br.numero }}</h2>
+        <p>Bon de réception — Cave Behanian</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="{% url 'bar:stock_management' %}?tab=reception" class="btn btn-outline" style="background:rgba(255,255,255,.15);color:white;border-color:rgba(255,255,255,.3)">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        {% if br.statut in 'brouillon,en_cours' %}
+        <form method="post" action="{% url 'bar:bon_reception_valider' br.pk %}" style="margin:0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-green" onclick="return confirm('Valider ce bon et mettre à jour le stock ?')">
+                <i class="fas fa-check-circle"></i> Valider & Mettre à jour le stock
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- INFOS GÉNÉRALES -->
+<div class="card">
+    <div class="section-title"><i class="fas fa-info-circle"></i> Informations générales</div>
+    <div class="meta-grid">
+        <div class="meta-item">
+            <label>Numéro</label>
+            <span>{{ br.numero }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Statut</label>
+            <span class="badge badge-{{ br.statut }}">{{ br.get_statut_display }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Date de réception</label>
+            <span>{{ br.date_reception|date:"d/m/Y" }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Fournisseur</label>
+            <span>{{ br.fournisseur.nom|default:"—" }}</span>
+        </div>
+        <div class="meta-item">
+            <label>N° document fournisseur</label>
+            <span>{{ br.numero_document_fournisseur|default:"—" }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Bon de commande lié</label>
+            <span>
+                {% if br.bon_commande %}
+                <a href="{% url 'bar:bon_commande_detail' br.bon_commande.pk %}" style="color:#8e44ad">{{ br.bon_commande.numero }}</a>
+                {% else %}—{% endif %}
+            </span>
+        </div>
+        <div class="meta-item">
+            <label>Opérateur</label>
+            <span>{{ br.operateur.get_full_name|default:br.operateur.username }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Créé le</label>
+            <span>{{ br.date_creation|date:"d/m/Y à H:i" }}</span>
+        </div>
+        {% if br.valide_par %}
+        <div class="meta-item">
+            <label>Validé par</label>
+            <span>{{ br.valide_par.get_full_name|default:br.valide_par.username }}</span>
+        </div>
+        <div class="meta-item">
+            <label>Validé le</label>
+            <span>{{ br.date_validation|date:"d/m/Y à H:i"|default:"—" }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% if br.notes %}
+    <div style="margin-top:16px;padding:12px 16px;background:#faf5ff;border-left:4px solid #8e44ad;border-radius:6px;font-size:.9rem;color:#4a4a6a">
+        <strong>Notes :</strong> {{ br.notes }}
+    </div>
+    {% endif %}
+</div>
+
+<!-- LIGNES ARTICLES -->
+<div class="card">
+    <div class="section-title"><i class="fas fa-boxes"></i> Articles reçus ({{ lignes.count }})</div>
+    {% if br.a_des_ecarts %}
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.85rem;color:#92400e">
+        <i class="fas fa-exclamation-triangle"></i> Ce bon présente des écarts entre les quantités commandées et reçues.
+    </div>
+    {% endif %}
+    <div style="overflow-x:auto">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th>Article</th>
+                    <th class="r">Qté commandée</th>
+                    <th class="r">Qté reçue</th>
+                    <th class="r">Écart</th>
+                    <th class="r">Prix unitaire</th>
+                    <th class="r">Total ligne</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ligne in lignes %}
+            <tr>
+                <td>
+                    <div style="font-weight:600">{{ ligne.article.nom }}</div>
+                    {% if ligne.article.categorie %}<div style="font-size:.78rem;color:#888">{{ ligne.article.categorie }}</div>{% endif %}
+                </td>
+                <td class="r" style="color:#64748b">
+                    {% if ligne.quantite_commandee %}{{ ligne.quantite_commandee|floatformat:"-2" }}{% else %}—{% endif %}
+                </td>
+                <td class="r">{{ ligne.quantite_recue|floatformat:"-2" }}</td>
+                <td class="r">
+                    {% if ligne.ecart > 0 %}
+                        <span class="ecart-pos">+{{ ligne.ecart|floatformat:"-2" }}</span>
+                    {% elif ligne.ecart < 0 %}
+                        <span class="ecart-neg">{{ ligne.ecart|floatformat:"-2" }}</span>
+                    {% else %}
+                        <span class="ecart-zero">—</span>
+                    {% endif %}
+                </td>
+                <td class="r">{{ ligne.prix_unitaire|floatformat:"0" }} F</td>
+                <td class="r" style="color:#8e44ad">{{ ligne.total_ligne|floatformat:"0" }} F</td>
+                <td style="font-size:.82rem;color:#888">{{ ligne.notes_ligne|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8">Aucun article</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="total-row">
+        <span class="lbl">TOTAL RÉCEPTION</span>
+        <span class="val">{{ br.total|floatformat:"0" }} F CFA</span>
+    </div>
+</div>
+
+{% endblock %}
