@@ -1,5 +1,6 @@
 ﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
+{% load l10n %}
 {% block title %}Caisse — BEHANIAN{% endblock %}
 
 {% block extra_css %}
@@ -886,6 +887,7 @@
   </div>
 </div>
 
+{% localize off %}
 <script>
 const CSRF = '{{ csrf_token }}';
 
@@ -1146,4 +1148,5 @@ async function rafraichirReconciliation(manuel=false){
   } catch(e){ if(manuel) toast('❌ Erreur actualisation', 'error'); }
 }
 </script>
+{% endlocalize %}
 {% endblock %}
