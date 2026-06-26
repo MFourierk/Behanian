@@ -128,7 +128,7 @@
                             <td>
                                 <input type="number" name="quantite_comptee[]"
                                     class="qte-comptee"
-                                    value="{% if mode == 'edit' %}{{ art.qte_comptee_init }}{% else %}{{ art.quantite_stock }}{% endif %}"
+                                    value="{{ art.quantite_stock }}"
                                     min="0" step="1"
                                     oninput="majEcartInv(this)"
                                     style="width:90px;">
@@ -136,7 +136,7 @@
                             <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;">0</td>
                             <td>
                                 <input type="number" name="prix_unitaire[]"
-                                    value="{% if mode == 'edit' %}{{ art.prix_inv_init }}{% else %}{{ art.prix_achat }}{% endif %}"
+                                    value="{{ art.prix_achat }}"
                                     min="0" step="1"
                                     class="prix-inv"
                                     oninput="majEcartInv(this)"
@@ -144,7 +144,7 @@
                             </td>
                             <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:#e74c3c;">0 FCFA</td>
                             <td>
-                                <input type="text" name="notes_ligne[]" value="{% if mode == 'edit' %}{{ art.notes_ligne_init }}{% endif %}" placeholder="Note..." style="width:100px;font-size:0.82rem;">
+                                <input type="text" name="notes_ligne[]" placeholder="Note..." style="width:100px;font-size:0.82rem;">
                             </td>
                         </tr>
                         {% endfor %}
@@ -252,7 +252,23 @@ function filtrerInv() {
     majResume();
 }
 
-// Init
+// Pré-remplissage depuis la sauvegarde (mode continuer)
+const PREFILL = {{ prefill_json|default:"{}"|safe }};
+if (Object.keys(PREFILL).length) {
+    document.querySelectorAll('input[name="article_id[]"]').forEach(hidden => {
+        const data = PREFILL[parseInt(hidden.value)];
+        if (!data) return;
+        const row = hidden.closest('tr');
+        const qteInp   = row.querySelector('.qte-comptee');
+        const prixInp  = row.querySelector('.prix-inv');
+        const notesInp = row.querySelector('input[name="notes_ligne[]"]');
+        if (qteInp)   qteInp.value   = data.qte;
+        if (prixInp)  prixInp.value  = data.prix;
+        if (notesInp && data.notes) notesInp.value = data.notes;
+    });
+}
+
+// Init écarts (après pré-remplissage)
 document.querySelectorAll('.qte-comptee').forEach(inp => majEcartInv(inp));
 </script>
 {% endblock %}

@@ -854,24 +854,23 @@ def inventaire_edit(request, pk):
             messages.success(request, f"Inventaire {inv.numero} mis à jour.")
         return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
-    # Pré-remplir chaque article avec les valeurs déjà saisies
-    lignes_dict = {l.article_id: l for l in inv.lignes.select_related('article').all()}
-    for art in articles:
-        ligne = lignes_dict.get(art.pk)
-        if ligne:
-            art.qte_comptee_init  = ligne.quantite_comptee
-            art.prix_inv_init     = ligne.prix_unitaire
-            art.notes_ligne_init  = ligne.notes_ligne
-        else:
-            art.qte_comptee_init  = art.quantite_stock
-            art.prix_inv_init     = art.prix_achat
-            art.notes_ligne_init  = ''
+    import json
+    lignes_dict = {l.article_id: l for l in inv.lignes.all()}
+    prefill = {
+        art_id: {
+            'qte':   str(l.quantite_comptee),
+            'prix':  str(l.prix_unitaire),
+            'notes': l.notes_ligne,
+        }
+        for art_id, l in lignes_dict.items()
+    }
 
     context = {
-        'page_title': f'Continuer {inv.numero}',
-        'articles': articles,
-        'mode': 'edit',
-        'inv': inv,
+        'page_title':    f'Continuer {inv.numero}',
+        'articles':      articles,
+        'mode':          'edit',
+        'inv':           inv,
+        'prefill_json':  json.dumps(prefill),
     }
     return render(request, 'bar/inventaire_form.html', context)
 

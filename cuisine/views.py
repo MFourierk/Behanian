@@ -1005,20 +1005,19 @@ def inventaire_edit(request, pk):
             messages.success(request, f"Inventaire {inv.numero} mis à jour.")
         return redirect('/cuisine/stock/?tab=inventaire')
 
-    # Pré-remplir avec valeurs existantes
+    import json
     lignes_dict = {l.ingredient_id: l for l in inv.lignes.all()}
-    for ing in ingredients:
-        ligne = lignes_dict.get(ing.pk)
-        if ligne:
-            ing.qte_physique_init = ligne.quantite_physique
-        else:
-            ing.qte_physique_init = 0
+    prefill = {
+        ing_id: {'qte': str(l.quantite_physique)}
+        for ing_id, l in lignes_dict.items()
+    }
 
     context = {
-        'page_title': f'Continuer {inv.numero}',
-        'ingredients': ingredients,
-        'mode': 'edit',
-        'inv': inv,
+        'page_title':   f'Continuer {inv.numero}',
+        'ingredients':  ingredients,
+        'mode':         'edit',
+        'inv':          inv,
+        'prefill_json': json.dumps(prefill),
     }
     return render(request, 'cuisine/inventaire_form.html', context)
 
