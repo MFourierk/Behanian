@@ -1,2 +1,5 @@
 # La DB locale gagne toujours lors des merges
 db.sqlite3 merge=ours
+
+# Scripts shell : toujours LF (Linux/Mac)
+*.sh text eol=lf
