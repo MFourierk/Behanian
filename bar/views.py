@@ -618,12 +618,17 @@ def bon_reception_create(request):
 def bon_reception_detail(request, pk):
     br = get_object_or_404(BonReceptionBar, pk=pk)
     lignes = br.lignes.select_related('article').all()
+    # Aligner les champs sur le template partagé cuisine
+    br.cree_par = br.operateur
+    for l in lignes:
+        l.ingredient = l.article
     context = {
         'page_title': f'Réception {br.numero}',
         'br': br,
         'lignes': lignes,
+        'dept_label': 'Cave',
     }
-    return render(request, 'bar/bon_reception_detail.html', context)
+    return render(request, 'cuisine/bon_reception_print.html', context)
 
 
 @require_module_access('bar')

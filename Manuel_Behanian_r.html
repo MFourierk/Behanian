@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Manuel Utilisateur - Logiciel de Gestion - Complexe Hôtelier Behanian</title>
+<style>
+    @page {
+        size: A4;
+        margin: 20mm;
+    }
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: #333;
+        line-height: 1.4;
+        font-size: 11pt;
+    }
+    
+    /* RÈGLE CLÉ : Force le saut de page uniquement au début de chaque chapitre */
+    h2.chapitre {
+        break-before: page;
+        page-break-before: always;
+        color: #8B0000;
+        border-bottom: 2px solid #8B0000;
+        padding-bottom: 5px;
+        margin-top: 0; /* Évite un vide en haut de page */
+    }
+    
+    h1 { text-align: center; color: #8B0000; margin-top: 50px; }
+    h3 { color: #A52A2A; margin-top: 15px; margin-bottom: 8px; }
+    
+    .subtitle { text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 30px; }
+    .meta { text-align: center; font-style: italic; margin-bottom: 50px; }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+        page-break-inside: avoid;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 6px 10px;
+        text-align: left;
+        vertical-align: top;
+    }
+    th { background-color: #8B0000; color: white; font-size: 10pt; }
+    
+    ul, ol { margin-top: 5px; margin-bottom: 10px; padding-left: 20px; }
+    li { margin-bottom: 4px; }
+    
+    .note {
+        background-color: #FFF5F5;
+        border-left: 4px solid #8B0000;
+        padding: 10px;
+        margin: 10px 0;
+        font-size: 10.5pt;
+        page-break-inside: avoid;
+    }
+    .important { font-weight: bold; color: #8B0000; }
+    
+    /* Styles pour compacter le texte */
+    .steps-inline span { font-weight: bold; color: #8B0000; }
+</style>
+</head>
+<body>
+
+<!-- PAGE DE GARDE / ACCUEIL (PREMIER CHAPITRE INCLUS) -->
+<h1>COMPLEXE HÔTELIER BEHANIAN</h1>
+<div class="subtitle">Manuel Utilisateur - Logiciel de Gestion</div>
+<div class="subtitle">Guide complet pour tous les membres du personnel</div>
+<div class="meta">Version 2.0 - Juin 2026 - Usage interne uniquement</div>
+
+<hr>
+
+<h3>Table des matières</h3>
+<ol>
+    <li>Introduction et connexion</li>
+    <li>Navigation générale</li>
+    <li>Directeur Général & Manager</li>
+    <li>Réceptionniste & Responsable Hôtel</li>
+    <li>Chef caissier(e) & Caissier(e)</li>
+    <li>Manager Cuisine & Cuisinier(e)</li>
+    <li>Serveuse / Serveur</li>
+    <li>Responsable Cave</li>
+    <li>Piscine & Espaces Événementiels</li>
+    <li>Facturation</li>
+    <li>Questions fréquentes</li>
+</ol>
+
+<!-- CHAPITRE 1 -->
+<h2 class="chapitre">1. Introduction et connexion</h2>
+<h3>Qu'est-ce que le logiciel Behanian ?</h3>
+<p>Le logiciel Behanian est le système de gestion intégré du Complexe Hôtelier Behanian. Il regroupe dans une seule application tous les services : hôtel, restaurant, cuisine, cave, piscine, espaces événementiels, caisse et facturation. Chaque membre du personnel accède uniquement aux modules correspondant à son poste[cite: 1].</p>
+
+<h3>Se connecter</h3>
+<p class="steps-inline">
+    <span>1.</span> Ouvrez votre navigateur (Chrome, Firefox ou Edge recommandé) | 
+    <span>2.</span> Allez sur l'adresse du logiciel fournie par votre responsable | 
+    <span>3.</span> Entrez votre identifiant et votre mot de passe | 
+    <span>4.</span> Cliquez sur <strong>Se connecter</strong>[cite: 1].
+</p>
+<div class="note">
+    <strong>Mot de passe oublié ?</strong> Contactez votre Manager ou le Directeur pour une réinitialisation. Votre email ne sert pas d'identifiant[cite: 1].
+</div>
+
+<h3>Se déconnecter</h3>
+<p>Cliquez sur l'icône de déconnexion (→) en bas à gauche de la barre latérale. Déconnectez-vous toujours en quittant votre poste pour protéger les données du complexe[cite: 1].</p>
+
+
+<!-- CHAPITRE 2 -->
+<h2 class="chapitre">2. Navigation générale</h2>
+<h3>La barre latérale (menu de gauche)</h3>
+<p>Après connexion, la barre latérale à gauche affiche les modules auxquels vous avez accès. Cliquez sur un module pour y accéder[cite: 1].</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Module</th>
+            <th>Qui y accède</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>Dashboard (accueil)</strong></td><td>Tout le personnel[cite: 1]</td></tr>
+        <tr><td><strong>Vue Direction</strong></td><td>Direction & Managers[cite: 1]</td></tr>
+        <tr><td><strong>Hôtel</strong></td><td>Réception & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Restaurant</strong></td><td>Serveurs & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Cuisine</strong></td><td>Cuisine & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Cave</strong></td><td>Cave & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Piscine</strong></td><td>Piscine & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Espaces Événementiels</strong></td><td>Événements & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Facturation</strong></td><td>Caisse & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Caisse</strong></td><td>Caissiers & Direction[cite: 1]</td></tr>
+        <tr><td><strong>Paramétrage</strong></td><td>Managers uniquement[cite: 1]</td></tr>
+    </tbody>
+</table>
+<p><strong>Réduire le menu :</strong> cliquez sur la flèche &lt; en haut du menu pour gagner de la place à l'écran. Sur mobile, appuyez sur le menu pour l'ouvrir[cite: 1].</p>
+
+<h3>Le Dashboard (page d'accueil)</h3>
+<p>Le Dashboard affiche en temps réel : CA du jour et variation par rapport à hier, taux d'occupation des chambres, réservations actives/en attente, alertes stock (ingrédients en rupture ou niveau bas), état de la caisse (ouverte/fermée), et les 8 dernières transactions[cite: 1]. Ces chiffres se mettent à jour automatiquement toutes les 30 secondes[cite: 1].</p>
+
+
+<!-- CHAPITRE 3 -->
+<h2 class="chapitre">3. Directeur Général & Manager</h2>
+<p>Accès complet à tous les modules : Vue Direction, Gestion du personnel, Paramétrage[cite: 1].</p>
+
+<h3>La Vue Direction</h3>
+<p>Tableau de bord consolidé regroupant les indicateurs stratégiques (KPI) en temps réel[cite: 1] :</p>
+<ul>
+    <li><strong>CA du jour :</strong> Chiffre d'affaires total de la journée en cours[cite: 1].</li>
+    <li><strong>Taux d'occupation :</strong> Pourcentage de chambres occupées actuellement[cite: 1].</li>
+    <li><strong>Réservations :</strong> Nombre de séjours actifs à l'hôtel[cite: 1].</li>
+    <li><strong>Alertes Cave & Cuisine :</strong> Boissons et ingrédients en rupture ou en stock bas[cite: 1].</li>
+    <li><strong>Fond de caisse :</strong> Solde théorique de la session centrale[cite: 1].</li>
+</ul>
+<p>L'onglet <strong>Vue globale</strong> ventile le CA par module, affiche les sessions de caisse ouvertes et les écarts[cite: 1]. L'onglet <strong>Mouvements</strong> liste les 40 derniers mouvements de stock (Cave + Cuisine) avec filtres[cite: 1].</p>
+
+<h3>Gérer le personnel</h3>
+<p>Accédez à <strong>Paramétrage → Personnel</strong>[cite: 1]. Initialisez d'abord les postes (première utilisation uniquement) pour créer les groupes métier[cite: 1].</p>
+<p><strong>Ajouter un membre :</strong> Cliquez sur <em>Nouveau membre</em>, remplissez les informations (Prénom, Nom, Identifiant, Mot de passe), sélectionnez le poste et validez[cite: 1].</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Groupe / Poste</th>
+            <th>Modules accessibles</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><strong>Directeur Général / Manager Général(e)</strong></td><td>Tous les modules[cite: 1]</td></tr>
+        <tr><td><strong>Responsable Hôtel</strong></td><td>Hôtel, Facturation[cite: 1]</td></tr>
+        <tr><td><strong>Réceptionniste</strong></td><td>Hôtel[cite: 1]</td></tr>
+        <tr><td><strong>Chef caissier(e)</strong></td><td>Caisse, Restaurant, Cave (TPE), Piscine, Espaces[cite: 1]</td></tr>
+        <tr><td><strong>Caissier(e)</strong></td><td>Restaurant, Cave (TPE uniquement), Piscine, Espaces[cite: 1]</td></tr>
+        <tr><td><strong>Manager Cuisine</strong></td><td>Cuisine, Restaurant[cite: 1]</td></tr>
+        <tr><td><strong>Cuisinier(e)</strong></td><td>Cuisine[cite: 1]</td></tr>
+        <tr><td><strong>Serveuse / Serveur</strong></td><td>Restaurant[cite: 1]</td></tr>
+        <tr><td><strong>Responsable Cave</strong></td><td>Cave (gestion complète : articles, stock, inventaire, commandes...)[cite: 1]</td></tr>
+        <tr><td><strong>Agent de Sécurité</strong></td><td>Aucun accès interface[cite: 1]</td></tr>
+    </tbody>
+</table>
+
+<div class="note">
+    Le compte <strong>superadmin</strong> est protégé. Il ne peut pas être modifié, désactivé ou supprimé[cite: 1].
+</div>
+
+
+<!-- CHAPITRE 4 -->
+<h2 class="chapitre">4. Réceptionniste & Responsable Hôtel</h2>
+<p>Gestion des chambres, réservations, Check-in / Check-out, consommations[cite: 1].</p>
+
+<h3>Tableau de bord Hôtel</h3>
+<p>Grille des chambres avec code couleur : <span style="color:green;font-weight:bold;">Vert</span> = Disponible | <span style="color:red;font-weight:bold;">Rouge</span> = Occupée | <span style="color:orange;font-weight:bold;">Jaune</span> = Réservée | <span style="color:gray;font-weight:bold;">Gris</span> = En maintenance[cite: 1].</p>
+
+<h3>Procédures clés</h3>
+<ul>
+    <li><strong>Créer une réservation :</strong> <em>Nouvelle réservation</em> → Saisir les infos client, chambre, dates et acompte → Créer[cite: 1].</li>
+    <li><strong>Check-in (Arrivée) :</strong> Sélectionner la réservation dans la liste des arrivées du jour (ou faire un <em>Check-in direct</em> sans réservation) → Valider. La chambre passe en <strong>Occupée</strong>[cite: 1].</li>
+    <li><strong>Ajouter des consommations :</strong> Ouvrir la réservation active → <em>Ajouter une consommation</em> → Choisir le serveur, le type de service, l'article et la quantité → Ajouter. Tout sera inclus dans la note finale[cite: 1].</li>
+    <li><strong>Check-out (Départ) :</strong> Sélectionner le séjour → <em>Check-out</em> → Vérifier le récapitulatif → Sélectionner le mode de paiement → Encaisser, clôturer et libérer la chambre (repassant en <strong>Disponible</strong>)[cite: 1].</li>
+</ul>
+
+
+<!-- CHAPITRE 5 -->
+<h2 class="chapitre">5. Chef caissier(e) & Caissier(e)</h2>
+<p>Ouverture/clôture de session, encaissements, mouvements, prélèvements et rapports[cite: 1].</p>
+
+<h3>Architecture du système de caisse</h3>
+<p>La <strong>Caisse Centrale</strong> (gérée uniquement par le Chef caissier) centralise automatiquement toutes les transactions effectuées de manière indépendante sur les caisses des modules (Hôtel, Restaurant, Cave, Piscine, Espaces)[cite: 1].</p>
+
+<h3>Opérations journalières</h3>
+<ul>
+    <li><strong>Ouvrir la caisse :</strong> Module Caisse → <em>Ouvrir la caisse</em> → Entrer le fond de caisse physique de début de journée[cite: 1]. La caisse de la veille doit obligatoirement être clôturée[cite: 1].</li>
+    <li><strong>Suivi des versements :</strong> Les statuts indiquent l'état des caisses indépendantes : <em>En attente</em> (transactions sans versement physique reçu), <em>Partiel</em>, ou <em>Soldé</em>[cite: 1].</li>
+    <li><strong>Enregistrer un versement de module :</strong> Cliquez sur <em>Mouvement</em> → Type : <em>Versement module</em> → Sélectionner le module et saisir le montant remis physiquement[cite: 1].</li>
+    <li><strong>Prélèvement banque :</strong> Pour transférer des espèces vers la banque en cours de journée, utilisez le bouton <em>Banque</em>[cite: 1].</li>
+</ul>
+
+<h3>Clôture de la caisse (Processus obligatoire en 3 étapes)</h3>
+<p>La clôture ne peut jamais être bloquée[cite: 1]. 
+<strong>1. Vérification :</strong> Résumé de la journée et alertes de versements manquants[cite: 1]. 
+<strong>2. Billetage :</strong> Comptage physique de chaque coupure et pièce[cite: 1]. 
+<strong>3. Finalisation :</strong> Calcul automatique de l'écart (Fond théorique - Fond compté) et confirmation définitive[cite: 1].</p>
+
+<div class="note">
+    <strong>Formule du Fond Théorique :</strong> Fond initial + Encaissements espèces - Prélèvements banque = Fond théorique[cite: 1].
+</div>
+
+
+<!-- CHAPITRE 6 -->
+<h2 class="chapitre">6. Manager Cuisine & Cuisinier(e)</h2>
+<p>Contrôle des coûts et gestion des fiches techniques[cite: 1]. 
+<span class="important">Ordre logique strict à respecter :</span> 1. Créer les ingrédients → 2. Créer la fiche technique (recette) → 3. Créer le plat[cite: 1]. Aucun plat n'apparaît au restaurant sans sa fiche technique associée[cite: 1].</p>
+
+<h3>Étape 1 - Créer les ingrédients</h3>
+<p>Renseignez le nom, la catégorie, l'unité de stock (fournisseur) et l'unité recette (petite unité de cuisine)[cite: 1].</p>
+<div class="note">
+    <strong>Facteur de conversion :</strong> Nombre d'unités recette contenues dans 1 unité de stock[cite: 1].<br>
+    <em>Exemple frites :</em> 1 carton (13 500 F) = 4 sachets &times; 8 portions = 32 portions. Facteur = 32. Coût de revient = 13 500 / 32 = 421,87 F / portion[cite: 1].
+</div>
+
+<h3>Étape 2 & 3 - Fiche technique et Plats</h3>
+<p>La fiche technique définit le nombre de portions préparées en une seule fois (ex: marmite pour 10 personnes) pour permettre au logiciel de diviser automatiquement le coût total et de recommander un prix de vente (calculé sur un coefficient standard de &times;3)[cite: 1]. Une fois la fiche créée, créez le <strong>Plat</strong> dans le menu pour le rendre immédiatement disponible sur le TPE des serveurs[cite: 1].</p>
+
+
+<!-- CHAPITRE 7 -->
+<h2 class="chapitre">7. Serveuse / Serveur</h2>
+<h3>Prise de commande (TPE Restaurant)</h3>
+<p>Sélectionnez une table sur le plan de salle (<span style="color:gray;font-weight:bold;">Blanche</span> = libre, <span style="color:orange;font-weight:bold;">Orange</span> = en cours)[cite: 1]. Ajoutez les plats et boissons demandés, ajustez les quantités avec + et -, puis cliquez sur <strong>Valider la commande</strong>[cite: 1].</p>
+
+<h3>Validation et modes de règlement</h3>
+<p>Sélectionnez obligatoirement le serveur assigné, puis choisissez le mode de paiement : <strong>Espèces</strong>, <strong>Carte bancaire</strong>, ou <strong>Chambre</strong> (pour imputer la note directement sur le séjour d'un client de l'hôtel)[cite: 1]. Confirmez pour imprimer automatiquement le ticket[cite: 1].</p>
+
+
+<!-- CHAPITRE 8 -->
+<h2 class="chapitre">8. Responsable Cave</h2>
+<p>Le catalogue se met à jour automatiquement à chaque vente. <span class="important">Ne saisissez jamais de sortie manuelle pour une vente</span>, sous peine de fausser les stocks par une double déduction[cite: 1].</p>
+<ul>
+    <li><strong>Créer un article :</strong> Onglet Articles → <em>Nouvel article</em> → Saisir le nom, la catégorie (Bière, Vin, Soft...), le prix de vente, et le seuil d'alerte[cite: 1].</li>
+    <li><strong>Réceptions :</strong> Comptez toujours physiquement les produits reçus avant de valider le bon de réception pour incrémenter le stock[cite: 1].</li>
+    <li><strong>Inventaire & Casses :</strong> Réalisez un inventaire périodique pour ajuster les écarts physiques[cite: 1]. Déclarez immédiatement toute bouteille cassée ou périmée dans l'onglet <em>Casses</em> pour garder un état à date rigoureux[cite: 1].</li>
+</ul>
+
+
+<!-- CHAPITRE 9 -->
+<h2 class="chapitre">9. Piscine & Espaces Événementiels</h2>
+<h3>Module Piscine</h3>
+<p>Chaque client reçoit à l'entrée un ticket numéroté (ex: N&deg;003) qui sert d'identifiant unique pour ajouter ses consommations tout au long de sa présence[cite: 1]. À la sortie, le système calcule le solde total (entrée + extras)[cite: 1].</p>
+<p><strong>Types d'entrées :</strong> <em>Visiteur Ordinaire</em> (tarif standard), <em>Résident Hôtel</em> (gratuit, sélection de la chambre), ou <em>Forfait VIP</em> (bouton doré incluant des consommations pré-packagées)[cite: 1].</p>
+
+<h3>Module Espaces Événementiels</h3>
+<p>Permet de consulter le calendrier des disponibilités par code couleur[cite: 1]. Pour réserver, sélectionnez l'espace, saisissez les dates/heures et les détails du client[cite: 1]. Le prix s'adapte automatiquement selon le profil (particulier, professionnel ou résident hôtel)[cite: 1].</p>
+
+
+<!-- CHAPITRE 10 -->
+<h2 class="chapitre">10. Facturation</h2>
+<p>Centralisation de tous les flux financiers du complexe hôtelier[cite: 1].</p>
+<ul>
+    <li><strong>Tickets :</strong> Consultation, réimpression ou export PDF de tous les encaissements automatiques de chaque module[cite: 1].</li>
+    <li><strong>Factures :</strong> Pour les professionnels, générez une facture officielle nominative avec possibilité d'appliquer une remise globale[cite: 1].</li>
+    <li><strong>Devis (Proforma) :</strong> Saisie d'offres tarifaires modifiables, convertissables en facture définitive en un clic après acceptation[cite: 1].</li>
+    <li><strong>Avoirs :</strong> Permet d'annuler juridiquement tout ou partie d'un ticket erroné. <em>Note :</em> Un avoir régularise la comptabilité mais n'engendre pas de sortie d'argent physique ; le remboursement d'espèces doit être enregistré manuellement en caisse[cite: 1].</li>
+</ul>
+
+
+<!-- CHAPITRE 11 -->
+<h2 class="chapitre">11. Questions fréquentes</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Question</th>
+            <th>Réponse</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Je ne vois pas un module dans le menu</td><td>Votre compte n'a pas accès à ce module. Contactez votre Manager pour ajuster vos droits[cite: 1].</td></tr>
+        <tr><td>Le stock diminue tout seul, est-ce normal ?</td><td>Oui. Dès qu'une vente est validée, les articles sont automatiquement retirés du stock[cite: 1].</td></tr>
+        <tr><td>La caisse indique "session déjà ouverte"</td><td>Une session est restée ouverte depuis la veille. Un Manager doit forcer sa clôture[cite: 1].</td></tr>
+        <tr><td>Un client veut payer sa note restaurant sur sa chambre</td><td>Lors de la validation, sélectionnez le mode "Chambre" et choisissez son numéro de chambre[cite: 1].</td></tr>
+        <tr><td>Je n'arrive pas à me connecter</td><td>Vérifiez que vous utilisez votre identifiant (login) et non votre adresse email[cite: 1].</td></tr>
+        <tr><td>Un forfait VIP piscine est indisponible / rouge</td><td>Il manque du stock sur l'un des articles inclus. Vous pouvez utiliser le menu déroulant pour proposer un remplacement[cite: 1].</td></tr>
+    </tbody>
+</table>
+
+<hr>
+<div style="text-align: center; font-size: 9pt; color: #666; margin-top: 20px;">
+    Manuel Utilisateur - Complexe Hôtelier BEHANIAN | Version 2.0 Juin 2026<br>
+    <strong>Document interne - Ne pas diffuser à l'extérieur du complexe[cite: 1]</strong>
+</div>
+
+</body>
+</html>

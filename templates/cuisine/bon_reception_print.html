@@ -5,8 +5,8 @@
 <!-- TITRE -->
 <div class="doc-title-band">
   <div>
-    <div class="doc-title-text">Bon de Réception — Cuisine</div>
-    <div class="doc-title-sub">Département Cuisine · Approvisionnement</div>
+    <div class="doc-title-text">Bon de Réception — {{ dept_label|default:"Cuisine" }}</div>
+    <div class="doc-title-sub">Département {{ dept_label|default:"Cuisine" }} · Approvisionnement</div>
   </div>
   <div class="doc-title-right">
     <span class="badge badge-{{ br.statut }}">{{ br.get_statut_display }}</span>
