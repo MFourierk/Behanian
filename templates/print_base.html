@@ -139,7 +139,7 @@ body { font-family:'Segoe UI',Arial,sans-serif; font-size:12px; color:#1a1a2e; b
 <div class="btn-zone no-print">
   {% block doc_actions %}
   <button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
-  <button onclick="window.close()" class="btn-doc btn-doc-close">✕ Fermer</button>
+  <button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
   {% endblock %}
 </div>
 

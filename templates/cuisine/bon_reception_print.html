@@ -28,7 +28,7 @@
     <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ br.cree_par.get_full_name|default:br.cree_par.username }}</span></div>
     <div class="meta-row"><span class="meta-lbl">Date création</span><span class="meta-val">{{ br.date_creation|date:"d/m/Y H:i" }}</span></div>
     {% if br.statut == 'valide' %}
-    <div class="meta-row"><span class="meta-lbl">Validé par</span><span class="meta-val">{{ br.valide_par.get_full_name|default:br.valide_par.username }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Validé par</span><span class="meta-val">{{ br.valide_par.get_full_name|default:br.valide_par.username|default:"—" }}</span></div>
     <div class="meta-row"><span class="meta-lbl">Date validation</span><span class="meta-val">{{ br.date_validation|date:"d/m/Y H:i" }}</span></div>
     {% endif %}
     <div class="meta-row"><span class="meta-lbl">Nb articles</span><span class="meta-val">{{ lignes.count }} ligne(s)</span></div>
