@@ -76,8 +76,10 @@ def piscine_index(request):
         date_entree__date=today
     ).prefetch_related('consommations').order_by('-date_entree')
 
-    # Personnel actif pour assignation serveur
-    personnel = User.objects.filter(is_active=True, is_superuser=False).order_by('first_name', 'last_name')
+    # Serveurs/Serveuses uniquement (groupe "Serveuse/Serveur") pour assignation commande
+    personnel = User.objects.filter(
+        is_active=True, groups__name='Serveuse/Serveur'
+    ).order_by('first_name', 'last_name')
 
     context = {
         'entrees_jour': entrees_jour,
@@ -458,6 +460,7 @@ def encaisser_sortie(request, acces_id):
         acces.save()
 
         nb_total = acces.nb_adultes + acces.nb_enfants
+        label_entree = f'Menu VIP {acces.forfait.nom}' if acces.forfait else f'Entrée piscine x{nb_total}'
 
         # Mode CHAMBRE : ajouter les consos à la réservation hôtel sans créer ticket séparé
         if sur_chambre and acces.reservation_hotel:
@@ -467,12 +470,12 @@ def encaisser_sortie(request, acces_id):
             if acces.prix_total > 0:
                 HotelConso.objects.create(
                     reservation=reservation, type_service='piscine',
-                    nom=f'[Piscine] Entrée x{nb_total}',
+                    nom=f'[Piscine] {label_entree}',
                     quantite=1, prix_unitaire=acces.prix_total,
                 )
             # Les consos sont déjà sur la chambre via ajouter_consommation
             # Générer reçu de dépôt
-            lignes = [{'nom': f'Entrée piscine x{nb_total}', 'total': float(acces.prix_total)}]
+            lignes = [{'nom': label_entree, 'total': float(acces.prix_total)}]
             for c in acces.consommations.all():
                 lignes.append({'nom': f'{c.produit} x{c.quantite}', 'total': float(c.get_total())})
             return JsonResponse({
@@ -495,7 +498,7 @@ def encaisser_sortie(request, acces_id):
             ).delete()
 
         # Créer ticket facturation
-        contenu = f'<div class="row"><span class="item-name">Entrée piscine x{nb_total}</span><span class="item-price">{int(acces.prix_total):,} F</span></div>'
+        contenu = f'<div class="row"><span class="item-name">{label_entree}</span><span class="item-price">{int(acces.prix_total):,} F</span></div>'
         for c in acces.consommations.all():
             contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
 
