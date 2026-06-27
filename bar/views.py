@@ -827,7 +827,6 @@ def inventaire_edit(request, pk):
         inv.notes = request.POST.get('notes', inv.notes)
         inv.save()
 
-        inv.lignes.all().delete()
         article_ids     = request.POST.getlist('article_id[]')
         qtes_comptees   = request.POST.getlist('quantite_comptee[]')
         qtes_theoriques = request.POST.getlist('quantite_theorique[]')
@@ -835,12 +834,14 @@ def inventaire_edit(request, pk):
 
         for i, art_id in enumerate(article_ids):
             if art_id:
-                LigneInventaireBar.objects.create(
+                LigneInventaireBar.objects.update_or_create(
                     inventaire=inv,
                     article_id=art_id,
-                    quantite_theorique=qtes_theoriques[i] if qtes_theoriques[i] else 0,
-                    quantite_comptee=qtes_comptees[i] if qtes_comptees[i] else 0,
-                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
+                    defaults={
+                        'quantite_theorique': qtes_theoriques[i] if qtes_theoriques[i] else 0,
+                        'quantite_comptee':   qtes_comptees[i] if qtes_comptees[i] else 0,
+                        'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
+                    }
                 )
 
         if inv.statut == 'valide':

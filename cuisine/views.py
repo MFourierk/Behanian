@@ -987,7 +987,6 @@ def inventaire_edit(request, pk):
         inv.notes = request.POST.get('notes', inv.notes)
         inv.save()
 
-        inv.lignes.all().delete()
         ing_ids    = request.POST.getlist('ingredient_id[]')
         th_list    = request.POST.getlist('quantite_theorique[]')
         ph_list    = request.POST.getlist('quantite_physique[]')
@@ -995,12 +994,14 @@ def inventaire_edit(request, pk):
 
         for i, ing_id in enumerate(ing_ids):
             if ing_id:
-                LigneInventaireCuisine.objects.create(
+                LigneInventaireCuisine.objects.update_or_create(
                     inventaire=inv,
                     ingredient_id=ing_id,
-                    quantite_theorique=th_list[i] if th_list[i] else 0,
-                    quantite_physique=ph_list[i] if ph_list[i] else 0,
-                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
+                    defaults={
+                        'quantite_theorique': th_list[i] if th_list[i] else 0,
+                        'quantite_physique':  ph_list[i] if ph_list[i] else 0,
+                        'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
+                    }
                 )
 
         if request.POST.get('valider') == '1':
