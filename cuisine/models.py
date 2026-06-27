@@ -642,6 +642,7 @@ class LigneInventaireCuisine(models.Model):
     class Meta:
         verbose_name        = "Ligne d'inventaire (Cuisine)"
         verbose_name_plural = "Lignes d'inventaire (Cuisine)"
+        unique_together     = [('inventaire', 'ingredient')]
 
 
 # ==============================================================================
