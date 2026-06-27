@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Sum, Q, F
 from django.utils import timezone
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from decimal import Decimal
 
 from .models import (
@@ -930,9 +931,10 @@ def inventaire_create(request):
             cree_par=request.user,
         )
         inv.save()
-        ing_ids  = request.POST.getlist('ingredient_id[]')
-        th_list  = request.POST.getlist('quantite_theorique[]')
-        ph_list  = request.POST.getlist('quantite_physique[]')
+        ing_ids    = request.POST.getlist('ingredient_id[]')
+        th_list    = request.POST.getlist('quantite_theorique[]')
+        ph_list    = request.POST.getlist('quantite_physique[]')
+        notes_list = request.POST.getlist('notes_ligne[]')
         for i, ing_id in enumerate(ing_ids):
             if ing_id:
                 LigneInventaireCuisine.objects.create(
@@ -940,10 +942,11 @@ def inventaire_create(request):
                     ingredient_id=ing_id,
                     quantite_theorique=th_list[i] if th_list[i] else 0,
                     quantite_physique=ph_list[i] if ph_list[i] else 0,
+                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
                 )
         if request.POST.get('valider') == '1':
             inv.valider(request.user)
-            messages.success(request, f"Inventaire {inv.numero} validé.")
+            messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
         else:
             messages.success(request, f"Inventaire {inv.numero} enregistré.")
         return redirect('/cuisine/stock/?tab=inventaire')
@@ -985,9 +988,10 @@ def inventaire_edit(request, pk):
         inv.save()
 
         inv.lignes.all().delete()
-        ing_ids = request.POST.getlist('ingredient_id[]')
-        th_list = request.POST.getlist('quantite_theorique[]')
-        ph_list = request.POST.getlist('quantite_physique[]')
+        ing_ids    = request.POST.getlist('ingredient_id[]')
+        th_list    = request.POST.getlist('quantite_theorique[]')
+        ph_list    = request.POST.getlist('quantite_physique[]')
+        notes_list = request.POST.getlist('notes_ligne[]')
 
         for i, ing_id in enumerate(ing_ids):
             if ing_id:
@@ -996,6 +1000,7 @@ def inventaire_edit(request, pk):
                     ingredient_id=ing_id,
                     quantite_theorique=th_list[i] if th_list[i] else 0,
                     quantite_physique=ph_list[i] if ph_list[i] else 0,
+                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
                 )
 
         if request.POST.get('valider') == '1':
@@ -1008,7 +1013,7 @@ def inventaire_edit(request, pk):
     import json
     lignes_dict = {l.ingredient_id: l for l in inv.lignes.all()}
     prefill = {
-        ing_id: {'qte': str(l.quantite_physique)}
+        ing_id: {'qte': str(l.quantite_physique), 'notes': l.notes_ligne}
         for ing_id, l in lignes_dict.items()
     }
 
@@ -1028,9 +1033,20 @@ def inventaire_valider(request, pk):
     if request.method == 'POST':
         ok = inv.valider(request.user)
         if ok:
-            messages.success(request, f"Inventaire {inv.numero} validé.")
+            messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
         else:
             messages.error(request, "Impossible de valider.")
+    return redirect('/cuisine/stock/?tab=inventaire')
+
+
+@require_module_access('cuisine')
+@require_POST
+def inventaire_annuler(request, pk):
+    inv = get_object_or_404(InventaireCuisine, pk=pk)
+    if inv.statut != 'valide':
+        inv.statut = 'annule'
+        inv.save()
+        messages.warning(request, f"Inventaire {inv.numero} annulé.")
     return redirect('/cuisine/stock/?tab=inventaire')
 
 

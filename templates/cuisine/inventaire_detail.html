@@ -25,7 +25,7 @@
     .inv-table tr:hover { background: #fef9f9; }
     .ecart-pos { color: #27ae60; font-weight: 700; }
     .ecart-neg { color: #e74c3c; font-weight: 700; }
-    .ecart-ok { color: #95a5a6; }
+    .ecart-ok  { color: #95a5a6; }
     .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; text-transform:uppercase; }
     .badge-brouillon { background:#fef3c7; color:#92400e; }
     .badge-valide    { background:#dcfce7; color:#15803d; }
@@ -37,6 +37,8 @@
     .btn-continuer:hover { background:#922b21; }
     .btn-valider { background:#27ae60; color:white; }
     .btn-valider:hover { background:#219a52; }
+    .btn-annuler { background:#e74c3c; color:white; }
+    .btn-annuler:hover { background:#c0392b; }
     .btn-back { background:#ecf0f1; color:#2c3e50; }
     .btn-back:hover { background:#dde1e4; }
     .actions-row { display:flex; gap:10px; flex-wrap:wrap; }
@@ -66,8 +68,8 @@
         <div class="meta-value">{{ inv.cree_par.get_full_name|default:inv.cree_par.username|default:"—" }}</div>
     </div>
     <div class="meta-item">
-        <div class="meta-label">Lignes</div>
-        <div class="meta-value">{{ lignes|length }} ingrédient(s)</div>
+        <div class="meta-label">Ingrédients</div>
+        <div class="meta-value">{{ lignes|length }} ligne(s)</div>
     </div>
     <div class="meta-item">
         <div class="meta-label">Écarts</div>
@@ -83,7 +85,7 @@
 
 {% if ecarts %}
 <div class="ecart-summary">
-    <h4>⚠️ {{ ecarts|length }} écart(s) détecté(s)</h4>
+    <h4>⚠️ {{ ecarts|length }} écart(s) détecté(s) — Valeur totale : {{ valeur_ecart_total|montant }} FCFA</h4>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
         {% for l in ecarts %}
         <span style="background:white;border:1px solid #f6d860;border-radius:8px;padding:4px 10px;font-size:0.82rem;font-weight:600;">
@@ -108,8 +110,10 @@
                 <th>Catégorie</th>
                 <th>Unité</th>
                 <th class="r">Qté théorique</th>
-                <th class="r">Qté physique</th>
+                <th class="r">Qté comptée</th>
                 <th class="r">Écart</th>
+                <th class="r">Valeur écart (FCFA)</th>
+                <th>Note</th>
             </tr>
         </thead>
         <tbody>
@@ -130,11 +134,28 @@
                         <span class="ecart-ok">—</span>
                     {% endif %}
                 </td>
+                <td class="r">
+                    {% if l.ecart != 0 %}
+                        <span class="{% if l.ecart > 0 %}ecart-pos{% else %}ecart-neg{% endif %}">
+                            {{ l.valeur_ecart|default:0|montant }}
+                        </span>
+                    {% else %}
+                        <span class="ecart-ok">0</span>
+                    {% endif %}
+                </td>
+                <td style="color:#7f8c8d;font-size:0.85rem;">{{ l.notes_ligne|default:"—" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="7" style="text-align:center;padding:20px;color:#95a5a6;font-style:italic">Aucun ingrédient</td></tr>
+            <tr><td colspan="9" style="text-align:center;padding:20px;color:#95a5a6;font-style:italic">Aucun ingrédient</td></tr>
             {% endfor %}
         </tbody>
+        <tfoot class="tfoot-total">
+            <tr>
+                <td colspan="7" style="text-align:right;font-size:0.88rem;color:#7f8c8d;">Valeur totale des écarts (absolue)</td>
+                <td class="r">{{ valeur_ecart_total|montant }} FCFA</td>
+                <td></td>
+            </tr>
+        </tfoot>
     </table>
 </div>
 
@@ -149,9 +170,15 @@
 <div class="actions-row">
     {% if inv.statut == 'brouillon' %}
     <a href="{% url 'cuisine:inventaire_edit' inv.pk %}" class="btn-action btn-continuer">✏ Continuer l'inventaire</a>
-    <form method="post" action="{% url 'cuisine:inventaire_valider' inv.pk %}" onsubmit="return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités physiques comptées.');">
+    <form method="post" action="{% url 'cuisine:inventaire_valider' inv.pk %}"
+          onsubmit="return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités comptées.');">
         {% csrf_token %}
-        <button type="submit" class="btn-action btn-valider">✔ Valider l'inventaire</button>
+        <button type="submit" class="btn-action btn-valider">✔ Valider &amp; Ajuster le stock</button>
+    </form>
+    <form method="post" action="{% url 'cuisine:inventaire_annuler' inv.pk %}"
+          onsubmit="return confirm('Annuler cet inventaire ?');">
+        {% csrf_token %}
+        <button type="submit" class="btn-action btn-annuler">✕ Annuler</button>
     </form>
     {% endif %}
     <a href="{% url 'cuisine:stock_management' %}?tab=inventaire" class="btn-action btn-back">← Retour</a>

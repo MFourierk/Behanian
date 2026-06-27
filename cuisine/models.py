@@ -635,6 +635,7 @@ class LigneInventaireCuisine(models.Model):
     quantite_theorique  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté théorique (stock)")
     quantite_physique   = models.DecimalField(max_digits=12, decimal_places=3, default=0, verbose_name="Qté physique (comptée)")
     valeur_ecart        = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
+    notes_ligne         = models.CharField(max_length=200, blank=True, verbose_name="Note")
 
     @property
     def ecart(self):
