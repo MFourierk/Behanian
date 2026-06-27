@@ -608,8 +608,12 @@ class InventaireCuisine(models.Model):
                 ),
                 utilisateur    = user,
             )
+            cmup_moment = ligne.ingredient.cmup
             ligne.ingredient.quantite_stock = ligne.quantite_physique
             ligne.ingredient.save()
+            # Persister la valeur de l'écart au CMUP du moment de l'inventaire
+            ligne.valeur_ecart = ecart * cmup_moment
+            ligne.save()
         self.statut          = 'valide'
         self.valide_par      = user
         self.date_validation = timezone.now()
@@ -630,14 +634,11 @@ class LigneInventaireCuisine(models.Model):
     ingredient          = models.ForeignKey(Ingredient, on_delete=models.PROTECT, verbose_name="Ingrédient")
     quantite_theorique  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté théorique (stock)")
     quantite_physique   = models.DecimalField(max_digits=12, decimal_places=3, default=0, verbose_name="Qté physique (comptée)")
+    valeur_ecart        = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
 
     @property
     def ecart(self):
         return self.quantite_physique - self.quantite_theorique
-
-    @property
-    def valeur_ecart(self):
-        return self.ecart * self.ingredient.cmup
 
     class Meta:
         verbose_name        = "Ligne d'inventaire (Cuisine)"

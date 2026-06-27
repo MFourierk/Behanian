@@ -104,7 +104,6 @@
                             <th>Stock théorique</th>
                             <th>Qté comptée <span style="color:#8e44ad;">★</span></th>
                             <th>Écart</th>
-                            <th>Prix unit.</th>
                             <th>Valeur écart</th>
                             <th>Note</th>
                         </tr>
@@ -113,10 +112,10 @@
                         {% regroup articles by categorie as articles_par_cat %}
                         {% for cat in articles_par_cat %}
                         <tr class="cat-header">
-                            <td colspan="9"><i class="fas fa-tag"></i> {{ cat.grouper }}</td>
+                            <td colspan="8"><i class="fas fa-tag"></i> {{ cat.grouper }}</td>
                         </tr>
                         {% for art in cat.list %}
-                        <tr class="inv-row" data-nom="{{ art.nom|lower }}" data-ref="{{ art.reference|lower|default:'' }}">
+                        <tr class="inv-row" data-nom="{{ art.nom|lower }}" data-ref="{{ art.reference|lower|default:'' }}" data-prix="{{ art.prix_achat }}">
                             <td><span style="font-family:monospace;font-size:0.82rem;color:#8e44ad;">{{ art.reference|default:"—" }}</span></td>
                             <td style="font-weight:600;color:#2c3e50;">{{ art.nom }}</td>
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ art.unite_affichee }}</td>
@@ -134,14 +133,6 @@
                                     style="width:90px;">
                             </td>
                             <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;">0</td>
-                            <td>
-                                <input type="number" name="prix_unitaire[]"
-                                    value="{{ art.prix_achat }}"
-                                    min="0" step="1"
-                                    class="prix-inv"
-                                    oninput="majEcartInv(this)"
-                                    style="width:90px;">
-                            </td>
                             <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:#e74c3c;">0 FCFA</td>
                             <td>
                                 <input type="text" name="notes_ligne[]" placeholder="Note..." style="width:100px;font-size:0.82rem;">
@@ -190,7 +181,7 @@ function majEcartInv(el) {
     const row = el.closest('tr');
     const theorique = parseFloat(row.querySelector('.qte-theorique').value) || 0;
     const comptee = parseFloat(row.querySelector('.qte-comptee').value) || 0;
-    const prix = parseFloat(row.querySelector('.prix-inv').value) || 0;
+    const prix = parseFloat(row.dataset.prix) || 0;
     const ecart = comptee - theorique;
     const valeurEcart = ecart * prix;
 
@@ -217,7 +208,7 @@ function majResume() {
         if (row.style.display === 'none') return;
         const theorique = parseFloat(row.querySelector('.qte-theorique').value) || 0;
         const comptee   = parseFloat(row.querySelector('.qte-comptee').value) || 0;
-        const prix      = parseFloat(row.querySelector('.prix-inv').value) || 0;
+        const prix      = parseFloat(row.dataset.prix) || 0;
         const ecart     = comptee - theorique;
         if (ecart < 0) nbManquants++;
         if (ecart > 0) nbExcedents++;
@@ -260,10 +251,8 @@ if (Object.keys(PREFILL).length) {
         if (!data) return;
         const row = hidden.closest('tr');
         const qteInp   = row.querySelector('.qte-comptee');
-        const prixInp  = row.querySelector('.prix-inv');
         const notesInp = row.querySelector('input[name="notes_ligne[]"]');
         if (qteInp)   qteInp.value   = data.qte;
-        if (prixInp)  prixInp.value  = data.prix;
         if (notesInp && data.notes) notesInp.value = data.notes;
     });
 }

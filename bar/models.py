@@ -503,7 +503,7 @@ class InventaireBar(models.Model):
 
     @property
     def valeur_ecart_total(self):
-        return sum(abs(l.valeur_ecart) for l in self.lignes.all())
+        return sum(abs(l.valeur_ecart or 0) for l in self.lignes.all())
 
     class Meta:
         verbose_name = "Inventaire (Cave)"
@@ -519,16 +519,12 @@ class LigneInventaireBar(models.Model):
     article = models.ForeignKey(BoissonBar, on_delete=models.PROTECT)
     quantite_theorique = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Qté théorique (système)")
     quantite_comptee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Qté comptée (physique)")
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix unitaire")
+    valeur_ecart = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne = models.CharField(max_length=200, blank=True)
 
     @property
     def ecart_quantite(self):
         return self.quantite_comptee - self.quantite_theorique
-
-    @property
-    def valeur_ecart(self):
-        return self.ecart_quantite * self.prix_unitaire
 
     @property
     def est_conforme(self):

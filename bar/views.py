@@ -784,7 +784,6 @@ def inventaire_create(request):
         article_ids = request.POST.getlist('article_id[]')
         qtes_comptees = request.POST.getlist('quantite_comptee[]')
         qtes_theoriques = request.POST.getlist('quantite_theorique[]')
-        prix_list = request.POST.getlist('prix_unitaire[]')
         notes_list = request.POST.getlist('notes_ligne[]')
 
         for i, art_id in enumerate(article_ids):
@@ -794,7 +793,6 @@ def inventaire_create(request):
                     article_id=art_id,
                     quantite_theorique=qtes_theoriques[i] if qtes_theoriques[i] else 0,
                     quantite_comptee=qtes_comptees[i] if qtes_comptees[i] else 0,
-                    prix_unitaire=prix_list[i] if prix_list[i] else 0,
                     notes_ligne=notes_list[i] if i < len(notes_list) else '',
                 )
 
@@ -833,7 +831,6 @@ def inventaire_edit(request, pk):
         article_ids     = request.POST.getlist('article_id[]')
         qtes_comptees   = request.POST.getlist('quantite_comptee[]')
         qtes_theoriques = request.POST.getlist('quantite_theorique[]')
-        prix_list       = request.POST.getlist('prix_unitaire[]')
         notes_list      = request.POST.getlist('notes_ligne[]')
 
         for i, art_id in enumerate(article_ids):
@@ -843,7 +840,6 @@ def inventaire_edit(request, pk):
                     article_id=art_id,
                     quantite_theorique=qtes_theoriques[i] if qtes_theoriques[i] else 0,
                     quantite_comptee=qtes_comptees[i] if qtes_comptees[i] else 0,
-                    prix_unitaire=prix_list[i] if prix_list[i] else 0,
                     notes_ligne=notes_list[i] if i < len(notes_list) else '',
                 )
 
@@ -859,7 +855,6 @@ def inventaire_edit(request, pk):
     prefill = {
         art_id: {
             'qte':   str(l.quantite_comptee),
-            'prix':  str(l.prix_unitaire),
             'notes': l.notes_ligne,
         }
         for art_id, l in lignes_dict.items()
@@ -930,6 +925,9 @@ def _valider_inventaire(inv, user):
         ligne.article.refresh_from_db()
         ligne.article.quantite_stock = int(ligne.quantite_comptee)
         ligne.article.save()
+        # Persister la valeur de l'écart au CMUP (prix_achat) du moment
+        ligne.valeur_ecart = ligne.ecart_quantite * ligne.article.prix_achat
+        ligne.save()
 
     inv.statut = 'valide'
     inv.date_validation = timezone.now()

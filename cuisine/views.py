@@ -959,7 +959,7 @@ def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
     lignes = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
     ecarts = [l for l in lignes if l.ecart != 0]
-    valeur_ecart_total = sum(abs(l.valeur_ecart) for l in ecarts)
+    valeur_ecart_total = sum(abs(l.valeur_ecart or 0) for l in ecarts)
     context = {
         'page_title': f'Inventaire {inv.numero}',
         'inv': inv,

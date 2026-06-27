@@ -111,7 +111,6 @@
                 <th class="r">Qté théorique</th>
                 <th class="r">Qté comptée</th>
                 <th class="r">Écart</th>
-                <th class="r">Prix unit. (FCFA)</th>
                 <th class="r">Valeur écart (FCFA)</th>
                 <th>Note</th>
             </tr>
@@ -132,10 +131,9 @@
                         <span class="ecart-ok">—</span>
                     {% endif %}
                 </td>
-                <td class="r">{{ l.prix_unitaire|montant }}</td>
                 <td class="r">
                     {% if l.ecart_quantite != 0 %}
-                        <span class="{% if l.ecart_quantite > 0 %}ecart-pos{% else %}ecart-neg{% endif %}">{{ l.valeur_ecart|montant }}</span>
+                        <span class="{% if l.ecart_quantite > 0 %}ecart-pos{% else %}ecart-neg{% endif %}">{{ l.valeur_ecart|default:0|montant }}</span>
                     {% else %}
                         <span class="ecart-ok">0</span>
                     {% endif %}
@@ -143,12 +141,12 @@
                 <td style="color:#7f8c8d;font-size:0.85rem;">{{ l.notes_ligne|default:"—" }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="8" style="text-align:center;padding:20px;color:#95a5a6;font-style:italic">Aucun article</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#95a5a6;font-style:italic">Aucun article</td></tr>
             {% endfor %}
         </tbody>
         <tfoot class="tfoot-total">
             <tr>
-                <td colspan="6" style="text-align:right;font-size:0.88rem;color:#7f8c8d;">Valeur totale des écarts (absolue)</td>
+                <td colspan="5" style="text-align:right;font-size:0.88rem;color:#7f8c8d;">Valeur totale des écarts (absolue)</td>
                 <td class="r">{{ valeur_ecart_total|montant }} FCFA</td>
                 <td></td>
             </tr>
