@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Chambre, Client, Reservation
+from .models import Chambre, Client, Reservation, Consommation
 
 @admin.register(Chambre)
 class ChambreAdmin(admin.ModelAdmin):
@@ -17,3 +17,9 @@ class ReservationAdmin(admin.ModelAdmin):
     list_display = ['id', 'chambre', 'client', 'date_arrivee', 'date_depart', 'statut']
     list_filter = ['statut', 'date_arrivee']
     search_fields = ['client__nom', 'chambre__numero']
+
+@admin.register(Consommation)
+class ConsommationAdmin(admin.ModelAdmin):
+    list_display = ['reservation', 'type_service', 'boisson', 'plat', 'espace']
+    list_filter = ['type_service']
+    search_fields = ['reservation__client__nom']

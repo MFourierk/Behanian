@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Table, CategorieMenu, PlatMenu, Commande, LigneCommande
+from .models import Table, CategorieMenu, PlatMenu, Commande, LigneCommande, Reservation, SouscriptionForfait
 
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
@@ -26,6 +26,13 @@ class CommandeAdmin(admin.ModelAdmin):
 class LigneCommandeAdmin(admin.ModelAdmin):
     list_display = ['commande', 'plat', 'quantite', 'prix_unitaire']
 
+@admin.register(Reservation)
+class ReservationRestaurantAdmin(admin.ModelAdmin):
+    list_display = ['client_nom', 'table', 'date_reservation', 'nombre_personnes', 'statut']
+    list_filter = ['statut', 'date_reservation']
+    search_fields = ['client_nom', 'client_telephone']
+    date_hierarchy = 'date_reservation'
+
 # ── Forfaits ────────────────────────────────────────────────────────────────
 from .models import Forfait, LigneForfait
 from django.contrib import admin as django_admin
@@ -45,3 +52,10 @@ class ForfaitAdmin(django_admin.ModelAdmin):
     def nb_items(self, obj):
         return obj.lignes.count()
     nb_items.short_description = "Nb éléments"
+
+@admin.register(SouscriptionForfait)
+class SouscriptionForfaitAdmin(admin.ModelAdmin):
+    list_display = ['forfait', 'client_display', 'statut', 'date_souscription', 'montant_paye', 'mode_paiement']
+    list_filter = ['statut', 'mode_paiement', 'forfait__module']
+    search_fields = ['nom_client', 'client__nom', 'forfait__nom']
+    date_hierarchy = 'date_souscription'

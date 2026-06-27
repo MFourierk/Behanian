@@ -1,11 +1,33 @@
 from django.contrib import admin
 from .models import (
+    FournisseurBar, UniteVente, Client, TableBar,
     BoissonBar, CategorieBar, MouvementStockBar,
     BonCommandeBar, LigneBonCommandeBar,
     BonReceptionBar, LigneBonReceptionBar,
     InventaireBar, LigneInventaireBar,
     CasseBar, LigneCasseBar,
 )
+
+@admin.register(FournisseurBar)
+class FournisseurBarAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'type_fournisseur', 'telephone', 'ville', 'actif')
+    list_filter = ('type_fournisseur', 'actif')
+    search_fields = ('nom', 'telephone', 'email')
+
+@admin.register(UniteVente)
+class UniteVenteAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'abreviation')
+
+@admin.register(Client)
+class ClientBarAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'type_client', 'telephone', 'email', 'actif')
+    list_filter = ('type_client', 'actif')
+    search_fields = ('nom', 'telephone', 'email')
+
+@admin.register(TableBar)
+class TableBarAdmin(admin.ModelAdmin):
+    list_display = ('numero', 'capacite', 'statut', 'zone')
+    list_filter = ('statut', 'zone')
 
 @admin.register(CategorieBar)
 class CategorieBarAdmin(admin.ModelAdmin):
