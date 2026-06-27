@@ -43,8 +43,11 @@ def restaurant_index(request):
     commandes_en_cours_list = Commande.objects.filter(statut__in=['en_attente', 'en_preparation', 'prete', 'servie']).order_by('-date_modification')
     commandes_en_cours = commandes_en_cours_list.count()
     
-    # Tables
-    tables = Table.objects.all()
+    # Tables — tri numérique (SBT1, SBT2 … SBT10, SBT11)
+    from django.db.models.expressions import RawSQL
+    tables = Table.objects.annotate(
+        num=RawSQL("CAST(REGEXP_REPLACE(numero, '[^0-9]', '', 'g') AS INTEGER)", [])
+    ).order_by('num', 'numero')
 
     # Réservations actives
     reservations = Reservation.objects.filter(

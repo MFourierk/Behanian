@@ -5,6 +5,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.utils.decorators import method_decorator
+from django.db.models.expressions import RawSQL
 
 from hotel.models import Chambre
 from restaurant.models import Table, PlatMenu, CategorieMenu
@@ -190,6 +191,11 @@ class TableListView(ListView):
     model = Table
     template_name = 'parametres/table_list.html'
     context_object_name = 'tables'
+
+    def get_queryset(self):
+        return Table.objects.annotate(
+            num=RawSQL("CAST(REGEXP_REPLACE(numero, '[^0-9]', '', 'g') AS INTEGER)", [])
+        ).order_by('num', 'numero')
 
 @method_decorator(login_required, name='dispatch')
 class TableCreateView(CreateView):
