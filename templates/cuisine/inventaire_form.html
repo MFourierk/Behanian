@@ -4,6 +4,7 @@
 
 {% block content %}
 {% breadcrumb "Cuisine" "cuisine:index" "Stock" "cuisine:stock_management" "Inventaire" "" %}
+{% regroup ingredients by categorie as ings_par_cat %}
 <style>
     .page-header { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(192,57,43,0.2); }
     .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
@@ -32,8 +33,10 @@
     .btn-stock-avant:hover { background: #3498db; color: white; }
     .btn-zero { background: #fdecea; color: #e74c3c; border-color: #fad7d7; }
     .btn-zero:hover { background: #e74c3c; color: white; }
-    .search-inv { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.88rem; background: #f8f9fa; width: 220px; }
+    .search-inv { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.88rem; background: #f8f9fa; width: 200px; }
     .search-inv:focus { outline: none; border-color: #c0392b; background: white; }
+    .filter-cat { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.85rem; background: #f8f9fa; cursor: pointer; }
+    .filter-cat:focus { outline: none; border-color: #c0392b; }
 
     /* Table inventaire */
     .inv-table { width: 100%; border-collapse: collapse; }
@@ -132,7 +135,13 @@
             <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
                 <div style="font-weight:700;color:#2c3e50;"><i class="fas fa-boxes" style="color:#c0392b;"></i> Ingrédients à inventorier</div>
                 <div class="toolbar">
-                    <input type="text" class="search-inv" placeholder="🔍 Filtrer un ingrédient..." oninput="filtrerInv(this.value)">
+                    <input type="text" class="search-inv" id="search-inv" placeholder="🔍 Filtrer un ingrédient..." oninput="filtrerInv()">
+                    <select class="filter-cat" id="filter-cat" onchange="filtrerCat(this.value)">
+                        <option value="">Toutes les catégories</option>
+                        {% for cat in ings_par_cat %}
+                        <option value="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">{{ cat.grouper.nom|default:"Sans catégorie" }}</option>
+                        {% endfor %}
+                    </select>
                     <button type="button" class="btn-toolbar btn-stock-avant" onclick="copierStock()">
                         <i class="fas fa-copy"></i> Stock avant inventaire
                     </button>
@@ -156,13 +165,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% regroup ingredients by categorie as ings_par_cat %}
                         {% for cat in ings_par_cat %}
-                        <tr class="cat-header">
+                        <tr class="cat-header" data-cat="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">
                             <td colspan="8"><i class="fas fa-tag"></i> {{ cat.grouper.nom|default:"Sans catégorie" }}</td>
                         </tr>
                         {% for ing in cat.list %}
-                        <tr class="inv-row" data-nom="{{ ing.nom|lower }}" data-ref="{{ ing.reference|lower|default:'' }}" data-cmup="{{ ing.cmup }}">
+                        <tr class="inv-row"
+                            data-nom="{{ ing.nom|lower }}"
+                            data-ref="{{ ing.reference|lower|default:'' }}"
+                            data-cmup="{{ ing.cmup }}"
+                            data-cat="{{ ing.categorie.nom|lower|default:'sans-categorie' }}">
                             <td>
                                 <input type="hidden" name="ingredient_id[]" value="{{ ing.pk }}">
                                 <input type="hidden" name="quantite_theorique[]" class="qte-theorique" value="{{ ing.quantite_stock }}">
@@ -271,6 +283,7 @@ function majResume() {
 
 function copierStock() {
     document.querySelectorAll('.inv-row').forEach(row => {
+        if (row.style.display === 'none') return;
         const theo = parseFloat(row.querySelector('.qte-theorique').value) || 0;
         const inp  = row.querySelector('.qte-comptee');
         inp.value  = theo.toFixed(3);
@@ -280,17 +293,42 @@ function copierStock() {
 
 function toutAZero() {
     if (!confirm('Mettre toutes les quantités comptées à 0 ?')) return;
-    document.querySelectorAll('.qte-comptee').forEach(inp => { inp.value = '0'; majEcart(inp); });
+    document.querySelectorAll('.inv-row').forEach(row => {
+        if (row.style.display === 'none') return;
+        const inp = row.querySelector('.qte-comptee');
+        inp.value = '0';
+        majEcart(inp);
+    });
 }
 
-function filtrerInv(q) {
-    q = q.toLowerCase();
+function filtrerInv() {
+    const q   = (document.getElementById('search-inv').value || '').toLowerCase();
+    const cat = document.getElementById('filter-cat').value;
     document.querySelectorAll('.inv-row').forEach(row => {
-        const nom = row.dataset.nom || '';
-        const ref = row.dataset.ref || '';
-        row.style.display = !q || nom.includes(q) || ref.includes(q) ? '' : 'none';
+        const nomOk = !q || (row.dataset.nom || '').includes(q) || (row.dataset.ref || '').includes(q);
+        const catOk = !cat || row.dataset.cat === cat;
+        row.style.display = (nomOk && catOk) ? '' : 'none';
     });
+    majCatHeaders();
     majResume();
+}
+
+function filtrerCat(val) {
+    document.getElementById('search-inv').value = '';
+    document.querySelectorAll('.inv-row').forEach(row => {
+        row.style.display = !val || row.dataset.cat === val ? '' : 'none';
+    });
+    majCatHeaders();
+    majResume();
+}
+
+function majCatHeaders() {
+    document.querySelectorAll('.cat-header').forEach(h => {
+        const cat  = h.dataset.cat;
+        const rows = document.querySelectorAll(`.inv-row[data-cat="${cat}"]`);
+        const any  = Array.from(rows).some(r => r.style.display !== 'none');
+        h.style.display = any ? '' : 'none';
+    });
 }
 
 function togglePrecautions() {

@@ -1,4 +1,4 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
@@ -6,11 +6,19 @@
 
 {% block content %}
 {% breadcrumb "Cave" "bar:stock_management" "Gestion de stock" "bar:stock_management" "Inventaire" "" %}
+{% regroup articles by categorie as articles_par_cat %}
 <style>
     .page-header { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2); }
     .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
     .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
-    .back-link { display:inline-flex; align-items:center; gap:6px; color:#8e44ad; font-weight:600; margin-bottom:16px; text-decoration:none; }
+
+    /* Précautions */
+    .precautions { background: #fff8e1; border: 1.5px solid #f9a825; border-radius: 14px; padding: 18px 22px; margin-bottom: 20px; }
+    .precautions-title { font-weight: 700; color: #e65100; font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .precautions-body { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .precaution-item { display: flex; align-items: flex-start; gap: 8px; font-size: 0.87rem; color: #5d4037; background: white; border-radius: 8px; padding: 10px 12px; border: 1px solid #ffe082; }
+    .precaution-item i { color: #f9a825; margin-top: 2px; flex-shrink: 0; }
+
     .form-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
     .form-section-title { font-weight: 700; color: #8e44ad; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f3e5f5; }
     .form-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
@@ -19,14 +27,26 @@
     .form-group input, .form-group select, .form-group textarea { padding: 10px 14px; border: 1px solid #e9ecef; border-radius: 10px; font-size: 0.92rem; background: #f8f9fa; transition: all 0.2s; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #8e44ad; background: white; box-shadow: 0 0 0 3px rgba(142,68,173,0.1); }
 
-    /* Tableau inventaire */
+    /* Toolbar */
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .btn-toolbar { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-stock-avant { background: #e8f4fd; color: #3498db; border-color: #bee3f8; }
+    .btn-stock-avant:hover { background: #3498db; color: white; }
+    .btn-zero { background: #fdecea; color: #e74c3c; border-color: #fad7d7; }
+    .btn-zero:hover { background: #e74c3c; color: white; }
+    .search-inv { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.88rem; background: #f8f9fa; width: 200px; }
+    .search-inv:focus { outline: none; border-color: #8e44ad; background: white; }
+    .filter-cat { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.85rem; background: #f8f9fa; cursor: pointer; }
+    .filter-cat:focus { outline: none; border-color: #8e44ad; }
+
+    /* Table inventaire */
     .inv-table { width: 100%; border-collapse: collapse; }
     .inv-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.78rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; }
     .inv-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
     .inv-table tr:hover { background: #fdf8ff; }
-    .inv-table input { padding: 7px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; text-align: center; }
-    .inv-table input:focus { outline: none; border-color: #8e44ad; background: white; }
-
+    .inv-table input[type="number"] { padding: 7px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; text-align: right; }
+    .inv-table input[type="number"]:focus { outline: none; border-color: #8e44ad; background: white; }
+    .inv-table input[type="text"] { padding: 7px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.82rem; background: #f8f9fa; width: 100%; }
     .cat-header td { background: #f3e5f5; font-weight: 700; color: #8e44ad; font-size: 0.85rem; padding: 8px 14px; }
     .stock-theorique { color: #3498db; font-weight: 600; }
     .ecart-pos { color: #27ae60; font-weight: 700; }
@@ -38,16 +58,13 @@
     .resume-stat { text-align: center; }
     .resume-stat .val { font-size: 1.4rem; font-weight: 700; }
     .resume-stat .lbl { font-size: 0.78rem; opacity: 0.8; }
-
-    .btn-save { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 12px 28px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(142,68,173,0.3); transition: all 0.2s; }
+    .btn-save { background: #3498db; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
     .btn-valider { background: linear-gradient(135deg, #27ae60, #2ecc71); box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
-    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
-
-    .search-inv { padding: 10px 16px; border: 1px solid #e9ecef; border-radius: 10px; font-size: 0.9rem; background: #f8f9fa; width: 300px; }
-    .search-inv:focus { outline: none; border-color: #8e44ad; background: white; }
+    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
 </style>
 
 <div class="container-fluid py-4">
+
     <div class="page-header">
         <div>
             <h2><i class="fas fa-clipboard-list mr-2"></i> {{ page_title }}</h2>
@@ -59,11 +76,46 @@
         </div>
     </div>
 
+    <!-- Précautions -->
+    <div class="precautions">
+        <div class="precautions-title" onclick="togglePrecautions()">
+            <i class="fas fa-exclamation-triangle" style="color:#f9a825;"></i>
+            <span>Précautions à prendre avant de commencer l'inventaire</span>
+            <i class="fas fa-chevron-down toggle-icon" id="toggle-icon" style="margin-left:auto;"></i>
+        </div>
+        <div class="precautions-body" id="precautions-body">
+            <div class="precaution-item">
+                <i class="fas fa-ban"></i>
+                <span><strong>Arrêter tout mouvement de stock</strong> — suspendre les réceptions, sorties, casses et entrées pendant toute la durée du comptage.</span>
+            </div>
+            <div class="precaution-item">
+                <i class="fas fa-sync-alt"></i>
+                <span><strong>Tirer le stock avant inventaire</strong> — cliquer sur "Stock avant inventaire" pour pré-remplir les quantités théoriques actuelles comme base de comptage.</span>
+            </div>
+            <div class="precaution-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span><strong>Procéder zone par zone</strong> — compter étagère par étagère, chambre froide puis rayon sec, sans sauter d'article.</span>
+            </div>
+            <div class="precaution-item">
+                <i class="fas fa-user-check"></i>
+                <span><strong>Comptage à deux personnes</strong> — un compteur, un vérificateur. Ne pas interrompre le cycle une fois commencé.</span>
+            </div>
+            <div class="precaution-item">
+                <i class="fas fa-clock"></i>
+                <span><strong>Hors heures de service</strong> — réaliser l'inventaire avant l'ouverture ou après la fermeture pour éviter les mouvements parasites.</span>
+            </div>
+            <div class="precaution-item">
+                <i class="fas fa-check-circle"></i>
+                <span><strong>Valider uniquement quand terminé</strong> — utiliser "Enregistrer" pour sauvegarder en cours, "Valider" uniquement quand tout est compté.</span>
+            </div>
+        </div>
+    </div>
+
     <form method="post" id="inv-form">
         {% csrf_token %}
+        <input type="hidden" name="statut" id="statut-input" value="brouillon">
 
         <!-- En-tête -->
-        <input type="hidden" name="statut" id="statut-input" value="brouillon">
         <div class="form-card">
             <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations</div>
             <div class="form-grid">
@@ -74,51 +126,54 @@
             </div>
         </div>
 
-        <!-- Filtres -->
-        <div class="form-card" style="padding:16px 24px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-                <div style="font-weight:700;color:#2c3e50;">
-                    <i class="fas fa-boxes" style="color:#8e44ad;"></i> Articles à inventorier
-                </div>
-                <div style="display:flex;gap:10px;align-items:center;">
+        <!-- Toolbar + Table -->
+        <div class="form-card" style="padding:0;overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="font-weight:700;color:#2c3e50;"><i class="fas fa-boxes" style="color:#8e44ad;"></i> Articles à inventorier</div>
+                <div class="toolbar">
                     <input type="text" class="search-inv" id="search-inv" placeholder="🔍 Filtrer un article..." oninput="filtrerInv()">
-                    <button type="button" onclick="toutMettreAZero()" style="padding:8px 14px;border-radius:8px;border:1px solid #e9ecef;background:#fdecea;color:#e74c3c;font-size:0.85rem;cursor:pointer;font-weight:600;">
-                        Tout à 0
+                    <select class="filter-cat" id="filter-cat" onchange="filtrerCat(this.value)">
+                        <option value="">Toutes les catégories</option>
+                        {% for cat in articles_par_cat %}
+                        <option value="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">{{ cat.grouper|default:"Sans catégorie" }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn-toolbar btn-stock-avant" onclick="copierStock()">
+                        <i class="fas fa-copy"></i> Stock avant inventaire
                     </button>
-                    <button type="button" onclick="copierStock()" style="padding:8px 14px;border-radius:8px;border:1px solid #e9ecef;background:#e8f4fd;color:#3498db;font-size:0.85rem;cursor:pointer;font-weight:600;">
-                        Copier stock théorique
+                    <button type="button" class="btn-toolbar btn-zero" onclick="toutMettreAZero()">
+                        <i class="fas fa-eraser"></i> Tout à 0
                     </button>
                 </div>
             </div>
-        </div>
-
-        <!-- Table de comptage -->
-        <div class="form-card" style="padding:0;overflow:hidden;">
             <div style="overflow-x:auto;">
                 <table class="inv-table" id="inv-table">
                     <thead>
                         <tr>
                             <th>Référence</th>
                             <th>Désignation</th>
-                            <th>Unité</th>
-                            <th>Stock théorique</th>
-                            <th>Qté comptée <span style="color:#8e44ad;">★</span></th>
-                            <th>Écart</th>
-                            <th>Valeur écart</th>
+                            <th style="text-align:center;">Unité</th>
+                            <th style="text-align:center;">Stock théorique</th>
+                            <th style="text-align:center;">Qté comptée <span style="color:#8e44ad;">★</span></th>
+                            <th style="text-align:center;">Écart</th>
+                            <th style="text-align:right;">Valeur écart (FCFA)</th>
                             <th>Note</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% regroup articles by categorie as articles_par_cat %}
                         {% for cat in articles_par_cat %}
-                        <tr class="cat-header">
-                            <td colspan="8"><i class="fas fa-tag"></i> {{ cat.grouper }}</td>
+                        <tr class="cat-header" data-cat="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">
+                            <td colspan="8"><i class="fas fa-tag"></i> {{ cat.grouper|default:"Sans catégorie" }}</td>
                         </tr>
                         {% for art in cat.list %}
-                        <tr class="inv-row" data-nom="{{ art.nom|lower }}" data-ref="{{ art.reference|lower|default:'' }}" data-prix="{{ art.prix_achat }}">
+                        <tr class="inv-row"
+                            data-nom="{{ art.nom|lower }}"
+                            data-ref="{{ art.reference|lower|default:'' }}"
+                            data-prix="{{ art.prix_achat }}"
+                            data-cat="{{ art.categorie.nom|lower|default:'sans-categorie' }}">
                             <td><span style="font-family:monospace;font-size:0.82rem;color:#8e44ad;">{{ art.reference|default:"—" }}</span></td>
                             <td style="font-weight:600;color:#2c3e50;">{{ art.nom }}</td>
-                            <td style="font-size:0.85rem;color:#7f8c8d;">{{ art.unite_affichee }}</td>
+                            <td style="text-align:center;font-size:0.85rem;color:#7f8c8d;">{{ art.unite_affichee }}</td>
                             <td class="stock-theorique" style="text-align:center;">
                                 {{ art.quantite_stock }}
                                 <input type="hidden" name="article_id[]" value="{{ art.pk }}">
@@ -132,8 +187,8 @@
                                     oninput="majEcartInv(this)"
                                     style="width:90px;">
                             </td>
-                            <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;">0</td>
-                            <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:#e74c3c;">0 FCFA</td>
+                            <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;">✓</td>
+                            <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:#7f8c8d;">0</td>
                             <td>
                                 <input type="text" name="notes_ligne[]" placeholder="Note..." style="width:100px;font-size:0.82rem;">
                             </td>
@@ -168,7 +223,8 @@
                 <button type="submit" class="btn-save" onclick="document.getElementById('statut-input').value='brouillon';">
                     <i class="fas fa-save"></i> Enregistrer (continuer plus tard)
                 </button>
-                <button type="submit" class="btn-save btn-valider" onclick="document.getElementById('statut-input').value='valide';return confirm('Valider et ajuster le stock immédiatement ?');">
+                <button type="submit" class="btn-save btn-valider"
+                    onclick="document.getElementById('statut-input').value='valide';return confirm('Valider et ajuster le stock immédiatement ?');">
                     <i class="fas fa-check"></i> Valider &amp; Ajuster le stock
                 </button>
             </div>
@@ -180,84 +236,119 @@
 function majEcartInv(el) {
     const row = el.closest('tr');
     const theorique = parseFloat(row.querySelector('.qte-theorique').value) || 0;
-    const comptee = parseFloat(row.querySelector('.qte-comptee').value) || 0;
-    const prix = parseFloat(row.dataset.prix) || 0;
-    const ecart = comptee - theorique;
-    const valeurEcart = ecart * prix;
+    const comptee   = parseFloat(el.value) || 0;
+    const prix      = parseFloat(row.dataset.prix) || 0;
+    const ecart     = comptee - theorique;
+    const valeur    = ecart * prix;
 
     const ecartCell = row.querySelector('.ecart-cell');
     if (ecart > 0) {
-        ecartCell.textContent = '⬆ Excédent +' + ecart;
-        ecartCell.className = 'ecart-cell ecart-pos';
+        ecartCell.textContent = '⬆ +' + ecart;
+        ecartCell.className   = 'ecart-cell ecart-pos';
     } else if (ecart < 0) {
-        ecartCell.textContent = '⬇ Manquant ' + ecart;
-        ecartCell.className = 'ecart-cell ecart-neg';
+        ecartCell.textContent = '⬇ ' + ecart;
+        ecartCell.className   = 'ecart-cell ecart-neg';
     } else {
-        ecartCell.textContent = '✓ Conforme';
-        ecartCell.className = 'ecart-cell ecart-zero';
+        ecartCell.textContent = '✓';
+        ecartCell.className   = 'ecart-cell ecart-zero';
     }
 
-    row.querySelector('.valeur-ecart-cell').textContent = Math.abs(valeurEcart).toLocaleString('fr-FR') + ' FCFA';
-    row.querySelector('.valeur-ecart-cell').style.color = ecart !== 0 ? '#e74c3c' : '#27ae60';
+    const valeurCell = row.querySelector('.valeur-ecart-cell');
+    valeurCell.textContent = Math.abs(valeur).toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' FCFA';
+    valeurCell.style.color = ecart !== 0 ? '#e74c3c' : '#7f8c8d';
     majResume();
 }
 
 function majResume() {
-    let nbManquants = 0, nbExcedents = 0, valeurTotale = 0;
+    let nbM = 0, nbE = 0, valTot = 0;
     document.querySelectorAll('.inv-row').forEach(row => {
         if (row.style.display === 'none') return;
-        const theorique = parseFloat(row.querySelector('.qte-theorique').value) || 0;
-        const comptee   = parseFloat(row.querySelector('.qte-comptee').value) || 0;
-        const prix      = parseFloat(row.dataset.prix) || 0;
-        const ecart     = comptee - theorique;
-        if (ecart < 0) nbManquants++;
-        if (ecart > 0) nbExcedents++;
-        if (ecart !== 0) valeurTotale += Math.abs(ecart * prix);
+        const theo  = parseFloat(row.querySelector('.qte-theorique').value) || 0;
+        const comp  = parseFloat(row.querySelector('.qte-comptee').value) || 0;
+        const prix  = parseFloat(row.dataset.prix) || 0;
+        const ecart = comp - theo;
+        if (ecart < 0) nbM++;
+        if (ecart > 0) nbE++;
+        if (ecart !== 0) valTot += Math.abs(ecart * prix);
     });
-    document.getElementById('res-manquants').textContent = nbManquants;
-    document.getElementById('res-excedents').textContent = nbExcedents;
-    document.getElementById('res-valeur').textContent = valeurTotale.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('res-manquants').textContent = nbM;
+    document.getElementById('res-excedents').textContent = nbE;
+    document.getElementById('res-valeur').textContent = valTot.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' FCFA';
 }
 
-function toutMettreAZero() {
-    if (!confirm('Mettre toutes les quantités comptées à 0 ?')) return;
-    document.querySelectorAll('.qte-comptee').forEach(inp => { inp.value = 0; majEcartInv(inp); });
+function filtrerInv() {
+    const q   = (document.getElementById('search-inv').value || '').toLowerCase();
+    const cat = document.getElementById('filter-cat').value;
+    document.querySelectorAll('.inv-row').forEach(row => {
+        const nomOk = !q || (row.dataset.nom || '').includes(q) || (row.dataset.ref || '').includes(q);
+        const catOk = !cat || row.dataset.cat === cat;
+        row.style.display = (nomOk && catOk) ? '' : 'none';
+    });
+    majCatHeaders();
+    majResume();
+}
+
+function filtrerCat(val) {
+    document.getElementById('search-inv').value = '';
+    document.querySelectorAll('.inv-row').forEach(row => {
+        row.style.display = !val || row.dataset.cat === val ? '' : 'none';
+    });
+    majCatHeaders();
+    majResume();
+}
+
+function majCatHeaders() {
+    document.querySelectorAll('.cat-header').forEach(h => {
+        const cat  = h.dataset.cat;
+        const rows = document.querySelectorAll(`.inv-row[data-cat="${cat}"]`);
+        const any  = Array.from(rows).some(r => r.style.display !== 'none');
+        h.style.display = any ? '' : 'none';
+    });
 }
 
 function copierStock() {
     document.querySelectorAll('.inv-row').forEach(row => {
-        const th = parseFloat(row.querySelector('.qte-theorique').value) || 0;
+        if (row.style.display === 'none') return;
+        const th  = parseFloat(row.querySelector('.qte-theorique').value) || 0;
         const inp = row.querySelector('.qte-comptee');
         inp.value = th;
         majEcartInv(inp);
     });
 }
 
-function filtrerInv() {
-    const q = document.getElementById('search-inv').value.toLowerCase();
+function toutMettreAZero() {
+    if (!confirm('Mettre toutes les quantités comptées à 0 ?')) return;
     document.querySelectorAll('.inv-row').forEach(row => {
-        const nom = row.dataset.nom || '';
-        const ref = row.dataset.ref || '';
-        row.style.display = !q || nom.includes(q) || ref.includes(q) ? '' : 'none';
+        if (row.style.display === 'none') return;
+        const inp = row.querySelector('.qte-comptee');
+        inp.value = 0;
+        majEcartInv(inp);
     });
-    majResume();
 }
 
-// Pré-remplissage depuis la sauvegarde (mode continuer)
+function togglePrecautions() {
+    const body = document.getElementById('precautions-body');
+    const icon = document.getElementById('toggle-icon');
+    const visible = body.style.display !== 'none';
+    body.style.display = visible ? 'none' : 'grid';
+    icon.style.transform = visible ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+// Pré-remplissage (mode continuer)
 const PREFILL = {{ prefill_json|default:"{}"|safe }};
 if (Object.keys(PREFILL).length) {
     document.querySelectorAll('input[name="article_id[]"]').forEach(hidden => {
         const data = PREFILL[parseInt(hidden.value)];
         if (!data) return;
-        const row = hidden.closest('tr');
+        const row      = hidden.closest('tr');
         const qteInp   = row.querySelector('.qte-comptee');
         const notesInp = row.querySelector('input[name="notes_ligne[]"]');
-        if (qteInp)   qteInp.value   = data.qte;
+        if (qteInp)   { qteInp.value = data.qte; majEcartInv(qteInp); }
         if (notesInp && data.notes) notesInp.value = data.notes;
     });
+} else {
+    // Init écarts
+    document.querySelectorAll('.qte-comptee').forEach(inp => majEcartInv(inp));
 }
-
-// Init écarts (après pré-remplissage)
-document.querySelectorAll('.qte-comptee').forEach(inp => majEcartInv(inp));
 </script>
 {% endblock %}
