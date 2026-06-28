@@ -34,6 +34,13 @@
     .btn-stock-avant:hover { background: #3498db; color: white; }
     .btn-zero { background: #fdecea; color: #e74c3c; border-color: #fad7d7; }
     .btn-zero:hover { background: #e74c3c; color: white; }
+    .btn-split { position: relative; display: inline-flex; }
+    .btn-split-main { border-radius: 8px 0 0 8px !important; }
+    .btn-split-arrow { border-radius: 0 8px 8px 0 !important; padding: 8px 10px !important; border-left: 1px solid #bee3f8 !important; }
+    .split-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: white; border: 1px solid #e9ecef; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); min-width: 190px; z-index: 300; overflow: hidden; }
+    .split-menu a { display: flex; align-items: center; gap: 9px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: #2c3e50; text-decoration: none; }
+    .split-menu a:hover { background: #f0f7ff; }
+    .split-menu.show { display: block; }
     .search-inv { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.88rem; background: #f8f9fa; width: 200px; }
     .search-inv:focus { outline: none; border-color: #8e44ad; background: white; }
     .filter-cat { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.85rem; background: #f8f9fa; cursor: pointer; }
@@ -138,9 +145,18 @@
                         <option value="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">{{ cat.grouper|default:"Sans catégorie" }}</option>
                         {% endfor %}
                     </select>
-                    <button type="button" class="btn-toolbar btn-stock-avant" onclick="copierStock()">
-                        <i class="fas fa-copy"></i> Stock avant inventaire
-                    </button>
+                    <div class="btn-split" id="stock-split">
+                        <button type="button" class="btn-toolbar btn-stock-avant btn-split-main" onclick="copierStock()">
+                            <i class="fas fa-copy"></i> Stock avant inventaire
+                        </button>
+                        <button type="button" class="btn-toolbar btn-stock-avant btn-split-arrow" onclick="toggleStockMenu(event)">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="split-menu" id="stock-menu">
+                            <a href="{% url 'bar:etat_stock_print' %}" target="_blank"><i class="fas fa-print" style="color:#8e44ad;"></i> Éditer en PDF</a>
+                            <a href="{% url 'bar:etat_stock_excel' %}" target="_blank"><i class="fas fa-file-excel" style="color:#27ae60;"></i> Éditer en Excel</a>
+                        </div>
+                    </div>
                     <button type="button" class="btn-toolbar btn-zero" onclick="toutMettreAZero()">
                         <i class="fas fa-eraser"></i> Tout à 0
                     </button>
@@ -350,6 +366,14 @@ if (Object.keys(PREFILL).length) {
     // Init écarts
     document.querySelectorAll('.qte-comptee').forEach(inp => majEcartInv(inp));
 }
+
+function toggleStockMenu(e) {
+    e.stopPropagation();
+    document.getElementById('stock-menu').classList.toggle('show');
+}
+document.addEventListener('click', function() {
+    document.getElementById('stock-menu').classList.remove('show');
+});
 
 // Désactiver les lignes cachées avant soumission pour ne pas écraser les articles non inventoriés
 document.getElementById('inv-form').addEventListener('submit', function() {

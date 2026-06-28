@@ -53,6 +53,8 @@ urlpatterns = [
     # Casses
     path('api/vente/', views.api_vente_create, name='api_vente'),
     path('rapport/stock/', views.rapport_stock_cave, name='rapport_stock'),
+    path('stock/etat-stock/print/', views.etat_stock_print_bar, name='etat_stock_print'),
+    path('stock/etat-stock/excel/', views.etat_stock_excel_bar, name='etat_stock_excel'),
     path('stock/etat-date/', views.etat_stock_date_bar, name='etat_stock_date'),
     path('stock/etat-date/imprimer/', views.etat_stock_date_bar_print, name='etat_stock_date_print'),
     path('mouvements/imprimer/', views.mouvements_print_bar, name='mouvements_print'),

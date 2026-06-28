@@ -1,0 +1,103 @@
+{% extends 'print_base.html' %}
+{% load static %}
+{% block doc_title %}État du Stock — Cave{% endblock %}
+
+{% block doc_content %}
+
+<!-- TITRE -->
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">État du Stock — Cave</div>
+    <div class="doc-title-sub">Département Cave &amp; Bar · Inventaire valorisé</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ articles|length }} article(s)</span>
+  </div>
+</div>
+
+<!-- META -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations du rapport</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb articles actifs</span><span class="meta-val">{{ articles|length }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Valorisation du stock</div>
+    <div class="meta-row"><span class="meta-lbl">Valeur totale stock</span><span class="meta-val bold" style="color:#16a34a;font-size:13px">{{ total_valeur|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Méthode de valorisation</span><span class="meta-val">Prix d'achat</span></div>
+    <div class="meta-row"><span class="meta-lbl">Établissement</span><span class="meta-val">Complexe Hôtelier Behanian</span></div>
+  </div>
+</div>
+
+<!-- TABLEAU STOCK -->
+<div class="content-section">
+  <div class="section-title">Détail du stock par article</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:70px">Référence</th>
+        <th>Désignation</th>
+        <th style="width:100px">Catégorie</th>
+        <th style="width:55px">Unité</th>
+        <th class="r" style="width:80px">Stock actuel</th>
+        <th class="r" style="width:75px">Seuil alerte</th>
+        <th class="r" style="width:95px">Prix achat (FCFA)</th>
+        <th class="r" style="width:105px">Valeur (FCFA)</th>
+        <th style="width:55px;text-align:center">Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in articles %}{% with art=row.obj %}
+      <tr {% if art.quantite_stock <= 0 %}style="background:#fff5f5"{% elif art.quantite_stock <= art.seuil_alerte and art.seuil_alerte > 0 %}style="background:#fffbeb"{% endif %}>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td style="font-family:monospace;font-size:9px;color:#8e44ad">{{ art.reference|default:"—" }}</td>
+        <td class="bold">{{ art.nom }}</td>
+        <td style="font-size:10px;color:#6b7a8d">{{ art.categorie.nom|default:"—" }}</td>
+        <td>{{ art.unite_affichee }}</td>
+        <td class="r {% if art.quantite_stock <= 0 %}bold{% endif %}" style="{% if art.quantite_stock <= 0 %}color:#c0392b{% elif art.quantite_stock <= art.seuil_alerte and art.seuil_alerte > 0 %}color:#d97706{% endif %}">
+          {{ art.quantite_stock }}
+        </td>
+        <td class="r" style="color:#8a9ab0">{{ art.seuil_alerte }}</td>
+        <td class="r">{{ art.prix_achat|montant }}</td>
+        <td class="r bold">{{ row.valeur|montant }}</td>
+        <td style="text-align:center;font-size:9px">
+          {% if art.quantite_stock <= 0 %}
+          <span style="background:#fee2e2;color:#dc2626;padding:2px 5px;border-radius:4px;font-weight:700">Rupture</span>
+          {% elif art.quantite_stock <= art.seuil_alerte and art.seuil_alerte > 0 %}
+          <span style="background:#fef3c7;color:#d97706;padding:2px 5px;border-radius:4px;font-weight:700">Alerte</span>
+          {% else %}
+          <span style="background:#dcfce7;color:#16a34a;padding:2px 5px;border-radius:4px;font-weight:700">OK</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}{% empty %}
+      <tr><td colspan="10" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article actif</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7"></td>
+        <td class="total-label">Valeur totale stock</td>
+        <td class="total-val" colspan="2">{{ total_valeur|montant }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div style="margin:8px 30px;font-size:9px;color:#8a9ab0">
+  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil d'alerte &nbsp;|&nbsp;
+  <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#dc2626">Rupture</span> Stock épuisé
+</div>
+
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Cave</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+</div>
+
+{% endblock %}
+{% block doc_footer_right %}État du stock · Cave Behanian · {% now "d/m/Y H:i" %}{% endblock %}

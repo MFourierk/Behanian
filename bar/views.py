@@ -1162,6 +1162,111 @@ def _mouvements_bar(date_debut_str, date_fin_str, categorie_id, article_id, type
 
 @require_module_access('bar')
 @require_bar_gestion
+def etat_stock_print_bar(request):
+    qs = BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom')
+    articles = [{'obj': a, 'valeur': float(a.prix_achat or 0) * float(a.quantite_stock or 0)} for a in qs]
+    total_valeur = sum(a['valeur'] for a in articles)
+    return render(request, 'bar/etat_stock_print.html', {
+        'articles': articles,
+        'total_valeur': total_valeur,
+    })
+
+
+@require_module_access('bar')
+@require_bar_gestion
+def etat_stock_excel_bar(request):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse as HR
+
+    articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie').order_by('categorie__nom', 'nom')
+    total_valeur = sum(float(a.prix_achat or 0) * float(a.quantite_stock or 0) for a in articles)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "État du Stock"
+
+    header_fill  = PatternFill("solid", fgColor="1a2535")
+    header_font  = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    title_font   = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bold_font    = Font(name='Calibri', bold=True, size=10)
+    normal_font  = Font(name='Calibri', size=10)
+    ok_fill      = PatternFill("solid", fgColor="dcfce7")
+    alerte_fill  = PatternFill("solid", fgColor="fef3c7")
+    rupture_fill = PatternFill("solid", fgColor="fee2e2")
+    thin   = Side(border_style="thin", color="d4dce8")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+    right  = Alignment(horizontal='right', vertical='center')
+
+    ws.merge_cells('A1:I1')
+    ws['A1'] = "ÉTAT DU STOCK — CAVE BEHANIAN"
+    ws['A1'].font = title_font
+    ws['A1'].alignment = center
+
+    ws.merge_cells('A2:I2')
+    ws['A2'] = f"Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')} — {articles.count()} article(s)"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = center
+
+    ws.append([])
+
+    headers = ['#', 'Référence', 'Désignation', 'Catégorie', 'Unité', 'Stock actuel', 'Seuil alerte', 'Prix achat (FCFA)', 'Valeur stock (FCFA)', 'État']
+    ws.append(headers)
+    row_h = ws.max_row
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=row_h, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+
+    for i, art in enumerate(articles, 1):
+        val = float(art.prix_achat or 0) * float(art.quantite_stock or 0)
+        if art.quantite_stock <= 0:
+            etat = 'Rupture'; fill = rupture_fill
+        elif art.seuil_alerte and art.quantite_stock <= art.seuil_alerte:
+            etat = 'Alerte'; fill = alerte_fill
+        else:
+            etat = 'Normal'; fill = ok_fill
+
+        ws.append([
+            i, art.reference or '—', art.nom,
+            art.categorie.nom if art.categorie else '—',
+            art.unite_affichee,
+            art.quantite_stock, art.seuil_alerte or 0,
+            float(art.prix_achat or 0), round(val, 0), etat,
+        ])
+        r = ws.max_row
+        for col in range(1, 11):
+            cell = ws.cell(row=r, column=col)
+            cell.font = bold_font if col in (3, 9) else normal_font
+            cell.border = border
+            cell.alignment = right if col in (6, 7, 8, 9) else (center if col in (1, 5, 10) else Alignment(vertical='center'))
+            if col == 10:
+                cell.fill = fill
+                cell.font = Font(name='Calibri', bold=True, size=10,
+                    color='15803d' if etat == 'Normal' else ('d97706' if etat == 'Alerte' else 'dc2626'))
+
+    ws.append([])
+    r = ws.max_row + 1
+    ws.cell(row=r, column=8, value='VALEUR TOTALE').font = Font(bold=True, size=11)
+    ws.cell(row=r, column=9, value=round(total_valeur, 0)).font = Font(bold=True, size=11, color='16a34a')
+    ws.cell(row=r, column=9).number_format = '#,##0'
+
+    for col, w in enumerate([5, 12, 28, 16, 10, 12, 12, 18, 18, 10], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    response = HR(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    fname = f"Stock_Cave_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    wb.save(response)
+    return response
+
+
+@require_module_access('bar')
+@require_bar_gestion
 def etat_stock_date_bar(request):
     """Page de sélection : état du stock sur une période — Cave"""
     today = timezone.now().date().isoformat()
