@@ -1,4 +1,4 @@
-﻿{% extends 'print_base.html' %}
+{% extends 'print_base.html' %}
 {% load static %}
 {% block doc_title %}
   {% if is_single_date %}État du Stock au {{ date_fin|date:"d/m/Y" }} — Cave
@@ -64,6 +64,63 @@
     {% if is_single_date %}Détail du stock par article — Cave au {{ date_fin|date:"d/m/Y" }}
     {% else %}Évolution du stock par article — Cave · {{ date_debut|date:"d/m/Y" }} → {{ date_fin|date:"d/m/Y" }}{% endif %}
   </div>
+
+  {% if is_single_date %}
+  <!-- VUE DATE UNIQUE : même mise en page que l'état du stock courant -->
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th style="width:65px">Référence</th>
+        <th>Article</th>
+        <th style="width:100px">Catégorie</th>
+        <th style="width:55px">Unité</th>
+        <th class="r" style="width:85px">Stock actuel</th>
+        <th class="r" style="width:80px">Seuil alerte</th>
+        <th class="r" style="width:95px">Prix achat (FCFA)</th>
+        <th class="r" style="width:100px">Valeur (FCFA)</th>
+        <th style="width:55px;text-align:center">Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resultats %}
+      <tr {% if r.stock_fin <= 0 %}style="background:#fff5f5"{% elif r.stock_fin <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}style="background:#fffbeb"{% endif %}>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td style="font-family:monospace;font-size:9px;color:#8e44ad">{{ r.article.reference|default:"—" }}</td>
+        <td class="bold">{{ r.article.nom }}</td>
+        <td style="font-size:10px;color:#6b7a8d">{{ r.article.categorie.nom }}</td>
+        <td>{{ r.article.unite_affichee }}</td>
+        <td class="r bold" style="{% if r.stock_fin <= 0 %}color:#c0392b{% elif r.stock_fin <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}color:#d97706{% else %}color:#16a34a{% endif %}">
+          {{ r.stock_fin }}
+        </td>
+        <td class="r" style="color:#8a9ab0">{{ r.article.seuil_alerte }}</td>
+        <td class="r">{{ r.article.prix_achat|montant }}</td>
+        <td class="r bold">{{ r.valeur_fin|montant }}</td>
+        <td style="text-align:center;font-size:9px">
+          {% if r.stock_fin <= 0 %}
+          <span style="background:#fee2e2;color:#dc2626;padding:2px 5px;border-radius:4px;font-weight:700">Rupture</span>
+          {% elif r.stock_fin <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}
+          <span style="background:#fef3c7;color:#d97706;padding:2px 5px;border-radius:4px;font-weight:700">Alerte</span>
+          {% else %}
+          <span style="background:#dcfce7;color:#16a34a;padding:2px 5px;border-radius:4px;font-weight:700">OK</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="10" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7"></td>
+        <td class="total-label">Valeur totale stock</td>
+        <td class="total-val" colspan="2">{{ valeur_totale_fin|montant }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% else %}
+  <!-- VUE PÉRIODE : colonnes de mouvements -->
   <table class="doc-table">
     <thead>
       <tr>
@@ -71,13 +128,11 @@
         <th>Article</th>
         <th style="width:100px">Catégorie</th>
         <th style="width:45px">Unité</th>
-        {% if not is_single_date %}
         <th class="r" style="width:70px">Stk début</th>
         <th class="r" style="width:55px">Entrées</th>
         <th class="r" style="width:55px">Sorties</th>
         <th class="r" style="width:50px">Casses</th>
         <th class="r" style="width:50px">Ajust.</th>
-        {% endif %}
         <th class="r" style="width:70px">Stk fin</th>
         <th class="r" style="width:80px">P. achat</th>
         <th class="r" style="width:90px">Valeur fin</th>
@@ -91,13 +146,11 @@
         <td class="bold">{{ r.article.nom }}</td>
         <td style="font-size:10px;color:#6b7a8d">{{ r.article.categorie.nom }}</td>
         <td>{{ r.article.unite_affichee }}</td>
-        {% if not is_single_date %}
         <td class="r" style="color:#6b7a8d;">{{ r.stock_debut }}</td>
         <td class="r" style="color:#16a34a;font-weight:600;">+{{ r.nb_entrees }}</td>
         <td class="r" style="color:#c0392b;">-{{ r.nb_sorties }}</td>
         <td class="r" style="color:#c0392b;">-{{ r.nb_casses }}</td>
         <td class="r" style="color:#3730a3;">{{ r.nb_inventaires }}</td>
-        {% endif %}
         <td class="r bold" style="{% if r.stock_fin <= 0 %}color:#c0392b{% elif r.stock_fin <= r.article.seuil_alerte and r.article.seuil_alerte > 0 %}color:#d97706{% else %}color:#16a34a{% endif %}">
           {{ r.stock_fin }}
         </td>
@@ -114,21 +167,22 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="{% if is_single_date %}8{% else %}13{% endif %}" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
+      <tr><td colspan="13" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
       {% endfor %}
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="{% if is_single_date %}7{% else %}11{% endif %}"></td>
+        <td colspan="11"></td>
         <td class="total-label">Valeur totale stock</td>
-        <td class="total-val" colspan="2">{{ valeur_totale_fin|montant }} FCFA</td>
+        <td class="total-val">{{ valeur_totale_fin|montant }} FCFA</td>
       </tr>
     </tfoot>
   </table>
+  {% endif %}
 </div>
 
 <div style="margin:6px 30px;font-size:9px;color:#8a9ab0">
-  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil &nbsp;|&nbsp;
+  <span style="background:#fef3c7;padding:1px 5px;border-radius:3px;color:#d97706">Alerte</span> Stock sous le seuil d'alerte &nbsp;|&nbsp;
   <span style="background:#fee2e2;padding:1px 5px;border-radius:3px;color:#dc2626">Rupture</span> Stock épuisé &nbsp;|&nbsp;
   {% if is_single_date %}Stock reconstitué par inversion des mouvements postérieurs au {{ date_fin|date:"d/m/Y" }}
   {% else %}Mouvements de la période pris en compte pour le calcul{% endif %}
