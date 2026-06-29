@@ -98,8 +98,6 @@ def restaurant_index(request):
     
     return render(request, 'restaurant/index.html', context)
 
-@require_module_access('restaurant')
-@require_POST
 def _map_mode_paiement(mode, operateur=''):
     """Mappe le code TPE vers le code Ticket (PAIEMENT_CHOICES facturation)."""
     if mode == 'mobile':
@@ -114,6 +112,8 @@ def _map_mode_paiement(mode, operateur=''):
     return mode  # 'especes'
 
 
+@require_module_access('restaurant')
+@require_POST
 def valider_commande(request):
     """Valide une commande (Paiement uniquement maintenant, l'ajout se fait en temps réel)"""
     try:
