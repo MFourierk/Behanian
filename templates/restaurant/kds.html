@@ -1,0 +1,249 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KDS — Écran Cuisine</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d12; --surface: #18181f; --border: rgba(255,255,255,0.07);
+      --gold: #c9a84c; --green: #4ade80; --blue: #60a5fa; --red: #f87171;
+      --orange: #fbbf24; --violet: #c084fc;
+      --text: rgba(255,255,255,0.88); --muted: rgba(255,255,255,0.4);
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+    /* Header */
+    .kds-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: var(--surface);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .kds-title { font-size: 1rem; font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 10px; }
+    .kds-clock { font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: 1px; }
+    .kds-meta { font-size: 0.72rem; color: var(--muted); }
+    .kds-refresh-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.25);
+      font-size: 0.7rem; font-weight: 700; color: var(--green);
+    }
+    .kds-refresh-badge.stale { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.25); color: var(--red); }
+
+    /* Grille commandes */
+    .kds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px; padding: 20px;
+      align-content: start; min-height: calc(100vh - 64px);
+    }
+    .kds-empty {
+      grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 80px 20px; color: var(--muted); gap: 12px;
+    }
+    .kds-empty i { font-size: 3rem; opacity: 0.3; }
+    .kds-empty p { font-size: 0.9rem; }
+
+    /* Carte commande */
+    .cmd-card {
+      background: var(--surface); border-radius: 16px;
+      border: 2px solid transparent; display: flex; flex-direction: column;
+      overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(12px); } }
+    .cmd-card.en_attente   { border-color: rgba(251,191,36,0.4); }
+    .cmd-card.en_preparation { border-color: rgba(96,165,250,0.5); box-shadow: 0 0 20px rgba(96,165,250,0.1); }
+    .cmd-card.prete        { border-color: rgba(74,222,128,0.6); box-shadow: 0 0 24px rgba(74,222,128,0.15); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 20px rgba(74,222,128,0.15); } 50% { box-shadow: 0 0 32px rgba(74,222,128,0.35); } }
+
+    .cmd-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+    }
+    .cmd-table { font-size: 1.3rem; font-weight: 800; color: var(--gold); }
+    .cmd-table.emporter { color: var(--violet); }
+    .cmd-info { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .cmd-age { font-size: 0.7rem; color: var(--muted); }
+    .cmd-age.urgent { color: var(--red); font-weight: 700; }
+    .cmd-couv { font-size: 0.7rem; color: var(--muted); }
+    .cmd-statut-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px; font-size: 0.65rem; font-weight: 800;
+      letter-spacing: 0.5px; text-transform: uppercase; margin-top: 4px;
+    }
+    .statut-en_attente    { background: rgba(251,191,36,0.2);  color: var(--orange); border: 1px solid rgba(251,191,36,0.4); }
+    .statut-en_preparation{ background: rgba(96,165,250,0.2);  color: var(--blue);   border: 1px solid rgba(96,165,250,0.4); }
+    .statut-prete         { background: rgba(74,222,128,0.2);  color: var(--green);  border: 1px solid rgba(74,222,128,0.5); }
+
+    .cmd-body { padding: 12px 16px; flex: 1; }
+    .cmd-client { font-size: 0.72rem; color: var(--muted); margin-bottom: 8px; }
+    .cmd-ligne {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      gap: 8px;
+    }
+    .cmd-ligne:last-child { border-bottom: none; }
+    .cmd-ligne-nom { flex: 1; font-size: 0.88rem; font-weight: 500; }
+    .cmd-ligne-qty {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px;
+      background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold); font-size: 0.85rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cmd-ligne-note { font-size: 0.7rem; color: rgba(201,168,76,0.6); font-style: italic; margin-top: 2px; }
+
+    /* Actions */
+    .cmd-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+    .cmd-btn {
+      flex: 1; padding: 9px 6px; border-radius: 10px; border: none;
+      font-size: 0.75rem; font-weight: 700; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .btn-prep { background: rgba(96,165,250,0.15); color: var(--blue); border: 1px solid rgba(96,165,250,0.3); }
+    .btn-prep:hover { background: rgba(96,165,250,0.3); }
+    .btn-pret { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.4); }
+    .btn-pret:hover { background: rgba(74,222,128,0.3); }
+    .btn-servi { background: rgba(192,132,252,0.15); color: var(--violet); border: 1px solid rgba(192,132,252,0.3); }
+    .btn-servi:hover { background: rgba(192,132,252,0.3); }
+
+    /* Son notification */
+    .notif-bell { position: fixed; top: 80px; right: 20px; z-index: 999;
+      background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.4);
+      border-radius: 12px; padding: 10px 16px; color: var(--green);
+      font-size: 0.82rem; font-weight: 700; display: none; animation: slideIn 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+<div class="kds-header">
+  <div class="kds-title">
+    <i class="fas fa-fire-alt" style="color:#f87171;"></i>
+    Écran Cuisine — KDS
+  </div>
+  <div class="kds-clock" id="kdsClock"></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="kds-refresh-badge" id="refreshBadge"><i class="fas fa-circle" style="font-size:6px;"></i> En direct</span>
+    <span class="kds-meta" id="lastUpdate">—</span>
+    <a href="{% url 'restaurant:index' %}" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:0.72rem;text-decoration:none;">← TPE</a>
+  </div>
+</div>
+
+<div class="kds-grid" id="kdsGrid">
+  <div class="kds-empty">
+    <i class="fas fa-utensils"></i>
+    <p>Chargement…</p>
+  </div>
+</div>
+
+<div class="notif-bell" id="notifBell">🔔 Nouvelle commande !</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+let _dernieresCommandes = new Set();
+let _pollOk = true;
+
+function majHorloge() {
+  const now = new Date();
+  document.getElementById('kdsClock').textContent =
+    now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+setInterval(majHorloge, 1000); majHorloge();
+
+async function changerStatut(cmdId, statut) {
+  try {
+    await fetch("{% url 'restaurant:kds_changer_statut' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ commande_id: cmdId, statut }),
+    });
+    await pollKDS();
+  } catch(e) {}
+}
+
+function ageStr(min) {
+  if (min < 1)  return '< 1 min';
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}`;
+}
+
+function renderCard(cmd) {
+  const isEmporter = cmd.table === 'À emporter';
+  const ageUrgent  = cmd.age_min >= 20;
+  const actions = {
+    en_attente:     `<button class="cmd-btn btn-prep" onclick="changerStatut(${cmd.id},'en_preparation')"><i class="fas fa-fire"></i> En prépa</button>`,
+    en_preparation: `<button class="cmd-btn btn-pret" onclick="changerStatut(${cmd.id},'prete')"><i class="fas fa-check"></i> Prête</button>
+                     <button class="cmd-btn btn-servi" onclick="changerStatut(${cmd.id},'servie')"><i class="fas fa-concierge-bell"></i> Servie</button>`,
+    prete:          `<button class="cmd-btn btn-servi" onclick="changerStatut(${cmd.id},'servie')"><i class="fas fa-concierge-bell"></i> Servie</button>`,
+  }[cmd.statut] || '';
+
+  const statutLabels = { en_attente:'En attente', en_preparation:'En préparation', prete:'Prête !' };
+  const statutIcons  = { en_attente:'fa-clock', en_preparation:'fa-fire', prete:'fa-check-circle' };
+
+  return `<div class="cmd-card ${cmd.statut}" id="cmd-${cmd.id}">
+    <div class="cmd-header">
+      <div class="cmd-table ${isEmporter?'emporter':''}">${isEmporter?'🛍️ ':' '}${cmd.table}</div>
+      <div class="cmd-info">
+        <span class="cmd-age ${ageUrgent?'urgent':''}">⏱ ${ageStr(cmd.age_min)}</span>
+        ${cmd.nb_couverts > 1 ? `<span class="cmd-couv">👥 ${cmd.nb_couverts} couverts</span>` : ''}
+        <span class="cmd-statut-badge statut-${cmd.statut}"><i class="fas ${statutIcons[cmd.statut]||'fa-circle'}"></i> ${statutLabels[cmd.statut]||cmd.statut}</span>
+      </div>
+    </div>
+    <div class="cmd-body">
+      ${cmd.client ? `<div class="cmd-client">👤 ${cmd.client}</div>` : ''}
+      ${cmd.lignes.map(l => `
+        <div class="cmd-ligne">
+          <div>
+            <div class="cmd-ligne-nom">${l.nom}</div>
+            ${l.note ? `<div class="cmd-ligne-note">"${l.note}"</div>` : ''}
+          </div>
+          <div class="cmd-ligne-qty">×${l.quantite}</div>
+        </div>`).join('')}
+    </div>
+    ${actions ? `<div class="cmd-actions">${actions}</div>` : ''}
+  </div>`;
+}
+
+async function pollKDS() {
+  try {
+    const r = await fetch("{% url 'restaurant:kds_api' %}");
+    const d = await r.json();
+    _pollOk = true;
+    document.getElementById('refreshBadge').className = 'kds-refresh-badge';
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+    const grid = document.getElementById('kdsGrid');
+    const nouvellesIds = new Set(d.commandes.map(c => c.id));
+
+    // Notifier nouvelles commandes
+    const nouvelles = d.commandes.filter(c => !_dernieresCommandes.has(c.id));
+    if (nouvelles.length && _dernieresCommandes.size > 0) {
+      const bell = document.getElementById('notifBell');
+      bell.textContent = `🔔 ${nouvelles.length} nouvelle(s) commande(s) !`;
+      bell.style.display = 'block';
+      setTimeout(() => { bell.style.display = 'none'; }, 4000);
+    }
+    _dernieresCommandes = nouvellesIds;
+
+    if (!d.commandes.length) {
+      grid.innerHTML = `<div class="kds-empty"><i class="fas fa-utensils"></i><p>Aucune commande en attente — cuisine libre !</p></div>`;
+      return;
+    }
+    grid.innerHTML = d.commandes.map(renderCard).join('');
+  } catch(e) {
+    _pollOk = false;
+    document.getElementById('refreshBadge').className = 'kds-refresh-badge stale';
+  }
+}
+
+pollKDS();
+setInterval(pollKDS, 10000);
+</script>
+</body>
+</html>

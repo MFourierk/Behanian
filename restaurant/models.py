@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Max
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -133,9 +134,11 @@ class Commande(models.Model):
         with db_transaction.atomic():
             annee = self.date_creation.year if self.date_creation else timezone.now().year
             prefixe = f"CMD-{annee}-"
-            max_num = Commande.objects.filter(
-                numero_fiscal__startswith=prefixe
-            ).select_for_update().aggregate(m=Max('numero_fiscal'))['m']
+            max_num = (
+                Commande.objects.select_for_update()
+                .filter(numero_fiscal__startswith=prefixe)
+                .aggregate(m=Max('numero_fiscal'))['m']
+            )
             if max_num:
                 dernier = int(max_num.split('-')[-1])
             else:

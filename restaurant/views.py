@@ -622,15 +622,23 @@ def ajouter_item_commande(request):
             if not commande:
                 # Créer nouvelle commande
                 commande = Commande.objects.create(
-                    table=table, 
-                    serveur=request.user, 
-                    statut='en_preparation',
+                    table=table,
+                    serveur=request.user,
+                    statut='en_attente',
                     nom_client=data.get('client', '')
                 )
                 table.statut = 'occupee'
                 table.save()
+        elif data.get('emporter'):
+            # Mode emporter — pas de table
+            commande = Commande.objects.create(
+                table=None,
+                serveur=request.user,
+                statut='en_attente',
+                nom_client=data.get('client', '') or 'À emporter',
+            )
         else:
-            return JsonResponse({'success': False, 'message': 'Table requise'})
+            return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
 
         # 2. Obtenir le Plat
         if plat_id:
@@ -868,6 +876,99 @@ def update_couverts(request):
 
 
 @require_module_access('restaurant')
+def kds_view(request):
+    """Écran KDS cuisine — liste des commandes actives."""
+    return render(request, 'restaurant/kds.html', {})
+
+
+@require_module_access('restaurant')
+def kds_api(request):
+    """API polling KDS — retourne les commandes en_attente et en_preparation."""
+    commandes = Commande.objects.filter(
+        statut__in=['en_attente', 'en_preparation']
+    ).prefetch_related(
+        'lignes__plat', 'lignes__accompagnement', 'lignes__boisson'
+    ).select_related('table').order_by('date_creation')
+
+    result = []
+    for cmd in commandes:
+        lignes = [{'nom': l.get_nom, 'quantite': l.quantite, 'note': l.note or ''} for l in cmd.lignes.all()]
+        result.append({
+            'id': cmd.id,
+            'table': cmd.table.numero if cmd.table else 'À emporter',
+            'statut': cmd.statut,
+            'nb_couverts': cmd.nb_couverts,
+            'client': cmd.nom_client or '',
+            'lignes': lignes,
+            'age_min': int((timezone.now() - cmd.date_creation).total_seconds() // 60),
+        })
+    return JsonResponse({'commandes': result})
+
+
+@require_module_access('restaurant')
+@require_POST
+def kds_changer_statut(request):
+    """Change le statut d'une commande depuis le KDS."""
+    try:
+        data = json.loads(request.body)
+        commande = get_object_or_404(Commande, id=data['commande_id'])
+        nouveau = data.get('statut')
+        if nouveau not in ('en_preparation', 'prete', 'servie'):
+            return JsonResponse({'success': False, 'message': 'Statut invalide'})
+        commande.statut = nouveau
+        commande.save(update_fields=['statut'])
+        return JsonResponse({'success': True, 'statut': nouveau})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@require_module_access('restaurant')
+@require_POST
+def transferer_table(request):
+    """Transfère une commande d'une table vers une autre."""
+    try:
+        data = json.loads(request.body)
+        commande = get_object_or_404(Commande, id=data['commande_id'])
+        nouvelle_table = get_object_or_404(Table, id=data['nouvelle_table_id'])
+
+        # Vérifier que la table de destination est disponible ou c'est la même
+        if nouvelle_table.statut == 'occupee' and commande.table != nouvelle_table:
+            # Chercher si une commande active existe déjà sur cette table
+            existe = Commande.objects.filter(
+                table=nouvelle_table,
+                statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+            ).exists()
+            if existe:
+                return JsonResponse({'success': False, 'message': f'La table {nouvelle_table.numero} a déjà une commande active'})
+
+        with transaction.atomic():
+            ancienne_table = commande.table
+            commande.table = nouvelle_table
+            commande.save(update_fields=['table'])
+            # Libérer l'ancienne table si plus de commandes actives
+            if ancienne_table:
+                autres = Commande.objects.filter(
+                    table=ancienne_table,
+                    statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+                ).exclude(pk=commande.pk).exists()
+                if not autres:
+                    ancienne_table.statut = 'disponible'
+                    ancienne_table.save()
+            # Marquer la nouvelle table comme occupée
+            nouvelle_table.statut = 'occupee'
+            nouvelle_table.save()
+
+        return JsonResponse({
+            'success': True,
+            'nouvelle_table_id': nouvelle_table.id,
+            'nouvelle_table_num': nouvelle_table.numero,
+            'ancienne_table_id': ancienne_table.id if ancienne_table else None,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@require_module_access('restaurant')
 def resume_ventes_jour(request):
     """Résumé des ventes du jour pour le TPE restaurant (lecture seule)."""
     from django.db.models import Sum, Count
@@ -1062,12 +1163,17 @@ def ajouter_boisson_commande(request):
             if not commande:
                 commande = Commande.objects.create(
                     table=table, serveur=request.user,
-                    statut='en_preparation', nom_client=client_nom
+                    statut='en_attente', nom_client=client_nom
                 )
                 table.statut = 'occupee'
                 table.save()
+        elif data.get('emporter'):
+            commande = Commande.objects.create(
+                table=None, serveur=request.user,
+                statut='en_attente', nom_client=client_nom or 'À emporter',
+            )
         else:
-            return JsonResponse({'success': False, 'message': 'Table requise'})
+            return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
 
         with transaction.atomic():
             # Chercher ligne existante pour cette boisson
@@ -1157,12 +1263,17 @@ def ajouter_forfait_commande(request):
             if not commande:
                 commande = Commande.objects.create(
                     table=table, serveur=request.user,
-                    statut='en_preparation', nom_client=client_nom
+                    statut='en_attente', nom_client=client_nom
                 )
                 table.statut = 'occupee'
                 table.save()
+        elif data.get('emporter'):
+            commande = Commande.objects.create(
+                table=None, serveur=request.user,
+                statut='en_attente', nom_client=client_nom or 'À emporter',
+            )
         else:
-            return JsonResponse({'success': False, 'message': 'Table requise'})
+            return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
 
         with transaction.atomic():
             # ── 3. Créer une LigneCommande unique pour le forfait ──

@@ -489,6 +489,57 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .btn-quick-pay:hover { background: rgba(22,163,74,0.28); }
 .btn-quick-pay:disabled { opacity: 0.3; pointer-events: none; }
 
+/* Mode emporter */
+.btn-emporter {
+  width: 100%; padding: 11px; margin-bottom: 10px;
+  background: rgba(192,132,252,0.12); border: 1.5px solid rgba(192,132,252,0.3);
+  color: #c084fc; border-radius: 12px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.btn-emporter.active { background: rgba(192,132,252,0.25); border-color: #c084fc; }
+.btn-emporter:hover  { background: rgba(192,132,252,0.22); }
+
+/* Badge emporter dans ticket-meta */
+.emporter-badge {
+  display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+  background: rgba(192,132,252,0.12); border: 1px solid rgba(192,132,252,0.3);
+  border-radius: 10px; font-size: 0.8rem; font-weight: 600; color: #c084fc;
+}
+
+/* Transfert de table */
+.btn-transfert {
+  padding: 4px 10px; border-radius: 8px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5); font-size: 0.7rem; font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.btn-transfert:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
+
+/* Alerte stock sur catalogue */
+.stock-alert {
+  position: absolute; top: 4px; left: 4px;
+  background: rgba(220,38,38,0.85); color: white;
+  border-radius: 6px; padding: 2px 6px; font-size: 0.62rem; font-weight: 800;
+  letter-spacing: 0.3px; pointer-events: none;
+}
+.stock-low .stock-alert { background: rgba(217,119,6,0.85); }
+
+/* Modal transfert de table */
+#modalTransfert .tables-transfert-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px; max-height: 280px; overflow-y: auto; margin-top: 12px;
+}
+.table-transfert-btn {
+  padding: 10px 6px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05); color: var(--cave-text); cursor: pointer;
+  text-align: center; font-size: 0.8rem; font-weight: 600; transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.table-transfert-btn:hover { border-color: var(--cave-gold); color: var(--cave-gold); background: rgba(201,168,76,0.1); }
+.table-transfert-btn.occupee { border-color: rgba(220,38,38,0.35); color: #f87171; }
+.table-transfert-btn.disabled { opacity: 0.3; pointer-events: none; }
+
 .ticket-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
 .sous-total-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
 .total-row {
@@ -695,11 +746,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="nav-tab" data-view="ventes" onclick="switchView(this);chargerResumeVentes()">
           📊 Ventes du jour
         </button>
+        <a href="{% url 'restaurant:kds' %}" target="_blank" class="nav-tab" style="text-decoration:none;">
+          🔥 KDS Cuisine
+        </a>
       </div>
     </div>
 
     <!-- ── VUE : PLAN DE SALLE ── -->
     <div class="view-panel active" id="view-salle">
+      <div style="padding:10px 16px 0;flex-shrink:0;">
+        <button class="btn-emporter" id="btnEmporter" onclick="activerModeEmporter()">
+          <i class="fas fa-shopping-bag"></i> Commande À Emporter (sans table)
+        </button>
+      </div>
       <div class="salle-header">
         <input type="text" class="salle-search" placeholder="Rechercher une table…" oninput="filtrerTables(this.value)">
         <div class="salle-legend">
@@ -935,8 +994,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
 
       <div class="ticket-meta">
-        <div class="table-sel-badge" id="tableSelbadge" style="display:none;">
-          🪑 <span id="tableSelLabel">—</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="table-sel-badge" id="tableSelbadge" style="display:none;">
+            🪑 <span id="tableSelLabel">—</span>
+          </div>
+          <div class="emporter-badge" id="emporterBadge" style="display:none;">🛍️ À emporter</div>
+          <button class="btn-transfert" id="btnTransfertTable" style="display:none;" onclick="ouvrirModalTransfert()" title="Transférer vers une autre table">
+            <i class="fas fa-exchange-alt"></i> Transférer
+          </button>
         </div>
         <input type="text" id="inputClient" placeholder="👤 Nom du client…" oninput="majTicketMeta()">
         <select id="selectServeur" onchange="majTicketMeta()">
@@ -1051,6 +1116,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </button>
       <button onclick="_fermerAlerteChangement()" style="padding:13px;border-radius:10px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
         Annuler — rester sur ce ticket
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TRANSFERT DE TABLE -->
+<div class="modal-overlay" id="modalTransfert">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-title"><i class="fas fa-exchange-alt" style="margin-right:8px;color:var(--cave-gold);"></i>Transfert de table</div>
+    <div class="modal-subtitle">Sélectionnez la table de destination</div>
+    <div class="tables-transfert-grid" id="tablesTransfertGrid"></div>
+    <div style="margin-top:16px;">
+      <button onclick="document.getElementById('modalTransfert').classList.remove('open')"
+        style="width:100%;padding:11px;border-radius:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        Annuler
       </button>
     </div>
   </div>
@@ -1175,7 +1255,7 @@ const CSRF = '{{ csrf_token }}';
 const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };
 
 // ── STATE ──
-let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null } };
+let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null, emporter:false } };
 let ticketActifId = 1;
 let ticketCounter = 1;
 let modePaiement  = 'especes';
@@ -1308,7 +1388,7 @@ async function supprimerTicket(tid, e) {
   const remaining = Object.keys(tickets).map(Number);
   if (!remaining.length) {
     ticketCounter = 1;
-    tickets[1] = { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null };
+    tickets[1] = { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null, emporter:false };
     const btn = ajouterBoutonTicket(1, 'T-001');
     btn.classList.add('active');
     _chargerTicketInterne(1);
@@ -1393,11 +1473,13 @@ function filtrerArticles(type) {
 function verifierTable() {
   // Récupérer depuis le ticket actif si tableSelActif perdu
   const t = tickets[ticketActifId];
+  // Mode emporter — pas de table requise
+  if (t && t.emporter) return true;
   if (!tableSelActif && t && t.tableId) {
     tableSelActif = { id: t.tableId, numero: t.tableNum };
   }
   if (!tableSelActif || !tableSelActif.id) {
-    afficherAlerte('🪑 Sélectionnez d\'abord une table pour démarrer une commande', () => {
+    afficherAlerte('🪑 Sélectionnez d\'abord une table (ou mode "À Emporter")', () => {
       switchView(document.querySelector('.nav-tab[data-view="salle"]'));
     });
     return false;
@@ -1422,7 +1504,9 @@ async function _envoyerPlat(platId, nom, prix, accId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify({
-        table_id: t.tableId, commande_id: t.commandeDbId,
+        table_id: t.emporter ? null : t.tableId,
+        emporter: t.emporter || false,
+        commande_id: t.commandeDbId,
         plat_id: platId, nom: nom,
         accompagnement_id: accId || null,
         client: t.client,
@@ -1439,7 +1523,11 @@ async function _envoyerPlat(platId, nom, prix, accId) {
     if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
     renderTicket();
     toast('✅ ' + nom + ' ajouté', 'info');
-    majTableCard(t.tableId, 'occupee', t.total, t.client);
+    if (t.tableId) majTableCard(t.tableId, 'occupee', t.total, t.client);
+    // Afficher le bouton transfert si commande enregistrée avec table
+    if (t.commandeDbId && t.tableId) {
+      document.getElementById('btnTransfertTable').style.display = '';
+    }
   } catch(e) { toast('❌ Erreur réseau', 'error'); }
 }
 
@@ -1459,7 +1547,8 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify({
-        table_id: t.tableId,
+        table_id: t.emporter ? null : t.tableId,
+        emporter: t.emporter || false,
         commande_id: t.commandeDbId,
         boisson_id: boissonId,
         client: t.client,
@@ -1474,7 +1563,7 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
     if (data.statut !== undefined) t.statut = data.statut;
     renderTicket();
     toast('🍷 ' + nom + ' ajouté au ticket', 'success');
-    majTableCard(t.tableId, 'occupee', t.total, t.client);
+    if (t.tableId) majTableCard(t.tableId, 'occupee', t.total, t.client);
   } catch(e) {
     console.error('Erreur ajouterBoisson:', e);
     toast('❌ Erreur réseau — réessayez', 'error');
@@ -1495,7 +1584,8 @@ async function ajouterForfait(forfaitId, nom, prix, enStock) {
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify({
         forfait_id: forfaitId,
-        table_id: t.tableId,
+        table_id: t.emporter ? null : t.tableId,
+        emporter: t.emporter || false,
         commande_id: t.commandeDbId,
         client: t.client,
       })
@@ -1509,7 +1599,7 @@ async function ajouterForfait(forfaitId, nom, prix, enStock) {
     if (data.statut !== undefined) t.statut = data.statut;
     renderTicket();
     toast('⭐ ' + nom + ' ajouté au ticket', 'success');
-    majTableCard(t.tableId, 'occupee', t.total, t.client);
+    if (t.tableId) majTableCard(t.tableId, 'occupee', t.total, t.client);
   } catch(e) {
     console.error('Erreur ajouterForfait:', e);
     toast('❌ Erreur réseau — réessayez', 'error');
@@ -1788,6 +1878,125 @@ async function _pollStatutCommande() {
 // Démarrer le polling
 _demarrerPollStatut();
 
+// ── MODE EMPORTER ──
+function activerModeEmporter() {
+  const t = tickets[ticketActifId];
+  if (!t) return;
+  if (t.lignes && t.lignes.length && !t.emporter) {
+    _afficherAlerteChangement(() => _activerModeEmporterInterne());
+    return;
+  }
+  _activerModeEmporterInterne();
+}
+function _activerModeEmporterInterne() {
+  const t = tickets[ticketActifId];
+  t.emporter = true;
+  t.tableId  = null;
+  t.tableNum = null;
+  tableSelActif = null;
+  document.getElementById('tableSelbadge').style.display = 'none';
+  document.getElementById('emporterBadge').style.display = 'flex';
+  document.getElementById('btnTransfertTable').style.display = 'none';
+  document.getElementById('ticketNum').textContent = '🛍️ ' + t.nom + ' (Emporter)';
+  document.getElementById('btnEmporter').classList.add('active');
+  switchView(document.querySelector('.nav-tab[data-view="plats"]'));
+  toast('🛍️ Mode À Emporter activé', 'success');
+}
+
+// ── TRANSFERT DE TABLE ──
+function ouvrirModalTransfert() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) { toast('❌ Aucune commande enregistrée à transférer', 'error'); return; }
+  const grid = document.getElementById('tablesTransfertGrid');
+  // Récupérer les tables depuis le DOM (plan de salle)
+  const tableCards = document.querySelectorAll('.table-card[data-id]');
+  grid.innerHTML = Array.from(tableCards).map(card => {
+    const tid    = card.dataset.id;
+    const tnum   = card.dataset.num;
+    const statut = card.dataset.statut;
+    const isCurrent = t.tableId && String(t.tableId) === String(tid);
+    if (isCurrent) return '';
+    return `<button class="table-transfert-btn ${statut}" onclick="executerTransfert(${tid}, '${tnum}')">
+      <div style="font-size:1rem;font-weight:800;">${tnum}</div>
+      <div style="font-size:0.65rem;opacity:0.6;margin-top:2px;">${statut === 'disponible' ? 'Libre' : 'Occupée'}</div>
+    </button>`;
+  }).join('') || '<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.3);font-size:0.82rem;">Aucune autre table disponible</div>';
+  document.getElementById('modalTransfert').classList.add('open');
+}
+
+async function executerTransfert(nouvelleTableId, nouvelleTableNum) {
+  const t = tickets[ticketActifId];
+  document.getElementById('modalTransfert').classList.remove('open');
+  try {
+    const r = await fetch("{% url 'restaurant:transferer_table' %}", {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ commande_id: t.commandeDbId, nouvelle_table_id: nouvelleTableId }),
+    });
+    const d = await r.json();
+    if (!d.success) { toast('❌ ' + d.message, 'error'); return; }
+    // Mettre à jour les cartes tables
+    if (t.tableId) majTableCard(t.tableId, 'disponible', 0, '');
+    majTableCard(nouvelleTableId, 'occupee', t.totalNet || t.total || 0, t.client);
+    // Mettre à jour le ticket local
+    const ancTableId = t.tableId;
+    t.tableId  = nouvelleTableId;
+    t.tableNum = nouvelleTableNum;
+    tableSelActif = { id: nouvelleTableId, numero: nouvelleTableNum };
+    document.getElementById('tableSelbadge').style.display = 'flex';
+    document.getElementById('tableSelLabel').textContent = 'Table ' + nouvelleTableNum;
+    document.getElementById('ticketNum').textContent = 'Table ' + nouvelleTableNum;
+    // Mettre à jour data-statut sur les cartes
+    document.querySelector(`.table-card[data-id="${nouvelleTableId}"]`)?.setAttribute('data-statut', 'occupee');
+    if (ancTableId) document.querySelector(`.table-card[data-id="${ancTableId}"]`)?.setAttribute('data-statut', 'disponible');
+    toast(`✅ Commande transférée → Table ${nouvelleTableNum}`, 'success');
+  } catch(e) { toast('❌ Erreur réseau', 'error'); }
+}
+
+// ── ALERTES STOCK TEMPS RÉEL ──
+async function rafraichirStockCatalogue() {
+  try {
+    // Collecter les IDs des plats affichés
+    const platIds = [...new Set(Array.from(document.querySelectorAll('.article-card[data-type="plat"]')).map(c => c.dataset.id))];
+    const boissonIds = [...new Set(Array.from(document.querySelectorAll('.article-card[data-type="boisson"]')).map(c => c.dataset.id))];
+    if (!platIds.length && !boissonIds.length) return;
+
+    // On recharge la page en background n'est pas idéal — on lit les badges de stock existants
+    // Alternative légère : vérifier visuellement les cartes en rupture (déjà marquées .rupture)
+    // Pour une alerte temps réel, on peut relire les données via l'API KDS stock
+    // Ici on met juste à jour visuellement les badges existants
+    document.querySelectorAll('.article-card.rupture').forEach(card => {
+      const badge = card.querySelector('.stock-alert');
+      if (!badge) {
+        const wrap = card.querySelector('.ac-img-wrap');
+        if (wrap) {
+          const el = document.createElement('div');
+          el.className = 'stock-alert';
+          el.textContent = 'RUPTURE';
+          wrap.appendChild(el);
+        }
+      }
+    });
+    // Cartes avec stock bas (badge existant indique <=5)
+    document.querySelectorAll('.ac-stock-badge.bas').forEach(badge => {
+      const card = badge.closest('.article-card');
+      if (card && !card.querySelector('.stock-alert')) {
+        const wrap = card.querySelector('.ac-img-wrap');
+        if (wrap) {
+          const el = document.createElement('div');
+          el.className = 'stock-alert';
+          el.textContent = 'STOCK BAS';
+          card.classList.add('stock-low');
+          wrap.appendChild(el);
+        }
+      }
+    });
+  } catch(e) {}
+}
+// Appliquer au chargement
+document.addEventListener('DOMContentLoaded', () => setTimeout(rafraichirStockCatalogue, 500));
+// Ré-appliquer toutes les 30s
+setInterval(rafraichirStockCatalogue, 30000);
+
 // ── TICKETS ──
 function majTicketMeta() {
   const t = tickets[ticketActifId];
@@ -1799,7 +2008,7 @@ function nouveauTicket() {
   ticketCounter++;
   const tid = ticketCounter;
   const nom = `T-${String(tid).padStart(3,'0')}`;
-  tickets[tid] = { id:tid, nom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null };
+  tickets[tid] = { id:tid, nom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null, emporter:false };
   ajouterBoutonTicket(tid, nom);
   _chargerTicketInterne(tid);
   tableSelActif = null;
@@ -1819,15 +2028,25 @@ function _chargerTicketInterne(tid) {
   ticketActifId = tid;
   document.querySelectorAll('.ticket-attente-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.tid) === tid));
   const t = tickets[tid];
-  document.getElementById('ticketNum').textContent = t.tableNum ? 'Table ' + t.tableNum : t.nom;
+  // Entête ticket
+  if (t.emporter) {
+    document.getElementById('ticketNum').textContent = '🛍️ ' + t.nom + ' (Emporter)';
+  } else if (t.tableNum) {
+    document.getElementById('ticketNum').textContent = 'Table ' + t.tableNum;
+  } else {
+    document.getElementById('ticketNum').textContent = t.nom;
+  }
   document.getElementById('inputClient').value  = t.client  || '';
   document.getElementById('selectServeur').value = t.serveur || '';
-  if (t.tableNum) {
-    document.getElementById('tableSelbadge').style.display = 'flex';
+  // Badges table / emporter
+  document.getElementById('tableSelbadge').style.display    = (t.tableNum && !t.emporter) ? 'flex' : 'none';
+  document.getElementById('emporterBadge').style.display    = t.emporter ? 'flex' : 'none';
+  document.getElementById('btnTransfertTable').style.display = (t.commandeDbId && t.tableId) ? '' : 'none';
+  document.getElementById('btnEmporter').classList.toggle('active', !!t.emporter);
+  if (t.tableNum && !t.emporter) {
     document.getElementById('tableSelLabel').textContent = 'Table ' + t.tableNum;
     tableSelActif = { id: t.tableId, numero: t.tableNum };
   } else {
-    document.getElementById('tableSelbadge').style.display = 'none';
     tableSelActif = null;
   }
   modePaiement = t.paiement || 'especes';
