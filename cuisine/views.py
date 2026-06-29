@@ -193,17 +193,21 @@ def ingredient_edit(request, pk):
     unites     = UniteIngredient.objects.all()
     fournisseurs = Fournisseur.objects.filter(actif=True)
     if request.method == 'POST':
-        ing.nom = request.POST.get('nom')
+        ing.nom = request.POST.get('nom') or ing.nom
         ing.reference = request.POST.get('reference') or None
-        ing.categorie_id = request.POST.get('categorie') or None
+        ing.categorie_id = request.POST.get('categorie') or ing.categorie_id
         ing.description = request.POST.get('description', '')
-        ing.unite_stock_id = request.POST.get('unite_stock') or None
-        ing.unite_recette_id = request.POST.get('unite_recette') or None
-        ing.facteur_conversion = request.POST.get('facteur_conversion') or 1
-        ing.prix_achat = request.POST.get('prix_achat') or 0
-        ing.seuil_alerte = request.POST.get('seuil_alerte') or 0
-        ing.stock_max = request.POST.get('stock_max') or 0
+        ing.unite_stock_id = request.POST.get('unite_stock') or ing.unite_stock_id
+        ing.unite_recette_id = request.POST.get('unite_recette') or ing.unite_recette_id
+        ing.facteur_conversion = request.POST.get('facteur_conversion') or ing.facteur_conversion
+        ing.prix_achat = request.POST.get('prix_achat') or ing.prix_achat
+        ing.seuil_alerte = request.POST.get('seuil_alerte') if request.POST.get('seuil_alerte') != '' else ing.seuil_alerte
+        ing.stock_max = request.POST.get('stock_max') if request.POST.get('stock_max') != '' else ing.stock_max
         ing.fournisseur_principal_id = request.POST.get('fournisseur_principal') or None
+        # quantite_stock gérée ici uniquement si soumise explicitement (sinon conservée)
+        qs = request.POST.get('quantite_stock', None)
+        if qs is not None and qs != '':
+            ing.quantite_stock = qs
         ing.save()
         messages.success(request, f"Ingrédient '{ing.nom}' modifié.")
         return redirect('/cuisine/stock/?tab=ingredients')
@@ -525,13 +529,13 @@ def fiche_edit(request, pk):
     categories   = CategoriePlat.objects.all()
     ingredients  = Ingredient.objects.filter(statut=True).select_related('unite_recette')
     if request.method == 'POST':
-        fiche.nom               = request.POST.get('nom')
-        fiche.categorie_id      = request.POST.get('categorie') or None
+        fiche.nom               = request.POST.get('nom') or fiche.nom
+        fiche.categorie_id      = request.POST.get('categorie') or fiche.categorie_id
         fiche.description       = request.POST.get('description', '')
-        fiche.nb_portions       = request.POST.get('nb_portions') or 1
-        fiche.temps_preparation = request.POST.get('temps_preparation') or 0
-        fiche.temps_cuisson     = request.POST.get('temps_cuisson') or 0
-        fiche.statut            = request.POST.get('statut', 'actif')
+        fiche.nb_portions       = request.POST.get('nb_portions') or fiche.nb_portions
+        fiche.temps_preparation = request.POST.get('temps_preparation') if request.POST.get('temps_preparation') != '' else fiche.temps_preparation
+        fiche.temps_cuisson     = request.POST.get('temps_cuisson') if request.POST.get('temps_cuisson') != '' else fiche.temps_cuisson
+        fiche.statut            = request.POST.get('statut') or fiche.statut
         if request.FILES.get('image'):
             fiche.image = request.FILES['image']
         fiche.save()
@@ -805,11 +809,11 @@ def plat_edit(request, pk):
     categories  = CategoriePlat.objects.all()
     ingredients = Ingredient.objects.filter(statut=True).select_related('unite_recette')
     if request.method == 'POST':
-        plat.nom               = request.POST.get('nom')
-        plat.categorie_id      = request.POST.get('categorie') or None
+        plat.nom               = request.POST.get('nom') or plat.nom
+        plat.categorie_id      = request.POST.get('categorie') or plat.categorie_id
         plat.description_carte = request.POST.get('description_carte', '')
-        plat.prix_vente        = request.POST.get('prix_vente') or 0
-        plat.statut            = request.POST.get('statut', 'disponible')
+        plat.prix_vente        = request.POST.get('prix_vente') or plat.prix_vente
+        plat.statut            = request.POST.get('statut') or plat.statut
         if request.FILES.get('image'):
             plat.image = request.FILES['image']
         elif request.POST.get('image-clear'):

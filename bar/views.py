@@ -234,20 +234,23 @@ def article_edit(request, pk):
     categories = CategorieBar.objects.all()
     unites = UniteVente.objects.all()
     if request.method == 'POST':
-        article.nom = request.POST.get('nom')
+        article.nom = request.POST.get('nom') or article.nom
         article.reference = request.POST.get('reference') or None
-        article.categorie_id = request.POST.get('categorie')
+        article.categorie_id = request.POST.get('categorie') or article.categorie_id
         article.description = request.POST.get('description', '')
-        article.mode_prix = request.POST.get('mode_prix', 'manuel')
-        article.prix_achat = request.POST.get('prix_achat', 0) or 0
-        article.marge = request.POST.get('marge', 0) or 0
-        mode = request.POST.get('mode_prix', 'manuel')
-        article.prix = (request.POST.get('prix_calcule', 0) or 0) if mode == 'marge' else (request.POST.get('prix_manuel', 0) or 0)
-        article.unite_standard = request.POST.get('unite_standard', 'bouteille')
+        article.mode_prix = request.POST.get('mode_prix') or article.mode_prix
+        article.prix_achat = request.POST.get('prix_achat') or article.prix_achat
+        article.marge = request.POST.get('marge') or article.marge
+        mode = request.POST.get('mode_prix') or article.mode_prix
+        if mode == 'marge':
+            article.prix = request.POST.get('prix_calcule') or article.prix
+        else:
+            article.prix = request.POST.get('prix_manuel') or article.prix
+        article.unite_standard = request.POST.get('unite_standard') or article.unite_standard
         article.unite_personnalisee_id = request.POST.get('unite_personnalisee') or None
-        article.seuil_alerte = request.POST.get('seuil_alerte', 10) or 10
+        article.seuil_alerte = request.POST.get('seuil_alerte') or article.seuil_alerte
         article.disponible = request.POST.get('disponible') == 'on'
-        article.statut = request.POST.get('statut', 'actif')
+        article.statut = request.POST.get('statut') or article.statut
         article.est_compose = request.POST.get('est_compose') == 'on'
         if request.FILES.get('image'):
             article.image = request.FILES.get('image')
