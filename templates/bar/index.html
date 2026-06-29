@@ -220,38 +220,57 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .caissier-info strong { color: var(--cave-gold); }
 
 /* Tickets en attente */
-.tickets-attente {
-  display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 5px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--cave-gold) rgba(255,255,255,0.08);
+/* ─── BARRE DE TICKETS CAVE ─── */
+.ticket-tabbar {
+  display: flex; align-items: stretch;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  min-height: 46px; flex-shrink: 0;
 }
-.tickets-attente::-webkit-scrollbar { height: 4px; }
-.tickets-attente::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); border-radius: 2px; }
-.tickets-attente::-webkit-scrollbar-thumb { background: var(--cave-gold); border-radius: 2px; }
+.ticket-tabbar-nav {
+  flex-shrink: 0; width: 28px; background: transparent;
+  border: none; border-right: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.35); font-size: 18px; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+}
+.ticket-tabbar-nav:last-of-type { border-right: none; border-left: 1px solid rgba(255,255,255,0.08); }
+.ticket-tabbar-nav:hover { color: var(--cave-gold); background: rgba(201,168,76,0.08); }
+.tickets-attente {
+  flex: 1; display: flex; gap: 5px; flex-wrap: nowrap;
+  overflow-x: auto; overflow-y: visible;
+  padding: 7px 6px; align-items: center;
+  scrollbar-width: none;
+}
+.tickets-attente::-webkit-scrollbar { display: none; }
 .ticket-attente-btn {
-  flex-shrink: 0; padding: 5px 8px 5px 12px;
-  background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35);
+  flex-shrink: 0; padding: 5px 7px 5px 12px;
+  background: rgba(201,168,76,0.12); border: 1.5px solid rgba(201,168,76,0.3);
   color: var(--cave-gold); border-radius: 20px; font-size: 0.72rem;
   font-weight: 700; cursor: pointer; transition: all 0.2s;
-  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 6px;
 }
-.ticket-attente-btn:hover { background: rgba(201,168,76,0.28); }
-.ticket-attente-btn.active {
-  background: var(--cave-gold); color: var(--cave-deep);
-}
+.ticket-attente-btn:hover { background: rgba(201,168,76,0.25); }
+.ticket-attente-btn.active { background: var(--cave-gold); color: var(--cave-deep); }
 .ticket-close {
-  font-size: 14px; line-height: 1; opacity: 0.45;
-  padding: 1px 3px; border-radius: 4px; transition: all 0.15s;
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; line-height: 1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+  transition: all 0.15s;
 }
-.ticket-close:hover { opacity: 1; color: #ff6b6b; background: rgba(255,107,107,0.2); }
+.ticket-attente-btn.active .ticket-close { background: rgba(0,0,0,0.15); color: var(--cave-deep); }
+.ticket-close:hover { background: #dc2626 !important; color: #fff !important; }
 .btn-new-ticket {
-  flex-shrink: 0; padding: 5px 12px;
-  background: rgba(255,255,255,0.07); border: 1.5px dashed rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.55); border-radius: 20px; font-size: 0.72rem;
+  flex-shrink: 0; padding: 5px 13px;
+  background: rgba(255,255,255,0.06); border: 1.5px dashed rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.45); border-radius: 20px; font-size: 0.72rem;
   font-weight: 600; cursor: pointer; transition: all 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
 }
-.btn-new-ticket:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
+.btn-new-ticket:hover { border-color: var(--cave-gold); color: var(--cave-gold); background: rgba(201,168,76,0.08); }
 
 /* Corps ticket — lignes */
 .ticket-lines {
@@ -610,13 +629,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         </div>
       </div>
 
-      <!-- Tickets en attente -->
-      <div class="tickets-attente" id="ticketsAttente">
-        <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
-          <i class="fas fa-circle" style="font-size:0.5rem;"></i> <span class="ticket-label">T-001</span>
-          <span class="ticket-close" title="Annuler ce ticket" onclick="supprimerTicket(1, event)">×</span>
-        </button>
-        <button class="btn-new-ticket" onclick="nouveauTicket()">+ Nouveau</button>
+      <!-- Barre de tickets -->
+      <div class="ticket-tabbar">
+        <button type="button" class="ticket-tabbar-nav" onclick="scrollTabBar(-140)" title="Précédent">&#8249;</button>
+        <div class="tickets-attente" id="ticketsAttente">
+          <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
+            <i class="fas fa-circle" style="font-size:0.45rem;"></i>
+            <span class="ticket-label">T-001</span>
+            <span class="ticket-close" title="Annuler" onclick="supprimerTicket(1, event)">×</span>
+          </button>
+        </div>
+        <button type="button" class="ticket-tabbar-nav" onclick="scrollTabBar(140)" title="Suivant">&#8250;</button>
+        <button class="btn-new-ticket" type="button" onclick="nouveauTicket()" title="Nouveau ticket">+ Nouveau</button>
       </div>
     </div>
 
@@ -974,7 +998,12 @@ function nouveauTicket() {
   _creerNouveauTicket();
 }
 
-function _creerNouveauTicket() {
+function scrollTabBar(delta) {
+  const el = document.getElementById('ticketsAttente');
+  el.scrollBy({ left: delta, behavior: 'smooth' });
+}
+
+function _creerNouveauTicket(silent = false) {
   ticketCounter++;
   const tid = ticketCounter;
   const nom = `T-${String(tid).padStart(3, '0')}`;
@@ -982,17 +1011,16 @@ function _creerNouveauTicket() {
   ticketActifId = tid;
 
   const container = document.getElementById('ticketsAttente');
-  const btnNew    = container.querySelector('.btn-new-ticket');
   const btn       = document.createElement('button');
   btn.type        = 'button';
   btn.className   = 'ticket-attente-btn';
   btn.dataset.tid = tid;
-  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> <span class="ticket-label">${nom}</span><span class="ticket-close" title="Annuler ce ticket" onclick="supprimerTicket(${tid}, event)">×</span>`;
+  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${nom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${tid}, event)">×</span>`;
   btn.onclick     = () => chargerTicket(tid);
-  container.insertBefore(btn, btnNew);
+  container.appendChild(btn);
 
   _chargerTicketInterne(tid);
-  toast(`Nouveau ticket ${nom} créé`, 'info');
+  if (!silent) toast(`Nouveau ticket ${nom} créé`, 'info');
 }
 
 function chargerTicket(tid) {
@@ -1041,7 +1069,7 @@ function supprimerTicket(tid, e) {
     if (remaining.length > 0) {
       _chargerTicketInterne(remaining[remaining.length - 1]);
     } else {
-      _creerNouveauTicket();
+      _creerNouveauTicket(true); // silent : pas de toast lors d'une annulation
     }
   }
 }
@@ -1338,14 +1366,13 @@ async function confirmerPaiement() {
       tickets[newTid] = { id: newTid, nom: newNom, espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' };
       ticketActifId = newTid;
       const container = document.getElementById('ticketsAttente');
-      const btnNew    = container.querySelector('.btn-new-ticket');
       const btn       = document.createElement('button');
       btn.type        = 'button';
       btn.className   = 'ticket-attente-btn active';
       btn.dataset.tid = newTid;
-      btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler ce ticket" onclick="supprimerTicket(${newTid}, event)">×</span>`;
-      btn.onclick     = () => chargerTicket(newTid); // newTid capturé
-      container.insertBefore(btn, btnNew);
+      btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${newTid}, event)">×</span>`;
+      btn.onclick     = () => chargerTicket(newTid);
+      container.appendChild(btn);
       chargerTicket(newTid);
     }, 300);
 

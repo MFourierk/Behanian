@@ -635,28 +635,46 @@
 .btn-encaisser:hover { background: var(--gold-light); }
 .btn-encaisser:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ─── COMMANDES EN ATTENTE (tickets) ─── */
-.tickets-attente {
-  padding: 8px 10px 4px;
+/* ─── BARRE DE TICKETS ─── */
+.ticket-tabbar {
   display: flex;
-  gap: 6px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gold-dim) var(--bg-card);
+  align-items: stretch;
+  background: var(--bg-deep);
   border-top: 1px solid var(--border-dim);
   border-bottom: 1px solid var(--border-dim);
-  background: var(--bg-deep);
-  min-height: 40px;
-  align-items: center;
+  min-height: 44px;
+  flex-shrink: 0;
 }
-.tickets-attente::-webkit-scrollbar { height: 4px; }
-.tickets-attente::-webkit-scrollbar-track { background: var(--bg-card); border-radius: 2px; }
-.tickets-attente::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+.ticket-tabbar-nav {
+  flex-shrink: 0;
+  width: 30px;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-dim);
+  color: var(--cream-dim);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.ticket-tabbar-nav:last-child { border-right: none; border-left: 1px solid var(--border-dim); }
+.ticket-tabbar-nav:hover { color: var(--gold); background: rgba(201,148,58,0.08); }
+.tickets-attente {
+  flex: 1;
+  display: flex;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 7px 8px;
+  align-items: center;
+  scrollbar-width: none;
+}
+.tickets-attente::-webkit-scrollbar { display: none; }
 .ticket-badge {
   flex-shrink: 0;
-  padding: 4px 8px 4px 10px;
-  border-radius: 14px;
+  padding: 5px 6px 5px 11px;
+  border-radius: 20px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--cream-dim);
@@ -666,15 +684,26 @@
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
-.ticket-badge.active { background: rgba(201,148,58,0.2); border-color: var(--gold); color: var(--gold-light); font-weight: 600; }
+.ticket-badge.active {
+  background: rgba(201,148,58,0.18);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  font-weight: 600;
+}
 .ticket-badge:hover:not(.active) { border-color: var(--gold-dim); color: var(--cream); }
 .ticket-close {
-  font-size: 14px; line-height: 1; opacity: 0.4;
-  padding: 1px 3px; border-radius: 4px; transition: all 0.15s;
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; line-height: 1;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  color: var(--cream-dim);
+  transition: all 0.15s;
 }
-.ticket-close:hover { opacity: 1; color: #ff6b6b; background: rgba(255,107,107,0.15); }
+.ticket-close:hover { background: #dc2626; color: #fff; }
 
 /* ═══════════════════════════════════════════
    MODAL ENCAISSEMENT
@@ -1075,9 +1104,11 @@
   <!-- ═══ PANNEAU DROIT ═══ -->
   <div class="tpe-right">
 
-    <!-- TICKETS EN ATTENTE -->
-    <div class="tickets-attente" id="ticketsAttente">
-      <span style="font-size:11px;color:var(--cream-dim)">Tickets :</span>
+    <!-- BARRE DE TICKETS -->
+    <div class="ticket-tabbar">
+      <button type="button" class="ticket-tabbar-nav" onclick="scrollTabBar(-140)" title="Tickets précédents">&#8249;</button>
+      <div class="tickets-attente" id="ticketsAttente"></div>
+      <button type="button" class="ticket-tabbar-nav" onclick="scrollTabBar(140)" title="Tickets suivants">&#8250;</button>
     </div>
 
     <!-- EN-TÊTE COMMANDE -->
@@ -1293,6 +1324,11 @@ function nouveauTicketPourTable(tableId, tableNum) {
   };
   ajouterBoutonTicket(tid, 'Table ' + tableNum);
   chargerTicket(tid);
+}
+
+function scrollTabBar(delta) {
+  const el = document.getElementById('ticketsAttente');
+  el.scrollBy({ left: delta, behavior: 'smooth' });
 }
 
 function ajouterBoutonTicket(tid, label) {
