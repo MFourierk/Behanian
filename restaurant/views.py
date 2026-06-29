@@ -265,12 +265,12 @@ def annuler_commande(request):
             
         with transaction.atomic():
             # 1. Restaurer le stock pour chaque ligne
-            for ligne in commande.lignes.all():
+            for ligne in commande.lignes.select_related('plat', 'accompagnement', 'boisson').all():
                 process_stock_movement(
-                    ligne.plat, 
-                    ligne.quantite, 
-                    'entree', 
-                    request.user, 
+                    ligne.plat,
+                    ligne.quantite,
+                    'entree',
+                    request.user,
                     f"Annulation Commande #{commande.id}"
                 )
                 if ligne.accompagnement:
@@ -280,6 +280,14 @@ def annuler_commande(request):
                         'entree',
                         request.user,
                         f"Annulation Accompagnement #{commande.id}"
+                    )
+                if ligne.boisson:
+                    MouvementStockBar.objects.create(
+                        boisson=ligne.boisson,
+                        type_mouvement='entree',
+                        quantite=ligne.quantite,
+                        commentaire=f"Annulation Restaurant #{commande.id}",
+                        utilisateur=request.user,
                     )
             
             # 2. Mettre à jour le statut
