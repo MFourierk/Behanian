@@ -329,21 +329,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 }
 
 .ticket-tabbar {
-  display: flex; align-items: center;
+  display: flex; align-items: stretch;
   background: rgba(255,255,255,0.04);
-  border-bottom: 2px solid rgba(255,255,255,0.10);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   min-height: 46px; flex-shrink: 0;
 }
 .ticket-tabbar-nav {
-  flex-shrink: 0; width: 30px; height: 46px;
-  background: rgba(255,255,255,0.06);
-  border: none; border-right: 1px solid rgba(255,255,255,0.10);
-  color: rgba(255,255,255,0.55); font-size: 20px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  flex-shrink: 0; width: 28px; background: transparent;
+  border: none; border-right: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.35); font-size: 18px; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; justify-content: center;
 }
-.ticket-tabbar-nav.nav-right { border-right: none; border-left: 1px solid rgba(255,255,255,0.10); }
-.ticket-tabbar-nav:hover { background: rgba(255,255,255,0.13); color: white; }
+.ticket-tabbar-nav:last-of-type { border-right: none; border-left: 1px solid rgba(255,255,255,0.08); }
+.ticket-tabbar-nav:hover { color: var(--cave-gold); background: rgba(201,168,76,0.08); }
 .tickets-attente {
   flex: 1; display: flex; gap: 6px; overflow-x: hidden; padding: 6px 8px;
 }
@@ -862,7 +860,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
             <span class="ticket-close" onclick="supprimerTicket(1, event)">&#215;</span>
           </button>
         </div>
-        <button class="ticket-tabbar-nav nav-right" onclick="scrollTabBar(140)">&#8250;</button>
+        <button class="ticket-tabbar-nav" onclick="scrollTabBar(140)">&#8250;</button>
         <button class="btn-new-ticket" onclick="nouveauTicket()">+ Nouveau</button>
       </div>
     </div>
