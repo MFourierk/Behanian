@@ -1552,13 +1552,19 @@ def api_vente_create(request):
                 }, status=400)
 
         # Map mode paiement TPE -> choix Ticket facturation
-        MODE_MAP = {
-            'especes': 'especes',
-            'carte'  : 'carte_bancaire',
-            'mobile' : 'mobile_money',
-            'chambre': 'autre',
-        }
-        mode_fact = MODE_MAP.get(paiement, 'especes')
+        operateur_mobile = data.get('operateur_mobile', '')
+        def _map_mode(mode):
+            if mode == 'mobile':
+                op = (operateur_mobile or '').lower()
+                if 'wave' in op:    return 'wave'
+                if 'orange' in op:  return 'orange_money'
+                if 'mtn' in op:     return 'mtn_money'
+                if 'moov' in op:    return 'moov_money'
+                return 'mobile_money'
+            if mode == 'carte':   return 'carte_bancaire'
+            if mode == 'chambre': return 'autre'
+            return mode
+        mode_fact = _map_mode(paiement)
 
         ESPACE_LABELS = {
             'restaurant'  : 'Restaurant',
@@ -1579,6 +1585,13 @@ def api_vente_create(request):
             f"  {l['nom']} x{l['qty']}  {int(Decimal(str(l['prix'])) * int(l['qty'])):,} F"
             for l in lignes
         )
+        # Label règlement lisible pour le ticket texte
+        _REGLEMENT_LABELS = {'especes': 'Espèces', 'carte': 'Carte / TPE', 'chambre': 'Report Chambre'}
+        if paiement == 'mobile' and operateur_mobile:
+            reglement_label = operateur_mobile
+        else:
+            reglement_label = _REGLEMENT_LABELS.get(paiement, 'Mobile Money')
+
         # Serveur sélectionné ou à défaut le caissier connecté
         serveur_cave = serveur_nom or request.user.get_full_name() or request.user.username
         contenu = (
@@ -1592,7 +1605,7 @@ def api_vente_create(request):
             f"{lignes_txt}\n"
             f"{'='*32}\n"
             f"TOTAL   : {int(total):,} FCFA\n"
-            f"Reglement : {mode_fact}\n"
+            f"Reglement : {reglement_label}\n"
         )
         if paiement in ('especes', 'mobile') and rendu > 0:
             contenu += f"Recu    : {int(montant_recu):,} F\n"

@@ -100,6 +100,20 @@ def restaurant_index(request):
 
 @require_module_access('restaurant')
 @require_POST
+def _map_mode_paiement(mode, operateur=''):
+    """Mappe le code TPE vers le code Ticket (PAIEMENT_CHOICES facturation)."""
+    if mode == 'mobile':
+        op = (operateur or '').lower()
+        if 'wave' in op:       return 'wave'
+        if 'orange' in op:     return 'orange_money'
+        if 'mtn' in op:        return 'mtn_money'
+        if 'moov' in op:       return 'moov_money'
+        return 'mobile_money'
+    if mode == 'carte':   return 'carte_bancaire'
+    if mode == 'chambre': return 'autre'
+    return mode  # 'especes'
+
+
 def valider_commande(request):
     """Valide une commande (Paiement uniquement maintenant, l'ajout se fait en temps réel)"""
     try:
@@ -204,7 +218,10 @@ def valider_commande(request):
                     contenu=services_html,
                     objet_id=commande.id,
                     montant_paye=montant_encaisse,
-                    mode_paiement=data.get('mode_paiement', 'especes'),
+                    mode_paiement=_map_mode_paiement(
+                        data.get('mode_paiement', 'especes'),
+                        data.get('operateur_mobile', ''),
+                    ),
                     cree_par=request.user,
                     imprime=True
                 )
