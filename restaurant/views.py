@@ -1,5 +1,5 @@
 import logging
-from utils.permissions import require_module_access
+from utils.permissions import require_module_access, require_kds_access
 from django.shortcuts import render, redirect, get_object_or_404
 
 logger = logging.getLogger(__name__)
@@ -875,13 +875,13 @@ def update_couverts(request):
         return JsonResponse({'success': False, 'message': str(e)})
 
 
-@require_module_access('restaurant')
+@require_kds_access
 def kds_view(request):
     """Écran KDS cuisine — liste des commandes actives."""
     return render(request, 'restaurant/kds.html', {})
 
 
-@require_module_access('restaurant')
+@require_kds_access
 def kds_api(request):
     """API polling KDS — retourne les commandes en_attente et en_preparation."""
     commandes = Commande.objects.filter(
@@ -905,7 +905,7 @@ def kds_api(request):
     return JsonResponse({'commandes': result})
 
 
-@require_module_access('restaurant')
+@require_kds_access
 @require_POST
 def kds_changer_statut(request):
     """Change le statut d'une commande depuis le KDS."""

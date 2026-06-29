@@ -10,6 +10,7 @@ Groupes canoniques (sans accents pour éviter les conflits d'encodage en base) :
   Caissiere           → caisses TPE uniquement (restaurant, bar, piscine, espaces) – PAS caisse centrale
   Utilisateur Simple  → aucun accès interface (gardiens, serveurs, agents)
   Responsable Cave    → module Cave complet (articles, stock, inventaire, commandes, fournisseurs)
+  KDS                 → écran cuisine uniquement (serveurs/serveuses + cuisinier·es)
 """
 from functools import wraps
 from django.shortcuts import redirect
@@ -26,6 +27,7 @@ GROUPE_CAISSIERE_PRINCIPALE = 'Caissiere Principale'
 GROUPE_CAISSIERE          = 'Caissiere'
 GROUPE_UTILISATEUR_SIMPLE = 'Utilisateur Simple'
 GROUPE_RESPONSABLE_CAVE   = 'Responsable Cave'
+GROUPE_KDS                = 'KDS'
 
 # Noms alternatifs (anciens groupes en base + rétrocompatibilité complète)
 _MANAGERS = [
@@ -69,7 +71,14 @@ _UTILISATEUR_SIMPLE = [
     GROUPE_UTILISATEUR_SIMPLE,
     'Serveuse/Serveur',
     'Agent de Sécurité',   # nom réel en base — aucun accès interface
-    'Cuisinier(e)',         # personnel cuisine — pas d'accès interface
+    'Cuisinier(e)',         # personnel cuisine — accès KDS uniquement
+]
+
+# KDS : serveurs/serveuses + cuisinier·es → écran cuisine en lecture + boutons statut
+_KDS = [
+    GROUPE_KDS,
+    'Serveuse/Serveur',
+    'Cuisinier(e)',
 ]
 
 
@@ -248,6 +257,38 @@ def require_gestion_access(module):
             return view_func(request, *args, **kwargs)
         return wrapper
     return decorator
+
+
+def _is_kds(user):
+    """True si l'utilisateur appartient au groupe KDS (serveurs/cuisiniers)."""
+    if user.is_superuser:
+        return True
+    return any(g in _KDS for g in get_user_groups(user))
+
+
+def is_kds_only(user):
+    """True si l'utilisateur est KDS SANS accès au module restaurant complet.
+    Utilisé pour la redirection post-login vers /restaurant/kds/ directement."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return False
+    groups = get_user_groups(user)
+    has_kds   = any(g in _KDS for g in groups)
+    has_resto = any('*' in (ACCESS_MAP.get(g) or []) or 'restaurant' in (ACCESS_MAP.get(g) or []) for g in groups)
+    return has_kds and not has_resto
+
+
+def require_kds_access(view_func):
+    """Décorateur KDS — autorise les utilisateurs KDS ET ceux ayant accès au module restaurant."""
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if _is_kds(request.user) or user_has_access(request.user, 'restaurant'):
+            return view_func(request, *args, **kwargs)
+        messages.error(request, "Accès refusé — réservé au personnel de salle et cuisine.")
+        return redirect('dashboard:index')
+    return wrapper
 
 
 def caisse_est_ouverte(user):
