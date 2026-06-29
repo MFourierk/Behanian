@@ -855,7 +855,23 @@ function filtrerBoissons() {
 // ============================================================
 // AJOUTER ARTICLE
 // ============================================================
-function ajouterArticle(id, nom, prix, unite) {
+async function _ajusterStockTpe(boissonId, delta) {
+  try {
+    const r = await fetch("{% url 'bar:api_ajuster_stock_tpe' %}", {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({boisson_id: boissonId, delta})
+    });
+    const data = await r.json();
+    if (!data.ok) { toast(data.error, 'error'); return false; }
+    return true;
+  } catch(e) { toast('Erreur réseau', 'error'); return false; }
+}
+
+async function ajouterArticle(id, nom, prix, unite) {
+  const ok = await _ajusterStockTpe(id, 1);
+  if (!ok) return;
+
   const t = tickets[ticketActifId];
   const existing = t.lignes.find(l => l.id === id);
   if (existing) existing.qty++;
@@ -919,7 +935,9 @@ function renderTicket() {
   });
 }
 
-function changerQty(id, delta) {
+async function changerQty(id, delta) {
+  const ok = await _ajusterStockTpe(id, delta);
+  if (!ok) return;
   const t = tickets[ticketActifId];
   const idx = t.lignes.findIndex(l => l.id === id);
   if (idx === -1) return;
@@ -1007,6 +1025,11 @@ function _chargerTicketInterne(tid) {
 // ═══════════════════════════════════════════
 function supprimerTicket(tid, e) {
   e.stopPropagation();
+  const t = tickets[tid];
+  // Restaurer le stock de tous les articles du ticket annulé
+  if (t && t.lignes.length > 0) {
+    t.lignes.forEach(l => _ajusterStockTpe(l.id, -l.qty));
+  }
   document.querySelector(`.ticket-attente-btn[data-tid="${tid}"]`)?.remove();
   delete tickets[tid];
   if (ticketActifId === tid) {
@@ -1189,7 +1212,7 @@ async function mettreOnChambre() {
       ticket_nom: t.nom, lignes: t.lignes.map(l=>({id:l.id,nom:l.nom,prix:l.prix,qty:l.qty})),
       total, paiement: 'chambre', espace: t.espace, ref: t.ref,
       serveur: serveurVal, serveur_id: t.serveur_id || null, montant_recu: 0, reservation_id: chambreLieeId,
-      sur_chambre: true,
+      sur_chambre: true, stock_live: true,
     };
     const resp = await fetch("{% url 'bar:api_vente' %}", {
       method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
@@ -1267,6 +1290,7 @@ async function confirmerPaiement() {
       serveur_id   : t.serveur_id || null,
       montant_recu   : montantRecu,
       reservation_id : chambreLieeId || (modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : ''),
+      stock_live   : true,  // stock déjà prélevé en temps réel, évite double-déduction
     };
 
     const resp = await fetch("{% url 'bar:api_vente' %}", {

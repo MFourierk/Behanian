@@ -1456,6 +1456,49 @@ from decimal import Decimal
 
 @require_module_access('bar')
 @require_POST
+def api_ajuster_stock_tpe(request):
+    """
+    Ajustement de stock en temps réel depuis le TPE Cave (+/- article).
+    delta > 0 : sortie (déduction)  — bloque si stock insuffisant
+    delta < 0 : entrée (restauration) — toujours autorisé
+    """
+    try:
+        data      = json.loads(request.body)
+        boisson_id = int(data['boisson_id'])
+        delta      = int(data['delta'])
+
+        boisson = BoissonBar.objects.select_for_update().get(pk=boisson_id)
+
+        with transaction.atomic():
+            if delta > 0:
+                if boisson.quantite_stock < delta:
+                    return JsonResponse({
+                        'ok': False,
+                        'error': f"{boisson.nom} : stock insuffisant ({boisson.quantite_stock} disponible)"
+                    })
+                MouvementStockBar.objects.create(
+                    boisson=boisson, type_mouvement='sortie', quantite=delta,
+                    commentaire='TPE Cave — prévisionnel',
+                    utilisateur=request.user,
+                )
+            else:
+                MouvementStockBar.objects.create(
+                    boisson=boisson, type_mouvement='entree', quantite=abs(delta),
+                    commentaire='TPE Cave — retrait prévisionnel',
+                    utilisateur=request.user,
+                )
+
+        boisson.refresh_from_db()
+        return JsonResponse({'ok': True, 'stock': boisson.quantite_stock})
+
+    except BoissonBar.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Article introuvable'})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
+
+
+@require_module_access('bar')
+@require_POST
 def api_vente_create(request):
     """
     API AJAX appelée depuis le TPE Cave.
@@ -1472,6 +1515,7 @@ def api_vente_create(request):
         montant_recu = Decimal(str(data.get('montant_recu', total)))
         serveur_nom  = data.get('serveur', '')
         serveur_id   = data.get('serveur_id')
+        stock_live   = data.get('stock_live', False)  # True = stock déjà prélevé en temps réel
         serveur_obj  = None
         if serveur_id:
             from django.contrib.auth.models import User as AuthUser
@@ -1483,24 +1527,25 @@ def api_vente_create(request):
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
 
-        # Vérification stock avant toute transaction
-        manques = []
-        for l in lignes:
-            try:
-                b = BoissonBar.objects.get(pk=int(l['id']))
-                qty = int(l['qty'])
-                if b.quantite_stock < qty:
-                    manques.append(
-                        f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé"
-                    )
-            except BoissonBar.DoesNotExist:
-                manques.append(f"• Article introuvable (id={l['id']})")
-        if manques:
-            return JsonResponse({
-                'ok': False,
-                'error': "Vente bloquée — stock insuffisant :",
-                'details': manques,
-            }, status=400)
+        # Vérification stock avant toute transaction (ignorée si déjà prélevé en temps réel)
+        if not stock_live:
+            manques = []
+            for l in lignes:
+                try:
+                    b = BoissonBar.objects.get(pk=int(l['id']))
+                    qty = int(l['qty'])
+                    if b.quantite_stock < qty:
+                        manques.append(
+                            f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé"
+                        )
+                except BoissonBar.DoesNotExist:
+                    manques.append(f"• Article introuvable (id={l['id']})")
+            if manques:
+                return JsonResponse({
+                    'ok': False,
+                    'error': "Vente bloquée — stock insuffisant :",
+                    'details': manques,
+                }, status=400)
 
         # Map mode paiement TPE -> choix Ticket facturation
         MODE_MAP = {
@@ -1572,8 +1617,8 @@ def api_vente_create(request):
                         prix_unitaire=Decimal(str(l['prix'])),
                         serveur=serveur_obj,
                     )
-                    # Décrémenter stock
-                    if boisson_obj:
+                    # Décrémenter stock (ignoré si déjà prélevé en temps réel)
+                    if boisson_obj and not stock_live:
                         qty = int(l['qty'])
                         MouvementStockBar.objects.create(
                             boisson=boisson_obj, type_mouvement='sortie',
@@ -1623,22 +1668,23 @@ def api_vente_create(request):
             except Exception as e:
                 pass  # Ne pas bloquer la vente si erreur liaison
 
-        # Decrementer stock + tracer mouvements
+        # Decrementer stock + tracer mouvements (ignoré si déjà prélevé en temps réel)
         erreurs_stock = []
-        for l in lignes:
-            try:
-                boisson = BoissonBar.objects.get(pk=int(l['id']))
-                qty     = int(l['qty'])
-                MouvementStockBar.objects.create(
-                    boisson        = boisson,
-                    type_mouvement = 'sortie',
-                    quantite       = qty,
-                    commentaire    = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -'),
-                    utilisateur    = request.user,
-                    serveur        = serveur_obj,
-                )
-            except BoissonBar.DoesNotExist:
-                erreurs_stock.append(f"Article id={l['id']} introuvable")
+        if not stock_live:
+            for l in lignes:
+                try:
+                    boisson = BoissonBar.objects.get(pk=int(l['id']))
+                    qty     = int(l['qty'])
+                    MouvementStockBar.objects.create(
+                        boisson        = boisson,
+                        type_mouvement = 'sortie',
+                        quantite       = qty,
+                        commentaire    = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -'),
+                        utilisateur    = request.user,
+                        serveur        = serveur_obj,
+                    )
+                except BoissonBar.DoesNotExist:
+                    erreurs_stock.append(f"Article id={l['id']} introuvable")
 
         return JsonResponse({
             'ok'            : True,

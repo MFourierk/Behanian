@@ -738,13 +738,18 @@ def update_ligne_quantite(request):
         
         with transaction.atomic():
             prix_unit = ligne.prix_unitaire
-            
+            boisson   = ligne.boisson  # peut être None (ligne cuisine)
+
             if delta > 0:
                 # Ajout (+1)
-                # Check stock Plat
+                # Check stock Plat (cuisine)
                 is_available, error_msg = check_stock_availability(plat, 1)
                 if not is_available: return JsonResponse({'success': False, 'message': error_msg})
-                
+
+                # Check stock Boisson (bar)
+                if boisson and boisson.quantite_stock < 1:
+                    return JsonResponse({'success': False, 'message': f"{boisson.nom} : stock insuffisant ({boisson.quantite_stock} disponible)"})
+
                 # Check stock Accompagnement
                 if ligne.accompagnement:
                      is_acc, acc_err = check_stock_availability(ligne.accompagnement, 1)
@@ -753,33 +758,53 @@ def update_ligne_quantite(request):
                 # Update
                 ligne.quantite += 1
                 ligne.save()
-                
-                # Destock
+
+                # Destock cuisine
                 process_stock_movement(plat, 1, 'sortie', request.user, f"Ajout Restaurant #{commande.id}")
                 if ligne.accompagnement:
                     process_stock_movement(ligne.accompagnement, 1, 'sortie', request.user, f"Ajout Accompagnement #{commande.id}")
-                
+                # Destock boisson bar
+                if boisson:
+                    MouvementStockBar.objects.create(
+                        boisson=boisson, type_mouvement='sortie', quantite=1,
+                        commentaire=f"Ajout Restaurant #{commande.id}",
+                        utilisateur=request.user,
+                    )
+
                 commande.total = float(commande.total) + float(prix_unit)
-                
+
             else:
                 # Retrait (-1)
                 if ligne.quantite > 1:
                     ligne.quantite -= 1
                     ligne.save()
-                    
-                    # Restock
+
+                    # Restock cuisine
                     process_stock_movement(plat, 1, 'entree', request.user, f"Retrait Restaurant #{commande.id}")
                     if ligne.accompagnement:
                         process_stock_movement(ligne.accompagnement, 1, 'entree', request.user, f"Retrait Accompagnement #{commande.id}")
-                         
+                    # Restock boisson bar
+                    if boisson:
+                        MouvementStockBar.objects.create(
+                            boisson=boisson, type_mouvement='entree', quantite=1,
+                            commentaire=f"Retrait Restaurant #{commande.id}",
+                            utilisateur=request.user,
+                        )
+
                     commande.total = float(commande.total) - float(prix_unit)
-                    
+
                 else:
-                    # Suppression complète
+                    # Suppression complète de la ligne
                     process_stock_movement(plat, 1, 'entree', request.user, f"Retrait Restaurant #{commande.id}")
                     if ligne.accompagnement:
                         process_stock_movement(ligne.accompagnement, 1, 'entree', request.user, f"Retrait Accompagnement #{commande.id}")
-                    
+                    if boisson:
+                        MouvementStockBar.objects.create(
+                            boisson=boisson, type_mouvement='entree', quantite=1,
+                            commentaire=f"Retrait Restaurant #{commande.id}",
+                            utilisateur=request.user,
+                        )
+
                     ligne.delete()
                     commande.total = float(commande.total) - float(prix_unit)
 
