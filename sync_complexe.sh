@@ -60,7 +60,40 @@ cd /opt/behanian
 source venv/bin/activate
 python manage.py migrate --noinput >> "$LOG" 2>&1
 
-# 8. Redemarrer Gunicorn
+# 8. Verification post-sync : base non vide
+set +e
+NB_USERS=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost -d behanian_db -t -c "SELECT COUNT(*) FROM auth_user;" 2>/dev/null | tr -d ' \n')
+set -e
+
+if [ -z "$NB_USERS" ] || [ "$NB_USERS" -lt 1 ] 2>/dev/null; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- ALERTE: ${NB_USERS:-0} utilisateur(s) apres sync. Restauration backup precedent..." >> "$LOG"
+
+    # Chercher le backup precedent (exclu celui qu'on vient de creer)
+    BACKUP_PRECEDENT=$(ls -t "$BACKUP_DIR"/backup_*.sql 2>/dev/null | grep -v "^${BACKUP}$" | head -1 || true)
+
+    if [ -n "${BACKUP_PRECEDENT:-}" ] && [ -f "$BACKUP_PRECEDENT" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') --- Restauration depuis : $(basename $BACKUP_PRECEDENT)" >> "$LOG"
+
+        PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost -d behanian_db -c \
+          "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO behanian_user; GRANT ALL ON SCHEMA public TO public;" >> "$LOG" 2>&1 || true
+
+        PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost -d behanian_db \
+          < "$BACKUP_PRECEDENT" >> "$LOG" 2>&1 || true
+
+        python manage.py migrate --noinput >> "$LOG" 2>&1 || true
+
+        set +e
+        NB_FINAL=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost -d behanian_db -t -c "SELECT COUNT(*) FROM auth_user;" 2>/dev/null | tr -d ' \n')
+        set -e
+        echo "$(date '+%Y-%m-%d %H:%M:%S') --- Restauration terminee : ${NB_FINAL:-0} utilisateur(s) restaure(s)" >> "$LOG"
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') --- CRITIQUE: Aucun backup precedent disponible pour restauration!" >> "$LOG"
+    fi
+else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- Verification OK : $NB_USERS utilisateur(s)" >> "$LOG"
+fi
+
+# 9. Redemarrer Gunicorn
 sudo systemctl restart gunicorn
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') --- Sync + backup termines OK" >> "$LOG"
