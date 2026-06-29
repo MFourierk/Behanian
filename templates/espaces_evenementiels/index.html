@@ -371,7 +371,22 @@
         <div class="form-row"><label>Téléphone</label><input type="text" id="resTelephone" placeholder="00 00 00 00"></div>
       </div>
     </div>
-    <div class="form-row"><label>Type d'événement *</label><input type="text" id="resTypeEvenement" placeholder="Conférence, mariage, anniversaire…"></div>
+    <div class="form-row"><label>Type d'événement *</label>
+      <select id="resTypeEvenement">
+        <option value="">— Sélectionner un type —</option>
+        <option value="Mariage">Mariage</option>
+        <option value="Conférence">Conférence</option>
+        <option value="Anniversaire">Anniversaire</option>
+        <option value="Séminaire">Séminaire</option>
+        <option value="Baptême">Baptême</option>
+        <option value="Soirée d'entreprise">Soirée d'entreprise</option>
+        <option value="Gala / Dîner de gala">Gala / Dîner de gala</option>
+        <option value="Réunion">Réunion</option>
+        <option value="Formation">Formation</option>
+        <option value="Fête privée">Fête privée</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
     <div class="form-row">
       <label>Durée *</label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
