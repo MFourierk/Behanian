@@ -1467,9 +1467,8 @@ def api_ajuster_stock_tpe(request):
         boisson_id = int(data['boisson_id'])
         delta      = int(data['delta'])
 
-        boisson = BoissonBar.objects.select_for_update().get(pk=boisson_id)
-
         with transaction.atomic():
+            boisson = BoissonBar.objects.select_for_update().get(pk=boisson_id)
             if delta > 0:
                 if boisson.quantite_stock < delta:
                     return JsonResponse({
@@ -1487,8 +1486,7 @@ def api_ajuster_stock_tpe(request):
                     commentaire='TPE Cave — retrait prévisionnel',
                     utilisateur=request.user,
                 )
-
-        boisson.refresh_from_db()
+            boisson.refresh_from_db()
         return JsonResponse({'ok': True, 'stock': boisson.quantite_stock})
 
     except BoissonBar.DoesNotExist:
