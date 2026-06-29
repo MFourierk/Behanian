@@ -1541,12 +1541,12 @@ function renderTicket() {
         ${nomAcc ? `<div class="ligne-acc">+ ${nomAcc}</div>` : ''}
       </div>
       <div class="qty-ctrl">
-        <button class="qty-btn" onclick="modifierQty(${l.id}, -1)">−</button>
+        <button class="qty-btn" type="button" onclick="modifierQty(${l.id}, -1)">−</button>
         <span class="qty-val">${l.quantite}</span>
-        <button class="qty-btn" onclick="modifierQty(${l.id}, 1)">+</button>
+        <button class="qty-btn" type="button" onclick="modifierQty(${l.id}, 1)">+</button>
       </div>
       <div class="ligne-prix">${formatF(sousTotal)}</div>
-      <button class="btn-del-ligne" onclick="supprimerLigne(${l.id})" title="Supprimer">✕</button>
+      <button class="btn-del-ligne" type="button" onclick="supprimerLigne(${l.id})" title="Supprimer">✕</button>
     </div>`;
   });
 

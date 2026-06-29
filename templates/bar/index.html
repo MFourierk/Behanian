@@ -889,9 +889,9 @@ function renderTicket() {
     return `<div class="ticket-line">
       <div class="tl-nom">${l.nom}<br><small style="opacity:0.45;font-size:0.72rem;">${l.unite}</small></div>
       <div class="tl-ctrl">
-        <button class="tl-qty-btn del" onclick="changerQty(${i}, -1)" title="Retirer">−</button>
+        <button class="tl-qty-btn del" type="button" onclick="changerQty(${l.id}, -1)" title="Retirer">−</button>
         <span class="tl-qty">${l.qty}</span>
-        <button class="tl-qty-btn" onclick="changerQty(${i}, 1)" title="Ajouter">+</button>
+        <button class="tl-qty-btn" type="button" onclick="changerQty(${l.id}, 1)" title="Ajouter">+</button>
       </div>
       <div class="tl-prix">${formatF(l.prix * l.qty)}</div>
     </div>`;
@@ -912,10 +912,12 @@ function renderTicket() {
   });
 }
 
-function changerQty(index, delta) {
+function changerQty(id, delta) {
   const t = tickets[ticketActifId];
-  t.lignes[index].qty += delta;
-  if (t.lignes[index].qty <= 0) t.lignes.splice(index, 1);
+  const idx = t.lignes.findIndex(l => l.id === id);
+  if (idx === -1) return;
+  t.lignes[idx].qty += delta;
+  if (t.lignes[idx].qty <= 0) t.lignes.splice(idx, 1);
   renderTicket();
 }
 

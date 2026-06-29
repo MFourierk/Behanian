@@ -382,7 +382,7 @@ def add_accompagnement_to_ligne(request):
                 'prix': float(l.prix_unitaire),
                 'quantite': l.quantite,
                 'has_acc': bool(l.accompagnement),
-                'plat_id': l.plat.id
+                'plat_id': l.plat.id if l.plat else None
             })
             
         return JsonResponse({
@@ -474,16 +474,16 @@ def supprimer_ligne_commande(request):
                 'nom': nom_affiche,
                 'prix': float(l.prix_unitaire),
                 'quantite': l.quantite,
-                'plat_id': l.plat.id,
+                'plat_id': l.plat.id if l.plat else None,
                 'has_acc': bool(l.accompagnement)
             })
 
         return JsonResponse({
-            'success': True, 
+            'success': True,
             'items': items,
             'total': float(commande.total)
         })
-        
+
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
@@ -757,25 +757,30 @@ def update_ligne_quantite(request):
             if commande.total < 0: commande.total = 0
             commande.save()
 
-        # Retour état
+        # Retour état complet de la commande
         items = []
-        try:
-             # On re-check si la commande existe encore (normalement oui)
-             cmd = Commande.objects.get(id=commande.id)
-             for l in cmd.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-                nom_affiche = (l.get_nom if hasattr(l,"get_nom") else l.nom_article or (l.plat.nom if l.plat else (l.boisson.nom if hasattr(l,"boisson") and l.boisson else "?")))
-                if l.accompagnement:
-                    nom_affiche += f" (+ {l.accompagnement.nom})"
-                items.append({
-                    'id': l.id,
-                    'nom': nom_affiche,
-                    'prix': float(l.prix_unitaire),
-                    'quantite': l.quantite,
-                    'plat_id': l.plat.id,
-                    'has_acc': bool(l.accompagnement)
-                })
-        except Exception:
-             pass
+        cmd = Commande.objects.get(id=commande.id)
+        for l in cmd.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
+            if hasattr(l, 'get_nom') and callable(l.get_nom):
+                nom_affiche = l.get_nom()
+            elif l.nom_article:
+                nom_affiche = l.nom_article
+            elif l.plat:
+                nom_affiche = l.plat.nom
+            elif hasattr(l, 'boisson') and l.boisson:
+                nom_affiche = l.boisson.nom
+            else:
+                nom_affiche = "?"
+            if l.accompagnement:
+                nom_affiche += f" (+ {l.accompagnement.nom})"
+            items.append({
+                'id': l.id,
+                'nom': nom_affiche,
+                'prix': float(l.prix_unitaire),
+                'quantite': l.quantite,
+                'plat_id': l.plat.id if l.plat else None,
+                'has_acc': bool(l.accompagnement)
+            })
             
         return JsonResponse({
             'success': True,
