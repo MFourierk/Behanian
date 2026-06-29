@@ -78,6 +78,11 @@
 .forfait-alerte-item:last-child{margin-bottom:0}
 .forfait-alerte-action{font-size:12px;font-weight:600;color:#dc2626;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:4px 10px;border:1px solid #fca5a5;border-radius:6px;background:white}
 .forfait-alerte-action:hover{background:#fef2f2}
+/* Rupture de stock */
+.art-item.rupture{opacity:.6;background:#fef2f2 !important;cursor:not-allowed}
+.art-item.rupture:hover{background:#fef2f2 !important}
+.art-item.rupture .art-add-btn{background:#dc2626 !important;cursor:not-allowed}
+.badge-rupture{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;margin-left:5px;text-transform:uppercase;letter-spacing:.5px}
 /* Substitution inline */
 .sub-select{width:100%;padding:6px 10px;border:1.5px solid #2563eb;border-radius:7px;font-size:12px;color:#1a2535;background:white;cursor:pointer;margin-top:5px}
 .sub-ok-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#15803d;background:#f0fdf4;padding:3px 8px;border-radius:6px;border:1px solid #bbf7d0;margin-top:4px}
@@ -370,13 +375,17 @@
         <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchBoisson" oninput="filtrerB(null,null)" placeholder="Rechercher..."></div>
         <div id="listBoisson">
           {% for b in boissons %}
-          <div class="art-item" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" onclick="ajouterAuPanier(this)">
-            <div style="flex:1"><div class="art-nom">{{ b.nom }}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
+          <div class="art-item{% if b.quantite_stock == 0 %} rupture{% endif %}" data-id="{{ b.id }}" data-type="boisson" data-cat="{{ b.categorie.nom }}" data-prix="{{ b.prix|floatformat:0 }}" data-nom="{{ b.nom|escapejs }}" data-stock="{{ b.quantite_stock }}" onclick="ajouterAuPanier(this)">
+            <div style="flex:1"><div class="art-nom">{{ b.nom }}{% if b.quantite_stock == 0 %}<span class="badge-rupture">RUPTURE</span>{% endif %}</div><div class="art-cat">{{ b.categorie.nom }}</div></div>
             <div style="text-align:right;flex-shrink:0">
               <div class="art-prix">{{ b.prix|montant }} F</div>
+              {% if b.quantite_stock == 0 %}
+              <div class="art-stock low">Épuisé</div>
+              {% else %}
               <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
+              {% endif %}
             </div>
-            <div class="art-add-btn">＋</div>
+            <div class="art-add-btn">{% if b.quantite_stock == 0 %}✕{% else %}＋{% endif %}</div>
           </div>{% endfor %}
         </div>
       </div>
@@ -973,7 +982,25 @@ function filtrerP(btn,cat){
   });
 }
 
+function piscineRuptureAlerte(nom){
+  const existing=document.getElementById('rupture-modal-overlay');
+  if(existing) existing.remove();
+  const ov=document.createElement('div');
+  ov.id='rupture-modal-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:center;justify-content:center';
+  const box=document.createElement('div');
+  box.style.cssText='background:white;border:3px solid #dc2626;border-radius:16px;padding:28px 32px;text-align:center;box-shadow:0 20px 60px rgba(220,38,38,.35);min-width:280px;max-width:360px';
+  box.innerHTML=`<div style="font-size:2.4rem;margin-bottom:10px">⛔</div><div style="font-size:17px;font-weight:700;color:#dc2626;margin-bottom:8px">Rupture de stock</div><div style="font-size:14px;color:#7f1d1d;margin-bottom:20px"><strong>${nom}</strong> n'est plus disponible. Veuillez avertir le client.</div><button style="padding:10px 28px;background:#dc2626;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px" onclick="document.getElementById('rupture-modal-overlay').remove()">Compris</button>`;
+  ov.appendChild(box);
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+
 function ajouterAuPanier(el){
+  if(el.classList.contains('rupture')){
+    piscineRuptureAlerte(el.dataset.nom);
+    return;
+  }
   const type=el.dataset.type;
   const id=el.dataset.id;
   const nom=el.dataset.nom;
@@ -999,7 +1026,7 @@ function renderPanier(){
     const inP=panier.find(x=>x.type===el.dataset.type&&x.id===el.dataset.id);
     el.classList.toggle('in-panier', !!inP);
     const btn=el.querySelector('.art-add-btn');
-    if(btn) btn.textContent=inP?'×'+inP.qty:'＋';
+    if(btn) btn.textContent=inP?'×'+inP.qty:(el.classList.contains('rupture')?'✕':'＋');
   });
 
   count.textContent=panier.length;

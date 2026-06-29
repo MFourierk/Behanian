@@ -18,9 +18,13 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--type',
-            choices=['partiel', 'complet'],
+            choices=['partiel', 'stocks', 'complet'],
             default='partiel',
-            help="Type de remise : partiel (transactions seulement) ou complet (tout sauf structure)."
+            help=(
+                "partiel : supprime les transactions, conserve stocks et articles. "
+                "stocks  : supprime les mouvements ET remet les quantités à 0, conserve articles/prix. "
+                "complet : supprime tout sauf infrastructure physique et superusers."
+            )
         )
         parser.add_argument(
             '--yes',
@@ -46,6 +50,14 @@ class Command(BaseCommand):
                 "   • Tout le référentiel (articles, plats, boissons, utilisateurs…)\n"
                 "   Ne conserve que l'infrastructure physique et les superusers.\n"
             ))
+        elif type_reset == 'stocks':
+            self.stdout.write(self.style.WARNING(
+                "\n📦 La remise STOCKS va supprimer :\n"
+                "   • Tous les mouvements (BC, BR, inventaires, casses, entrées/sorties)\n"
+                "   • Toutes les transactions (commandes, réservations, tickets…)\n"
+                "   • Remettre toutes les quantités à 0\n"
+                "   ✅ Conserve : articles, boissons, ingrédients et leurs PRIX\n"
+            ))
         else:
             self.stdout.write(self.style.WARNING(
                 "\n📋 La remise PARTIELLE va supprimer :\n"
@@ -55,11 +67,11 @@ class Command(BaseCommand):
             ))
 
         if not auto_yes:
+            mots = {'complet': 'RESET TOTAL', 'stocks': 'RESET STOCKS', 'partiel': 'CONFIRMER'}
             confirm = input(
-                f"\nConfirmez la remise {type_reset} ? Saisissez "
-                f"{'RESET TOTAL' if type_reset == 'complet' else 'CONFIRMER'} : "
+                f"\nConfirmez la remise {type_reset} ? Saisissez {mots[type_reset]} : "
             )
-            expected = 'RESET TOTAL' if type_reset == 'complet' else 'CONFIRMER'
+            expected = mots[type_reset]
             if confirm.strip().upper() != expected:
                 raise CommandError("Confirmation incorrecte. Opération annulée.")
 
@@ -75,6 +87,9 @@ class Command(BaseCommand):
             self.stdout.write("\n⏳ Backup en cours…")
             if type_reset == 'partiel':
                 _, backup_path = reset_partiel(user=superuser)
+            elif type_reset == 'stocks':
+                from dashboard.reset_actions import reset_stocks
+                _, backup_path = reset_stocks(user=superuser)
             else:
                 _, backup_path = reset_complet(user=superuser)
 

@@ -565,6 +565,43 @@ def reset_partiel(user=None):
         raise
 
 
+# ── Remise Stocks (mouvements effacés + quantités à 0, articles conservés) ───
+
+def reset_stocks(user=None):
+    """
+    Remet à zéro les mouvements ET les quantités de stock.
+    Conserve : utilisateurs, référentiel complet (articles, boissons, ingrédients,
+               plats, fiches techniques, tarifs, chambres, tables…) et leurs prix.
+    Supprime  : BC, BR, mouvements, inventaires, casses pour Cave et Cuisine.
+                Transactions de tous les autres modules (commandes, réservations,
+                tickets, sessions caisse…).
+    Remet     : quantite_stock → 0 pour BoissonBar et Ingredient.
+                cmup → 0 pour Ingredient.
+    """
+    counts_avant = get_counts()
+    backup_path  = backup_json('stocks', user)
+
+    selection = {
+        'facturation': True,
+        'caisse':      True,
+        'hotel':       True,
+        'restaurant':  True,
+        'cave':        ['mouvements', 'commandes', 'receptions', 'inventaires', 'casses', 'stocks'],
+        'cuisine':     ['mouvements', 'commandes', 'receptions', 'inventaires', 'casses', 'stocks'],
+        'piscine':     True,
+        'espaces':     True,
+        'boite_nuit':  True,
+    }
+
+    try:
+        reset_modules(selection)
+        journal_reset('stocks', user, selection, counts_avant, backup_path, succes=True)
+        return True, backup_path
+    except Exception as e:
+        journal_reset('stocks', user, selection, counts_avant, backup_path, succes=False, erreur=str(e))
+        raise
+
+
 # ── Remise Totale (admin Django uniquement) ───────────────────────────────────
 
 def reset_complet(user=None):
