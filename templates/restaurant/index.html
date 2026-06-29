@@ -328,26 +328,51 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   display: flex; align-items: center; gap: 7px;
 }
 
-.tickets-attente {
-  display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 4px;
-  scrollbar-width: none;
+.ticket-tabbar {
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 2px solid rgba(255,255,255,0.10);
+  min-height: 46px; flex-shrink: 0;
 }
-.tickets-attente::-webkit-scrollbar { display: none; }
+.ticket-tabbar-nav {
+  flex-shrink: 0; width: 30px; height: 46px;
+  background: rgba(255,255,255,0.06);
+  border: none; border-right: 1px solid rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.55); font-size: 20px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.ticket-tabbar-nav.nav-right { border-right: none; border-left: 1px solid rgba(255,255,255,0.10); }
+.ticket-tabbar-nav:hover { background: rgba(255,255,255,0.13); color: white; }
+.tickets-attente {
+  flex: 1; display: flex; gap: 6px; overflow-x: hidden; padding: 6px 8px;
+}
 .ticket-attente-btn {
-  flex-shrink: 0; padding: 5px 12px;
-  background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35);
+  flex-shrink: 0; padding: 5px 8px 5px 12px;
+  background: rgba(201,168,76,0.12); border: 1.5px solid rgba(201,168,76,0.35);
   color: var(--cave-gold); border-radius: 20px; font-size: 0.72rem;
   font-weight: 700; cursor: pointer; transition: all 0.2s;
   font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 5px;
+  max-width: 180px; overflow: hidden;
 }
-.ticket-attente-btn:hover { background: rgba(201,168,76,0.28); }
+.ticket-attente-btn:hover { background: rgba(201,168,76,0.25); }
 .ticket-attente-btn.active { background: var(--cave-gold); color: var(--cave-deep); }
+.ticket-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+.ticket-close {
+  flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(255,255,255,0.18); border: none; color: rgba(255,255,255,0.75);
+  font-size: 12px; cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center; line-height: 1;
+  transition: all 0.15s;
+}
+.ticket-attente-btn.active .ticket-close { background: rgba(26,18,37,0.25); color: var(--cave-deep); }
+.ticket-close:hover { background: rgba(220,38,38,0.8) !important; color: white !important; }
 .btn-new-ticket {
-  flex-shrink: 0; padding: 5px 12px;
+  flex-shrink: 0; padding: 5px 12px; margin-right: 6px;
   background: rgba(255,255,255,0.07); border: 1.5px dashed rgba(255,255,255,0.2);
   color: rgba(255,255,255,0.55); border-radius: 20px; font-size: 0.72rem;
   font-weight: 600; cursor: pointer; transition: all 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
 }
 .btn-new-ticket:hover { border-color: var(--cave-gold); color: var(--cave-gold); }
 
@@ -829,10 +854,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         </div>
       </div>
 
-      <div class="tickets-attente" id="ticketsAttente">
-        <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
-          <i class="fas fa-circle" style="font-size:0.5rem;"></i> T-001
-        </button>
+      <div class="ticket-tabbar">
+        <button class="ticket-tabbar-nav" onclick="scrollTabBar(-140)">&#8249;</button>
+        <div class="tickets-attente" id="ticketsAttente">
+          <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
+            <span class="ticket-label"><i class="fas fa-circle" style="font-size:0.5rem;"></i>&thinsp;T-001</span>
+            <span class="ticket-close" onclick="supprimerTicket(1, event)">&#215;</span>
+          </button>
+        </div>
+        <button class="ticket-tabbar-nav nav-right" onclick="scrollTabBar(140)">&#8250;</button>
         <button class="btn-new-ticket" onclick="nouveauTicket()">+ Nouveau</button>
       </div>
     </div>
@@ -895,6 +925,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 </div><!-- /tpe-wrap -->
 
 <!-- ========== MODAL ========== -->
+<!-- MODAL ALERTE CHANGEMENT TICKET -->
+<div class="modal-overlay" id="modalChangement" style="z-index:99997">
+  <div class="modal-box" style="max-width:360px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+    <div class="modal-title" style="font-size:1.1rem;margin-bottom:8px">Ticket en cours</div>
+    <div class="modal-subtitle" style="margin-bottom:22px">Des articles sont en cours sur ce ticket.<br>Que souhaitez-vous faire ?</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="_executerApresAlerte('attente')" style="padding:13px;border-radius:10px;background:rgba(201,168,76,0.15);border:1.5px solid rgba(201,168,76,0.4);color:var(--cave-gold);font-size:0.88rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="fas fa-pause-circle"></i> Mettre en attente &amp; continuer
+      </button>
+      <button onclick="_fermerAlerteChangement()" style="padding:13px;border-radius:10px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:0.88rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+        Annuler — rester sur ce ticket
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CHOIX CHAMBRE/PAIEMENT -->
 <div class="modal-overlay" id="modalChoixChambre">
   <div class="modal-box" style="max-width:380px">
@@ -1058,6 +1105,107 @@ function afficherAlerte(msg, callback) {
 }
 function getCookie(name) { const v = document.cookie.match('(^|;) ?'+name+'=([^;]*)(;|$)'); return v?v[2]:null; }
 
+// ── TABBAR NAVIGATION ──
+function scrollTabBar(delta) {
+  const el = document.getElementById('ticketsAttente');
+  if (!el) return;
+  el.style.overflowX = 'scroll';
+  el.scrollLeft = Math.max(0, el.scrollLeft + delta);
+  setTimeout(() => { el.style.overflowX = 'hidden'; }, 50);
+}
+
+// ── ALERTE CHANGEMENT TICKET ──
+let _pendingAction = null;
+function _afficherAlerteChangement(callback) {
+  _pendingAction = callback;
+  document.getElementById('modalChangement').classList.add('open');
+}
+function _fermerAlerteChangement() {
+  _pendingAction = null;
+  document.getElementById('modalChangement').classList.remove('open');
+}
+function _executerApresAlerte(mode) {
+  document.getElementById('modalChangement').classList.remove('open');
+  const action = _pendingAction;
+  _pendingAction = null;
+  if (mode === 'attente') {
+    const t = tickets[ticketActifId];
+    if (t) {
+      majTicketMeta(); t.paiement = modePaiement;
+      _majLabelTicket(ticketActifId);
+    }
+  }
+  if (action) action();
+}
+
+// ── HELPER: mise à jour du label d'un ticket sans écraser le × ──
+function _majLabelTicket(tid) {
+  const t = tickets[tid];
+  const btn = document.querySelector(`.ticket-attente-btn[data-tid="${tid}"]`);
+  if (!btn || !t) return;
+  const label = btn.querySelector('.ticket-label');
+  const total = t.lignes ? t.lignes.reduce((s,l) => s + l.prix * l.quantite, 0) : 0;
+  const txt = `${t.nom}${total > 0 ? ' · ' + formatF(total) : ''}`;
+  if (label) label.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i>&thinsp;${txt}`;
+}
+
+// ── HELPER: créer bouton ticket ──
+function ajouterBoutonTicket(tid, labelHtml) {
+  const container = document.getElementById('ticketsAttente');
+  const btn = document.createElement('button');
+  btn.className = 'ticket-attente-btn';
+  btn.dataset.tid = tid;
+  const spanLabel = document.createElement('span');
+  spanLabel.className = 'ticket-label';
+  spanLabel.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i>&thinsp;${labelHtml}`;
+  const spanClose = document.createElement('span');
+  spanClose.className = 'ticket-close';
+  spanClose.innerHTML = '&#215;';
+  spanClose.onclick = (e) => { e.stopPropagation(); supprimerTicket(tid, e); };
+  btn.appendChild(spanLabel);
+  btn.appendChild(spanClose);
+  btn.onclick = () => chargerTicket(tid);
+  container.appendChild(btn);
+  return btn;
+}
+
+// ── SUPPRIMER TICKET (bouton ×) ──
+async function supprimerTicket(tid, e) {
+  if (e) e.stopPropagation();
+  const t = tickets[tid];
+  if (!t) return;
+  if (t.lignes && t.lignes.length) {
+    if (!confirm(`Annuler le ticket ${t.nom} ?\nCette action est irréversible.`)) return;
+  }
+  if (t.commandeDbId) {
+    try {
+      const r = await fetch("{% url 'restaurant:annuler_commande' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ commande_id: t.commandeDbId, motif: 'Annulation TPE' }),
+      });
+      const d = await r.json();
+      if (!d.success) { toast('❌ ' + d.message, 'error'); return; }
+      if (t.tableId) majTableCard(t.tableId, 'disponible', 0, '');
+    } catch(err) { toast('❌ Erreur réseau', 'error'); return; }
+  }
+  document.querySelector(`.ticket-attente-btn[data-tid="${tid}"]`)?.remove();
+  delete tickets[tid];
+  const remaining = Object.keys(tickets).map(Number);
+  if (!remaining.length) {
+    ticketCounter++;
+    const newTid = ticketCounter;
+    const newNom = `T-${String(newTid).padStart(3,'0')}`;
+    tickets[newTid] = { id:newTid, nom:newNom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+    const btn = ajouterBoutonTicket(newTid, newNom);
+    btn.classList.add('active');
+    _chargerTicketInterne(newTid);
+  } else {
+    _chargerTicketInterne(remaining[remaining.length - 1]);
+  }
+  toast(`🗑 Ticket ${t.nom} supprimé`, 'info');
+}
+
 // ── NAVIGATION VUES ──
 function switchView(btn) {
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
@@ -1075,6 +1223,15 @@ function filtrerTables(q) {
 }
 
 function selectionnerTable(tableId, tableNum, statut) {
+  const t = tickets[ticketActifId];
+  if (t && t.lignes && t.lignes.length && t.tableId !== tableId) {
+    _afficherAlerteChangement(() => _selectionnerTableInterne(tableId, tableNum, statut));
+    return;
+  }
+  _selectionnerTableInterne(tableId, tableNum, statut);
+}
+
+function _selectionnerTableInterne(tableId, tableNum, statut) {
   document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('table-card-' + tableId)?.classList.add('selected');
   tableSelActif = { id: tableId, numero: tableNum };
@@ -1082,7 +1239,6 @@ function selectionnerTable(tableId, tableNum, statut) {
   document.getElementById('tableSelbadge').style.display = 'flex';
   document.getElementById('tableSelLabel').textContent = 'Table ' + tableNum;
 
-  // Stocker dans le ticket actif
   const t = tickets[ticketActifId];
   t.tableId = tableId;
   t.tableNum = tableNum;
@@ -1305,8 +1461,7 @@ function renderTicket() {
   if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
   t.total = total;
 
-  const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
-  if (btn) btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom}${total > 0 ? ' · ' + formatF(total) : ''}`;
+  _majLabelTicket(ticketActifId);
 }
 
 // ── TICKETS ──
@@ -1321,20 +1476,22 @@ function nouveauTicket() {
   const tid = ticketCounter;
   const nom = `T-${String(tid).padStart(3,'0')}`;
   tickets[tid] = { id:tid, nom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
-  ticketActifId = tid; tableSelActif = null;
+  ajouterBoutonTicket(tid, nom);
+  _chargerTicketInterne(tid);
+  tableSelActif = null;
   document.getElementById('tableSelbadge').style.display = 'none';
-  document.getElementById('ticketNum').textContent = nom;
-  const container = document.getElementById('ticketsAttente');
-  const btnNew = container.querySelector('.btn-new-ticket');
-  const btn = document.createElement('button');
-  btn.className = 'ticket-attente-btn'; btn.dataset.tid = tid;
-  btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${nom}`;
-  btn.onclick = () => chargerTicket(tid);
-  container.insertBefore(btn, btnNew);
-  chargerTicket(tid);
 }
 
 function chargerTicket(tid) {
+  const t = tickets[ticketActifId];
+  if (t && t.lignes && t.lignes.length && tid !== ticketActifId) {
+    _afficherAlerteChangement(() => _chargerTicketInterne(tid));
+    return;
+  }
+  _chargerTicketInterne(tid);
+}
+
+function _chargerTicketInterne(tid) {
   ticketActifId = tid;
   document.querySelectorAll('.ticket-attente-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.tid) === tid));
   const t = tickets[tid];
@@ -1383,8 +1540,7 @@ function mettreEnAttente() {
   const t = tickets[ticketActifId];
   if (!t.lignes.length) { toast('❌ Ticket vide', 'error'); return; }
   majTicketMeta(); t.paiement = modePaiement;
-  const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
-  if (btn) btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom} · ${formatF(t.total||0)}`;
+  _majLabelTicket(ticketActifId);
   toast(`⏸ Ticket ${t.nom} mis en attente`, 'info');
   nouveauTicket();
 }
@@ -1427,14 +1583,8 @@ async function chargerCommande(cmdId) {
       lignes:data.commande.items, total:data.commande.total,
       commandeDbId:data.commande.id, paiement:'especes'
     };
-    const container = document.getElementById('ticketsAttente');
-    const btnNew = container.querySelector('.btn-new-ticket');
-    const btn = document.createElement('button');
-    btn.className = 'ticket-attente-btn'; btn.dataset.tid = tid;
-    btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> #${cmdId}`;
-    btn.onclick = () => chargerTicket(tid);
-    container.insertBefore(btn, btnNew);
-    chargerTicket(tid);
+    ajouterBoutonTicket(tid, '#' + cmdId);
+    _chargerTicketInterne(tid);
     switchView(document.querySelector('.nav-tab[data-view="plats"]'));
   } catch(e) { toast('❌ Erreur chargement', 'error'); }
 }
@@ -1626,14 +1776,8 @@ async function confirmerPaiement() {
     const newTid = ticketCounter;
     const newNom = `T-${String(newTid).padStart(3,'0')}`;
     tickets[newTid] = { id:newTid, nom:newNom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
-    const container = document.getElementById('ticketsAttente');
-    const btnNew = container.querySelector('.btn-new-ticket');
-    const newBtn = document.createElement('button');
-    newBtn.className='ticket-attente-btn active'; newBtn.dataset.tid=newTid;
-    newBtn.innerHTML=`<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${newNom}`;
-    newBtn.onclick = () => chargerTicket(newTid);
-    container.insertBefore(newBtn, btnNew);
-    chargerTicket(newTid);
+    ajouterBoutonTicket(newTid, newNom);
+    _chargerTicketInterne(newTid);
     document.getElementById('tableSelbadge').style.display='none';
     tableSelActif = null;
 
@@ -1661,7 +1805,7 @@ function updateRestoClock() {
 }
 setInterval(updateRestoClock, 1000); updateRestoClock();
 
-document.addEventListener('keydown', e => { if(e.key==='Escape') fermerModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') { fermerModal(); _fermerAlerteChangement(); } });
 
 // ── INIT : au démarrage, charger les commandes en cours (comme la Cave) ──
 document.addEventListener('DOMContentLoaded', async function() {
@@ -1675,14 +1819,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       const tid = ticketCounter;
       const label = 'Table {{ cmd.table.numero|escapejs }}';
       tickets[tid] = { id: tid, nom: label, tableId: {{ cmd.table.id }}, tableNum: '{{ cmd.table.numero|escapejs }}', client: data.commande.client || '', serveur: '', lignes: data.commande.items, total: data.commande.total, commandeDbId: {{ cmd.id }}, paiement: 'especes' };
-      const container = document.getElementById('ticketsAttente');
-      const btnNew = container.querySelector('.btn-new-ticket');
-      const btn = document.createElement('button');
-      btn.className = 'ticket-attente-btn';
-      btn.dataset.tid = tid;
-      btn.innerHTML = '<i class="fas fa-circle" style="font-size:0.5rem;"></i> ' + label + ' · ' + formatF(data.commande.total);
-      btn.onclick = () => chargerTicket(tid);
-      container.insertBefore(btn, btnNew);
+      const totalFmt = formatF(data.commande.total);
+      ajouterBoutonTicket(tid, label + ' · ' + totalFmt);
     } catch(e) {}
   })();
   {% endif %}{% endfor %}
