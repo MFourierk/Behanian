@@ -398,10 +398,10 @@
         <div class="search-wrap" style="margin-bottom:8px"><i class="fas fa-search"></i><input class="search-input" id="searchPlat" oninput="filtrerP(null,null)" placeholder="Rechercher..."></div>
         <div id="listPlat">
           {% for p in plats %}
-          <div class="art-item" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
-            <div style="flex:1"><div class="art-nom">{{ p.nom }}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
+          <div class="art-item{% if not p.disponible %} rupture{% endif %}" data-id="{{ p.id }}" data-type="plat" data-cat="{{ p.categorie.nom }}" data-prix="{{ p.prix|floatformat:0 }}" data-nom="{{ p.nom|escapejs }}" onclick="ajouterAuPanier(this)">
+            <div style="flex:1"><div class="art-nom">{{ p.nom }}{% if not p.disponible %}<span class="badge-rupture">RUPTURE</span>{% endif %}</div><div class="art-cat">{{ p.categorie.nom }}</div></div>
             <div style="text-align:right;flex-shrink:0"><div class="art-prix">{{ p.prix|montant }} F</div></div>
-            <div class="art-add-btn">＋</div>
+            <div class="art-add-btn">{% if not p.disponible %}✕{% else %}＋{% endif %}</div>
           </div>{% endfor %}
         </div>
       </div>

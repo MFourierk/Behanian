@@ -68,7 +68,7 @@ def piscine_index(request):
     from restaurant.models import PlatMenu, CategorieMenu
     boissons    = BoissonBar.objects.filter(statut='actif', disponible=True).select_related('categorie').order_by('categorie__nom', 'nom')
     cats_bar    = CategorieBar.objects.order_by('nom')
-    plats       = PlatMenu.objects.filter(disponible=True).select_related('categorie').order_by('categorie__nom', 'nom')
+    plats       = PlatMenu.objects.all().select_related('categorie').order_by('categorie__nom', 'nom')
     cats_resto  = CategorieMenu.objects.exclude(nom__icontains='boisson').order_by('nom')
 
     # Accès du jour avec consommations
