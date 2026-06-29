@@ -200,7 +200,7 @@ def index(request):
     reconciliation = get_reconciliation_jour(today)
 
     context = {
-        'billetage_vals': [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25],
+        'billetage_vals': [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5],
         'today': today,
         'session_active': session_active,
         'is_manager': is_manager,
