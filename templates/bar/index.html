@@ -1069,7 +1069,8 @@ function supprimerTicket(tid, e) {
     if (remaining.length > 0) {
       _chargerTicketInterne(remaining[remaining.length - 1]);
     } else {
-      _creerNouveauTicket(true); // silent : pas de toast lors d'une annulation
+      ticketCounter = 0; // réinitialiser pour que le prochain soit T-001
+      _creerNouveauTicket(true);
     }
   }
 }

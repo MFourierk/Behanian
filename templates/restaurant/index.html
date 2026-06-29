@@ -1191,13 +1191,11 @@ async function supprimerTicket(tid, e) {
   delete tickets[tid];
   const remaining = Object.keys(tickets).map(Number);
   if (!remaining.length) {
-    ticketCounter++;
-    const newTid = ticketCounter;
-    const newNom = `T-${String(newTid).padStart(3,'0')}`;
-    tickets[newTid] = { id:newTid, nom:newNom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
-    const btn = ajouterBoutonTicket(newTid, newNom);
+    ticketCounter = 1;
+    tickets[1] = { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+    const btn = ajouterBoutonTicket(1, 'T-001');
     btn.classList.add('active');
-    _chargerTicketInterne(newTid);
+    _chargerTicketInterne(1);
   } else {
     _chargerTicketInterne(remaining[remaining.length - 1]);
   }
