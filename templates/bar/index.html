@@ -226,7 +226,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 }
 .tickets-attente::-webkit-scrollbar { display: none; }
 .ticket-attente-btn {
-  flex-shrink: 0; padding: 5px 12px;
+  flex-shrink: 0; padding: 5px 8px 5px 12px;
   background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35);
   color: var(--cave-gold); border-radius: 20px; font-size: 0.72rem;
   font-weight: 700; cursor: pointer; transition: all 0.2s;
@@ -236,6 +236,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .ticket-attente-btn.active {
   background: var(--cave-gold); color: var(--cave-deep);
 }
+.ticket-close {
+  font-size: 14px; line-height: 1; opacity: 0.45;
+  padding: 1px 3px; border-radius: 4px; transition: all 0.15s;
+}
+.ticket-close:hover { opacity: 1; color: #ff6b6b; background: rgba(255,107,107,0.2); }
 .btn-new-ticket {
   flex-shrink: 0; padding: 5px 12px;
   background: rgba(255,255,255,0.07); border: 1.5px dashed rgba(255,255,255,0.2);
@@ -605,7 +610,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <!-- Tickets en attente -->
       <div class="tickets-attente" id="ticketsAttente">
         <button class="ticket-attente-btn active" data-tid="1" onclick="chargerTicket(1)">
-          <i class="fas fa-circle" style="font-size:0.5rem;"></i> T-001
+          <i class="fas fa-circle" style="font-size:0.5rem;"></i> <span class="ticket-label">T-001</span>
+          <span class="ticket-close" title="Annuler ce ticket" onclick="supprimerTicket(1, event)">×</span>
         </button>
         <button class="btn-new-ticket" onclick="nouveauTicket()">+ Nouveau</button>
       </div>
@@ -907,7 +913,8 @@ function renderTicket() {
   document.querySelectorAll('.ticket-attente-btn').forEach(btn => {
     if (parseInt(btn.dataset.tid) === ticketActifId) {
       const tot = tickets[ticketActifId].lignes.reduce((s, l) => s + l.prix * l.qty, 0);
-      btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${tickets[ticketActifId].nom}${tot > 0 ? ' · ' + formatF(tot) : ''}`;
+      const lbl = btn.querySelector('.ticket-label');
+      if (lbl) lbl.textContent = tickets[ticketActifId].nom + (tot > 0 ? ' · ' + formatF(tot) : '');
     }
   });
 }
@@ -956,9 +963,10 @@ function _creerNouveauTicket() {
   const container = document.getElementById('ticketsAttente');
   const btnNew    = container.querySelector('.btn-new-ticket');
   const btn       = document.createElement('button');
+  btn.type        = 'button';
   btn.className   = 'ticket-attente-btn';
   btn.dataset.tid = tid;
-  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${nom}`;
+  btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> <span class="ticket-label">${nom}</span><span class="ticket-close" title="Annuler ce ticket" onclick="supprimerTicket(${tid}, event)">×</span>`;
   btn.onclick     = () => chargerTicket(tid);
   container.insertBefore(btn, btnNew);
 
@@ -995,6 +1003,24 @@ function _chargerTicketInterne(tid) {
 }
 
 // ═══════════════════════════════════════════
+// SUPPRIMER TICKET (croix ×)
+// ═══════════════════════════════════════════
+function supprimerTicket(tid, e) {
+  e.stopPropagation();
+  document.querySelector(`.ticket-attente-btn[data-tid="${tid}"]`)?.remove();
+  delete tickets[tid];
+  if (ticketActifId === tid) {
+    ticketActifId = null;
+    const remaining = Object.keys(tickets).map(Number);
+    if (remaining.length > 0) {
+      _chargerTicketInterne(remaining[remaining.length - 1]);
+    } else {
+      _creerNouveauTicket();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
 // ALERTE CHANGEMENT CLIENT
 // ═══════════════════════════════════════════
 let _pendingAction = null;
@@ -1026,7 +1052,8 @@ function _executerApresAlerte() {
   if (t) {
     const total = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
     const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
-    if (btn) btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom}` + (total > 0 ? ` · ${formatF(total)}` : '');
+    const lbl = btn?.querySelector('.ticket-label');
+    if (lbl) lbl.textContent = t.nom + (total > 0 ? ` · ${formatF(total)}` : '');
   }
   toast('Commande mise en attente', 'info');
   const action = _pendingAction;
@@ -1046,7 +1073,8 @@ function mettreEnAttente() {
   const btnActif = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
   if (btnActif) {
     const total = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
-    btnActif.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom} · ${formatF(total)}`;
+    const lbl = btnActif.querySelector('.ticket-label');
+    if (lbl) lbl.textContent = `${t.nom} · ${formatF(total)}`;
   }
   toast(`Ticket ${t.nom} mis en attente`, 'info');
   _creerNouveauTicket();
@@ -1285,9 +1313,10 @@ async function confirmerPaiement() {
       const container = document.getElementById('ticketsAttente');
       const btnNew    = container.querySelector('.btn-new-ticket');
       const btn       = document.createElement('button');
+      btn.type        = 'button';
       btn.className   = 'ticket-attente-btn active';
       btn.dataset.tid = newTid;
-      btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${newNom}`;
+      btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler ce ticket" onclick="supprimerTicket(${newTid}, event)">×</span>`;
       btn.onclick     = () => chargerTicket(newTid); // newTid capturé
       container.insertBefore(btn, btnNew);
       chargerTicket(newTid);
