@@ -105,11 +105,43 @@ class Commande(models.Model):
     table = models.ForeignKey(Table, on_delete=models.CASCADE, verbose_name="Table", null=True, blank=True)
     nom_client = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nom du client")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Total (FCFA)")
-    
-    serveur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Serveur")
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Total brut (FCFA)")
+    remise_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Remise (%)")
+    nb_couverts = models.PositiveSmallIntegerField(default=1, verbose_name="Nombre de couverts")
+
+    # Numérotation fiscale séquentielle (Sprint 2)
+    numero_fiscal = models.CharField(max_length=20, blank=True, null=True, unique=True, verbose_name="N° fiscal (CMD-YYYY-XXXX)")
+    montant_rendu = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Montant rendu (FCFA)")
+    caissier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='encaissements', verbose_name="Caissier (encaissement)")
+
+    serveur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Serveur",
+                                related_name='commandes_serveur')
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
+
+    @property
+    def total_net(self):
+        return float(self.total) * (1 - float(self.remise_pct) / 100)
+
+    def assigner_numero_fiscal(self):
+        """Génère et assigne CMD-YYYY-XXXX si pas encore attribué."""
+        if self.numero_fiscal:
+            return
+        from django.db import transaction as db_transaction
+        from django.db.models import Max
+        with db_transaction.atomic():
+            annee = self.date_creation.year if self.date_creation else timezone.now().year
+            prefixe = f"CMD-{annee}-"
+            max_num = Commande.objects.filter(
+                numero_fiscal__startswith=prefixe
+            ).select_for_update().aggregate(m=Max('numero_fiscal'))['m']
+            if max_num:
+                dernier = int(max_num.split('-')[-1])
+            else:
+                dernier = 0
+            self.numero_fiscal = f"{prefixe}{dernier + 1:04d}"
+            Commande.objects.filter(pk=self.pk).update(numero_fiscal=self.numero_fiscal)
     
     class Meta:
         verbose_name = "Commande"
@@ -129,6 +161,7 @@ class LigneCommande(models.Model):
     quantite = models.IntegerField(default=1, verbose_name="Quantité")
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
     nom_article = models.CharField(max_length=200, blank=True, default='', verbose_name="Nom article")
+    note = models.CharField(max_length=200, blank=True, default='', verbose_name="Note / instructions")
 
     class Meta:
         verbose_name = "Ligne de commande"

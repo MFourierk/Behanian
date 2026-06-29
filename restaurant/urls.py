@@ -14,6 +14,10 @@ urlpatterns = [
     path('ajouter-forfait-commande/', views.ajouter_forfait_commande, name='ajouter_forfait_commande'),
     path('update-ligne-quantite/', views.update_ligne_quantite, name='update_ligne_quantite'),
     path('add-accompagnement-to-ligne/', views.add_accompagnement_to_ligne, name='add_accompagnement_to_ligne'),
+    path('update-note-ligne/', views.update_note_ligne, name='update_note_ligne'),
+    path('set-remise/', views.set_remise_commande, name='set_remise_commande'),
+    path('update-couverts/', views.update_couverts, name='update_couverts'),
+    path('resume-ventes-jour/', views.resume_ventes_jour, name='resume_ventes_jour'),
     path('create-reservation/', views.create_reservation, name='create_reservation'),
     path('update-reservation-status/', views.update_reservation_status, name='update_reservation_status'),
 

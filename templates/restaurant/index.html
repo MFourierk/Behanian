@@ -407,6 +407,88 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .tl-qty  { min-width: 22px; text-align: center; font-size: 0.88rem; font-weight: 700; color: white; }
 .tl-prix { font-size: 0.88rem; font-weight: 700; color: var(--cave-gold); min-width: 70px; text-align: right; }
 
+/* Note ligne */
+.tl-note-btn {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  background: transparent; border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4); font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.tl-note-btn:hover, .tl-note-btn.has-note { border-color: var(--cave-gold); color: var(--cave-gold); background: rgba(201,168,76,0.1); }
+.tl-note-row {
+  display: none; margin: 2px 12px 6px; gap: 6px; align-items: center;
+}
+.tl-note-row.open { display: flex; }
+.tl-note-input {
+  flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; color: white; font-size: 0.78rem; padding: 5px 10px;
+  font-family: 'DM Sans', sans-serif; font-style: italic;
+}
+.tl-note-input:focus { outline: none; border-color: var(--cave-gold); }
+.tl-note-input::placeholder { color: rgba(255,255,255,0.3); }
+.tl-note-save {
+  padding: 5px 10px; border-radius: 8px; background: rgba(201,168,76,0.2);
+  border: 1px solid rgba(201,168,76,0.4); color: var(--cave-gold);
+  font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+
+/* Statut commande badge */
+.statut-cmd-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.5px; text-transform: uppercase; margin-left: 8px;
+}
+.statut-cmd-badge.en_attente    { background: rgba(217,119,6,0.2);   color: #fbbf24; border: 1px solid rgba(217,119,6,0.4); }
+.statut-cmd-badge.en_preparation{ background: rgba(37,99,235,0.2);   color: #60a5fa; border: 1px solid rgba(37,99,235,0.4); }
+.statut-cmd-badge.prete         { background: rgba(22,163,74,0.25);  color: #4ade80; border: 1px solid rgba(22,163,74,0.5); }
+.statut-cmd-badge.servie        { background: rgba(124,58,237,0.2);  color: #c084fc; border: 1px solid rgba(124,58,237,0.4); }
+
+/* Remise */
+.remise-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 8px; padding: 6px 10px;
+  background: rgba(255,255,255,0.04); border-radius: 10px;
+  border: 1px dashed rgba(255,255,255,0.12);
+}
+.remise-label { font-size: 0.75rem; color: rgba(255,255,255,0.5); flex: 1; }
+.remise-input {
+  width: 60px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 7px; color: white; font-size: 0.82rem; font-weight: 700;
+  padding: 4px 8px; text-align: center; font-family: 'DM Sans', sans-serif;
+}
+.remise-input:focus { outline: none; border-color: var(--cave-gold); }
+.remise-apply {
+  padding: 4px 10px; border-radius: 7px; background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.35); color: var(--cave-gold);
+  font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.remise-apply:hover { background: rgba(201,168,76,0.28); }
+.remise-montant { font-size: 0.75rem; color: #4ade80; font-weight: 700; min-width: 60px; text-align: right; }
+
+/* Couverts */
+.couverts-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+}
+.couverts-label { font-size: 0.72rem; color: rgba(255,255,255,0.45); }
+.couverts-btn {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: rgba(255,255,255,0.08); border: none; color: white;
+  font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.couverts-val { font-size: 0.82rem; font-weight: 700; color: white; min-width: 20px; text-align: center; }
+
+/* Quick pay */
+.btn-quick-pay {
+  width: 100%; padding: 9px; margin-bottom: 8px;
+  background: rgba(22,163,74,0.15); border: 1.5px solid rgba(22,163,74,0.35);
+  color: #4ade80; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.2s;
+}
+.btn-quick-pay:hover { background: rgba(22,163,74,0.28); }
+.btn-quick-pay:disabled { opacity: 0.3; pointer-events: none; }
+
 .ticket-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
 .sous-total-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
 .total-row {
@@ -610,6 +692,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <a href="{% url 'restaurant:reservation_list' %}" class="nav-tab" style="text-decoration:none;">
           📅 Réservations
         </a>
+        <button class="nav-tab" data-view="ventes" onclick="switchView(this);chargerResumeVentes()">
+          📊 Ventes du jour
+        </button>
       </div>
     </div>
 
@@ -823,6 +908,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
     </div>
 
+    <!-- ── VUE : RÉSUMÉ VENTES DU JOUR ── -->
+    <div class="view-panel" id="view-ventes">
+      <div style="padding:16px 20px;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h3 style="margin:0;font-size:0.95rem;color:var(--cave-gold);">📊 Ventes du jour</h3>
+          <button onclick="chargerResumeVentes()" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Actualiser</button>
+        </div>
+        <div id="resumeVentesContainer">
+          <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:0.85rem;">Chargement…</div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /panel-catalogue -->
 
   <!-- ========== PANNEAU DROIT — TICKET ========== -->
@@ -833,6 +931,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="btn-mobile-retour" id="btnMobileRetour" onclick="toggleMobilePanel(false)" style="display:none"><i class="fas fa-arrow-left"></i> Catalogue</button>
         <h3><i class="fas fa-receipt" style="font-size:0.9rem;margin-right:6px;"></i>Ticket en cours</h3>
         <span class="ticket-num" id="ticketNum">T-001</span>
+        <span id="statutCmdBadge" class="statut-cmd-badge" style="display:none"></span>
       </div>
 
       <div class="ticket-meta">
@@ -846,6 +945,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <option value="{{ u.get_full_name|default:u.username }}">{{ u.get_full_name|default:u.username }}</option>
           {% endfor %}
         </select>
+        <div class="couverts-row">
+          <span class="couverts-label"><i class="fas fa-user-friends" style="margin-right:4px;"></i>Couverts :</span>
+          <button class="couverts-btn" onclick="changerCouverts(-1)">−</button>
+          <span class="couverts-val" id="couvertsVal">1</span>
+          <button class="couverts-btn" onclick="changerCouverts(1)">+</button>
+        </div>
         <div class="caissier-info">
           <i class="fas fa-user-tie"></i>
           Caissier : <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
@@ -881,10 +986,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <span id="nbArticlesLabel">0 article(s)</span>
         <span id="sousTotal">0 F</span>
       </div>
+      <div class="remise-row" id="remiseRow">
+        <span class="remise-label">Remise&nbsp;:</span>
+        <input type="number" class="remise-input" id="remiseInput" min="0" max="100" step="1" value="0" placeholder="0" onkeydown="if(event.key==='Enter')appliquerRemise()">
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.4);">%</span>
+        <button class="remise-apply" onclick="appliquerRemise()">OK</button>
+        <span class="remise-montant" id="remiseMontant"></span>
+      </div>
       <div class="total-row">
-        <span class="total-label">TOTAL À PAYER</span>
+        <span class="total-label" id="totalLabel">TOTAL À PAYER</span>
         <span class="total-value" id="totalDisplay">0 F</span>
       </div>
+
+      <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
+        <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
+      </button>
 
       <div class="paiement-grid">
         <button class="pay-btn selected" data-mode="especes" onclick="selectPaiement(this)">
@@ -1059,7 +1175,7 @@ const CSRF = '{{ csrf_token }}';
 const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };
 
 // ── STATE ──
-let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null } };
+let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null } };
 let ticketActifId = 1;
 let ticketCounter = 1;
 let modePaiement  = 'especes';
@@ -1192,7 +1308,7 @@ async function supprimerTicket(tid, e) {
   const remaining = Object.keys(tickets).map(Number);
   if (!remaining.length) {
     ticketCounter = 1;
-    tickets[1] = { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+    tickets[1] = { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null };
     const btn = ajouterBoutonTicket(1, 'T-001');
     btn.classList.add('active');
     _chargerTicketInterne(1);
@@ -1316,6 +1432,9 @@ async function _envoyerPlat(platId, nom, prix, accId) {
     if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     t.commandeDbId = data.commande_id;
     t.lignes = data.items; t.total = data.total;
+    if (data.remise_pct !== undefined) t.remise_pct = data.remise_pct;
+    if (data.nb_couverts !== undefined) t.nb_couverts = data.nb_couverts;
+    if (data.statut !== undefined) t.statut = data.statut;
     const card = document.querySelector(`.article-card[data-id="${platId}"]`);
     if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
     renderTicket();
@@ -1350,6 +1469,9 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
     if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     t.commandeDbId = data.commande_id;
     t.lignes = data.items; t.total = data.total;
+    if (data.remise_pct !== undefined) t.remise_pct = data.remise_pct;
+    if (data.nb_couverts !== undefined) t.nb_couverts = data.nb_couverts;
+    if (data.statut !== undefined) t.statut = data.statut;
     renderTicket();
     toast('🍷 ' + nom + ' ajouté au ticket', 'success');
     majTableCard(t.tableId, 'occupee', t.total, t.client);
@@ -1382,6 +1504,9 @@ async function ajouterForfait(forfaitId, nom, prix, enStock) {
     if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     t.commandeDbId = data.commande_id;
     t.lignes = data.items; t.total = data.total;
+    if (data.remise_pct !== undefined) t.remise_pct = data.remise_pct;
+    if (data.nb_couverts !== undefined) t.nb_couverts = data.nb_couverts;
+    if (data.statut !== undefined) t.statut = data.statut;
     renderTicket();
     toast('⭐ ' + nom + ' ajouté au ticket', 'success');
     majTableCard(t.tableId, 'occupee', t.total, t.client);
@@ -1408,7 +1533,12 @@ async function modifierQty(ligneId, delta) {
     const data = await r.json();
     if (!data.success) { toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error'); return; }
     const t = tickets[ticketActifId];
-    if (t) { t.lignes = data.items; t.total = data.total; }
+    if (t) {
+      t.lignes = data.items; t.total = data.total;
+      if (data.remise_pct !== undefined) t.remise_pct = data.remise_pct;
+      if (data.nb_couverts !== undefined) t.nb_couverts = data.nb_couverts;
+      if (data.statut !== undefined) t.statut = data.statut;
+    }
     renderTicket();
   } catch(e) { toast('❌ Erreur réseau', 'error'); }
 }
@@ -1426,7 +1556,13 @@ function renderTicket() {
     document.getElementById('nbArticlesLabel').textContent = '0 article(s)';
     document.getElementById('sousTotal').textContent = '0 F';
     document.getElementById('totalDisplay').textContent = '0 F';
+    document.getElementById('totalLabel').textContent = 'TOTAL À PAYER';
+    document.getElementById('remiseMontant').textContent = '';
+    document.getElementById('remiseInput').value = 0;
+    document.getElementById('couvertsVal').textContent = '1';
     document.getElementById('btnValider').disabled = true;
+    document.getElementById('btnQuickPay').disabled = true;
+    _majStatutBadge(null);
     if (btnAnnuler) btnAnnuler.style.display = 'none';
     return;
   }
@@ -1438,27 +1574,219 @@ function renderTicket() {
     const parts = l.nom.split(' (+ ');
     const nomPlat = parts[0];
     const nomAcc  = parts[1] ? parts[1].replace(')','') : null;
-    return `<div class="ticket-line">
-      <div class="tl-nom">${nomPlat}${nomAcc ? `<br><small style="opacity:0.45;font-size:0.72rem;">+ ${nomAcc}</small>` : ''}</div>
+    const note    = l.note || '';
+    const hasNote = note.length > 0;
+    return `<div class="ticket-line" id="tl-${l.id}">
+      <div class="tl-nom">${nomPlat}${nomAcc ? `<br><small style="opacity:0.45;font-size:0.72rem;">+ ${nomAcc}</small>` : ''}${hasNote ? `<br><small class="tl-note-preview" style="color:rgba(201,168,76,0.7);font-style:italic;font-size:0.72rem;">"${note}"</small>` : ''}</div>
       <div class="tl-ctrl">
         <button class="tl-qty-btn del" onclick="modifierQty(${l.id}, -1)">−</button>
         <span class="tl-qty">${l.quantite}</span>
         <button class="tl-qty-btn" onclick="modifierQty(${l.id}, 1)">+</button>
       </div>
+      <button class="tl-note-btn${hasNote ? ' has-note' : ''}" title="Ajouter une note" onclick="toggleNoteRow(${l.id})"><i class="fas fa-pen-nib" style="font-size:10px;"></i></button>
       <div class="tl-prix">${formatF(l.prix * l.quantite)}</div>
+    </div>
+    <div class="tl-note-row" id="note-row-${l.id}">
+      <input type="text" class="tl-note-input" id="note-input-${l.id}" maxlength="200" placeholder="Instructions, cuisson, allergie…" value="${note.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')saveNoteLigne(${l.id})">
+      <button class="tl-note-save" onclick="saveNoteLigne(${l.id})">✓</button>
     </div>`;
   }).join('');
 
   const nb = t.lignes.reduce((s,l) => s + l.quantite, 0);
   document.getElementById('nbArticlesLabel').textContent = `${nb} article(s)`;
   document.getElementById('sousTotal').textContent = formatF(total);
-  document.getElementById('totalDisplay').textContent = formatF(total);
-  document.getElementById('btnValider').disabled = false;
-  if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
   t.total = total;
+
+  // Remise
+  const remise = t.remise_pct || 0;
+  document.getElementById('remiseInput').value = remise;
+  if (remise > 0) {
+    const montantRemise = total * remise / 100;
+    const totalNet = total - montantRemise;
+    document.getElementById('remiseMontant').textContent = `−${formatF(montantRemise)}`;
+    document.getElementById('totalDisplay').textContent = formatF(totalNet);
+    document.getElementById('totalLabel').textContent = `TOTAL NET (−${remise}%)`;
+    t.totalNet = totalNet;
+  } else {
+    document.getElementById('remiseMontant').textContent = '';
+    document.getElementById('totalDisplay').textContent = formatF(total);
+    document.getElementById('totalLabel').textContent = 'TOTAL À PAYER';
+    t.totalNet = total;
+  }
+
+  // Couverts
+  document.getElementById('couvertsVal').textContent = t.nb_couverts || 1;
+
+  document.getElementById('btnValider').disabled = false;
+  document.getElementById('btnQuickPay').disabled = false;
+  if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
+
+  // Statut
+  _majStatutBadge(t.statut || null);
 
   _majLabelTicket(ticketActifId);
 }
+
+function _majStatutBadge(statut) {
+  const badge = document.getElementById('statutCmdBadge');
+  if (!statut || statut === 'payee' || statut === 'annulee') { badge.style.display = 'none'; return; }
+  const labels = { en_attente:'En attente', en_preparation:'En préparation', prete:'Prête !', servie:'Servie' };
+  const icons  = { en_attente:'fa-clock', en_preparation:'fa-fire', prete:'fa-check-circle', servie:'fa-concierge-bell' };
+  badge.className = `statut-cmd-badge ${statut}`;
+  badge.innerHTML = `<i class="fas ${icons[statut]||'fa-circle'}"></i> ${labels[statut]||statut}`;
+  badge.style.display = 'inline-flex';
+}
+
+function toggleNoteRow(ligneId) {
+  const row = document.getElementById(`note-row-${ligneId}`);
+  if (!row) return;
+  const isOpen = row.classList.contains('open');
+  document.querySelectorAll('.tl-note-row.open').forEach(r => r.classList.remove('open'));
+  if (!isOpen) { row.classList.add('open'); document.getElementById(`note-input-${ligneId}`)?.focus(); }
+}
+
+async function saveNoteLigne(ligneId) {
+  const input = document.getElementById(`note-input-${ligneId}`);
+  if (!input) return;
+  const note = input.value.trim().slice(0, 200);
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) {
+    // Update locale seulement — sera envoyée lors du prochain appel API
+    const l = t?.lignes?.find(x => x.id === ligneId);
+    if (l) { l.note = note; renderTicket(); }
+    return;
+  }
+  try {
+    const r = await fetch("{% url 'restaurant:update_note_ligne' %}", {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ ligne_id: ligneId, note }),
+    });
+    const d = await r.json();
+    if (d.success) {
+      const l = t.lignes.find(x => x.id === ligneId);
+      if (l) { l.note = note; }
+      document.getElementById(`note-row-${ligneId}`)?.classList.remove('open');
+      renderTicket();
+    }
+  } catch(e) { toast('❌ Erreur réseau', 'error'); }
+}
+
+async function appliquerRemise() {
+  const t = tickets[ticketActifId];
+  if (!t) return;
+  const pct = Math.max(0, Math.min(100, parseFloat(document.getElementById('remiseInput').value) || 0));
+  t.remise_pct = pct;
+  if (t.commandeDbId) {
+    try {
+      const r = await fetch("{% url 'restaurant:set_remise_commande' %}", {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ commande_id: t.commandeDbId, remise_pct: pct }),
+      });
+      const d = await r.json();
+      if (!d.success) { toast('❌ Erreur remise', 'error'); return; }
+    } catch(e) { toast('❌ Erreur réseau', 'error'); return; }
+  }
+  renderTicket();
+  if (pct > 0) toast(`✅ Remise de ${pct}% appliquée`, 'success');
+}
+
+async function changerCouverts(delta) {
+  const t = tickets[ticketActifId];
+  if (!t) return;
+  const current = t.nb_couverts || 1;
+  const nb = Math.max(1, current + delta);
+  t.nb_couverts = nb;
+  document.getElementById('couvertsVal').textContent = nb;
+  if (t.commandeDbId) {
+    try {
+      await fetch("{% url 'restaurant:update_couverts' %}", {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ commande_id: t.commandeDbId, nb_couverts: nb }),
+      });
+    } catch(e) {}
+  }
+}
+
+function paiementRapide() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.lignes.length) return;
+  modePaiement = 'especes';
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === 'especes'));
+  const total = t.totalNet !== undefined ? t.totalNet : (t.total || 0);
+  ouvrirModalPaiement();
+  setTimeout(() => {
+    const inp = document.getElementById('montantEncaisse');
+    if (inp) { inp.value = Math.round(total); inp.dispatchEvent(new Event('input')); }
+  }, 80);
+}
+
+// ── RÉSUMÉ VENTES DU JOUR ──
+async function chargerResumeVentes() {
+  const c = document.getElementById('resumeVentesContainer');
+  if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:0.85rem;">Chargement…</div>';
+  try {
+    const r = await fetch("{% url 'restaurant:resume_ventes_jour' %}");
+    const d = await r.json();
+    if (!d.success) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Erreur chargement</div>'; return; }
+    const modeIcons = { especes:'💵', carte:'💳', mobile:'📱', chambre:'🛏️' };
+    const modeNoms = { especes:'Espèces', carte:'Carte/TPE', mobile:'Mobile Money', chambre:'Chambre' };
+    let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:14px;">
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-bottom:4px;">COMMANDES</div>
+        <div style="font-size:1.6rem;font-weight:800;color:var(--cave-gold);">${d.nb_commandes}</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:14px;">
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-bottom:4px;">TOTAL NET</div>
+        <div style="font-size:1.3rem;font-weight:800;color:#4ade80;">${formatF(d.total_net)}</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:700;margin-bottom:10px;letter-spacing:0.5px;">PAR MODE DE PAIEMENT</div>
+      ${Object.entries(d.par_mode).length ? Object.entries(d.par_mode).map(([m,v]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:0.82rem;">${modeIcons[m]||'💰'} ${modeNoms[m]||m}</span>
+          <span style="font-size:0.82rem;font-weight:700;color:var(--cave-gold);">${formatF(v)}</span>
+        </div>`).join('') : '<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.8rem;padding:8px;">Aucune vente aujourd\'hui</div>'}
+    </div>
+    ${d.par_caissier.length ? `
+    <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;">
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:700;margin-bottom:10px;letter-spacing:0.5px;">PAR CAISSIER</div>
+      ${d.par_caissier.map(x => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:0.82rem;">👤 ${x.nom} <small style="opacity:0.5;">(${x.nb} cmd)</small></span>
+          <span style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${formatF(x.total)}</span>
+        </div>`).join('')}
+    </div>` : ''}
+    <div style="text-align:center;margin-top:12px;font-size:0.7rem;color:rgba(255,255,255,0.25);">Données du ${d.date}</div>`;
+    if (c) c.innerHTML = html;
+  } catch(e) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Erreur réseau</div>'; }
+}
+
+// ── POLLING STATUT COMMANDE ──
+let _statutPollTimer = null;
+function _demarrerPollStatut() {
+  _stopperPollStatut();
+  _statutPollTimer = setInterval(_pollStatutCommande, 20000);
+}
+function _stopperPollStatut() {
+  if (_statutPollTimer) { clearInterval(_statutPollTimer); _statutPollTimer = null; }
+}
+async function _pollStatutCommande() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) return;
+  try {
+    const r = await fetch(`{% url 'restaurant:recuperer_commande_details' 0 %}`.replace('0', t.commandeDbId));
+    const data = await r.json();
+    if (data.success && data.commande.statut !== t.statut) {
+      t.statut = data.commande.statut;
+      _majStatutBadge(t.statut);
+      if (t.statut === 'prete') toast('🍽️ Commande prête à servir !', 'success');
+    }
+  } catch(e) {}
+}
+// Démarrer le polling
+_demarrerPollStatut();
 
 // ── TICKETS ──
 function majTicketMeta() {
@@ -1471,7 +1799,7 @@ function nouveauTicket() {
   ticketCounter++;
   const tid = ticketCounter;
   const nom = `T-${String(tid).padStart(3,'0')}`;
-  tickets[tid] = { id:tid, nom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+  tickets[tid] = { id:tid, nom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null };
   ajouterBoutonTicket(tid, nom);
   _chargerTicketInterne(tid);
   tableSelActif = null;
@@ -1554,8 +1882,10 @@ async function chargerCommandeParTable(tableId) {
       if (data.success && data.commande.table_id == tableId) {
         const t = tickets[ticketActifId];
         t.commandeDbId = data.commande.id;
-        t.lignes = data.commande.items;
-        t.total  = data.commande.total;
+        t.lignes = data.commande.items; t.total = data.commande.total;
+        t.remise_pct = data.commande.remise_pct || 0;
+        t.nb_couverts = data.commande.nb_couverts || 1;
+        t.statut = data.commande.statut || null;
         if (data.commande.client) { t.client = data.commande.client; document.getElementById('inputClient').value = t.client; }
         renderTicket();
         toast('📋 Commande en cours chargée', 'info');
@@ -1577,7 +1907,9 @@ async function chargerCommande(cmdId) {
       tableId:data.commande.table_id, tableNum:null,
       client:data.commande.client||'', serveur:'',
       lignes:data.commande.items, total:data.commande.total,
-      commandeDbId:data.commande.id, paiement:'especes'
+      commandeDbId:data.commande.id, paiement:'especes',
+      remise_pct:data.commande.remise_pct||0, nb_couverts:data.commande.nb_couverts||1,
+      statut:data.commande.statut||null
     };
     ajouterBoutonTicket(tid, '#' + cmdId);
     _chargerTicketInterne(tid);
@@ -1610,7 +1942,11 @@ function selectPaiement(btn) {
   btn.classList.add('selected');
 }
 
-function getTotal() { return tickets[ticketActifId]?.lignes?.reduce((s,l) => s + l.prix * l.quantite, 0) || 0; }
+function getTotal() {
+  const t = tickets[ticketActifId];
+  const brut = t?.lignes?.reduce((s,l) => s + l.prix * l.quantite, 0) || 0;
+  return (t?.remise_pct > 0) ? brut * (1 - t.remise_pct / 100) : brut;
+}
 
 function ouvrirModalPaiement() {
   const t = tickets[ticketActifId];

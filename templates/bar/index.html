@@ -349,6 +349,40 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .btn-valider:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.5); }
 .btn-valider:disabled { opacity: 0.35; pointer-events: none; }
 
+/* Remise */
+.remise-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 8px; padding: 6px 10px;
+  background: rgba(255,255,255,0.04); border-radius: 10px;
+  border: 1px dashed rgba(255,255,255,0.12);
+}
+.remise-label { font-size: 0.75rem; color: rgba(255,255,255,0.5); flex: 1; }
+.remise-input {
+  width: 60px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 7px; color: white; font-size: 0.82rem; font-weight: 700;
+  padding: 4px 8px; text-align: center; font-family: 'DM Sans', sans-serif;
+}
+.remise-input:focus { outline: none; border-color: var(--cave-gold); }
+.remise-apply {
+  padding: 4px 10px; border-radius: 7px; background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.35); color: var(--cave-gold);
+  font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.remise-apply:hover { background: rgba(201,168,76,0.28); }
+.remise-montant { font-size: 0.75rem; color: #4ade80; font-weight: 700; min-width: 60px; text-align: right; }
+
+/* Quick pay */
+.btn-quick-pay {
+  width: 100%; padding: 9px; margin-bottom: 8px;
+  background: rgba(22,163,74,0.15); border: 1.5px solid rgba(22,163,74,0.35);
+  color: #4ade80; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.2s;
+}
+.btn-quick-pay:hover { background: rgba(22,163,74,0.28); }
+.btn-quick-pay:disabled { opacity: 0.3; pointer-events: none; }
+
 /* Bouton mettre en attente */
 .btn-attente {
   width: 100%; padding: 9px; margin-bottom: 8px;
@@ -659,8 +693,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <span id="nbArticlesLabel">0 article(s)</span>
         <span id="sousTotal">0 F</span>
       </div>
+      <div class="remise-row" id="remiseRow">
+        <span class="remise-label">Remise&nbsp;:</span>
+        <input type="number" class="remise-input" id="remiseInput" min="0" max="100" step="1" value="0" placeholder="0" onkeydown="if(event.key==='Enter')appliquerRemise()">
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.4);">%</span>
+        <button class="remise-apply" onclick="appliquerRemise()">OK</button>
+        <span class="remise-montant" id="remiseMontant"></span>
+      </div>
       <div class="total-row">
-        <span class="total-label">TOTAL À PAYER</span>
+        <span class="total-label" id="totalLabel">TOTAL À PAYER</span>
         <span class="total-value" id="totalDisplay">0 F</span>
       </div>
 
@@ -690,6 +731,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </button>
       <button class="btn-attente" onclick="mettreEnAttente()">
         <i class="fas fa-pause-circle"></i> Mettre en attente
+      </button>
+      <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
+        <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
       </button>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Valider le paiement
@@ -816,7 +860,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 // STATE
 // ============================================================
 let tickets = {
-  1: { id: 1, nom: 'T-001', espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes' }
+  1: { id: 1, nom: 'T-001', espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes', remise_pct: 0 }
 };
 let ticketActifId = 1;
 let ticketCounter = 1;
@@ -927,7 +971,11 @@ function renderTicket() {
     document.getElementById('nbArticlesLabel').textContent = '0 article(s)';
     document.getElementById('sousTotal').textContent = '0 F';
     document.getElementById('totalDisplay').textContent = '0 F';
+    document.getElementById('totalLabel').textContent = 'TOTAL À PAYER';
+    document.getElementById('remiseMontant').textContent = '';
+    document.getElementById('remiseInput').value = 0;
     document.getElementById('btnValider').disabled = true;
+    document.getElementById('btnQuickPay').disabled = true;
     return;
   }
 
@@ -949,17 +997,58 @@ function renderTicket() {
   const nb = t.lignes.reduce((s, l) => s + l.qty, 0);
   document.getElementById('nbArticlesLabel').textContent = `${nb} article(s)`;
   document.getElementById('sousTotal').textContent = formatF(total);
-  document.getElementById('totalDisplay').textContent = formatF(total);
+  t.total = total;
+
+  // Remise
+  const remise = t.remise_pct || 0;
+  document.getElementById('remiseInput').value = remise;
+  if (remise > 0) {
+    const montantRemise = total * remise / 100;
+    const totalNet = total - montantRemise;
+    document.getElementById('remiseMontant').textContent = `−${formatF(montantRemise)}`;
+    document.getElementById('totalDisplay').textContent = formatF(totalNet);
+    document.getElementById('totalLabel').textContent = `TOTAL NET (−${remise}%)`;
+    t.totalNet = totalNet;
+  } else {
+    document.getElementById('remiseMontant').textContent = '';
+    document.getElementById('totalDisplay').textContent = formatF(total);
+    document.getElementById('totalLabel').textContent = 'TOTAL À PAYER';
+    t.totalNet = total;
+  }
+
   document.getElementById('btnValider').disabled = false;
+  document.getElementById('btnQuickPay').disabled = false;
 
   // Maj badge tickets en attente
   document.querySelectorAll('.ticket-attente-btn').forEach(btn => {
     if (parseInt(btn.dataset.tid) === ticketActifId) {
-      const tot = tickets[ticketActifId].lignes.reduce((s, l) => s + l.prix * l.qty, 0);
       const lbl = btn.querySelector('.ticket-label');
-      if (lbl) lbl.textContent = tickets[ticketActifId].nom + (tot > 0 ? ' · ' + formatF(tot) : '');
+      if (lbl) lbl.textContent = tickets[ticketActifId].nom + (total > 0 ? ' · ' + formatF(t.totalNet || total) : '');
     }
   });
+}
+
+function appliquerRemise() {
+  const t = tickets[ticketActifId];
+  if (!t) return;
+  const pct = Math.max(0, Math.min(100, parseFloat(document.getElementById('remiseInput').value) || 0));
+  t.remise_pct = pct;
+  renderTicket();
+  if (pct > 0) toast(`✅ Remise de ${pct}% appliquée`, 'success');
+}
+
+function paiementRapide() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.lignes.length) return;
+  modePaiement = 'especes';
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === 'especes'));
+  t.paiement = 'especes';
+  const total = t.totalNet !== undefined ? t.totalNet : (t.total || 0);
+  ouvrirModalPaiement();
+  setTimeout(() => {
+    const inp = document.getElementById('montantEncaisse');
+    if (inp) { inp.value = Math.round(total); inp.dispatchEvent(new Event('input')); }
+  }, 80);
 }
 
 async function changerQty(id, delta) {
@@ -1007,7 +1096,7 @@ function _creerNouveauTicket(silent = false) {
   ticketCounter++;
   const tid = ticketCounter;
   const nom = `T-${String(tid).padStart(3, '0')}`;
-  tickets[tid] = { id: tid, nom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes' };
+  tickets[tid] = { id: tid, nom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes', remise_pct: 0 };
   ticketActifId = tid;
 
   const container = document.getElementById('ticketsAttente');
@@ -1146,7 +1235,9 @@ function selectPaiement(btn) {
 }
 
 function getTotal() {
-  return tickets[ticketActifId].lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+  const t = tickets[ticketActifId];
+  const brut = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+  return t.remise_pct > 0 ? brut * (1 - t.remise_pct / 100) : brut;
 }
 
 const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };

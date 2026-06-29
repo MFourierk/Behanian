@@ -134,6 +134,11 @@ def valider_commande(request):
 
             with transaction.atomic():
                 commande.statut = 'payee'
+                # Caissier = utilisateur connecté
+                commande.caissier = request.user
+                # Montant rendu
+                total_net = commande.total_net
+                commande.montant_rendu = max(Decimal('0'), montant_encaisse - Decimal(str(total_net)))
                 # Sauvegarder le serveur sélectionné dans la commande
                 if serveur_nom:
                     from django.contrib.auth.models import User as AuthUser
@@ -145,6 +150,8 @@ def valider_commande(request):
                     if srv:
                         commande.serveur = srv
                 commande.save()
+                # Numérotation fiscale séquentielle
+                commande.assigner_numero_fiscal()
                 
                 if commande.table:
                     commande.table.statut = 'disponible'
@@ -436,16 +443,7 @@ def recuperer_commande(request, commande_id):
                 'quantite': ligne.quantite,
             })
 
-        return JsonResponse({
-            'success': True,
-            'commande': {
-                'id':       commande.id,
-                'table_id': commande.table.id if commande.table else None,
-                'client':   commande.nom_client,
-                'items':    items,
-                'total':    float(commande.total)
-            }
-        })
+        return JsonResponse({'success': True, 'commande': _serialize_commande(commande)})
     except Commande.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Commande introuvable'})
 
@@ -500,25 +498,11 @@ def supprimer_ligne_commande(request):
                 'commande_annulee': True,
             })
 
-        items = []
-        for l in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            nom_affiche = (l.get_nom if hasattr(l,"get_nom") else l.nom_article or (l.plat.nom if l.plat else (l.boisson.nom if hasattr(l,"boisson") and l.boisson else "?")))
-            if l.accompagnement:
-                nom_affiche += f" (+ {l.accompagnement.nom})"
-            items.append({
-                'id': l.id,
-                'nom': nom_affiche,
-                'prix': float(l.prix_unitaire),
-                'quantite': l.quantite,
-                'plat_id': l.plat.id if l.plat else None,
-                'has_acc': bool(l.accompagnement)
-            })
-
+        data_out = _serialize_commande(commande)
         return JsonResponse({
             'success': True,
-            'items': items,
-            'total': float(commande.total),
             'commande_annulee': False,
+            **data_out,
         })
 
     except Exception as e:
@@ -707,26 +691,9 @@ def ajouter_item_commande(request):
             commande.total = float(commande.total) + float(prix_total_unit)
             commande.save()
             
-        # 5. Retourner l'état complet de la commande pour rafraichissement
-        items = []
-        for l in commande.lignes.all().select_related('plat', 'accompagnement', 'boisson').order_by('id'):
-            nom_affiche = l.get_nom if hasattr(l, 'get_nom') else (l.nom_article or (l.plat.nom if l.plat else '?'))
-            if l.plat and l.accompagnement:
-                nom_affiche += f" (+ {l.accompagnement.nom})"
-            items.append({
-                'id': l.id,
-                'nom': nom_affiche,
-                'prix': float(l.prix_unitaire),
-                'quantite': l.quantite,
-            })
-            
-        return JsonResponse({
-            'success': True,
-            'commande_id': commande.id,
-            'items': items,
-            'total': float(commande.total),
-            'client': commande.nom_client
-        })
+        # 5. Retourner l'état complet
+        data_out = _serialize_commande(commande)
+        return JsonResponse({'success': True, 'commande_id': commande.id, **data_out})
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
@@ -819,39 +786,131 @@ def update_ligne_quantite(request):
             if commande.total < 0: commande.total = 0
             commande.save()
 
-        # Retour état complet de la commande
-        items = []
+        # Retour état complet
         cmd = Commande.objects.get(id=commande.id)
-        for l in cmd.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
-            if hasattr(l, 'get_nom') and callable(l.get_nom):
-                nom_affiche = l.get_nom()
-            elif l.nom_article:
-                nom_affiche = l.nom_article
-            elif l.plat:
-                nom_affiche = l.plat.nom
-            elif hasattr(l, 'boisson') and l.boisson:
-                nom_affiche = l.boisson.nom
-            else:
-                nom_affiche = "?"
-            if l.accompagnement:
-                nom_affiche += f" (+ {l.accompagnement.nom})"
-            items.append({
-                'id': l.id,
-                'nom': nom_affiche,
-                'prix': float(l.prix_unitaire),
-                'quantite': l.quantite,
-                'plat_id': l.plat.id if l.plat else None,
-                'has_acc': bool(l.accompagnement)
-            })
-            
-        return JsonResponse({
-            'success': True,
-            'items': items,
-            'total': float(commande.total)
-        })
+        data_out = _serialize_commande(cmd)
+        return JsonResponse({'success': True, **data_out})
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
+
+def _serialize_commande(commande):
+    """Helper — sérialise une Commande avec tous les champs Sprint1."""
+    items = []
+    for l in commande.lignes.all().select_related('plat', 'accompagnement', 'boisson').order_by('id'):
+        nom = l.get_nom if hasattr(l, 'get_nom') else (l.nom_article or (l.plat.nom if l.plat else '?'))
+        items.append({
+            'id':       l.id,
+            'nom':      nom,
+            'prix':     float(l.prix_unitaire),
+            'quantite': l.quantite,
+            'note':     l.note or '',
+            'plat_id':  l.plat.id if l.plat else None,
+            'has_acc':  bool(l.accompagnement),
+        })
+    return {
+        'id':          commande.id,
+        'table_id':    commande.table.id if commande.table else None,
+        'statut':      commande.statut,
+        'total':       float(commande.total),
+        'remise_pct':  float(commande.remise_pct),
+        'total_net':   commande.total_net,
+        'nb_couverts': commande.nb_couverts,
+        'client':      commande.nom_client or '',
+        'items':       items,
+    }
+
+
+@require_module_access('restaurant')
+@require_POST
+def update_note_ligne(request):
+    """Met à jour la note/instruction d'une ligne."""
+    try:
+        data    = json.loads(request.body)
+        ligne   = get_object_or_404(LigneCommande, id=data['ligne_id'])
+        ligne.note = (data.get('note') or '').strip()[:200]
+        ligne.save(update_fields=['note'])
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@require_module_access('restaurant')
+@require_POST
+def set_remise_commande(request):
+    """Applique une remise % sur la commande."""
+    try:
+        data       = json.loads(request.body)
+        commande   = get_object_or_404(Commande, id=data['commande_id'])
+        pct        = float(data.get('remise_pct', 0))
+        pct        = max(0, min(100, pct))
+        commande.remise_pct = pct
+        commande.save(update_fields=['remise_pct'])
+        return JsonResponse({'success': True, 'remise_pct': pct, 'total_net': commande.total_net})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@require_module_access('restaurant')
+@require_POST
+def update_couverts(request):
+    """Met à jour le nombre de couverts de la commande."""
+    try:
+        data       = json.loads(request.body)
+        commande   = get_object_or_404(Commande, id=data['commande_id'])
+        nb         = max(1, int(data.get('nb_couverts', 1)))
+        commande.nb_couverts = nb
+        commande.save(update_fields=['nb_couverts'])
+        return JsonResponse({'success': True, 'nb_couverts': nb})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@require_module_access('restaurant')
+def resume_ventes_jour(request):
+    """Résumé des ventes du jour pour le TPE restaurant (lecture seule)."""
+    from django.db.models import Sum, Count
+    aujourd_hui = timezone.now().date()
+    commandes = Commande.objects.filter(
+        statut='payee',
+        date_creation__date=aujourd_hui,
+    ).select_related('caissier', 'serveur')
+
+    total_brut = sum(float(c.total) for c in commandes)
+    total_net  = sum(c.total_net for c in commandes)
+    nb_cmd     = commandes.count()
+
+    # Par mode de paiement (lu depuis les tickets facturation)
+    try:
+        from facturation.models import Ticket as TicketCaisse
+        tickets_jour = TicketCaisse.objects.filter(
+            module='restaurant', date_creation__date=aujourd_hui,
+        )
+        par_mode = {}
+        for tk in tickets_jour:
+            m = tk.mode_paiement or 'especes'
+            par_mode[m] = par_mode.get(m, 0) + float(tk.montant_paye or 0)
+    except Exception:
+        par_mode = {}
+
+    # Par caissier
+    par_caissier = {}
+    for c in commandes:
+        nom = c.caissier.get_full_name() or c.caissier.username if c.caissier else 'Inconnu'
+        par_caissier[nom] = par_caissier.get(nom, {'nb': 0, 'total': 0})
+        par_caissier[nom]['nb'] += 1
+        par_caissier[nom]['total'] += c.total_net
+
+    return JsonResponse({
+        'success': True,
+        'date': aujourd_hui.strftime('%d/%m/%Y'),
+        'nb_commandes': nb_cmd,
+        'total_brut': total_brut,
+        'total_net': total_net,
+        'par_mode': par_mode,
+        'par_caissier': [{'nom': k, **v} for k, v in par_caissier.items()],
+    })
 
 
 @require_module_access('restaurant')
@@ -1042,24 +1101,8 @@ def ajouter_boisson_commande(request):
             commande.total = float(commande.total) + float(boisson.prix)
             commande.save()
 
-        # Retourner état complet
-        items = []
-        for l in commande.lignes.all().order_by('id'):
-            nom = l.get_nom
-            items.append({
-                'id':       l.id,
-                'nom':      nom,
-                'prix':     float(l.prix_unitaire),
-                'quantite': l.quantite,
-            })
-
-        return JsonResponse({
-            'success':    True,
-            'commande_id': commande.id,
-            'items':      items,
-            'total':      float(commande.total),
-            'client':     commande.nom_client
-        })
+        data_out = _serialize_commande(commande)
+        return JsonResponse({'success': True, 'commande_id': commande.id, **data_out})
 
     except Exception as e:
         import traceback
@@ -1154,21 +1197,8 @@ def ajouter_forfait_commande(request):
                         utilisateur=request.user
                     )
 
-        items = []
-        for l in commande.lignes.all().order_by('id'):
-            items.append({
-                'id':       l.id,
-                'nom':      l.get_nom,
-                'prix':     float(l.prix_unitaire),
-                'quantite': l.quantite,
-            })
-        return JsonResponse({
-            'success':     True,
-            'commande_id': commande.id,
-            'items':       items,
-            'total':       float(commande.total),
-            'client':      commande.nom_client,
-        })
+        data_out = _serialize_commande(commande)
+        return JsonResponse({'success': True, 'commande_id': commande.id, **data_out})
 
     except Exception as e:
         import traceback
