@@ -221,10 +221,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
 /* Tickets en attente */
 .tickets-attente {
-  display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 4px;
-  scrollbar-width: none;
+  display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 5px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cave-gold) rgba(255,255,255,0.08);
 }
-.tickets-attente::-webkit-scrollbar { display: none; }
+.tickets-attente::-webkit-scrollbar { height: 4px; }
+.tickets-attente::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); border-radius: 2px; }
+.tickets-attente::-webkit-scrollbar-thumb { background: var(--cave-gold); border-radius: 2px; }
 .ticket-attente-btn {
   flex-shrink: 0; padding: 5px 8px 5px 12px;
   background: rgba(201,168,76,0.15); border: 1.5px solid rgba(201,168,76,0.35);
