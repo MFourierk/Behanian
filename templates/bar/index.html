@@ -1619,7 +1619,7 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
     ${ref ? `<div class="meta-row"><span class="meta-label">Réf :</span><span>${ref}</span></div>` : ''}
     <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
     <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
-    <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabels[modePaiement] || modePaiement}</span></div>
+    <div class="meta-row"><span class="meta-label">Règlement :</span><span>${(modePaiement === 'mobile' && mobileMoneyOperateur) ? mobileMoneyOperateur : (modeLabels[modePaiement] || modePaiement)}</span></div>
     <hr class="sep-dash">
 
     <!-- ARTICLES -->
