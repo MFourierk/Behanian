@@ -1,5 +1,21 @@
 from django.db import models
 
+
+class OperateurMobileMoney(models.Model):
+    nom   = models.CharField(max_length=100, verbose_name="Nom de l'opérateur")
+    image = models.ImageField(upload_to='mobile_money/', blank=True, null=True, verbose_name="Logo")
+    ordre = models.PositiveIntegerField(default=0, verbose_name="Ordre d'affichage")
+    actif = models.BooleanField(default=True, verbose_name="Actif")
+
+    class Meta:
+        ordering = ['ordre', 'nom']
+        verbose_name = "Opérateur Mobile Money"
+        verbose_name_plural = "Opérateurs Mobile Money"
+
+    def __str__(self):
+        return self.nom
+
+
 class Coordonnees(models.Model):
     nom_complexe = models.CharField(max_length=255, default="COMPLEXE HOTELIER BEHANIAN")
     adresse = models.CharField(max_length=255, default="Yopougon Beago à 2000m du Palais de justice")

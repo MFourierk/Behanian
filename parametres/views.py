@@ -1,4 +1,5 @@
 from utils.permissions import require_module_access, require_manager, require_chambre_access, _is_responsable_hotel
+from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -856,3 +857,69 @@ def souscription_changer_statut(request, pk):
     sous.statut = statut
     sous.save()
     return JsonResponse({'success': True, 'statut': sous.get_statut_display()})
+
+
+# ── MOBILE MONEY — Opérateurs ────────────────────────────────
+
+@require_manager
+def mobile_money_list(request):
+    from parametres.models import OperateurMobileMoney
+    operateurs = OperateurMobileMoney.objects.all()
+    return render(request, 'parametres/mobile_money_list.html', {'operateurs': operateurs})
+
+
+@require_manager
+def mobile_money_create(request):
+    from parametres.models import OperateurMobileMoney
+    if request.method == 'POST':
+        nom   = request.POST.get('nom', '').strip()
+        ordre = int(request.POST.get('ordre', 0) or 0)
+        actif = request.POST.get('actif') == 'on'
+        if not nom:
+            messages.error(request, "Le nom de l'opérateur est obligatoire.")
+            return redirect('parametres:mobile_money_create')
+        op = OperateurMobileMoney(nom=nom, ordre=ordre, actif=actif)
+        if 'image' in request.FILES:
+            op.image = request.FILES['image']
+        op.save()
+        messages.success(request, f"Opérateur « {nom} » ajouté.")
+        return redirect('parametres:mobile_money_list')
+    return render(request, 'parametres/mobile_money_form.html', {'action': 'Ajouter'})
+
+
+@require_manager
+def mobile_money_update(request, pk):
+    from parametres.models import OperateurMobileMoney
+    op = get_object_or_404(OperateurMobileMoney, pk=pk)
+    if request.method == 'POST':
+        op.nom   = request.POST.get('nom', op.nom).strip()
+        op.ordre = int(request.POST.get('ordre', op.ordre) or 0)
+        op.actif = request.POST.get('actif') == 'on'
+        if 'image' in request.FILES:
+            op.image = request.FILES['image']
+        op.save()
+        messages.success(request, f"Opérateur « {op.nom} » mis à jour.")
+        return redirect('parametres:mobile_money_list')
+    return render(request, 'parametres/mobile_money_form.html', {'action': 'Modifier', 'operateur': op})
+
+
+@require_manager
+def mobile_money_delete(request, pk):
+    from parametres.models import OperateurMobileMoney
+    op = get_object_or_404(OperateurMobileMoney, pk=pk)
+    if request.method == 'POST':
+        nom = op.nom
+        op.delete()
+        messages.success(request, f"Opérateur « {nom} » supprimé.")
+        return redirect('parametres:mobile_money_list')
+    return render(request, 'parametres/mobile_money_confirm_delete.html', {'operateur': op})
+
+
+@require_manager
+@require_POST
+def mobile_money_toggle(request, pk):
+    from parametres.models import OperateurMobileMoney
+    op = get_object_or_404(OperateurMobileMoney, pk=pk)
+    op.actif = not op.actif
+    op.save()
+    return JsonResponse({'success': True, 'actif': op.actif})

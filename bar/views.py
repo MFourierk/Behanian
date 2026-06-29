@@ -1441,13 +1441,18 @@ def bar_tpe(request):
         statut='en_cours'
     ).select_related('client', 'chambre').order_by('chambre__numero')
 
+    # Opérateurs Mobile Money actifs
+    from parametres.models import OperateurMobileMoney
+    operateurs_mobile_money = OperateurMobileMoney.objects.filter(actif=True)
+
     return render(request, 'bar/index.html', {
-        'boissons'         : boissons,
-        'categories'       : categories,
-        'serveurs'         : serveurs,
-        'config'           : config,
-        'page_title'       : 'Cave - Vente TPE',
-        'chambres_occupees': chambres_occupees,
+        'boissons'                 : boissons,
+        'categories'               : categories,
+        'serveurs'                 : serveurs,
+        'config'                   : config,
+        'page_title'               : 'Cave - Vente TPE',
+        'chambres_occupees'        : chambres_occupees,
+        'operateurs_mobile_money'  : operateurs_mobile_money,
     })
 
 

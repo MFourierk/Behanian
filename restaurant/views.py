@@ -1089,6 +1089,10 @@ def restaurant_tpe(request):
         statut='en_cours'
     ).select_related('client', 'chambre').order_by('chambre__numero')
 
+    # Opérateurs Mobile Money actifs
+    from parametres.models import OperateurMobileMoney
+    operateurs_mobile_money = OperateurMobileMoney.objects.filter(actif=True)
+
     # ── Menus VIP (tous modules, disponibles) ──
     from .models import Forfait
     forfaits_qs = Forfait.objects.filter(disponible=True).prefetch_related(
@@ -1131,6 +1135,7 @@ def restaurant_tpe(request):
         'serveurs': serveurs,
         'chambres_occupees': chambres_occupees,
         'forfaits': forfaits,
+        'operateurs_mobile_money': operateurs_mobile_money,
     }
     return render(request, 'restaurant/index.html', context)
 

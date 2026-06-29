@@ -1082,6 +1082,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         </button>
       </div>
 
+      <!-- Sélecteur opérateurs Mobile Money -->
+      <div id="mobileMoneyOps" style="display:none;margin:10px 0 4px;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px">
+        <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Opérateur Mobile Money</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          {% for op in operateurs_mobile_money %}
+          <button type="button" class="mobile-op-btn" data-op="{{ op.nom }}" onclick="selectMobileOp(this)"
+            style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:white;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;font-family:'DM Sans',sans-serif">
+            {% if op.image %}<img src="{{ op.image.url }}" alt="{{ op.nom }}" style="width:24px;height:24px;object-fit:contain;border-radius:5px">{% else %}<i class="fas fa-mobile-alt"></i>{% endif %}
+            {{ op.nom }}
+          </button>
+          {% empty %}
+          <span style="color:#6b7280;font-size:12px">Aucun opérateur — <a href="{% url 'parametres:mobile_money_list' %}" style="color:#60a5fa">configurer</a></span>
+          {% endfor %}
+        </div>
+        <div id="mobileOpSelectedResto" style="display:none;margin-top:8px;padding:5px 10px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);border-radius:8px;font-size:12px;color:#34d399;font-weight:600"></div>
+      </div>
+
       <div id="chambre-liee-badge" style="display:none;padding:7px 12px;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.4);border-radius:8px;font-size:12px;font-weight:600;color:#60a5fa;align-items:center;gap:6px;cursor:pointer" onclick="ouvrirModalLierChambre()">
         <i class="fas fa-bed"></i> <span id="chambre-liee-nom">Ch. ---</span>
         <span onclick="event.stopPropagation();delierChambre()" style="margin-left:4px;opacity:.7;font-size:11px">✕</span>
@@ -2154,11 +2171,31 @@ function majTableCard(tableId, statut, total, clientNom) {
 }
 
 // ── PAIEMENT ──
+let mobileMoneyOperateur = null;
+
 function selectPaiement(btn) {
   modePaiement = btn.dataset.mode;
   tickets[ticketActifId].paiement = modePaiement;
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
+  // Afficher/masquer le sélecteur opérateurs Mobile Money
+  const mobileOps = document.getElementById('mobileMoneyOps');
+  if (mobileOps) mobileOps.style.display = (modePaiement === 'mobile') ? 'block' : 'none';
+  if (modePaiement !== 'mobile') {
+    mobileMoneyOperateur = null;
+    document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor='rgba(255,255,255,0.15)'; b.style.background='rgba(255,255,255,0.07)'; });
+    const sel = document.getElementById('mobileOpSelectedResto');
+    if (sel) sel.style.display = 'none';
+  }
+}
+
+function selectMobileOp(btn) {
+  document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor='rgba(255,255,255,0.15)'; b.style.background='rgba(255,255,255,0.07)'; });
+  btn.style.borderColor = 'rgba(16,185,129,0.6)';
+  btn.style.background  = 'rgba(16,185,129,0.15)';
+  mobileMoneyOperateur = btn.dataset.op;
+  const sel = document.getElementById('mobileOpSelectedResto');
+  if (sel) { sel.style.display='block'; sel.textContent='✓ ' + mobileMoneyOperateur; }
 }
 
 function getTotal() {
@@ -2259,7 +2296,11 @@ async function mettreOnChambre() {
     document.getElementById('confirmChambreMsg').textContent = 'Ajouté à la note de ' + chambreLieeNom;
     document.getElementById('confirmChambreDetail').innerHTML = detail;
     document.getElementById('modalConfirmChambre').classList.add('open');
-    // Reset ticket et liaison
+    // Supprimer l'ancien ticket et créer un nouveau
+    const oldId = ticketActifId;
+    if (t.tableId) majTableCard(t.tableId, 'disponible', 0, '');
+    delete tickets[oldId];
+    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
     delierChambre();
     nouveauTicket();
   } catch(e) { toast('❌ Erreur réseau','error'); }
@@ -2280,6 +2321,10 @@ async function confirmerPaiement() {
   if ((modePaiement==='especes'||modePaiement==='mobile') && montantRecu < total) {
     toast('❌ Montant insuffisant', 'error'); return;
   }
+  // Opérateur Mobile Money obligatoire
+  if (modePaiement === 'mobile' && !mobileMoneyOperateur) {
+    toast('❌ Sélectionnez un opérateur Mobile Money', 'error'); return;
+  }
   // Chambre obligatoire en mode report
   const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
   if (modePaiement === 'chambre' && !reservation_hotel_id) {
@@ -2298,6 +2343,7 @@ async function confirmerPaiement() {
         client: t.client || '',
         serveur: t.serveur || document.getElementById('selectServeur').value || '',
         reservation_hotel_id: chambreLieeId || reservation_hotel_id,
+        operateur_mobile: mobileMoneyOperateur || '',
       })
     });
     const data = await r.json();
@@ -2309,6 +2355,7 @@ async function confirmerPaiement() {
 
     fermerModal();
     delierChambre();
+    mobileMoneyOperateur = null;
     toast(`✅ Commande encaissée — ${formatF(total)}`, 'success');
 
     // Impression ticket thermique

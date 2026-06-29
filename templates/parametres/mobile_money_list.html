@@ -1,0 +1,105 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="font-weight-700 mb-1" style="color:#1a2535"><i class="fas fa-mobile-alt mr-2 text-success"></i> Opérateurs Mobile Money</h4>
+      <p class="text-muted mb-0" style="font-size:13px">Configurez les opérateurs affichés lors du paiement par Mobile Money dans les TPE.</p>
+    </div>
+    <a href="{% url 'parametres:mobile_money_create' %}" class="btn btn-success btn-sm font-weight-600">
+      <i class="fas fa-plus mr-1"></i> Ajouter un opérateur
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+    <div class="alert alert-{{ m.tags }} alert-dismissible fade show" role="alert">
+      {{ m }} <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if operateurs %}
+  <div class="card border-0 shadow-sm" style="border-radius:14px;overflow:hidden">
+    <table class="table mb-0" style="font-size:14px">
+      <thead style="background:#f8fafc">
+        <tr>
+          <th style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;padding:14px 20px">Logo</th>
+          <th style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b7280">Nom</th>
+          <th style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b7280">Ordre</th>
+          <th style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b7280">Statut</th>
+          <th style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#6b7280">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for op in operateurs %}
+        <tr style="border-top:1px solid #f1f3f5">
+          <td style="padding:12px 20px;vertical-align:middle">
+            {% if op.image %}
+            <img src="{{ op.image.url }}" alt="{{ op.nom }}" style="width:48px;height:48px;object-fit:contain;border-radius:10px;border:1px solid #e5e7eb">
+            {% else %}
+            <div style="width:48px;height:48px;border-radius:10px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af">
+              <i class="fas fa-mobile-alt fa-lg"></i>
+            </div>
+            {% endif %}
+          </td>
+          <td style="vertical-align:middle;font-weight:600;color:#1a2535">{{ op.nom }}</td>
+          <td style="vertical-align:middle;color:#6b7280">{{ op.ordre }}</td>
+          <td style="vertical-align:middle">
+            <button type="button" class="btn btn-sm font-weight-600 toggle-btn"
+              data-url="{% url 'parametres:mobile_money_toggle' op.pk %}"
+              data-actif="{{ op.actif|yesno:'true,false' }}"
+              style="border-radius:20px;padding:4px 14px;font-size:12px;border:none;
+                background:{% if op.actif %}rgba(16,185,129,0.15){% else %}rgba(107,114,128,0.15){% endif %};
+                color:{% if op.actif %}#059669{% else %}#6b7280{% endif %}">
+              {% if op.actif %}<i class="fas fa-circle mr-1" style="font-size:7px"></i> Actif{% else %}<i class="fas fa-circle mr-1" style="font-size:7px;opacity:.4"></i> Inactif{% endif %}
+            </button>
+          </td>
+          <td style="vertical-align:middle">
+            <div class="d-flex gap-2" style="gap:8px">
+              <a href="{% url 'parametres:mobile_money_update' op.pk %}" class="btn btn-sm btn-outline-primary" style="border-radius:8px;font-size:12px">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'parametres:mobile_money_delete' op.pk %}" class="btn btn-sm btn-outline-danger" style="border-radius:8px;font-size:12px">
+                <i class="fas fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <div style="font-size:3rem;margin-bottom:16px;opacity:.3"><i class="fas fa-mobile-alt"></i></div>
+    <p class="text-muted">Aucun opérateur configuré.<br>Ajoutez Wave, Orange Money, MTN Money…</p>
+    <a href="{% url 'parametres:mobile_money_create' %}" class="btn btn-success mt-2">
+      <i class="fas fa-plus mr-1"></i> Ajouter le premier opérateur
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="mt-3">
+    <a href="{% url 'parametres:parametres_index' %}" class="text-muted" style="font-size:13px">
+      <i class="fas fa-arrow-left mr-1"></i> Retour aux paramètres
+    </a>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const resp = await fetch(btn.dataset.url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
+    });
+    const data = await resp.json();
+    if (data.success) location.reload();
+  });
+});
+</script>
+{% endblock %}

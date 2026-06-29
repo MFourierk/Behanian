@@ -241,6 +241,25 @@
             </div>
         </div>
 
+        <!-- Mobile Money -->
+        <div class="module-card">
+            <div class="card-icon-wrapper" style="background-color:#e8f5e9;color:#2e7d32">
+                <i class="fas fa-mobile-alt"></i>
+            </div>
+            <div class="text-center">
+                <h5 class="card-title">Mobile Money</h5>
+                <p class="card-text">Configurez les opérateurs (Wave, Orange Money, MTN…) affichés lors du paiement dans les TPE.</p>
+            </div>
+            <div class="btn-action-group">
+                <a href="{% url 'parametres:mobile_money_list' %}" class="btn-glam" style="background-color:#e8f5e9;color:#2e7d32;border-color:#c8e6c9">
+                    <i class="fas fa-list mr-2"></i> Gérer les Opérateurs
+                </a>
+                <a href="{% url 'parametres:mobile_money_create' %}" class="btn-glam" style="background-color:#e8f5e9;color:#2e7d32;border-color:#c8e6c9">
+                    <i class="fas fa-plus mr-2"></i> Ajouter un Opérateur
+                </a>
+            </div>
+        </div>
+
     </div>
   <!-- Menus VIP -->
   <div class="row mb-3">

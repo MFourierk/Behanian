@@ -75,4 +75,11 @@ urlpatterns = [
     path('forfaits/souscriptions/', views.souscription_list, name='souscription_list'),
     path('forfaits/<int:forfait_pk>/lier-client/', views.souscription_create, name='souscription_create'),
     path('forfaits/souscriptions/<int:pk>/statut/', views.souscription_changer_statut, name='souscription_statut'),
+
+    # Mobile Money — opérateurs
+    path('mobile-money/', views.mobile_money_list, name='mobile_money_list'),
+    path('mobile-money/ajouter/', views.mobile_money_create, name='mobile_money_create'),
+    path('mobile-money/<int:pk>/modifier/', views.mobile_money_update, name='mobile_money_update'),
+    path('mobile-money/<int:pk>/supprimer/', views.mobile_money_delete, name='mobile_money_delete'),
+    path('mobile-money/<int:pk>/toggle/', views.mobile_money_toggle, name='mobile_money_toggle'),
 ]
