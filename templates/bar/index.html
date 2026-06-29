@@ -1479,7 +1479,6 @@ async function confirmerPaiement() {
     }
 
     fermerModal();
-    mobileMoneyOperateur = null;
     toast(`<i class="fas fa-check-circle mr-2"></i> Ticket ${data.ticket_numero} — ${formatF(data.total)} validé`, 'success');
 
     // Alertes stock insuffisant
@@ -1491,6 +1490,7 @@ async function confirmerPaiement() {
     //    On passe une copie du ticket pour éviter qu'il soit effacé
     const ticketSnapshot = JSON.parse(JSON.stringify(t));
     imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu);
+    mobileMoneyOperateur = null;
 
     // 2. Seulement après : créer le nouveau ticket vide
     setTimeout(() => {
