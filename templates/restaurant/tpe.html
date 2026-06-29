@@ -1238,7 +1238,16 @@ function filtrerTables(q) {
 }
 
 function selectionnerTable(tableId, tableNum, statut) {
-  // Mettre à jour visuellement
+  const t = tickets[ticketActifId];
+  if (t && t.lignes.length > 0 && t.tableId !== tableId) {
+    _pendingAction = () => _selectionnerTableInterne(tableId, tableNum, statut);
+    _afficherAlerteChangement('Table ' + (t.tableNum || '—'), t.total);
+    return;
+  }
+  _selectionnerTableInterne(tableId, tableNum, statut);
+}
+
+function _selectionnerTableInterne(tableId, tableNum, statut) {
   document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('table-card-' + tableId)?.classList.add('selected');
 
@@ -1246,15 +1255,11 @@ function selectionnerTable(tableId, tableNum, statut) {
   document.getElementById('cmdTableBadge').textContent = 'Table ' + tableNum;
   document.getElementById('cmdTitre').textContent = 'Table ' + tableNum;
 
-  // Si table occupée avec commande → charger
   if (statut === 'occupee') {
     chargerCommandeParTable(tableId);
   } else {
-    // Nouvelle commande vide pour cette table
     nouveauTicketPourTable(tableId, tableNum);
   }
-
-  // Aller sur le catalogue
   switchTab('catalogue');
 }
 
@@ -1286,6 +1291,16 @@ function ajouterBoutonTicket(tid, label) {
 }
 
 function chargerTicket(tid) {
+  const t = tickets[ticketActifId];
+  if (t && t.lignes.length > 0 && tid !== ticketActifId) {
+    _pendingAction = () => _chargerTicketInterne(tid);
+    _afficherAlerteChangement('Table ' + (t.tableNum || '—'), t.total);
+    return;
+  }
+  _chargerTicketInterne(tid);
+}
+
+function _chargerTicketInterne(tid) {
   ticketActifId = tid;
   document.querySelectorAll('.ticket-badge').forEach(b =>
     b.classList.toggle('active', parseInt(b.dataset.tid) === tid)
@@ -1308,6 +1323,36 @@ function syncTicketActif() {
   const t = tickets[ticketActifId];
   t.client  = document.getElementById('inputClient').value;
   t.serveur = document.getElementById('selectServeur').value;
+}
+
+// ═══════════════════════════════════════════
+// ALERTE CHANGEMENT CLIENT
+// ═══════════════════════════════════════════
+let _pendingAction = null;
+
+function _afficherAlerteChangement(nomTicket, total) {
+  document.getElementById('alerteTicketNom').textContent = nomTicket;
+  document.getElementById('alerteTicketTotal').textContent = total > 0 ? ' — ' + formatF(total) : '';
+  document.getElementById('modalChangementClient').classList.add('open');
+}
+
+function _fermerAlerteChangement() {
+  document.getElementById('modalChangementClient').classList.remove('open');
+  _pendingAction = null;
+}
+
+function _executerApresAlerte() {
+  document.getElementById('modalChangementClient').classList.remove('open');
+  syncTicketActif();
+  const t = tickets[ticketActifId];
+  if (t) {
+    const btn = document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`);
+    if (btn) btn.textContent = 'Table ' + (t.tableNum || '—') + (t.total > 0 ? ' · ' + formatF(t.total) : '');
+  }
+  toast('Commande mise en attente', 'info');
+  const action = _pendingAction;
+  _pendingAction = null;
+  if (action) action();
 }
 
 // ═══════════════════════════════════════════
@@ -1786,5 +1831,28 @@ function toast(msg, type = 'info') {
   renderTicket();
 })();
 </script>
+
+<!-- ═══ MODAL ALERTE CHANGEMENT CLIENT ═══ -->
+<div class="modal-overlay" id="modalChangementClient">
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:16px">⚠️</div>
+    <div class="modal-head" style="justify-content:center;border:none">
+      <h3>Commande en cours</h3>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <p>Vous avez une commande en cours pour <strong id="alerteTicketNom">—</strong><span id="alerteTicketTotal"></span>.<br>
+      Que souhaitez-vous faire avant de continuer ?</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 24px 24px">
+      <button type="button" onclick="_executerApresAlerte()" style="padding:13px;background:var(--gold);color:#1a0a00;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.95rem">
+        ⏸ Mettre en attente et continuer
+      </button>
+      <button type="button" onclick="_fermerAlerteChangement()" style="padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:0.9rem">
+        Rester sur cette commande
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 

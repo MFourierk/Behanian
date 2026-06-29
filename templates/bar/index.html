@@ -936,8 +936,19 @@ function majTicketMeta() {
 // TICKETS EN ATTENTE
 // ============================================================
 function nouveauTicket() {
+  const t = tickets[ticketActifId];
+  if (t && t.lignes.length > 0) {
+    const total = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+    _pendingAction = () => _creerNouveauTicket();
+    _afficherAlerteChangement(t.nom, total);
+    return;
+  }
+  _creerNouveauTicket();
+}
+
+function _creerNouveauTicket() {
   ticketCounter++;
-  const tid = ticketCounter; // capturer la valeur locale pour la closure
+  const tid = ticketCounter;
   const nom = `T-${String(tid).padStart(3, '0')}`;
   tickets[tid] = { id: tid, nom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes' };
   ticketActifId = tid;
@@ -948,14 +959,25 @@ function nouveauTicket() {
   btn.className   = 'ticket-attente-btn';
   btn.dataset.tid = tid;
   btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${nom}`;
-  btn.onclick     = () => chargerTicket(tid); // tid capturé correctement
+  btn.onclick     = () => chargerTicket(tid);
   container.insertBefore(btn, btnNew);
 
-  chargerTicket(tid);
+  _chargerTicketInterne(tid);
   toast(`Nouveau ticket ${nom} créé`, 'info');
 }
 
 function chargerTicket(tid) {
+  const t = tickets[ticketActifId];
+  if (t && t.lignes.length > 0 && tid !== ticketActifId) {
+    const total = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+    _pendingAction = () => _chargerTicketInterne(tid);
+    _afficherAlerteChangement(t.nom, total);
+    return;
+  }
+  _chargerTicketInterne(tid);
+}
+
+function _chargerTicketInterne(tid) {
   ticketActifId = tid;
   document.querySelectorAll('.ticket-attente-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.tid) === tid);
@@ -965,12 +987,51 @@ function chargerTicket(tid) {
   document.getElementById('selectEspace').value  = t.espace;
   document.getElementById('inputRef').value      = t.ref;
   document.getElementById('selectServeur').value = t.serveur || '';
-  // Remettre le bon mode de paiement
   modePaiement = t.paiement || 'especes';
   document.querySelectorAll('.pay-btn').forEach(b => {
     b.classList.toggle('selected', b.dataset.mode === modePaiement);
   });
   renderTicket();
+}
+
+// ═══════════════════════════════════════════
+// ALERTE CHANGEMENT CLIENT
+// ═══════════════════════════════════════════
+let _pendingAction = null;
+
+function _syncTicketActif() {
+  if (!ticketActifId || !tickets[ticketActifId]) return;
+  const t = tickets[ticketActifId];
+  t.espace   = document.getElementById('selectEspace').value;
+  t.ref      = document.getElementById('inputRef').value;
+  t.serveur  = document.getElementById('selectServeur').value;
+  t.paiement = modePaiement;
+}
+
+function _afficherAlerteChangement(nomTicket, total) {
+  document.getElementById('alerteTicketNom').textContent = nomTicket;
+  document.getElementById('alerteTicketTotal').textContent = total > 0 ? ' — ' + formatF(total) : '';
+  document.getElementById('modalChangementClient').classList.add('open');
+}
+
+function _fermerAlerteChangement() {
+  document.getElementById('modalChangementClient').classList.remove('open');
+  _pendingAction = null;
+}
+
+function _executerApresAlerte() {
+  document.getElementById('modalChangementClient').classList.remove('open');
+  _syncTicketActif();
+  const t = tickets[ticketActifId];
+  if (t) {
+    const total = t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+    const btn = document.querySelector(`.ticket-attente-btn[data-tid="${ticketActifId}"]`);
+    if (btn) btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom}` + (total > 0 ? ` · ${formatF(total)}` : '');
+  }
+  toast('Commande mise en attente', 'info');
+  const action = _pendingAction;
+  _pendingAction = null;
+  if (action) action();
 }
 
 function mettreEnAttente() {
@@ -988,7 +1049,7 @@ function mettreEnAttente() {
     btnActif.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i> ${t.nom} · ${formatF(total)}`;
   }
   toast(`Ticket ${t.nom} mis en attente`, 'info');
-  nouveauTicket();
+  _creerNouveauTicket();
 }
 
 // ============================================================
@@ -1508,4 +1569,27 @@ document.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('resize', _initMobileUI);
 });
 </script>
+
+<!-- ═══ MODAL ALERTE CHANGEMENT CLIENT ═══ -->
+<div class="modal-overlay" id="modalChangementClient">
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:16px">⚠️</div>
+    <div class="modal-head" style="justify-content:center;border:none">
+      <h3>Commande en cours</h3>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <p>Vous avez une commande en cours pour <strong id="alerteTicketNom">—</strong><span id="alerteTicketTotal"></span>.<br>
+      Que souhaitez-vous faire avant de continuer ?</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 24px 24px">
+      <button type="button" onclick="_executerApresAlerte()" style="padding:13px;background:var(--cave-gold);color:#1a0a00;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.95rem">
+        ⏸ Mettre en attente et continuer
+      </button>
+      <button type="button" onclick="_fermerAlerteChangement()" style="padding:12px;background:transparent;border:1px solid var(--cave-border);border-radius:10px;cursor:pointer;font-size:0.9rem">
+        Rester sur cette commande
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
