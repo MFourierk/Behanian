@@ -1437,7 +1437,20 @@ async function supprimerLigne(ligneId) {
     const data = await r.json();
     if (!data.success) { toast(data.message, 'error'); return; }
     const t = tickets[ticketActifId];
-    if (t) { t.lignes = data.items; t.total = data.total; }
+    if (t) {
+      t.lignes = data.items;
+      t.total = data.total;
+      if (data.commande_annulee) {
+        // Toutes les lignes supprimées → commande auto-annulée → libérer table
+        majTableCard(t.tableId, 'disponible', 0, '');
+        delete tickets[ticketActifId];
+        document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`)?.remove();
+        ticketActifId = null;
+        toast('Commande vide — annulée automatiquement, table libérée', 'info');
+      } else {
+        majTableCard(t.tableId, 'occupee', data.total, t.client);
+      }
+    }
     renderTicket();
   } catch(e) { toast('Erreur réseau', 'error'); }
 }
@@ -1598,7 +1611,7 @@ async function annulerCommande() {
     const data = await r.json();
     if (data.success) {
       toast('Commande annulée', 'success');
-      majTableCard(t.tableId, 'disponible', 0, '');
+      if (data.table_freed) majTableCard(t.tableId, 'disponible', 0, '');
       delete tickets[ticketActifId];
       document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`)?.remove();
       ticketActifId = null;

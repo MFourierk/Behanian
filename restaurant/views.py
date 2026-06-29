@@ -286,12 +286,19 @@ def annuler_commande(request):
             commande.statut = 'annulee'
             commande.save()
             
-            # 3. Libérer la table
+            # 3. Libérer la table uniquement si plus aucune commande active
+            table_freed = False
             if commande.table:
-                commande.table.statut = 'disponible'
-                commande.table.save()
-                
-        return JsonResponse({'success': True, 'message': 'Commande annulée avec succès'})
+                autres_actives = Commande.objects.filter(
+                    table=commande.table,
+                    statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+                ).exclude(id=commande.id).exists()
+                if not autres_actives:
+                    commande.table.statut = 'disponible'
+                    commande.table.save()
+                    table_freed = True
+
+        return JsonResponse({'success': True, 'message': 'Commande annulée avec succès', 'table_freed': table_freed})
         
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
@@ -464,6 +471,27 @@ def supprimer_ligne_commande(request):
         if commande.total < 0: commande.total = Decimal('0')
         commande.save()
         
+        # Si la commande est maintenant vide → annulation automatique + libération table
+        commande_annulee = False
+        if not commande.lignes.exists():
+            commande.statut = 'annulee'
+            commande.save()
+            commande_annulee = True
+            if commande.table:
+                autres_actives = Commande.objects.filter(
+                    table=commande.table,
+                    statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+                ).exclude(id=commande.id).exists()
+                if not autres_actives:
+                    commande.table.statut = 'disponible'
+                    commande.table.save()
+            return JsonResponse({
+                'success': True,
+                'items': [],
+                'total': 0,
+                'commande_annulee': True,
+            })
+
         items = []
         for l in commande.lignes.all().select_related('plat', 'accompagnement').order_by('id'):
             nom_affiche = (l.get_nom if hasattr(l,"get_nom") else l.nom_article or (l.plat.nom if l.plat else (l.boisson.nom if hasattr(l,"boisson") and l.boisson else "?")))
@@ -481,7 +509,8 @@ def supprimer_ligne_commande(request):
         return JsonResponse({
             'success': True,
             'items': items,
-            'total': float(commande.total)
+            'total': float(commande.total),
+            'commande_annulee': False,
         })
 
     except Exception as e:
