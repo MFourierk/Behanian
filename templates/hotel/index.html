@@ -364,8 +364,9 @@
                   {% endif %}{% endfor %}
                 {% else %}
                 <div class="ch-prices" style="margin-bottom:10px">
-                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuit|montant }} F</strong></div>
-                  <div class="ch-price-row"><span>Séjour</span><strong>{{ chambre.prix_sejour|montant }} F</strong></div>
+                  <div class="ch-price-row"><span>Repos</span><strong>{{ chambre.prix_nuit|montant }} F</strong></div>
+                  <div class="ch-price-row"><span>Journée</span><strong>{{ chambre.prix_sejour|montant }} F</strong></div>
+                  <div class="ch-price-row"><span>Nuitée</span><strong>{{ chambre.prix_nuitee|montant }} F</strong></div>
                 </div>
                 {% endif %}
 
@@ -821,7 +822,7 @@
                         <select name="chambre_id" class="form-control" required>
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres_dispo_list %}
-                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|montant }} F)</option>
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}" data-price-nuitee="{{ ch.prix_nuitee }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|montant }} F)</option>
                             {% empty %}
                             <option value="" disabled>Aucune chambre disponible (Toutes réservées ou occupées)</option>
                             {% endfor %}
@@ -830,7 +831,9 @@
                     <div class="form-group" style="flex: 1;">
                         <label>Type de Séjour <span class="text-danger">*</span></label>
                         <select name="type_sejour" class="form-control" required>
-                            <option value="nuitee">Nuitée</option>
+                            <option value="repos">Repos (4h)</option>
+                            <option value="journee">Journée (10h)</option>
+                            <option value="nuitee" selected>Nuitée (24h)</option>
                             <option value="long_sejour">Long Séjour</option>
                         </select>
                     </div>
@@ -932,14 +935,16 @@
                         <select name="chambre_id" class="form-control" required>
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres %}
-                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}" data-price-nuitee="{{ ch.prix_nuitee }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Type de Séjour <span class="text-danger">*</span></label>
                         <select name="type_sejour" class="form-control" required>
-                            <option value="nuitee">Nuitée</option>
+                            <option value="repos">Repos (4h)</option>
+                            <option value="journee">Journée (10h)</option>
+                            <option value="nuitee" selected>Nuitée (24h)</option>
                             <option value="long_sejour">Long Séjour</option>
                         </select>
                     </div>
@@ -1971,10 +1976,12 @@
                     const typeSejour = typeSejourSelect ? typeSejourSelect.value : 'nuitee';
                     
                     let pricePerUnit = 0;
-                    if (typeSejour === 'long_sejour') {
+                    if (typeSejour === 'repos') {
+                        pricePerUnit = parseFloat(option.getAttribute('data-price-nuit') || 0);
+                    } else if (typeSejour === 'journee' || typeSejour === 'long_sejour') {
                         pricePerUnit = parseFloat(option.getAttribute('data-price-sejour') || 0);
                     } else {
-                        pricePerUnit = parseFloat(option.getAttribute('data-price-nuit') || 0);
+                        pricePerUnit = parseFloat(option.getAttribute('data-price-nuitee') || 0);
                     }
                     
                     const start = new Date(dateArrivee.value);

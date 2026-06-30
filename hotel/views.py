@@ -427,23 +427,31 @@ def checkin_direct(request):
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
         # Création Réservation
+        type_sejour = request.POST.get('type_sejour', 'nuitee')
         duree = (date_depart_obj - today).days
         if duree < 1: duree = 1
-        
-        prix_total = duree * chambre.prix_nuit
-        
+
+        if type_sejour == 'repos':
+            prix_unit = chambre.prix_nuit
+        elif type_sejour in ('journee', 'long_sejour'):
+            prix_unit = chambre.prix_sejour
+        else:
+            prix_unit = chambre.prix_nuitee
+        prix_total = duree * prix_unit
+
         reservation = Reservation.objects.create(
             client=client,
             chambre=chambre,
             date_arrivee=today,
             date_depart=date_depart_obj,
+            type_sejour=type_sejour,
             nombre_adultes=nombre_adultes,
             nombre_enfants=nombre_enfants,
             prix_total=prix_total,
             avance=avance,
             provenance=provenance,
             destination=destination,
-            statut='en_cours' # Directement en cours
+            statut='en_cours',
         )
         
         # Mise à jour Chambre
@@ -555,19 +563,28 @@ def reservation_create(request):
                 )
         
         # Calcul Prix
+        type_sejour = request.POST.get('type_sejour', 'nuitee')
         duree = (d_depart - d_arrivee).days
-        prix_total = duree * chambre.prix_nuit
-        
+
+        if type_sejour == 'repos':
+            prix_unit = chambre.prix_nuit
+        elif type_sejour in ('journee', 'long_sejour'):
+            prix_unit = chambre.prix_sejour
+        else:
+            prix_unit = chambre.prix_nuitee
+        prix_total = duree * prix_unit
+
         statut = 'confirmee' if avance > 0 else 'en_attente'
-        
+
         Reservation.objects.create(
             client=client,
             chambre=chambre,
             date_arrivee=d_arrivee,
             date_depart=d_depart,
+            type_sejour=type_sejour,
             prix_total=prix_total,
             avance=avance,
-            statut=statut
+            statut=statut,
         )
         
         # Note: On ne change PAS le statut de la chambre ici.
@@ -607,10 +624,13 @@ def checkout_reservation(request, reservation_id):
         diff_days = diff_time.days or 1 # Minimum 1 jour
         
         nouveau_prix_total = 0
-        if reservation.type_sejour == 'long_sejour':
-            nouveau_prix_total = (reservation.chambre.prix_sejour or 0) * diff_days
-        else:
+        ts = reservation.type_sejour
+        if ts == 'repos':
             nouveau_prix_total = (reservation.chambre.prix_nuit or 0) * diff_days
+        elif ts in ('journee', 'long_sejour'):
+            nouveau_prix_total = (reservation.chambre.prix_sejour or 0) * diff_days
+        else:  # nuitee (défaut)
+            nouveau_prix_total = (reservation.chambre.prix_nuitee or 0) * diff_days
             
         if nouveau_prix_total != reservation.prix_total:
             reservation.prix_total = nouveau_prix_total
