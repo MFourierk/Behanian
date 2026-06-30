@@ -53,7 +53,7 @@ ALLOWED_PATHS = {
     # Hôtel
     'Receptionniste':              ['/hotel/'],
     'Réceptionniste':              ['/hotel/'],
-    'Responsable Hôtel':           ['/hotel/'],
+    'Responsable Hôtel':           ['/hotel/', '/parametres/'],
     # Caissière Principale — caisse centrale + TPE
     'Caissiere Principale':        _CAISSE_PLUS_TPE,
     'Caissier(ère) Principal(e)':  _CAISSE_PLUS_TPE,
