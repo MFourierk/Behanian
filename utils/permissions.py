@@ -12,6 +12,7 @@ Groupes canoniques (sans accents pour éviter les conflits d'encodage en base) :
   Responsable Cave    → module Cave complet (articles, stock, inventaire, commandes, fournisseurs)
   KDS                 → écran cuisine uniquement (serveurs/serveuses + cuisinier·es)
 """
+import unicodedata
 from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -227,10 +228,10 @@ def require_chambre_access(view_func):
     def wrapper(request, *args, **kwargs):
         if _is_manager(request.user) or _is_responsable_hotel(request.user) or request.user.is_superuser:
             return view_func(request, *args, **kwargs)
-        # Fallback pattern : couvre variantes d'encodage du ô
+        # Fallback ASCII normalisé : couvre toutes les variantes d'encodage de ô
         for g in get_user_groups(request.user):
-            gl = g.lower()
-            if ('hotel' in gl or 'hôtel' in gl) and ('manager' in gl or 'responsable' in gl):
+            ga = unicodedata.normalize('NFKD', g).encode('ascii', 'ignore').decode().lower()
+            if 'hotel' in ga and ('manager' in ga or 'responsable' in ga):
                 return view_func(request, *args, **kwargs)
         messages.error(request, "Accès refusé — réservé aux managers et au Responsable Hôtel.")
         return redirect('dashboard:index')

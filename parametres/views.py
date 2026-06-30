@@ -1,3 +1,4 @@
+import unicodedata
 from utils.permissions import require_module_access, require_manager, require_chambre_access, _is_responsable_hotel
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
@@ -25,12 +26,11 @@ def parametres_index(request):
     # Vérification principale via ACCESS_MAP
     has_access = user_has_access(request.user, 'parametres')
 
-    # Fallback : correspondance par motif pour les rôles hôtel
-    # (couvre 'Manager Hôtel', 'Manager Hotel', 'Responsable Hôtel', etc.)
+    # Fallback : correspondance ASCII normalisée (contourne les variantes d'encodage de ô)
     if not has_access:
         for g in request.user.groups.values_list('name', flat=True):
-            gl = g.lower()
-            if ('hotel' in gl or 'hôtel' in gl) and ('manager' in gl or 'responsable' in gl):
+            ga = unicodedata.normalize('NFKD', g).encode('ascii', 'ignore').decode().lower()
+            if 'hotel' in ga and ('manager' in ga or 'responsable' in ga):
                 has_access = True
                 break
 
