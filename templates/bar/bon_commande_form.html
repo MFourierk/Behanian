@@ -145,11 +145,11 @@
                 </div>
                 <div class="form-group">
                     <label>Date de commande</label>
-                    <input type="date" name="date_commande" value="{% if bon %}{{ bon.date_commande|date:'Y-m-d' }}{% endif %}">
+                    <input type="date" lang="fr" name="date_commande" value="{% if bon %}{{ bon.date_commande|date:'Y-m-d' }}{% endif %}">
                 </div>
                 <div class="form-group">
                     <label>Date de livraison prévue</label>
-                    <input type="date" name="date_livraison_prevue" value="{% if bon %}{{ bon.date_livraison_prevue|date:'Y-m-d' }}{% endif %}">
+                    <input type="date" lang="fr" name="date_livraison_prevue" value="{% if bon %}{{ bon.date_livraison_prevue|date:'Y-m-d' }}{% endif %}">
                 </div>
                 <div class="form-group full">
                     <label>Notes / Observations</label>

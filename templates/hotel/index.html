@@ -755,7 +755,7 @@
                     <div class="row" style="display: flex; gap: 10px;">
                         <div class="form-group" style="flex: 1;">
                             <label>Date Naissance</label>
-                            <input type="date" name="date_naissance" class="form-control">
+                            <input type="date" lang="fr" name="date_naissance" class="form-control">
                         </div>
                         <div class="form-group" style="flex: 1;">
                             <label>Nationalité</label>
@@ -865,11 +865,11 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Arrivée</label>
-                        <input type="date" id="direct-date-arrivee" name="date_arrivee" class="form-control" value="{{ today|date:'Y-m-d' }}" readonly style="background:#f0f6ff">
+                        <input type="date" lang="fr" id="direct-date-arrivee" name="date_arrivee" class="form-control" value="{{ today|date:'Y-m-d' }}" readonly style="background:#f0f6ff">
                     </div>
                     <div class="form-group" style="flex: 1;" id="direct-date-depart-wrapper">
                         <label>Départ <span class="text-danger">*</span></label>
-                        <input type="date" id="direct-date-depart" name="date_depart" class="form-control" required>
+                        <input type="date" lang="fr" id="direct-date-depart" name="date_depart" class="form-control" required>
                     </div>
                 </div>
 
@@ -877,11 +877,11 @@
                 <div class="row" style="display: flex; gap: 10px; margin-top: 4px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Heure d'arrivée <span class="text-danger">*</span></label>
-                        <input type="time" id="direct-heure-arrivee" name="heure_arrivee" class="form-control" required onchange="majHeuresDirectCheckin()">
+                        <input type="time" lang="fr" id="direct-heure-arrivee" name="heure_arrivee" class="form-control" required onchange="majHeuresDirectCheckin()">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Heure de départ</label>
-                        <input type="time" id="direct-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
+                        <input type="time" lang="fr" id="direct-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
                     </div>
                 </div>
             </div>
@@ -987,11 +987,11 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Date Arrivée <span class="text-danger">*</span></label>
-                        <input type="date" id="res-date-arrivee" name="date_arrivee" class="form-control" required onchange="majHeuresReservation()">
+                        <input type="date" lang="fr" id="res-date-arrivee" name="date_arrivee" class="form-control" required onchange="majHeuresReservation()">
                     </div>
                     <div class="form-group" style="flex: 1;" id="res-date-depart-wrapper">
                         <label>Date Départ <span class="text-danger" id="res-depart-required">*</span></label>
-                        <input type="date" id="res-date-depart" name="date_depart" class="form-control" required>
+                        <input type="date" lang="fr" id="res-date-depart" name="date_depart" class="form-control" required>
                     </div>
                 </div>
 
@@ -999,11 +999,11 @@
                 <div class="row" style="display: flex; gap: 10px; margin-top: 4px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Heure d'arrivée</label>
-                        <input type="time" id="res-heure-arrivee" name="heure_arrivee" class="form-control" onchange="majHeuresReservation()">
+                        <input type="time" lang="fr" id="res-heure-arrivee" name="heure_arrivee" class="form-control" onchange="majHeuresReservation()">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Heure de départ</label>
-                        <input type="time" id="res-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
+                        <input type="time" lang="fr" id="res-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
                     </div>
                 </div>
             </div>
@@ -1381,22 +1381,22 @@
                 <div class="row" style="display:flex;gap:10px">
                     <div class="form-group" style="flex:1">
                         <label>Date Arrivée <span class="text-danger">*</span></label>
-                        <input type="date" id="mod-date-arrivee" name="date_arrivee" class="form-control" required onchange="majHeuresModifier()">
+                        <input type="date" lang="fr" id="mod-date-arrivee" name="date_arrivee" class="form-control" required onchange="majHeuresModifier()">
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Date Départ <span class="text-danger">*</span></label>
-                        <input type="date" id="mod-date-depart" name="date_depart" class="form-control" required>
+                        <input type="date" lang="fr" id="mod-date-depart" name="date_depart" class="form-control" required>
                     </div>
                 </div>
 
                 <div class="row" style="display:flex;gap:10px;margin-top:4px">
                     <div class="form-group" style="flex:1">
                         <label>Heure d'arrivée</label>
-                        <input type="time" id="mod-heure-arrivee" name="heure_arrivee" class="form-control" onchange="majHeuresModifier()">
+                        <input type="time" lang="fr" id="mod-heure-arrivee" name="heure_arrivee" class="form-control" onchange="majHeuresModifier()">
                     </div>
                     <div class="form-group" style="flex:1">
                         <label>Heure de départ</label>
-                        <input type="time" id="mod-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
+                        <input type="time" lang="fr" id="mod-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
                     </div>
                 </div>
             </div>
@@ -1448,7 +1448,7 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Date Naissance</label>
-                        <input type="date" name="date_naissance" id="cr_date_naissance" class="form-control">
+                        <input type="date" lang="fr" name="date_naissance" id="cr_date_naissance" class="form-control">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Nationalité</label>

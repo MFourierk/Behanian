@@ -163,7 +163,7 @@
         <div class="date-nav">
           {% with prev_date=date_filtre|date:"Y-m-d" %}
           <a href="?date={{ date_filtre|date:'Y-m-d' }}" onclick="this.href='?date='+offsetDate(-1)">‹</a>
-          <input type="date" value="{{ date_filtre|date:'Y-m-d' }}" onchange="window.location='?date='+this.value"
+          <input type="date" lang="fr" value="{{ date_filtre|date:'Y-m-d' }}" onchange="window.location='?date='+this.value"
                  style="border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600">
           <a href="?date={{ date_filtre|date:'Y-m-d' }}" onclick="this.href='?date='+offsetDate(1)">›</a>
           {% endwith %}

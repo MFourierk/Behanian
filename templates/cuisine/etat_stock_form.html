@@ -38,7 +38,7 @@
             <form action="{% url 'cuisine:etat_stock' %}" method="get" class="row g-3 align-items-end">
                 <div class="col-md-5">
                     <label for="date" class="form-label">Date du rapport</label>
-                    <input type="date" id="date" name="date" class="form-control" value="{{ date_str }}" required>
+                    <input type="date" lang="fr" id="date" name="date" class="form-control" value="{{ date_str }}" required>
                 </div>
                 <div class="col-md-7">
                     <label for="categorie" class="form-label">Catégories (laisser vide pour tout)</label>

@@ -158,7 +158,7 @@
         <i class="fas fa-search"></i>
         <input type="text" id="filtreRecherche" placeholder="N° ticket ou client…" oninput="filtrer()" value="{{ request.GET.q|default:'' }}">
       </div>
-      <input type="date" id="filtreDate" value="{{ date_filter }}" onchange="applyServerFilter()" placeholder="Toutes dates">
+      <input type="date" lang="fr" id="filtreDate" value="{{ date_filter }}" onchange="applyServerFilter()" placeholder="Toutes dates">
       <select id="filtreModule" onchange="applyServerFilter()">
         <option value="">Tous modules</option>
         {% for val, label in module_choices %}
