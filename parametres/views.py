@@ -19,18 +19,17 @@ from django.shortcuts import get_object_or_404
 
 @login_required
 def parametres_index(request):
-    from utils.permissions import user_has_access, _is_receptionniste
-    if request.user.is_superuser:
-        return render(request, 'parametres/index.html')
+    from utils.permissions import user_has_access, _is_receptionniste, _is_manager
+    u = request.user
+    if u.is_superuser:
+        return render(request, 'parametres/index.html', {'is_admin': True})
 
-    # Accès direct via ACCESS_MAP (managers, responsable hôtel…)
-    if user_has_access(request.user, 'parametres'):
-        return render(request, 'parametres/index.html')
+    if user_has_access(u, 'parametres'):
+        is_admin = u.is_superuser or _is_manager(u)
+        return render(request, 'parametres/index.html', {'is_admin': is_admin})
 
-    # Fallback fiable : accès hotel confirmé + pas juste réceptionniste
-    # (Responsable Hôtel a accès hotel → on sait que ça fonctionne)
-    if user_has_access(request.user, 'hotel') and not _is_receptionniste(request.user):
-        return render(request, 'parametres/index.html')
+    if user_has_access(u, 'hotel') and not _is_receptionniste(u):
+        return render(request, 'parametres/index.html', {'is_admin': False})
 
     messages.error(request, "Accès refusé — réservé aux managers.")
     return redirect('dashboard:index')
