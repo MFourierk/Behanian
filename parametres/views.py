@@ -19,25 +19,21 @@ from django.shortcuts import get_object_or_404
 
 @login_required
 def parametres_index(request):
-    from utils.permissions import user_has_access
+    from utils.permissions import user_has_access, _is_receptionniste
     if request.user.is_superuser:
         return render(request, 'parametres/index.html')
 
-    # Vérification principale via ACCESS_MAP
-    has_access = user_has_access(request.user, 'parametres')
+    # Accès direct via ACCESS_MAP (managers, responsable hôtel…)
+    if user_has_access(request.user, 'parametres'):
+        return render(request, 'parametres/index.html')
 
-    # Fallback : correspondance ASCII normalisée (contourne les variantes d'encodage de ô)
-    if not has_access:
-        for g in request.user.groups.values_list('name', flat=True):
-            ga = unicodedata.normalize('NFKD', g).encode('ascii', 'ignore').decode().lower()
-            if 'hotel' in ga and ('manager' in ga or 'responsable' in ga):
-                has_access = True
-                break
+    # Fallback fiable : accès hotel confirmé + pas juste réceptionniste
+    # (Responsable Hôtel a accès hotel → on sait que ça fonctionne)
+    if user_has_access(request.user, 'hotel') and not _is_receptionniste(request.user):
+        return render(request, 'parametres/index.html')
 
-    if not has_access:
-        messages.error(request, "Accès refusé — réservé aux managers.")
-        return redirect('dashboard:index')
-    return render(request, 'parametres/index.html')
+    messages.error(request, "Accès refusé — réservé aux managers.")
+    return redirect('dashboard:index')
 
 # --- BAR : BOISSONS ---
 @method_decorator(login_required, name='dispatch')

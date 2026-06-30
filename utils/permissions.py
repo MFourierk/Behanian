@@ -226,13 +226,11 @@ def require_chambre_access(view_func):
     @wraps(view_func)
     @login_required
     def wrapper(request, *args, **kwargs):
-        if _is_manager(request.user) or _is_responsable_hotel(request.user) or request.user.is_superuser:
+        if request.user.is_superuser or _is_manager(request.user) or _is_responsable_hotel(request.user):
             return view_func(request, *args, **kwargs)
-        # Fallback ASCII normalisé : couvre toutes les variantes d'encodage de ô
-        for g in get_user_groups(request.user):
-            ga = unicodedata.normalize('NFKD', g).encode('ascii', 'ignore').decode().lower()
-            if 'hotel' in ga and ('manager' in ga or 'responsable' in ga):
-                return view_func(request, *args, **kwargs)
+        # Fallback fiable : accès hotel confirmé + pas juste réceptionniste
+        if user_has_access(request.user, 'hotel') and not _is_receptionniste(request.user):
+            return view_func(request, *args, **kwargs)
         messages.error(request, "Accès refusé — réservé aux managers et au Responsable Hôtel.")
         return redirect('dashboard:index')
     return wrapper
