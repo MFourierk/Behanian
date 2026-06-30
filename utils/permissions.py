@@ -108,6 +108,18 @@ for _names, _modules in _RULES:
         ACCESS_MAP[_n] = _modules
 
 
+def _norm(s):
+    """Supprime les accents et met en minuscules pour comparaison souple."""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    ).lower()
+
+
+# Table de lookup normalisée (fallback si encodage DB ≠ source Python)
+_ACCESS_MAP_NORM = {_norm(k): v for k, v in ACCESS_MAP.items()}
+
+
 def get_user_groups(user):
     """Retourne les noms de groupes de l'utilisateur."""
     return list(user.groups.values_list('name', flat=True))
@@ -121,7 +133,8 @@ def user_has_access(user, module):
         return True
     groups = get_user_groups(user)
     for g in groups:
-        allowed = ACCESS_MAP.get(g, [])
+        # Essai exact d'abord, puis fallback normalisé (insensible aux accents)
+        allowed = ACCESS_MAP.get(g) or _ACCESS_MAP_NORM.get(_norm(g), [])
         if '*' in allowed or module in allowed:
             return True
     return False
@@ -184,7 +197,7 @@ def get_accessible_modules(user):
     groups = get_user_groups(user)
     modules = {'dashboard'}
     for g in groups:
-        allowed = ACCESS_MAP.get(g, [])
+        allowed = ACCESS_MAP.get(g) or _ACCESS_MAP_NORM.get(_norm(g), [])
         if '*' in allowed:
             modules.update(['hotel', 'restaurant', 'bar', 'cuisine',
                            'piscine', 'boite_nuit', 'espaces', 'caisse',
@@ -207,11 +220,13 @@ def _is_caissier_principal(user):
 
 def _is_receptionniste(user):
     g = get_user_groups(user)
-    return any(x in g for x in _RECEPTIONNISTE)
+    g_norm = [_norm(x) for x in g]
+    return any(_norm(x) in g_norm for x in _RECEPTIONNISTE)
 
 def _is_responsable_hotel(user):
     g = get_user_groups(user)
-    return any(x in g for x in _RESPONSABLE_HOTEL)
+    g_norm = [_norm(x) for x in g]
+    return any(_norm(x) in g_norm for x in _RESPONSABLE_HOTEL)
 
 def _is_manager_cuisine(user):
     g = get_user_groups(user)
