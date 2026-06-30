@@ -7,6 +7,7 @@ class Chambre(models.Model):
     TYPE_CHOICES = [
         ('standard', 'Standard'),
         ('superieure', 'Supérieure'),
+        ('suite_junior', 'Suite Junior'),
         ('suite', 'Suite'),
         ('vip', 'VIP'),
     ]
@@ -22,8 +23,9 @@ class Chambre(models.Model):
     type_chambre = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
     etage = models.IntegerField(verbose_name="Étage")
     capacite = models.IntegerField(default=2, verbose_name="Capacité (personnes)")
-    prix_nuit = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix Nuitée (FCFA)")
-    prix_sejour = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix Séjour (FCFA)")
+    prix_nuit    = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix Repos 4h (FCFA)")
+    prix_sejour  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix Journée 10h (FCFA)")
+    prix_nuitee  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix Nuitée 24h (FCFA)")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='disponible', verbose_name="Statut")
     
     # Détails & Image
@@ -104,7 +106,9 @@ class Reservation(models.Model):
     ]
 
     TYPE_SEJOUR_CHOICES = [
-        ('nuitee', 'Nuitée'),
+        ('repos', 'Repos (4h)'),
+        ('journee', 'Journée (10h)'),
+        ('nuitee', 'Nuitée (24h)'),
         ('long_sejour', 'Long Séjour'),
     ]
 

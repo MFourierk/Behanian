@@ -240,18 +240,25 @@
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="form-group-glam">
-                        <label for="{{ form.prix_nuit.id_for_label }}" class="form-label-glam">Prix Nuitée (FCFA)</label>
+                        <label for="{{ form.prix_nuit.id_for_label }}" class="form-label-glam">Repos 4h (FCFA)</label>
                         {{ form.prix_nuit }}
                         {{ form.prix_nuit.errors }}
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="form-group-glam">
-                        <label for="{{ form.prix_sejour.id_for_label }}" class="form-label-glam">Prix Séjour (FCFA)</label>
+                        <label for="{{ form.prix_sejour.id_for_label }}" class="form-label-glam">Journée 10h (FCFA)</label>
                         {{ form.prix_sejour }}
                         {{ form.prix_sejour.errors }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group-glam">
+                        <label for="{{ form.prix_nuitee.id_for_label }}" class="form-label-glam">Nuitée 24h (FCFA)</label>
+                        {{ form.prix_nuitee }}
+                        {{ form.prix_nuitee.errors }}
                     </div>
                 </div>
             </div>
