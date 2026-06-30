@@ -379,6 +379,7 @@ import json
 GROUPES_METIER = [
     ('Directeur Général',    '👑 Direction'),
     ('Manager Général(e)',   '👑 Direction'),
+    ('Manager Hôtel',        '🏨 Hôtel'),
     ('Responsable Hôtel',    '🏨 Hôtel'),
     ('Réceptionniste',       '🏨 Hôtel'),
     ('Chef caissier(e)',      '💰 Caisse'),
