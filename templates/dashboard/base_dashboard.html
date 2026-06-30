@@ -50,12 +50,6 @@
                 <span class="nav-item-icon"><i class="fas fa-chart-line"></i></span>
                 <span class="nav-text">Dashboard</span>
             </a>
-            {% if 'parametres' in accessible_modules %}
-            <a href="{% url 'dashboard:direction' %}" class="nav-item {% if request.resolver_match.url_name == 'direction' %}active{% endif %}">
-                <span class="nav-item-icon"><i class="fas fa-crown"></i></span>
-                <span class="nav-text">Vue Direction</span>
-            </a>
-            {% endif %}
             {% if 'hotel' in accessible_modules %}
             <a href="{% url 'hotel:index' %}" class="nav-item {% if request.resolver_match.app_name == 'hotel' %}active{% endif %}">
                 <span class="nav-item-icon"><i class="fas fa-hotel"></i></span>

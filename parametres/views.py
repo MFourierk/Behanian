@@ -18,10 +18,8 @@ from django.shortcuts import get_object_or_404
 
 @login_required
 def parametres_index(request):
-    from utils.permissions import _is_manager
-    if _is_responsable_hotel(request.user):
-        return redirect('parametres:chambre_list')
-    if not (_is_manager(request.user) or request.user.is_superuser):
+    from utils.permissions import user_has_access
+    if not (user_has_access(request.user, 'parametres') or request.user.is_superuser):
         messages.error(request, "Accès refusé — réservé aux managers.")
         return redirect('dashboard:index')
     return render(request, 'parametres/index.html')

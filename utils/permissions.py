@@ -61,6 +61,7 @@ _RECEPTIONNISTE = [
 # Responsable Hôtel : module hôtel + gestion des chambres dans paramètres
 _RESPONSABLE_HOTEL = [
     'Responsable Hôtel',
+    'Responsable Hotel',   # variante sans accent
 ]
 
 # Responsable Cave : module Cave complet (stock, articles, inventaire, commandes, fournisseurs)
