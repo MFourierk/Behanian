@@ -221,12 +221,17 @@ def _is_manager_general(user):
 
 
 def require_chambre_access(view_func):
-    """Autorise managers ET Responsable Hôtel sur les vues chambres du module paramètres."""
+    """Autorise managers ET rôles hôtel (Responsable Hôtel, Manager Hôtel…) sur les vues chambres."""
     @wraps(view_func)
     @login_required
     def wrapper(request, *args, **kwargs):
         if _is_manager(request.user) or _is_responsable_hotel(request.user) or request.user.is_superuser:
             return view_func(request, *args, **kwargs)
+        # Fallback pattern : couvre variantes d'encodage du ô
+        for g in get_user_groups(request.user):
+            gl = g.lower()
+            if ('hotel' in gl or 'hôtel' in gl) and ('manager' in gl or 'responsable' in gl):
+                return view_func(request, *args, **kwargs)
         messages.error(request, "Accès refusé — réservé aux managers et au Responsable Hôtel.")
         return redirect('dashboard:index')
     return wrapper

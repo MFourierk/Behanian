@@ -19,7 +19,22 @@ from django.shortcuts import get_object_or_404
 @login_required
 def parametres_index(request):
     from utils.permissions import user_has_access
-    if not (user_has_access(request.user, 'parametres') or request.user.is_superuser):
+    if request.user.is_superuser:
+        return render(request, 'parametres/index.html')
+
+    # Vérification principale via ACCESS_MAP
+    has_access = user_has_access(request.user, 'parametres')
+
+    # Fallback : correspondance par motif pour les rôles hôtel
+    # (couvre 'Manager Hôtel', 'Manager Hotel', 'Responsable Hôtel', etc.)
+    if not has_access:
+        for g in request.user.groups.values_list('name', flat=True):
+            gl = g.lower()
+            if ('hotel' in gl or 'hôtel' in gl) and ('manager' in gl or 'responsable' in gl):
+                has_access = True
+                break
+
+    if not has_access:
         messages.error(request, "Accès refusé — réservé aux managers.")
         return redirect('dashboard:index')
     return render(request, 'parametres/index.html')
