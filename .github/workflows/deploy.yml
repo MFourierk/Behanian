@@ -20,6 +20,7 @@ jobs:
           script: |
             cd /opt/behanian
             git pull origin main
+            chmod +x /opt/behanian/sync_complexe.sh
             source venv/bin/activate
             pip install -r requirements.txt --quiet
             python manage.py migrate --noinput
