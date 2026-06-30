@@ -20,4 +20,6 @@ urlpatterns = [
     path('api/consommation/<int:conso_id>/modifier/', views.api_modifier_consommation, name='api_modifier_conso'),
     path('api/consommation/<int:conso_id>/supprimer/', views.api_supprimer_consommation, name='api_supprimer_conso'),
     path('api/checkout-details/<int:reservation_id>/', views.api_checkout_details, name='api_checkout_details'),
+    path('reservation/<int:reservation_id>/modifier/', views.reservation_modifier, name='reservation_modifier'),
+    path('reservation/<int:reservation_id>/annuler/', views.reservation_annuler, name='reservation_annuler'),
 ]

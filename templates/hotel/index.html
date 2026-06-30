@@ -444,10 +444,11 @@
                   <th>Chambre</th>
                   <th>Arrivée</th>
                   <th>Départ</th>
+                  <th>Type</th>
                   <th>Statut</th>
                   <th>Total</th>
                   <th>Avance</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -455,15 +456,38 @@
                 <tr>
                   <td><strong>{{ res.client.nom_complet }}</strong></td>
                   <td>{{ res.chambre.numero }}</td>
-                  <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
-                  <td>{{ res.date_depart|date:"d/m/Y" }}</td>
+                  <td>{{ res.date_arrivee|date:"d/m/Y" }}{% if res.heure_arrivee %} <span style="color:#2563eb;font-size:11px">{{ res.heure_arrivee|time:"H:i" }}</span>{% endif %}</td>
+                  <td>{{ res.date_depart|date:"d/m/Y" }}{% if res.heure_depart %} <span style="color:#dc2626;font-size:11px">{{ res.heure_depart|time:"H:i" }}</span>{% endif %}</td>
+                  <td><span style="font-size:11px;color:#5a6b7c">{{ res.get_type_sejour_display }}</span></td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
                   <td>{{ res.prix_total|montant }} F</td>
                   <td>{{ res.avance|montant }} F</td>
-                  <td>
+                  <td style="white-space:nowrap">
                     <a href="{% url 'hotel:print_checkin_form' res.id %}" target="_blank" class="btn-hotel sm" title="Imprimer">
                       <i class="fas fa-print"></i>
                     </a>
+                    {% if res.statut in 'en_attente,confirmee' %}
+                    <button class="btn-hotel sm" title="Modifier" style="color:#2563eb"
+                      onclick="ouvrirModifierReservation({
+                        id: {{ res.id }},
+                        chambre_id: {{ res.chambre.id }},
+                        date_arrivee: '{{ res.date_arrivee|date:'Y-m-d' }}',
+                        heure_arrivee: '{{ res.heure_arrivee|time:'H:i'|default:'' }}',
+                        date_depart: '{{ res.date_depart|date:'Y-m-d' }}',
+                        heure_depart: '{{ res.heure_depart|time:'H:i'|default:'' }}',
+                        type_sejour: '{{ res.type_sejour }}',
+                        avance: {{ res.avance }}
+                      })">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <form method="post" action="{% url 'hotel:reservation_annuler' res.id %}" style="display:inline"
+                          onsubmit="return confirm('Annuler la réservation de {{ res.client.nom_complet|escapejs }} (ch. {{ res.chambre.numero }}) ?')">
+                      {% csrf_token %}
+                      <button type="submit" class="btn-hotel sm" title="Annuler" style="color:#dc2626">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </form>
+                    {% endif %}
                   </td>
                 </tr>
                 {% endfor %}
@@ -819,7 +843,7 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Chambre <span class="text-danger">*</span></label>
-                        <select name="chambre_id" class="form-control" required>
+                        <select id="direct-chambre" name="chambre_id" class="form-control" required onchange="majPrixDirectCheckin()">
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres_dispo_list %}
                             <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}" data-price-nuitee="{{ ch.prix_nuitee }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }} ({{ ch.prix_nuit|montant }} F)</option>
@@ -830,7 +854,7 @@
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Type de Séjour <span class="text-danger">*</span></label>
-                        <select name="type_sejour" class="form-control" required>
+                        <select id="direct-type-sejour" name="type_sejour" class="form-control" required onchange="majHeuresDirectCheckin()">
                             <option value="repos">Repos (4h)</option>
                             <option value="journee">Journée (10h)</option>
                             <option value="nuitee" selected>Nuitée (24h)</option>
@@ -840,12 +864,24 @@
 
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
-                        <label>Arrivée <span class="text-danger">*</span></label>
-                        <input type="date" name="date_arrivee" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+                        <label>Arrivée</label>
+                        <input type="date" id="direct-date-arrivee" name="date_arrivee" class="form-control" value="{{ today|date:'Y-m-d' }}" readonly style="background:#f0f6ff">
+                    </div>
+                    <div class="form-group" style="flex: 1;" id="direct-date-depart-wrapper">
+                        <label>Départ <span class="text-danger">*</span></label>
+                        <input type="date" id="direct-date-depart" name="date_depart" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- HEURES -->
+                <div class="row" style="display: flex; gap: 10px; margin-top: 4px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Heure d'arrivée <span class="text-danger">*</span></label>
+                        <input type="time" id="direct-heure-arrivee" name="heure_arrivee" class="form-control" required onchange="majHeuresDirectCheckin()">
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label>Départ <span class="text-danger">*</span></label>
-                        <input type="date" name="date_depart" class="form-control" required>
+                        <label>Heure de départ</label>
+                        <input type="time" id="direct-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
                     </div>
                 </div>
             </div>
@@ -856,14 +892,14 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Prix Total (FCFA)</label>
-                        <input type="number" name="prix_total" class="form-control" required placeholder="Calculé ou Saisi">
+                        <input type="number" id="direct-prix-total" name="prix_total" class="form-control" required placeholder="Calculé automatiquement">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Avance (FCFA)</label>
                         <input type="number" name="avance" class="form-control" value="0">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                      <label>Mode Paiement</label>
                      <select name="mode_paiement" class="form-control">
@@ -875,7 +911,7 @@
                      </select>
                 </div>
             </div>
-            
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="submit" name="action" value="save" class="btn-action primary" style="flex: 1;">Valider Entrée</button>
                 <button type="submit" name="action" value="print_form" class="btn-action secondary" style="flex: 1;">Valider & Imprimer</button>
@@ -931,7 +967,7 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Chambre <span class="text-danger">*</span></label>
-                        <select name="chambre_id" class="form-control" required>
+                        <select id="res-chambre" name="chambre_id" class="form-control" required onchange="majPrixReservation()">
                             <option value="">Sélectionner une chambre</option>
                             {% for ch in chambres %}
                             <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}" data-price-nuitee="{{ ch.prix_nuitee }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
@@ -940,7 +976,7 @@
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Type de Séjour <span class="text-danger">*</span></label>
-                        <select name="type_sejour" class="form-control" required>
+                        <select id="res-type-sejour" name="type_sejour" class="form-control" required onchange="majHeuresReservation()">
                             <option value="repos">Repos (4h)</option>
                             <option value="journee">Journée (10h)</option>
                             <option value="nuitee" selected>Nuitée (24h)</option>
@@ -951,11 +987,23 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Date Arrivée <span class="text-danger">*</span></label>
-                        <input type="date" name="date_arrivee" class="form-control" required>
+                        <input type="date" id="res-date-arrivee" name="date_arrivee" class="form-control" required onchange="majHeuresReservation()">
+                    </div>
+                    <div class="form-group" style="flex: 1;" id="res-date-depart-wrapper">
+                        <label>Date Départ <span class="text-danger" id="res-depart-required">*</span></label>
+                        <input type="date" id="res-date-depart" name="date_depart" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- HEURES -->
+                <div class="row" style="display: flex; gap: 10px; margin-top: 4px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Heure d'arrivée</label>
+                        <input type="time" id="res-heure-arrivee" name="heure_arrivee" class="form-control" onchange="majHeuresReservation()">
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label>Date Départ <span class="text-danger">*</span></label>
-                        <input type="date" name="date_depart" class="form-control" required>
+                        <label>Heure de départ</label>
+                        <input type="time" id="res-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
                     </div>
                 </div>
             </div>
@@ -966,7 +1014,7 @@
                 <div class="row" style="display: flex; gap: 10px;">
                     <div class="form-group" style="flex: 1;">
                         <label>Prix Total (FCFA)</label>
-                        <input type="number" name="prix_total" class="form-control" required placeholder="Calculé ou Saisi">
+                        <input type="number" id="res-prix-total" name="prix_total" class="form-control" required placeholder="Calculé automatiquement">
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label>Avance (FCFA)</label>
@@ -974,7 +1022,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="submit" class="btn-action primary" style="flex: 1;">Enregistrer Réservation</button>
                 <button type="button" class="btn-action" style="flex: 1;" onclick="closeModal('modalNouvelleReservation')">Annuler</button>
@@ -1298,6 +1346,81 @@
       </button>
     </div>
   </div>
+</div>
+
+<!-- MODAL MODIFIER RESERVATION -->
+<div id="modalModifierReservation" class="modal">
+    <div class="modal-content" style="width:580px;max-height:90vh;overflow-y:auto">
+        <h3>✏️ Modifier la Réservation</h3>
+        <form id="formModifierReservation" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="mod-prix-total-hidden" name="prix_total" value="0">
+
+            <div style="background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:20px">
+                <h4 style="border-bottom:1px solid #dee2e6;padding-bottom:10px;margin-bottom:15px;font-size:15px">🏨 Chambre & Séjour</h4>
+
+                <div class="row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Chambre <span class="text-danger">*</span></label>
+                        <select id="mod-chambre" name="chambre_id" class="form-control" required onchange="majPrixModifier()">
+                            {% for ch in chambres %}
+                            <option value="{{ ch.id }}" data-price-nuit="{{ ch.prix_nuit }}" data-price-sejour="{{ ch.prix_sejour }}" data-price-nuitee="{{ ch.prix_nuitee }}">N° {{ ch.numero }} - {{ ch.get_type_chambre_display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Type de Séjour <span class="text-danger">*</span></label>
+                        <select id="mod-type-sejour" name="type_sejour" class="form-control" required onchange="majHeuresModifier()">
+                            <option value="repos">Repos (4h)</option>
+                            <option value="journee">Journée (10h)</option>
+                            <option value="nuitee">Nuitée (24h)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Date Arrivée <span class="text-danger">*</span></label>
+                        <input type="date" id="mod-date-arrivee" name="date_arrivee" class="form-control" required onchange="majHeuresModifier()">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Date Départ <span class="text-danger">*</span></label>
+                        <input type="date" id="mod-date-depart" name="date_depart" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row" style="display:flex;gap:10px;margin-top:4px">
+                    <div class="form-group" style="flex:1">
+                        <label>Heure d'arrivée</label>
+                        <input type="time" id="mod-heure-arrivee" name="heure_arrivee" class="form-control" onchange="majHeuresModifier()">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Heure de départ</label>
+                        <input type="time" id="mod-heure-depart" name="heure_depart" class="form-control" readonly style="background:#f0f6ff;color:#dc2626;font-weight:600">
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:20px">
+                <h4 style="border-bottom:1px solid #dee2e6;padding-bottom:10px;margin-bottom:15px;font-size:15px">💰 Paiement</h4>
+                <div class="row" style="display:flex;gap:10px">
+                    <div class="form-group" style="flex:1">
+                        <label>Prix Total (FCFA)</label>
+                        <input type="number" id="mod-prix-total" name="prix_total_affiche" class="form-control" readonly style="background:#f0f6ff">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Avance (FCFA)</label>
+                        <input type="number" id="mod-avance" name="avance" class="form-control" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:20px">
+                <button type="submit" class="btn-action primary" style="flex:2">Enregistrer les modifications</button>
+                <button type="button" class="btn-action" style="flex:1" onclick="closeModal('modalModifierReservation')">Annuler</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- MODAL CHECK-IN RESERVATION (COMPLETE) -->
@@ -1959,50 +2082,176 @@
     filtrerPlats._cat = '';
 
 
-    function setupPriceCalculation(modalId) {
-        const form = document.querySelector('#' + modalId + ' form');
-        if (form) {
-            const chambreSelect = form.querySelector('select[name="chambre_id"]');
-            const typeSejourSelect = form.querySelector('select[name="type_sejour"]');
-            const dateArrivee = form.querySelector('input[name="date_arrivee"]');
-            const dateDepart = form.querySelector('input[name="date_depart"]');
-            const prixInput = form.querySelector('input[name="prix_total"]');
-
-            function calculatePrice() {
-                if (chambreSelect.value && dateArrivee.value && dateDepart.value) {
-                    const option = chambreSelect.options[chambreSelect.selectedIndex];
-                    const typeSejour = typeSejourSelect ? typeSejourSelect.value : 'nuitee';
-                    
-                    let pricePerUnit = 0;
-                    if (typeSejour === 'repos') {
-                        pricePerUnit = parseFloat(option.getAttribute('data-price-nuit') || 0);
-                    } else if (typeSejour === 'journee') {
-                        pricePerUnit = parseFloat(option.getAttribute('data-price-sejour') || 0);
-                    } else {
-                        pricePerUnit = parseFloat(option.getAttribute('data-price-nuitee') || 0);
-                    }
-                    
-                    const start = new Date(dateArrivee.value);
-                    const end = new Date(dateDepart.value);
-                    
-                    if (start < end) {
-                        const diffTime = Math.abs(end - start);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        const total = pricePerUnit * diffDays;
-                        prixInput.value = Math.round(total);
-                    }
-                }
-            }
-
-            if (chambreSelect) chambreSelect.addEventListener('change', calculatePrice);
-            if (typeSejourSelect) typeSejourSelect.addEventListener('change', calculatePrice);
-            if (dateArrivee) dateArrivee.addEventListener('change', calculatePrice);
-            if (dateDepart) dateDepart.addEventListener('change', calculatePrice);
-        }
+    // ── CALCUL DES HEURES ──────────────────────────────────────
+    // Retourne { heureDepart: "HH:MM", daysAdded: 0|1 } ou null si heure invalide
+    function calcDepart(heureArriveeStr, typeSejour) {
+        if (!heureArriveeStr) return null;
+        const parts = heureArriveeStr.split(':');
+        if (parts.length < 2) return null;
+        const hh = parseInt(parts[0]);
+        const mm = parseInt(parts[1]);
+        const totalMin = hh * 60 + mm;
+        const addMin = typeSejour === 'repos' ? 240 : typeSejour === 'journee' ? 600 : 1440;
+        const departMin = totalMin + addMin;
+        const departHH = Math.floor(departMin / 60) % 24;
+        const departMM = departMin % 60;
+        const daysAdded = Math.floor(departMin / 1440);
+        return {
+            heureDepart: String(departHH).padStart(2,'0') + ':' + String(departMM).padStart(2,'0'),
+            daysAdded
+        };
     }
 
-    setupPriceCalculation('modalNouvelleReservation');
-    setupPriceCalculation('modalCheckinDirect');
+    // Ajoute `days` jours à une date "YYYY-MM-DD" et renvoie la nouvelle date
+    function addDays(dateStr, days) {
+        if (!dateStr || !days) return dateStr;
+        const d = new Date(dateStr + 'T00:00:00');
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+    }
+
+    // Calcule le prix selon chambre + type + durée (duree ≥ 1)
+    function calcPrix(chambreSelect, typeSejour, dateArr, dateDep) {
+        if (!chambreSelect || !chambreSelect.value) return null;
+        const opt = chambreSelect.options[chambreSelect.selectedIndex];
+        let unitPrice = 0;
+        if (typeSejour === 'repos')    unitPrice = parseFloat(opt.getAttribute('data-price-nuit')   || 0);
+        else if (typeSejour === 'journee') unitPrice = parseFloat(opt.getAttribute('data-price-sejour') || 0);
+        else                           unitPrice = parseFloat(opt.getAttribute('data-price-nuitee')  || 0);
+        let duree = 1;
+        if (dateArr && dateDep) {
+            const d = Math.round((new Date(dateDep) - new Date(dateArr)) / 86400000);
+            if (d > 1) duree = d;
+        }
+        return Math.round(unitPrice * duree);
+    }
+
+    // ── CHECK-IN DIRECT ─────────────────────────────────────────
+    function majHeuresDirectCheckin() {
+        const type   = document.getElementById('direct-type-sejour').value;
+        const hArr   = document.getElementById('direct-heure-arrivee').value;
+        const dArr   = document.getElementById('direct-date-arrivee').value;
+        const hDepEl = document.getElementById('direct-heure-depart');
+        const dDepEl = document.getElementById('direct-date-depart');
+
+        const res = calcDepart(hArr, type);
+        if (res) {
+            hDepEl.value = res.heureDepart;
+            if (type !== 'nuitee') {
+                // Date de départ calculée automatiquement pour repos/journée
+                const newDate = addDays(dArr, res.daysAdded);
+                dDepEl.value = newDate;
+                dDepEl.readOnly = true;
+                dDepEl.style.background = '#f0f6ff';
+            } else {
+                dDepEl.readOnly = false;
+                dDepEl.style.background = '';
+            }
+        }
+        majPrixDirectCheckin();
+    }
+
+    function majPrixDirectCheckin() {
+        const chambreEl = document.getElementById('direct-chambre');
+        const typeEl    = document.getElementById('direct-type-sejour');
+        const dArr      = document.getElementById('direct-date-arrivee').value;
+        const dDep      = document.getElementById('direct-date-depart').value;
+        const prixEl    = document.getElementById('direct-prix-total');
+        if (!chambreEl || !typeEl || !prixEl) return;
+        const prix = calcPrix(chambreEl, typeEl.value, dArr, dDep);
+        if (prix !== null) prixEl.value = prix;
+    }
+
+    // ── NOUVELLE RÉSERVATION ────────────────────────────────────
+    function majHeuresReservation() {
+        const type   = document.getElementById('res-type-sejour').value;
+        const hArr   = document.getElementById('res-heure-arrivee').value;
+        const dArr   = document.getElementById('res-date-arrivee').value;
+        const hDepEl = document.getElementById('res-heure-depart');
+        const dDepEl = document.getElementById('res-date-depart');
+
+        const res = calcDepart(hArr, type);
+        if (res) {
+            hDepEl.value = res.heureDepart;
+            if (type !== 'nuitee') {
+                const newDate = addDays(dArr, res.daysAdded);
+                dDepEl.value = newDate;
+                dDepEl.readOnly = true;
+                dDepEl.style.background = '#f0f6ff';
+            } else {
+                dDepEl.readOnly = false;
+                dDepEl.style.background = '';
+            }
+        }
+        majPrixReservation();
+    }
+
+    function majPrixReservation() {
+        const chambreEl = document.getElementById('res-chambre');
+        const typeEl    = document.getElementById('res-type-sejour');
+        const dArr      = document.getElementById('res-date-arrivee').value;
+        const dDep      = document.getElementById('res-date-depart').value;
+        const prixEl    = document.getElementById('res-prix-total');
+        if (!chambreEl || !typeEl || !prixEl) return;
+        const prix = calcPrix(chambreEl, typeEl.value, dArr, dDep);
+        if (prix !== null) prixEl.value = prix;
+    }
+
+    // ── MODAL MODIFIER RÉSERVATION ──────────────────────────────
+    function ouvrirModifierReservation(data) {
+        const form = document.getElementById('formModifierReservation');
+        const urlTpl = "{% url 'hotel:reservation_modifier' 0 %}";
+        form.action = urlTpl.replace('0', data.id);
+
+        document.getElementById('mod-chambre').value        = data.chambre_id;
+        document.getElementById('mod-type-sejour').value    = data.type_sejour;
+        document.getElementById('mod-date-arrivee').value   = data.date_arrivee;
+        document.getElementById('mod-date-depart').value    = data.date_depart;
+        document.getElementById('mod-heure-arrivee').value  = data.heure_arrivee || '';
+        document.getElementById('mod-heure-depart').value   = data.heure_depart  || '';
+        document.getElementById('mod-avance').value         = data.avance || 0;
+
+        majPrixModifier();
+        openModal('modalModifierReservation');
+    }
+
+    function majHeuresModifier() {
+        const type   = document.getElementById('mod-type-sejour').value;
+        const hArr   = document.getElementById('mod-heure-arrivee').value;
+        const dArr   = document.getElementById('mod-date-arrivee').value;
+        const hDepEl = document.getElementById('mod-heure-depart');
+        const dDepEl = document.getElementById('mod-date-depart');
+
+        const res = calcDepart(hArr, type);
+        if (res) {
+            hDepEl.value = res.heureDepart;
+            if (type !== 'nuitee') {
+                const newDate = addDays(dArr, res.daysAdded);
+                dDepEl.value = newDate;
+                dDepEl.readOnly = true;
+                dDepEl.style.background = '#f0f6ff';
+            } else {
+                dDepEl.readOnly = false;
+                dDepEl.style.background = '';
+            }
+        }
+        majPrixModifier();
+    }
+
+    function majPrixModifier() {
+        const chambreEl = document.getElementById('mod-chambre');
+        const typeEl    = document.getElementById('mod-type-sejour');
+        const dArr      = document.getElementById('mod-date-arrivee').value;
+        const dDep      = document.getElementById('mod-date-depart').value;
+        const prixEl    = document.getElementById('mod-prix-total');
+        const prixHid   = document.getElementById('mod-prix-total-hidden');
+        if (!chambreEl || !typeEl || !prixEl) return;
+        const prix = calcPrix(chambreEl, typeEl.value, dArr, dDep);
+        if (prix !== null) {
+            prixEl.value = prix;
+            if (prixHid) prixHid.value = prix;
+        }
+    }
 
     // Auto-Select Tab from URL
     document.addEventListener('DOMContentLoaded', function() {

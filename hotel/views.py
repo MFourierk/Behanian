@@ -399,9 +399,17 @@ def checkin_direct(request):
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
             return redirect(reverse('hotel:index') + '?tab=checkinout')
-            
-        if date_depart_obj <= today:
-            msg = "La date de départ doit être ultérieure à aujourd'hui."
+
+        type_sejour = request.POST.get('type_sejour', 'nuitee')
+        # Repos/journée peuvent finir le même jour — seule la nuitée exige le lendemain
+        if type_sejour == 'nuitee' and date_depart_obj <= today:
+            msg = "La date de départ doit être postérieure à la date d'arrivée."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
+        elif date_depart_obj < today:
+            msg = "La date de départ ne peut pas être dans le passé."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
@@ -427,7 +435,6 @@ def checkin_direct(request):
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
         # Création Réservation
-        type_sejour = request.POST.get('type_sejour', 'nuitee')
         duree = (date_depart_obj - today).days
         if duree < 1: duree = 1
 
@@ -439,11 +446,16 @@ def checkin_direct(request):
             prix_unit = chambre.prix_nuitee
         prix_total = duree * prix_unit
 
+        heure_arrivee_str = request.POST.get('heure_arrivee', '').strip() or None
+        heure_depart_str  = request.POST.get('heure_depart', '').strip() or None
+
         reservation = Reservation.objects.create(
             client=client,
             chambre=chambre,
             date_arrivee=today,
+            heure_arrivee=heure_arrivee_str,
             date_depart=date_depart_obj,
+            heure_depart=heure_depart_str,
             type_sejour=type_sejour,
             nombre_adultes=nombre_adultes,
             nombre_enfants=nombre_enfants,
@@ -495,11 +507,19 @@ def reservation_create(request):
             return redirect('hotel:index')
             
         # Validation Dates
+        type_sejour = request.POST.get('type_sejour', 'nuitee')
         d_arrivee = timezone.datetime.strptime(date_arrivee, '%Y-%m-%d').date()
         d_depart = timezone.datetime.strptime(date_depart, '%Y-%m-%d').date()
-        
-        if d_arrivee >= d_depart:
-            msg = "La date de départ doit être après la date d'arrivée."
+
+        # Repos/journée peuvent être le même jour ; nuitée exige d_depart > d_arrivee
+        if type_sejour == 'nuitee' and d_arrivee >= d_depart:
+            msg = "Pour une nuitée, la date de départ doit être après la date d'arrivée."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': msg})
+            messages.error(request, msg)
+            return redirect('hotel:index')
+        elif d_depart < d_arrivee:
+            msg = "La date de départ ne peut pas être avant la date d'arrivée."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
@@ -563,8 +583,7 @@ def reservation_create(request):
                 )
         
         # Calcul Prix
-        type_sejour = request.POST.get('type_sejour', 'nuitee')
-        duree = (d_depart - d_arrivee).days
+        duree = (d_depart - d_arrivee).days or 1
 
         if type_sejour == 'repos':
             prix_unit = chambre.prix_nuit
@@ -576,11 +595,16 @@ def reservation_create(request):
 
         statut = 'confirmee' if avance > 0 else 'en_attente'
 
+        heure_arrivee_str = request.POST.get('heure_arrivee', '').strip() or None
+        heure_depart_str  = request.POST.get('heure_depart', '').strip() or None
+
         Reservation.objects.create(
             client=client,
             chambre=chambre,
             date_arrivee=d_arrivee,
+            heure_arrivee=heure_arrivee_str,
             date_depart=d_depart,
+            heure_depart=heure_depart_str,
             type_sejour=type_sejour,
             prix_total=prix_total,
             avance=avance,
@@ -1055,6 +1079,102 @@ def api_supprimer_consommation(request, conso_id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('hotel')
+@transaction.atomic
+def reservation_modifier(request, reservation_id):
+    """Modifier une réservation en attente ou confirmée."""
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    if reservation.statut not in ('en_attente', 'confirmee'):
+        messages.error(request, "Impossible de modifier une réservation déjà en cours, terminée ou annulée.")
+        return redirect(reverse('hotel:index') + '?tab=reservations')
+
+    if request.method == 'POST':
+        chambre_id    = request.POST.get('chambre_id')
+        date_arrivee  = request.POST.get('date_arrivee')
+        heure_arrivee = request.POST.get('heure_arrivee', '').strip() or None
+        date_depart   = request.POST.get('date_depart')
+        heure_depart  = request.POST.get('heure_depart', '').strip() or None
+        type_sejour   = request.POST.get('type_sejour', 'nuitee')
+        avance        = Decimal(request.POST.get('avance', 0))
+
+        try:
+            d_arrivee = timezone.datetime.strptime(date_arrivee, '%Y-%m-%d').date()
+            d_depart  = timezone.datetime.strptime(date_depart,  '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, "Format de date invalide.")
+            return redirect(reverse('hotel:index') + '?tab=reservations')
+
+        if type_sejour == 'nuitee' and d_arrivee >= d_depart:
+            messages.error(request, "Pour une nuitée, la date de départ doit être après la date d'arrivée.")
+            return redirect(reverse('hotel:index') + '?tab=reservations')
+        if d_depart < d_arrivee:
+            messages.error(request, "La date de départ ne peut pas être avant la date d'arrivée.")
+            return redirect(reverse('hotel:index') + '?tab=reservations')
+
+        chambre = get_object_or_404(Chambre, id=chambre_id)
+
+        # Vérification chevauchement (en excluant la réservation en cours de modification)
+        overlapping = Reservation.objects.filter(
+            chambre=chambre,
+            statut__in=['en_attente', 'confirmee', 'en_cours']
+        ).filter(
+            Q(date_arrivee__lt=d_depart) & Q(date_depart__gt=d_arrivee)
+        ).exclude(id=reservation_id)
+
+        if overlapping.exists():
+            o = overlapping.first()
+            messages.error(request, f"La chambre {chambre.numero} est déjà réservée du {o.date_arrivee.strftime('%d/%m/%Y')} au {o.date_depart.strftime('%d/%m/%Y')}.")
+            return redirect(reverse('hotel:index') + '?tab=reservations')
+
+        duree = (d_depart - d_arrivee).days or 1
+        if type_sejour == 'repos':
+            prix_unit = chambre.prix_nuit
+        elif type_sejour == 'journee':
+            prix_unit = chambre.prix_sejour
+        else:
+            prix_unit = chambre.prix_nuitee
+        prix_total = duree * prix_unit
+
+        reservation.chambre       = chambre
+        reservation.date_arrivee  = d_arrivee
+        reservation.heure_arrivee = heure_arrivee
+        reservation.date_depart   = d_depart
+        reservation.heure_depart  = heure_depart
+        reservation.type_sejour   = type_sejour
+        reservation.avance        = avance
+        reservation.prix_total    = prix_total
+        if avance > 0 and reservation.statut == 'en_attente':
+            reservation.statut = 'confirmee'
+        reservation.save()
+
+        messages.success(request, f"Réservation #{reservation_id} modifiée avec succès.")
+        return redirect(reverse('hotel:index') + '?tab=reservations')
+
+    return redirect(reverse('hotel:index') + '?tab=reservations')
+
+
+@require_module_access('hotel')
+@require_POST
+@transaction.atomic
+def reservation_annuler(request, reservation_id):
+    """Annuler une réservation (statut → annulée). Interdit si en_cours ou terminée."""
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    if reservation.statut in ('terminee',):
+        messages.error(request, "Impossible d'annuler une réservation déjà terminée.")
+        return redirect(reverse('hotel:index') + '?tab=reservations')
+    if reservation.statut == 'en_cours':
+        messages.error(request, "Impossible d'annuler un séjour en cours. Effectuez d'abord un check-out.")
+        return redirect(reverse('hotel:index') + '?tab=reservations')
+    if reservation.statut == 'annulee':
+        messages.warning(request, "Cette réservation est déjà annulée.")
+        return redirect(reverse('hotel:index') + '?tab=reservations')
+
+    reservation.statut = 'annulee'
+    reservation.save()
+    messages.success(request, f"Réservation #{reservation_id} de {reservation.client.nom_complet} annulée.")
+    return redirect(reverse('hotel:index') + '?tab=reservations')
 
 
 @require_module_access('hotel')

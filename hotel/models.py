@@ -114,8 +114,10 @@ class Reservation(models.Model):
     chambre = models.ForeignKey(Chambre, on_delete=models.CASCADE, verbose_name="Chambre")
     client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name="Client")
     
-    date_arrivee = models.DateField(verbose_name="Date d'arrivée")
-    date_depart = models.DateField(verbose_name="Date de départ")
+    date_arrivee  = models.DateField(verbose_name="Date d'arrivée")
+    heure_arrivee = models.TimeField(null=True, blank=True, verbose_name="Heure d'arrivée")
+    date_depart   = models.DateField(verbose_name="Date de départ")
+    heure_depart  = models.TimeField(null=True, blank=True, verbose_name="Heure de départ")
     type_sejour = models.CharField(max_length=20, choices=TYPE_SEJOUR_CHOICES, default='nuitee', verbose_name="Type de Séjour")
     
     # Voyage Info
@@ -169,10 +171,14 @@ class Reservation(models.Model):
             
         if duree < 1:
             duree = 1
-            
-        # Recalcul du prix
-        # On utilise le prix de la chambre actuel
-        prix_reel = duree * self.chambre.prix_nuit
+
+        ts = self.type_sejour
+        if ts == 'repos':
+            prix_reel = duree * self.chambre.prix_nuit
+        elif ts == 'journee':
+            prix_reel = duree * self.chambre.prix_sejour
+        else:
+            prix_reel = duree * self.chambre.prix_nuitee
         return prix_reel
 
     def get_montant_services(self):
