@@ -433,7 +433,7 @@ def checkin_direct(request):
 
         if type_sejour == 'repos':
             prix_unit = chambre.prix_nuit
-        elif type_sejour in ('journee', 'long_sejour'):
+        elif type_sejour == 'journee':
             prix_unit = chambre.prix_sejour
         else:
             prix_unit = chambre.prix_nuitee
@@ -568,7 +568,7 @@ def reservation_create(request):
 
         if type_sejour == 'repos':
             prix_unit = chambre.prix_nuit
-        elif type_sejour in ('journee', 'long_sejour'):
+        elif type_sejour == 'journee':
             prix_unit = chambre.prix_sejour
         else:
             prix_unit = chambre.prix_nuitee
@@ -627,7 +627,7 @@ def checkout_reservation(request, reservation_id):
         ts = reservation.type_sejour
         if ts == 'repos':
             nouveau_prix_total = (reservation.chambre.prix_nuit or 0) * diff_days
-        elif ts in ('journee', 'long_sejour'):
+        elif ts == 'journee':
             nouveau_prix_total = (reservation.chambre.prix_sejour or 0) * diff_days
         else:  # nuitee (défaut)
             nouveau_prix_total = (reservation.chambre.prix_nuitee or 0) * diff_days

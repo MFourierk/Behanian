@@ -109,7 +109,6 @@ class Reservation(models.Model):
         ('repos', 'Repos (4h)'),
         ('journee', 'Journée (10h)'),
         ('nuitee', 'Nuitée (24h)'),
-        ('long_sejour', 'Long Séjour'),
     ]
 
     chambre = models.ForeignKey(Chambre, on_delete=models.CASCADE, verbose_name="Chambre")

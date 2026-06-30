@@ -51,7 +51,6 @@ class Migration(migrations.Migration):
                     ('repos', 'Repos (4h)'),
                     ('journee', 'Journée (10h)'),
                     ('nuitee', 'Nuitée (24h)'),
-                    ('long_sejour', 'Long Séjour'),
                 ],
                 default='nuitee',
                 max_length=20,

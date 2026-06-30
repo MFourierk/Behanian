@@ -834,7 +834,6 @@
                             <option value="repos">Repos (4h)</option>
                             <option value="journee">Journée (10h)</option>
                             <option value="nuitee" selected>Nuitée (24h)</option>
-                            <option value="long_sejour">Long Séjour</option>
                         </select>
                     </div>
                 </div>
@@ -945,7 +944,6 @@
                             <option value="repos">Repos (4h)</option>
                             <option value="journee">Journée (10h)</option>
                             <option value="nuitee" selected>Nuitée (24h)</option>
-                            <option value="long_sejour">Long Séjour</option>
                         </select>
                     </div>
                 </div>
@@ -1978,7 +1976,7 @@
                     let pricePerUnit = 0;
                     if (typeSejour === 'repos') {
                         pricePerUnit = parseFloat(option.getAttribute('data-price-nuit') || 0);
-                    } else if (typeSejour === 'journee' || typeSejour === 'long_sejour') {
+                    } else if (typeSejour === 'journee') {
                         pricePerUnit = parseFloat(option.getAttribute('data-price-sejour') || 0);
                     } else {
                         pricePerUnit = parseFloat(option.getAttribute('data-price-nuitee') || 0);
