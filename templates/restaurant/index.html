@@ -737,9 +737,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="nav-tab" data-view="boissons" onclick="switchView(this)">
           🍷 Boissons
         </button>
-        <button class="nav-tab" data-view="accompagnements" onclick="switchView(this)">
-          🥗 Accompagnements
-        </button>
         <a href="{% url 'restaurant:reservation_list' %}" class="nav-tab" style="text-decoration:none;">
           📅 Réservations
         </a>
@@ -812,7 +809,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
       <div class="articles-scroll" style="margin-top:12px;">
         <div class="articles-grid" id="platsGrid">
-          {% for plat in plats %}{% if not plat.is_accompagnement %}
+          {% for plat in plats %}
           <div class="article-card {% if not plat.en_stock %}rupture{% endif %}"
                data-type="plat"
                data-id="{{ plat.id }}"
@@ -836,7 +833,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               </div>
             </div>
           </div>
-          {% endif %}{% endfor %}
+          {% endfor %}
           {% if not plats %}
           <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
             <i class="fas fa-utensils" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
@@ -918,49 +915,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
             <i class="fas fa-wine-bottle" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
             Aucune boisson disponible
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <!-- ── VUE : ACCOMPAGNEMENTS ── -->
-    <div class="view-panel" id="view-accompagnements">
-      <div style="padding:12px 22px 0; flex-shrink:0;">
-        <div class="search-wrap">
-          <i class="fas fa-search"></i>
-          <input type="text" id="searchAccompagnements" placeholder="Rechercher un accompagnement…" oninput="filtrerArticles('accompagnements')">
-        </div>
-      </div>
-      <div class="articles-scroll" style="margin-top:12px;">
-        <div class="articles-grid" id="accompagnementsGrid">
-          {% for acc in accompagnements %}
-          <div class="article-card {% if not acc.en_stock %}rupture{% endif %}"
-               data-type="accompagnement"
-               data-id="{{ acc.id }}"
-               data-nom="{{ acc.nom|lower }}"
-               onclick="ajouterArticle('plat', {{ acc.id }}, '{{ acc.nom|escapejs }}', {{ acc.prix|stringformat:'g' }}, '{{ acc.categorie.nom|escapejs }}', {{ acc.en_stock|yesno:'true,false' }})">
-            <div class="ac-img-wrap">
-              {% if acc.image %}<img src="{{ acc.image.url }}" alt="{{ acc.nom }}">{% else %}🥗{% endif %}
-              <span class="ac-stock-badge {% if acc.stock_quantity > 5 %}ok{% elif acc.stock_quantity > 0 %}bas{% else %}rupture{% endif %}">
-                {% if acc.stock_quantity > 50 %}✓{% elif acc.stock_quantity > 0 %}{{ acc.stock_quantity }}{% else %}—{% endif %}
-              </span>
-            </div>
-            <div class="ac-body">
-              <div class="ac-nom">{{ acc.nom }}</div>
-              <div class="ac-footer">
-                <div>
-                  <div class="ac-prix">{{ acc.prix|montant }} F</div>
-                </div>
-                <button class="ac-add" onclick="event.stopPropagation(); ajouterArticle('plat', {{ acc.id }}, '{{ acc.nom|escapejs }}', {{ acc.prix|stringformat:'g' }}, '{{ acc.categorie.nom|escapejs }}', {{ acc.en_stock|yesno:'true,false' }})">+</button>
-              </div>
-            </div>
-          </div>
-          {% empty %}
-          <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
-            <i class="fas fa-leaf" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
-            Aucun accompagnement disponible.<br>
-            <small>Créez des plats marqués "Accompagnement" dans le module Cuisine.</small>
           </div>
           {% endfor %}
         </div>
@@ -1474,7 +1428,6 @@ function filtrerArticles(type) {
   const map = {
     plats:          { search:'searchPlats',          filter:'platsFilters',          grid:'platsGrid' },
     boissons:       { search:'searchBoissons',        filter:'boissonsFilters',        grid:'boissonsGrid' },
-    accompagnements:{ search:'searchAccompagnements', filter:null,                     grid:'accompagnementsGrid' },
   };
   const cfg = map[type] || map.plats;
   const q   = document.getElementById(cfg.search)?.value.toLowerCase() || '';
