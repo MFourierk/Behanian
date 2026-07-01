@@ -25,15 +25,23 @@ if [ "$TAILLE" -lt "$TAILLE_MIN" ]; then
     exit 1
 fi
 
-# SECURITE : verifier que auth_user est bien dans le dump
+# SECURITE : verifier que auth_user est bien dans le dump ET contient des donnees
 if ! grep -q "COPY public.auth_user" "$DUMP" 2>/dev/null; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') --- ERREUR: Dump ne contient pas auth_user. Sync annulee." >> "$LOG"
     rm -f "$DUMP"
     exit 1
 fi
 
+# Compter les lignes de données dans auth_user (entre COPY ... FROM stdin; et \.)
+NB_USERS_DUMP=$(awk '/^COPY public\.auth_user /,/^\\./{if(!/^COPY/ && !/^\\./)print}' "$DUMP" | wc -l | tr -d ' ')
+if [ -z "$NB_USERS_DUMP" ] || [ "$NB_USERS_DUMP" -lt 3 ] 2>/dev/null; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- ERREUR: Dump auth_user ne contient que ${NB_USERS_DUMP:-0} utilisateur(s). Sync annulee." >> "$LOG"
+    rm -f "$DUMP"
+    exit 1
+fi
+
 SIZE=$(du -sh "$DUMP" | cut -f1)
-echo "$(date '+%Y-%m-%d %H:%M:%S') --- Dump OK ($SIZE, ${TAILLE} octets)" >> "$LOG"
+echo "$(date '+%Y-%m-%d %H:%M:%S') --- Dump OK ($SIZE, ${TAILLE} octets, $NB_USERS_DUMP utilisateur(s) dans dump)" >> "$LOG"
 
 # 2. Copie de sauvegarde horodatee (conservee 7 jours)
 cp "$DUMP" "$BACKUP"
