@@ -117,5 +117,34 @@ fi
 # 9. Redemarrer Gunicorn
 sudo systemctl restart gunicorn
 
+# 10. Verification croisee complexe <-> VPS (nb lignes tables cles + taille DB)
+set +e
+SSH_C="ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 behanian@10.8.0.2"
+PG_C="PGPASSWORD='BehaNian2026Local' psql -U behanian_user -h localhost behanian_db -t -c"
+PG_V="PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost behanian_db -t -c"
+
+NB_USERS_C=$($SSH_C "$PG_C 'SELECT COUNT(*) FROM auth_user;'" 2>/dev/null | tr -d ' \n')
+NB_BOISSONS_C=$($SSH_C "$PG_C 'SELECT COUNT(*) FROM bar_boissonbar;'" 2>/dev/null | tr -d ' \n')
+NB_INGR_C=$($SSH_C "$PG_C 'SELECT COUNT(*) FROM cuisine_ingredient;'" 2>/dev/null | tr -d ' \n')
+TAILLE_C=$($SSH_C "$PG_C \"SELECT pg_size_pretty(pg_database_size('behanian_db'));\"" 2>/dev/null | tr -d ' \n')
+
+NB_USERS_V=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost behanian_db -t -c "SELECT COUNT(*) FROM auth_user;" 2>/dev/null | tr -d ' \n')
+NB_BOISSONS_V=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost behanian_db -t -c "SELECT COUNT(*) FROM bar_boissonbar;" 2>/dev/null | tr -d ' \n')
+NB_INGR_V=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost behanian_db -t -c "SELECT COUNT(*) FROM cuisine_ingredient;" 2>/dev/null | tr -d ' \n')
+TAILLE_V=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost behanian_db -t -c "SELECT pg_size_pretty(pg_database_size('behanian_db'));" 2>/dev/null | tr -d ' \n')
+
+echo "$(date '+%Y-%m-%d %H:%M:%S') --- Tailles DB : complexe=${TAILLE_C:-?}, VPS=${TAILLE_V:-?}" >> "$LOG"
+
+if [ -n "$NB_USERS_C" ] && [ -n "$NB_USERS_V" ]; then
+    if [ "$NB_USERS_C" = "$NB_USERS_V" ] && [ "$NB_BOISSONS_C" = "$NB_BOISSONS_V" ] && [ "$NB_INGR_C" = "$NB_INGR_V" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') --- Coherence OK : users=${NB_USERS_V}, boissons=${NB_BOISSONS_V}, ingredients=${NB_INGR_V}" >> "$LOG"
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') --- ALERTE coherence : complexe(users=${NB_USERS_C:-?}, boissons=${NB_BOISSONS_C:-?}, ingr=${NB_INGR_C:-?}) != VPS(users=${NB_USERS_V:-?}, boissons=${NB_BOISSONS_V:-?}, ingr=${NB_INGR_V:-?})" >> "$LOG"
+    fi
+else
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- Verification coherence impossible (connexion complexe KO)" >> "$LOG"
+fi
+set -e
+
 echo "$(date '+%Y-%m-%d %H:%M:%S') --- Sync + backup termines OK" >> "$LOG"
 echo "---" >> "$LOG"
