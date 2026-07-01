@@ -12,6 +12,19 @@ TAILLE_MIN=150000
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') --- Debut sync complexe->VPS" >> "$LOG"
 
+# 0. Vérification préalable : complexe joignable via WireGuard
+if ! ping -c 2 -W 5 10.8.0.2 > /dev/null 2>&1; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- ERREUR: complexe (10.8.0.2) injoignable via WireGuard. Sync annulee." >> "$LOG"
+    echo "---" >> "$LOG"
+    exit 1
+fi
+if ! ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 behanian@10.8.0.2 "echo ok" > /dev/null 2>&1; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- ERREUR: SSH complexe echoue (WireGuard up mais SSH KO). Sync annulee." >> "$LOG"
+    echo "---" >> "$LOG"
+    exit 1
+fi
+echo "$(date '+%Y-%m-%d %H:%M:%S') --- Connexion complexe OK (ping + SSH)" >> "$LOG"
+
 # 1. Dump depuis le complexe via WireGuard
 ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=30 behanian@10.8.0.2 \
   "PGPASSWORD='BehaNian2026Local' pg_dump -U behanian_user -h localhost behanian_db --no-owner --no-acl" \
