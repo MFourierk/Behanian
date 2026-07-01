@@ -97,6 +97,7 @@ class BoissonBar(models.Model):
     ]
     UNITE_STANDARD_CHOICES = [
         ('bouteille', 'Bouteille'),
+        ('canette', 'Canette'),
         ('verre', 'Verre'),
         ('cl', 'Cl'),
         ('litre', 'Litre'),
