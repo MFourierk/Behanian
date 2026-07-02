@@ -196,6 +196,7 @@ function renderCard(cmd) {
       </div>
     </div>
     <div class="cmd-body">
+      ${cmd.serveur ? `<div class="cmd-client" style="color:var(--violet);margin-bottom:4px;">🧑‍🍳 ${cmd.serveur}</div>` : ''}
       ${cmd.client ? `<div class="cmd-client">👤 ${cmd.client}</div>` : ''}
       ${cmd.lignes.map(l => `
         <div class="cmd-ligne">

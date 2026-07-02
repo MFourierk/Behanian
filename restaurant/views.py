@@ -905,17 +905,22 @@ def kds_api(request):
         statut__in=['en_attente', 'en_preparation']
     ).prefetch_related(
         'lignes__plat', 'lignes__accompagnement', 'lignes__boisson'
-    ).select_related('table').order_by('date_creation')
+    ).select_related('table', 'serveur').order_by('date_creation')
 
     result = []
     for cmd in commandes:
         lignes = [{'nom': l.get_nom, 'quantite': l.quantite, 'note': l.note or ''} for l in cmd.lignes.all()]
+        if cmd.serveur:
+            serveur_nom = cmd.serveur.get_full_name() or cmd.serveur.username
+        else:
+            serveur_nom = ''
         result.append({
             'id': cmd.id,
             'table': cmd.table.numero if cmd.table else 'À emporter',
             'statut': cmd.statut,
             'nb_couverts': cmd.nb_couverts,
             'client': cmd.nom_client or '',
+            'serveur': serveur_nom,
             'lignes': lignes,
             'age_min': int((timezone.now() - cmd.date_creation).total_seconds() // 60),
         })
