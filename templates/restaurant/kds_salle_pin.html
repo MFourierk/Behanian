@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service — Code d'accès</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0d12; color: rgba(255,255,255,0.88);
+      font-family: 'DM Sans', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+    }
+    .box {
+      background: #18181f; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 340px;
+      text-align: center;
+    }
+    .icon { font-size: 2.4rem; margin-bottom: 16px; }
+    h1 { font-size: 1.2rem; font-weight: 800; color: #c9a84c; margin-bottom: 6px; }
+    p  { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
+
+    /* Affichage points PIN */
+    .pin-display {
+      display: flex; justify-content: center; gap: 14px; margin-bottom: 28px;
+    }
+    .dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2); background: transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .dot.filled { background: #c9a84c; border-color: #c9a84c; }
+    .dot.error  { background: #f87171; border-color: #f87171; }
+
+    /* Clavier */
+    .keypad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .key {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 18px 0; font-size: 1.3rem; font-weight: 700;
+      cursor: pointer; color: rgba(255,255,255,0.88); transition: background 0.15s;
+      user-select: none;
+    }
+    .key:active, .key:hover { background: rgba(201,168,76,0.2); border-color: rgba(201,168,76,0.4); }
+    .key.del { font-size: 1rem; color: rgba(255,255,255,0.5); }
+    .key.empty { visibility: hidden; }
+
+    .msg-erreur {
+      margin-top: 18px; font-size: 0.8rem; color: #f87171;
+      font-weight: 700; display: none;
+    }
+    .msg-erreur.visible { display: block; }
+  </style>
+</head>
+<body>
+<div class="box">
+  <div class="icon">🔐</div>
+  <h1>Vue Salle — Behanian</h1>
+  <p>Saisir le code d'accès</p>
+
+  <div class="pin-display">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+  </div>
+
+  <div class="keypad">
+    {% for n in "123456789" %}
+    <button class="key" onclick="saisir('{{ n }}')">{{ n }}</button>
+    {% endfor %}
+    <button class="key empty"></button>
+    <button class="key" onclick="saisir('0')">0</button>
+    <button class="key del" onclick="effacer()">⌫</button>
+  </div>
+
+  <div class="msg-erreur" id="msgErreur">Code incorrect, réessayez.</div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+let pin = '';
+
+function majDots(erreur) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
+    d.className = 'dot' + (i < pin.length ? (erreur ? ' error' : ' filled') : '');
+  }
+}
+
+function saisir(c) {
+  if (pin.length >= 4) return;
+  pin += c;
+  majDots(false);
+  if (pin.length === 4) verifier();
+}
+
+function effacer() {
+  pin = pin.slice(0, -1);
+  majDots(false);
+  document.getElementById('msgErreur').classList.remove('visible');
+}
+
+async function verifier() {
+  const form = new URLSearchParams();
+  form.append('pin', pin);
+  const r = await fetch("{% url 'restaurant:kds_salle_pin' %}", {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form,
+  });
+  const d = await r.json();
+  if (d.ok) {
+    window.location.reload();
+  } else {
+    majDots(true);
+    document.getElementById('msgErreur').classList.add('visible');
+    setTimeout(() => { pin = ''; majDots(false); document.getElementById('msgErreur').classList.remove('visible'); }, 1200);
+  }
+}
+</script>
+</body>
+</html>

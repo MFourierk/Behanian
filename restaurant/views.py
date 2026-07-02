@@ -899,12 +899,29 @@ def kds_view(request):
 
 
 def kds_salle_view(request):
-    """Vue salle publique — lecture seule, aucune authentification requise."""
+    """Vue salle — lecture seule, protégée par PIN de session."""
+    if not request.session.get('salle_unlocked'):
+        return render(request, 'restaurant/kds_salle_pin.html', {})
     return render(request, 'restaurant/kds_salle.html', {})
 
 
+def kds_salle_pin(request):
+    """Vérifie le PIN salle et ouvre la session si correct."""
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    from django.conf import settings
+    pin_saisi = request.POST.get('pin', '').strip()
+    if pin_saisi == getattr(settings, 'SALLE_PIN', '1234'):
+        request.session['salle_unlocked'] = True
+        request.session.set_expiry(86400 * 30)  # 30 jours
+        return JsonResponse({'ok': True})
+    return JsonResponse({'ok': False, 'message': 'Code incorrect'}, status=403)
+
+
 def kds_salle_api(request):
-    """API publique lecture seule — statuts commandes pour écran salle."""
+    """API salle lecture seule — protégée par PIN de session."""
+    if not request.session.get('salle_unlocked'):
+        return JsonResponse({'error': 'Non autorisé'}, status=403)
     commandes = Commande.objects.filter(
         statut__in=['en_attente', 'en_preparation', 'prete']
     ).prefetch_related(

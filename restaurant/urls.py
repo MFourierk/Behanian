@@ -23,6 +23,7 @@ urlpatterns = [
     path('kds/statut/', views.kds_changer_statut, name='kds_changer_statut'),
     path('service/', views.kds_salle_view, name='kds_salle'),
     path('service/api/', views.kds_salle_api, name='kds_salle_api'),
+    path('service/pin/', views.kds_salle_pin, name='kds_salle_pin'),
     path('resume-ventes-jour/', views.resume_ventes_jour, name='resume_ventes_jour'),
     path('create-reservation/', views.create_reservation, name='create_reservation'),
     path('update-reservation-status/', views.update_reservation_status, name='update_reservation_status'),

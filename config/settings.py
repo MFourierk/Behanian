@@ -247,3 +247,8 @@ AXES_LOCKOUT_PARAMETERS = ['ip_address', 'username']
 AXES_RESET_ON_SUCCESS = True    # réinitialise le compteur après connexion réussie
 
 AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'
+
+# ---------------------------------------------------------------------------
+# PIN vue salle (lecture seule, sans login)
+# ---------------------------------------------------------------------------
+SALLE_PIN = os.environ.get('SALLE_PIN', '1234')
