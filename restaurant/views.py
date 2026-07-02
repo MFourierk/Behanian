@@ -934,7 +934,7 @@ def kds_salle_api(request):
 def kds_api(request):
     """API polling KDS — retourne les commandes en_attente et en_preparation."""
     commandes = Commande.objects.filter(
-        statut__in=['en_attente', 'en_preparation']
+        statut__in=['en_attente', 'en_preparation', 'prete']
     ).prefetch_related(
         'lignes__plat', 'lignes__accompagnement', 'lignes__boisson'
     ).select_related('table', 'serveur').order_by('date_creation')
