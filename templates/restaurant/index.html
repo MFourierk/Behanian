@@ -1323,6 +1323,7 @@ function _executerApresAlerte(mode) {
       majTicketMeta(); t.paiement = modePaiement;
       _majLabelTicket(ticketActifId);
     }
+    nouveauTicket(); // ticket vierge actif avant d'exécuter l'action
   }
   if (action) action();
 }
