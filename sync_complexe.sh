@@ -82,7 +82,7 @@ source venv/bin/activate
 python manage.py migrate --noinput >> "$LOG" 2>&1
 
 # 7b. Sync media (images) depuis complexe -> VPS
-for MEDIA_DIR in plats boissons forfaits; do
+for MEDIA_DIR in plats boissons forfaits chambres espaces; do
     rsync -a --delete behanian@10.8.0.2:/opt/behanian/media/${MEDIA_DIR}/ /opt/behanian/media/${MEDIA_DIR}/ >> "$LOG" 2>&1 \
       && echo "$(date '+%Y-%m-%d %H:%M:%S') --- Media sync OK : ${MEDIA_DIR}/" >> "$LOG" \
       || echo "$(date '+%Y-%m-%d %H:%M:%S') --- AVERT: Media sync echouee pour ${MEDIA_DIR}/" >> "$LOG"
