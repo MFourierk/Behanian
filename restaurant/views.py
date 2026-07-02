@@ -918,6 +918,22 @@ def kds_salle_pin(request):
     return JsonResponse({'ok': False, 'message': 'Code incorrect'}, status=403)
 
 
+def kds_salle_marquer_servi(request):
+    """Marque une commande 'prete' comme 'servie' — session PIN uniquement."""
+    if not request.session.get('salle_unlocked'):
+        return JsonResponse({'ok': False, 'message': 'Non autorisé'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'ok': False}, status=405)
+    try:
+        data = json.loads(request.body)
+        commande = get_object_or_404(Commande, id=data['commande_id'], statut='prete')
+        commande.statut = 'servie'
+        commande.save(update_fields=['statut'])
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'message': str(e)}, status=400)
+
+
 def kds_salle_api(request):
     """API salle lecture seule — protégée par PIN de session."""
     if not request.session.get('salle_unlocked'):
