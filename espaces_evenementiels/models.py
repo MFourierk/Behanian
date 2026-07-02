@@ -11,6 +11,7 @@ class EspaceEvenementiel(models.Model):
         ('espace_exterieur', 'Espace extérieur'),
         ('jardin', 'Jardin'),
         ('terrasse', 'Terrasse'),
+        ('restauration', 'Restauration'),
     ]
     
     STATUT_CHOICES = [
