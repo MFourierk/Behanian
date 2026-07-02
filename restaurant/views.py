@@ -1076,29 +1076,55 @@ def transferer_table(request):
 @require_module_access('restaurant')
 def resume_ventes_jour(request):
     """Résumé des ventes du jour pour le TPE restaurant (lecture seule)."""
-    from django.db.models import Sum, Count
     aujourd_hui = timezone.now().date()
     commandes = Commande.objects.filter(
         statut='payee',
         date_creation__date=aujourd_hui,
-    ).select_related('caissier', 'serveur')
+    ).select_related('caissier', 'serveur', 'table')
 
     total_brut = sum(float(c.total) for c in commandes)
     total_net  = sum(c.total_net for c in commandes)
     nb_cmd     = commandes.count()
 
-    # Par mode de paiement (lu depuis les tickets facturation)
+    # Tickets facturation : mode de paiement + liste détaillée
+    par_mode = {}
+    liste_tickets = []
     try:
         from facturation.models import Ticket as TicketCaisse
         tickets_jour = TicketCaisse.objects.filter(
             module='restaurant', date_creation__date=aujourd_hui,
-        )
-        par_mode = {}
+        ).select_related('cree_par').order_by('-date_creation')
+        mode_noms = {
+            'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
+            'mobile': 'Mobile Money', 'mobile_money': 'Mobile Money',
+            'orange_money': 'Orange Money', 'wave': 'Wave',
+            'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
+            'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
+        }
         for tk in tickets_jour:
             m = tk.mode_paiement or 'especes'
             par_mode[m] = par_mode.get(m, 0) + float(tk.montant_paye or 0)
+            caissier_nom = ''
+            if tk.cree_par:
+                caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username
+            # Retrouver la table via objet_id → Commande
+            table_ref = ''
+            if tk.objet_id:
+                try:
+                    cmd = Commande.objects.select_related('table').get(pk=tk.objet_id)
+                    table_ref = cmd.table.numero if cmd.table else ('À emporter' if cmd.emporter else '')
+                except Commande.DoesNotExist:
+                    pass
+            liste_tickets.append({
+                'numero':   tk.numero,
+                'heure':    tk.date_creation.strftime('%H:%M'),
+                'montant':  float(tk.montant_paye or 0),
+                'mode':     mode_noms.get(m, m),
+                'caissier': caissier_nom,
+                'table':    table_ref,
+            })
     except Exception:
-        par_mode = {}
+        pass
 
     # Par caissier
     par_caissier = {}
@@ -1116,6 +1142,7 @@ def resume_ventes_jour(request):
         'total_net': total_net,
         'par_mode': par_mode,
         'par_caissier': [{'nom': k, **v} for k, v in par_caissier.items()],
+        'tickets': liste_tickets,
     })
 
 

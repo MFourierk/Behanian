@@ -947,10 +947,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
     <!-- ── VUE : RÉSUMÉ VENTES DU JOUR ── -->
     <div class="view-panel" id="view-ventes">
-      <div style="padding:16px 20px;overflow-y:auto;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="padding:16px 20px;overflow-y:auto;height:100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <h3 style="margin:0;font-size:0.95rem;color:var(--cave-gold);">📊 Ventes du jour</h3>
-          <button onclick="chargerResumeVentes()" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Actualiser</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="ventesSearch" type="text" placeholder="Rechercher ticket…"
+              oninput="filtrerTickets()"
+              style="padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);font-size:0.72rem;font-family:'DM Sans',sans-serif;width:140px;outline:none;">
+            <button onclick="chargerResumeVentes()" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻</button>
+          </div>
         </div>
         <div id="resumeVentesContainer">
           <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:0.85rem;">Chargement…</div>
@@ -1823,6 +1828,8 @@ function paiementRapide() {
 }
 
 // ── RÉSUMÉ VENTES DU JOUR ──
+let _ventesData = null;
+
 async function chargerResumeVentes() {
   const c = document.getElementById('resumeVentesContainer');
   if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:0.85rem;">Chargement…</div>';
@@ -1830,39 +1837,124 @@ async function chargerResumeVentes() {
     const r = await fetch("{% url 'restaurant:resume_ventes_jour' %}");
     const d = await r.json();
     if (!d.success) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Erreur chargement</div>'; return; }
-    const modeIcons = { especes:'💵', carte:'💳', mobile:'📱', chambre:'🛏️' };
-    const modeNoms = { especes:'Espèces', carte:'Carte/TPE', mobile:'Mobile Money', chambre:'Chambre' };
-    let html = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:14px;">
-        <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-bottom:4px;">COMMANDES</div>
-        <div style="font-size:1.6rem;font-weight:800;color:var(--cave-gold);">${d.nb_commandes}</div>
-      </div>
-      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:14px;">
-        <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);margin-bottom:4px;">TOTAL NET</div>
-        <div style="font-size:1.3rem;font-weight:800;color:#4ade80;">${formatF(d.total_net)}</div>
-      </div>
-    </div>
-    <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;margin-bottom:12px;">
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:700;margin-bottom:10px;letter-spacing:0.5px;">PAR MODE DE PAIEMENT</div>
-      ${Object.entries(d.par_mode).length ? Object.entries(d.par_mode).map(([m,v]) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:0.82rem;">${modeIcons[m]||'💰'} ${modeNoms[m]||m}</span>
-          <span style="font-size:0.82rem;font-weight:700;color:var(--cave-gold);">${formatF(v)}</span>
-        </div>`).join('') : '<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.8rem;padding:8px;">Aucune vente aujourd\'hui</div>'}
-    </div>
-    ${d.par_caissier.length ? `
-    <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;">
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);font-weight:700;margin-bottom:10px;letter-spacing:0.5px;">PAR CAISSIER</div>
-      ${d.par_caissier.map(x => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:0.82rem;">👤 ${x.nom} <small style="opacity:0.5;">(${x.nb} cmd)</small></span>
-          <span style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${formatF(x.total)}</span>
-        </div>`).join('')}
-    </div>` : ''}
-    <div style="text-align:center;margin-top:12px;font-size:0.7rem;color:rgba(255,255,255,0.25);">Données du ${d.date}</div>`;
-    if (c) c.innerHTML = html;
+    _ventesData = d;
+    _renderVentes(d);
   } catch(e) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Erreur réseau</div>'; }
+}
+
+function filtrerTickets() {
+  if (!_ventesData) return;
+  _renderVentes(_ventesData);
+}
+
+function _renderVentes(d) {
+  const c = document.getElementById('resumeVentesContainer');
+  if (!c) return;
+  const q = (document.getElementById('ventesSearch')?.value || '').toLowerCase().trim();
+
+  const modeIcons = {
+    'Espèces':'💵', 'Carte/TPE':'💳', 'Mobile Money':'📱',
+    'Orange Money':'🍊', 'Wave':'🌊', 'Moov Money':'📲', 'MTN Money':'📲',
+    'Chèque':'📝', 'Virement':'🏦', 'Chambre':'🛏️',
+  };
+
+  // ── KPI row ──
+  const remise = d.total_brut - d.total_net;
+  let html = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">TICKETS</div>
+      <div style="font-size:1.5rem;font-weight:800;color:var(--cave-gold);">${d.nb_commandes}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">TOTAL NET</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#4ade80;">${formatF(d.total_net)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
+      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">REMISES</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#f87171;">${remise > 0 ? '-'+formatF(remise) : '—'}</div>
+    </div>
+  </div>`;
+
+  // ── Par mode de paiement ──
+  if (Object.keys(d.par_mode).length) {
+    html += `<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;margin-bottom:12px;">
+    <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:8px;">PAR MODE DE PAIEMENT</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+    ${Object.entries(d.par_mode).map(([m,v]) => {
+      const icon = modeIcons[m] || '💰';
+      return `<div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.75rem;">${icon} ${m}</span>
+        <span style="font-size:0.75rem;font-weight:700;color:var(--cave-gold);">${formatF(v)}</span>
+      </div>`;
+    }).join('')}
+    </div></div>`;
+  }
+
+  // ── Tableau tickets ──
+  const tickets = (d.tickets || []).filter(tk => {
+    if (!q) return true;
+    return tk.numero.toLowerCase().includes(q)
+        || (tk.table||'').toLowerCase().includes(q)
+        || (tk.caissier||'').toLowerCase().includes(q)
+        || tk.heure.includes(q);
+  });
+
+  html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:12px;">
+  <div style="display:grid;grid-template-columns:1fr 60px 90px 80px 90px;padding:8px 12px;background:rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.08);">
+    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">N° TICKET</span>
+    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">HEURE</span>
+    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">TABLE</span>
+    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">MODE</span>
+    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;text-align:right;">MONTANT</span>
+  </div>`;
+
+  if (!tickets.length) {
+    html += `<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.3);font-size:0.8rem;">
+      ${q ? 'Aucun ticket ne correspond à la recherche' : 'Aucune vente aujourd\'hui'}
+    </div>`;
+  } else {
+    tickets.forEach((tk, i) => {
+      const bg = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
+      const icon = modeIcons[tk.mode] || '💰';
+      html += `<div style="display:grid;grid-template-columns:1fr 60px 90px 80px 90px;padding:9px 12px;background:${bg};border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
+        <span style="font-size:0.78rem;font-weight:700;color:var(--cave-gold);font-family:monospace;">${tk.numero}</span>
+        <span style="font-size:0.78rem;color:rgba(255,255,255,0.6);">🕐 ${tk.heure}</span>
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.7);">${tk.table || '—'}</span>
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.55);">${icon} ${tk.mode}</span>
+        <span style="font-size:0.82rem;font-weight:800;color:#4ade80;text-align:right;">${formatF(tk.montant)}</span>
+      </div>`;
+    });
+    // Total filtré
+    const totalFiltre = tickets.reduce((s, tk) => s + tk.montant, 0);
+    if (q && tickets.length < (d.tickets||[]).length) {
+      html += `<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(201,168,76,0.08);border-top:1px solid rgba(201,168,76,0.2);">
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.5);">${tickets.length} résultat(s)</span>
+        <span style="font-size:0.78rem;font-weight:800;color:var(--cave-gold);">${formatF(totalFiltre)}</span>
+      </div>`;
+    }
+  }
+  html += `</div>`;
+
+  // ── Par caissier ──
+  if (d.par_caissier.length) {
+    html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:12px;">
+    <div style="padding:8px 12px;background:rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.08);">
+      <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">PAR CAISSIER</span>
+    </div>
+    ${d.par_caissier.map((x,i) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:${i%2===0?'transparent':'rgba(255,255,255,0.02)'};border-bottom:1px solid rgba(255,255,255,0.04);">
+      <span style="font-size:0.8rem;">👤 ${x.nom}</span>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);">${x.nb} ticket${x.nb>1?'s':''}</span>
+        <span style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${formatF(x.total)}</span>
+      </div>
+    </div>`).join('')}
+    </div>`;
+  }
+
+  html += `<div style="text-align:center;margin-top:4px;font-size:0.65rem;color:rgba(255,255,255,0.2);">Données du ${d.date}</div>`;
+  c.innerHTML = html;
 }
 
 // ── POLLING STATUT COMMANDE ──
