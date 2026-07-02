@@ -953,12 +953,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <div style="display:flex;gap:8px;align-items:center;">
             <input id="ventesSearch" type="text" placeholder="Rechercher ticket…"
               oninput="filtrerTickets()"
-              style="padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);font-size:0.72rem;font-family:'DM Sans',sans-serif;width:140px;outline:none;">
-            <button onclick="chargerResumeVentes()" style="padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻</button>
+              style="padding:5px 10px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.72rem;font-family:'DM Sans',sans-serif;width:150px;outline:none;">
+            <button onclick="chargerResumeVentes()" style="padding:5px 12px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Actualiser</button>
           </div>
         </div>
         <div id="resumeVentesContainer">
-          <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:0.85rem;">Chargement…</div>
+          <div style="text-align:center;padding:40px;color:#9b8faa;font-size:0.85rem;">Chargement…</div>
         </div>
       </div>
     </div>
@@ -1832,14 +1832,14 @@ let _ventesData = null;
 
 async function chargerResumeVentes() {
   const c = document.getElementById('resumeVentesContainer');
-  if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.3);font-size:0.85rem;">Chargement…</div>';
+  if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8faa;font-size:0.85rem;">Chargement…</div>';
   try {
     const r = await fetch("{% url 'restaurant:resume_ventes_jour' %}");
     const d = await r.json();
-    if (!d.success) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Erreur chargement</div>'; return; }
+    if (!d.success) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">Erreur chargement</div>'; return; }
     _ventesData = d;
     _renderVentes(d);
-  } catch(e) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171;">Erreur réseau</div>'; }
+  } catch(e) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">Erreur réseau</div>'; }
 }
 
 function filtrerTickets() {
@@ -1852,40 +1852,57 @@ function _renderVentes(d) {
   if (!c) return;
   const q = (document.getElementById('ventesSearch')?.value || '').toLowerCase().trim();
 
-  const modeIcons = {
-    'Espèces':'💵', 'Carte/TPE':'💳', 'Mobile Money':'📱',
-    'Orange Money':'🍊', 'Wave':'🌊', 'Moov Money':'📲', 'MTN Money':'📲',
-    'Chèque':'📝', 'Virement':'🏦', 'Chambre':'🛏️',
+  // Couleurs badges mode paiement
+  const modeCfg = {
+    'Espèces':      { icon:'💵', bg:'#dcfce7', color:'#15803d', border:'#bbf7d0' },
+    'Carte/TPE':    { icon:'💳', bg:'#dbeafe', color:'#1d4ed8', border:'#bfdbfe' },
+    'Mobile Money': { icon:'📱', bg:'#fef3c7', color:'#92400e', border:'#fde68a' },
+    'Orange Money': { icon:'🍊', bg:'#ffedd5', color:'#c2410c', border:'#fed7aa' },
+    'Wave':         { icon:'🌊', bg:'#ede9fe', color:'#6d28d9', border:'#ddd6fe' },
+    'Moov Money':   { icon:'📲', bg:'#ecfeff', color:'#0e7490', border:'#a5f3fc' },
+    'MTN Money':    { icon:'📲', bg:'#fefce8', color:'#a16207', border:'#fef08a' },
+    'Chèque':       { icon:'📝', bg:'#f1f5f9', color:'#475569', border:'#cbd5e1' },
+    'Virement':     { icon:'🏦', bg:'#f0fdf4', color:'#166534', border:'#bbf7d0' },
+    'Chambre':      { icon:'🛏️', bg:'#fdf4ff', color:'#7e22ce', border:'#e9d5ff' },
   };
+  function modeBadge(mode) {
+    const cfg = modeCfg[mode] || { icon:'💰', bg:'#f1f5f9', color:'#475569', border:'#cbd5e1' };
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:0.7rem;font-weight:700;background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border};white-space:nowrap;">${cfg.icon} ${mode}</span>`;
+  }
 
-  // ── KPI row ──
+  // ── KPI cards ──
   const remise = d.total_brut - d.total_net;
   let html = `
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
-    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
-      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">TICKETS</div>
-      <div style="font-size:1.5rem;font-weight:800;color:var(--cave-gold);">${d.nb_commandes}</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+    <div style="background:#fff;border-radius:14px;padding:14px 16px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;margin-bottom:6px;">TICKETS DU JOUR</div>
+      <div style="font-size:2rem;font-weight:800;color:var(--cave-deep);line-height:1;">${d.nb_commandes}</div>
     </div>
-    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
-      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">TOTAL NET</div>
-      <div style="font-size:1.1rem;font-weight:800;color:#4ade80;">${formatF(d.total_net)}</div>
+    <div style="background:#fff;border-radius:14px;padding:14px 16px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;margin-bottom:6px;">TOTAL ENCAISSÉ</div>
+      <div style="font-size:1.25rem;font-weight:800;color:#15803d;line-height:1;">${formatF(d.total_net)}</div>
     </div>
-    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px;text-align:center;">
-      <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:4px;">REMISES</div>
-      <div style="font-size:1.1rem;font-weight:800;color:#f87171;">${remise > 0 ? '-'+formatF(remise) : '—'}</div>
+    <div style="background:#fff;border-radius:14px;padding:14px 16px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);">
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;margin-bottom:6px;">REMISES ACCORDÉES</div>
+      <div style="font-size:1.25rem;font-weight:800;color:${remise > 0 ? '#dc2626' : '#9b8faa'};line-height:1;">${remise > 0 ? '- '+formatF(remise) : '—'}</div>
     </div>
   </div>`;
 
-  // ── Par mode de paiement ──
+  // ── Récap modes de paiement ──
   if (Object.keys(d.par_mode).length) {
-    html += `<div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;margin-bottom:12px;">
-    <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);font-weight:700;letter-spacing:.5px;margin-bottom:8px;">PAR MODE DE PAIEMENT</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+    html += `<div style="background:#fff;border-radius:14px;padding:14px 16px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);margin-bottom:16px;">
+    <div style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;margin-bottom:10px;">RÉPARTITION PAR MODE DE PAIEMENT</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
     ${Object.entries(d.par_mode).map(([m,v]) => {
-      const icon = modeIcons[m] || '💰';
-      return `<div style="flex:1;min-width:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.75rem;">${icon} ${m}</span>
-        <span style="font-size:0.75rem;font-weight:700;color:var(--cave-gold);">${formatF(v)}</span>
+      const cfg = modeCfg[m] || { icon:'💰', bg:'#f1f5f9', color:'#475569', border:'#cbd5e1' };
+      const pct = d.total_net > 0 ? Math.round(v / d.total_net * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:10px;">
+        <span style="flex:0 0 130px;display:inline-flex;align-items:center;gap:5px;font-size:0.78rem;font-weight:600;color:#2d1f3d;">${cfg.icon} ${m}</span>
+        <div style="flex:1;height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${cfg.color};border-radius:99px;transition:width .4s;"></div>
+        </div>
+        <span style="flex:0 0 80px;text-align:right;font-size:0.82rem;font-weight:800;color:#2d1f3d;">${formatF(v)}</span>
+        <span style="flex:0 0 34px;text-align:right;font-size:0.7rem;color:#9b8faa;">${pct}%</span>
       </div>`;
     }).join('')}
     </div></div>`;
@@ -1897,63 +1914,86 @@ function _renderVentes(d) {
     return tk.numero.toLowerCase().includes(q)
         || (tk.table||'').toLowerCase().includes(q)
         || (tk.caissier||'').toLowerCase().includes(q)
+        || (tk.mode||'').toLowerCase().includes(q)
         || tk.heure.includes(q);
   });
 
-  html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:12px;">
-  <div style="display:grid;grid-template-columns:1fr 60px 90px 80px 90px;padding:8px 12px;background:rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.08);">
-    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">N° TICKET</span>
-    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">HEURE</span>
-    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">TABLE</span>
-    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">MODE</span>
-    <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;text-align:right;">MONTANT</span>
-  </div>`;
+  const totalFiltre = tickets.reduce((s, tk) => s + tk.montant, 0);
+
+  html += `<div style="background:#fff;border-radius:14px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);overflow:hidden;margin-bottom:16px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(45,31,61,0.08);">
+    <span style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;">DÉTAIL DES TICKETS</span>
+    <span style="font-size:0.72rem;color:#9b8faa;">${tickets.length} ticket${tickets.length!==1?'s':''} ${q ? '(filtrés)' : ''}</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="background:#f8f6fc;">
+        <th style="padding:9px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">#</th>
+        <th style="padding:9px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">N° TICKET</th>
+        <th style="padding:9px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">HEURE</th>
+        <th style="padding:9px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">TABLE</th>
+        <th style="padding:9px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">CAISSIER</th>
+        <th style="padding:9px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">MODE</th>
+        <th style="padding:9px 14px;text-align:right;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">MONTANT</th>
+      </tr>
+    </thead>
+    <tbody>`;
 
   if (!tickets.length) {
-    html += `<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.3);font-size:0.8rem;">
-      ${q ? 'Aucun ticket ne correspond à la recherche' : 'Aucune vente aujourd\'hui'}
-    </div>`;
+    html += `<tr><td colspan="7" style="text-align:center;padding:32px;color:#9b8faa;font-size:0.82rem;">
+      ${q ? 'Aucun ticket ne correspond à la recherche' : 'Aucune vente enregistrée aujourd\'hui'}
+    </td></tr>`;
   } else {
     tickets.forEach((tk, i) => {
-      const bg = i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)';
-      const icon = modeIcons[tk.mode] || '💰';
-      html += `<div style="display:grid;grid-template-columns:1fr 60px 90px 80px 90px;padding:9px 12px;background:${bg};border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
-        <span style="font-size:0.78rem;font-weight:700;color:var(--cave-gold);font-family:monospace;">${tk.numero}</span>
-        <span style="font-size:0.78rem;color:rgba(255,255,255,0.6);">🕐 ${tk.heure}</span>
-        <span style="font-size:0.75rem;color:rgba(255,255,255,0.7);">${tk.table || '—'}</span>
-        <span style="font-size:0.72rem;color:rgba(255,255,255,0.55);">${icon} ${tk.mode}</span>
-        <span style="font-size:0.82rem;font-weight:800;color:#4ade80;text-align:right;">${formatF(tk.montant)}</span>
-      </div>`;
+      const bg = i % 2 === 0 ? '#fff' : '#faf9fc';
+      html += `<tr style="background:${bg};">
+        <td style="padding:10px 14px;font-size:0.72rem;color:#9b8faa;border-bottom:1px solid rgba(45,31,61,0.05);">${i+1}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(45,31,61,0.05);">
+          <span style="font-family:monospace;font-size:0.82rem;font-weight:700;color:var(--cave-gold);">${tk.numero}</span>
+        </td>
+        <td style="padding:10px 14px;font-size:0.8rem;font-weight:600;color:#2d1f3d;border-bottom:1px solid rgba(45,31,61,0.05);">${tk.heure}</td>
+        <td style="padding:10px 14px;font-size:0.8rem;color:#374151;border-bottom:1px solid rgba(45,31,61,0.05);">${tk.table || '<span style="color:#9b8faa;">—</span>'}</td>
+        <td style="padding:10px 14px;font-size:0.78rem;color:#4b5563;border-bottom:1px solid rgba(45,31,61,0.05);">${tk.caissier || '<span style="color:#9b8faa;">—</span>'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid rgba(45,31,61,0.05);">${modeBadge(tk.mode)}</td>
+        <td style="padding:10px 14px;text-align:right;font-size:0.88rem;font-weight:800;color:#15803d;border-bottom:1px solid rgba(45,31,61,0.05);">${formatF(tk.montant)}</td>
+      </tr>`;
     });
-    // Total filtré
-    const totalFiltre = tickets.reduce((s, tk) => s + tk.montant, 0);
-    if (q && tickets.length < (d.tickets||[]).length) {
-      html += `<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(201,168,76,0.08);border-top:1px solid rgba(201,168,76,0.2);">
-        <span style="font-size:0.72rem;color:rgba(255,255,255,0.5);">${tickets.length} résultat(s)</span>
-        <span style="font-size:0.78rem;font-weight:800;color:var(--cave-gold);">${formatF(totalFiltre)}</span>
-      </div>`;
-    }
+    // Ligne total
+    html += `<tr style="background:#f0fdf4;border-top:2px solid #bbf7d0;">
+      <td colspan="6" style="padding:10px 14px;font-size:0.75rem;font-weight:700;color:#15803d;letter-spacing:.4px;">TOTAL${q ? ' (sélection)' : ''}</td>
+      <td style="padding:10px 14px;text-align:right;font-size:1rem;font-weight:800;color:#15803d;">${formatF(totalFiltre)}</td>
+    </tr>`;
   }
-  html += `</div>`;
+
+  html += `</tbody></table></div>`;
 
   // ── Par caissier ──
-  if (d.par_caissier.length) {
-    html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:12px;">
-    <div style="padding:8px 12px;background:rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.08);">
-      <span style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.5px;">PAR CAISSIER</span>
+  if (d.par_caissier.length > 1) {
+    html += `<div style="background:#fff;border-radius:14px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);overflow:hidden;margin-bottom:12px;">
+    <div style="padding:12px 16px;border-bottom:1px solid rgba(45,31,61,0.08);">
+      <span style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;">PERFORMANCE PAR CAISSIER</span>
     </div>
-    ${d.par_caissier.map((x,i) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:${i%2===0?'transparent':'rgba(255,255,255,0.02)'};border-bottom:1px solid rgba(255,255,255,0.04);">
-      <span style="font-size:0.8rem;">👤 ${x.nom}</span>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <span style="font-size:0.7rem;color:rgba(255,255,255,0.4);">${x.nb} ticket${x.nb>1?'s':''}</span>
-        <span style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${formatF(x.total)}</span>
-      </div>
-    </div>`).join('')}
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:#f8f6fc;">
+        <th style="padding:8px 14px;text-align:left;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">CAISSIER</th>
+        <th style="padding:8px 14px;text-align:center;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">TICKETS</th>
+        <th style="padding:8px 14px;text-align:right;font-size:0.65rem;font-weight:700;letter-spacing:.6px;color:#6b7280;border-bottom:1px solid rgba(45,31,61,0.08);">TOTAL</th>
+      </tr></thead>
+      <tbody>
+      ${d.par_caissier.map((x,i) => `
+      <tr style="background:${i%2===0?'#fff':'#faf9fc'};">
+        <td style="padding:10px 14px;font-size:0.82rem;font-weight:600;color:#2d1f3d;border-bottom:1px solid rgba(45,31,61,0.05);">👤 ${x.nom}</td>
+        <td style="padding:10px 14px;text-align:center;border-bottom:1px solid rgba(45,31,61,0.05);">
+          <span style="display:inline-block;background:#ede9fe;color:#6d28d9;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;">${x.nb}</span>
+        </td>
+        <td style="padding:10px 14px;text-align:right;font-size:0.88rem;font-weight:800;color:#1d4ed8;border-bottom:1px solid rgba(45,31,61,0.05);">${formatF(x.total)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
     </div>`;
   }
 
-  html += `<div style="text-align:center;margin-top:4px;font-size:0.65rem;color:rgba(255,255,255,0.2);">Données du ${d.date}</div>`;
+  html += `<div style="text-align:center;margin-top:4px;padding-bottom:8px;font-size:0.65rem;color:#c4b8d1;">Rapport du ${d.date}</div>`;
   c.innerHTML = html;
 }
 
