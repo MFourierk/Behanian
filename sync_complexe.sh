@@ -81,6 +81,13 @@ cd /opt/behanian
 source venv/bin/activate
 python manage.py migrate --noinput >> "$LOG" 2>&1
 
+# 7b. Sync media (images) depuis complexe -> VPS
+for MEDIA_DIR in plats boissons forfaits; do
+    rsync -a --delete behanian@10.8.0.2:/opt/behanian/media/${MEDIA_DIR}/ /opt/behanian/media/${MEDIA_DIR}/ >> "$LOG" 2>&1 \
+      && echo "$(date '+%Y-%m-%d %H:%M:%S') --- Media sync OK : ${MEDIA_DIR}/" >> "$LOG" \
+      || echo "$(date '+%Y-%m-%d %H:%M:%S') --- AVERT: Media sync echouee pour ${MEDIA_DIR}/" >> "$LOG"
+done
+
 # 8. Verification post-sync : base non vide
 set +e
 NB_USERS=$(PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost -d behanian_db -t -c "SELECT COUNT(*) FROM auth_user;" 2>/dev/null | tr -d ' \n')
