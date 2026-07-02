@@ -715,6 +715,30 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
   <!-- ========== PANNEAU GAUCHE ========== -->
   <div class="panel-catalogue">
+    <!-- ── MODAL SÉLECTION SERVEUR ── -->
+    <div id="modalServeur" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.82);display:none;align-items:center;justify-content:center;">
+      <div style="background:#1e1e28;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 28px;width:100%;max-width:380px;text-align:center;">
+        <div style="font-size:1.5rem;margin-bottom:6px;">🧑‍🍳</div>
+        <h3 style="color:#c9a84c;font-size:1.1rem;font-weight:800;margin-bottom:4px;" id="modalServeurTitre">Qui prend cette table ?</h3>
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:22px;">Sélectionnez le serveur avant de commencer</p>
+        <div id="modalServeurBtns" style="display:flex;flex-direction:column;gap:10px;">
+          {% for u in serveurs %}
+          <button onclick="confirmerServeur('{{ u.get_full_name|default:u.username }}')"
+            style="padding:14px;border-radius:12px;border:1px solid rgba(201,168,76,0.3);background:rgba(201,168,76,0.08);
+                   color:rgba(255,255,255,0.88);font-size:0.95rem;font-weight:700;cursor:pointer;
+                   font-family:'DM Sans',sans-serif;transition:background 0.2s;"
+            onmouseover="this.style.background='rgba(201,168,76,0.2)'"
+            onmouseout="this.style.background='rgba(201,168,76,0.08)'">
+            {{ u.get_full_name|default:u.username }}
+          </button>
+          {% empty %}
+          <p style="color:rgba(255,255,255,0.4);font-size:0.82rem;">Aucun serveur configuré.<br>Ajoutez des utilisateurs au groupe "Serveuse/Serveur".</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- ── FIN MODAL SERVEUR ── -->
+
     <div class="cat-header">
       <div class="cat-header-top">
         <h2>🍽 Restaurant
@@ -1410,9 +1434,23 @@ function _selectionnerTableInterne(tableId, tableNum, statut) {
   if (statut === 'occupee') {
     chargerCommandeParTable(tableId);
     toast('📋 Table ' + tableNum + ' — commande en cours chargée', 'info');
+    switchView(document.querySelector('.nav-tab[data-view="plats"]'));
   } else {
-    toast('🪑 Table ' + tableNum + ' sélectionnée — ajoutez vos articles', 'success');
+    // Table libre : exiger sélection du serveur avant de commencer
+    document.getElementById('modalServeurTitre').textContent = 'Qui prend la Table ' + tableNum + ' ?';
+    const modal = document.getElementById('modalServeur');
+    modal.style.display = 'flex';
   }
+}
+
+function confirmerServeur(nom) {
+  document.getElementById('modalServeur').style.display = 'none';
+  const t = tickets[ticketActifId];
+  t.serveur = nom;
+  const sel = document.getElementById('selectServeur');
+  sel.value = nom;
+  sel.disabled = true;
+  toast('🧑‍🍳 ' + nom + ' — Table ' + t.tableNum, 'success');
   switchView(document.querySelector('.nav-tab[data-view="plats"]'));
 }
 
@@ -2007,7 +2045,10 @@ function _chargerTicketInterne(tid) {
     document.getElementById('ticketNum').textContent = t.nom;
   }
   document.getElementById('inputClient').value  = t.client  || '';
-  document.getElementById('selectServeur').value = t.serveur || '';
+  const selSrv = document.getElementById('selectServeur');
+  selSrv.value = t.serveur || '';
+  // Verrouiller si serveur déjà assigné, débloquer si ticket vierge
+  selSrv.disabled = !!t.serveur;
   // Badges table / emporter
   document.getElementById('tableSelbadge').style.display    = (t.tableNum && !t.emporter) ? 'flex' : 'none';
   document.getElementById('emporterBadge').style.display    = t.emporter ? 'flex' : 'none';
@@ -2076,6 +2117,12 @@ async function chargerCommandeParTable(tableId) {
         t.nb_couverts = data.commande.nb_couverts || 1;
         t.statut = data.commande.statut || null;
         if (data.commande.client) { t.client = data.commande.client; document.getElementById('inputClient').value = t.client; }
+        if (data.commande.serveur) {
+          t.serveur = data.commande.serveur;
+          const sel = document.getElementById('selectServeur');
+          sel.value = data.commande.serveur;
+          sel.disabled = true;
+        }
         renderTicket();
         toast('📋 Commande en cours chargée', 'info');
         return;

@@ -834,6 +834,9 @@ def _serialize_commande(commande):
             'plat_id':  l.plat.id if l.plat else None,
             'has_acc':  bool(l.accompagnement),
         })
+    serveur_nom = ''
+    if commande.serveur:
+        serveur_nom = commande.serveur.get_full_name() or commande.serveur.username
     return {
         'id':          commande.id,
         'table_id':    commande.table.id if commande.table else None,
@@ -843,6 +846,7 @@ def _serialize_commande(commande):
         'total_net':   commande.total_net,
         'nb_couverts': commande.nb_couverts,
         'client':      commande.nom_client or '',
+        'serveur':     serveur_nom,
         'items':       items,
     }
 
