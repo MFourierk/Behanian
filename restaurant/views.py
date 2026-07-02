@@ -1102,7 +1102,8 @@ def resume_ventes_jour(request):
             'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
         }
         for tk in tickets_jour:
-            m = tk.mode_paiement or 'especes'
+            m_raw = tk.mode_paiement or 'especes'
+            m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
             par_mode[m] = par_mode.get(m, 0) + float(tk.montant_paye or 0)
             caissier_nom = ''
             if tk.cree_par:
