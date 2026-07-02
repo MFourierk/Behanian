@@ -1518,6 +1518,7 @@ async function _envoyerPlat(platId, nom, prix, accId) {
         plat_id: platId, nom: nom,
         accompagnement_id: accId || null,
         client: t.client,
+        serveur: t.serveur || '',
       })
     });
     const data = await r.json();
@@ -1560,6 +1561,7 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
         commande_id: t.commandeDbId,
         boisson_id: boissonId,
         client: t.client,
+        serveur: t.serveur || '',
       })
     });
     const data = await r.json();
@@ -1596,6 +1598,7 @@ async function ajouterForfait(forfaitId, nom, prix, enStock) {
         emporter: t.emporter || false,
         commande_id: t.commandeDbId,
         client: t.client,
+        serveur: t.serveur || '',
       })
     });
     const data = await r.json();

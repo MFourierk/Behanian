@@ -14,6 +14,7 @@ from django.utils import timezone
 import json
 from .models import Table, CategorieMenu, PlatMenu, Commande, LigneCommande, Reservation
 from decimal import Decimal
+from django.contrib.auth.models import User as AuthUser
 from bar.models import BoissonBar, MouvementStockBar
 from facturation.models import Ticket, generate_ticket_numero
 from hotel.models import Client as HotelClient
@@ -617,6 +618,17 @@ def update_reservation_status(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
+def _resoudre_serveur(nom):
+    """Retourne l'User correspondant au nom complet ou username, ou None."""
+    if not nom:
+        return None
+    mots = nom.strip().split()
+    qs = AuthUser.objects.filter(first_name__icontains=mots[0])
+    if len(mots) > 1:
+        qs = qs.filter(last_name__icontains=mots[-1])
+    return qs.first() or AuthUser.objects.filter(username__icontains=mots[0]).first()
+
+
 @require_module_access('restaurant')
 @require_POST
 def ajouter_item_commande(request):
@@ -630,27 +642,29 @@ def ajouter_item_commande(request):
         acc_id = data.get('accompagnement_id') # Nouvel ID pour l'accompagnement
         
         # 1. Gestion Commande / Table
+        serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
         if commande_id:
             commande = get_object_or_404(Commande, id=commande_id)
+            # Mettre à jour le serveur si pas encore assigné correctement
+            if commande.serveur == request.user and serveur_user != request.user:
+                commande.serveur = serveur_user
+                commande.save(update_fields=['serveur'])
         elif table_id:
             table = get_object_or_404(Table, id=table_id)
-            # Chercher commande active
             commande = Commande.objects.filter(table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']).first()
             if not commande:
-                # Créer nouvelle commande
                 commande = Commande.objects.create(
                     table=table,
-                    serveur=request.user,
+                    serveur=serveur_user,
                     statut='en_attente',
                     nom_client=data.get('client', '')
                 )
                 table.statut = 'occupee'
                 table.save()
         elif data.get('emporter'):
-            # Mode emporter — pas de table
             commande = Commande.objects.create(
                 table=None,
-                serveur=request.user,
+                serveur=serveur_user,
                 statut='en_attente',
                 nom_client=data.get('client', '') or 'À emporter',
             )
@@ -1248,9 +1262,13 @@ def ajouter_boisson_commande(request):
         if boisson.est_en_rupture:
             return JsonResponse({'success': False, 'message': f'{boisson.nom} est en rupture de stock'})
 
+        serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
         # Récupérer ou créer la commande
         if commande_id:
             commande = get_object_or_404(Commande, id=commande_id)
+            if commande.serveur == request.user and serveur_user != request.user:
+                commande.serveur = serveur_user
+                commande.save(update_fields=['serveur'])
         elif table_id:
             table = get_object_or_404(Table, id=table_id)
             commande = Commande.objects.filter(
@@ -1258,14 +1276,14 @@ def ajouter_boisson_commande(request):
             ).first()
             if not commande:
                 commande = Commande.objects.create(
-                    table=table, serveur=request.user,
+                    table=table, serveur=serveur_user,
                     statut='en_attente', nom_client=client_nom
                 )
                 table.statut = 'occupee'
                 table.save()
         elif data.get('emporter'):
             commande = Commande.objects.create(
-                table=None, serveur=request.user,
+                table=None, serveur=serveur_user,
                 statut='en_attente', nom_client=client_nom or 'À emporter',
             )
         else:
@@ -1349,8 +1367,12 @@ def ajouter_forfait_commande(request):
             return JsonResponse({'success': False, 'message': "Stock insuffisant :\n" + "\n".join(erreurs)})
 
         # ── 2. Récupérer ou créer la commande ──
+        serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
         if commande_id:
             commande = get_object_or_404(Commande, id=commande_id)
+            if commande.serveur == request.user and serveur_user != request.user:
+                commande.serveur = serveur_user
+                commande.save(update_fields=['serveur'])
         elif table_id:
             table = get_object_or_404(Table, id=table_id)
             commande = Commande.objects.filter(
@@ -1358,14 +1380,14 @@ def ajouter_forfait_commande(request):
             ).first()
             if not commande:
                 commande = Commande.objects.create(
-                    table=table, serveur=request.user,
+                    table=table, serveur=serveur_user,
                     statut='en_attente', nom_client=client_nom
                 )
                 table.statut = 'occupee'
                 table.save()
         elif data.get('emporter'):
             commande = Commande.objects.create(
-                table=None, serveur=request.user,
+                table=None, serveur=serveur_user,
                 statut='en_attente', nom_client=client_nom or 'À emporter',
             )
         else:
