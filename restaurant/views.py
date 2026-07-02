@@ -898,6 +898,38 @@ def kds_view(request):
     return render(request, 'restaurant/kds.html', {})
 
 
+def kds_salle_view(request):
+    """Vue salle publique — lecture seule, aucune authentification requise."""
+    return render(request, 'restaurant/kds_salle.html', {})
+
+
+def kds_salle_api(request):
+    """API publique lecture seule — statuts commandes pour écran salle."""
+    commandes = Commande.objects.filter(
+        statut__in=['en_attente', 'en_preparation', 'prete']
+    ).prefetch_related(
+        'lignes__plat', 'lignes__accompagnement', 'lignes__boisson'
+    ).select_related('table', 'serveur').order_by('date_creation')
+
+    result = []
+    for cmd in commandes:
+        lignes = [{'nom': l.get_nom, 'quantite': l.quantite} for l in cmd.lignes.all()]
+        if cmd.serveur:
+            serveur_nom = cmd.serveur.get_full_name() or cmd.serveur.username
+        else:
+            serveur_nom = ''
+        result.append({
+            'id': cmd.id,
+            'table': cmd.table.numero if cmd.table else 'À emporter',
+            'statut': cmd.statut,
+            'nb_couverts': cmd.nb_couverts,
+            'serveur': serveur_nom,
+            'lignes': lignes,
+            'age_min': int((timezone.now() - cmd.date_creation).total_seconds() // 60),
+        })
+    return JsonResponse({'commandes': result})
+
+
 @require_kds_access
 def kds_api(request):
     """API polling KDS — retourne les commandes en_attente et en_preparation."""

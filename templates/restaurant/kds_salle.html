@@ -1,0 +1,212 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service — Salle</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d12; --surface: #18181f; --border: rgba(255,255,255,0.07);
+      --gold: #c9a84c; --green: #4ade80; --blue: #60a5fa; --red: #f87171;
+      --orange: #fbbf24; --violet: #c084fc; --text: rgba(255,255,255,0.88); --muted: rgba(255,255,255,0.4);
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-title { font-size: 1rem; font-weight: 800; color: var(--gold); display: flex; align-items: center; gap: 10px; }
+    .header-clock { font-size: 1.4rem; font-weight: 800; letter-spacing: 1px; }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+      border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+      background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.25); color: var(--green);
+    }
+    .header-badge.stale { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.25); color: var(--red); }
+
+    /* Bandeau "PRÊT À SERVIR" */
+    .prete-banner {
+      display: none; align-items: center; justify-content: center; gap: 16px;
+      background: rgba(74,222,128,0.15); border-bottom: 2px solid rgba(74,222,128,0.5);
+      padding: 14px 24px; font-size: 1.1rem; font-weight: 800; color: var(--green);
+      animation: blink-banner 1s infinite;
+    }
+    .prete-banner.visible { display: flex; }
+    @keyframes blink-banner { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; padding: 20px; align-content: start;
+    }
+    .empty {
+      grid-column: 1/-1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 80px 20px; color: var(--muted); gap: 12px;
+    }
+    .empty i { font-size: 3rem; opacity: 0.3; }
+
+    .card {
+      background: var(--surface); border-radius: 16px; border: 2px solid transparent;
+      overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(12px); } }
+    .card.en_attente    { border-color: rgba(251,191,36,0.3); }
+    .card.en_preparation{ border-color: rgba(96,165,250,0.4); }
+    .card.prete {
+      border-color: rgba(74,222,128,0.8);
+      box-shadow: 0 0 32px rgba(74,222,128,0.25);
+      animation: pulse-card 1.2s infinite;
+    }
+    @keyframes pulse-card { 0%,100%{box-shadow:0 0 20px rgba(74,222,128,0.2);} 50%{box-shadow:0 0 40px rgba(74,222,128,0.5);} }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+    }
+    .card-table { font-size: 1.5rem; font-weight: 800; color: var(--gold); }
+    .card-table.emporter { color: var(--violet); }
+
+    .card-statut {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .s-en_attente    { background: rgba(251,191,36,0.15);  color: var(--orange); border: 1px solid rgba(251,191,36,0.4); }
+    .s-en_preparation{ background: rgba(96,165,250,0.15);  color: var(--blue);   border: 1px solid rgba(96,165,250,0.4); }
+    .s-prete         { background: rgba(74,222,128,0.2);   color: var(--green);  border: 1px solid rgba(74,222,128,0.6); font-size: 0.82rem; }
+
+    .card-body { padding: 12px 16px; }
+    .card-meta { font-size: 0.7rem; color: var(--muted); margin-bottom: 10px; display: flex; gap: 12px; }
+    .card-meta .urgent { color: var(--red); font-weight: 700; }
+
+    .ligne {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .ligne:last-child { border-bottom: none; }
+    .ligne-nom { font-size: 0.88rem; font-weight: 500; }
+    .ligne-qty {
+      flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px;
+      background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3);
+      color: var(--gold); font-size: 0.82rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Pied de carte : serveur */
+    .card-footer {
+      padding: 8px 16px; border-top: 1px solid var(--border);
+      font-size: 0.7rem; color: var(--violet); display: flex; align-items: center; gap: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <i class="fas fa-concierge-bell"></i>
+    Vue Salle — Suivi commandes
+  </div>
+  <div class="header-clock" id="clock"></div>
+  <span class="header-badge" id="badge"><i class="fas fa-circle" style="font-size:6px;"></i> En direct</span>
+</div>
+
+<div class="prete-banner" id="preteBanner">
+  <i class="fas fa-bell fa-shake"></i>
+  <span id="preteCount">1 commande prête à servir !</span>
+  <i class="fas fa-bell fa-shake"></i>
+</div>
+
+<div class="grid" id="grid">
+  <div class="empty"><i class="fas fa-utensils"></i><p>Chargement…</p></div>
+</div>
+
+<script>
+function majHorloge() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+setInterval(majHorloge, 1000); majHorloge();
+
+function ageStr(min) {
+  if (min < 1)  return '< 1 min';
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}`;
+}
+
+const STATUT_LABEL = {
+  en_attente:     'En cuisine…',
+  en_preparation: 'En préparation',
+  prete:          '✔ Prêt à servir !',
+};
+const STATUT_ICON = {
+  en_attente:     'fa-clock',
+  en_preparation: 'fa-fire',
+  prete:          'fa-check-circle',
+};
+
+function renderCard(cmd) {
+  const emporter = cmd.table === 'À emporter';
+  const urgent   = cmd.age_min >= 20;
+  return `<div class="card ${cmd.statut}">
+    <div class="card-header">
+      <div class="card-table ${emporter ? 'emporter' : ''}">${emporter ? '🛍️ ' : ''}${cmd.table}</div>
+      <span class="card-statut s-${cmd.statut}">
+        <i class="fas ${STATUT_ICON[cmd.statut] || 'fa-circle'}"></i>
+        ${STATUT_LABEL[cmd.statut] || cmd.statut}
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="card-meta">
+        <span class="${urgent ? 'urgent' : ''}">⏱ ${ageStr(cmd.age_min)}</span>
+        ${cmd.nb_couverts > 1 ? `<span>👥 ${cmd.nb_couverts} couverts</span>` : ''}
+      </div>
+      ${cmd.lignes.map(l => `
+        <div class="ligne">
+          <span class="ligne-nom">${l.nom}</span>
+          <span class="ligne-qty">×${l.quantite}</span>
+        </div>`).join('')}
+    </div>
+    ${cmd.serveur ? `<div class="card-footer"><i class="fas fa-user"></i>${cmd.serveur}</div>` : ''}
+  </div>`;
+}
+
+async function poll() {
+  try {
+    const r = await fetch("{% url 'restaurant:kds_salle_api' %}");
+    const d = await r.json();
+    document.getElementById('badge').className = 'header-badge';
+
+    const pretes = d.commandes.filter(c => c.statut === 'prete');
+    const banner = document.getElementById('preteBanner');
+    if (pretes.length) {
+      banner.classList.add('visible');
+      document.getElementById('preteCount').textContent =
+        pretes.length === 1
+          ? `Table ${pretes[0].table} — prête à servir !`
+          : `${pretes.length} commandes prêtes à servir !`;
+    } else {
+      banner.classList.remove('visible');
+    }
+
+    const grid = document.getElementById('grid');
+    if (!d.commandes.length) {
+      grid.innerHTML = '<div class="empty"><i class="fas fa-utensils"></i><p>Aucune commande en cours</p></div>';
+      return;
+    }
+    grid.innerHTML = d.commandes.map(renderCard).join('');
+  } catch(e) {
+    document.getElementById('badge').className = 'header-badge stale';
+  }
+}
+
+poll();
+setInterval(poll, 10000);
+</script>
+</body>
+</html>
