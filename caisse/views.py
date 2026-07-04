@@ -527,6 +527,137 @@ def rapport_caisse(request, session_id=None):
 
 
 @require_module_access('caisse')
+def rapport_caisse_excel(request, session_id=None):
+    """Export Excel : rapport de session de caisse."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    if session_id:
+        session = get_object_or_404(CaisseSession, pk=session_id)
+    else:
+        today = timezone.localdate()
+        session = CaisseSession.objects.filter(
+            opened_at__date=today, user=request.user
+        ).order_by('-opened_at').first()
+
+    if not session:
+        from django.http import HttpResponseNotFound
+        return HttpResponseNotFound("Aucune session trouvée.")
+
+    mouvements   = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
+    prelevements = PrelevementBanque.objects.filter(session=session, valide=True).order_by('date')
+
+    wb = openpyxl.Workbook()
+
+    hf  = PatternFill("solid", fgColor="1a2535")
+    hft = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    tf  = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bf  = Font(name='Calibri', bold=True, size=10)
+    nf  = Font(name='Calibri', size=10)
+    th  = Side(border_style="thin", color="d4dce8")
+    bd  = Border(left=th, right=th, top=th, bottom=th)
+    ct  = Alignment(horizontal='center', vertical='center')
+    rt  = Alignment(horizontal='right', vertical='center')
+
+    # --- Feuille 1 : Mouvements ---
+    ws = wb.active
+    ws.title = "Mouvements Caisse"
+
+    NC = 7
+    ws.merge_cells(f'A1:{get_column_letter(NC)}1')
+    ws['A1'] = f"RAPPORT DE CAISSE — {session.opened_at.strftime('%d/%m/%Y').upper()} — COMPLEXE BEHANIAN"
+    ws['A1'].font = tf; ws['A1'].alignment = ct
+
+    ws.merge_cells(f'A2:{get_column_letter(NC)}2')
+    caissier = session.user.get_full_name() or session.user.username
+    ws['A2'] = f"Caissier : {caissier} — Ouverture : {session.opened_at.strftime('%H:%M')} — Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = ct
+
+    ws.append([])
+    headers = ['#', 'Date / Heure', 'Type', 'Module', 'Référence', 'Mode paiement', 'Montant (FCFA)']
+    ws.append(headers)
+    rh = ws.max_row
+    for col in range(1, NC + 1):
+        c = ws.cell(row=rh, column=col)
+        c.fill = hf; c.font = hft; c.alignment = ct; c.border = bd
+
+    enc_fill = PatternFill("solid", fgColor="f0fdf4")
+    dep_fill = PatternFill("solid", fgColor="fef2f2")
+    for i, m in enumerate(mouvements, 1):
+        row_fill = enc_fill if m.type in ('encaissement', 'versement', 'fond_caisse') else dep_fill
+        ws.append([
+            i,
+            m.date.strftime('%d/%m/%Y %H:%M'),
+            m.get_type_display(),
+            m.get_module_display(),
+            m.reference or '—',
+            m.get_mode_paiement_display(),
+            float(m.montant),
+        ])
+        rw = ws.max_row
+        for col in range(1, NC + 1):
+            c = ws.cell(row=rw, column=col)
+            c.font = bf if col == 7 else nf
+            c.border = bd
+            c.fill = row_fill
+            c.alignment = rt if col == 7 else (ct if col in (1, 2) else Alignment(vertical='center'))
+        ws.cell(row=rw, column=7).number_format = '#,##0'
+
+    ws.append([])
+    tr = ws.max_row + 1
+    total = sum(float(m.montant) for m in mouvements)
+    ws.cell(row=tr, column=6, value='TOTAL').font = Font(name='Calibri', bold=True, size=11)
+    ws.cell(row=tr, column=7, value=total).font = Font(name='Calibri', bold=True, size=12, color='16a34a')
+    ws.cell(row=tr, column=7).number_format = '#,##0'
+
+    for col, w in enumerate([5, 18, 20, 16, 16, 16, 16], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    # --- Feuille 2 : Prélèvements ---
+    if prelevements.exists():
+        ws2 = wb.create_sheet("Prélèvements")
+        ws2.merge_cells('A1:E1')
+        ws2['A1'] = f"PRÉLÈVEMENTS BANQUE — {session.opened_at.strftime('%d/%m/%Y')}"
+        ws2['A1'].font = tf; ws2['A1'].alignment = ct
+
+        ws2.append([])
+        h2 = ['#', 'Date / Heure', 'Montant (FCFA)', 'Banque', 'Description']
+        ws2.append(h2)
+        rh2 = ws2.max_row
+        for col in range(1, 6):
+            c = ws2.cell(row=rh2, column=col)
+            c.fill = hf; c.font = hft; c.alignment = ct; c.border = bd
+
+        for i, p in enumerate(prelevements, 1):
+            ws2.append([
+                i,
+                p.date.strftime('%d/%m/%Y %H:%M'),
+                float(p.montant),
+                getattr(p, 'banque', '—') or '—',
+                getattr(p, 'description', '') or '',
+            ])
+            rw2 = ws2.max_row
+            for col in range(1, 6):
+                c = ws2.cell(row=rw2, column=col)
+                c.font = bf if col == 3 else nf
+                c.border = bd
+                c.alignment = rt if col == 3 else (ct if col in (1, 2) else Alignment(vertical='center'))
+            ws2.cell(row=rw2, column=3).number_format = '#,##0'
+
+        for col, w in enumerate([5, 18, 16, 16, 30], 1):
+            ws2.column_dimensions[get_column_letter(col)].width = w
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    fname = f"Caisse_{session.opened_at.strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    wb.save(response)
+    return response
+
+
+@require_module_access('caisse')
 def api_stats_jour(request):
     """API stats pour une date donnée."""
     from datetime import date as dt

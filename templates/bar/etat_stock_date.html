@@ -241,6 +241,10 @@ table.stock-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; 
                target="_blank" class="btn-print">
                 <i class="fas fa-print"></i> Ouvrir pour impression
             </a>
+            <a href="{% url 'bar:etat_stock_date_excel' %}?date_debut={{ date_debut_str }}&date_fin={{ date_fin_str }}{% if categorie_id %}&categorie={{ categorie_id }}{% endif %}{% if article_id %}&article={{ article_id }}{% endif %}"
+               class="btn-print" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+                <i class="fas fa-file-excel"></i> Exporter Excel
+            </a>
         </div>
     </div>
 

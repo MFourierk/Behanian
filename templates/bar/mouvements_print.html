@@ -172,6 +172,10 @@ table.mv-table { width:100%;border-collapse:collapse;font-size:0.86rem; }
            target="_blank" class="btn-print no-print">
             <i class="fas fa-print"></i> Ouvrir pour impression
         </a>
+        <a href="{% url 'bar:mouvements_excel' %}?date_debut={{ request.GET.date_debut }}&date_fin={{ request.GET.date_fin }}&categorie={{ categorie_id }}&article={{ article_id }}&type_mouvement={{ type_mv }}"
+           class="btn-print no-print" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+            <i class="fas fa-file-excel"></i> Exporter Excel
+        </a>
     </div>
 
     <div style="overflow-x:auto;">

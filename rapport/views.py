@@ -325,3 +325,103 @@ def rapport_marges_print(request):
         'generated_at': timezone.now(),
         **data,
     })
+
+
+def rapport_marges_excel(request):
+    """Export Excel : Rapport Marges par Module."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    date_rapport = _parse_date(request)
+    data = _calcul_marges(date_rapport)
+    modules_data = data['modules_data']
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Marges par Module"
+
+    hf  = PatternFill("solid", fgColor="1a2535")
+    hft = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    tf  = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bf  = Font(name='Calibri', bold=True, size=10)
+    nf  = Font(name='Calibri', size=10)
+    th  = Side(border_style="thin", color="d4dce8")
+    bd  = Border(left=th, right=th, top=th, bottom=th)
+    ct  = Alignment(horizontal='center', vertical='center')
+    rt  = Alignment(horizontal='right', vertical='center')
+
+    NC = 8
+    ws.merge_cells(f'A1:{get_column_letter(NC)}1')
+    ws['A1'] = f"RAPPORT MARGES PAR MODULE — {date_rapport.strftime('%d/%m/%Y').upper()} — COMPLEXE BEHANIAN"
+    ws['A1'].font = tf; ws['A1'].alignment = ct
+
+    ws.merge_cells(f'A2:{get_column_letter(NC)}2')
+    ws['A2'] = f"Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')} — {len(modules_data)} module(s) analysé(s)"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = ct
+
+    ws.append([])
+    headers = ['Module', 'Tickets', 'CA Encaissé (F)', 'Coût Estimé (F)', 'Marge Brute (F)', 'Taux Marge %', 'Coefficient ×', 'Remarque']
+    ws.append(headers)
+    rh = ws.max_row
+    for col in range(1, NC + 1):
+        c = ws.cell(row=rh, column=col)
+        c.fill = hf; c.font = hft; c.alignment = ct; c.border = bd
+
+    for mod in modules_data:
+        cout_val  = float(mod['cout']) if mod['cout'] is not None else None
+        marge_val = float(mod['marge_brute']) if mod['marge_brute'] is not None else None
+        taux_val  = mod['taux_marge']
+        coeff_val = mod['coeff_mult']
+        if mod['ca'] == 0:
+            remarque = 'Aucune vente'
+        elif not mod['cout_disponible']:
+            remarque = 'Service pur — pas de coût matière'
+        else:
+            remarque = 'Coût partiel' if mod['nb_lignes_cout'] < mod['nb_lignes_total'] else 'Coût complet'
+
+        ws.append([
+            mod['label'],
+            mod['nb_tickets'],
+            float(mod['ca']),
+            cout_val,
+            marge_val,
+            taux_val,
+            coeff_val,
+            remarque,
+        ])
+        rw = ws.max_row
+        for col in range(1, NC + 1):
+            c = ws.cell(row=rw, column=col)
+            c.font = bf if col in (1, 3, 5) else nf
+            c.border = bd
+            c.alignment = rt if col in (2, 3, 4, 5, 6, 7) else Alignment(vertical='center')
+        for col in (3, 4, 5):
+            ws.cell(row=rw, column=col).number_format = '#,##0'
+        ws.cell(row=rw, column=6).number_format = '0.00'
+        ws.cell(row=rw, column=7).number_format = '0.00'
+
+    ws.append([])
+    tr = ws.max_row + 1
+    ws.cell(row=tr, column=1, value='TOTAL GÉNÉRAL').font = Font(name='Calibri', bold=True, size=11)
+    ws.cell(row=tr, column=3, value=float(data['total_ca'])).font = Font(name='Calibri', bold=True, size=11)
+    ws.cell(row=tr, column=3).number_format = '#,##0'
+    if data['total_cout'] is not None:
+        ws.cell(row=tr, column=4, value=float(data['total_cout'])).font = Font(name='Calibri', bold=True, size=11, color='c0392b')
+        ws.cell(row=tr, column=4).number_format = '#,##0'
+    if data['total_marge'] is not None:
+        ws.cell(row=tr, column=5, value=float(data['total_marge'])).font = Font(name='Calibri', bold=True, size=11, color='16a34a')
+        ws.cell(row=tr, column=5).number_format = '#,##0'
+    if data['taux_marge_global'] is not None:
+        ws.cell(row=tr, column=6, value=data['taux_marge_global']).font = Font(name='Calibri', bold=True, size=11, color='c9a84c')
+        ws.cell(row=tr, column=6).number_format = '0.00'
+
+    for col, w in enumerate([24, 10, 18, 18, 18, 14, 14, 30], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="Marges_{date_rapport.strftime("%Y%m%d")}.xlsx"'
+    wb.save(response)
+    return response

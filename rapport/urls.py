@@ -7,4 +7,5 @@ urlpatterns = [
     path('stock/', views.rapport_stock, name='stock'),
     path('marges/', views.rapport_marges, name='marges'),
     path('marges/print/', views.rapport_marges_print, name='marges_print'),
+    path('marges/excel/', views.rapport_marges_excel, name='marges_excel'),
 ]

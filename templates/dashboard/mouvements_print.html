@@ -107,3 +107,11 @@
 {% endblock %}
 
 {% block doc_footer_right %}Mouvements du {{ date_mvt|date:"d/m/Y" }}{% endblock %}
+
+{% block doc_actions %}
+<a href="{% url 'dashboard:mouvements_excel' %}?date_mvt={{ date_mvt|date:'Y-m-d' }}" class="btn-doc" style="background:#16a34a;color:#fff;">
+  <i class="fas fa-file-excel"></i> Télécharger Excel
+</a>
+<button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+<button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endblock %}

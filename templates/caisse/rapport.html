@@ -1,6 +1,14 @@
 ﻿{% extends 'print_base.html' %}
 {% block doc_title %}Rapport de Caisse — {{ session.opened_at|date:"d/m/Y" }}{% endblock %}
 
+{% block doc_actions %}
+<a href="{% url 'caisse:rapport_session_excel' session.pk %}" class="btn-doc" style="background:#16a34a;color:#fff;">
+  <i class="fas fa-file-excel"></i> Télécharger Excel
+</a>
+<button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+<button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endblock %}
+
 {% block doc_content %}
 <div class="doc-title-band">
   <div>

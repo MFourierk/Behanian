@@ -1426,6 +1426,94 @@ def etat_stock_date_cuisine_print(request):
 
 
 @require_module_access('cuisine')
+def etat_stock_date_cuisine_excel(request):
+    """Export Excel : état du stock sur une période — Cuisine"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    date_debut_str = request.GET.get('date_debut', timezone.now().date().isoformat())
+    date_fin_str   = request.GET.get('date_fin',   timezone.now().date().isoformat())
+    categorie_id   = request.GET.get('categorie', '')
+    ingredient_id  = request.GET.get('ingredient', '')
+    date_debut, date_fin, resultats, valeur_totale_fin, valeur_totale_debut = _stock_periode_cuisine(
+        date_debut_str, date_fin_str, categorie_id, ingredient_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Stock Cuisine"
+
+    hf = PatternFill("solid", fgColor="1a2535")
+    hft = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    tf  = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bf  = Font(name='Calibri', bold=True, size=10)
+    nf  = Font(name='Calibri', size=10)
+    th  = Side(border_style="thin", color="d4dce8")
+    bd  = Border(left=th, right=th, top=th, bottom=th)
+    ct  = Alignment(horizontal='center', vertical='center')
+    rt  = Alignment(horizontal='right', vertical='center')
+
+    NC = 13
+    ws.merge_cells(f'A1:{get_column_letter(NC)}1')
+    ws['A1'] = "ÉTAT DU STOCK SUR PÉRIODE — CUISINE BEHANIAN"
+    ws['A1'].font = tf; ws['A1'].alignment = ct
+
+    ws.merge_cells(f'A2:{get_column_letter(NC)}2')
+    prd = (f"Du {date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
+           if date_debut != date_fin else f"Le {date_debut.strftime('%d/%m/%Y')}")
+    ws['A2'] = f"{prd} — {len(resultats)} article(s) — Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = ct
+
+    ws.append([])
+    headers = ['#', 'Ingrédient', 'Catégorie', 'Unité',
+               'Stock début', 'Entrées', 'Sorties', 'Casses', 'Productions', 'Inventaires',
+               'Stock fin', 'Val. début (F)', 'Val. fin (F)']
+    ws.append(headers)
+    rh = ws.max_row
+    for col in range(1, NC + 1):
+        c = ws.cell(row=rh, column=col)
+        c.fill = hf; c.font = hft; c.alignment = ct; c.border = bd
+
+    for i, r in enumerate(resultats, 1):
+        ing = r['ingredient']
+        ws.append([
+            i, ing.nom,
+            ing.categorie.nom if ing.categorie else '—',
+            str(ing.unite_stock) if ing.unite_stock else '—',
+            float(r['stock_debut']), float(r['nb_entrees']), float(r['nb_sorties']),
+            float(r['nb_casses']), float(r['nb_productions']), float(r['nb_inventaires']),
+            float(r['stock_fin']), float(r['valeur_debut']), float(r['valeur_fin']),
+        ])
+        rw = ws.max_row
+        for col in range(1, NC + 1):
+            c = ws.cell(row=rw, column=col)
+            c.font = bf if col in (2, 11, 12, 13) else nf
+            c.border = bd
+            c.alignment = rt if col >= 5 else (ct if col == 1 else Alignment(vertical='center'))
+        ws.cell(row=rw, column=12).number_format = '#,##0'
+        ws.cell(row=rw, column=13).number_format = '#,##0'
+
+    ws.append([])
+    tr = ws.max_row + 1
+    ws.cell(row=tr, column=11, value='TOTAL').font = Font(name='Calibri', bold=True)
+    ws.cell(row=tr, column=12, value=float(valeur_totale_debut)).font = Font(name='Calibri', bold=True, size=11)
+    ws.cell(row=tr, column=12).number_format = '#,##0'
+    ws.cell(row=tr, column=13, value=float(valeur_totale_fin)).font = Font(name='Calibri', bold=True, size=11, color='16a34a')
+    ws.cell(row=tr, column=13).number_format = '#,##0'
+
+    for col, w in enumerate([5, 28, 16, 9, 11, 9, 9, 9, 11, 11, 11, 16, 16], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    sfx = f"{date_debut.strftime('%Y%m%d')}{'_' + date_fin.strftime('%Y%m%d') if date_debut != date_fin else ''}"
+    response['Content-Disposition'] = f'attachment; filename="Stock_Cuisine_{sfx}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@require_module_access('cuisine')
 def mouvements_print_cuisine(request):
     """Page de sélection : mouvements de stock — Cuisine"""
     date_debut_str = request.GET.get('date_debut', '')
@@ -1493,6 +1581,104 @@ def mouvements_doc_cuisine(request):
         'total_mvts': len(mvts_list),
     }
     return render(request, 'cuisine/mouvements_doc.html', context)
+
+
+@require_module_access('cuisine')
+def mouvements_excel_cuisine(request):
+    """Export Excel : mouvements de stock — Cuisine"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str   = request.GET.get('date_fin', '')
+    categorie_id   = request.GET.get('categorie', '')
+    ingredient_id  = request.GET.get('ingredient', '')
+    type_mv        = request.GET.get('type_mouvement', '')
+    date_debut, date_fin_obj, mvts_list = _mouvements_cuisine(
+        date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv)
+
+    TYPE_LABELS = {'entree': 'Entrée', 'sortie': 'Sortie', 'production': 'Production',
+                   'casse': 'Casse / Perte', 'inventaire': 'Inventaire'}
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Mouvements Cuisine"
+
+    hf  = PatternFill("solid", fgColor="1a2535")
+    hft = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    tf  = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bf  = Font(name='Calibri', bold=True, size=10)
+    nf  = Font(name='Calibri', size=10)
+    th  = Side(border_style="thin", color="d4dce8")
+    bd  = Border(left=th, right=th, top=th, bottom=th)
+    ct  = Alignment(horizontal='center', vertical='center')
+    rt  = Alignment(horizontal='right', vertical='center')
+
+    NC = 10
+    ws.merge_cells(f'A1:{get_column_letter(NC)}1')
+    ws['A1'] = "MOUVEMENTS DE STOCK — CUISINE BEHANIAN"
+    ws['A1'].font = tf; ws['A1'].alignment = ct
+
+    ws.merge_cells(f'A2:{get_column_letter(NC)}2')
+    parts = []
+    if date_debut: parts.append(f"Du {date_debut.strftime('%d/%m/%Y')}")
+    if date_fin_obj: parts.append(f"au {date_fin_obj.strftime('%d/%m/%Y')}")
+    ws['A2'] = f"{' '.join(parts) or 'Toutes dates'} — {len(mvts_list)} mouvement(s) — Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = ct
+
+    ws.append([])
+    headers = ['#', 'Date', 'Heure', 'Ingrédient', 'Catégorie', 'Type', 'Quantité', 'Unité', 'Utilisateur', 'Commentaire']
+    ws.append(headers)
+    rh = ws.max_row
+    for col in range(1, NC + 1):
+        c = ws.cell(row=rh, column=col)
+        c.fill = hf; c.font = hft; c.alignment = ct; c.border = bd
+
+    entree_fill = PatternFill("solid", fgColor="f0fdf4")
+    sortie_fill = PatternFill("solid", fgColor="fef2f2")
+    inv_fill    = PatternFill("solid", fgColor="eff6ff")
+    for i, m in enumerate(mvts_list, 1):
+        ing = m.ingredient
+        row_fill = (entree_fill if m.type_mouvement == 'entree'
+                    else inv_fill if m.type_mouvement == 'inventaire'
+                    else sortie_fill)
+        ws.append([
+            i,
+            m.date.strftime('%d/%m/%Y'),
+            m.date.strftime('%H:%M'),
+            ing.nom if ing else '—',
+            ing.categorie.nom if ing and ing.categorie else '—',
+            TYPE_LABELS.get(m.type_mouvement, m.type_mouvement),
+            float(m.quantite),
+            str(ing.unite_stock) if ing and ing.unite_stock else '—',
+            m.utilisateur.get_full_name() or m.utilisateur.username if m.utilisateur else '—',
+            m.commentaire or '',
+        ])
+        rw = ws.max_row
+        for col in range(1, NC + 1):
+            c = ws.cell(row=rw, column=col)
+            c.font = bf if col in (4, 7) else nf
+            c.border = bd
+            c.fill = row_fill
+            c.alignment = rt if col == 7 else (ct if col in (1, 2, 3, 8) else Alignment(vertical='center'))
+
+    ws.append([])
+    tr = ws.max_row + 1
+    ws.cell(row=tr, column=6, value='TOTAL').font = Font(name='Calibri', bold=True)
+    ws.cell(row=tr, column=7, value=len(mvts_list)).font = Font(name='Calibri', bold=True, size=11)
+
+    for col, w in enumerate([5, 12, 8, 28, 16, 16, 10, 9, 18, 30], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    sfx = timezone.now().strftime('%Y%m%d_%H%M')
+    response['Content-Disposition'] = f'attachment; filename="Mouvements_Cuisine_{sfx}.xlsx"'
+    wb.save(response)
+    return response
+
 
 @require_module_access('cuisine')
 def epurer_plats(request):

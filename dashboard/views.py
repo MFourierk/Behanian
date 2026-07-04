@@ -308,6 +308,119 @@ def mouvements_print(request):
 
 
 @login_required
+def mouvements_excel(request):
+    """Export Excel : mouvements de stock globaux (Cave + Cuisine) — Vue Direction"""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+    from utils.permissions import _is_manager
+    from datetime import date as date_type
+
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden()
+
+    date_mvt_str = request.GET.get('date_mvt', timezone.now().date().isoformat())
+    try:
+        date_mvt = date_type.fromisoformat(date_mvt_str)
+    except ValueError:
+        date_mvt = timezone.now().date()
+
+    mouvements = []
+    try:
+        from bar.models import MouvementStockBar
+        for m in MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date'):
+            mouvements.append({
+                'source': 'Cave & Bar', 'nom': m.boisson.nom,
+                'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
+                'quantite': float(m.quantite), 'unite': 'unité(s)',
+                'date': m.date,
+                'user': m.utilisateur.get_full_name() or m.utilisateur.username if m.utilisateur else '—',
+                'commentaire': m.commentaire or '',
+            })
+    except Exception:
+        pass
+    try:
+        from cuisine.models import MouvementStockCuisine
+        for m in MouvementStockCuisine.objects.filter(date__date=date_mvt).select_related('ingredient', 'utilisateur').order_by('-date'):
+            mouvements.append({
+                'source': 'Cuisine', 'nom': m.ingredient.nom,
+                'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
+                'quantite': float(m.quantite),
+                'unite': str(m.ingredient.unite_stock) if m.ingredient.unite_stock else '—',
+                'date': m.date,
+                'user': m.utilisateur.get_full_name() or m.utilisateur.username if m.utilisateur else '—',
+                'commentaire': m.commentaire or '',
+            })
+    except Exception:
+        pass
+    mouvements.sort(key=lambda x: x['date'], reverse=True)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Mouvements"
+
+    hf  = PatternFill("solid", fgColor="1a2535")
+    hft = Font(name='Calibri', bold=True, color='FFFFFF', size=11)
+    tf  = Font(name='Calibri', bold=True, size=14, color='1a2535')
+    bf  = Font(name='Calibri', bold=True, size=10)
+    nf  = Font(name='Calibri', size=10)
+    th  = Side(border_style="thin", color="d4dce8")
+    bd  = Border(left=th, right=th, top=th, bottom=th)
+    ct  = Alignment(horizontal='center', vertical='center')
+    rt  = Alignment(horizontal='right', vertical='center')
+
+    NC = 9
+    ws.merge_cells(f'A1:{get_column_letter(NC)}1')
+    ws['A1'] = f"MOUVEMENTS DE STOCK — {date_mvt.strftime('%d/%m/%Y').upper()} — COMPLEXE BEHANIAN"
+    ws['A1'].font = tf; ws['A1'].alignment = ct
+
+    ws.merge_cells(f'A2:{get_column_letter(NC)}2')
+    ws['A2'] = f"{len(mouvements)} mouvement(s) — Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')}"
+    ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
+    ws['A2'].alignment = ct
+
+    ws.append([])
+    headers = ['#', 'Module', 'Article', 'Type de mouvement', 'Quantité', 'Unité', 'Heure', 'Utilisateur', 'Commentaire']
+    ws.append(headers)
+    rh = ws.max_row
+    for col in range(1, NC + 1):
+        c = ws.cell(row=rh, column=col)
+        c.fill = hf; c.font = hft; c.alignment = ct; c.border = bd
+
+    cave_fill = PatternFill("solid", fgColor="ede9fe")
+    cuis_fill = PatternFill("solid", fgColor="fff7ed")
+    for i, m in enumerate(mouvements, 1):
+        ws.append([
+            i, m['source'], m['nom'], m['type'],
+            m['quantite'], m['unite'],
+            m['date'].strftime('%H:%M'), m['user'], m['commentaire'],
+        ])
+        rw = ws.max_row
+        row_fill = cave_fill if m['source'] == 'Cave & Bar' else cuis_fill
+        for col in range(1, NC + 1):
+            c = ws.cell(row=rw, column=col)
+            c.font = bf if col in (3, 5) else nf
+            c.border = bd
+            c.fill = row_fill
+            c.alignment = rt if col == 5 else (ct if col in (1, 2, 7) else Alignment(vertical='center'))
+
+    ws.append([])
+    tr = ws.max_row + 1
+    ws.cell(row=tr, column=4, value='TOTAL').font = Font(name='Calibri', bold=True)
+    ws.cell(row=tr, column=5, value=len(mouvements)).font = Font(name='Calibri', bold=True, size=11)
+
+    for col, w in enumerate([5, 12, 28, 20, 10, 9, 8, 18, 30], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="Mouvements_{date_mvt.strftime("%Y%m%d")}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
 def api_stats(request):
     """API temps réel — appelée toutes les 30s par le dashboard."""
     modules = get_accessible_modules(request.user)

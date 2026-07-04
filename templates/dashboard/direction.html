@@ -282,6 +282,9 @@
       <a href="{% url 'dashboard:mouvements_print' %}?date_mvt={{ date_mvt }}" target="_blank" class="btn-a btn-outline btn-sm">
         <i class="fas fa-print"></i> Imprimer
       </a>
+      <a href="{% url 'dashboard:mouvements_excel' %}?date_mvt={{ date_mvt }}" class="btn-a btn-sm" style="background:#16a34a;color:#fff;border-color:#16a34a;">
+        <i class="fas fa-file-excel"></i> Excel
+      </a>
     </div>
     <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
       <input type="text" id="filterMvt" placeholder="Rechercher article…" oninput="filtrerMvt()">
