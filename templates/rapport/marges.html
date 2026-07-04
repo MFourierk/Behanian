@@ -1,0 +1,401 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load humanize %}
+{% block title %}Rapport Marges par Module — BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+/* ===== LAYOUT ===== */
+.rpt-header {
+    background: linear-gradient(135deg, #1a252f 0%, #2c3e50 100%);
+    color: white; padding: 28px 32px; border-radius: 18px;
+    margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; overflow: hidden;
+}
+.rpt-header::after {
+    content: '📈'; position: absolute; right: 24px; bottom: -14px;
+    font-size: 90px; opacity: 0.07; pointer-events: none;
+}
+.rpt-header h2 { font-size: 1.55rem; font-weight: 800; margin: 0; letter-spacing: -0.3px; }
+.rpt-header p  { margin: 5px 0 0; opacity: 0.75; font-size: 0.87rem; }
+
+/* ===== KPI CARDS ===== */
+.stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 18px 20px; border-top: 4px solid #e0e0e0;
+}
+.stat-card.ca     { border-top-color: #2c3e50; }
+.stat-card.cout   { border-top-color: #e74c3c; }
+.stat-card.marge  { border-top-color: #27ae60; }
+.stat-card.taux   { border-top-color: #c9a84c; }
+.stat-card .sc-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #7f8c8d; margin-bottom: 8px; }
+.stat-card .sc-value { font-size: 1.5rem; font-weight: 800; color: #2c3e50; line-height: 1; }
+.stat-card .sc-sub   { font-size: 0.73rem; color: #95a5a6; margin-top: 5px; }
+.stat-card.marge .sc-value { color: #27ae60; }
+.stat-card.taux  .sc-value { color: #c9a84c; }
+.stat-card.na    .sc-value { color: #95a5a6; font-size: 1rem; }
+
+/* ===== FILTRE ===== */
+.filtres-bar {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 18px 22px; margin-bottom: 20px;
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;
+}
+.filtre-group { display: flex; flex-direction: column; gap: 5px; }
+.filtre-group label { font-size: 0.73rem; font-weight: 700; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; }
+.filtre-group input[type=date] {
+    padding: 9px 13px; border: 1.5px solid #e9ecef; border-radius: 10px;
+    font-size: 0.88rem; color: #2c3e50; background: #f8f9fa; min-width: 180px;
+}
+.filtre-group input:focus { outline: none; border-color: #2c3e50; background: white; }
+.btn-appliquer {
+    padding: 9px 22px; border-radius: 10px; border: none;
+    background: #2c3e50; color: white; font-weight: 700;
+    font-size: 0.88rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+}
+.btn-appliquer:hover { background: #1a252f; }
+
+/* ===== MODULE CARDS ===== */
+.module-card {
+    background: white; border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden; margin-bottom: 16px;
+}
+.module-header {
+    padding: 14px 22px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-left: 5px solid #ccc; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+}
+.module-header:hover { background: #fafafa; }
+.module-header.restaurant { border-left-color: #c0392b; }
+.module-header.cave       { border-left-color: #1a5276; }
+.module-header.hotel      { border-left-color: #27ae60; }
+.module-header.piscine    { border-left-color: #2980b9; }
+.module-header.espace     { border-left-color: #8e44ad; }
+
+.module-icon  { font-size: 1.6rem; margin-right: 12px; }
+.module-label { font-size: 1rem; font-weight: 800; color: #2c3e50; }
+.module-sub   { font-size: 0.75rem; color: #7f8c8d; margin-top: 2px; }
+
+.module-badge {
+    font-size: 0.68rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; margin-right: 8px;
+}
+.badge-restaurant { background: #fdecea; color: #c0392b; }
+.badge-cave       { background: #eaf4fb; color: #1a5276; }
+.badge-hotel      { background: #eafaf1; color: #1e8449; }
+.badge-piscine    { background: #ebf5fb; color: #2471a3; }
+.badge-espace     { background: #f5eef8; color: #7d3c98; }
+
+/* ===== TABLE DÉTAIL ===== */
+.module-body { overflow: hidden; max-height: 600px; transition: max-height 0.3s ease; }
+.module-body.collapsed { max-height: 0; }
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    border-top: 1px solid #f0f0f0;
+}
+.detail-cell {
+    padding: 20px 22px;
+    border-right: 1px solid #f5f5f5;
+    text-align: center;
+}
+.detail-cell:last-child { border-right: none; }
+.detail-cell .dc-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #7f8c8d; margin-bottom: 8px; }
+.detail-cell .dc-value { font-size: 1.2rem; font-weight: 800; color: #2c3e50; }
+.detail-cell .dc-value.vert { color: #27ae60; }
+.detail-cell .dc-value.rouge { color: #c0392b; }
+.detail-cell .dc-value.or { color: #c9a84c; }
+.detail-cell .dc-value.gris { color: #95a5a6; font-size: 0.88rem; font-weight: 500; }
+.detail-cell .dc-sub { font-size: 0.7rem; color: #95a5a6; margin-top: 4px; }
+
+/* Barre de marge visuelle */
+.marge-bar-wrap { padding: 0 22px 18px; }
+.marge-bar-label { font-size: 0.68rem; color: #7f8c8d; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.marge-bar-track { height: 8px; background: #f0f0f0; border-radius: 99px; overflow: hidden; }
+.marge-bar-fill  { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+.fill-vert   { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+.fill-orange { background: linear-gradient(90deg, #e67e22, #f39c12); }
+.fill-rouge  { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+
+/* Note coût partiel */
+.cout-note {
+    padding: 8px 22px 14px;
+    font-size: 0.72rem; color: #7f8c8d;
+    display: flex; align-items: center; gap: 6px;
+}
+
+/* ===== TOTAL GÉNÉRAL ===== */
+.total-general {
+    background: linear-gradient(135deg, #1a252f, #2c3e50);
+    color: white; border-radius: 14px;
+    padding: 22px 28px; display: grid;
+    grid-template-columns: 1fr repeat(3, auto);
+    gap: 40px; align-items: center;
+    margin-top: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+.tg-title   { font-size: 1rem; font-weight: 800; }
+.tg-sub     { font-size: 0.78rem; opacity: 0.6; margin-top: 3px; }
+.tg-bloc    { text-align: right; }
+.tg-lbl     { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; opacity: 0.6; }
+.tg-val     { font-size: 1.35rem; font-weight: 900; margin-top: 3px; }
+.tg-val.vert  { color: #2ecc71; }
+.tg-val.or    { color: #f1c40f; }
+
+/* ===== IMPRESSION ===== */
+@media print {
+    .filtres-bar, .btn-appliquer, .actions-bar, nav, .sidebar, .breadcrumb-bar,
+    .module-header .module-toggle { display: none !important; }
+    .module-body.collapsed { max-height: 600px !important; }
+    .module-card { box-shadow: none !important; border: 1px solid #e0e0e0; page-break-inside: avoid; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { margin: 15mm 12mm; }
+}
+</style>
+
+{% load static %}
+<div style="max-width:1100px;margin:0 auto;padding:24px 16px;">
+
+  <!-- En-tête -->
+  <div class="rpt-header">
+    <div>
+      <h2>📈 Rapport Marges par Module</h2>
+      <p>Chiffre d'affaires, coût estimé et taux de marge — {{ date_rapport|date:"l d F Y" }}</p>
+    </div>
+    <div style="text-align:right;font-size:0.8rem;opacity:0.6;">
+      Généré le {{ generated_at|date:"d/m/Y à H:i" }}
+    </div>
+  </div>
+
+  <!-- Filtre date -->
+  <div class="filtres-bar">
+    <div class="filtre-group">
+      <label>📅 Date du rapport</label>
+      <input type="date" id="dateInput" value="{{ date_rapport|date:'Y-m-d' }}">
+    </div>
+    <button class="btn-appliquer" onclick="appliquerDate()">
+      <i class="fas fa-search"></i> Appliquer
+    </button>
+    <button class="btn-appliquer" onclick="window.print()" style="background:#7f8c8d;margin-left:auto;">
+      <i class="fas fa-print"></i> Imprimer
+    </button>
+  </div>
+
+  <!-- KPI globaux -->
+  <div class="stats-grid">
+    <div class="stat-card ca">
+      <div class="sc-label">Chiffre d'Affaires Total</div>
+      <div class="sc-value">{{ total_ca|floatformat:0|intcomma }} F</div>
+      <div class="sc-sub">Tous modules confondus</div>
+    </div>
+    <div class="stat-card cout">
+      <div class="sc-label">Coût Estimé (partiel)</div>
+      {% if total_cout %}
+      <div class="sc-value" style="color:#c0392b;">{{ total_cout|floatformat:0|intcomma }} F</div>
+      <div class="sc-sub">Restaurant & Cave uniquement</div>
+      {% else %}
+      <div class="sc-value gris" style="font-size:0.95rem;color:#95a5a6;font-weight:500;">Non disponible</div>
+      <div class="sc-sub">Aucune donnée de coût</div>
+      {% endif %}
+    </div>
+    <div class="stat-card marge">
+      <div class="sc-label">Marge Brute Estimée</div>
+      {% if total_marge is not None %}
+      <div class="sc-value">{{ total_marge|floatformat:0|intcomma }} F</div>
+      <div class="sc-sub">Sur les modules calculés</div>
+      {% else %}
+      <div class="sc-value" style="font-size:0.95rem;color:#95a5a6;font-weight:500;">Non disponible</div>
+      <div class="sc-sub">—</div>
+      {% endif %}
+    </div>
+    <div class="stat-card taux">
+      <div class="sc-label">Taux de Marge Global</div>
+      {% if taux_marge_global is not None %}
+      <div class="sc-value">{{ taux_marge_global|floatformat:1 }} %</div>
+      <div class="sc-sub">Modules avec données de coût</div>
+      {% else %}
+      <div class="sc-value" style="font-size:0.95rem;color:#95a5a6;font-weight:500;">Non disponible</div>
+      <div class="sc-sub">—</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Module par module -->
+  {% for mod in modules_data %}
+  <div class="module-card">
+    <div class="module-header {{ mod.css }}" onclick="toggleModule('mod-{{ mod.key }}', this)">
+      <div style="display:flex;align-items:center;">
+        <span class="module-icon">{{ mod.icon }}</span>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="module-badge badge-{{ mod.css }}">{{ mod.css }}</span>
+            <span class="module-label">{{ mod.label }}</span>
+          </div>
+          <div class="module-sub">
+            {{ mod.nb_tickets }} ticket{% if mod.nb_tickets != 1 %}s{% endif %} encaissé{% if mod.nb_tickets != 1 %}s{% endif %}
+            — CA : {{ mod.ca|floatformat:0|intcomma }} FCFA
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        {% if mod.taux_marge is not None %}
+        <div style="text-align:right;">
+          <div style="font-size:1.3rem;font-weight:800;color:{% if mod.taux_marge >= 50 %}#27ae60{% elif mod.taux_marge >= 30 %}#e67e22{% else %}#c0392b{% endif %};">
+            {{ mod.taux_marge|floatformat:1 }}%
+          </div>
+          <div style="font-size:0.68rem;color:#7f8c8d;">taux marge</div>
+        </div>
+        {% elif mod.ca > 0 %}
+        <div style="font-size:0.75rem;color:#7f8c8d;font-style:italic;">Coût non calculé</div>
+        {% else %}
+        <div style="font-size:0.75rem;color:#bdc3c7;">Aucune vente</div>
+        {% endif %}
+        <span class="module-toggle" style="font-size:0.85rem;color:#95a5a6;">▼</span>
+      </div>
+    </div>
+
+    <div class="module-body" id="mod-{{ mod.key }}">
+      <!-- Grille de chiffres -->
+      <div class="detail-grid">
+        <div class="detail-cell">
+          <div class="dc-label">Chiffre d'Affaires</div>
+          <div class="dc-value">{{ mod.ca|floatformat:0|intcomma }}</div>
+          <div class="dc-sub">FCFA</div>
+        </div>
+        <div class="detail-cell">
+          <div class="dc-label">Coût Estimé</div>
+          {% if mod.cout is not None %}
+          <div class="dc-value rouge">{{ mod.cout|floatformat:0|intcomma }}</div>
+          <div class="dc-sub">FCFA</div>
+          {% else %}
+          <div class="dc-value gris">—</div>
+          <div class="dc-sub">Non calculé</div>
+          {% endif %}
+        </div>
+        <div class="detail-cell">
+          <div class="dc-label">Marge Brute</div>
+          {% if mod.marge_brute is not None %}
+          <div class="dc-value vert">{{ mod.marge_brute|floatformat:0|intcomma }}</div>
+          <div class="dc-sub">FCFA</div>
+          {% else %}
+          <div class="dc-value gris">—</div>
+          <div class="dc-sub">—</div>
+          {% endif %}
+        </div>
+        <div class="detail-cell">
+          <div class="dc-label">Taux de Marge</div>
+          {% if mod.taux_marge is not None %}
+          <div class="dc-value or">{{ mod.taux_marge|floatformat:1 }} %</div>
+          <div class="dc-sub">sur le CA</div>
+          {% else %}
+          <div class="dc-value gris">—</div>
+          <div class="dc-sub">—</div>
+          {% endif %}
+        </div>
+        <div class="detail-cell">
+          <div class="dc-label">Coeff. Multiplicateur</div>
+          {% if mod.coeff_mult is not None %}
+          <div class="dc-value" style="color:#2c3e50;">× {{ mod.coeff_mult|floatformat:2 }}</div>
+          <div class="dc-sub">prix / coût</div>
+          {% else %}
+          <div class="dc-value gris">—</div>
+          <div class="dc-sub">—</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Barre visuelle du taux de marge -->
+      {% if mod.taux_marge is not None %}
+      <div class="marge-bar-wrap">
+        <div class="marge-bar-label">
+          <span>0 %</span>
+          <span style="font-weight:700;">Marge : {{ mod.taux_marge|floatformat:1 }} %</span>
+          <span>100 %</span>
+        </div>
+        <div class="marge-bar-track">
+          <div class="marge-bar-fill {% if mod.taux_marge >= 50 %}fill-vert{% elif mod.taux_marge >= 30 %}fill-orange{% else %}fill-rouge{% endif %}"
+               style="width:{{ mod.taux_marge|floatformat:0 }}%;"></div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Note si coût partiel -->
+      {% if mod.cout_disponible and mod.nb_lignes_total > 0 %}
+      <div class="cout-note">
+        <i class="fas fa-info-circle" style="color:#3498db;"></i>
+        Coût calculé sur {{ mod.nb_lignes_cout }} / {{ mod.nb_lignes_total }} ligne{% if mod.nb_lignes_total != 1 %}s{% endif %} de commande (articles avec fiche technique ou prix d'achat renseigné).
+      </div>
+      {% elif not mod.cout_disponible and mod.ca > 0 %}
+      <div class="cout-note">
+        <i class="fas fa-exclamation-triangle" style="color:#f39c12;"></i>
+        Données de coût non disponibles pour ce module — marge non calculée.
+        {% if mod.key == 'hotel' %}Renseigner les coûts de séjour dans les paramètres pour activer le calcul.{% endif %}
+      </div>
+      {% elif mod.ca == 0 %}
+      <div class="cout-note" style="justify-content:center;padding:20px;">
+        <i class="fas fa-moon" style="color:#bdc3c7;"></i>
+        Aucune vente enregistrée pour ce module à cette date.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Récapitulatif général -->
+  {% if total_ca > 0 %}
+  <div class="total-general">
+    <div>
+      <div class="tg-title">📊 Récapitulatif du {{ date_rapport|date:"d/m/Y" }}</div>
+      <div class="tg-sub">{{ modules_data|length }} modules de service</div>
+    </div>
+    <div class="tg-bloc">
+      <div class="tg-lbl">CA TOTAL</div>
+      <div class="tg-val">{{ total_ca|floatformat:0|intcomma }} F</div>
+    </div>
+    {% if total_marge is not None %}
+    <div class="tg-bloc">
+      <div class="tg-lbl">MARGE ESTIMÉE</div>
+      <div class="tg-val vert">{{ total_marge|floatformat:0|intcomma }} F</div>
+    </div>
+    <div class="tg-bloc">
+      <div class="tg-lbl">TAUX MOYEN</div>
+      <div class="tg-val or">{{ taux_marge_global|floatformat:1 }} %</div>
+    </div>
+    {% else %}
+    <div class="tg-bloc">
+      <div class="tg-lbl">MARGE</div>
+      <div class="tg-val" style="opacity:0.4;font-size:1rem;">Données insuffisantes</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function appliquerDate() {
+  const d = document.getElementById('dateInput').value;
+  if (d) window.location.href = '?date=' + d;
+}
+document.getElementById('dateInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') appliquerDate();
+});
+
+function toggleModule(id, header) {
+  const body = document.getElementById(id);
+  const tog  = header.querySelector('.module-toggle');
+  body.classList.toggle('collapsed');
+  tog.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+}
+</script>
+{% endblock %}
