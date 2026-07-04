@@ -1,0 +1,130 @@
+{% extends 'print_base.html' %}
+{% load static humanize %}
+{% block doc_title %}Rapport Marges par Module — {{ date_rapport|date:"d/m/Y" }}{% endblock %}
+
+{% block doc_content %}
+
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Rapport Marges par Module</div>
+    <div class="doc-title-sub">Chiffre d'affaires, coût estimé et taux de marge — {{ date_rapport|date:"l d F Y" }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ modules_data|length }} modules</span>
+  </div>
+</div>
+
+<!-- Méta globale -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations du rapport</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date du rapport</span><span class="meta-val" style="color:#c0392b;font-weight:700">{{ date_rapport|date:"d/m/Y" }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Synthèse globale</div>
+    <div class="meta-row"><span class="meta-lbl">CA Total</span><span class="meta-val" style="font-weight:700;color:#1a2535">{{ total_ca|floatformat:0|intcomma }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Coût estimé</span>
+      <span class="meta-val" style="color:#c0392b">{% if total_cout %}{{ total_cout|floatformat:0|intcomma }} FCFA{% else %}Non disponible{% endif %}</span>
+    </div>
+    <div class="meta-row"><span class="meta-lbl">Marge brute</span>
+      <span class="meta-val" style="color:#15803d">{% if total_marge is not None %}{{ total_marge|floatformat:0|intcomma }} FCFA{% else %}—{% endif %}</span>
+    </div>
+    <div class="meta-row"><span class="meta-lbl">Taux de marge global</span>
+      <span class="meta-val" style="color:#c9a84c;font-weight:700">{% if taux_marge_global is not None %}{{ taux_marge_global|floatformat:1 }} %{% else %}—{% endif %}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Tableau par module -->
+<div class="content-section">
+  <div class="section-title">Détail par module de service</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Module</th>
+        <th class="r">Tickets</th>
+        <th class="r">CA Encaissé</th>
+        <th class="r">Coût Estimé</th>
+        <th class="r">Marge Brute</th>
+        <th class="r">Taux Marge</th>
+        <th class="r">Coeff. ×</th>
+        <th>Remarque</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for mod in modules_data %}
+    <tr>
+      <td>
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;background:#f1f5f9;color:#1a2535;border-left:3px solid {{ mod.color }}">
+          {{ mod.icon }} {{ mod.label }}
+        </span>
+      </td>
+      <td class="r muted">{{ mod.nb_tickets }}</td>
+      <td class="r bold">{% if mod.ca > 0 %}{{ mod.ca|floatformat:0|intcomma }}{% else %}<span class="muted">0</span>{% endif %}</td>
+      <td class="r" style="color:#c0392b">
+        {% if mod.cout is not None %}{{ mod.cout|floatformat:0|intcomma }}
+        {% elif mod.cout_disponible == False and mod.ca > 0 %}<span class="muted" style="font-size:9px">Service pur</span>
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td class="r" style="color:#15803d">
+        {% if mod.marge_brute is not None %}{{ mod.marge_brute|floatformat:0|intcomma }}
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td class="r bold" style="color:{% if mod.taux_marge is not None %}{% if mod.taux_marge >= 50 %}#15803d{% elif mod.taux_marge >= 30 %}#d97706{% else %}#c0392b{% endif %}{% else %}#8a9ab0{% endif %}">
+        {% if mod.taux_marge is not None %}{{ mod.taux_marge|floatformat:1 }} %{% else %}—{% endif %}
+      </td>
+      <td class="r muted">
+        {% if mod.coeff_mult is not None %}× {{ mod.coeff_mult|floatformat:2 }}{% else %}—{% endif %}
+      </td>
+      <td style="font-size:9px;color:#8a9ab0">
+        {% if mod.ca == 0 %}Aucune vente
+        {% elif not mod.cout_disponible %}Service — pas de coût matière
+        {% elif mod.nb_lignes_cout < mod.nb_lignes_total %}Coût partiel ({{ mod.nb_lignes_cout }}/{{ mod.nb_lignes_total }} lignes)
+        {% else %}Coût complet{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2" class="total-label">TOTAL GÉNÉRAL</td>
+        <td class="total-val">{{ total_ca|floatformat:0|intcomma }} F</td>
+        <td class="r" style="font-weight:700;background:#fdf2f2;color:#c0392b;padding:10px 12px">
+          {% if total_cout %}{{ total_cout|floatformat:0|intcomma }} F{% else %}—{% endif %}
+        </td>
+        <td class="r" style="font-weight:700;background:#f0fdf4;color:#15803d;padding:10px 12px">
+          {% if total_marge is not None %}{{ total_marge|floatformat:0|intcomma }} F{% else %}—{% endif %}
+        </td>
+        <td class="r" style="font-weight:700;background:#fffbf0;color:#c9a84c;padding:10px 12px">
+          {% if taux_marge_global is not None %}{{ taux_marge_global|floatformat:1 }} %{% else %}—{% endif %}
+        </td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<div class="notes-box">
+  <strong>Légende</strong>
+  CA : montant total encaissé (tickets de facturation).
+  Coût estimé : matières premières Restaurant (fiches techniques) et Cave (prix d'achat boissons).
+  Hôtel, Piscine, Espaces : services purs — pas de coût matière renseigné dans le système.
+  Taux marge = Marge Brute / CA × 100. Coefficient = CA / Coût (prix de vente relatif au coût).
+</div>
+
+<div class="signatures cols-2" style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin:18px 30px 0;padding-top:14px">
+  <div class="sig-box">
+    <div class="sig-line">Directeur / Responsable</div>
+    <div class="sig-hint">Signature & cachet</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line">Comptable</div>
+    <div class="sig-hint">Signature & cachet</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block doc_footer_right %}Rapport Marges — {{ date_rapport|date:"d/m/Y" }}{% endblock %}

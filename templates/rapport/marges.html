@@ -188,7 +188,7 @@
     <button class="btn-appliquer" onclick="appliquerDate()">
       <i class="fas fa-search"></i> Appliquer
     </button>
-    <button class="btn-appliquer" onclick="window.print()" style="background:#7f8c8d;margin-left:auto;">
+    <button class="btn-appliquer" onclick="window.open('{% url "rapport:marges_print" %}?date={{ date_rapport|date:"Y-m-d" }}', '_blank', 'width=1100,height=800,toolbar=0,menubar=0,scrollbars=1')" style="background:#7f8c8d;margin-left:auto;">
       <i class="fas fa-print"></i> Imprimer
     </button>
   </div>

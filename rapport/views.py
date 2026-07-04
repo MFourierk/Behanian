@@ -190,37 +190,26 @@ def rapport_stock(request):
     return render(request, 'rapport/stock.html', context)
 
 
-def rapport_marges(request):
-    """
-    Rapport Marges par Module — Complexe Behanian.
-    Calcule CA, coût estimé et marge pour chaque module de service à une date donnée.
-    """
+def _calcul_marges(date_rapport):
+    """Calcule les données de marges pour une date — partagé entre vue et impression."""
     from django.db.models import Sum
-    from datetime import date as date_type
     from facturation.models import Ticket
     from restaurant.models import Commande, LigneCommande
 
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
-    try:
-        date_rapport = date_type.fromisoformat(date_str)
-    except ValueError:
-        date_rapport = timezone.now().date()
-
     MODULES = [
-        {'key': 'restaurant', 'label': 'Restaurant',              'icon': '🍽️',  'color': '#c0392b', 'css': 'restaurant'},
-        {'key': 'cave',       'label': 'Cave & Bar',              'icon': '🍷',  'color': '#1a5276', 'css': 'cave'},
-        {'key': 'hotel',      'label': 'Hôtel',                   'icon': '🏨',  'color': '#27ae60', 'css': 'hotel'},
-        {'key': 'piscine',    'label': 'Piscine',                 'icon': '🏊',  'color': '#2980b9', 'css': 'piscine'},
-        {'key': 'espace',     'label': 'Espaces Événementiels',   'icon': '🎪',  'color': '#8e44ad', 'css': 'espace'},
+        {'key': 'restaurant', 'label': 'Restaurant',            'icon': '🍽️', 'color': '#c0392b', 'css': 'restaurant'},
+        {'key': 'cave',       'label': 'Cave & Bar',            'icon': '🍷', 'color': '#1a5276', 'css': 'cave'},
+        {'key': 'hotel',      'label': 'Hôtel',                 'icon': '🏨', 'color': '#27ae60', 'css': 'hotel'},
+        {'key': 'piscine',    'label': 'Piscine',               'icon': '🏊', 'color': '#2980b9', 'css': 'piscine'},
+        {'key': 'espace',     'label': 'Espaces Événementiels', 'icon': '🎪', 'color': '#8e44ad', 'css': 'espace'},
     ]
 
     modules_data = []
-    total_ca    = Decimal('0')
-    total_cout  = Decimal('0')
+    total_ca   = Decimal('0')
+    total_cout = Decimal('0')
     has_any_cout = False
 
     for mod in MODULES:
-        # ── Chiffre d'affaires depuis les tickets facturation ──
         tickets = Ticket.objects.filter(module=mod['key'], date_creation__date=date_rapport)
         ca = tickets.aggregate(s=Sum('montant_paye'))['s'] or Decimal('0')
         nb_tickets = tickets.count()
@@ -230,19 +219,16 @@ def rapport_marges(request):
         nb_lignes_avec_cout = 0
         nb_lignes_total = 0
 
-        # ── Coût estimé (uniquement Restaurant et Cave) ──
         if mod['key'] == 'restaurant':
             try:
                 from cuisine.models import Plat as PlatCuisine
                 commandes = Commande.objects.filter(
                     statut='payee', date_creation__date=date_rapport
                 ).prefetch_related('lignes__plat', 'lignes__boisson')
-
                 plat_cache = {}
                 for cmd in commandes:
                     for ligne in cmd.lignes.all():
                         nb_lignes_total += 1
-                        # Plat → fiche technique
                         if ligne.plat and ligne.plat.cuisine_plat_id:
                             pid = ligne.plat.cuisine_plat_id
                             if pid not in plat_cache:
@@ -255,7 +241,6 @@ def rapport_marges(request):
                             if pc and getattr(pc, 'fiche_technique', None):
                                 cout += pc.fiche_technique.cout_par_portion * ligne.quantite
                                 nb_lignes_avec_cout += 1
-                        # Boisson dans commande resto
                         if ligne.boisson and ligne.boisson.prix_achat:
                             cout += Decimal(str(ligne.boisson.prix_achat)) * ligne.quantite
                             nb_lignes_avec_cout += 1
@@ -289,26 +274,54 @@ def rapport_marges(request):
 
         modules_data.append({
             **mod,
-            'ca':                  ca,
-            'nb_tickets':          nb_tickets,
-            'cout':                cout if cout_disponible else None,
-            'cout_disponible':     cout_disponible,
-            'marge_brute':         marge_brute,
-            'taux_marge':          taux_marge,
-            'coeff_mult':          coeff_mult,
-            'nb_lignes_cout':      nb_lignes_avec_cout,
-            'nb_lignes_total':     nb_lignes_total,
+            'ca': ca, 'nb_tickets': nb_tickets,
+            'cout': cout if cout_disponible else None,
+            'cout_disponible': cout_disponible,
+            'marge_brute': marge_brute,
+            'taux_marge': taux_marge,
+            'coeff_mult': coeff_mult,
+            'nb_lignes_cout': nb_lignes_avec_cout,
+            'nb_lignes_total': nb_lignes_total,
         })
 
-    total_marge      = total_ca - total_cout if has_any_cout else None
+    total_marge       = total_ca - total_cout if has_any_cout else None
     taux_marge_global = float(total_marge / total_ca * 100) if (total_marge and total_ca > 0) else None
 
-    return render(request, 'rapport/marges.html', {
-        'date_rapport':      date_rapport,
-        'modules_data':      modules_data,
-        'total_ca':          total_ca,
-        'total_cout':        total_cout if has_any_cout else None,
-        'total_marge':       total_marge,
+    return {
+        'modules_data': modules_data,
+        'total_ca': total_ca,
+        'total_cout': total_cout if has_any_cout else None,
+        'total_marge': total_marge,
         'taux_marge_global': taux_marge_global,
-        'generated_at':      timezone.now(),
+    }
+
+
+def _parse_date(request, param='date'):
+    from datetime import date as date_type
+    date_str = request.GET.get(param, timezone.now().date().isoformat())
+    try:
+        return date_type.fromisoformat(date_str)
+    except ValueError:
+        return timezone.now().date()
+
+
+def rapport_marges(request):
+    """Rapport Marges par Module — vue dashboard avec filtre date."""
+    date_rapport = _parse_date(request)
+    data = _calcul_marges(date_rapport)
+    return render(request, 'rapport/marges.html', {
+        'date_rapport': date_rapport,
+        'generated_at': timezone.now(),
+        **data,
+    })
+
+
+def rapport_marges_print(request):
+    """Page d'impression Marges par Module — modèle print_base.html."""
+    date_rapport = _parse_date(request)
+    data = _calcul_marges(date_rapport)
+    return render(request, 'rapport/marges_print.html', {
+        'date_rapport': date_rapport,
+        'generated_at': timezone.now(),
+        **data,
     })
