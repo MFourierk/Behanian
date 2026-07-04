@@ -1,0 +1,109 @@
+{% extends 'print_base.html' %}
+{% load static %}
+{% block doc_title %}Mouvements de Stock — {{ date_mvt|date:"d/m/Y" }}{% endblock %}
+
+{% block doc_content %}
+
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Mouvements de Stock</div>
+    <div class="doc-title-sub">Cave & Bar · Cuisine — {{ date_mvt|date:"l d F Y" }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ mouvements|length }} mouvement(s)</span>
+  </div>
+</div>
+
+<div class="meta-grid cols-3">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations du rapport</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date des mouvements</span><span class="meta-val" style="color:#c0392b;font-weight:700">{{ date_mvt|date:"d/m/Y" }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Cave & Bar</div>
+    <div class="meta-row"><span class="meta-lbl">Mouvements</span><span class="meta-val">{{ nb_cave }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Module</span><span class="meta-val">Cave & Bar</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Cuisine</div>
+    <div class="meta-row"><span class="meta-lbl">Mouvements</span><span class="meta-val">{{ nb_cuisine }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Module</span><span class="meta-val">Cuisine</span></div>
+  </div>
+</div>
+
+<div class="content-section">
+  <div class="section-title">Détail des mouvements — {{ date_mvt|date:"d/m/Y" }}</div>
+
+  {% if mouvements %}
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th>Module</th>
+        <th>Article / Ingrédient</th>
+        <th>Type de mouvement</th>
+        <th class="r">Quantité</th>
+        <th>Unité</th>
+        <th class="c">Heure</th>
+        <th>Utilisateur</th>
+        <th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in mouvements %}
+    <tr>
+      <td class="muted">{{ forloop.counter }}</td>
+      <td>
+        {% if m.source == 'cave' %}
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;background:#f3e8ff;color:#7c3aed;">🍷 Cave</span>
+        {% else %}
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;background:#fff7ed;color:#c2410c;">🍽️ Cuisine</span>
+        {% endif %}
+      </td>
+      <td class="bold">{{ m.nom }}</td>
+      <td>
+        {% if m.type_code == 'entree' or m.type_code == 'inventaire_excedent' %}
+        <span style="color:#15803d;font-weight:600">▲ {{ m.type }}</span>
+        {% elif m.type_code == 'inventaire' %}
+        <span style="color:#1d4ed8;font-weight:600">= {{ m.type }}</span>
+        {% else %}
+        <span style="color:#b91c1c;font-weight:600">▼ {{ m.type }}</span>
+        {% endif %}
+      </td>
+      <td class="r bold" style="color:{% if m.type_code == 'entree' or m.type_code == 'inventaire_excedent' %}#15803d{% elif m.type_code == 'inventaire' %}#1d4ed8{% else %}#b91c1c{% endif %}">
+        {% if m.type_code == 'entree' or m.type_code == 'inventaire_excedent' %}+{% elif m.type_code != 'inventaire' %}−{% endif %}{{ m.quantite }}
+      </td>
+      <td class="muted">{{ m.unite }}</td>
+      <td class="c muted">{{ m.date|date:"H:i" }}</td>
+      <td>{{ m.user }}</td>
+      <td class="muted" style="font-size:10px;max-width:120px">{{ m.commentaire }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4" class="total-label">TOTAL MOUVEMENTS</td>
+        <td class="total-val" colspan="5">{{ mouvements|length }} mouvement(s) — {{ nb_cave }} Cave · {{ nb_cuisine }} Cuisine</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% else %}
+  <div style="text-align:center;padding:40px;color:#8a9ab0;border:1px dashed #dde3ec;border-radius:8px;">
+    <div style="font-size:32px;margin-bottom:10px">📭</div>
+    <div style="font-weight:600">Aucun mouvement enregistré le {{ date_mvt|date:"d/m/Y" }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="notes-box">
+  <strong>Note</strong>
+  Les mouvements de type ▲ (entrée) augmentent le stock. Les mouvements ▼ (sortie, casse, production) le diminuent. Les mouvements = (inventaire conforme) sont neutres.
+  Généré le {% now "d/m/Y à H:i" %} — Complexe Hôtelier Behanian.
+</div>
+
+{% endblock %}
+
+{% block doc_footer_right %}Mouvements du {{ date_mvt|date:"d/m/Y" }}{% endblock %}

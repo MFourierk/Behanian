@@ -279,6 +279,9 @@
   <div class="panel">
     <div class="ph">
       <h3>📋 Mouvements — {{ date_mvt|slice:"8:10" }}/{{ date_mvt|slice:"5:7" }}/{{ date_mvt|slice:"0:4" }} — {{ mouvements_combines|length }} résultat(s)</h3>
+      <a href="{% url 'dashboard:mouvements_print' %}?date_mvt={{ date_mvt }}" target="_blank" class="btn-a btn-outline btn-sm">
+        <i class="fas fa-print"></i> Imprimer
+      </a>
     </div>
     <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
       <input type="text" id="filterMvt" placeholder="Rechercher article…" oninput="filtrerMvt()">

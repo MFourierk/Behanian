@@ -249,6 +249,65 @@ def direction_view(request):
 
 
 @login_required
+def mouvements_print(request):
+    """Page d'impression des mouvements de stock — modèle print_base.html."""
+    from utils.permissions import _is_manager
+    from django.contrib import messages
+    from datetime import date as date_type
+
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        messages.error(request, "Accès réservé à la Direction.")
+        return redirect('dashboard:index')
+
+    date_mvt_str = request.GET.get('date_mvt', timezone.now().date().isoformat())
+    try:
+        date_mvt = date_type.fromisoformat(date_mvt_str)
+    except ValueError:
+        date_mvt = timezone.now().date()
+
+    mouvements = []
+    try:
+        from bar.models import MouvementStockBar
+        for m in MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date'):
+            mouvements.append({
+                'source': 'cave', 'source_label': 'Cave & Bar',
+                'nom': m.boisson.nom,
+                'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
+                'quantite': m.quantite, 'unite': 'unité(s)',
+                'date': m.date,
+                'user': m.utilisateur.get_full_name() or m.utilisateur.username if m.utilisateur else '—',
+                'commentaire': m.commentaire or '—',
+            })
+    except Exception:
+        pass
+
+    try:
+        from cuisine.models import MouvementStockCuisine
+        for m in MouvementStockCuisine.objects.filter(date__date=date_mvt).select_related('ingredient', 'utilisateur').order_by('-date'):
+            mouvements.append({
+                'source': 'cuisine', 'source_label': 'Cuisine',
+                'nom': m.ingredient.nom,
+                'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
+                'quantite': m.quantite, 'unite': str(m.ingredient.unite_stock) if m.ingredient.unite_stock else '—',
+                'date': m.date,
+                'user': m.utilisateur.get_full_name() or m.utilisateur.username if m.utilisateur else '—',
+                'commentaire': m.commentaire or '—',
+            })
+    except Exception:
+        pass
+
+    mouvements.sort(key=lambda x: x['date'], reverse=True)
+
+    return render(request, 'dashboard/mouvements_print.html', {
+        'date_mvt': date_mvt,
+        'mouvements': mouvements,
+        'nb_cave': sum(1 for m in mouvements if m['source'] == 'cave'),
+        'nb_cuisine': sum(1 for m in mouvements if m['source'] == 'cuisine'),
+        'generated_at': timezone.now(),
+    })
+
+
+@login_required
 def api_stats(request):
     """API temps réel — appelée toutes les 30s par le dashboard."""
     modules = get_accessible_modules(request.user)

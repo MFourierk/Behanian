@@ -6,5 +6,6 @@ app_name = 'dashboard'
 urlpatterns = [
     path('', views.dashboard_view, name='index'),
     path('direction/', views.direction_view, name='direction'),
+    path('direction/mouvements/print/', views.mouvements_print, name='mouvements_print'),
     path('api/stats/', views.api_stats, name='api_stats'),
 ]
