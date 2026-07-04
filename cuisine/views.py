@@ -1567,7 +1567,7 @@ def mouvements_doc_cuisine(request):
             ingredient_nom = Ingredient.objects.get(pk=ingredient_id).nom
         except Ingredient.DoesNotExist:
             pass
-    TYPE_LABELS = {'entree': 'Entrées', 'sortie': 'Sorties', 'production': 'Production', 'casse': 'Casses / Pertes', 'inventaire': 'Ajustements'}
+    TYPE_LABELS = {'entree': 'Entrées', 'sortie': 'Sorties', 'production': 'Sortie — Vente Restaurant', 'casse': 'Casses / Pertes', 'inventaire': 'Ajustements'}
     context = {
         'mouvements': mvts_list,
         'date_debut': date_debut,
@@ -1599,7 +1599,7 @@ def mouvements_excel_cuisine(request):
     date_debut, date_fin_obj, mvts_list = _mouvements_cuisine(
         date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv)
 
-    TYPE_LABELS = {'entree': 'Entrée', 'sortie': 'Sortie', 'production': 'Production',
+    TYPE_LABELS = {'entree': 'Entrée', 'sortie': 'Sortie', 'production': 'Sortie — Vente Restaurant',
                    'casse': 'Casse / Perte', 'inventaire': 'Inventaire'}
 
     wb = openpyxl.Workbook()

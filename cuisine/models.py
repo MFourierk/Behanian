@@ -158,7 +158,7 @@ class MouvementStockCuisine(models.Model):
         ('entree',               'Entrée (Réception)'),
         ('sortie',               'Sortie (Consommation)'),
         ('casse',                'Casse / Perte'),
-        ('production',           'Consommation production'),
+        ('production',           'Sortie — Vente Restaurant'),
         ('inventaire_excedent',  'Inventaire — Excédent'),
         ('inventaire_manquant',  'Inventaire — Manquant'),
         ('inventaire',           'Inventaire — Conforme'),

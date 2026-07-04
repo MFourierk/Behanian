@@ -122,7 +122,7 @@ table.mv-table { width:100%;border-collapse:collapse;font-size:0.86rem; }
                     <option value="">— Tous —</option>
                     <option value="entree"    {% if type_mv == 'entree'     %}selected{% endif %}>Entrée</option>
                     <option value="sortie"    {% if type_mv == 'sortie'     %}selected{% endif %}>Sortie</option>
-                    <option value="production"{% if type_mv == 'production' %}selected{% endif %}>Production</option>
+                    <option value="production"{% if type_mv == 'production' %}selected{% endif %}>Sortie — Vente Restaurant</option>
                     <option value="casse"     {% if type_mv == 'casse'      %}selected{% endif %}>Casse / Perte</option>
                     <option value="inventaire"{% if type_mv == 'inventaire' %}selected{% endif %}>Ajustement</option>
                 </select>
@@ -208,7 +208,7 @@ table.mv-table { width:100%;border-collapse:collapse;font-size:0.86rem; }
                         {% elif mv.type_mouvement == 'sortie' %}
                             <span class="badge-sortie"><i class="fas fa-arrow-up"></i> Sortie</span>
                         {% elif mv.type_mouvement == 'production' %}
-                            <span class="badge-production"><i class="fas fa-utensils"></i> Production</span>
+                            <span class="badge-production"><i class="fas fa-utensils"></i> Vente Restaurant</span>
                         {% elif mv.type_mouvement == 'casse' %}
                             <span class="badge-casse"><i class="fas fa-exclamation-triangle"></i> Casse</span>
                         {% elif mv.type_mouvement == 'inventaire' %}
