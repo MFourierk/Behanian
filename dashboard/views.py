@@ -158,6 +158,7 @@ def direction_view(request):
     """Vue consolidée Direction — stocks, mouvements et stats de tous les modules."""
     from utils.permissions import _is_manager
     from django.contrib import messages
+    from datetime import date as date_type
     if not (_is_manager(request.user) or request.user.is_superuser):
         messages.error(request, "Accès réservé à la Direction et aux Managers.")
         return redirect('dashboard:index')
@@ -165,6 +166,16 @@ def direction_view(request):
     today = timezone.now().date()
     modules = get_accessible_modules(request.user)
     stats = _get_dashboard_stats(request.user, modules)
+
+    # Filtre date mouvements
+    active_tab = request.GET.get('tab', 'global')
+    date_mvt_str = request.GET.get('date_mvt', '')
+    date_mvt = None
+    if date_mvt_str:
+        try:
+            date_mvt = date_type.fromisoformat(date_mvt_str)
+        except ValueError:
+            pass
 
     bar_ruptures, bar_alertes = 0, 0
     cuisine_ruptures, cuisine_alertes = 0, 0
@@ -175,7 +186,12 @@ def direction_view(request):
         bar_qs = BoissonBar.objects.filter(statut='actif')
         bar_ruptures = sum(1 for a in bar_qs if a.est_en_rupture())
         bar_alertes  = sum(1 for a in bar_qs if a.est_stock_bas())
-        for m in MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')[:30]:
+        qs_bar = MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')
+        if date_mvt:
+            qs_bar = qs_bar.filter(date__date=date_mvt)
+        else:
+            qs_bar = qs_bar[:50]
+        for m in qs_bar:
             mouvements_combines.append({
                 'source': 'cave', 'nom': m.boisson.nom,
                 'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
@@ -190,7 +206,12 @@ def direction_view(request):
         cuisine_qs = Ingredient.objects.filter(statut=True)
         cuisine_ruptures = sum(1 for i in cuisine_qs if i.est_en_rupture())
         cuisine_alertes  = sum(1 for i in cuisine_qs if i.est_stock_bas())
-        for m in MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')[:30]:
+        qs_cuisine = MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')
+        if date_mvt:
+            qs_cuisine = qs_cuisine.filter(date__date=date_mvt)
+        else:
+            qs_cuisine = qs_cuisine[:50]
+        for m in qs_cuisine:
             mouvements_combines.append({
                 'source': 'cuisine', 'nom': m.ingredient.nom,
                 'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
@@ -227,10 +248,12 @@ def direction_view(request):
         'bar_alertes': bar_alertes,
         'cuisine_ruptures': cuisine_ruptures,
         'cuisine_alertes': cuisine_alertes,
-        'mouvements_combines': mouvements_combines[:40],
+        'mouvements_combines': mouvements_combines,
         'sessions_jour': sessions_jour,
         'stats_caisse_jour': stats_caisse_jour,
         'solde_veille_dir': solde_veille_dir,
+        'active_tab': active_tab,
+        'date_mvt': date_mvt.isoformat() if date_mvt else '',
     }
     return render(request, 'dashboard/direction.html', context)
 

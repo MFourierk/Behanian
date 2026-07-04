@@ -126,12 +126,12 @@
 
 <!-- TABS -->
 <div class="dir-tabs">
-  <button class="dir-tab active" onclick="showTab('global',this)">📊 Vue globale</button>
-  <button class="dir-tab" onclick="showTab('mouvements',this)">📋 Mouvements <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ mouvements_combines|length }}</span></button>
+  <button class="dir-tab {% if active_tab != 'mouvements' %}active{% endif %}" id="tab-btn-global" onclick="showTab('global',this)">📊 Vue globale</button>
+  <button class="dir-tab {% if active_tab == 'mouvements' %}active{% endif %}" id="tab-btn-mouvements" onclick="showTab('mouvements',this)">📋 Mouvements <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:1px 7px;font-size:10px;margin-left:4px">{{ mouvements_combines|length }}</span></button>
 </div>
 
 <!-- ─── TAB 1 : VUE GLOBALE ─────────────────────────────────── -->
-<div class="dir-pane active" id="pane-global">
+<div class="dir-pane {% if active_tab != 'mouvements' %}active{% endif %}" id="pane-global">
 
   <!-- PANEL CAISSE DU JOUR -->
   <div class="panel" style="margin-bottom:16px">
@@ -275,12 +275,19 @@
 </div>
 
 <!-- ─── TAB 2 : MOUVEMENTS ─────────────────────────────────── -->
-<div class="dir-pane" id="pane-mouvements">
+<div class="dir-pane {% if active_tab == 'mouvements' %}active{% endif %}" id="pane-mouvements">
   <div class="panel">
     <div class="ph">
-      <h3>📋 Mouvements récents — {{ mouvements_combines|length }} dernier(s)</h3>
+      <h3>📋 Mouvements
+        {% if date_mvt %}— {{ date_mvt|slice:"8:10" }}/{{ date_mvt|slice:"5:7" }}/{{ date_mvt|slice:"0:4" }} — {{ mouvements_combines|length }} résultat(s)
+        {% else %}— {{ mouvements_combines|length }} dernier(s){% endif %}
+      </h3>
     </div>
-    <div class="filter-bar">
+    <!-- Filtre date -->
+    <form method="get" action="" id="formDateMvt" style="display:contents">
+      <input type="hidden" name="tab" value="mouvements">
+    </form>
+    <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
       <input type="text" id="filterMvt" placeholder="Rechercher article…" oninput="filtrerMvt()">
       <select id="filterMvtSource" onchange="filtrerMvt()">
         <option value="">Tous les modules</option>
@@ -295,6 +302,15 @@
         <option value="inventaire">Inventaire</option>
         <option value="production">Production</option>
       </select>
+      <!-- Filtre par date -->
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+        <label style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">📅 Date :</label>
+        <input type="date" id="inputDateMvt" value="{{ date_mvt }}" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--dark)">
+        <button onclick="appliquerDateMvt()" class="btn-a btn-or" style="padding:6px 12px;font-size:11px">Filtrer</button>
+        {% if date_mvt %}
+        <a href="{% url 'dashboard:direction' %}?tab=mouvements" class="btn-a btn-outline" style="padding:6px 12px;font-size:11px">✕ Effacer</a>
+        {% endif %}
+      </div>
     </div>
     <div style="overflow-x:auto;max-height:560px;overflow-y:auto">
     <table class="tbl" id="tableMvt">
@@ -367,6 +383,18 @@ function filtrerMvt() {
             && (!typ || tr.dataset.type === typ);
     tr.style.display = ok ? '' : 'none';
   });
+}
+
+function appliquerDateMvt() {
+  const d = document.getElementById('inputDateMvt').value;
+  const url = new URL(window.location.href);
+  url.searchParams.set('tab', 'mouvements');
+  if (d) {
+    url.searchParams.set('date_mvt', d);
+  } else {
+    url.searchParams.delete('date_mvt');
+  }
+  window.location.href = url.toString();
 }
 </script>
 {% endblock %}
