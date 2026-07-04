@@ -14,7 +14,9 @@
     <!-- Styles Behanian centralisés -->
     <link rel="stylesheet" href="{% static 'css/behanian.css' %}">
     <style>
-        /* Styles additionnels par template — voir behanian.css pour les styles globaux */
+        .nav-direction:not(.active) { border-left: 3px solid #c9a84c !important; }
+        .nav-direction .nav-text { color: #c9a84c; font-weight: 700; }
+        .nav-direction .nav-item-icon { color: #c9a84c; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -50,6 +52,12 @@
                 <span class="nav-item-icon"><i class="fas fa-chart-line"></i></span>
                 <span class="nav-text">Dashboard</span>
             </a>
+            {% if user.is_superuser or user.groups.all|length > 0 %}
+            <a href="{% url 'dashboard:direction' %}" class="nav-item nav-direction {% if request.resolver_match.url_name == 'direction' %}active{% endif %}">
+                <span class="nav-item-icon"><i class="fas fa-binoculars"></i></span>
+                <span class="nav-text">Vue Direction</span>
+            </a>
+            {% endif %}
             {% if 'hotel' in accessible_modules %}
             <a href="{% url 'hotel:index' %}" class="nav-item {% if request.resolver_match.app_name == 'hotel' %}active{% endif %}">
                 <span class="nav-item-icon"><i class="fas fa-hotel"></i></span>
