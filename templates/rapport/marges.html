@@ -257,17 +257,22 @@
           </div>
           <div style="font-size:0.68rem;color:#7f8c8d;">taux marge</div>
         </div>
-        {% elif mod.ca > 0 %}
-        <div style="font-size:0.75rem;color:#7f8c8d;font-style:italic;">Coût non calculé</div>
-        {% else %}
-        <div style="font-size:0.75rem;color:#bdc3c7;">Aucune vente</div>
+        {% elif not mod.cout_disponible and mod.ca > 0 %}
+        <div style="text-align:right;">
+          <div style="font-size:1.1rem;font-weight:800;color:#2c3e50;">{{ mod.ca|floatformat:0|intcomma }} F</div>
+          <div style="font-size:0.68rem;color:#7f8c8d;">CA encaissé</div>
+        </div>
+        {% elif mod.ca == 0 %}
+        <div style="font-size:0.75rem;color:#bdc3c7;font-style:italic;">Aucune vente</div>
         {% endif %}
         <span class="module-toggle" style="font-size:0.85rem;color:#95a5a6;">▼</span>
       </div>
     </div>
 
     <div class="module-body" id="mod-{{ mod.key }}">
-      <!-- Grille de chiffres -->
+
+      {% if mod.cout_disponible %}
+      {# ── Module avec coût calculable : grille complète ── #}
       <div class="detail-grid">
         <div class="detail-cell">
           <div class="dc-label">Chiffre d'Affaires</div>
@@ -276,48 +281,26 @@
         </div>
         <div class="detail-cell">
           <div class="dc-label">Coût Estimé</div>
-          {% if mod.cout is not None %}
           <div class="dc-value rouge">{{ mod.cout|floatformat:0|intcomma }}</div>
           <div class="dc-sub">FCFA</div>
-          {% else %}
-          <div class="dc-value gris">—</div>
-          <div class="dc-sub">Non calculé</div>
-          {% endif %}
         </div>
         <div class="detail-cell">
           <div class="dc-label">Marge Brute</div>
-          {% if mod.marge_brute is not None %}
           <div class="dc-value vert">{{ mod.marge_brute|floatformat:0|intcomma }}</div>
           <div class="dc-sub">FCFA</div>
-          {% else %}
-          <div class="dc-value gris">—</div>
-          <div class="dc-sub">—</div>
-          {% endif %}
         </div>
         <div class="detail-cell">
           <div class="dc-label">Taux de Marge</div>
-          {% if mod.taux_marge is not None %}
           <div class="dc-value or">{{ mod.taux_marge|floatformat:1 }} %</div>
           <div class="dc-sub">sur le CA</div>
-          {% else %}
-          <div class="dc-value gris">—</div>
-          <div class="dc-sub">—</div>
-          {% endif %}
         </div>
         <div class="detail-cell">
           <div class="dc-label">Coeff. Multiplicateur</div>
-          {% if mod.coeff_mult is not None %}
           <div class="dc-value" style="color:#2c3e50;">× {{ mod.coeff_mult|floatformat:2 }}</div>
           <div class="dc-sub">prix / coût</div>
-          {% else %}
-          <div class="dc-value gris">—</div>
-          <div class="dc-sub">—</div>
-          {% endif %}
         </div>
       </div>
-
-      <!-- Barre visuelle du taux de marge -->
-      {% if mod.taux_marge is not None %}
+      <!-- Barre visuelle -->
       <div class="marge-bar-wrap">
         <div class="marge-bar-label">
           <span>0 %</span>
@@ -329,26 +312,37 @@
                style="width:{{ mod.taux_marge|floatformat:0 }}%;"></div>
         </div>
       </div>
-      {% endif %}
-
-      <!-- Note si coût partiel -->
-      {% if mod.cout_disponible and mod.nb_lignes_total > 0 %}
+      {% if mod.nb_lignes_total > 0 %}
       <div class="cout-note">
         <i class="fas fa-info-circle" style="color:#3498db;"></i>
         Coût calculé sur {{ mod.nb_lignes_cout }} / {{ mod.nb_lignes_total }} ligne{% if mod.nb_lignes_total != 1 %}s{% endif %} de commande (articles avec fiche technique ou prix d'achat renseigné).
       </div>
-      {% elif not mod.cout_disponible and mod.ca > 0 %}
-      <div class="cout-note">
-        <i class="fas fa-exclamation-triangle" style="color:#f39c12;"></i>
-        Données de coût non disponibles pour ce module — marge non calculée.
-        {% if mod.key == 'hotel' %}Renseigner les coûts de séjour dans les paramètres pour activer le calcul.{% endif %}
+      {% endif %}
+
+      {% else %}
+      {# ── Module service pur (hôtel, piscine, espaces) : CA uniquement ── #}
+      {% if mod.ca > 0 %}
+      <div style="padding:22px 28px;display:flex;align-items:center;gap:40px;border-top:1px solid #f0f0f0;">
+        <div>
+          <div class="dc-label">Chiffre d'Affaires</div>
+          <div style="font-size:2rem;font-weight:800;color:#2c3e50;line-height:1.1;">{{ mod.ca|floatformat:0|intcomma }}</div>
+          <div class="dc-sub" style="margin-top:4px;">FCFA encaissés — {{ mod.nb_tickets }} ticket{% if mod.nb_tickets != 1 %}s{% endif %}</div>
+        </div>
+        <div style="flex:1;height:3px;background:linear-gradient(90deg,{{ mod.color }},transparent);border-radius:99px;opacity:.4;"></div>
+        <div style="text-align:right;">
+          <div class="dc-label">Nature</div>
+          <div style="font-size:0.85rem;font-weight:700;color:#7f8c8d;">Service — pas de coût matière</div>
+          <div class="dc-sub">Marge non applicable</div>
+        </div>
       </div>
-      {% elif mod.ca == 0 %}
-      <div class="cout-note" style="justify-content:center;padding:20px;">
-        <i class="fas fa-moon" style="color:#bdc3c7;"></i>
+      {% else %}
+      <div class="cout-note" style="justify-content:center;padding:24px;">
+        <i class="fas fa-moon" style="color:#bdc3c7;margin-right:6px;"></i>
         Aucune vente enregistrée pour ce module à cette date.
       </div>
       {% endif %}
+      {% endif %}
+
     </div>
   </div>
   {% endfor %}
