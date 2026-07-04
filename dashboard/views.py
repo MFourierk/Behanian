@@ -184,8 +184,8 @@ def direction_view(request):
     try:
         from bar.models import BoissonBar, MouvementStockBar
         bar_qs = BoissonBar.objects.filter(statut='actif')
-        bar_ruptures = sum(1 for a in bar_qs if a.est_en_rupture())
-        bar_alertes  = sum(1 for a in bar_qs if a.est_stock_bas())
+        bar_ruptures = sum(1 for a in bar_qs if a.est_en_rupture)
+        bar_alertes  = sum(1 for a in bar_qs if a.est_stock_bas)
         qs_bar = MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')
         if date_mvt:
             qs_bar = qs_bar.filter(date__date=date_mvt)
@@ -204,8 +204,8 @@ def direction_view(request):
     try:
         from cuisine.models import Ingredient, MouvementStockCuisine
         cuisine_qs = Ingredient.objects.filter(statut=True)
-        cuisine_ruptures = sum(1 for i in cuisine_qs if i.est_en_rupture())
-        cuisine_alertes  = sum(1 for i in cuisine_qs if i.est_stock_bas())
+        cuisine_ruptures = sum(1 for i in cuisine_qs if i.est_en_rupture)
+        cuisine_alertes  = sum(1 for i in cuisine_qs if i.est_stock_bas)
         qs_cuisine = MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')
         if date_mvt:
             qs_cuisine = qs_cuisine.filter(date__date=date_mvt)
