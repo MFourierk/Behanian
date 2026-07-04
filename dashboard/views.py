@@ -270,7 +270,7 @@ def mouvements_print(request):
         from bar.models import MouvementStockBar
         for m in MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date'):
             mouvements.append({
-                'source': 'cave', 'source_label': 'Cave & Bar',
+                'source': 'cave', 'source_label': 'Cave',
                 'nom': m.boisson.nom,
                 'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
                 'quantite': m.quantite, 'unite': 'unité(s)',
@@ -332,7 +332,7 @@ def mouvements_excel(request):
         from bar.models import MouvementStockBar
         for m in MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date'):
             mouvements.append({
-                'source': 'Cave & Bar', 'nom': m.boisson.nom,
+                'source': 'Cave', 'nom': m.boisson.nom,
                 'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
                 'quantite': float(m.quantite), 'unite': 'unité(s)',
                 'date': m.date,
@@ -398,7 +398,7 @@ def mouvements_excel(request):
             m['date'].strftime('%H:%M'), m['user'], m['commentaire'],
         ])
         rw = ws.max_row
-        row_fill = cave_fill if m['source'] == 'Cave & Bar' else cuis_fill
+        row_fill = cave_fill if m['source'] == 'Cave' else cuis_fill
         for col in range(1, NC + 1):
             c = ws.cell(row=rw, column=col)
             c.font = bf if col in (3, 5) else nf

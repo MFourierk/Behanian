@@ -198,7 +198,7 @@ def _calcul_marges(date_rapport):
 
     MODULES = [
         {'key': 'restaurant', 'label': 'Restaurant',            'icon': '🍽️', 'color': '#c0392b', 'css': 'restaurant'},
-        {'key': 'cave',       'label': 'Cave & Bar',            'icon': '🍷', 'color': '#1a5276', 'css': 'cave'},
+        {'key': 'cave',       'label': 'Cave',                  'icon': '🍷', 'color': '#1a5276', 'css': 'cave'},
         {'key': 'hotel',      'label': 'Hôtel',                 'icon': '🏨', 'color': '#27ae60', 'css': 'hotel'},
         {'key': 'piscine',    'label': 'Piscine',               'icon': '🏊', 'color': '#2980b9', 'css': 'piscine'},
         {'key': 'espace',     'label': 'Espaces Événementiels', 'icon': '🎪', 'color': '#8e44ad', 'css': 'espace'},
