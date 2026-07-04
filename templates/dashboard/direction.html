@@ -278,15 +278,8 @@
 <div class="dir-pane {% if active_tab == 'mouvements' %}active{% endif %}" id="pane-mouvements">
   <div class="panel">
     <div class="ph">
-      <h3>📋 Mouvements
-        {% if date_mvt %}— {{ date_mvt|slice:"8:10" }}/{{ date_mvt|slice:"5:7" }}/{{ date_mvt|slice:"0:4" }} — {{ mouvements_combines|length }} résultat(s)
-        {% else %}— {{ mouvements_combines|length }} dernier(s){% endif %}
-      </h3>
+      <h3>📋 Mouvements — {{ date_mvt|slice:"8:10" }}/{{ date_mvt|slice:"5:7" }}/{{ date_mvt|slice:"0:4" }} — {{ mouvements_combines|length }} résultat(s)</h3>
     </div>
-    <!-- Filtre date -->
-    <form method="get" action="" id="formDateMvt" style="display:contents">
-      <input type="hidden" name="tab" value="mouvements">
-    </form>
     <div class="filter-bar" style="flex-wrap:wrap;gap:8px">
       <input type="text" id="filterMvt" placeholder="Rechercher article…" oninput="filtrerMvt()">
       <select id="filterMvtSource" onchange="filtrerMvt()">
@@ -302,14 +295,10 @@
         <option value="inventaire">Inventaire</option>
         <option value="production">Production</option>
       </select>
-      <!-- Filtre par date -->
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
         <label style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">📅 Date :</label>
         <input type="date" id="inputDateMvt" value="{{ date_mvt }}" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--dark)">
         <button onclick="appliquerDateMvt()" class="btn-a btn-or" style="padding:6px 12px;font-size:11px">Filtrer</button>
-        {% if date_mvt %}
-        <a href="{% url 'dashboard:direction' %}?tab=mouvements" class="btn-a btn-outline" style="padding:6px 12px;font-size:11px">✕ Effacer</a>
-        {% endif %}
       </div>
     </div>
     <div style="overflow-x:auto;max-height:560px;overflow-y:auto">

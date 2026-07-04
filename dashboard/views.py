@@ -167,15 +167,13 @@ def direction_view(request):
     modules = get_accessible_modules(request.user)
     stats = _get_dashboard_stats(request.user, modules)
 
-    # Filtre date mouvements
+    # Filtre date mouvements — défaut = aujourd'hui
     active_tab = request.GET.get('tab', 'global')
-    date_mvt_str = request.GET.get('date_mvt', '')
-    date_mvt = None
-    if date_mvt_str:
-        try:
-            date_mvt = date_type.fromisoformat(date_mvt_str)
-        except ValueError:
-            pass
+    date_mvt_str = request.GET.get('date_mvt', today.isoformat())
+    try:
+        date_mvt = date_type.fromisoformat(date_mvt_str)
+    except ValueError:
+        date_mvt = today
 
     bar_ruptures, bar_alertes = 0, 0
     cuisine_ruptures, cuisine_alertes = 0, 0
@@ -186,11 +184,7 @@ def direction_view(request):
         bar_qs = BoissonBar.objects.filter(statut='actif')
         bar_ruptures = sum(1 for a in bar_qs if a.est_en_rupture)
         bar_alertes  = sum(1 for a in bar_qs if a.est_stock_bas)
-        qs_bar = MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')
-        if date_mvt:
-            qs_bar = qs_bar.filter(date__date=date_mvt)
-        else:
-            qs_bar = qs_bar[:50]
+        qs_bar = MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date')
         for m in qs_bar:
             mouvements_combines.append({
                 'source': 'cave', 'nom': m.boisson.nom,
@@ -206,11 +200,7 @@ def direction_view(request):
         cuisine_qs = Ingredient.objects.filter(statut=True)
         cuisine_ruptures = sum(1 for i in cuisine_qs if i.est_en_rupture)
         cuisine_alertes  = sum(1 for i in cuisine_qs if i.est_stock_bas)
-        qs_cuisine = MouvementStockCuisine.objects.select_related('ingredient', 'utilisateur').order_by('-date')
-        if date_mvt:
-            qs_cuisine = qs_cuisine.filter(date__date=date_mvt)
-        else:
-            qs_cuisine = qs_cuisine[:50]
+        qs_cuisine = MouvementStockCuisine.objects.filter(date__date=date_mvt).select_related('ingredient', 'utilisateur').order_by('-date')
         for m in qs_cuisine:
             mouvements_combines.append({
                 'source': 'cuisine', 'nom': m.ingredient.nom,
