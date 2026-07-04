@@ -154,9 +154,11 @@
 
 /* ===== IMPRESSION ===== */
 @media print {
-    .filtres-bar, .btn-appliquer, .actions-bar, nav, .sidebar, .breadcrumb-bar,
-    .module-header .module-toggle { display: none !important; }
-    .module-body.collapsed { max-height: 600px !important; }
+    body > * { display: none !important; }
+    #printable-zone { display: block !important; position: fixed; top: 0; left: 0; width: 100%; background: white; }
+    #printable-zone * { display: revert !important; }
+    .filtres-bar, .btn-appliquer, .module-toggle { display: none !important; }
+    .module-body.collapsed { max-height: 2000px !important; }
     .module-card { box-shadow: none !important; border: 1px solid #e0e0e0; page-break-inside: avoid; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     @page { margin: 15mm 12mm; }
@@ -164,7 +166,7 @@
 </style>
 
 {% load static %}
-<div style="max-width:1100px;margin:0 auto;padding:24px 16px;">
+<div id="printable-zone" style="max-width:1100px;margin:0 auto;padding:24px 16px;">
 
   <!-- En-tête -->
   <div class="rpt-header">
