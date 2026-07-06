@@ -169,6 +169,7 @@ def ingredient_create(request):
             unite_recette_id=request.POST.get('unite_recette') or None,
             facteur_conversion=request.POST.get('facteur_conversion') or 1,
             prix_achat=request.POST.get('prix_achat') or 0,
+            cmup=request.POST.get('prix_achat') or 0,
             seuil_alerte=request.POST.get('seuil_alerte') or 0,
             stock_max=request.POST.get('stock_max') or 0,
             fournisseur_principal_id=request.POST.get('fournisseur_principal') or None,
@@ -200,7 +201,12 @@ def ingredient_edit(request, pk):
         ing.unite_stock_id = request.POST.get('unite_stock') or ing.unite_stock_id
         ing.unite_recette_id = request.POST.get('unite_recette') or ing.unite_recette_id
         ing.facteur_conversion = request.POST.get('facteur_conversion') or ing.facteur_conversion
-        ing.prix_achat = request.POST.get('prix_achat') or ing.prix_achat
+        nouveau_prix = request.POST.get('prix_achat')
+        if nouveau_prix:
+            from decimal import Decimal
+            ing.prix_achat = Decimal(nouveau_prix)
+            if ing.cmup == 0:
+                ing.cmup = Decimal(nouveau_prix)
         ing.seuil_alerte = request.POST.get('seuil_alerte') if request.POST.get('seuil_alerte') != '' else ing.seuil_alerte
         ing.stock_max = request.POST.get('stock_max') if request.POST.get('stock_max') != '' else ing.stock_max
         ing.fournisseur_principal_id = request.POST.get('fournisseur_principal') or None
