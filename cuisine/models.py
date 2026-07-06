@@ -317,7 +317,11 @@ class BonReceptionCuisine(models.Model):
             qte_recue   = ligne.quantite_recue
             prix_achat  = ligne.prix_unitaire
             # Calcul CMUP
-            ing.cmup = prix_achat
+            stock_actuel  = ing.quantite_stock
+            cmup_actuel   = ing.cmup
+            nouveau_stock = stock_actuel + qte_recue
+            if nouveau_stock > 0:
+                ing.cmup = ((stock_actuel * cmup_actuel) + (qte_recue * prix_achat)) / nouveau_stock
             ing.prix_achat = prix_achat
             ing.save()
             # Mouvement de stock
