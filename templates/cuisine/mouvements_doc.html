@@ -83,7 +83,7 @@
           {% else %}<span>{{ mv.type_mouvement }}</span>{% endif %}
         </td>
         <td class="r bold" style="{% if mv.type_mouvement == 'entree' %}color:#16a34a{% elif mv.type_mouvement == 'sortie' or mv.type_mouvement == 'casse' or mv.type_mouvement == 'production' %}color:#c0392b{% else %}color:#3730a3{% endif %}">
-          {% if mv.type_mouvement == 'entree' %}+{% elif mv.type_mouvement == 'sortie' or mv.type_mouvement == 'casse' or mv.type_mouvement == 'production' %}-{% endif %}{{ mv.quantite|floatformat:"-3" }}
+          {% if mv.type_mouvement == 'entree' %}+{% elif mv.type_mouvement == 'sortie' or mv.type_mouvement == 'casse' or mv.type_mouvement == 'production' %}-{% endif %}{{ mv.quantite|qty }}
         </td>
         <td class="r" style="font-size:10px;color:#4a5568">
           {% if mv.prix_unitaire %}{{ mv.prix_unitaire|montant }}{% else %}—{% endif %}

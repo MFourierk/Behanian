@@ -4,6 +4,19 @@ from decimal import Decimal, InvalidOperation
 register = template.Library()
 
 
+@register.filter(name='qty')
+def qty(value):
+    """Affiche une quantité sans zéros inutiles : 1.000→1, 0.500→0.5, 1.250→1.25"""
+    try:
+        v = float(str(value).replace(',', '.').replace('\xa0', '').replace(' ', ''))
+        if v == int(v):
+            return str(int(v))
+        s = f'{v:.10g}'
+        return s
+    except (ValueError, TypeError):
+        return value
+
+
 @register.filter(name='montant')
 def montant(value, arg=0):
     """

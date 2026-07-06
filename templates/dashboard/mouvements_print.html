@@ -73,7 +73,7 @@
         {% endif %}
       </td>
       <td class="r bold" style="color:{% if m.type_code == 'entree' or m.type_code == 'inventaire_excedent' %}#15803d{% elif m.type_code == 'inventaire' %}#1d4ed8{% else %}#b91c1c{% endif %}">
-        {% if m.type_code == 'entree' or m.type_code == 'inventaire_excedent' %}+{% elif m.type_code != 'inventaire' %}−{% endif %}{{ m.quantite|floatformat:"-3" }}
+        {% if m.type_code == 'entree' or m.type_code == 'inventaire_excedent' %}+{% elif m.type_code != 'inventaire' %}−{% endif %}{{ m.quantite|qty }}
       </td>
       <td class="muted">{{ m.unite }}</td>
       <td class="c muted">{{ m.date|date:"H:i" }}</td>

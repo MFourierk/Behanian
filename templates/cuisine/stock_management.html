@@ -325,9 +325,9 @@
                     </div>
                     <div style="text-align:right;">
                         {% if mv.type_mouvement == 'entree' %}
-                            <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|floatformat:"-3" }}</span>
+                            <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|qty }}</span>
                         {% else %}
-                            <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|floatformat:"-3" }}</span>
+                            <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|qty }}</span>
                         {% endif %}
                         <div style="font-size:0.75rem;color:#7f8c8d;">{{ mv.get_type_mouvement_display }}</div>
                     </div>
@@ -735,11 +735,11 @@
                             </td>
                             <td>
                                 {% if mv.type_mouvement == 'entree' or mv.type_mouvement == 'inventaire_excedent' %}
-                                    <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|floatformat:"-3" }}</span>
+                                    <span style="color:#27ae60;font-weight:700;">+{{ mv.quantite|qty }}</span>
                                 {% elif mv.type_mouvement == 'inventaire' %}
                                     <span style="color:#7f8c8d;font-weight:700;">—</span>
                                 {% else %}
-                                    <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|floatformat:"-3" }}</span>
+                                    <span style="color:#e74c3c;font-weight:700;">-{{ mv.quantite|qty }}</span>
                                 {% endif %}
                                 <span style="font-size:0.8rem;color:#7f8c8d;">{{ mv.ingredient.unite_stock.abreviation|default:"" }}</span>
                             </td>
