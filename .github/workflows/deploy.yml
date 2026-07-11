@@ -26,6 +26,7 @@ jobs:
             pip install -r requirements.txt --quiet
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
+            python manage.py init_plats_simples
             sudo systemctl restart gunicorn
             echo "VPS mis a jour"
 
@@ -50,6 +51,7 @@ jobs:
               pip install -r requirements.txt --quiet &&
               python manage.py migrate --noinput &&
               python manage.py collectstatic --noinput &&
+              python manage.py init_plats_simples &&
               sudo systemctl restart gunicorn &&
               echo Serveur local mis a jour
             "
