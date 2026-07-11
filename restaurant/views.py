@@ -1200,10 +1200,15 @@ def restaurant_tpe(request):
 
     # ── Vérification stock plats ──
     for plat in plats:
+        if plat.is_simple:
+            plat.en_stock = True
+            plat.stock_quantity = 999
+            continue
         is_available, _ = check_stock_availability(plat, 1)
         plat.en_stock = is_available
-        if hasattr(plat, 'fiche_technique'):
-            plat.stock_quantity = plat.fiche_technique.max_portions_possibles()
+        ft = plat.fiche_technique
+        if ft is not None:
+            plat.stock_quantity = ft.max_portions_possibles()
         else:
             try:
                 ing = Ingredient.objects.filter(nom__iexact=plat.nom).first()
