@@ -1,0 +1,59 @@
+name: Sync Media Complexe -> VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      dossier:
+        description: 'Dossier media a syncer (laisser vide = tous)'
+        required: false
+        default: 'tous'
+
+jobs:
+  sync-media:
+    name: Rsync media complexe vers VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync media via VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "=== Sync media complexe -> VPS ($(date '+%Y-%m-%d %H:%M:%S')) ==="
+
+            # Verifier que le complexe est joignable
+            if ! ping -c 2 -W 5 10.8.0.2 > /dev/null 2>&1; then
+              echo "ERREUR: complexe (10.8.0.2) injoignable via WireGuard"
+              exit 1
+            fi
+            echo "Complexe joignable OK"
+
+            DOSSIER="${{ github.event.inputs.dossier }}"
+            LOG="/opt/behanian/logs/sync.log"
+
+            if [ "$DOSSIER" = "tous" ] || [ -z "$DOSSIER" ]; then
+              DIRS="plats boissons forfaits chambres espaces"
+            else
+              DIRS="$DOSSIER"
+            fi
+
+            OK_COUNT=0
+            ERR_COUNT=0
+            for DIR in $DIRS; do
+              SRC="behanian@10.8.0.2:/opt/behanian/media/${DIR}/"
+              DST="/opt/behanian/media/${DIR}/"
+              mkdir -p "$DST"
+              if rsync -av --delete "$SRC" "$DST"; then
+                echo "$(date '+%Y-%m-%d %H:%M:%S') --- Media sync OK : ${DIR}/" >> "$LOG"
+                echo "  OK : ${DIR}/"
+                OK_COUNT=$((OK_COUNT + 1))
+              else
+                echo "$(date '+%Y-%m-%d %H:%M:%S') --- ERREUR media sync : ${DIR}/" >> "$LOG"
+                echo "  ERREUR : ${DIR}/"
+                ERR_COUNT=$((ERR_COUNT + 1))
+              fi
+            done
+
+            echo "=== Termine : $OK_COUNT OK, $ERR_COUNT erreur(s) ==="
+            [ "$ERR_COUNT" -eq 0 ] && exit 0 || exit 1
