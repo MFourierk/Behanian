@@ -1,0 +1,334 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb montant_filter %}
+{% block title %}Articles Menu Sans Stock — BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── HEADER ─────────────────────────────────────────────── */
+.ps-header {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white; padding: 28px 32px; border-radius: 18px;
+    margin-bottom: 24px; box-shadow: 0 10px 28px rgba(124,58,237,.28);
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; overflow: hidden;
+}
+.ps-header::after { content: '🍽️'; position: absolute; right: 24px; bottom: -18px; font-size: 110px; opacity: .07; pointer-events: none; }
+.ps-header h2 { font-size: 1.55rem; font-weight: 800; margin: 0; }
+.ps-header p  { margin: 4px 0 0; opacity: .85; font-size: .9rem; }
+.ps-header-actions { display: flex; gap: 10px; z-index: 1; }
+
+/* ── STATS ──────────────────────────────────────────────── */
+.ps-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 14px; margin-bottom: 24px; }
+.ps-stat  { background: white; border-radius: 14px; padding: 18px 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.06); border-left: 4px solid #7c3aed;
+            display: flex; flex-direction: column; gap: 4px; }
+.ps-stat-val { font-size: 1.6rem; font-weight: 800; color: #7c3aed; }
+.ps-stat-lbl { font-size: .78rem; color: #8a9ab0; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ── CATEGORY SECTION ───────────────────────────────────── */
+.cat-section { margin-bottom: 28px; }
+.cat-title {
+    font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    color: #7c3aed; display: flex; align-items: center; gap: 8px;
+    margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #ede9fe;
+}
+.cat-count { background: #ede9fe; color: #7c3aed; border-radius: 20px; padding: 2px 10px; font-size: .75rem; }
+
+/* ── CARDS GRID ─────────────────────────────────────────── */
+.plats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.plat-card {
+    background: white; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); transition: transform .2s, box-shadow .2s;
+    border: 1.5px solid #f0ebff;
+}
+.plat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(124,58,237,.15); }
+.plat-card-img {
+    height: 140px; object-fit: cover; width: 100%; background: linear-gradient(135deg,#ede9fe,#ddd6fe);
+    display: flex; align-items: center; justify-content: center; font-size: 42px; color: #c4b5fd;
+}
+.plat-card-img img { width: 100%; height: 140px; object-fit: cover; }
+.plat-card-body { padding: 14px 16px; }
+.plat-card-nom  { font-weight: 700; color: #1e1b4b; font-size: .95rem; margin-bottom: 4px; }
+.plat-card-prix { font-size: 1.1rem; font-weight: 800; color: #7c3aed; }
+.plat-card-desc { font-size: .78rem; color: #8a9ab0; margin-top: 4px; min-height: 18px; }
+.plat-card-badge-off { display: inline-block; background: #fee2e2; color: #dc2626; font-size: .7rem; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+.plat-card-actions { display: flex; gap: 6px; margin-top: 12px; }
+.btn-edit-ps { padding: 6px 14px; border-radius: 8px; border: 1.5px solid #7c3aed; background: white; color: #7c3aed; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.btn-edit-ps:hover { background: #ede9fe; }
+.btn-del-ps  { padding: 6px 14px; border-radius: 8px; border: 1.5px solid #fca5a5; background: white; color: #dc2626; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.btn-del-ps:hover { background: #fee2e2; }
+
+/* ── BUTTONS ─────────────────────────────────────────────── */
+.btn-add {
+    padding: 11px 22px; border-radius: 12px; border: none;
+    background: white; color: #7c3aed; font-weight: 800; font-size: .9rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; transition: all .2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.btn-add:hover { background: #ede9fe; }
+.btn-rapport {
+    padding: 11px 22px; border-radius: 12px; border: 2px solid rgba(255,255,255,.4);
+    background: transparent; color: white; font-weight: 700; font-size: .9rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all .2s;
+}
+.btn-rapport:hover { background: rgba(255,255,255,.15); color: white; }
+
+/* ── MODAL ───────────────────────────────────────────────── */
+.ps-modal-bg  { display: none; position: fixed; inset: 0; background: rgba(15,10,30,.55); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; }
+.ps-modal-bg.open { display: flex; }
+.ps-modal     { background: white; border-radius: 20px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.ps-modal-hd  { background: linear-gradient(135deg,#7c3aed,#a855f7); color: white; padding: 20px 24px; border-radius: 20px 20px 0 0; display: flex; justify-content: space-between; align-items: center; }
+.ps-modal-hd h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+.ps-modal-close { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; opacity: .8; }
+.ps-modal-body { padding: 24px; }
+.pm-group { margin-bottom: 18px; }
+.pm-group label { display: block; font-size: .85rem; font-weight: 700; color: #4a4a6a; margin-bottom: 6px; }
+.pm-group label span.req { color: #dc2626; }
+.pm-group input, .pm-group select, .pm-group textarea {
+    width: 100%; padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid #e9ecef; background: #f8f9fa; font-size: .92rem;
+    color: #2c3e50; box-sizing: border-box; transition: all .2s;
+}
+.pm-group input:focus, .pm-group select:focus, .pm-group textarea:focus {
+    outline: none; border-color: #7c3aed; background: white; box-shadow: 0 0 0 3px rgba(124,58,237,.1);
+}
+.pm-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ps-modal-ft { padding: 16px 24px; background: #fafafa; border-radius: 0 0 20px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #f0f0f0; }
+.btn-save-ps { padding: 10px 26px; border-radius: 10px; border: none; background: linear-gradient(135deg,#7c3aed,#a855f7); color: white; font-weight: 800; cursor: pointer; font-size: .92rem; }
+.btn-cancel-ps { padding: 10px 20px; border-radius: 10px; border: 2px solid #e9ecef; background: white; color: #6b7a8d; font-weight: 700; cursor: pointer; font-size: .92rem; }
+
+/* ── IMAGE PREVIEW ───────────────────────────────────────── */
+.img-preview-wrap { margin-top: 8px; }
+.img-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; border: 1.5px solid #e9ecef; display: none; }
+
+/* ── EMPTY ───────────────────────────────────────────────── */
+.ps-empty { text-align: center; padding: 60px 20px; color: #8a9ab0; }
+.ps-empty i { font-size: 3rem; margin-bottom: 16px; opacity: .4; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  {% if messages %}
+  <div style="margin-bottom:16px">
+    {% for m in messages %}
+    <div style="padding:12px 18px;border-radius:10px;margin-bottom:8px;font-weight:600;
+      {% if m.tags == 'success' %}background:#dcfce7;color:#15803d;{% else %}background:#fee2e2;color:#dc2626;{% endif %}">
+      {{ m }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- HEADER -->
+  <div class="ps-header">
+    <div>
+      <h2><i class="fas fa-utensils mr-2"></i> Articles Menu Sans Stock</h2>
+      <p>Entrées, desserts et articles facturables sans gestion d'ingrédients</p>
+    </div>
+    <div class="ps-header-actions">
+      <a href="{% url 'cuisine:plats_simples_rapport' %}" class="btn-rapport">
+        <i class="fas fa-chart-bar"></i> Rapport ventes
+      </a>
+      <button class="btn-add" onclick="ouvrirModal()">
+        <i class="fas fa-plus"></i> Ajouter un article
+      </button>
+    </div>
+  </div>
+
+  {% breadcrumb "Cuisine" "cuisine:index" "Articles Menu" "" %}
+
+  <!-- STATS -->
+  <div class="ps-stats">
+    <div class="ps-stat">
+      <span class="ps-stat-val">{{ total_plats }}</span>
+      <span class="ps-stat-lbl">Articles au menu</span>
+    </div>
+    <div class="ps-stat">
+      <span class="ps-stat-val">{{ par_categorie|length }}</span>
+      <span class="ps-stat-lbl">Catégories</span>
+    </div>
+    <div class="ps-stat" style="border-left-color:#16a34a">
+      <span class="ps-stat-val" style="color:#16a34a">✓</span>
+      <span class="ps-stat-lbl">Aucun stock requis</span>
+    </div>
+    <div class="ps-stat" style="border-left-color:#f59e0b">
+      <span class="ps-stat-val" style="color:#f59e0b"><i class="fas fa-receipt" style="font-size:1.3rem"></i></span>
+      <span class="ps-stat-lbl">Facturables restaurant</span>
+    </div>
+  </div>
+
+  <!-- CATEGORIES + CARTES -->
+  {% if par_categorie %}
+    {% for cat_nom, plats in par_categorie.items %}
+    <div class="cat-section">
+      <div class="cat-title">
+        <i class="fas fa-tag"></i> {{ cat_nom }}
+        <span class="cat-count">{{ plats|length }} article{{ plats|length|pluralize }}</span>
+      </div>
+      <div class="plats-grid">
+        {% for plat in plats %}
+        <div class="plat-card">
+          <div class="plat-card-img">
+            {% if plat.image %}
+            <img src="{{ plat.image.url }}" alt="{{ plat.nom }}">
+            {% else %}
+            🍽️
+            {% endif %}
+          </div>
+          <div class="plat-card-body">
+            <div class="plat-card-nom">
+              {{ plat.nom }}
+              {% if not plat.disponible %}<span class="plat-card-badge-off">Indispo</span>{% endif %}
+            </div>
+            <div class="plat-card-prix">{{ plat.prix|montant }} F</div>
+            {% if plat.description %}
+            <div class="plat-card-desc">{{ plat.description|truncatechars:60 }}</div>
+            {% endif %}
+            <div class="plat-card-actions">
+              <button class="btn-edit-ps" onclick="ouvrirModalEdit({{ plat.pk }}, '{{ plat.nom|escapejs }}', {{ plat.categorie_id }}, '{{ plat.prix }}', '{{ plat.description|escapejs }}', {{ plat.disponible|yesno:'true,false' }})">
+                <i class="fas fa-pencil-alt"></i> Modifier
+              </button>
+              <form method="post" action="{% url 'cuisine:plat_simple_delete' plat.pk %}" onsubmit="return confirm('Supprimer « {{ plat.nom|escapejs }} » ?')">
+                {% csrf_token %}
+                <button type="submit" class="btn-del-ps"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <!-- Carte "Ajouter dans cette catégorie" -->
+        <div class="plat-card" style="border:2px dashed #ddd6fe;background:#faf8ff;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:220px;"
+             onclick="ouvrirModal({{ forloop.parentloop.counter0 }})">
+          <div style="text-align:center;color:#c4b5fd">
+            <i class="fas fa-plus-circle" style="font-size:2rem;margin-bottom:8px;display:block"></i>
+            <span style="font-size:.85rem;font-weight:700">Ajouter dans<br>{{ cat_nom }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="ps-empty">
+    <i class="fas fa-utensils"></i>
+    <p style="font-size:1.1rem;font-weight:700;color:#4a4a6a">Aucun article sans stock créé</p>
+    <p>Ajoutez vos entrées, desserts et autres articles facturables.</p>
+    <button class="btn-add" style="margin:16px auto;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;" onclick="ouvrirModal()">
+      <i class="fas fa-plus"></i> Ajouter le premier article
+    </button>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ══ MODAL AJOUT / ÉDITION ══════════════════════════════ -->
+<div class="ps-modal-bg" id="psModalBg">
+  <div class="ps-modal">
+    <div class="ps-modal-hd">
+      <h3 id="psModalTitre"><i class="fas fa-plus mr-2"></i> Nouvel article</h3>
+      <button class="ps-modal-close" onclick="fermerModal()">✕</button>
+    </div>
+    <form method="post" id="psForm" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="ps-modal-body">
+
+        <div class="pm-group">
+          <label>Désignation <span class="req">*</span></label>
+          <input type="text" name="nom" id="psNom" placeholder="Ex: Salade Mixte, Crème brûlée…" required>
+        </div>
+
+        <div class="pm-grid2">
+          <div class="pm-group">
+            <label>Catégorie <span class="req">*</span></label>
+            <select name="categorie" id="psCategorie" required>
+              <option value="">— Sélectionner —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}">{{ cat.nom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="pm-group">
+            <label>Prix de vente (FCFA) <span class="req">*</span></label>
+            <input type="number" name="prix" id="psPrix" min="0" step="50" placeholder="Ex: 3000" required>
+          </div>
+        </div>
+
+        <div class="pm-group">
+          <label>Description <span style="color:#aaa;font-weight:400">(optionnel)</span></label>
+          <textarea name="description" id="psDesc" rows="2" placeholder="Courte description visible au menu…"></textarea>
+        </div>
+
+        <div class="pm-group">
+          <label>Image du plat <span style="color:#aaa;font-weight:400">(optionnel)</span></label>
+          <input type="file" name="image" id="psImage" accept="image/*" onchange="previewImg(this)">
+          <div class="img-preview-wrap">
+            <img id="psImgPreview" class="img-preview" src="" alt="Aperçu">
+          </div>
+        </div>
+
+        <div class="pm-group" id="psDispoWrap" style="display:none">
+          <label>Disponibilité</label>
+          <select name="disponible" id="psDispo">
+            <option value="1">✅ Disponible</option>
+            <option value="0">❌ Indisponible</option>
+          </select>
+        </div>
+
+      </div>
+      <div class="ps-modal-ft">
+        <button type="button" class="btn-cancel-ps" onclick="fermerModal()">Annuler</button>
+        <button type="submit" class="btn-save-ps"><i class="fas fa-save mr-1"></i> Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const CATS = [{% for cat in categories %}{id:{{cat.pk}},nom:"{{cat.nom|escapejs}}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+function ouvrirModal(catIdx) {
+    document.getElementById('psModalTitre').innerHTML = '<i class="fas fa-plus mr-2"></i> Nouvel article';
+    document.getElementById('psForm').action = "{% url 'cuisine:plat_simple_create' %}";
+    document.getElementById('psNom').value = '';
+    document.getElementById('psPrix').value = '';
+    document.getElementById('psDesc').value = '';
+    document.getElementById('psImgPreview').style.display = 'none';
+    document.getElementById('psDispoWrap').style.display = 'none';
+    const sel = document.getElementById('psCategorie');
+    sel.value = '';
+    if (catIdx !== undefined && CATS[catIdx]) sel.value = CATS[catIdx].id;
+    document.getElementById('psModalBg').classList.add('open');
+}
+
+function ouvrirModalEdit(pk, nom, catId, prix, desc, dispo) {
+    document.getElementById('psModalTitre').innerHTML = '<i class="fas fa-pencil-alt mr-2"></i> Modifier article';
+    document.getElementById('psForm').action = `/cuisine/menu-simple/${pk}/modifier/`;
+    document.getElementById('psNom').value = nom;
+    document.getElementById('psCategorie').value = catId;
+    document.getElementById('psPrix').value = prix;
+    document.getElementById('psDesc').value = desc;
+    document.getElementById('psImgPreview').style.display = 'none';
+    document.getElementById('psDispoWrap').style.display = 'block';
+    document.getElementById('psDispo').value = dispo ? '1' : '0';
+    document.getElementById('psModalBg').classList.add('open');
+}
+
+function fermerModal() {
+    document.getElementById('psModalBg').classList.remove('open');
+}
+
+function previewImg(input) {
+    const preview = document.getElementById('psImgPreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+document.getElementById('psModalBg').addEventListener('click', function(e) {
+    if (e.target === this) fermerModal();
+});
+</script>
+{% endblock %}

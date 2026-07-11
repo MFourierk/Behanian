@@ -32,13 +32,18 @@ def restaurant_index(request):
     # utiliser le système de Forfaits (voir restaurant/models.py → Forfait).
 
     # Récupérer toutes les catégories et plats
-    # Seuls les plats liés à une fiche technique cuisine sont affichés
+    # Plats avec fiche technique OU plats simples (sans stock)
     from cuisine.models import Plat as PlatCuisine
+    from django.db.models import Q
     _plats_avec_ft = PlatCuisine.objects.filter(
         fiche_technique__isnull=False
     ).values_list('pk', flat=True)
     categories = CategorieMenu.objects.all()
-    plats = PlatMenu.objects.filter(disponible=True, cuisine_plat_id__in=_plats_avec_ft)
+    plats = PlatMenu.objects.filter(
+        disponible=True
+    ).filter(
+        Q(cuisine_plat_id__in=_plats_avec_ft) | Q(is_simple=True)
+    )
     
     # Commandes en cours (Non payées)
     commandes_en_cours_list = Commande.objects.filter(statut__in=['en_attente', 'en_preparation', 'prete', 'servie']).order_by('-date_modification')
@@ -59,9 +64,13 @@ def restaurant_index(request):
     # Vérification du stock pour chaque plat
     # On ajoute un attribut temporaire 'en_stock' aux objets plats pour l'affichage
     for plat in plats:
+        if plat.is_simple:
+            plat.en_stock = True
+            plat.stock_quantity = 999
+            continue
         is_available, _ = check_stock_availability(plat, 1)
         plat.en_stock = is_available
-        
+
         # Calcul de la quantité exacte disponible (Venant de la Cuisine ou du Bar)
         if hasattr(plat, 'fiche_technique'):
             plat.stock_quantity = plat.fiche_technique.max_portions_possibles()
@@ -1163,20 +1172,19 @@ def restaurant_tpe(request):
     # ── Catégories BAR (Cave) ──
     categories_bar = CategorieBar.objects.all().order_by('nom')
 
-    # ── Plats CUISINE uniquement (hors boissons, avec fiche technique obligatoire) ──
+    # ── Plats CUISINE : avec fiche technique OU plats simples ──
     from cuisine.models import Plat as PlatCuisine
+    from django.db.models import Q
     _plats_avec_ft = PlatCuisine.objects.filter(
         fiche_technique__isnull=False
     ).values_list('pk', flat=True)
     ids_cat_cuisine = [c.id for c in categories_cuisine]
+    _q_plats = Q(cuisine_plat_id__in=_plats_avec_ft) | Q(is_simple=True)
     plats = PlatMenu.objects.filter(
-        disponible=True,
-        cuisine_plat_id__in=_plats_avec_ft,
-        categorie__id__in=ids_cat_cuisine
-    ) if ids_cat_cuisine else PlatMenu.objects.filter(
-        disponible=True,
-        cuisine_plat_id__in=_plats_avec_ft
-    )
+        disponible=True, categorie__id__in=ids_cat_cuisine
+    ).filter(_q_plats) if ids_cat_cuisine else PlatMenu.objects.filter(
+        disponible=True
+    ).filter(_q_plats)
 
     # ── Boissons de la Cave ──
     boissons_bar = BoissonBar.objects.filter(

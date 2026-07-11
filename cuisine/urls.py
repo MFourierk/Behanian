@@ -80,4 +80,11 @@ urlpatterns = [
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('api/commande/<int:pk>/lignes/', views.get_bc_lignes, name='get_bc_lignes'),
     path('epuration/', views.epurer_plats, name='epuration'),
+
+    # Articles menu sans stock (Entrées, Desserts…)
+    path('menu-simple/', views.plats_simples, name='plats_simples'),
+    path('menu-simple/nouveau/', views.plat_simple_create, name='plat_simple_create'),
+    path('menu-simple/<int:pk>/modifier/', views.plat_simple_edit, name='plat_simple_edit'),
+    path('menu-simple/<int:pk>/supprimer/', views.plat_simple_delete, name='plat_simple_delete'),
+    path('menu-simple/rapport/', views.plats_simples_rapport, name='plats_simples_rapport'),
 ]

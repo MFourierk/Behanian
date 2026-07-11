@@ -1739,3 +1739,116 @@ def epurer_plats(request):
         'manquants':     manquants,
     }
     return render(request, 'cuisine/epuration.html', context)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PLATS SIMPLES — Articles menu sans stock (Entrées, Desserts…)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@require_module_access('cuisine')
+def plats_simples(request):
+    from restaurant.models import PlatMenu, CategorieMenu
+    from collections import defaultdict
+    plats = PlatMenu.objects.filter(is_simple=True).select_related('categorie').order_by('categorie__ordre', 'categorie__nom', 'nom')
+    categories = CategorieMenu.objects.all().order_by('ordre', 'nom')
+    par_categorie = defaultdict(list)
+    for p in plats:
+        par_categorie[p.categorie.nom].append(p)
+    context = {
+        'par_categorie': dict(par_categorie),
+        'categories': categories,
+        'total_plats': plats.count(),
+        'page_title': 'Articles Menu Sans Stock',
+    }
+    return render(request, 'cuisine/plats_simples.html', context)
+
+
+@require_module_access('cuisine')
+def plat_simple_create(request):
+    from restaurant.models import PlatMenu
+    if request.method == 'POST':
+        nom = request.POST.get('nom', '').strip()
+        categorie_id = request.POST.get('categorie')
+        prix = request.POST.get('prix') or 0
+        description = request.POST.get('description', '')
+        if not nom or not categorie_id:
+            messages.error(request, "Nom et catégorie sont obligatoires.")
+            return redirect('cuisine:plats_simples')
+        plat = PlatMenu(nom=nom, categorie_id=categorie_id, prix=prix,
+                        description=description, is_simple=True, disponible=True, temps_preparation=0)
+        if request.FILES.get('image'):
+            plat.image = request.FILES['image']
+        plat.save()
+        messages.success(request, f"« {nom} » ajouté au menu.")
+    return redirect('cuisine:plats_simples')
+
+
+@require_module_access('cuisine')
+def plat_simple_edit(request, pk):
+    from restaurant.models import PlatMenu
+    plat = get_object_or_404(PlatMenu, pk=pk, is_simple=True)
+    if request.method == 'POST':
+        plat.nom = request.POST.get('nom', plat.nom).strip()
+        plat.categorie_id = request.POST.get('categorie') or plat.categorie_id
+        plat.prix = request.POST.get('prix') or plat.prix
+        plat.description = request.POST.get('description', '')
+        plat.disponible = request.POST.get('disponible') == '1'
+        if request.FILES.get('image'):
+            plat.image = request.FILES['image']
+        plat.save()
+        messages.success(request, f"« {plat.nom} » modifié.")
+    return redirect('cuisine:plats_simples')
+
+
+@require_module_access('cuisine')
+def plat_simple_delete(request, pk):
+    from restaurant.models import PlatMenu
+    plat = get_object_or_404(PlatMenu, pk=pk, is_simple=True)
+    if request.method == 'POST':
+        nom = plat.nom
+        plat.delete()
+        messages.success(request, f"« {nom} » supprimé.")
+    return redirect('cuisine:plats_simples')
+
+
+@require_module_access('cuisine')
+def plats_simples_rapport(request):
+    from restaurant.models import LigneCommande
+    from collections import defaultdict
+    from datetime import datetime
+    today = timezone.now().date()
+    raw_debut = request.GET.get('date_debut', '')
+    raw_fin   = request.GET.get('date_fin', '')
+    try:
+        date_debut = datetime.strptime(raw_debut, '%Y-%m-%d').date()
+    except ValueError:
+        date_debut = today
+    try:
+        date_fin = datetime.strptime(raw_fin, '%Y-%m-%d').date()
+    except ValueError:
+        date_fin = today
+    lignes = LigneCommande.objects.filter(
+        plat__is_simple=True,
+        commande__date_creation__date__gte=date_debut,
+        commande__date_creation__date__lte=date_fin,
+        commande__statut='payee',
+    ).select_related('plat', 'plat__categorie')
+    stats = {}
+    for l in lignes:
+        pid = l.plat_id
+        if pid not in stats:
+            stats[pid] = {'plat': l.plat, 'categorie': l.plat.categorie.nom, 'qty': 0, 'ca': 0}
+        stats[pid]['qty'] += l.quantite
+        stats[pid]['ca']  += int(l.quantite * l.prix_unitaire)
+    par_categorie = defaultdict(list)
+    for s in sorted(stats.values(), key=lambda x: (-x['ca'])):
+        par_categorie[s['categorie']].append(s)
+    context = {
+        'par_categorie': dict(par_categorie),
+        'total_ca':  sum(s['ca']  for s in stats.values()),
+        'total_qty': sum(s['qty'] for s in stats.values()),
+        'date_debut': date_debut,
+        'date_fin':   date_fin,
+        'page_title': 'Rapport Ventes — Articles Sans Stock',
+    }
+    return render(request, 'cuisine/plats_simples_rapport.html', context)

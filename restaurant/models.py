@@ -54,6 +54,7 @@ class PlatMenu(models.Model):
     temps_preparation = models.IntegerField(verbose_name="Temps de préparation (min)")
     disponible = models.BooleanField(default=True, verbose_name="Disponible")
     is_accompagnement = models.BooleanField(default=False, verbose_name="Est un accompagnement")
+    is_simple = models.BooleanField(default=False, verbose_name="Plat simple (sans stock)")
     description = models.TextField(blank=True, null=True, verbose_name="Description")
     cuisine_plat_id = models.IntegerField(null=True, blank=True, db_index=True,
                                           help_text="ID du plat Cuisine source — synchro permanente par ID")
