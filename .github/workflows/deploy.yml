@@ -59,8 +59,7 @@ jobs:
             echo "WireGuard OK"
             echo "=== Test SSH ===" && ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -o BatchMode=yes behanian@10.8.0.2 "echo SSH_OK" || { echo "ERREUR: SSH vers complexe echoue"; exit 1; }
 
-            VPS_USER=$(whoami)
-            SVC=$(printf 'W1VuaXRdCkRlc2NyaXB0aW9uPVR1bm5lbCBTU0ggcmV0b3VyIHZlcnMgVlBTCkFmdGVyPW5ldHdvcmsudGFyZ2V0CgpbU2VydmljZV0KVXNlcj1iZWhhbmlhbgpFeGVjU3RhcnQ9L3Vzci9iaW4vc3NoIC1OIC1SIDIyMjI6bG9jYWxob3N0OjIyIC1pIC9ob21lL2JlaGFuaWFuLy5zc2gvdnBzX3R1bm5lbCAtbyBTdHJpY3RIb3N0S2V5Q2hlY2tpbmc9bm8gLW8gU2VydmVyQWxpdmVJbnRlcnZhbD02MCAtbyBTZXJ2ZXJBbGl2ZUNvdW50TWF4PTMgLW8gRXhpdE9uRm9yd2FyZEZhaWx1cmU9eWVzIFZQU19VU0VSQDg5LjE2Ny42Ni4xOTQKUmVzdGFydD1hbHdheXMKUmVzdGFydFNlYz0zMAoKW0luc3RhbGxdCldhbnRlZEJ5PW11bHRpLXVzZXIudGFyZ2V0' | base64 -d | sed "s/VPS_USER/$VPS_USER/g")
+            SVC=$(printf 'W1VuaXRdCkRlc2NyaXB0aW9uPVR1bm5lbCBTU0ggcmV0b3VyIHZlcnMgVlBTCkFmdGVyPW5ldHdvcmsudGFyZ2V0CgpbU2VydmljZV0KVXNlcj1iZWhhbmlhbgpFeGVjU3RhcnQ9L3Vzci9iaW4vc3NoIC1OIC1SIDIyMjI6bG9jYWxob3N0OjIyIC1pIC9ob21lL2JlaGFuaWFuLy5zc2gvdnBzX3R1bm5lbCAtbyBTdHJpY3RIb3N0S2V5Q2hlY2tpbmc9bm8gLW8gU2VydmVyQWxpdmVJbnRlcnZhbD02MCAtbyBTZXJ2ZXJBbGl2ZUNvdW50TWF4PTMgLW8gRXhpdE9uRm9yd2FyZEZhaWx1cmU9eWVzIGJlaGFuaWFuQDg5LjE2Ny42Ni4xOTQKUmVzdGFydD1hbHdheXMKUmVzdGFydFNlYz0zMAoKW0luc3RhbGxdCldhbnRlZEJ5PW11bHRpLXVzZXIudGFyZ2V0' | base64 -d)
             echo "$SVC" | ssh -o StrictHostKeyChecking=no behanian@10.8.0.2 "
               ssh-keyscan -H 89.167.66.194 >> ~/.ssh/known_hosts 2>/dev/null
               sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
