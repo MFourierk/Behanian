@@ -27,6 +27,7 @@ jobs:
             python manage.py migrate --noinput
             python manage.py collectstatic --noinput
             python manage.py init_plats_simples
+            python manage.py init_boissons_bar
             sudo systemctl restart gunicorn
             echo "VPS mis a jour"
 
@@ -52,6 +53,7 @@ jobs:
               python manage.py migrate --noinput &&
               python manage.py collectstatic --noinput &&
               python manage.py init_plats_simples &&
+              python manage.py init_boissons_bar &&
               sudo systemctl restart gunicorn &&
               echo Serveur local mis a jour
             "
