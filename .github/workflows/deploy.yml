@@ -35,6 +35,7 @@ jobs:
     name: Déployer sur serveur local
     runs-on: ubuntu-latest
     needs: deploy-vps
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -44,10 +45,15 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 5m
           script: |
-            ssh -o KexAlgorithms=curve25519-sha256 behanian@10.8.0.2 "
+            echo "=== Test WireGuard ===" && ping -c 2 -W 5 10.8.0.2 || { echo "ERREUR: complexe injoignable via WireGuard"; exit 1; }
+            echo "=== Test SSH ===" && ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -o BatchMode=yes behanian@10.8.0.2 "echo SSH_OK" || { echo "ERREUR: SSH vers complexe echoue"; exit 1; }
+            echo "=== Deploiement ===" && ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 behanian@10.8.0.2 "
+              set -e
               cd /opt/behanian &&
-              git pull origin main &&
+              git fetch origin main &&
+              git reset --hard origin/main &&
               source venv/bin/activate &&
               pip install -r requirements.txt --quiet &&
               python manage.py migrate --noinput &&
@@ -55,5 +61,5 @@ jobs:
               python manage.py init_plats_simples &&
               python manage.py init_boissons_bar &&
               sudo systemctl restart gunicorn &&
-              echo Serveur local mis a jour
-            "
+              echo COMPLEXE_OK
+            " && echo "Serveur local mis a jour" || { echo "ERREUR: deploiement complexe echoue"; exit 1; }
