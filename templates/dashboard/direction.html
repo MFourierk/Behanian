@@ -278,12 +278,20 @@
 <div class="dir-pane {% if active_tab == 'mouvements' %}active{% endif %}" id="pane-mouvements">
   <div class="panel">
     <div class="ph">
-      <h3>📋 Mouvements — {{ date_mvt|slice:"8:10" }}/{{ date_mvt|slice:"5:7" }}/{{ date_mvt|slice:"0:4" }} — {{ mouvements_combines|length }} résultat(s)</h3>
+      <h3>📋 Mouvements —
+        {% if date_debut == date_fin %}
+          {{ date_debut|slice:"8:10" }}/{{ date_debut|slice:"5:7" }}/{{ date_debut|slice:"0:4" }}
+        {% else %}
+          du {{ date_debut|slice:"8:10" }}/{{ date_debut|slice:"5:7" }}/{{ date_debut|slice:"0:4" }}
+          au {{ date_fin|slice:"8:10" }}/{{ date_fin|slice:"5:7" }}/{{ date_fin|slice:"0:4" }}
+        {% endif %}
+        — {{ mouvements_combines|length }} résultat(s)
+      </h3>
       <div style="display:flex;gap:6px;align-items:center;">
-        <a href="{% url 'dashboard:mouvements_print' %}?date_mvt={{ date_mvt }}" target="_blank" class="btn-a btn-outline btn-sm">
+        <a href="{% url 'dashboard:mouvements_print' %}?date_debut={{ date_debut }}&date_fin={{ date_fin }}" target="_blank" class="btn-a btn-outline btn-sm">
           <i class="fas fa-print"></i> Imprimer
         </a>
-        <a href="{% url 'dashboard:mouvements_excel' %}?date_mvt={{ date_mvt }}" class="btn-a btn-sm" style="background:#16a34a;color:#fff;border-color:#16a34a;">
+        <a href="{% url 'dashboard:mouvements_excel' %}?date_debut={{ date_debut }}&date_fin={{ date_fin }}" class="btn-a btn-sm" style="background:#16a34a;color:#fff;border-color:#16a34a;">
           <i class="fas fa-file-excel"></i> Excel
         </a>
       </div>
@@ -303,10 +311,12 @@
         <option value="inventaire">Inventaire</option>
         <option value="production">Sortie — Vente Restaurant</option>
       </select>
-      <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-        <label style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">📅 Date :</label>
-        <input type="date" id="inputDateMvt" value="{{ date_mvt }}" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--dark)">
-        <button onclick="appliquerDateMvt()" class="btn-a btn-or" style="padding:6px 12px;font-size:11px">Filtrer</button>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
+        <label style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">📅 Du :</label>
+        <input type="date" id="inputDateDebut" value="{{ date_debut }}" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--dark)">
+        <label style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">Au :</label>
+        <input type="date" id="inputDateFin" value="{{ date_fin }}" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--dark)">
+        <button onclick="appliquerPeriodeMvt()" class="btn-a btn-or" style="padding:6px 12px;font-size:11px">Filtrer</button>
       </div>
     </div>
     <div style="overflow-x:auto;max-height:560px;overflow-y:auto">
@@ -382,15 +392,13 @@ function filtrerMvt() {
   });
 }
 
-function appliquerDateMvt() {
-  const d = document.getElementById('inputDateMvt').value;
+function appliquerPeriodeMvt() {
+  const debut = document.getElementById('inputDateDebut').value;
+  const fin   = document.getElementById('inputDateFin').value;
   const url = new URL(window.location.href);
   url.searchParams.set('tab', 'mouvements');
-  if (d) {
-    url.searchParams.set('date_mvt', d);
-  } else {
-    url.searchParams.delete('date_mvt');
-  }
+  if (debut) { url.searchParams.set('date_debut', debut); } else { url.searchParams.delete('date_debut'); }
+  if (fin)   { url.searchParams.set('date_fin',   fin);   } else { url.searchParams.delete('date_fin'); }
   window.location.href = url.toString();
 }
 </script>

@@ -167,13 +167,20 @@ def direction_view(request):
     modules = get_accessible_modules(request.user)
     stats = _get_dashboard_stats(request.user, modules)
 
-    # Filtre date mouvements — défaut = aujourd'hui
+    # Filtre période mouvements — défaut = aujourd'hui
     active_tab = request.GET.get('tab', 'global')
-    date_mvt_str = request.GET.get('date_mvt', today.isoformat())
+    date_debut_str = request.GET.get('date_debut', today.isoformat())
+    date_fin_str   = request.GET.get('date_fin',   today.isoformat())
     try:
-        date_mvt = date_type.fromisoformat(date_mvt_str)
+        date_debut = date_type.fromisoformat(date_debut_str)
     except ValueError:
-        date_mvt = today
+        date_debut = today
+    try:
+        date_fin = date_type.fromisoformat(date_fin_str)
+    except ValueError:
+        date_fin = today
+    if date_fin < date_debut:
+        date_fin = date_debut
 
     bar_ruptures, bar_alertes = 0, 0
     cuisine_ruptures, cuisine_alertes = 0, 0
@@ -184,7 +191,9 @@ def direction_view(request):
         bar_qs = BoissonBar.objects.filter(statut='actif')
         bar_ruptures = sum(1 for a in bar_qs if a.est_en_rupture)
         bar_alertes  = sum(1 for a in bar_qs if a.est_stock_bas)
-        qs_bar = MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date')
+        qs_bar = MouvementStockBar.objects.filter(
+            date__date__gte=date_debut, date__date__lte=date_fin
+        ).select_related('boisson', 'utilisateur').order_by('-date')
         for m in qs_bar:
             mouvements_combines.append({
                 'source': 'cave', 'nom': m.boisson.nom,
@@ -200,7 +209,9 @@ def direction_view(request):
         cuisine_qs = Ingredient.objects.filter(statut=True)
         cuisine_ruptures = sum(1 for i in cuisine_qs if i.est_en_rupture)
         cuisine_alertes  = sum(1 for i in cuisine_qs if i.est_stock_bas)
-        qs_cuisine = MouvementStockCuisine.objects.filter(date__date=date_mvt).select_related('ingredient', 'utilisateur').order_by('-date')
+        qs_cuisine = MouvementStockCuisine.objects.filter(
+            date__date__gte=date_debut, date__date__lte=date_fin
+        ).select_related('ingredient', 'utilisateur').order_by('-date')
         for m in qs_cuisine:
             mouvements_combines.append({
                 'source': 'cuisine', 'nom': m.ingredient.nom,
@@ -243,7 +254,8 @@ def direction_view(request):
         'stats_caisse_jour': stats_caisse_jour,
         'solde_veille_dir': solde_veille_dir,
         'active_tab': active_tab,
-        'date_mvt': date_mvt.isoformat() if date_mvt else '',
+        'date_debut': date_debut.isoformat(),
+        'date_fin':   date_fin.isoformat(),
     }
     return render(request, 'dashboard/direction.html', context)
 
@@ -259,16 +271,26 @@ def mouvements_print(request):
         messages.error(request, "Accès réservé à la Direction.")
         return redirect('dashboard:index')
 
-    date_mvt_str = request.GET.get('date_mvt', timezone.now().date().isoformat())
+    today_p = timezone.now().date()
+    date_debut_str = request.GET.get('date_debut', today_p.isoformat())
+    date_fin_str   = request.GET.get('date_fin',   today_p.isoformat())
     try:
-        date_mvt = date_type.fromisoformat(date_mvt_str)
+        date_debut = date_type.fromisoformat(date_debut_str)
     except ValueError:
-        date_mvt = timezone.now().date()
+        date_debut = today_p
+    try:
+        date_fin = date_type.fromisoformat(date_fin_str)
+    except ValueError:
+        date_fin = today_p
+    if date_fin < date_debut:
+        date_fin = date_debut
 
     mouvements = []
     try:
         from bar.models import MouvementStockBar
-        for m in MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date'):
+        for m in MouvementStockBar.objects.filter(
+            date__date__gte=date_debut, date__date__lte=date_fin
+        ).select_related('boisson', 'utilisateur').order_by('-date'):
             mouvements.append({
                 'source': 'cave', 'source_label': 'Cave',
                 'nom': m.boisson.nom,
@@ -283,7 +305,9 @@ def mouvements_print(request):
 
     try:
         from cuisine.models import MouvementStockCuisine
-        for m in MouvementStockCuisine.objects.filter(date__date=date_mvt).select_related('ingredient', 'utilisateur').order_by('-date'):
+        for m in MouvementStockCuisine.objects.filter(
+            date__date__gte=date_debut, date__date__lte=date_fin
+        ).select_related('ingredient', 'utilisateur').order_by('-date'):
             mouvements.append({
                 'source': 'cuisine', 'source_label': 'Cuisine',
                 'nom': m.ingredient.nom,
@@ -299,7 +323,8 @@ def mouvements_print(request):
     mouvements.sort(key=lambda x: x['date'], reverse=True)
 
     return render(request, 'dashboard/mouvements_print.html', {
-        'date_mvt': date_mvt,
+        'date_debut': date_debut,
+        'date_fin':   date_fin,
         'mouvements': mouvements,
         'nb_cave': sum(1 for m in mouvements if m['source'] == 'cave'),
         'nb_cuisine': sum(1 for m in mouvements if m['source'] == 'cuisine'),
@@ -321,16 +346,26 @@ def mouvements_excel(request):
         from django.http import HttpResponseForbidden
         return HttpResponseForbidden()
 
-    date_mvt_str = request.GET.get('date_mvt', timezone.now().date().isoformat())
+    today_x = timezone.now().date()
+    date_debut_str = request.GET.get('date_debut', today_x.isoformat())
+    date_fin_str   = request.GET.get('date_fin',   today_x.isoformat())
     try:
-        date_mvt = date_type.fromisoformat(date_mvt_str)
+        date_debut = date_type.fromisoformat(date_debut_str)
     except ValueError:
-        date_mvt = timezone.now().date()
+        date_debut = today_x
+    try:
+        date_fin = date_type.fromisoformat(date_fin_str)
+    except ValueError:
+        date_fin = today_x
+    if date_fin < date_debut:
+        date_fin = date_debut
 
     mouvements = []
     try:
         from bar.models import MouvementStockBar
-        for m in MouvementStockBar.objects.filter(date__date=date_mvt).select_related('boisson', 'utilisateur').order_by('-date'):
+        for m in MouvementStockBar.objects.filter(
+            date__date__gte=date_debut, date__date__lte=date_fin
+        ).select_related('boisson', 'utilisateur').order_by('-date'):
             mouvements.append({
                 'source': 'Cave', 'nom': m.boisson.nom,
                 'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
@@ -343,7 +378,9 @@ def mouvements_excel(request):
         pass
     try:
         from cuisine.models import MouvementStockCuisine
-        for m in MouvementStockCuisine.objects.filter(date__date=date_mvt).select_related('ingredient', 'utilisateur').order_by('-date'):
+        for m in MouvementStockCuisine.objects.filter(
+            date__date__gte=date_debut, date__date__lte=date_fin
+        ).select_related('ingredient', 'utilisateur').order_by('-date'):
             mouvements.append({
                 'source': 'Cuisine', 'nom': m.ingredient.nom,
                 'type': m.get_type_mouvement_display(), 'type_code': m.type_mouvement,
@@ -373,7 +410,8 @@ def mouvements_excel(request):
 
     NC = 9
     ws.merge_cells(f'A1:{get_column_letter(NC)}1')
-    ws['A1'] = f"MOUVEMENTS DE STOCK — {date_mvt.strftime('%d/%m/%Y').upper()} — COMPLEXE BEHANIAN"
+    periode = f"{date_debut.strftime('%d/%m/%Y')}" if date_debut == date_fin else f"{date_debut.strftime('%d/%m/%Y')} au {date_fin.strftime('%d/%m/%Y')}"
+    ws['A1'] = f"MOUVEMENTS DE STOCK — {periode.upper()} — COMPLEXE BEHANIAN"
     ws['A1'].font = tf; ws['A1'].alignment = ct
 
     ws.merge_cells(f'A2:{get_column_letter(NC)}2')
