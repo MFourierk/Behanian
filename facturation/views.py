@@ -115,8 +115,37 @@ def index(request):
 
 @require_module_access('facturation')
 def facture_list(request):
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str   = request.GET.get('date_fin', '')
+    date_debut = date_fin = None
+    try:
+        if date_debut_str:
+            date_debut = timezone.datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+        if date_fin_str:
+            date_fin = timezone.datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        pass
+
     factures = Facture.objects.select_related('client', 'cree_par').order_by('-date_creation')
-    return render(request, 'facturation/facture_list.html', {'factures': factures})
+    if date_debut:
+        factures = factures.filter(date_facturation__gte=date_debut)
+    if date_fin:
+        factures = factures.filter(date_facturation__lte=date_fin)
+
+    total_ttc  = factures.aggregate(s=Sum('total'))['s'] or Decimal('0')
+    total_paye = factures.aggregate(s=Sum('montant_paye'))['s'] or Decimal('0')
+    stats = {
+        'nb':       factures.count(),
+        'total_ttc': total_ttc,
+        'total_paye': total_paye,
+        'reste_du': total_ttc - total_paye,
+    }
+    return render(request, 'facturation/facture_list.html', {
+        'factures':   factures,
+        'stats':      stats,
+        'date_debut': date_debut_str,
+        'date_fin':   date_fin_str,
+    })
 
 @require_module_access('facturation')
 def facture_create(request):
@@ -261,8 +290,34 @@ def facture_pdf(request, pk):
 
 @require_module_access('facturation')
 def proforma_list(request):
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str   = request.GET.get('date_fin', '')
+    date_debut = date_fin = None
+    try:
+        if date_debut_str:
+            date_debut = timezone.datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+        if date_fin_str:
+            date_fin = timezone.datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        pass
+
     proformas = Proforma.objects.select_related('client', 'cree_par').order_by('-date_creation')
-    return render(request, 'facturation/proforma_list.html', {'proformas': proformas})
+    if date_debut:
+        proformas = proformas.filter(date_creation__date__gte=date_debut)
+    if date_fin:
+        proformas = proformas.filter(date_creation__date__lte=date_fin)
+
+    stats = {
+        'nb':           proformas.count(),
+        'total_ttc':    proformas.aggregate(s=Sum('total'))['s'] or Decimal('0'),
+        'nb_convertis': proformas.filter(statut='convertie').count(),
+    }
+    return render(request, 'facturation/proforma_list.html', {
+        'proformas':  proformas,
+        'stats':      stats,
+        'date_debut': date_debut_str,
+        'date_fin':   date_fin_str,
+    })
 
 def _generer_numero_proforma():
     """Génère un numéro PRO-YYYY-XXXX automatique."""
@@ -424,8 +479,34 @@ def proforma_pdf(request, pk):
 
 @require_module_access('facturation')
 def avoir_list(request):
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str   = request.GET.get('date_fin', '')
+    date_debut = date_fin = None
+    try:
+        if date_debut_str:
+            date_debut = timezone.datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+        if date_fin_str:
+            date_fin = timezone.datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        pass
+
     avoirs = Avoir.objects.select_related('client', 'cree_par', 'facture_origine', 'ticket_origine').order_by('-date_creation')
-    return render(request, 'facturation/avoir_list.html', {'avoirs': avoirs})
+    if date_debut:
+        avoirs = avoirs.filter(date_avoir__gte=date_debut)
+    if date_fin:
+        avoirs = avoirs.filter(date_avoir__lte=date_fin)
+
+    stats = {
+        'nb':           avoirs.count(),
+        'total_credits': avoirs.aggregate(s=Sum('total'))['s'] or Decimal('0'),
+        'nb_traites':   avoirs.filter(statut='traitee').count(),
+    }
+    return render(request, 'facturation/avoir_list.html', {
+        'avoirs':     avoirs,
+        'stats':      stats,
+        'date_debut': date_debut_str,
+        'date_fin':   date_fin_str,
+    })
 
 def _generer_numero_avoir():
     annee = timezone.now().year
@@ -552,22 +633,27 @@ def avoir_pdf(request, pk):
 def ticket_list(request):
     today = timezone.now().date()
 
-    # Date filter : optionnel — vide = tout afficher
-    date_str    = request.GET.get('date', '')
-    module_filter = request.GET.get('module', '')
-    query       = request.GET.get('q', '')
+    # Date range filter : optionnel — vide = tout afficher
+    date_debut_str = request.GET.get('date_debut', '')
+    date_fin_str   = request.GET.get('date_fin', '')
+    module_filter  = request.GET.get('module', '')
+    query          = request.GET.get('q', '')
 
-    selected_date = None
-    if date_str:
-        try:
-            selected_date = timezone.datetime.strptime(date_str, '%Y-%m-%d').date()
-        except (ValueError, TypeError):
-            selected_date = None
+    date_debut = date_fin = None
+    try:
+        if date_debut_str:
+            date_debut = timezone.datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+        if date_fin_str:
+            date_fin = timezone.datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        pass
 
     tickets = Ticket.objects.select_related('client', 'cree_par').order_by('-date_creation')
 
-    if selected_date:
-        tickets = tickets.filter(date_creation__date=selected_date)
+    if date_debut:
+        tickets = tickets.filter(date_creation__date__gte=date_debut)
+    if date_fin:
+        tickets = tickets.filter(date_creation__date__lte=date_fin)
     if module_filter:
         tickets = tickets.filter(module=module_filter)
     if query:
@@ -597,7 +683,8 @@ def ticket_list(request):
         'tickets':        tickets,
         'module_choices': Ticket.MODULE_CHOICES,
         'module_filter':  module_filter,
-        'date_filter':    date_str,
+        'date_debut':     date_debut_str,
+        'date_fin':       date_fin_str,
         'query':          query,
         'stats':          stats,
         'today':          today,

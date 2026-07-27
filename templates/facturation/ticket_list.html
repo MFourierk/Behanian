@@ -127,7 +127,7 @@
     <div class="kpi">
       <div class="kpi-icon" style="background:#fffbeb"><i class="fas fa-chart-line" style="color:#d97706"></i></div>
       <div>
-        <div class="kpi-lbl">Net du jour</div>
+        <div class="kpi-lbl">Net période</div>
         <div class="kpi-val amber">{{ stats.net_total|default:0|montant }} F</div>
       </div>
     </div>
@@ -156,9 +156,13 @@
     <div class="filter-bar">
       <div class="search-wrap">
         <i class="fas fa-search"></i>
-        <input type="text" id="filtreRecherche" placeholder="N° ticket ou client…" oninput="filtrer()" value="{{ request.GET.q|default:'' }}">
+        <input type="text" id="filtreRecherche" placeholder="N° ticket ou client…" oninput="filtrer()" value="{{ query }}">
       </div>
-      <input type="date" lang="fr" id="filtreDate" value="{{ date_filter }}" onchange="applyServerFilter()" placeholder="Toutes dates">
+      <label style="font-size:11px;font-weight:600;color:#7a8b9c;white-space:nowrap">Du</label>
+      <input type="date" id="filtreDebut" value="{{ date_debut }}" style="height:32px">
+      <label style="font-size:11px;font-weight:600;color:#7a8b9c;white-space:nowrap">Au</label>
+      <input type="date" id="filtreFin" value="{{ date_fin }}" style="height:32px">
+      <button class="btn-p btn-primary btn-sm" onclick="applyServerFilter()"><i class="fas fa-search"></i> Voir</button>
       <select id="filtreModule" onchange="applyServerFilter()">
         <option value="">Tous modules</option>
         {% for val, label in module_choices %}
@@ -253,7 +257,7 @@
           <td colspan="8">
             <div class="empty-state">
               <i class="fas fa-receipt"></i>
-              <p>Aucun ticket{% if date_filter %} pour le <strong>{{ date_filter }}</strong>{% endif %}</p>
+              <p>Aucun ticket{% if date_debut or date_fin %} sur la période sélectionnée{% endif %}</p>
               <p style="margin-top:6px;font-size:11px">Vérifiez les filtres ou effacez la date pour tout afficher.</p>
             </div>
           </td>
@@ -287,14 +291,16 @@ function filtrer() {
   document.getElementById('nbTickets').textContent = visible;
 }
 
-// ── Filtre serveur (date + module) ─────────────────────────
+// ── Filtre serveur (date range + module) ───────────────────
 function applyServerFilter() {
   const base = "{% url 'facturation:ticket_list' %}";
   const params = new URLSearchParams();
-  const d = document.getElementById('filtreDate').value;
+  const d = document.getElementById('filtreDebut').value;
+  const f = document.getElementById('filtreFin').value;
   const m = document.getElementById('filtreModule').value;
   const q = document.getElementById('filtreRecherche').value;
-  if (d) params.append('date', d);
+  if (d) params.append('date_debut', d);
+  if (f) params.append('date_fin', f);
   if (m) params.append('module', m);
   if (q) params.append('q', q);
   window.location.href = base + (params.toString() ? '?' + params.toString() : '');
@@ -304,6 +310,8 @@ function applyServerFilter() {
 function resetFiltres() {
   document.getElementById('filtreRecherche').value = '';
   document.getElementById('filtrePaiement').value = '';
+  document.getElementById('filtreDebut').value = '';
+  document.getElementById('filtreFin').value = '';
   applyServerFilter();
 }
 
