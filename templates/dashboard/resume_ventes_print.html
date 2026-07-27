@@ -1,0 +1,154 @@
+{% extends 'print_base.html' %}
+{% load static %}
+{% block doc_title %}Résumé Ventes — {% if date_debut == date_fin %}{{ date_debut|date:"d/m/Y" }}{% else %}{{ date_debut|date:"d/m/Y" }} au {{ date_fin|date:"d/m/Y" }}{% endif %}{% endblock %}
+
+{% block doc_content %}
+
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Résumé des Ventes</div>
+    <div class="doc-title-sub">{{ modules_display }} —
+      {% if date_debut == date_fin %}{{ date_debut|date:"l d F Y" }}
+      {% else %}du {{ date_debut|date:"d/m/Y" }} au {{ date_fin|date:"d/m/Y" }}{% endif %}
+    </div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ nb_tickets }} ticket(s)</span>
+  </div>
+</div>
+
+<!-- Méta -->
+<div class="meta-grid cols-3">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Période</span><span class="meta-val" style="color:#c0392b;font-weight:700">{{ periode }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Modules</span><span class="meta-val">{{ modules_display }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Résumé global</div>
+    <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val" style="color:#c9a84c;font-weight:800;font-size:14px">{{ total_net|floatformat:0 }} F</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb tickets</span><span class="meta-val">{{ nb_tickets }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Par module</div>
+    {% for nom, data in par_module.items %}
+    <div class="meta-row"><span class="meta-lbl">{{ nom }}</span><span class="meta-val">{{ data.total|floatformat:0 }} F ({{ data.nb }})</span></div>
+    {% empty %}
+    <div class="meta-row"><span class="meta-val" style="color:#8a9ab0;">—</span></div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Par mode + par caissier -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 30px 20px;">
+  <div>
+    <div class="section-title" style="padding:0 0 8px;">Par mode de paiement</div>
+    <table class="doc-table">
+      <thead><tr><th>Mode</th><th class="r">Total (F CFA)</th></tr></thead>
+      <tbody>
+        {% for mode, total in par_mode.items %}
+        <tr>
+          <td>{{ mode }}</td>
+          <td class="r bold" style="color:#c9a84c;">{{ total|floatformat:0 }} F</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" class="muted" style="text-align:center;">Aucune donnée</td></tr>
+        {% endfor %}
+        <tr>
+          <td class="total-label">TOTAL</td>
+          <td class="total-val r">{{ total_net|floatformat:0 }} F</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <div class="section-title" style="padding:0 0 8px;">Par caissier</div>
+    <table class="doc-table">
+      <thead><tr><th>Caissier</th><th class="r">Tickets</th><th class="r">Total (F)</th></tr></thead>
+      <tbody>
+        {% for nom, data in par_caissier.items %}
+        <tr>
+          <td>{{ nom }}</td>
+          <td class="r muted">{{ data.nb }}</td>
+          <td class="r bold" style="color:#c9a84c;">{{ data.total|floatformat:0 }} F</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="muted" style="text-align:center;">Aucune donnée</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Détail tickets -->
+<div class="content-section">
+  <div class="section-title">Détail des tickets</div>
+  {% if tickets %}
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:24px">#</th>
+        <th>N° Ticket</th>
+        <th>Module</th>
+        <th class="c">Date / Heure</th>
+        <th>Mode</th>
+        <th>Caissier</th>
+        <th class="r">Montant (F)</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for tk in tickets %}
+    <tr>
+      <td class="muted">{{ forloop.counter }}</td>
+      <td style="font-size:10px;color:#7a8b9c;">{{ tk.numero }}</td>
+      <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;
+        {% if tk.module == 'Restaurant' %}background:#fef0ed;color:#c0392b;
+        {% elif tk.module == 'Cave / Bar' %}background:#ede9fe;color:#7c3aed;
+        {% elif tk.module == 'Hôtel' %}background:#eff6ff;color:#1d4ed8;
+        {% elif tk.module == 'Piscine' %}background:#e0f2fe;color:#0369a1;
+        {% elif tk.module == 'Espaces' %}background:#fffbeb;color:#92400e;
+        {% else %}background:#f1f5f9;color:#475569;{% endif %}
+        ">{{ tk.module }}</span></td>
+      <td class="c muted">{{ tk.date|date:"d/m/Y H:i" }}</td>
+      <td>{{ tk.mode }}</td>
+      <td>{{ tk.caissier }}</td>
+      <td class="r bold" style="color:#c9a84c;">{{ tk.montant|floatformat:0 }} F</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6" class="total-label">TOTAL GÉNÉRAL</td>
+        <td class="total-val r">{{ total_net|floatformat:0 }} F</td>
+      </tr>
+    </tfoot>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:30px;color:#8a9ab0;border:1px dashed #dde3ec;border-radius:8px;">
+    Aucun ticket enregistré sur cette période
+  </div>
+  {% endif %}
+</div>
+
+<div class="notes-box">
+  <strong>Note</strong>
+  Ce rapport présente les encaissements enregistrés via les modules : {{ modules_display }}.
+  Seuls les tickets validés et payés sont inclus.
+  Généré le {% now "d/m/Y à H:i" %} — Complexe Hôtelier Behanian.
+</div>
+
+{% endblock %}
+
+{% block doc_footer_right %}
+  Résumé Ventes — {{ periode }}
+{% endblock %}
+
+{% block doc_actions %}
+<a href="{% url 'dashboard:resume_ventes_excel' %}?date_debut={{ date_debut|date:'Y-m-d' }}&date_fin={{ date_fin|date:'Y-m-d' }}{% if modules_param %}&modules={{ modules_param }}{% endif %}" class="btn-doc" style="background:#16a34a;color:#fff;">
+  <i class="fas fa-file-excel"></i> Télécharger Excel
+</a>
+<button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+<button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endblock %}

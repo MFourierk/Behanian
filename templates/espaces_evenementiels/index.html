@@ -114,7 +114,14 @@
       <h2 style="font-size:1.6rem;font-weight:700;margin:0">Espaces Location</h2>
       <p class="mb-0 opacity-75">Salles, jardins, terrasses &amp; espaces événementiels</p>
     </div>
-    <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="{% url 'dashboard:resume_ventes' %}?modules=espace" target="_blank"
+         style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.35);font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;"
+         onmouseover="this.style.background='rgba(201,168,76,0.28)'" onmouseout="this.style.background='rgba(201,168,76,0.15)'">
+        <i class="fas fa-chart-line"></i> Résumé Ventes
+      </a>
+      <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
+    </div>
   </div>
 
   <!-- KPIs -->

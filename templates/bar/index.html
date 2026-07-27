@@ -763,6 +763,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <input type="date" id="caveVentesFin">
           <button class="btn-resume btn-resume-voir" onclick="chargerResumeVentes()">↻ Voir</button>
           <button class="btn-resume btn-resume-today" onclick="caveVentesAujourdhui()">Aujourd'hui</button>
+          <button class="btn-resume btn-resume-today" onclick="exportCaveExcel()" title="Excel" style="padding:7px 12px;background:#16a34a;color:#fff;border-color:#16a34a !important;"><i class="fas fa-file-excel"></i></button>
+          <button class="btn-resume btn-resume-today" onclick="exportCavePrint()" title="PDF" style="padding:7px 12px;background:#4a2d6b;color:#fff;border-color:#4a2d6b !important;"><i class="fas fa-print"></i></button>
         </div>
         <!-- Contenu injecté -->
         <div id="resumeCaveBody">
@@ -1965,6 +1967,16 @@ function caveVentesAujourdhui() {
   document.getElementById('caveVentesDebut').value = today;
   document.getElementById('caveVentesFin').value   = today;
   chargerResumeVentes();
+}
+function exportCaveExcel() {
+  const debut = document.getElementById('caveVentesDebut').value || new Date().toISOString().split('T')[0];
+  const fin   = document.getElementById('caveVentesFin').value   || debut;
+  window.location.href = `{% url 'dashboard:resume_ventes_excel' %}?modules=cave&date_debut=${debut}&date_fin=${fin}`;
+}
+function exportCavePrint() {
+  const debut = document.getElementById('caveVentesDebut').value || new Date().toISOString().split('T')[0];
+  const fin   = document.getElementById('caveVentesFin').value   || debut;
+  window.open(`{% url 'dashboard:resume_ventes_print' %}?modules=cave&date_debut=${debut}&date_fin=${fin}`, '_blank');
 }
 
 function chargerResumeVentes() {

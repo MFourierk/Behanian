@@ -1001,6 +1001,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               style="padding:5px 12px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
               Aujourd'hui
             </button>
+            <button onclick="exportVentesExcel()"
+              style="padding:5px 11px;border-radius:8px;background:#16a34a;border:none;color:#fff;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;"
+              title="Exporter Excel">
+              <i class="fas fa-file-excel"></i>
+            </button>
+            <button onclick="exportVentesPrint()"
+              style="padding:5px 11px;border-radius:8px;background:#4a2d6b;border:none;color:#fff;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;"
+              title="Imprimer / PDF">
+              <i class="fas fa-print"></i>
+            </button>
           </div>
         </div>
         <div id="resumeVentesContainer">
@@ -1930,6 +1940,16 @@ function ventesAujourdhui() {
   document.getElementById('ventesDebut').value = t;
   document.getElementById('ventesFin').value   = t;
   chargerResumeVentes();
+}
+function exportVentesExcel() {
+  const debut = document.getElementById('ventesDebut')?.value || _todayStr();
+  const fin   = document.getElementById('ventesFin')?.value   || _todayStr();
+  window.location.href = `{% url 'dashboard:resume_ventes_excel' %}?modules=restaurant&date_debut=${debut}&date_fin=${fin}`;
+}
+function exportVentesPrint() {
+  const debut = document.getElementById('ventesDebut')?.value || _todayStr();
+  const fin   = document.getElementById('ventesFin')?.value   || _todayStr();
+  window.open(`{% url 'dashboard:resume_ventes_print' %}?modules=restaurant&date_debut=${debut}&date_fin=${fin}`, '_blank');
 }
 
 async function chargerResumeVentes() {

@@ -466,3 +466,275 @@ def api_stats(request):
     # Retirer les objets non-sérialisables
     stats.pop('tickets_recents', None)
     return JsonResponse(stats)
+
+
+# ═══════════════════════════════════════════════════════════════
+#  RÉSUMÉ VENTES — Multi-module (Vue Direction + exports)
+# ═══════════════════════════════════════════════════════════════
+
+def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
+    """Helper partagé : requête Ticket et agrégation pour le résumé ventes."""
+    MODULE_LABELS = {
+        'restaurant': 'Restaurant', 'cave': 'Cave / Bar',
+        'hotel': 'Hôtel', 'piscine': 'Piscine',
+        'espace': 'Espaces', 'autre': 'Autre',
+    }
+    MODE_LABELS = {
+        'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
+        'mobile': 'Mobile Money', 'mobile_money': 'Mobile Money',
+        'orange_money': 'Orange Money', 'wave': 'Wave',
+        'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
+        'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
+    }
+    from facturation.models import Ticket
+    qs = list(Ticket.objects.filter(
+        module__in=modules_filter,
+        date_creation__date__gte=date_debut,
+        date_creation__date__lte=date_fin,
+    ).select_related('cree_par').order_by('-date_creation'))
+
+    total_net, par_module, par_mode, par_caissier, tickets = 0, {}, {}, {}, []
+    same_day = (date_debut == date_fin)
+    for tk in qs:
+        montant = float(tk.montant_paye or 0)
+        total_net += montant
+        mod = MODULE_LABELS.get(tk.module, tk.module)
+        par_module.setdefault(mod, {'nb': 0, 'total': 0})
+        par_module[mod]['nb']    += 1
+        par_module[mod]['total'] += montant
+        m = MODE_LABELS.get(tk.mode_paiement or 'especes',
+                            (tk.mode_paiement or 'especes').replace('_', ' ').capitalize())
+        par_mode[m] = par_mode.get(m, 0) + montant
+        caissier = (tk.cree_par.get_full_name() or tk.cree_par.username) if tk.cree_par else 'Inconnu'
+        par_caissier.setdefault(caissier, {'nb': 0, 'total': 0})
+        par_caissier[caissier]['nb']    += 1
+        par_caissier[caissier]['total'] += montant
+        tickets.append({
+            'numero':   tk.numero or '—',
+            'module':   mod,
+            'date':     tk.date_creation,
+            'heure':    tk.date_creation.strftime('%H:%M') if same_day else tk.date_creation.strftime('%d/%m %H:%M'),
+            'mode':     m,
+            'caissier': caissier,
+            'montant':  montant,
+        })
+
+    periode = (date_debut.strftime('%d/%m/%Y') if same_day
+               else f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}")
+    return {
+        'periode': periode, 'nb_tickets': len(tickets), 'total_net': total_net,
+        'par_module': par_module, 'par_mode': par_mode,
+        'par_caissier': par_caissier, 'tickets': tickets,
+    }
+
+
+@login_required
+def resume_ventes_direction(request):
+    """Page Résumé Ventes — Vue Direction (multi-module, toute période)."""
+    from utils.permissions import _is_manager
+    from django.contrib import messages as _msg
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        _msg.error(request, "Accès réservé à la Direction.")
+        return redirect('dashboard:index')
+    today = timezone.now().date()
+    return render(request, 'dashboard/resume_ventes.html', {
+        'page_title': 'Résumé Ventes — Vue Direction',
+        'date_debut_default': today.replace(day=1).strftime('%Y-%m-%d'),
+        'date_fin_default':   today.strftime('%Y-%m-%d'),
+    })
+
+
+@login_required
+def api_resume_ventes(request):
+    """JSON : résumé des ventes multi-module sur une période."""
+    from utils.permissions import _is_manager
+    from datetime import datetime
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        return JsonResponse({'success': False, 'error': 'Accès refusé'}, status=403)
+
+    today = timezone.now().date()
+    def parse_date(p, fb):
+        try: return datetime.strptime(request.GET[p], '%Y-%m-%d').date()
+        except: return fb
+
+    date_debut = parse_date('date_debut', today)
+    date_fin   = parse_date('date_fin', today)
+    if date_fin < date_debut: date_fin = date_debut
+
+    ALL_MODULES = ['restaurant', 'cave', 'hotel', 'piscine', 'espace', 'autre']
+    mp = request.GET.get('modules', '')
+    modules_filter = [m for m in mp.split(',') if m in ALL_MODULES] if mp else ALL_MODULES
+
+    try:
+        data = _parse_resume_ventes_data(modules_filter, date_debut, date_fin)
+        return JsonResponse({
+            'success': True,
+            'periode':     data['periode'],
+            'nb_tickets':  data['nb_tickets'],
+            'total_net':   data['total_net'],
+            'par_module':  [{'nom': k, **v} for k, v in data['par_module'].items()],
+            'par_mode':    data['par_mode'],
+            'par_caissier': [{'nom': k, **v} for k, v in data['par_caissier'].items()],
+            'tickets':     [{k: v for k, v in t.items() if k != 'date'} for t in data['tickets']],
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def resume_ventes_excel(request):
+    """Export Excel : résumé ventes multi-module."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+    from utils.permissions import _is_manager
+    from datetime import datetime
+
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden()
+
+    today = timezone.now().date()
+    def parse_date(p, fb):
+        try: return datetime.strptime(request.GET[p], '%Y-%m-%d').date()
+        except: return fb
+    date_debut = parse_date('date_debut', today)
+    date_fin   = parse_date('date_fin', today)
+    if date_fin < date_debut: date_fin = date_debut
+
+    ALL_MODULES = ['restaurant', 'cave', 'hotel', 'piscine', 'espace', 'autre']
+    mp = request.GET.get('modules', '')
+    modules_filter = [m for m in mp.split(',') if m in ALL_MODULES] if mp else ALL_MODULES
+
+    try:
+        data = _parse_resume_ventes_data(modules_filter, date_debut, date_fin)
+    except Exception:
+        data = {'periode': '', 'nb_tickets': 0, 'total_net': 0,
+                'par_module': {}, 'par_mode': {}, 'par_caissier': {}, 'tickets': []}
+
+    GOLD, DARK, WHITE = 'C9A84C', '1A2535', 'FFFFFF'
+    thin = Border(**{s: Side(style='thin', color='D4DCE8') for s in ['left','right','top','bottom']})
+
+    def hf(bg=DARK, fg=WHITE, sz=10, bold=True):
+        return Font(name='Calibri', bold=bold, size=sz, color=fg), PatternFill('solid', fgColor=bg)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Résumé Ventes'
+    period_str = data['periode']
+
+    def title_row(ws, row, text, cols, bg=DARK, fg=WHITE, sz=12):
+        ws.merge_cells(f'A{row}:{get_column_letter(cols)}{row}')
+        c = ws.cell(row, 1, text)
+        c.font = Font(name='Calibri', bold=True, size=sz, color=fg)
+        c.fill = PatternFill('solid', fgColor=bg)
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[row].height = 24
+
+    def hdr_row(ws, row, labels, bg=DARK, fg=WHITE):
+        for i, lbl in enumerate(labels, 1):
+            c = ws.cell(row, i, lbl)
+            c.font = Font(name='Calibri', bold=True, size=9.5, color=fg)
+            c.fill = PatternFill('solid', fgColor=bg)
+            c.border = thin
+            c.alignment = Alignment(horizontal='center', vertical='center')
+
+    def data_row(ws, row, values, bold_cols=()):
+        for i, v in enumerate(values, 1):
+            c = ws.cell(row, i, v)
+            c.font = Font(name='Calibri', bold=(i in bold_cols), size=9.5)
+            c.border = thin
+            if row % 2 == 0:
+                c.fill = PatternFill('solid', fgColor='F8F9FB')
+
+    # ── Feuille 1 : Résumé global
+    title_row(ws, 1, 'COMPLEXE HÔTELIER BEHANIAN — RÉSUMÉ DES VENTES', 5, GOLD, DARK, 13)
+    title_row(ws, 2, f'Période : {period_str}   |   {data["nb_tickets"]} ticket(s)   |   Total : {int(data["total_net"]):,} F CFA'.replace(',', ' '), 5)
+    r = 4
+    hdr_row(ws, r, ['Module', 'Tickets', 'Total (F CFA)', '% total', '']); r += 1
+    total = data['total_net']
+    for mod, d in data['par_module'].items():
+        pct = f"{round(d['total']/total*100, 1)}%" if total else '—'
+        data_row(ws, r, [mod, d['nb'], int(d['total']), pct, ''], bold_cols=(3,)); r += 1
+
+    r += 1
+    hdr_row(ws, r, ['Mode de paiement', 'Total (F CFA)', '', '', '']); r += 1
+    for mode, t in data['par_mode'].items():
+        data_row(ws, r, [mode, int(t), '', '', ''], bold_cols=(2,)); r += 1
+
+    r += 1
+    hdr_row(ws, r, ['Caissier', 'Tickets', 'Total (F CFA)', '', '']); r += 1
+    for caissier, d in data['par_caissier'].items():
+        data_row(ws, r, [caissier, d['nb'], int(d['total']), '', ''], bold_cols=(3,)); r += 1
+
+    for i, w in enumerate([28, 14, 18, 12, 10], 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # ── Feuille 2 : Détail tickets
+    ws2 = wb.create_sheet('Détail Tickets')
+    title_row(ws2, 1, f'Détail Tickets — {period_str}', 6, GOLD, DARK, 11)
+    hdr_row(ws2, 2, ['N° Ticket', 'Module', 'Date / Heure', 'Mode', 'Caissier', 'Montant (F)'])
+    for r, tk in enumerate(data['tickets'], 3):
+        data_row(ws2, r, [
+            tk['numero'], tk['module'],
+            tk['date'].strftime('%d/%m/%Y %H:%M'),
+            tk['mode'], tk['caissier'], int(tk['montant'])
+        ], bold_cols=(6,))
+    for i, w in enumerate([16, 14, 18, 16, 22, 14], 1):
+        ws2.column_dimensions[get_column_letter(i)].width = w
+
+    resp = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    fname = f"resume_ventes_{date_debut.strftime('%Y%m%d')}_{date_fin.strftime('%Y%m%d')}.xlsx"
+    resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+    wb.save(resp)
+    return resp
+
+
+@login_required
+def resume_ventes_print(request):
+    """Page impression résumé ventes — modèle print_base.html."""
+    from utils.permissions import _is_manager
+    from django.contrib import messages as _msg
+    from datetime import datetime
+
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        _msg.error(request, "Accès réservé à la Direction.")
+        return redirect('dashboard:index')
+
+    today = timezone.now().date()
+    def parse_date(p, fb):
+        try: return datetime.strptime(request.GET[p], '%Y-%m-%d').date()
+        except: return fb
+    date_debut = parse_date('date_debut', today)
+    date_fin   = parse_date('date_fin', today)
+    if date_fin < date_debut: date_fin = date_debut
+
+    ALL_MODULES = ['restaurant', 'cave', 'hotel', 'piscine', 'espace', 'autre']
+    MODULE_LABELS = {'restaurant': 'Restaurant', 'cave': 'Cave / Bar',
+                     'hotel': 'Hôtel', 'piscine': 'Piscine',
+                     'espace': 'Espaces', 'autre': 'Autre'}
+    mp = request.GET.get('modules', '')
+    modules_filter = [m for m in mp.split(',') if m in ALL_MODULES] if mp else ALL_MODULES
+    modules_display = ', '.join(MODULE_LABELS.get(m, m) for m in modules_filter)
+
+    try:
+        data = _parse_resume_ventes_data(modules_filter, date_debut, date_fin)
+    except Exception as e:
+        data = {'periode': '—', 'nb_tickets': 0, 'total_net': 0,
+                'par_module': {}, 'par_mode': {}, 'par_caissier': {}, 'tickets': []}
+
+    return render(request, 'dashboard/resume_ventes_print.html', {
+        'date_debut':      date_debut,
+        'date_fin':        date_fin,
+        'modules_display': modules_display,
+        'modules_param':   mp or ','.join(ALL_MODULES),
+        'periode':         data['periode'],
+        'nb_tickets':      data['nb_tickets'],
+        'total_net':       data['total_net'],
+        'par_module':      data['par_module'],
+        'par_mode':        data['par_mode'],
+        'par_caissier':    data['par_caissier'],
+        'tickets':         data['tickets'],
+        'generated_at':    timezone.now(),
+    })
