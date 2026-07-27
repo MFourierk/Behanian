@@ -171,10 +171,11 @@ def get_cat_cuisine(nom, ordre):
     return cat
 
 
-def get_cat_menu(nom, ordre):
-    cat = CategorieMenu.objects.filter(nom__iexact=nom).first()
+def get_cat_menu_principal():
+    """Tous les plats gibier/volaille/poisson/brochette → Plats Principaux."""
+    cat = CategorieMenu.objects.filter(nom__iexact="Plats Principaux").first()
     if not cat:
-        cat = CategorieMenu.objects.create(nom=nom, ordre=ordre)
+        cat = CategorieMenu.objects.create(nom="Plats Principaux", ordre=3)
     return cat
 
 
@@ -199,16 +200,22 @@ class Command(BaseCommand):
         manquants = set()
 
         cats_cuisine = {}
-        cats_menu = {}
+        cat_m = get_cat_menu_principal()
+
+        # Corriger les PlatMenu existants mal catégorisés (Gibiers/Volailles/… → Plats Principaux)
+        noms_catalogue = [row[0] for row in CATALOGUE]
+        migres = PlatMenu.objects.filter(
+            nom__in=noms_catalogue
+        ).exclude(categorie=cat_m).update(categorie=cat_m)
+        if migres:
+            self.stdout.write(f"  → {migres} PlatMenu recatégorisé(s) en Plats Principaux")
 
         for nom, prix, cat_nom, ordre, ing_terme, nb_portions in CATALOGUE:
 
             # Catégories (cache local)
             if cat_nom not in cats_cuisine:
                 cats_cuisine[cat_nom] = get_cat_cuisine(cat_nom, ordre)
-                cats_menu[cat_nom]    = get_cat_menu(cat_nom, ordre)
             cat_c = cats_cuisine[cat_nom]
-            cat_m = cats_menu[cat_nom]
 
             # Vérification doublon Plat (insensible à la casse)
             existing_plat = Plat.objects.filter(nom__iexact=nom).first()
