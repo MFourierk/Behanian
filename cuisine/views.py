@@ -746,6 +746,8 @@ def _epurer_plats_restaurant():
 
     supprimes = []
     for plat_resto in PlatMenu.objects.all():
+        if plat_resto.is_simple:
+            continue  # Jamais supprimer les plats sans stock (pas de fiche technique)
         if plat_resto.cuisine_plat_id:
             # Vérification par ID — fiable
             if plat_resto.cuisine_plat_id not in ids_cuisine:
