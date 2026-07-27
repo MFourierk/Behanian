@@ -976,16 +976,31 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
     </div>
 
-    <!-- ── VUE : RÉSUMÉ VENTES DU JOUR ── -->
+    <!-- ── VUE : RÉSUMÉ VENTES ── -->
     <div class="view-panel" id="view-ventes">
       <div style="padding:16px 20px;overflow-y:auto;height:100%;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <h3 style="margin:0;font-size:0.95rem;color:var(--cave-gold);">📊 Ventes du jour</h3>
-          <div style="display:flex;gap:8px;align-items:center;">
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <h3 style="margin:0;font-size:0.95rem;color:var(--cave-gold);">📊 Rapport des ventes</h3>
             <input id="ventesSearch" type="text" placeholder="Rechercher ticket…"
               oninput="filtrerTickets()"
-              style="padding:5px 10px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.72rem;font-family:'DM Sans',sans-serif;width:150px;outline:none;">
-            <button onclick="chargerResumeVentes()" style="padding:5px 12px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Actualiser</button>
+              style="padding:5px 10px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.72rem;font-family:'DM Sans',sans-serif;width:140px;outline:none;">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:0.72rem;color:#9b8faa;font-weight:600;">Du</span>
+            <input type="date" id="ventesDebut"
+              style="padding:5px 9px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.75rem;font-family:'DM Sans',sans-serif;outline:none;">
+            <span style="font-size:0.72rem;color:#9b8faa;font-weight:600;">au</span>
+            <input type="date" id="ventesFin"
+              style="padding:5px 9px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.75rem;font-family:'DM Sans',sans-serif;outline:none;">
+            <button onclick="chargerResumeVentes()"
+              style="padding:5px 14px;border-radius:8px;background:var(--cave-gold);border:none;color:#1a1225;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              ↻ Voir
+            </button>
+            <button onclick="ventesAujourdhui()"
+              style="padding:5px 12px;border-radius:8px;background:#fff;border:1px solid rgba(45,31,61,0.18);color:#2d1f3d;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              Aujourd'hui
+            </button>
           </div>
         </div>
         <div id="resumeVentesContainer">
@@ -1907,11 +1922,24 @@ function paiementRapide() {
 // ── RÉSUMÉ VENTES DU JOUR ──
 let _ventesData = null;
 
+function _todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+function ventesAujourdhui() {
+  const t = _todayStr();
+  document.getElementById('ventesDebut').value = t;
+  document.getElementById('ventesFin').value   = t;
+  chargerResumeVentes();
+}
+
 async function chargerResumeVentes() {
   const c = document.getElementById('resumeVentesContainer');
   if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#9b8faa;font-size:0.85rem;">Chargement…</div>';
+  const debut = document.getElementById('ventesDebut')?.value || _todayStr();
+  const fin   = document.getElementById('ventesFin')?.value   || _todayStr();
   try {
-    const r = await fetch("{% url 'restaurant:resume_ventes_jour' %}");
+    const url = `{% url 'restaurant:resume_ventes_jour' %}?date_debut=${debut}&date_fin=${fin}`;
+    const r = await fetch(url);
     const d = await r.json();
     if (!d.success) { if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">Erreur chargement</div>'; return; }
     _ventesData = d;
@@ -1952,7 +1980,7 @@ function _renderVentes(d) {
   let html = `
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
     <div style="background:#fff;border-radius:14px;padding:14px 16px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);">
-      <div style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;margin-bottom:6px;">TICKETS DU JOUR</div>
+      <div style="font-size:0.62rem;font-weight:700;letter-spacing:.8px;color:#9b8faa;margin-bottom:6px;">TICKETS — ${d.date}</div>
       <div style="font-size:2rem;font-weight:800;color:var(--cave-deep);line-height:1;">${d.nb_commandes}</div>
     </div>
     <div style="background:#fff;border-radius:14px;padding:14px 16px;border:1px solid rgba(45,31,61,0.1);box-shadow:0 2px 8px rgba(45,31,61,0.06);">
@@ -2731,6 +2759,12 @@ function _majMobileCartBadge() {
 document.addEventListener('DOMContentLoaded', function() {
   _initMobileUI();
   window.addEventListener('resize', _initMobileUI);
+  // Pré-remplir les dates du résumé ventes à aujourd'hui
+  const t = _todayStr();
+  const dd = document.getElementById('ventesDebut');
+  const df = document.getElementById('ventesFin');
+  if (dd) dd.value = t;
+  if (df) df.value = t;
 });
 </script>
 {% endblock %}

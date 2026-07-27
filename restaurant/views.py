@@ -1084,11 +1084,26 @@ def transferer_table(request):
 
 @require_module_access('restaurant')
 def resume_ventes_jour(request):
-    """Résumé des ventes du jour pour le TPE restaurant (lecture seule)."""
+    """Résumé des ventes (jour ou période) pour le TPE restaurant."""
+    from datetime import date as dt_date
     aujourd_hui = timezone.now().date()
+
+    def parse_date(param, fallback):
+        try:
+            from datetime import datetime
+            return datetime.strptime(request.GET[param], '%Y-%m-%d').date()
+        except Exception:
+            return fallback
+
+    date_debut = parse_date('date_debut', aujourd_hui)
+    date_fin   = parse_date('date_fin',   aujourd_hui)
+    if date_fin < date_debut:
+        date_fin = date_debut
+
     commandes = Commande.objects.filter(
         statut='payee',
-        date_creation__date=aujourd_hui,
+        date_creation__date__gte=date_debut,
+        date_creation__date__lte=date_fin,
     ).select_related('caissier', 'serveur', 'table')
 
     total_brut = sum(float(c.total) for c in commandes)
@@ -1101,7 +1116,9 @@ def resume_ventes_jour(request):
     try:
         from facturation.models import Ticket as TicketCaisse
         tickets_jour = TicketCaisse.objects.filter(
-            module='restaurant', date_creation__date=aujourd_hui,
+            module='restaurant',
+            date_creation__date__gte=date_debut,
+            date_creation__date__lte=date_fin,
         ).select_related('cree_par').order_by('-date_creation')
         mode_noms = {
             'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
@@ -1144,9 +1161,11 @@ def resume_ventes_jour(request):
         par_caissier[nom]['nb'] += 1
         par_caissier[nom]['total'] += c.total_net
 
+    periode = (date_debut.strftime('%d/%m/%Y') if date_debut == date_fin
+               else f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}")
     return JsonResponse({
         'success': True,
-        'date': aujourd_hui.strftime('%d/%m/%Y'),
+        'date': periode,
         'nb_commandes': nb_cmd,
         'total_brut': total_brut,
         'total_net': total_net,
