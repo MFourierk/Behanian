@@ -271,16 +271,9 @@
         <h2>Gestion Hôtel</h2>
         <p class="mb-0 opacity-75">Chambres, Réservations et Séjours</p>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="{% url 'dashboard:resume_ventes' %}?modules=hotel" target="_blank"
-           style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.35);font-size:12px;font-weight:600;text-decoration:none;transition:all 0.2s;"
-           onmouseover="this.style.background='rgba(201,168,76,0.28)'" onmouseout="this.style.background='rgba(201,168,76,0.15)'">
-          <i class="fas fa-chart-line"></i> Résumé Ventes
-        </a>
-        <div class="header-clock">
-          <span class="time">--:-- GMT</span>
-          <span class="date">Chargement...</span>
-        </div>
+      <div class="header-clock">
+        <span class="time">--:-- GMT</span>
+        <span class="date">Chargement...</span>
       </div>
     </div>
 
@@ -311,6 +304,16 @@
         <div class="kpi-val">{{ chambres_maintenance }}</div>
         <div class="kpi-sub">hors service</div>
       </div>
+    </div>
+
+    <!-- LIENS RAPIDES -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <a href="{% url 'dashboard:resume_ventes' %}?modules=hotel" target="_blank"
+         style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;background:#f8fafc;border:1px solid #d4dce8;font-size:12px;font-weight:600;color:#3d4f63;text-decoration:none;transition:all 0.15s;"
+         onmouseover="this.style.background='#f0f4ff';this.style.borderColor='#2563eb'" onmouseout="this.style.background='#f8fafc';this.style.borderColor='#d4dce8'">
+        <span style="font-size:16px;">💰</span>
+        <div><div style="color:#1a2535;">Résumé Ventes</div><div style="font-size:10px;color:#7a8b9c;margin-top:1px;">Encaissements Hôtel</div></div>
+      </a>
     </div>
 
     <!-- MAIN GRID -->
