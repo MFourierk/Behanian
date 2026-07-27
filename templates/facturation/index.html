@@ -292,10 +292,10 @@
   <!-- ONGLET TICKETS -->
   <div class="tab-content" id="content-tickets">
     <div class="panel">
-      <div class="ph">
+      <div class="ph" style="flex-wrap:wrap;gap:8px">
         <h3>🧾 Tickets par module</h3>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="filtreModuleTicket" onchange="filtrerTickets()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="filtreModuleTicket" onchange="filtrerTickets()" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:11px;height:30px">
             <option value="">Tous modules</option>
             <option value="hotel">Hôtel</option>
             <option value="restaurant">Restaurant</option>
@@ -303,7 +303,14 @@
             <option value="piscine">Piscine</option>
             <option value="caisse">Caisse</option>
           </select>
-          <input type="text" id="filtreTicket" placeholder="N° ou client…" oninput="filtrerTickets()" style="padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;width:140px">
+          <input type="text" id="filtreTicket" placeholder="N° ou client…" oninput="filtrerTickets()" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:11px;width:120px;height:30px">
+          <span style="color:var(--border);font-size:18px;line-height:1">|</span>
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Du</label>
+          <input type="date" id="tckDebut" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Au</label>
+          <input type="date" id="tckFin" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <button class="btn-p primary" onclick="voirPeriode('{% url "facturation:ticket_list" %}','tckDebut','tckFin')" style="height:30px;font-size:11px"><i class="fas fa-search"></i> Voir</button>
+          <a href="{% url 'facturation:ticket_list' %}" class="btn-p outline" style="height:30px;font-size:11px">Tout</a>
         </div>
       </div>
       <div class="tbl-wrap">
@@ -343,9 +350,16 @@
   <!-- ONGLET FACTURES -->
   <div class="tab-content" id="content-factures">
     <div class="panel">
-      <div class="ph">
+      <div class="ph" style="flex-wrap:wrap;gap:8px">
         <h3>📋 Factures</h3>
-        
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Du</label>
+          <input type="date" id="facDebut" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Au</label>
+          <input type="date" id="facFin" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <button class="btn-p primary" onclick="voirPeriode('{% url "facturation:facture_list" %}','facDebut','facFin')" style="height:30px;font-size:11px"><i class="fas fa-search"></i> Voir</button>
+          <a href="{% url 'facturation:facture_list' %}" class="btn-p outline" style="height:30px;font-size:11px">Tout</a>
+        </div>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
@@ -381,9 +395,16 @@
   <!-- ONGLET PROFORMAS -->
   <div class="tab-content" id="content-proformas">
     <div class="panel">
-      <div class="ph">
+      <div class="ph" style="flex-wrap:wrap;gap:8px">
         <h3>📄 Proformas</h3>
-        
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Du</label>
+          <input type="date" id="proDebut" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Au</label>
+          <input type="date" id="proFin" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <button class="btn-p primary" onclick="voirPeriode('{% url "facturation:proforma_list" %}','proDebut','proFin')" style="height:30px;font-size:11px"><i class="fas fa-search"></i> Voir</button>
+          <a href="{% url 'facturation:proforma_list' %}" class="btn-p outline" style="height:30px;font-size:11px">Tout</a>
+        </div>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
@@ -418,9 +439,16 @@
   <!-- ONGLET AVOIRS -->
   <div class="tab-content" id="content-avoirs">
     <div class="panel">
-      <div class="ph">
+      <div class="ph" style="flex-wrap:wrap;gap:8px">
         <h3>🔄 Avoirs</h3>
-        
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Du</label>
+          <input type="date" id="avoDebut" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap">Au</label>
+          <input type="date" id="avoFin" style="height:30px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;color:var(--dark)">
+          <button class="btn-p primary" onclick="voirPeriode('{% url "facturation:avoir_list" %}','avoDebut','avoFin')" style="height:30px;font-size:11px"><i class="fas fa-search"></i> Voir</button>
+          <a href="{% url 'facturation:avoir_list' %}" class="btn-p outline" style="height:30px;font-size:11px">Tout</a>
+        </div>
       </div>
       <div class="tbl-wrap">
         <table class="tbl">
@@ -673,6 +701,16 @@ function setTab(name,el){
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('content-'+name).classList.add('active');
+}
+
+// Voir période sur page dédiée
+function voirPeriode(baseUrl, debutId, finId){
+  const d = document.getElementById(debutId).value;
+  const f = document.getElementById(finId).value;
+  const params = new URLSearchParams();
+  if(d) params.append('date_debut', d);
+  if(f) params.append('date_fin', f);
+  window.location.href = baseUrl + (params.toString() ? '?' + params.toString() : '');
 }
 
 // Filtres tickets
