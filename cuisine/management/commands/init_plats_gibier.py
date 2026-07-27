@@ -219,7 +219,31 @@ class Command(BaseCommand):
                 if pm and not pm.cuisine_plat_id:
                     pm.cuisine_plat_id = existing_plat.pk
                     pm.save(update_fields=['cuisine_plat_id'])
-                skipped += 1
+                # Créer la FicheTechnique si le plat n'en a pas encore
+                if not existing_plat.fiche_technique:
+                    ing = find_ingredient(ing_terme)
+                    if ing_terme and not ing:
+                        manquants.add(ing_terme)
+                    if ing:
+                        fiche = FicheTechnique.objects.create(
+                            nom=existing_plat.nom,
+                            categorie=cat_c,
+                            nb_portions=nb_portions,
+                            statut='actif',
+                        )
+                        LigneFicheTechnique.objects.create(
+                            fiche=fiche,
+                            ingredient=ing,
+                            quantite=1,
+                        )
+                        existing_plat.fiche_technique = fiche
+                        existing_plat.save(update_fields=['fiche_technique'])
+                        self.stdout.write(f"  ~ FT ajoutée : {nom} ({ing.nom})")
+                        created += 1
+                    else:
+                        sans_fiche += 1
+                else:
+                    skipped += 1
                 continue
 
             # Recherche ingrédient principal
