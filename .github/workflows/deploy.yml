@@ -28,6 +28,7 @@ jobs:
             python manage.py collectstatic --noinput
             python manage.py init_plats_simples
             python manage.py init_boissons_bar
+            python manage.py init_plats_gibier
             sudo systemctl restart gunicorn
             mkdir -p ~/.ssh && chmod 700 ~/.ssh
             touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
@@ -81,6 +82,7 @@ jobs:
               python manage.py collectstatic --noinput &&
               python manage.py init_plats_simples &&
               python manage.py init_boissons_bar &&
+              python manage.py init_plats_gibier &&
               sudo systemctl restart gunicorn &&
               echo COMPLEXE_OK
             " && echo "Serveur local mis a jour" || { echo "ERREUR: deploiement complexe echoue"; exit 1; }
