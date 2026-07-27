@@ -1162,12 +1162,21 @@ def restaurant_tpe(request):
     from dashboard.models import Configuration
     from bar.models import CategorieBar
 
-    # ── Catégories CUISINE (exclure celles qui contiennent 'boisson') ──
+    # ── Catégories CUISINE niveau 1 (parent=null, hors boissons) ──
     mots_boisson = ['boisson', 'bière', 'biere', 'vin', 'alcool', 'soda', 'jus', 'soft', 'liqueur', 'spiritueux']
-    categories_cuisine = [
-        c for c in CategorieMenu.objects.all()
+    cats_niveau1 = [
+        c for c in CategorieMenu.objects.filter(parent__isnull=True).order_by('ordre', 'nom')
         if not any(m in c.nom.lower() for m in mots_boisson)
     ]
+    # Sous-catégories de "Plats Principaux"
+    cat_plats_p = next((c for c in cats_niveau1 if 'plats principaux' in c.nom.lower()), None)
+    sous_cats_plats = (
+        list(CategorieMenu.objects.filter(parent=cat_plats_p).order_by('ordre', 'nom'))
+        if cat_plats_p else []
+    )
+    # Toutes les catégories utiles pour filtrer les plats (niveau1 + sous-cats)
+    ids_cat_cuisine = [c.id for c in cats_niveau1] + [c.id for c in sous_cats_plats]
+    categories_cuisine = cats_niveau1  # compat template boissons
 
     # ── Catégories BAR (Cave) ──
     categories_bar = CategorieBar.objects.all().order_by('nom')
@@ -1178,13 +1187,12 @@ def restaurant_tpe(request):
     _plats_avec_ft = PlatCuisine.objects.filter(
         fiche_technique__isnull=False
     ).values_list('pk', flat=True)
-    ids_cat_cuisine = [c.id for c in categories_cuisine]
     _q_plats = Q(cuisine_plat_id__in=_plats_avec_ft) | Q(is_simple=True)
     plats = PlatMenu.objects.filter(
         disponible=True, categorie__id__in=ids_cat_cuisine
-    ).filter(_q_plats) if ids_cat_cuisine else PlatMenu.objects.filter(
+    ).filter(_q_plats).select_related('categorie', 'categorie__parent') if ids_cat_cuisine else PlatMenu.objects.filter(
         disponible=True
-    ).filter(_q_plats)
+    ).filter(_q_plats).select_related('categorie', 'categorie__parent')
 
     # ── Boissons de la Cave ──
     boissons_bar = BoissonBar.objects.filter(
@@ -1215,6 +1223,13 @@ def restaurant_tpe(request):
                 plat.stock_quantity = int(ing.quantite_stock) if ing else 999
             except:
                 plat.stock_quantity = 999
+
+    # ── top_cat_id pour chaque plat (pour le filtre niveau 1) ──
+    for plat in plats:
+        if plat.categorie and plat.categorie.parent_id:
+            plat.top_cat_id = plat.categorie.parent_id
+        else:
+            plat.top_cat_id = plat.categorie_id if plat.categorie_id else 0
 
     # ── Vérification stock boissons ──
     for b in boissons_bar:
@@ -1270,7 +1285,9 @@ def restaurant_tpe(request):
     context = {
         'categories': CategorieMenu.objects.all(),
         'plats': plats,
-        'categories_cuisine': categories_cuisine,
+        'categories_cuisine': cats_niveau1,
+        'sous_cats_plats': sous_cats_plats,
+        'cat_plats_p_id': cat_plats_p.id if cat_plats_p else 0,
         'categories_bar': categories_bar,
         'boissons_bar': boissons_bar,
         'tables': tables,

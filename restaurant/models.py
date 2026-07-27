@@ -29,14 +29,20 @@ class Table(models.Model):
 
 class CategorieMenu(models.Model):
     """Catégories du menu (Entrées, Plats, Desserts, Boissons)"""
-    nom = models.CharField(max_length=50, verbose_name="Nom")
-    ordre = models.IntegerField(default=0, verbose_name="Ordre d'affichage")
-    
+    nom    = models.CharField(max_length=50, verbose_name="Nom")
+    ordre  = models.IntegerField(default=0, verbose_name="Ordre d'affichage")
+    parent = models.ForeignKey(
+        'self', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='sous_categories',
+        verbose_name="Catégorie parente"
+    )
+
     class Meta:
-        verbose_name = "Catégorie"
+        verbose_name        = "Catégorie"
         verbose_name_plural = "Catégories"
-        ordering = ['ordre', 'nom']
-    
+        ordering            = ['ordre', 'nom']
+
     def __str__(self):
         return self.nom
 

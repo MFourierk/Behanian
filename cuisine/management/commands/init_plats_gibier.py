@@ -172,10 +172,25 @@ def get_cat_cuisine(nom, ordre):
 
 
 def get_cat_menu_principal():
-    """Tous les plats gibier/volaille/poisson/brochette → Plats Principaux."""
-    cat = CategorieMenu.objects.filter(nom__iexact="Plats Principaux").first()
+    cat = CategorieMenu.objects.filter(nom__iexact="Plats Principaux", parent__isnull=True).first()
     if not cat:
         cat = CategorieMenu.objects.create(nom="Plats Principaux", ordre=3)
+    return cat
+
+
+def get_cat_menu_sub(nom, parent, ordre):
+    """Sous-catégorie de Plats Principaux."""
+    cat = CategorieMenu.objects.filter(nom__iexact=nom, parent=parent).first()
+    if not cat:
+        # récupérer l'ancienne (sans parent) et la rattacher
+        old = CategorieMenu.objects.filter(nom__iexact=nom, parent__isnull=True).first()
+        if old and old.pk != parent.pk:
+            old.parent = parent
+            old.ordre = ordre
+            old.save(update_fields=['parent', 'ordre'])
+            cat = old
+        else:
+            cat = CategorieMenu.objects.create(nom=nom, parent=parent, ordre=ordre)
     return cat
 
 
@@ -200,15 +215,18 @@ class Command(BaseCommand):
         manquants = set()
 
         cats_cuisine = {}
-        cat_m = get_cat_menu_principal()
+        cats_menu_sub = {}
 
-        # Corriger les PlatMenu existants mal catégorisés (Gibiers/Volailles/… → Plats Principaux)
-        noms_catalogue = [row[0] for row in CATALOGUE]
-        migres = PlatMenu.objects.filter(
-            nom__in=noms_catalogue
-        ).exclude(categorie=cat_m).update(categorie=cat_m)
-        if migres:
-            self.stdout.write(f"  → {migres} PlatMenu recatégorisé(s) en Plats Principaux")
+        # Catégorie parente restaurant
+        cat_m_parent = get_cat_menu_principal()
+
+        # Sous-catégories restaurant sous Plats Principaux
+        sous_cat_ordres = {
+            "Gibiers": 1, "Volailles": 2, "Brochettes": 3,
+            "Poissons & Fruits de mer": 4, "Spécialités": 5,
+        }
+        for sc_nom, sc_ordre in sous_cat_ordres.items():
+            cats_menu_sub[sc_nom] = get_cat_menu_sub(sc_nom, cat_m_parent, sc_ordre)
 
         for nom, prix, cat_nom, ordre, ing_terme, nb_portions in CATALOGUE:
 
@@ -216,6 +234,7 @@ class Command(BaseCommand):
             if cat_nom not in cats_cuisine:
                 cats_cuisine[cat_nom] = get_cat_cuisine(cat_nom, ordre)
             cat_c = cats_cuisine[cat_nom]
+            cat_m = cats_menu_sub.get(cat_nom, cat_m_parent)
 
             # Vérification doublon Plat (insensible à la casse)
             existing_plat = Plat.objects.filter(nom__iexact=nom).first()

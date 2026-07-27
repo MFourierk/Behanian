@@ -109,21 +109,41 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .view-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
 .view-panel.active { display: flex; }
 
-/* ===== SOUS-FILTRES PILLULES ===== */
+/* ===== SOUS-FILTRES NIVEAU 1 ===== */
 .sub-filters {
   display: flex; gap: 7px; padding: 12px 22px 0;
   overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
 }
 .sub-filters::-webkit-scrollbar { display: none; }
 .sub-btn {
-  flex-shrink: 0; padding: 5px 14px;
+  flex-shrink: 0; padding: 6px 16px;
   border: 1.5px solid var(--cave-border); border-radius: 20px;
-  background: white; font-size: 0.78rem; font-weight: 600;
+  background: white; font-size: 0.8rem; font-weight: 600;
   color: var(--cave-muted); cursor: pointer; transition: all 0.2s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
 }
-.sub-btn.active { background: var(--cave-purple); color: white; border-color: var(--cave-purple); }
+.sub-btn.active { background: var(--cave-purple); color: white; border-color: var(--cave-purple); box-shadow: 0 3px 10px rgba(74,45,107,0.25); }
 .sub-btn:hover:not(.active) { border-color: var(--cave-violet); color: var(--cave-text); }
+
+/* ===== SOUS-FILTRES NIVEAU 2 (sous-catégories Plats Principaux) ===== */
+.sub-filters-lvl2 {
+  display: none; gap: 6px; padding: 8px 22px 0;
+  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+  border-top: 1px dashed var(--cave-border); margin-top: 10px; padding-top: 10px;
+  animation: slideDown 0.2s ease;
+}
+.sub-filters-lvl2.visible { display: flex; }
+.sub-filters-lvl2::-webkit-scrollbar { display: none; }
+.sub-btn-lvl2 {
+  flex-shrink: 0; padding: 4px 13px;
+  border: 1.5px solid #e8d9a0; border-radius: 20px;
+  background: #fdf8ec; font-size: 0.75rem; font-weight: 600;
+  color: #92742a; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
+}
+.sub-btn-lvl2.active { background: var(--cave-gold); color: #1a1225; border-color: var(--cave-gold); box-shadow: 0 2px 8px rgba(201,168,76,0.35); }
+.sub-btn-lvl2:hover:not(.active) { border-color: var(--cave-gold); color: #6b5320; background: #fdf3d0; }
+@keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
 
 /* ===== GRILLE ARTICLES (plats & boissons) ===== */
 .articles-scroll {
@@ -822,14 +842,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <div style="padding:12px 22px 0; flex-shrink:0;">
         <div class="search-wrap">
           <i class="fas fa-search"></i>
-          <input type="text" id="searchPlats" placeholder="Rechercher un plat…" oninput="filtrerArticles('plats')">
+          <input type="text" id="searchPlats" placeholder="Rechercher un plat…" oninput="applyPlatsFilter()">
         </div>
+        <!-- Niveau 1 : Tout / Entrées / Plats Principaux / Desserts / Accompagnements -->
         <div class="sub-filters" id="platsFilters">
-          <button class="sub-btn active" data-cat="tout" onclick="filtrerSousCategorie(this,'plats')">Tout</button>
+          <button class="sub-btn active" data-cat="tout" onclick="filtrerLvl1(this,'tout')">✦ Tout</button>
           {% for cat in categories_cuisine %}
-          <button class="sub-btn" data-cat="{{ cat.id }}" onclick="filtrerSousCategorie(this,'plats')">{{ cat.nom }}</button>
+          <button class="sub-btn" data-cat="{{ cat.id }}" onclick="filtrerLvl1(this,'{{ cat.id }}')">{{ cat.nom }}</button>
           {% endfor %}
         </div>
+        <!-- Niveau 2 : sous-catégories de Plats Principaux (or, apparaît au clic) -->
+        {% if sous_cats_plats %}
+        <div class="sub-filters-lvl2" id="platsFiltersLvl2">
+          <button class="sub-btn-lvl2 active" data-cat2="tout" onclick="filtrerLvl2(this,'tout')">Tous les plats</button>
+          {% for sc in sous_cats_plats %}
+          <button class="sub-btn-lvl2" data-cat2="{{ sc.id }}" onclick="filtrerLvl2(this,'{{ sc.id }}')">{{ sc.nom }}</button>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
       <div class="articles-scroll" style="margin-top:12px;">
         <div class="articles-grid" id="platsGrid">
@@ -839,6 +869,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                data-id="{{ plat.id }}"
                data-nom="{{ plat.nom|lower }}"
                data-cat="{{ plat.categorie.id }}"
+               data-top-cat="{{ plat.top_cat_id }}"
                onclick="ajouterArticle('plat', {{ plat.id }}, '{{ plat.nom|escapejs }}', {{ plat.prix|stringformat:'g' }}, '{{ plat.categorie.nom|escapejs }}', {{ plat.en_stock|yesno:'true,false' }})">
             <div class="ac-img-wrap">
               {% if plat.image %}<img src="{{ plat.image.url }}" alt="{{ plat.nom }}">{% else %}🍽{% endif %}
@@ -1460,22 +1491,68 @@ function confirmerServeur(nom) {
   switchView(document.querySelector('.nav-tab[data-view="plats"]'));
 }
 
-// ── FILTRES ──
+// ── FILTRES PLATS (2 niveaux) ──
+const PLATS_P_ID = '{{ cat_plats_p_id }}';
+let lvl1Active = 'tout';
+let lvl2Active = 'tout';
+
+function filtrerLvl1(btn, catId) {
+  document.querySelectorAll('#platsFilters .sub-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  lvl1Active = catId;
+  lvl2Active = 'tout';
+
+  const lvl2Bar = document.getElementById('platsFiltersLvl2');
+  if (lvl2Bar) {
+    if (catId === PLATS_P_ID) {
+      lvl2Bar.classList.add('visible');
+      // Réinitialiser niveau 2 à "Tout"
+      lvl2Bar.querySelectorAll('.sub-btn-lvl2').forEach(b => b.classList.remove('active'));
+      lvl2Bar.querySelector('.sub-btn-lvl2').classList.add('active');
+    } else {
+      lvl2Bar.classList.remove('visible');
+    }
+  }
+  applyPlatsFilter();
+}
+
+function filtrerLvl2(btn, catId) {
+  document.querySelectorAll('#platsFiltersLvl2 .sub-btn-lvl2').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  lvl2Active = catId;
+  applyPlatsFilter();
+}
+
+function applyPlatsFilter() {
+  const q = document.getElementById('searchPlats')?.value.toLowerCase() || '';
+  document.querySelectorAll('#platsGrid .article-card').forEach(card => {
+    const matchQ  = !q || card.dataset.nom.includes(q);
+    const topCat  = card.dataset.topCat;
+    const dirCat  = card.dataset.cat;
+    const matchL1 = lvl1Active === 'tout' || topCat === lvl1Active || dirCat === lvl1Active;
+    const matchL2 = lvl2Active === 'tout' || dirCat === lvl2Active;
+    card.style.display = (matchQ && matchL1 && matchL2) ? '' : 'none';
+  });
+}
+
+// ── FILTRES BOISSONS ──
 function filtrerSousCategorie(btn, type) {
-  const filterId = type === 'plats' ? 'platsFilters' : 'boissonsFilters';
+  if (type === 'plats') { filtrerLvl1(btn, btn.dataset.cat); return; }
+  const filterId = 'boissonsFilters';
   document.querySelectorAll('#' + filterId + ' .sub-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   filtrerArticles(type);
 }
 
 function filtrerArticles(type) {
+  if (type === 'plats') { applyPlatsFilter(); return; }
   const map = {
-    plats:          { search:'searchPlats',          filter:'platsFilters',          grid:'platsGrid' },
-    boissons:       { search:'searchBoissons',        filter:'boissonsFilters',        grid:'boissonsGrid' },
+    boissons: { search:'searchBoissons', filter:'boissonsFilters', grid:'boissonsGrid' },
   };
-  const cfg = map[type] || map.plats;
+  const cfg = map[type];
+  if (!cfg) return;
   const q   = document.getElementById(cfg.search)?.value.toLowerCase() || '';
-  const cat = cfg.filter ? (document.querySelector('#'+cfg.filter+' .sub-btn.active')?.dataset.cat || 'tout') : 'tout';
+  const cat = document.querySelector('#'+cfg.filter+' .sub-btn.active')?.dataset.cat || 'tout';
   document.querySelectorAll('#'+cfg.grid+' .article-card').forEach(card => {
     const matchQ = card.dataset.nom.includes(q);
     const matchC = cat === 'tout' || card.dataset.cat === cat;
