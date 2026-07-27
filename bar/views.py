@@ -13,7 +13,9 @@ def require_bar_gestion(view_func):
             return _redirect('bar:tpe')
         return view_func(request, *args, **kwargs)
     return wrapper
+import json
 import logging
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -1637,9 +1639,92 @@ def bar_tpe(request):
     })
 
 
-import json
-import json
-from decimal import Decimal
+@require_module_access('bar')
+def resume_ventes_cave(request):
+    """Résumé des ventes Cave (jour ou période) — JSON pour le TPE."""
+    from django.utils import timezone
+    from datetime import datetime
+
+    aujourd_hui = timezone.now().date()
+
+    def parse_date(param, fallback):
+        try:
+            return datetime.strptime(request.GET[param], '%Y-%m-%d').date()
+        except Exception:
+            return fallback
+
+    date_debut = parse_date('date_debut', aujourd_hui)
+    date_fin   = parse_date('date_fin',   aujourd_hui)
+    if date_fin < date_debut:
+        date_fin = date_debut
+
+    try:
+        from facturation.models import Ticket as TicketCaisse
+        tickets_qs = TicketCaisse.objects.filter(
+            module='bar',
+            date_creation__date__gte=date_debut,
+            date_creation__date__lte=date_fin,
+        ).select_related('cree_par').order_by('-date_creation')
+
+        mode_noms = {
+            'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
+            'mobile': 'Mobile Money', 'mobile_money': 'Mobile Money',
+            'orange_money': 'Orange Money', 'wave': 'Wave',
+            'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
+            'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
+        }
+
+        par_mode    = {}
+        par_caissier = {}
+        liste_tickets = []
+        total_net   = 0
+
+        for tk in tickets_qs:
+            montant = float(tk.montant_paye or 0)
+            total_net += montant
+
+            m_raw = tk.mode_paiement or 'especes'
+            m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
+            par_mode[m] = par_mode.get(m, 0) + montant
+
+            caissier_nom = ''
+            if tk.cree_par:
+                caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username
+            par_caissier.setdefault(caissier_nom or 'Inconnu', {'nb': 0, 'total': 0})
+            par_caissier[caissier_nom or 'Inconnu']['nb']    += 1
+            par_caissier[caissier_nom or 'Inconnu']['total'] += montant
+
+            # Heure : en mode multi-jour, afficher la date aussi
+            if date_debut == date_fin:
+                heure_aff = tk.date_creation.strftime('%H:%M')
+            else:
+                heure_aff = tk.date_creation.strftime('%d/%m %H:%M')
+
+            liste_tickets.append({
+                'numero':   tk.numero or '—',
+                'heure':    heure_aff,
+                'montant':  montant,
+                'mode':     m,
+                'caissier': caissier_nom,
+                'ref':      getattr(tk, 'reference', '') or '',
+            })
+
+        periode = (date_debut.strftime('%d/%m/%Y') if date_debut == date_fin
+                   else f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}")
+
+        return JsonResponse({
+            'success':      True,
+            'date':         periode,
+            'nb_tickets':   len(liste_tickets),
+            'total_net':    total_net,
+            'par_mode':     par_mode,
+            'par_caissier': [{'nom': k, **v} for k, v in par_caissier.items()],
+            'tickets':      liste_tickets,
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
 
 @require_module_access('bar')
 @require_POST

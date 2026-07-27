@@ -552,6 +552,114 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   .cat-header    { padding: 10px 14px 0; }
   .sub-filters   { padding: 10px 14px 0; }
 }
+
+/* ===== ONGLETS CATALOGUE / RÉSUMÉ ===== */
+.panel-tabs {
+  display: flex; gap: 0;
+  border-bottom: 2px solid var(--cave-border);
+  background: white; flex-shrink: 0;
+  padding: 0 22px;
+}
+.panel-tab {
+  padding: 12px 18px;
+  font-size: 0.83rem; font-weight: 600; letter-spacing: 0.3px;
+  color: var(--cave-muted); background: none; border: none;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  border-bottom: 2.5px solid transparent; margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.panel-tab.active { color: var(--cave-violet); border-bottom-color: var(--cave-violet); }
+.panel-tab:hover:not(.active) { color: var(--cave-text); }
+
+/* Panel contenu switchable */
+.panel-view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.panel-view.active { display: flex; }
+
+/* ===== RÉSUMÉ VENTES CAVE ===== */
+.resume-cave-wrap {
+  flex: 1; overflow-y: auto; padding: 20px 22px;
+  scrollbar-width: thin; scrollbar-color: var(--cave-border) transparent;
+}
+.resume-cave-header {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 18px;
+}
+.resume-cave-header label {
+  font-size: 0.78rem; font-weight: 600; color: var(--cave-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.resume-cave-header input[type="date"] {
+  padding: 7px 11px; border-radius: 10px;
+  border: 1.5px solid var(--cave-border);
+  font-size: 0.82rem; font-family: 'DM Sans', sans-serif;
+  color: var(--cave-text); background: var(--cave-light);
+  transition: border-color 0.2s;
+}
+.resume-cave-header input[type="date"]:focus {
+  outline: none; border-color: var(--cave-violet); background: white;
+}
+.resume-cave-header .btn-resume {
+  padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer;
+  font-size: 0.82rem; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.btn-resume-voir {
+  background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet));
+  color: white; box-shadow: 0 3px 10px rgba(124,58,237,0.3);
+}
+.btn-resume-voir:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(124,58,237,0.4); }
+.btn-resume-today {
+  background: var(--cave-light); color: var(--cave-violet);
+  border: 1.5px solid var(--cave-border) !important;
+}
+.btn-resume-today:hover { border-color: var(--cave-violet) !important; background: white; }
+
+/* Kpi cards résumé */
+.resume-kpi-row {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px; margin-bottom: 18px;
+}
+.resume-kpi {
+  background: white; border-radius: 14px;
+  border: 1.5px solid var(--cave-border);
+  padding: 14px 16px; box-shadow: var(--shadow-sm);
+}
+.resume-kpi-label {
+  font-size: 0.72rem; font-weight: 600; color: var(--cave-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+}
+.resume-kpi-value {
+  font-size: 1.35rem; font-weight: 700; color: var(--cave-deep);
+}
+.resume-kpi-value.gold { color: var(--cave-gold); }
+.resume-kpi-value.violet { color: var(--cave-violet); }
+
+.resume-section-title {
+  font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--cave-muted);
+  margin: 16px 0 8px;
+}
+.resume-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.resume-table th {
+  text-align: left; font-weight: 600; font-size: 0.72rem;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--cave-muted); padding: 6px 10px;
+  border-bottom: 1.5px solid var(--cave-border);
+}
+.resume-table td {
+  padding: 8px 10px; border-bottom: 1px solid var(--cave-border);
+  color: var(--cave-text);
+}
+.resume-table tr:last-child td { border-bottom: none; }
+.resume-table .num { text-align: right; font-weight: 600; color: var(--cave-violet); }
+
+#resumeCaveBody .empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--cave-muted); font-size: 0.88rem;
+}
 </style>
 {% endblock %}
 
@@ -568,8 +676,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <span class="nb" id="mobileCartCount">0</span>
   </button>
 
-  <!-- ========== PANNEAU GAUCHE — CATALOGUE ========== -->
+  <!-- ========== PANNEAU GAUCHE — CATALOGUE / RÉSUMÉ ========== -->
   <div class="panel-catalogue">
+
+    <!-- En-tête fixe : titre + horloge -->
     <div class="cat-header">
       <div class="cat-header-top">
         <h2>🍷 Cave &nbsp;<small style="font-family:'DM Sans';font-size:0.75rem;color:var(--cave-muted);font-weight:400;">Vente rapide</small></h2>
@@ -578,54 +688,92 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <span style="font-size:10px;color:var(--cave-muted);text-transform:uppercase;letter-spacing:0.5px;" id="caveClockDate">---</span>
         </div>
       </div>
-      <div class="search-wrap">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchInput" placeholder="Rechercher une boisson..." oninput="filtrerBoissons()">
+    </div>
+
+    <!-- Onglets -->
+    <div class="panel-tabs">
+      <button class="panel-tab active" id="tabCatalogue" onclick="switchTab('catalogue')">
+        <i class="fas fa-wine-bottle" style="margin-right:6px;font-size:0.78rem;"></i>Catalogue
+      </button>
+      <button class="panel-tab" id="tabResume" onclick="switchTab('resume')">
+        <i class="fas fa-chart-bar" style="margin-right:6px;font-size:0.78rem;"></i>Résumé Ventes
+      </button>
+    </div>
+
+    <!-- Vue Catalogue -->
+    <div class="panel-view active" id="viewCatalogue">
+      <div class="cat-header" style="padding-top:14px;">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchInput" placeholder="Rechercher une boisson..." oninput="filtrerBoissons()">
+        </div>
+        <div class="cat-filters" id="catFilters">
+          <button class="cat-btn active" data-cat="tout" onclick="filtrerCategorie(this)">Tout</button>
+          {% for cat in categories %}
+          <button class="cat-btn" data-cat="{{ cat.nom|lower }}" onclick="filtrerCategorie(this)">{{ cat.nom }}</button>
+          {% endfor %}
+        </div>
       </div>
-      <div class="cat-filters" id="catFilters">
-        <button class="cat-btn active" data-cat="tout" onclick="filtrerCategorie(this)">Tout</button>
-        {% for cat in categories %}
-        <button class="cat-btn" data-cat="{{ cat.nom|lower }}" onclick="filtrerCategorie(this)">{{ cat.nom }}</button>
-        {% endfor %}
+      <div class="boissons-scroll">
+        <div class="boissons-grid" id="boissonsGrid">
+          {% for b in boissons %}
+          <div class="boisson-card {% if b.est_en_rupture %}rupture{% endif %}"
+               data-cat="{{ b.categorie.nom|lower }}"
+               data-nom="{{ b.nom|lower }}"
+               onclick="ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">
+            <div class="bc-img-wrap">
+              {% if b.image %}
+              <img src="{{ b.image.url }}" alt="{{ b.nom }}">
+              {% else %}
+              🍶
+              {% endif %}
+              <span class="bc-stock-badge {% if b.est_en_rupture %}rupture{% elif b.est_stock_bas %}bas{% else %}ok{% endif %}">
+                {% if b.est_en_rupture %}Rupture{% elif b.est_stock_bas %}Stock bas{% else %}{{ b.quantite_stock }}{% endif %}
+              </span>
+            </div>
+            <div class="bc-body">
+              <div class="bc-nom">{{ b.nom }}</div>
+              <div class="bc-footer">
+                <div>
+                  <div class="bc-prix">{{ b.prix|montant }} F</div>
+                  <div class="bc-unite">/ {{ b.unite_affichee }}</div>
+                </div>
+                <button class="bc-add" onclick="event.stopPropagation(); ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">+</button>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
+            <i class="fas fa-wine-bottle" style="font-size:2rem;margin-bottom:12px;display:block;opacity:0.3;"></i>
+            Aucune boisson disponible
+          </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
 
-    <div class="boissons-scroll">
-      <div class="boissons-grid" id="boissonsGrid">
-        {% for b in boissons %}
-        <div class="boisson-card {% if b.est_en_rupture %}rupture{% endif %}"
-             data-cat="{{ b.categorie.nom|lower }}"
-             data-nom="{{ b.nom|lower }}"
-             onclick="ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">
-          <div class="bc-img-wrap">
-            {% if b.image %}
-            <img src="{{ b.image.url }}" alt="{{ b.nom }}">
-            {% else %}
-            🍶
-            {% endif %}
-            <span class="bc-stock-badge {% if b.est_en_rupture %}rupture{% elif b.est_stock_bas %}bas{% else %}ok{% endif %}">
-              {% if b.est_en_rupture %}Rupture{% elif b.est_stock_bas %}Stock bas{% else %}{{ b.quantite_stock }}{% endif %}
-            </span>
-          </div>
-          <div class="bc-body">
-            <div class="bc-nom">{{ b.nom }}</div>
-            <div class="bc-footer">
-              <div>
-                <div class="bc-prix">{{ b.prix|montant }} F</div>
-                <div class="bc-unite">/ {{ b.unite_affichee }}</div>
-              </div>
-              <button class="bc-add" onclick="event.stopPropagation(); ajouterArticle({{ b.pk }}, '{{ b.nom|escapejs }}', {{ b.prix|stringformat:'g' }}, '{{ b.unite_affichee|escapejs }}')">+</button>
-            </div>
+    <!-- Vue Résumé Ventes -->
+    <div class="panel-view" id="viewResume">
+      <div class="resume-cave-wrap">
+        <!-- Filtres dates -->
+        <div class="resume-cave-header">
+          <label>Du</label>
+          <input type="date" id="caveVentesDebut">
+          <label>au</label>
+          <input type="date" id="caveVentesFin">
+          <button class="btn-resume btn-resume-voir" onclick="chargerResumeVentes()">↻ Voir</button>
+          <button class="btn-resume btn-resume-today" onclick="caveVentesAujourdhui()">Aujourd'hui</button>
+        </div>
+        <!-- Contenu injecté -->
+        <div id="resumeCaveBody">
+          <div class="empty-state">
+            <i class="fas fa-chart-bar" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.25;"></i>
+            Sélectionnez une période puis cliquez sur <strong>Voir</strong>
           </div>
         </div>
-        {% empty %}
-        <div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--cave-muted);">
-          <i class="fas fa-wine-bottle" style="font-size:2rem;margin-bottom:12px;display:block;opacity:0.3;"></i>
-          Aucune boisson disponible
-        </div>
-        {% endfor %}
       </div>
     </div>
+
   </div>
 
   <!-- ========== PANNEAU DROIT — TICKET ========== -->
@@ -1787,7 +1935,119 @@ function _initMobileUI() {
 document.addEventListener('DOMContentLoaded', function() {
   _initMobileUI();
   window.addEventListener('resize', _initMobileUI);
+
+  // Initialiser les dates du résumé cave à aujourd'hui
+  const today = new Date().toISOString().split('T')[0];
+  const deb = document.getElementById('caveVentesDebut');
+  const fin = document.getElementById('caveVentesFin');
+  if (deb) deb.value = today;
+  if (fin) fin.value = today;
 });
+
+// ============================================================
+// ONGLETS CATALOGUE / RÉSUMÉ VENTES
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel-view').forEach(v => v.classList.remove('active'));
+
+  if (tab === 'catalogue') {
+    document.getElementById('tabCatalogue').classList.add('active');
+    document.getElementById('viewCatalogue').classList.add('active');
+  } else {
+    document.getElementById('tabResume').classList.add('active');
+    document.getElementById('viewResume').classList.add('active');
+  }
+}
+
+function caveVentesAujourdhui() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('caveVentesDebut').value = today;
+  document.getElementById('caveVentesFin').value   = today;
+  chargerResumeVentes();
+}
+
+function chargerResumeVentes() {
+  const debut = document.getElementById('caveVentesDebut').value;
+  const fin   = document.getElementById('caveVentesFin').value;
+  if (!debut || !fin) { showToast('Sélectionnez une période', 'info'); return; }
+
+  const body = document.getElementById('resumeCaveBody');
+  body.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;opacity:0.4;"></i>Chargement…</div>';
+
+  const url = `{% url 'bar:resume_ventes_cave' %}?date_debut=${debut}&date_fin=${fin}`;
+  fetch(url, { headers: { 'X-CSRFToken': getCookie('csrftoken') } })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) { body.innerHTML = `<div class="empty-state" style="color:var(--danger);">Erreur : ${d.error}</div>`; return; }
+
+      const fmt = v => Number(v).toLocaleString('fr-FR') + ' F';
+
+      // KPI
+      let html = `
+        <div style="font-size:0.75rem;font-weight:600;color:var(--cave-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">
+          Période : ${d.date}
+        </div>
+        <div class="resume-kpi-row">
+          <div class="resume-kpi">
+            <div class="resume-kpi-label">Tickets</div>
+            <div class="resume-kpi-value violet">${d.nb_tickets}</div>
+          </div>
+          <div class="resume-kpi">
+            <div class="resume-kpi-label">Total encaissé</div>
+            <div class="resume-kpi-value gold">${fmt(d.total_net)}</div>
+          </div>
+        </div>`;
+
+      // Par mode de paiement
+      if (Object.keys(d.par_mode).length > 0) {
+        html += `<div class="resume-section-title">Par mode de paiement</div>
+          <table class="resume-table">
+            <thead><tr><th>Mode</th><th class="num">Montant</th></tr></thead><tbody>`;
+        for (const [mode, total] of Object.entries(d.par_mode)) {
+          html += `<tr><td>${mode}</td><td class="num">${fmt(total)}</td></tr>`;
+        }
+        html += `</tbody></table>`;
+      }
+
+      // Par caissier
+      if (d.par_caissier && d.par_caissier.length > 0) {
+        html += `<div class="resume-section-title">Par caissier</div>
+          <table class="resume-table">
+            <thead><tr><th>Caissier</th><th class="num">Tickets</th><th class="num">Total</th></tr></thead><tbody>`;
+        d.par_caissier.forEach(c => {
+          html += `<tr><td>${c.nom}</td><td class="num">${c.nb}</td><td class="num">${fmt(c.total)}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      // Liste tickets
+      if (d.tickets && d.tickets.length > 0) {
+        html += `<div class="resume-section-title">Détail des tickets</div>
+          <table class="resume-table">
+            <thead><tr><th>N°</th><th>Heure</th><th>Mode</th><th class="num">Montant</th></tr></thead><tbody>`;
+        d.tickets.forEach(tk => {
+          html += `<tr>
+            <td style="color:var(--cave-muted);font-size:0.78rem;">${tk.numero}</td>
+            <td>${tk.heure}</td>
+            <td>${tk.mode}</td>
+            <td class="num">${fmt(tk.montant)}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      if (d.nb_tickets === 0) {
+        html += `<div class="empty-state" style="margin-top:20px;">
+          <i class="fas fa-receipt" style="font-size:1.8rem;display:block;margin-bottom:10px;opacity:0.25;"></i>
+          Aucune vente sur cette période
+        </div>`;
+      }
+
+      body.innerHTML = html;
+    })
+    .catch(() => { body.innerHTML = '<div class="empty-state" style="color:var(--danger);">Erreur réseau</div>'; });
+}
 </script>
 
 <!-- ═══ MODAL ALERTE CHANGEMENT CLIENT ═══ -->
