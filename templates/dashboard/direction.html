@@ -78,14 +78,7 @@
     <h2 style="color:white;font-size:1.5rem;font-weight:700;margin:0">Vue Direction</h2>
     <p style="color:rgba(255,255,255,.7);margin:4px 0 0;font-size:13px">Tableau de bord consolidé — Stocks · Mouvements · Statistiques</p>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <a href="{% url 'dashboard:resume_ventes' %}"
-       style="display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;background:#c9a84c;color:#1a2535;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.3px;transition:filter 0.2s;"
-       onmouseover="this.style.filter='brightness(1.12)'" onmouseout="this.style.filter='brightness(1)'">
-      <i class="fas fa-chart-line"></i> Résumé Ventes
-    </a>
-    <div class="header-clock" style="text-align:right"><span class="time" style="color:white">--:-- GMT</span><br><span class="date" style="color:rgba(255,255,255,.7);font-size:11px">Chargement...</span></div>
-  </div>
+  <div class="header-clock" style="text-align:right"><span class="time" style="color:white">--:-- GMT</span><br><span class="date" style="color:rgba(255,255,255,.7);font-size:11px">Chargement...</span></div>
 </div>
 {% breadcrumb "Dashboard" "dashboard:index" "Vue Direction" "" %}
 
@@ -235,6 +228,10 @@
       <a href="{% url 'cuisine:etat_stock_date' %}" class="mod-link">
         <div class="icon">🍽️</div>
         <div class="info"><div class="title">Stock Cuisine</div><div class="sub">État du stock à date — ingrédients et valeurs</div></div>
+      </a>
+      <a href="{% url 'dashboard:resume_ventes' %}" class="mod-link" style="border-color:#c9a84c;background:#fffbf0;">
+        <div class="icon">💰</div>
+        <div class="info"><div class="title" style="color:#7a5c00;">Résumé Ventes</div><div class="sub">Encaissements par module et par période</div></div>
       </a>
     </div>
   </div>
