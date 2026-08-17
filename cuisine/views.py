@@ -1183,20 +1183,20 @@ def etat_stock_excel(request):
     right  = Alignment(horizontal='right',  vertical='center')
 
     # Titre
-    ws.merge_cells('A1:I1')
+    ws.merge_cells('A1:J1')
     ws['A1'] = f"ÉTAT DU STOCK — CUISINE BEHANIAN"
     ws['A1'].font = title_font
     ws['A1'].alignment = center
 
-    ws.merge_cells('A2:I2')
+    ws.merge_cells('A2:J2')
     ws['A2'] = f"Édité le {timezone.now().strftime('%d/%m/%Y à %H:%M')} — {ingredients.count()} article(s)"
     ws['A2'].font = Font(name='Calibri', size=10, color='7a8b9c', italic=True)
     ws['A2'].alignment = center
 
     ws.append([])
 
-    # En-têtes
-    headers = ['#', 'Ingrédient', 'Catégorie', 'Unité', 'Stock actuel', 'Seuil alerte', 'CMUP (FCFA)', 'Valeur stock (FCFA)', 'État']
+    # En-têtes — alignés sur la fiche screen
+    headers = ['Référence', 'Désignation', 'Catégorie', 'Unité stock', 'Stock actuel', 'Seuil alerte', 'CMUP (FCFA)', 'Valeur stock (FCFA)', 'Fournisseur', 'État']
     ws.append(headers)
     row_h = ws.max_row
     for col, h in enumerate(headers, 1):
@@ -1207,7 +1207,7 @@ def etat_stock_excel(request):
         cell.border = border
 
     # Données
-    for i, ing in enumerate(ingredients, 1):
+    for ing in ingredients:
         val = float(ing.cmup or 0) * float(ing.quantite_stock or 0)
         if ing.quantite_stock <= 0:
             etat = 'Rupture'; fill = rupture_fill
@@ -1217,7 +1217,7 @@ def etat_stock_excel(request):
             etat = 'Normal'; fill = ok_fill
 
         row = [
-            i,
+            ing.reference or '—',
             ing.nom,
             ing.categorie.nom if ing.categorie else '—',
             ing.unite_stock.abreviation if ing.unite_stock else '—',
@@ -1225,19 +1225,20 @@ def etat_stock_excel(request):
             float(ing.seuil_alerte or 0),
             float(ing.cmup or 0),
             round(val, 0),
+            str(ing.fournisseur_principal) if ing.fournisseur_principal else '—',
             etat,
         ]
         ws.append(row)
         r = ws.max_row
-        for col in range(1, 10):
+        for col in range(1, 11):
             cell = ws.cell(row=r, column=col)
-            cell.font = bold_font if col in (2, 8) else normal_font
+            cell.font = bold_font if col == 2 else normal_font
             cell.border = border
-            cell.alignment = right if col in (5,6,7,8) else (center if col in (1,4,9) else Alignment(vertical='center'))
-            if col == 9:
+            cell.alignment = right if col in (5, 6, 7, 8) else (center if col in (1, 4, 10) else Alignment(vertical='center'))
+            if col == 10:
                 cell.fill = fill
                 cell.font = Font(name='Calibri', bold=True, size=10,
-                    color='15803d' if etat=='Normal' else ('d97706' if etat=='Alerte' else 'dc2626'))
+                    color='15803d' if etat == 'Normal' else ('d97706' if etat == 'Alerte' else 'dc2626'))
 
     # Total
     ws.append([])
@@ -1246,8 +1247,8 @@ def etat_stock_excel(request):
     ws.cell(row=r, column=8, value=round(total_valeur, 0)).font = Font(bold=True, size=11, color='16a34a')
     ws.cell(row=r, column=8).number_format = '#,##0'
 
-    # Largeurs colonnes
-    for col, w in enumerate([5, 28, 16, 10, 13, 13, 13, 18, 10], 1):
+    # Largeurs colonnes : Réf | Désignation | Catégorie | Unité | Stock | Seuil | CMUP | Valeur | Fournisseur | État
+    for col, w in enumerate([14, 28, 16, 12, 13, 13, 13, 18, 20, 10], 1):
         ws.column_dimensions[get_column_letter(col)].width = w
 
     # Réponse HTTP
