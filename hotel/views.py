@@ -687,16 +687,33 @@ def checkout_reservation(request, reservation_id):
                 f_client.save()
 
         # 3. Génération du contenu du ticket (Format HTML pour impression thermique)
-        # On construit une structure de table simple qui sera stylisée par le CSS du ticket
-        
-        # Lignes de services
-        services_html = ""
         services = reservation.consommations.all()
-        
+        chambre_num = reservation.chambre.numero if reservation.chambre else '—'
+        ts = reservation.type_sejour
+
+        # --- En-tête séjour : chambre + dates/heures ---
+        services_html = f'<div style="margin-bottom:7px;border-bottom:1px dashed #000;padding-bottom:6px;">'
+        services_html += f'<div class="row"><span class="item-name"><b>Chambre N°</b></span><span class="item-price"><b>{chambre_num}</b></span></div>'
+
+        if ts == 'repos':
+            h_arr = reservation.heure_arrivee.strftime('%H:%M') if reservation.heure_arrivee else '—'
+            h_dep = timezone.now().strftime('%H:%M')
+            services_html += f'<div class="row"><span class="item-name">Arrivée</span><span class="item-price">{h_arr}</span></div>'
+            services_html += f'<div class="row"><span class="item-name">Départ</span><span class="item-price">{h_dep}</span></div>'
+        else:  # nuitee ou journee
+            d_arr = reservation.date_arrivee.strftime('%d/%m/%Y')
+            d_dep = reservation.date_depart.strftime('%d/%m/%Y')
+            services_html += f'<div class="row"><span class="item-name">Arrivée</span><span class="item-price">{d_arr}</span></div>'
+            services_html += f'<div class="row"><span class="item-name">Départ</span><span class="item-price">{d_dep}</span></div>'
+            services_html += f'<div class="row"><span class="item-name">Durée</span><span class="item-price">{diff_days} jour(s)</span></div>'
+
+        services_html += '</div>'
+
         # Hébergement
+        label_heberg = 'Repos' if ts == 'repos' else (f'{diff_days} nuit(s)' if ts == 'nuitee' else f'{diff_days} journée(s)')
         services_html += f"""
         <div class="row">
-            <span class="item-name">Hébergement ({diff_days}j)</span>
+            <span class="item-name">Hébergement ({label_heberg})</span>
             <span class="item-price">{reservation.get_prix_reel():,.0f} F</span>
         </div>
         """
