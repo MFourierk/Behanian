@@ -62,7 +62,6 @@ def restaurant_index(request):
     ).order_by('date_reservation')
     
     # Vérification du stock pour chaque plat
-    # On ajoute un attribut temporaire 'en_stock' aux objets plats pour l'affichage
     for plat in plats:
         if plat.is_simple:
             plat.en_stock = True
@@ -71,27 +70,16 @@ def restaurant_index(request):
         is_available, _ = check_stock_availability(plat, 1)
         plat.en_stock = is_available
 
-        # Calcul de la quantité exacte disponible (Venant de la Cuisine ou du Bar)
-        if hasattr(plat, 'fiche_technique'):
-            plat.stock_quantity = plat.fiche_technique.max_portions_possibles()
-        elif plat.categorie and any(x in plat.categorie.nom.lower() for x in ['boisson', 'bière', 'vin', 'alcool', 'jus', 'soda']):
-            try:
-                # Importation locale pour éviter circularité si nécessaire
-                # Mais BoissonBar est déjà importé en haut
-                boisson = BoissonBar.objects.get(nom__iexact=plat.nom)
-                plat.stock_quantity = int(boisson.quantite_stock)
-            except:
-                plat.stock_quantity = 999
+        ft = plat.fiche_technique
+        if ft is not None and ft.lignes.exists():
+            plat.stock_quantity = ft.max_portions_possibles()
         else:
-            # Fallback: Recherche d'un ingrédient homonyme (ex: Alloco) si pas de fiche technique
+            # FT vide ou absente → quantité via ingrédient homonyme
             try:
                 ing = Ingredient.objects.filter(nom__iexact=plat.nom).first()
-                if ing:
-                    plat.stock_quantity = int(ing.quantite_stock)
-                else:
-                    plat.stock_quantity = 999
-            except:
-                 plat.stock_quantity = 999
+                plat.stock_quantity = int(ing.quantite_stock) if ing else 999
+            except Exception:
+                plat.stock_quantity = 999
         
     # Accompagnements — extraits de la liste déjà évaluée pour conserver en_stock/stock_quantity
     accompagnements = [p for p in plats if p.is_accompagnement]
@@ -1233,13 +1221,13 @@ def restaurant_tpe(request):
         is_available, _ = check_stock_availability(plat, 1)
         plat.en_stock = is_available
         ft = plat.fiche_technique
-        if ft is not None:
+        if ft is not None and ft.lignes.exists():
             plat.stock_quantity = ft.max_portions_possibles()
         else:
             try:
                 ing = Ingredient.objects.filter(nom__iexact=plat.nom).first()
                 plat.stock_quantity = int(ing.quantite_stock) if ing else 999
-            except:
+            except Exception:
                 plat.stock_quantity = 999
 
     # ── top_cat_id pour chaque plat (pour le filtre niveau 1) ──
@@ -1259,7 +1247,14 @@ def restaurant_tpe(request):
             is_avail, _ = check_stock_availability(acc, 1)
             acc.en_stock = is_avail
             ft = acc.fiche_technique
-            acc.stock_quantity = ft.max_portions_possibles() if ft else 999
+            if ft is not None and ft.lignes.exists():
+                acc.stock_quantity = ft.max_portions_possibles()
+            else:
+                try:
+                    ing = Ingredient.objects.filter(nom__iexact=acc.nom).first()
+                    acc.stock_quantity = int(ing.quantite_stock) if ing else 999
+                except Exception:
+                    acc.stock_quantity = 999
         accompagnements.append(acc)
 
     # ── Vérification stock boissons ──

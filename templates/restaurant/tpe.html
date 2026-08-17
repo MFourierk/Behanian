@@ -511,6 +511,7 @@
 }
 .acc-pill:hover { border-color: var(--gold-dim); color: var(--cream); }
 .acc-pill.selected { background: var(--gold); color: var(--bg-deep); border-color: var(--gold); font-weight: 600; }
+.acc-pill.rupture { opacity: 0.4; cursor: not-allowed; pointer-events: none; text-decoration: line-through; }
 
 /* ─── PIED COMMANDE ─── */
 .cmd-footer {
@@ -1058,9 +1059,12 @@
       <div class="acc-panel-titre">Choisir accompagnement</div>
       <div class="acc-pills" id="accPills">
         {% for acc in accompagnements %}
-        <button class="acc-pill" data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix }}"
-                onclick="selectionnerAcc(this)">
-          {{ acc.nom }} <span style="color:var(--gold-dim)">(+{{ acc.prix|montant }}F)</span>
+        <button class="acc-pill{% if not acc.en_stock %} rupture{% endif %}"
+                data-acc-id="{{ acc.id }}" data-acc-nom="{{ acc.nom }}" data-acc-prix="{{ acc.prix }}"
+                data-en-stock="{{ acc.en_stock|yesno:'true,false' }}"
+                onclick="selectionnerAcc(this)"
+                {% if not acc.en_stock %}disabled title="Rupture de stock"{% endif %}>
+          {{ acc.nom }} <span style="color:var(--gold-dim)">(+{{ acc.prix|montant }}F)</span>{% if not acc.en_stock %} <span style="font-size:9px;color:#e55;">rupture</span>{% endif %}
         </button>
         {% endfor %}
         <button class="acc-pill" data-acc-id="" onclick="selectionnerAcc(this)">Sans accompagnement</button>
@@ -1371,6 +1375,7 @@ function ajouterPlat(platId, nom, prix, enStock) {
 }
 
 function selectionnerAcc(btn) {
+  if (btn.dataset.enStock === 'false') return;
   document.querySelectorAll('.acc-pill').forEach(p => p.classList.remove('selected'));
   btn.classList.add('selected');
   document.getElementById('accPanel').classList.remove('open');
