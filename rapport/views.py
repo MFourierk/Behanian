@@ -224,11 +224,12 @@ def _calcul_marges(date_rapport):
                 from cuisine.models import Plat as PlatCuisine
                 commandes = Commande.objects.filter(
                     statut='payee', date_creation__date=date_rapport
-                ).prefetch_related('lignes__plat', 'lignes__boisson')
+                ).prefetch_related('lignes__plat', 'lignes__boisson', 'lignes__accompagnement')
                 plat_cache = {}
                 for cmd in commandes:
                     for ligne in cmd.lignes.all():
                         nb_lignes_total += 1
+                        # Plat principal
                         if ligne.plat and ligne.plat.cuisine_plat_id:
                             pid = ligne.plat.cuisine_plat_id
                             if pid not in plat_cache:
@@ -241,6 +242,20 @@ def _calcul_marges(date_rapport):
                             if pc and getattr(pc, 'fiche_technique', None):
                                 cout += pc.fiche_technique.cout_par_portion * ligne.quantite
                                 nb_lignes_avec_cout += 1
+                        # Accompagnement
+                        if ligne.accompagnement and ligne.accompagnement.cuisine_plat_id:
+                            pid_acc = ligne.accompagnement.cuisine_plat_id
+                            if pid_acc not in plat_cache:
+                                try:
+                                    pc_acc = PlatCuisine.objects.select_related('fiche_technique').get(pk=pid_acc)
+                                    plat_cache[pid_acc] = pc_acc
+                                except PlatCuisine.DoesNotExist:
+                                    plat_cache[pid_acc] = None
+                            pc_acc = plat_cache.get(pid_acc)
+                            if pc_acc and getattr(pc_acc, 'fiche_technique', None):
+                                cout += pc_acc.fiche_technique.cout_par_portion * ligne.quantite
+                                nb_lignes_avec_cout += 1
+                        # Boisson cave
                         if ligne.boisson and ligne.boisson.prix_achat:
                             cout += Decimal(str(ligne.boisson.prix_achat)) * ligne.quantite
                             nb_lignes_avec_cout += 1

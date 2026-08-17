@@ -48,7 +48,7 @@ def process_stock_movement(plat, quantity, movement_type, user, reference=""):
         return
 
     fiche = plat.fiche_technique
-    type_mvt = 'production' if movement_type == 'sortie' else 'inventaire_excedent'
+    type_mvt = 'production' if movement_type == 'sortie' else 'entree'
 
     for ligne in fiche.lignes.select_related('ingredient').all():
         qte = ligne.quantite * quantity
@@ -56,6 +56,6 @@ def process_stock_movement(plat, quantity, movement_type, user, reference=""):
             ingredient     = ligne.ingredient,
             type_mouvement = type_mvt,
             quantite       = qte,
-            commentaire    = f"{'Production' if movement_type == 'sortie' else 'Annulation'} — {plat.nom} x{quantity} — {reference}",
+            commentaire    = f"{'Production' if movement_type == 'sortie' else 'Annulation retour stock'} — {plat.nom} x{quantity} — {reference}",
             utilisateur    = user,
         )

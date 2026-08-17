@@ -93,9 +93,9 @@ def restaurant_index(request):
             except:
                  plat.stock_quantity = 999
         
-    # Accompagnements (Définis dans le module Cuisine via le flag is_accompagnement)
-    accompagnements = plats.filter(is_accompagnement=True)
-        
+    # Accompagnements — extraits de la liste déjà évaluée pour conserver en_stock/stock_quantity
+    accompagnements = [p for p in plats if p.is_accompagnement]
+
     context = {
         'categories': categories,
         'plats': plats,
@@ -1222,7 +1222,6 @@ def restaurant_tpe(request):
     commandes_en_cours_list = Commande.objects.filter(
         statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
     ).order_by('-date_modification').prefetch_related('lignes', 'table')
-    accompagnements = PlatMenu.objects.filter(disponible=True, is_accompagnement=True)
     config = Configuration.load()
 
     # ── Vérification stock plats ──
@@ -1249,6 +1248,19 @@ def restaurant_tpe(request):
             plat.top_cat_id = plat.categorie.parent_id
         else:
             plat.top_cat_id = plat.categorie_id if plat.categorie_id else 0
+
+    # ── Accompagnements avec vérification stock ──
+    accompagnements = []
+    for acc in PlatMenu.objects.filter(disponible=True, is_accompagnement=True).select_related('categorie'):
+        if acc.is_simple:
+            acc.en_stock = True
+            acc.stock_quantity = 999
+        else:
+            is_avail, _ = check_stock_availability(acc, 1)
+            acc.en_stock = is_avail
+            ft = acc.fiche_technique
+            acc.stock_quantity = ft.max_portions_possibles() if ft else 999
+        accompagnements.append(acc)
 
     # ── Vérification stock boissons ──
     for b in boissons_bar:

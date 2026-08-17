@@ -834,7 +834,7 @@ def plat_edit(request, pk):
         messages.success(request, f"Plat '{plat.nom}' modifié et synchronisé.")
         return redirect('/cuisine/plats/')
     from restaurant.models import PlatMenu
-    plat_menu = PlatMenu.objects.filter(nom=plat.nom).first()
+    plat_menu = PlatMenu.objects.filter(cuisine_plat_id=plat.pk).first()
     ing_data = _ing_data_json_fiche(ingredients)
     context = {
         'page_title':         f'Modifier : {plat.nom}',
@@ -1306,21 +1306,25 @@ def _stock_periode_cuisine(date_debut_str, date_fin_str, categorie_id, ingredien
         # Stock fin : partir du stock actuel et inverser les mouvements postérieurs à date_fin
         stock_fin = ing.quantite_stock
         for mv in MouvementStockCuisine.objects.filter(ingredient=ing, date__gt=fin_aware):
-            if mv.type_mouvement in ('entree', 'inventaire'):
+            if mv.type_mouvement in ('entree', 'inventaire', 'inventaire_excedent'):
                 stock_fin -= mv.quantite
-            else:
+            else:  # sortie, casse, production, inventaire_manquant
                 stock_fin += mv.quantite
 
         # Mouvements sur la période
-        mvts_periode = MouvementStockCuisine.objects.filter(ingredient=ing, date__gte=debut_aware, date__lte=fin_aware)
-        nb_entrees = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'entree')
-        nb_sorties = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'sortie')
-        nb_casses = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'casse')
-        nb_productions = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'production')
-        nb_inventaires = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'inventaire')
+        mvts_periode = list(MouvementStockCuisine.objects.filter(ingredient=ing, date__gte=debut_aware, date__lte=fin_aware))
+        nb_entrees       = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'entree')
+        nb_sorties       = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'sortie')
+        nb_casses        = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'casse')
+        nb_productions   = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'production')
+        nb_inventaires   = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'inventaire')
+        nb_inv_excedents = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'inventaire_excedent')
+        nb_inv_manquants = sum(mv.quantite for mv in mvts_periode if mv.type_mouvement == 'inventaire_manquant')
 
-        # Stock début = stock_fin - net de la période
-        stock_debut = stock_fin - nb_entrees - nb_inventaires + nb_sorties + nb_casses + nb_productions
+        # Stock début = stock_fin - entrées + sorties (tous types)
+        stock_debut = (stock_fin
+                       - nb_entrees - nb_inventaires - nb_inv_excedents
+                       + nb_sorties + nb_casses + nb_productions + nb_inv_manquants)
 
         cmup = ing.cmup or Decimal('0')
         valeur_fin = stock_fin * cmup
@@ -1531,8 +1535,8 @@ def mouvements_print_cuisine(request):
     ingredient_id = request.GET.get('ingredient', '')
     type_mv = request.GET.get('type_mouvement', '')
     date_debut, date_fin_obj, mvts_list = _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv)
-    nb_entrees = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'entree')
-    nb_sorties = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse', 'production'))
+    nb_entrees     = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('entree', 'inventaire_excedent'))
+    nb_sorties     = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse', 'production', 'inventaire_manquant'))
     nb_inventaires = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'inventaire')
     context = {
         'page_title': 'Mouvements de stock — Cuisine',
@@ -1561,8 +1565,8 @@ def mouvements_doc_cuisine(request):
     ingredient_id = request.GET.get('ingredient', '')
     type_mv = request.GET.get('type_mouvement', '')
     date_debut, date_fin_obj, mvts_list = _mouvements_cuisine(date_debut_str, date_fin_str, categorie_id, ingredient_id, type_mv)
-    nb_entrees = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'entree')
-    nb_sorties = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse', 'production'))
+    nb_entrees     = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('entree', 'inventaire_excedent'))
+    nb_sorties     = sum(mv.quantite for mv in mvts_list if mv.type_mouvement in ('sortie', 'casse', 'production', 'inventaire_manquant'))
     nb_inventaires = sum(mv.quantite for mv in mvts_list if mv.type_mouvement == 'inventaire')
     categorie_nom = ''
     if categorie_id:
