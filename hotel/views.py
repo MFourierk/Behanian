@@ -749,9 +749,6 @@ def checkout_reservation(request, reservation_id):
 
         receptionniste_nom = request.POST.get('serveur', '').strip() or request.user.get_full_name() or request.user.username
         serveur_nom = request.POST.get('serveur_resto', '').strip()
-        if not serveur_nom:
-            messages.error(request, "Veuillez sélectionner un serveur/serveuse avant de valider le check-out.")
-            return redirect(reverse('hotel:index') + '?tab=checkinout')
 
         montant_total = reservation.get_total_general()
         request.session[f'hotel_checkout_{reservation.id}'] = {
