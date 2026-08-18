@@ -196,10 +196,9 @@
                                 <input type="hidden" name="quantite_theorique[]" class="qte-theorique" value="{{ art.quantite_stock }}">
                             </td>
                             <td>
-                                <input type="number" name="quantite_comptee[]"
+                                <input type="text" inputmode="numeric" name="quantite_comptee[]"
                                     class="qte-comptee"
                                     value="{{ art.quantite_stock }}"
-                                    min="0" step="1"
                                     oninput="majEcartInv(this)"
                                     style="width:90px;">
                             </td>

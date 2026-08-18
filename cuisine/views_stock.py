@@ -137,7 +137,7 @@ def inventaire_saisie(request):
                 if key.startswith('stock_physique_'):
                     ing_id = key.split('_')[2]
                     try:
-                        physique = Decimal(value)
+                        physique = Decimal(value.replace(',', '.'))
                         ing = Ingredient.objects.get(id=ing_id)
                         
                         # Calcul de la différence
