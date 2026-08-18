@@ -1005,6 +1005,12 @@ def inventaire_edit(request, pk):
         inv.notes = request.POST.get('notes', inv.notes)
         inv.save()
 
+        def _dec(val):
+            try:
+                return Decimal(str(val).replace('\xa0', '').replace(' ', '').replace(',', '.'))
+            except Exception:
+                return Decimal('0')
+
         ing_ids    = request.POST.getlist('ingredient_id[]')
         th_list    = request.POST.getlist('quantite_theorique[]')
         ph_list    = request.POST.getlist('quantite_physique[]')
@@ -1016,8 +1022,8 @@ def inventaire_edit(request, pk):
                     inventaire=inv,
                     ingredient_id=ing_id,
                     defaults={
-                        'quantite_theorique': th_list[i] if th_list[i] else 0,
-                        'quantite_physique':  ph_list[i] if ph_list[i] else 0,
+                        'quantite_theorique': _dec(th_list[i]) if i < len(th_list) else Decimal('0'),
+                        'quantite_physique':  _dec(ph_list[i]) if i < len(ph_list) else Decimal('0'),
                         'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
                     }
                 )

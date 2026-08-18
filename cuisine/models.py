@@ -583,41 +583,43 @@ class InventaireCuisine(models.Model):
         super().save(*args, **kwargs)
 
     def valider(self, user):
+        from django.db import transaction as _tx
         if self.statut != 'brouillon':
             return False
-        for ligne in self.lignes.all():
-            ecart = ligne.quantite_physique - ligne.quantite_theorique
-            if ecart > 0:
-                type_mv = 'inventaire_excedent'
-                qte     = ecart
-            elif ecart < 0:
-                type_mv = 'inventaire_manquant'
-                qte     = abs(ecart)
-            else:
-                type_mv = 'inventaire'
-                qte     = 0
+        with _tx.atomic():
+            for ligne in self.lignes.select_related('ingredient').all():
+                ing   = ligne.ingredient
+                ecart = ligne.quantite_physique - ligne.quantite_theorique
+                if ecart > 0:
+                    type_mv = 'inventaire_excedent'
+                    qte     = ecart
+                elif ecart < 0:
+                    type_mv = 'inventaire_manquant'
+                    qte     = abs(ecart)
+                else:
+                    type_mv = 'inventaire'
+                    qte     = Decimal('0')
 
-            MouvementStockCuisine.objects.create(
-                ingredient     = ligne.ingredient,
-                type_mouvement = type_mv,
-                quantite       = qte,
-                commentaire    = (
-                    f"Inventaire {self.numero} — "
-                    f"Théorique: {ligne.quantite_theorique} → Compté: {ligne.quantite_physique}"
-                    + (f" (écart: {'+' if ecart > 0 else ''}{ecart})" if ecart != 0 else " (conforme)")
-                ),
-                utilisateur    = user,
-            )
-            cmup_moment = ligne.ingredient.cmup
-            ligne.ingredient.quantite_stock = ligne.quantite_physique
-            ligne.ingredient.save()
-            # Persister la valeur de l'écart au CMUP du moment de l'inventaire
-            ligne.valeur_ecart = ecart * cmup_moment
-            ligne.save()
-        self.statut          = 'valide'
-        self.valide_par      = user
-        self.date_validation = timezone.now()
-        self.save()
+                cmup_moment = ing.cmup
+                MouvementStockCuisine.objects.create(
+                    ingredient     = ing,
+                    type_mouvement = type_mv,
+                    quantite       = qte,
+                    commentaire    = (
+                        f"Inventaire {self.numero} — "
+                        f"Théorique: {ligne.quantite_theorique} → Compté: {ligne.quantite_physique}"
+                        + (f" (écart: {'+' if ecart > 0 else ''}{ecart})" if ecart != 0 else " (conforme)")
+                    ),
+                    utilisateur    = user,
+                )
+                # Forcer le stock au physique compté (évite les décalages du save() stale)
+                Ingredient.objects.filter(pk=ing.pk).update(quantite_stock=ligne.quantite_physique)
+                ligne.valeur_ecart = ecart * cmup_moment
+                ligne.save()
+            self.statut          = 'valide'
+            self.valide_par      = user
+            self.date_validation = timezone.now()
+            self.save()
         return True
 
     class Meta:
