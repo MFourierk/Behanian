@@ -294,8 +294,8 @@ input:focus, select:focus, textarea:focus {
                 <div class="section-title"><i class="fas fa-file-invoice"></i> Informations générales</div>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Fournisseur <span class="req">*</span></label>
-                        <select name="fournisseur" id="sel-fournisseur" required>
+                        <label>Fournisseur</label>
+                        <select name="fournisseur" id="sel-fournisseur">
                             <option value="">— Sélectionner un fournisseur —</option>
                             {% for f in fournisseurs %}
                             <option value="{{ f.pk }}">{{ f.nom }}{% if f.telephone %} · {{ f.telephone }}{% endif %}</option>
