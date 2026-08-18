@@ -899,8 +899,13 @@
                 <div style="display:flex;flex-direction:column;gap:14px;">
                     <div>
                         <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Article *</label>
-                        <select name="boisson_id" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
-                            <option value="">— Sélectionner un article —</option>
+                        <input type="text" id="modal-search-bar" placeholder="🔍 Rechercher un article..."
+                               oninput="filtrerModalBar(this.value)"
+                               autocomplete="off"
+                               style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#fff;margin-bottom:6px;box-sizing:border-box;">
+                        <select name="boisson_id" id="modal-boisson" required size="5"
+                                style="width:100%;padding:6px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
+                            <option value="">— Sélectionner —</option>
                             {% for b in boissons %}
                             <option value="{{ b.pk }}">{{ b.nom }} {% if b.reference %}[{{ b.reference }}]{% endif %} — Stock: {{ b.quantite_stock }}</option>
                             {% endfor %}
@@ -1192,14 +1197,31 @@ const MODAL_CONFIGS = {
     'prelevement': { titre: '👤 Prélèvement Propriétaire',        color: '#8e44ad', label: 'Enregistrer le prélèvement' },
 };
 
+function filtrerModalBar(q) {
+    const sel = document.getElementById('modal-boisson');
+    const ql = q.toLowerCase();
+    Array.from(sel.options).forEach(opt => {
+        if (!opt.value) { opt.hidden = false; return; }
+        opt.hidden = !opt.textContent.toLowerCase().includes(ql);
+    });
+    const visibles = Array.from(sel.options).filter(o => o.value && !o.hidden);
+    if (visibles.length === 1) sel.value = visibles[0].value;
+}
+
 function ouvrirModalMouvement(type) {
     const cfg = MODAL_CONFIGS[type];
     document.getElementById('modal-titre').textContent = cfg.titre;
     document.getElementById('modal-type').value = type;
     document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`;
     document.getElementById('modal-btn-submit').textContent = cfg.label;
+    // Réinitialiser la recherche
+    const search = document.getElementById('modal-search-bar');
+    search.value = '';
+    filtrerModalBar('');
+    document.getElementById('modal-boisson').value = '';
     const modal = document.getElementById('modal-mouvement');
     modal.style.display = 'flex';
+    setTimeout(() => search.focus(), 100);
 }
 
 function fermerModal() {

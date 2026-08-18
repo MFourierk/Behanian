@@ -914,8 +914,13 @@
             <div style="display:flex;flex-direction:column;gap:14px;">
                 <div>
                     <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Ingrédient *</label>
-                    <select name="ingredient" id="modal-ingredient" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
-                        <option value="">— Sélectionner un ingrédient —</option>
+                    <input type="text" id="modal-search-ing" placeholder="🔍 Rechercher un ingrédient..."
+                           oninput="filtrerModalIng(this.value)"
+                           autocomplete="off"
+                           style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#fff;margin-bottom:6px;box-sizing:border-box;">
+                    <select name="ingredient" id="modal-ingredient" required size="5"
+                            style="width:100%;padding:6px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
+                        <option value="">— Sélectionner —</option>
                         {% for ing in ingredients %}
                         <option value="{{ ing.pk }}">{{ ing.nom }} — Stock: {{ ing.quantite_stock|floatformat:2 }}</option>
                         {% endfor %}
@@ -988,15 +993,34 @@ const MODAL_CONFIGS = {
     'inventaire': { titre: '📋 Ajustement d\'Inventaire',     color: '#3498db' },
 };
 
+function filtrerModalIng(q) {
+    const sel = document.getElementById('modal-ingredient');
+    const ql = q.toLowerCase();
+    Array.from(sel.options).forEach(opt => {
+        if (!opt.value) { opt.hidden = false; return; }
+        opt.hidden = !opt.textContent.toLowerCase().includes(ql);
+    });
+    // Auto-sélectionner si un seul résultat visible
+    const visibles = Array.from(sel.options).filter(o => o.value && !o.hidden);
+    if (visibles.length === 1) sel.value = visibles[0].value;
+}
+
 function ouvrirModalMouvement(type, ingId, ingNom) {
     const cfg = MODAL_CONFIGS[type];
     document.getElementById('modal-titre').textContent = cfg.titre;
     document.getElementById('modal-type').value = type;
     document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg,${cfg.color},${cfg.color}cc)`;
+    // Réinitialiser la recherche
+    const search = document.getElementById('modal-search-ing');
+    search.value = '';
+    filtrerModalIng('');
     if (ingId) {
         document.getElementById('modal-ingredient').value = ingId;
+    } else {
+        document.getElementById('modal-ingredient').value = '';
     }
     document.getElementById('modal-mouvement').style.display = 'flex';
+    setTimeout(() => search.focus(), 100);
 }
 
 function fermerModal() {
