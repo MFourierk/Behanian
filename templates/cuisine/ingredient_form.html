@@ -130,29 +130,36 @@
                 <div class="form-grid-3">
                     <div class="form-group">
                         <label>Unité de stock <span class="required">*</span></label>
-                        <select name="unite_stock">
+                        <select name="unite_stock" id="id-unite-stock" onchange="majPreviewConversion()">
                             <option value="">— Sélectionner —</option>
                             {% for u in unites %}
-                            <option value="{{ u.pk }}" {% if ingredient.unite_stock_id == u.pk %}selected{% endif %}>{{ u.nom }} ({{ u.abreviation }})</option>
+                            <option value="{{ u.pk }}" {% if ingredient.unite_stock_id == u.pk %}selected{% endif %}>{{ u.nom }}</option>
                             {% endfor %}
                         </select>
-                        <span class="hint">Unité d'achat et de stockage</span>
+                        <span class="hint">Comment vous achetez et stockez (ex : Banane, kg, litre…)</span>
                     </div>
                     <div class="form-group">
-                        <label>Unité recette</label>
-                        <select name="unite_recette">
-                            <option value="">— Même que stock —</option>
+                        <label>Unité de recette</label>
+                        <select name="unite_recette" id="id-unite-recette" onchange="majPreviewConversion()">
+                            <option value="">— Même unité que le stock —</option>
                             {% for u in unites %}
-                            <option value="{{ u.pk }}" {% if ingredient.unite_recette_id == u.pk %}selected{% endif %}>{{ u.nom }} ({{ u.abreviation }})</option>
+                            <option value="{{ u.pk }}" {% if ingredient.unite_recette_id == u.pk %}selected{% endif %}>{{ u.nom }}</option>
                             {% endfor %}
                         </select>
-                        <span class="hint">Unité utilisée dans les fiches techniques</span>
+                        <span class="hint">Unité dans les fiches techniques (ex : Portion, g…)</span>
                     </div>
                     <div class="form-group">
-                        <label>Facteur de conversion</label>
-                        <input type="number" name="facteur_conversion" value="{{ ingredient.facteur_conversion|default:'1' }}" step="0.000001" min="0.000001">
-                        <span class="hint">Ex: 1 kg stock = 1000 g recette → saisir 1000</span>
+                        <label>Quantité stock → 1 recette</label>
+                        <input type="number" name="facteur_conversion" id="id-facteur"
+                               value="{{ ingredient.facteur_conversion|default:'1' }}"
+                               step="0.001" min="0.001"
+                               oninput="majPreviewConversion()">
+                        <span class="hint">Combien d'unités stock = 1 unité recette</span>
                     </div>
+                </div>
+                <div id="conversion-preview" style="margin-top:14px;padding:12px 18px;background:linear-gradient(135deg,#eafaf1,#d5f5e3);border-radius:10px;border:1.5px solid #a9dfbf;display:flex;align-items:center;gap:10px;">
+                    <i class="fas fa-exchange-alt" style="color:#27ae60;font-size:1.1rem;"></i>
+                    <span id="preview-text" style="font-weight:600;color:#1e8449;font-size:0.95rem;">Même unité pour le stock et les recettes</span>
                 </div>
             </div>
 
@@ -195,4 +202,33 @@
         </div>
     </form>
 </div>
+
+<script>
+function majPreviewConversion() {
+    const stockSel   = document.getElementById('id-unite-stock');
+    const recetteSel = document.getElementById('id-unite-recette');
+    const facteurInput = document.getElementById('id-facteur');
+    const preview    = document.getElementById('preview-text');
+    if (!preview) return;
+
+    const stockNom   = stockSel && stockSel.selectedIndex > 0 ? stockSel.options[stockSel.selectedIndex].text : '';
+    const recetteNom = recetteSel && recetteSel.selectedIndex > 0 ? recetteSel.options[recetteSel.selectedIndex].text : '';
+    const facteur    = parseFloat(facteurInput ? facteurInput.value : 1) || 1;
+
+    if (!stockNom) {
+        preview.textContent = 'Sélectionnez une unité de stock pour voir la conversion';
+        return;
+    }
+    if (!recetteNom || recetteNom === stockNom) {
+        preview.textContent = 'Stock et recette dans la même unité : ' + stockNom;
+        return;
+    }
+    if (facteur === 1) {
+        preview.textContent = '1 ' + stockNom + ' = 1 ' + recetteNom;
+    } else {
+        preview.textContent = facteur + ' ' + stockNom + '(s) = 1 ' + recetteNom;
+    }
+}
+document.addEventListener('DOMContentLoaded', majPreviewConversion);
+</script>
 {% endblock %}

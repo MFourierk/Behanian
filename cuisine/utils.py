@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import transaction
 from .models import FicheTechnique, MouvementStockCuisine, Ingredient
 
@@ -28,16 +29,20 @@ def check_stock_availability(plat, quantity=1):
     # FT vide → repli sur l'ingrédient homonyme
     if not lignes:
         ing = _ingredient_par_nom(nom_plat)
-        if ing and ing.quantite_stock < quantity:
-            return False, (
-                f"« {nom_plat} » ne peut pas être servi — stock insuffisant :\n"
-                f"  • {ing.nom} : {ing.quantite_stock:.0f} disponible / {quantity} nécessaire"
-            )
+        if ing:
+            facteur = ing.facteur_conversion or Decimal('1')
+            qte_necessaire = Decimal(str(quantity)) * facteur
+            if ing.quantite_stock < qte_necessaire:
+                return False, (
+                    f"« {nom_plat} » ne peut pas être servi — stock insuffisant :\n"
+                    f"  • {ing.nom} : {ing.quantite_stock:.0f} disponible / {qte_necessaire:.0f} nécessaire"
+                )
         return True, ""
 
     manquants = []
     for ligne in lignes:
-        qte_necessaire = ligne.quantite * quantity
+        facteur        = ligne.ingredient.facteur_conversion or Decimal('1')
+        qte_necessaire = ligne.quantite * quantity * facteur
         stock_dispo    = ligne.ingredient.quantite_stock
         if stock_dispo < qte_necessaire:
             manquants.append({
@@ -78,17 +83,19 @@ def process_stock_movement(plat, quantity, movement_type, user, reference=""):
         # FT vide → déstockage par nom d'ingrédient
         ing = _ingredient_par_nom(plat.nom)
         if ing:
+            facteur = ing.facteur_conversion or Decimal('1')
             MouvementStockCuisine.objects.create(
                 ingredient     = ing,
                 type_mouvement = type_mvt,
-                quantite       = quantity,
+                quantite       = Decimal(str(quantity)) * facteur,
                 commentaire    = f"{label} — {plat.nom} x{quantity} — {reference}",
                 utilisateur    = user,
             )
         return
 
     for ligne in lignes:
-        qte = ligne.quantite * quantity
+        facteur = ligne.ingredient.facteur_conversion or Decimal('1')
+        qte     = ligne.quantite * quantity * facteur
         MouvementStockCuisine.objects.create(
             ingredient     = ligne.ingredient,
             type_mouvement = type_mvt,

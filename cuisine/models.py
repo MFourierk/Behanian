@@ -96,8 +96,8 @@ class Ingredient(models.Model):
                                           related_name='ingredients_recette', verbose_name="Unité recette (fiches techniques)")
     # Exemple : acheté en kg (stock), utilisé en g (recette)
     facteur_conversion = models.DecimalField(max_digits=12, decimal_places=6, default=1,
-                                              verbose_name="Facteur conversion stock→recette",
-                                              help_text="Ex : 1 kg = 1000 g → saisir 1000")
+                                              verbose_name="Quantité stock par unité recette",
+                                              help_text="Ex : 5 Bananes = 1 Portion Alloco → saisir 5")
 
     # Prix & CMUP
     prix_achat        = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix d'achat unitaire (FCFA)")
@@ -144,9 +144,9 @@ class Ingredient(models.Model):
 
     @property
     def prix_unitaire_recette(self):
-        """Coût par unité recette (ex: coût par gramme)"""
+        """Coût par unité recette (ex : CMUP banane × 5 = coût par portion Alloco)"""
         if self.facteur_conversion and self.facteur_conversion > 0:
-            return self.cmup / self.facteur_conversion
+            return self.cmup * self.facteur_conversion
         return self.cmup
 
     def __str__(self):
