@@ -193,7 +193,7 @@
                             data-cat="{{ ing.categorie.nom|lower|default:'sans-categorie' }}">
                             <td>
                                 <input type="hidden" name="ingredient_id[]" value="{{ ing.pk }}">
-                                <input type="hidden" name="quantite_theorique[]" class="qte-theorique" value="{{ ing.quantite_stock }}">
+                                <input type="hidden" name="quantite_theorique[]" class="qte-theorique" value="{{ ing.quantite_stock|stringformat:'.3f' }}">
                                 <div style="font-weight:600;color:#2c3e50;">{{ ing.nom }}</div>
                                 {% if ing.reference %}<div style="font-size:0.75rem;color:#c0392b;font-family:monospace;">{{ ing.reference }}</div>{% endif %}
                             </td>
@@ -201,10 +201,9 @@
                             <td style="text-align:center;font-size:0.85rem;">{{ ing.unite_stock.abreviation|default:"—" }}</td>
                             <td class="stock-theorique" style="text-align:center;">{{ ing.quantite_stock|floatformat:3 }}</td>
                             <td>
-                                <input type="number" name="quantite_physique[]"
+                                <input type="text" inputmode="decimal" name="quantite_physique[]"
                                     class="qte-comptee"
                                     value="0"
-                                    step="0.001" min="0"
                                     oninput="majEcart(this)"
                                     style="width:110px;">
                             </td>
