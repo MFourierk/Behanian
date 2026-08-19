@@ -366,5 +366,72 @@
         }).observe(document.body, { childList: true, subtree: true });
     });
     </script>
+
+    <!-- Auto-déconnexion après inactivité -->
+    <div id="idle-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:18px;padding:36px 40px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);">
+            <div style="font-size:3rem;margin-bottom:12px;">⏰</div>
+            <h3 style="margin:0 0 10px;font-size:1.2rem;color:#1a1a2e;">Session inactive</h3>
+            <p style="color:#64748b;font-size:.9rem;margin:0 0 20px;">Vous serez déconnecté dans <strong id="idle-countdown" style="color:#c0392b;font-size:1.1rem;">2:00</strong></p>
+            <button onclick="idleReset()" style="padding:12px 32px;background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;width:100%;">Je suis là</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var TIMEOUT_MS  = 30 * 60 * 1000;   // 30 minutes → déconnexion
+        var WARNING_MS  = 2  * 60 * 1000;   // avertissement 2 min avant
+        var LOGOUT_URL  = "{% url 'logout' %}";
+
+        var timer, countdownTimer;
+        var overlay    = document.getElementById('idle-overlay');
+        var countdownEl = document.getElementById('idle-countdown');
+
+        function fmt(ms) {
+            var s = Math.ceil(ms / 1000);
+            var m = Math.floor(s / 60); s = s % 60;
+            return m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function doLogout() {
+            window.location.href = LOGOUT_URL;
+        }
+
+        function showWarning() {
+            var remaining = WARNING_MS;
+            overlay.style.display = 'flex';
+            countdownEl.textContent = fmt(remaining);
+            clearInterval(countdownTimer);
+            countdownTimer = setInterval(function() {
+                remaining -= 1000;
+                if (remaining <= 0) {
+                    clearInterval(countdownTimer);
+                    doLogout();
+                } else {
+                    countdownEl.textContent = fmt(remaining);
+                }
+            }, 1000);
+        }
+
+        window.idleReset = function() {
+            clearInterval(countdownTimer);
+            overlay.style.display = 'none';
+            resetTimer();
+        };
+
+        function resetTimer() {
+            clearTimeout(timer);
+            timer = setTimeout(showWarning, TIMEOUT_MS - WARNING_MS);
+        }
+
+        ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(function(ev) {
+            document.addEventListener(ev, function() {
+                if (overlay.style.display === 'none') resetTimer();
+            }, { passive: true });
+        });
+
+        resetTimer();
+    })();
+    </script>
 </body>
 </html>
