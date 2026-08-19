@@ -1232,7 +1232,11 @@ async function ouvrirSortie(id, nom, prixEntree){
       html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span>${label}</span><span style="color:${c.inclus_forfait?'#d97706':'inherit'}">${mont}</span></div>`;
     });
   }
-  html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:8px;padding-top:8px;font-weight:700;color:#1a2535"><span>Total</span><span style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
+  if(d.remise && d.remise > 0){
+    html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;margin-top:4px;border-top:1px dashed #dde3ec"><span style="color:#6b7a8d">Sous-total brut</span><span style="color:#6b7a8d">${(d.entree+d.total_conso).toLocaleString('fr-FR')} F</span></div>`;
+    html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#dc2626">Remise</span><span style="color:#dc2626">- ${d.remise.toLocaleString('fr-FR')} F</span></div>`;
+  }
+  html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:6px;padding-top:8px;font-weight:700;color:#1a2535"><span>À PAYER</span><span style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
   det.innerHTML=html;
   // Gérer affichage selon type
   document.getElementById('sortieChoixResident').style.display=_sortieIsHeberge?'block':'none';

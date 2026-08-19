@@ -1041,6 +1041,7 @@ let modePaiement  = 'especes';
 let chambreLieeId  = null;
 let chambreLieeNom = null;
 const SESSION_TOKEN = crypto.randomUUID();
+const CSRF = '{{ csrf_token }}';
 
 // ============================================================
 // UTILITAIRES
@@ -1104,7 +1105,7 @@ async function _ajusterStockTpe(boissonId, delta) {
   try {
     const r = await fetch("{% url 'bar:api_ajuster_stock_tpe' %}", {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
       body: JSON.stringify({boisson_id: boissonId, delta, session_token: SESSION_TOKEN})
     });
     const data = await r.json();
@@ -1216,6 +1217,10 @@ function appliquerRemise() {
 async function paiementRapide() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) return;
+  if (!t.addition_imprimee) {
+    toast('🖨️ Imprimez l\'addition avant l\'encaissement rapide', 'error');
+    return;
+  }
   modePaiement = 'especes';
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === 'especes'));
   t.paiement = 'especes';
@@ -1623,7 +1628,7 @@ async function confirmerPaiement() {
       method : 'POST',
       headers: {
         'Content-Type' : 'application/json',
-        'X-CSRFToken'  : getCookie('csrftoken'),
+        'X-CSRFToken'  : CSRF,
       },
       body: JSON.stringify(payload),
     });
@@ -1826,6 +1831,7 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
 function imprimerAddition() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) { toast('Aucun article à imprimer', 'error'); return; }
+  t.addition_imprimee = true;
 
   const nomComplexe = "{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}";
   const adresse     = "{{ config.adresse|default:'Yopougon Beago à 200m du Palais de justice' }}";
@@ -2109,7 +2115,7 @@ function chargerResumeVentes() {
   body.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;display:block;margin-bottom:10px;color:var(--cave-violet);opacity:0.6;"></i><span style="font-size:0.85rem">Chargement…</span></div>`;
 
   const url = `{% url 'bar:resume_ventes_cave' %}?date_debut=${debut}&date_fin=${fin}`;
-  fetch(url, { headers: { 'X-CSRFToken': getCookie('csrftoken') } })
+  fetch(url, { headers: { 'X-CSRFToken': CSRF } })
     .then(r => r.json())
     .then(d => {
       if (!d.success) { body.innerHTML = `<div class="empty-state" style="color:#dc2626;">❌ ${d.error}</div>`; return; }

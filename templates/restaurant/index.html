@@ -1929,6 +1929,10 @@ async function paiementRapide() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) return;
   if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
+  if (!t.addition_imprimee) {
+    toast('🖨️ Imprimez l\'addition avant l\'encaissement rapide', 'error');
+    return;
+  }
   const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
   if (!serveurVal) {
     toast('👤 Sélectionnez un serveur avant d\'encaisser', 'error');
@@ -1951,6 +1955,7 @@ function imprimerAddition() {
   if (!t || !t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
   const url = ADDITION_URL_TPL.replace('/0/', '/' + t.commandeDbId + '/');
   window.open(url, '_blank', 'width=420,height=700');
+  t.addition_imprimee = true;
 }
 
 // ── RÉSUMÉ VENTES DU JOUR ──
@@ -2365,7 +2370,7 @@ async function annulerTicket() {
     // Mettre à jour la carte table en libre
     if (t.tableId) majTableCard(t.tableId, 'disponible', 0, '');
     // Réinitialiser le ticket local
-    t.lignes = []; t.total = 0; t.commandeDbId = null; t.tableId = null; t.tableNum = null; t.client = '';
+    t.lignes = []; t.total = 0; t.commandeDbId = null; t.tableId = null; t.tableNum = null; t.client = ''; t.addition_imprimee = false;
     tableSelActif = null;
     document.getElementById('tableSelbadge').style.display = 'none';
     document.getElementById('inputClient').value = '';

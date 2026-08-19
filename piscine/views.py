@@ -34,13 +34,14 @@ def piscine_index(request):
     entrees_jour   = AccesPiscine.objects.filter(date_entree__date=today).count()
     visiteurs      = acces_actifs.filter(type_client='visiteur').count()
     heberges       = acces_actifs.filter(type_client='heberge').count()
-    # Recette = entrées payantes + toutes les consommations du jour
+    # Recette nette = (entrées - remises) + consommations du jour
     acces_jour = AccesPiscine.objects.filter(date_entree__date=today)
     recette_entrees = acces_jour.aggregate(s=Sum('prix_total'))['s'] or 0
+    total_remises   = acces_jour.aggregate(s=Sum('remise_montant'))['s'] or 0
     recette_consos  = ConsommationPiscine.objects.filter(
         acces__date_entree__date=today
     ).aggregate(s=Sum(F('quantite') * F('prix_unitaire')))['s'] or 0
-    recette_jour = recette_entrees + recette_consos
+    recette_jour = max(recette_entrees - total_remises, 0) + recette_consos
 
     # Tarifs
     tarif_v_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
@@ -655,6 +656,9 @@ def api_acces_detail(request, acces_id):
         for c in acces.consommations.select_related('serveur').all()
     ]
     total_conso = sum(c.get_total() for c in acces.consommations.all())
+    total_brut  = acces.prix_total + total_conso
+    remise      = acces.remise_montant if acces.remise_montant else Decimal('0')
+    total_net   = max(total_brut - remise, Decimal('0'))
     return JsonResponse({
         'id': acces.id,
         'nom': acces.nom_client,
@@ -666,7 +670,8 @@ def api_acces_detail(request, acces_id):
         'forfait_nom': acces.forfait.nom if acces.forfait else None,
         'consommations': consommations,
         'total_conso': float(total_conso),
-        'total': float(acces.prix_total + total_conso),
+        'remise': float(remise),
+        'total': float(total_net),
         'is_heberge': acces.type_client == 'heberge',
         'reservation_hotel_id': acces.reservation_hotel_id,
         'chambre_nom': (
