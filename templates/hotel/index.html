@@ -914,7 +914,9 @@
                      <label>Mode Paiement</label>
                      <select name="mode_paiement" class="form-control">
                          <option value="especes">Espèces</option>
-                         <option value="mobile_money">Mobile Money</option>
+                         <option value="wave">Wave</option>
+                         <option value="orange_money">Orange Money</option>
+                         <option value="mtn_money">MTN Mobile Money</option>
                          <option value="carte_bancaire">Carte Bancaire</option>
                          <option value="cheque">Chèque</option>
                          <option value="virement">Virement</option>
@@ -1135,23 +1137,15 @@
             
              <div class="form-group">
                  <label>Mode Paiement</label>
-                 <select name="mode_paiement" id="hotelModePaiement" class="form-control" onchange="toggleHotelMomoOptions()">
+                 <select name="mode_paiement" id="hotelModePaiement" class="form-control">
                      <option value="especes">Espèces</option>
-                     <option value="mobile_money">Mobile Money</option>
+                     <option value="wave">Wave</option>
+                     <option value="orange_money">Orange Money</option>
+                     <option value="mtn_money">MTN Mobile Money</option>
                      <option value="carte_bancaire">Carte Bancaire</option>
                      <option value="cheque">Chèque</option>
                      <option value="virement">Virement</option>
                  </select>
-            </div>
-
-            <div class="form-group" id="hotelMomoOptions" style="display: none;">
-                <label>Opérateur Mobile Money</label>
-                <select name="operateur_momo" class="form-control">
-                    <option value="orange_money">Orange Money</option>
-                    <option value="wave">Wave</option>
-                    <option value="moov_money">Moov Money</option>
-                    <option value="mtn_money">MTN Mobile Money</option>
-                </select>
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
