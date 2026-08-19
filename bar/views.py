@@ -3,6 +3,11 @@ from functools import wraps
 from django.shortcuts import redirect as _redirect
 from django.contrib import messages as _messages
 
+def _is_manager_bar(user):
+    from utils.permissions import _is_manager
+    return _is_manager(user)
+
+
 def require_bar_gestion(view_func):
     """Réservé Manager Général et Manager Cuisine — pas les caissiers."""
     @wraps(view_func)
@@ -165,6 +170,7 @@ def stock_management(request):
         'mv_sorties_mois': mv_sorties_mois,
         'mv_casses_mois': mv_casses_mois,
         'mv_total_mois': mv_total_mois,
+        'is_manager': _is_manager_bar(request.user),
     }
     return render(request, 'bar/stock_management.html', context)
 
@@ -265,8 +271,11 @@ def article_edit(request, pk):
 
 
 @require_module_access('bar')
-@require_bar_gestion
 def article_delete(request, pk):
+    from utils.permissions import _is_manager
+    if not _is_manager(request.user):
+        messages.error(request, "Accès refusé — suppression réservée aux managers.")
+        return redirect(reverse('bar:stock_management') + '?tab=articles')
     article = get_object_or_404(BoissonBar, pk=pk)
     if request.method == 'POST':
         nom = article.nom

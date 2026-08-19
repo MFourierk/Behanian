@@ -454,7 +454,7 @@
                                     <a href="{% url 'bar:article_sommeil' article.pk %}" class="btn-action btn-sleep" title="{% if article.statut == 'actif' %}Mettre en sommeil{% else %}Réactiver{% endif %}">
                                         <i class="fas {% if article.statut == 'actif' %}fa-moon{% else %}fa-sun{% endif %}"></i>
                                     </a>
-                                    <a href="{% url 'bar:article_delete' article.pk %}" class="btn-action btn-del" title="Supprimer"><i class="fas fa-trash-alt"></i></a>
+                                    {% if is_manager %}<a href="{% url 'bar:article_delete' article.pk %}" class="btn-action btn-del" title="Supprimer"><i class="fas fa-trash-alt"></i></a>{% endif %}
                                 </div>
                             </td>
                         </tr>
