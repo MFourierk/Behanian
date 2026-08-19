@@ -270,12 +270,14 @@ def enregistrer_entree(request):
         nom_client = _generer_reference_entree(type_client, forfait=forfait, reservation=reservation_hotel)
 
         # ── Créer l'accès ─────────────────────────────────────────────
+        remise_montant = Decimal(str(data.get('remise_montant', 0)))
         acces = AccesPiscine.objects.create(
             nom_client=nom_client,
             type_client=type_client,
             nb_adultes=nb_adultes,
             nb_enfants=nb_enfants,
             prix_total=prix_total,
+            remise_montant=remise_montant,
             enregistre_par=request.user,
             reservation_hotel=reservation_hotel,
             forfait=forfait,
@@ -455,21 +457,19 @@ def encaisser_sortie(request, acces_id):
         mode_paiement = data.get('mode_paiement', 'especes')
         montant_recu  = Decimal(str(data.get('montant_recu', 0)))
         sur_chambre   = data.get('sur_chambre', False)
-        remise_pct    = Decimal(str(data.get('remise_pct', 0)))
 
-        # Total brut = entrée + consommations
-        total_conso = sum(c.get_total() for c in acces.consommations.all())
-        total_brut  = acces.prix_total + total_conso
-        montant_remise = (total_brut * remise_pct / 100).quantize(Decimal('1')) if remise_pct else Decimal('0')
-        total       = total_brut - montant_remise  # total net après remise
+        # Total brut = entrée + consommations ; remise fixe enregistrée à l'entrée
+        total_conso    = sum(c.get_total() for c in acces.consommations.all())
+        total_brut     = acces.prix_total + total_conso
+        montant_remise = acces.remise_montant if acces.remise_montant else Decimal('0')
+        total          = max(total_brut - montant_remise, Decimal('0'))
 
         # Validation montant pour tout paiement direct
         if not sur_chambre and montant_recu < total:
             return JsonResponse({'success': False, 'error': f'Montant insuffisant. Total net : {int(total)} F'})
 
-        # Marquer sortie + remise
-        acces.remise_pct    = remise_pct
-        acces.date_sortie   = timezone.now()
+        # Marquer sortie
+        acces.date_sortie = timezone.now()
         acces.save()
 
         nb_total = acces.nb_adultes + acces.nb_enfants
