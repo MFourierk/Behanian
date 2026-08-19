@@ -1170,11 +1170,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="btn-attente" id="btnAnnulerTicket" onclick="annulerTicket()" style="display:none;margin-bottom:8px;background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.3)">
         <i class="fas fa-times-circle"></i> Annuler le ticket
       </button>
-      <div style="display:flex;gap:6px">
-        <button class="btn-mobile-quick btn-mq-wave"   id="btnMqWave"   onclick="choisirModeMobile('wave')"         disabled title="Payer en Wave">🌊 Wave</button>
-        <button class="btn-mobile-quick btn-mq-orange" id="btnMqOrange" onclick="choisirModeMobile('orange_money')" disabled title="Payer en Orange Money">🟠 Orange</button>
-        <button class="btn-mobile-quick btn-mq-mtn"    id="btnMqMtn"    onclick="choisirModeMobile('mtn_money')"    disabled title="Payer en MTN">🟡 MTN</button>
-      </div>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Encaisser la commande
       </button>
@@ -1361,7 +1356,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-const CSRF = '{{ csrf_token }}';
+var CSRF = '{{ csrf_token }}';
 const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
 const modeLabels = { especes:'Espèces', carte:'Carte / TPE', mobile:'Mobile Money', wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN Mobile Money', chambre:'Report Chambre' };
 const MOBILE_MODES = ['wave','orange_money','mtn_money'];
@@ -1827,7 +1822,6 @@ function renderTicket() {
     document.getElementById('couvertsVal').textContent = '1';
     document.getElementById('btnValider').disabled = true;
     document.getElementById('btnAddition').disabled = true;
-    document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = true);
     _majStatutBadge(null);
     if (btnAnnuler) btnAnnuler.style.display = 'none';
     return;
@@ -1885,7 +1879,6 @@ function renderTicket() {
 
   document.getElementById('btnValider').disabled = false;
   document.getElementById('btnAddition').disabled = !t.commandeDbId;
-  document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = !t.commandeDbId);
   if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
 
   // Statut

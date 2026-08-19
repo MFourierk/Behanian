@@ -904,11 +904,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <i class="fas fa-receipt"></i> Addition
         </button>
       </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn-mobile-quick btn-mq-wave"   id="btnMqWave"   onclick="choisirModeMobile('wave')"         disabled title="Payer en Wave">🌊 Wave</button>
-        <button class="btn-mobile-quick btn-mq-orange" id="btnMqOrange" onclick="choisirModeMobile('orange_money')" disabled title="Payer en Orange Money">🟠 Orange</button>
-        <button class="btn-mobile-quick btn-mq-mtn"    id="btnMqMtn"    onclick="choisirModeMobile('mtn_money')"    disabled title="Payer en MTN">🟡 MTN</button>
-      </div>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Valider le paiement
       </button>
@@ -1069,7 +1064,7 @@ let modePaiement  = 'especes';
 let chambreLieeId  = null;
 let chambreLieeNom = null;
 const SESSION_TOKEN = crypto.randomUUID();
-const CSRF = '{{ csrf_token }}';
+var CSRF = '{{ csrf_token }}';
 
 // ============================================================
 // UTILITAIRES
@@ -1183,7 +1178,6 @@ function renderTicket() {
     document.getElementById('remiseInput').value = 0;
     document.getElementById('btnValider').disabled = true;
     document.getElementById('btnAddition').disabled = true;
-    document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = true);
     return;
   }
 
@@ -1226,7 +1220,6 @@ function renderTicket() {
 
   document.getElementById('btnValider').disabled = false;
   document.getElementById('btnAddition').disabled = false;
-  document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = false);
 
   // Maj badge tickets en attente
   document.querySelectorAll('.ticket-attente-btn').forEach(btn => {
