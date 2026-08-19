@@ -463,7 +463,21 @@
     <div class="modal-head"><h3>Sortie — <span id="sortieNom"></span></h3><button class="close-btn" onclick="fermerModal('modalSortie')">×</button></div>
     <input type="hidden" id="sortieAccesId">
 
-    <div id="sortieDetail" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px"></div>
+    <div id="sortieDetail" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13px"></div>
+
+    <!-- Remise optionnelle -->
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px">
+      <label style="font-size:12px;font-weight:600;color:#92400e;white-space:nowrap;margin:0">Remise&nbsp;:</label>
+      <input type="number" id="sortieRemise" min="0" max="100" step="1" value="0"
+        style="width:70px;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-weight:700;text-align:center"
+        oninput="calcRemiseSortie()">
+      <span style="font-size:13px;color:#6b7280">%</span>
+      <span id="sortieRemiseMontant" style="display:none;font-size:13px;font-weight:700;color:#dc2626;margin-left:auto"></span>
+    </div>
+    <div id="sortieNetRow" style="display:none;padding:8px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:12px;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:#1e40af">Total net</span>
+      <span id="sortieNetVal" style="font-size:16px;font-weight:800;color:#1e40af">0 F</span>
+    </div>
 
     <!-- Choix chambre / direct pour résidents -->
     <div id="sortieChoixResident" style="display:none;margin-bottom:14px">
@@ -1129,6 +1143,7 @@ async function validerCommande(){
 // ═══ SORTIE / PAIEMENT ═══
 let _sortieIsHeberge = false;
 let _sortieTotal = 0;
+let _sortieTotalBrut = 0;
 let _sortiePayChoice = 'chambre'; // 'chambre' | 'direct'
 
 function piscineOuvrirRecuDepot(chambreNom, module, lignes, total) {
@@ -1171,6 +1186,30 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 });
 
+function calcRemiseSortie() {
+  const pct = parseFloat(document.getElementById('sortieRemise').value) || 0;
+  const remiseMont = Math.round(_sortieTotalBrut * pct / 100);
+  const net = _sortieTotalBrut - remiseMont;
+  _sortieTotal = net;
+  const remiseSpan = document.getElementById('sortieRemiseMontant');
+  const netRow = document.getElementById('sortieNetRow');
+  if (pct > 0) {
+    remiseSpan.textContent = `-${remiseMont.toLocaleString('fr-FR')} F`;
+    remiseSpan.style.display = '';
+    netRow.style.display = 'flex';
+    document.getElementById('sortieNetVal').textContent = net.toLocaleString('fr-FR') + ' F';
+  } else {
+    remiseSpan.style.display = 'none';
+    netRow.style.display = 'none';
+  }
+  // Mettre à jour les champs montant reçu
+  if (!_sortieIsHeberge) {
+    document.getElementById('sortieRecuNR').value = net;
+  } else if (_sortiePayChoice === 'direct') {
+    document.getElementById('sortieRecu').value = net;
+  }
+}
+
 async function ouvrirSortie(id, nom, prixEntree){
   document.getElementById('sortieAccesId').value=id;
   document.getElementById('sortieNom').textContent=nom;
@@ -1184,7 +1223,11 @@ async function ouvrirSortie(id, nom, prixEntree){
     return;
   }
   _sortieTotal = d.total;
+  _sortieTotalBrut = d.total;
   _sortieIsHeberge = d.is_heberge || false;
+  document.getElementById('sortieRemise').value = 0;
+  document.getElementById('sortieRemiseMontant').style.display = 'none';
+  document.getElementById('sortieNetRow').style.display = 'none';
   // Construire le récapitulatif
   const det=document.getElementById('sortieDetail');
   const entreeLabel = d.forfait_nom ? `⭐ ${d.forfait_nom}` : `Entrée (${d.nb} pers.)`;
@@ -1228,7 +1271,7 @@ async function validerSortie(){
   try {
     r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({mode_paiement:mode,montant_recu:recu,sur_chambre:surChambre})
+      body:JSON.stringify({mode_paiement:mode,montant_recu:recu,sur_chambre:surChambre,remise_pct:parseFloat(document.getElementById('sortieRemise').value)||0})
     });
     if(!r.ok){
       piscineNotif(r.status===403?'Session expirée — rechargez la page (F5).':'Erreur serveur ('+r.status+').','error');

@@ -13,6 +13,7 @@ class AccesPiscine(models.Model):
     nb_adultes     = models.IntegerField(default=1)
     nb_enfants     = models.IntegerField(default=0)
     prix_total     = models.DecimalField(max_digits=10, decimal_places=2)
+    remise_pct     = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Remise (%)")
     date_entree    = models.DateTimeField(auto_now_add=True)
     date_sortie    = models.DateTimeField(null=True, blank=True)
     reservation_hotel = models.ForeignKey(
@@ -37,8 +38,17 @@ class AccesPiscine(models.Model):
 
     @property
     def total_general(self):
-        """Prix entrée + consommations"""
+        """Prix entrée + consommations (brut, avant remise)"""
         return self.prix_total + self.total_consommations
+
+    @property
+    def total_net(self):
+        """Total après remise"""
+        brut = self.total_general
+        if self.remise_pct:
+            from decimal import Decimal
+            return brut * (1 - Decimal(str(self.remise_pct)) / 100)
+        return brut
 
     class Meta:
         verbose_name = "Accès piscine"

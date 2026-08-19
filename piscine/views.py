@@ -455,17 +455,21 @@ def encaisser_sortie(request, acces_id):
         mode_paiement = data.get('mode_paiement', 'especes')
         montant_recu  = Decimal(str(data.get('montant_recu', 0)))
         sur_chambre   = data.get('sur_chambre', False)
+        remise_pct    = Decimal(str(data.get('remise_pct', 0)))
 
-        # Total = entrée + consommations
+        # Total brut = entrée + consommations
         total_conso = sum(c.get_total() for c in acces.consommations.all())
-        total       = acces.prix_total + total_conso
+        total_brut  = acces.prix_total + total_conso
+        montant_remise = (total_brut * remise_pct / 100).quantize(Decimal('1')) if remise_pct else Decimal('0')
+        total       = total_brut - montant_remise  # total net après remise
 
         # Validation montant pour tout paiement direct
         if not sur_chambre and montant_recu < total:
-            return JsonResponse({'success': False, 'error': f'Montant insuffisant. Total : {int(total)} F'})
+            return JsonResponse({'success': False, 'error': f'Montant insuffisant. Total net : {int(total)} F'})
 
-        # Marquer sortie
-        acces.date_sortie = timezone.now()
+        # Marquer sortie + remise
+        acces.remise_pct    = remise_pct
+        acces.date_sortie   = timezone.now()
         acces.save()
 
         nb_total = acces.nb_adultes + acces.nb_enfants
@@ -527,6 +531,8 @@ def encaisser_sortie(request, acces_id):
             contenu += f'<div class="row"><span class="item-name">{le["nom"]}</span><span class="item-price">{int(le["total"]):,} F</span></div>'
         for c in acces.consommations.all():
             contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
+        if montant_remise > 0:
+            contenu += f'<div class="row" style="color:#dc2626"><span class="item-name">Remise {int(remise_pct)}%</span><span class="item-price">-{int(montant_remise):,} F</span></div>'
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',
