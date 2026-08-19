@@ -1810,8 +1810,9 @@ def api_vente_create(request):
         espace       = data.get('espace', '')
         ref          = data.get('ref', '')
         ticket_nom   = data.get('ticket_nom', 'T-???')
-        montant_recu = Decimal(str(data.get('montant_recu', total)))
-        serveur_nom  = data.get('serveur', '')
+        montant_recu    = Decimal(str(data.get('montant_recu', total)))
+        montant_especes = Decimal(str(data.get('montant_especes', 0) or 0))
+        serveur_nom     = data.get('serveur', '')
         serveur_id   = data.get('serveur_id')
         stock_live   = data.get('stock_live', False)  # True = stock déjà prélevé en temps réel
         session_token = data.get('session_token', '')
@@ -1905,6 +1906,10 @@ def api_vente_create(request):
         if paiement in ('especes', 'mobile') and rendu > 0:
             contenu += f"Recu    : {int(montant_recu):,} F\n"
             contenu += f"Rendu   : {int(rendu):,} F\n"
+        if montant_especes > 0 and paiement not in ('especes', 'chambre'):
+            montant_mobile = max(Decimal('0'), total - montant_especes)
+            contenu += f"Especes : {int(montant_especes):,} F\n"
+            contenu += f"Mobile  : {int(montant_mobile):,} F\n"
 
         # Si sur_chambre=True → lier sans créer de ticket facturation séparé
         sur_chambre = data.get('sur_chambre', False)

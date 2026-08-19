@@ -651,6 +651,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .modal-btn-cancel:hover { background: rgba(220,38,38,0.2); color: #f87171; }
 .modal-btn-confirm { flex: 2; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, var(--cave-gold), #e8c56a); color: var(--cave-deep); border: none; font-size: 0.95rem; font-weight: 800; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
 .modal-btn-confirm:hover { transform: translateY(-1px); }
+.modal-mode-tabs { display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px; }
+.mmt { flex:1;min-width:60px;padding:7px 3px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s; }
+.mmt:hover { border-color:rgba(201,168,76,0.4);color:rgba(201,168,76,0.8); }
+.mmt.active { border-color:var(--cave-gold);background:rgba(201,168,76,0.15);color:var(--cave-gold); }
+.mixte-input { width:100%;padding:10px 14px;background:#0d1520;border:1.5px solid rgba(59,130,246,0.4);border-radius:10px;color:white;font-size:1rem;font-weight:600;-webkit-appearance:none;box-sizing:border-box; }
+.mixte-input:focus { outline:none;border-color:#3b82f6; }
+.mixte-reste { display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.25);border-radius:10px; }
 
 /* ===== TOAST ===== */
 .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column-reverse; gap: 8px; }
@@ -1163,13 +1170,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="btn-attente" id="btnAnnulerTicket" onclick="annulerTicket()" style="display:none;margin-bottom:8px;background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.3)">
         <i class="fas fa-times-circle"></i> Annuler le ticket
       </button>
-      <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
-        <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
-      </button>
       <div style="display:flex;gap:6px">
-        <button class="btn-mobile-quick btn-mq-wave"   onclick="paiementRapideMobile('wave')"         disabled title="Encaissement rapide Wave">🌊 Wave</button>
-        <button class="btn-mobile-quick btn-mq-orange" onclick="paiementRapideMobile('orange_money')" disabled title="Encaissement rapide Orange Money">🟠 Orange</button>
-        <button class="btn-mobile-quick btn-mq-mtn"    onclick="paiementRapideMobile('mtn_money')"    disabled title="Encaissement rapide MTN">🟡 MTN</button>
+        <button class="btn-mobile-quick btn-mq-wave"   id="btnMqWave"   onclick="choisirModeMobile('wave')"         disabled title="Payer en Wave">🌊 Wave</button>
+        <button class="btn-mobile-quick btn-mq-orange" id="btnMqOrange" onclick="choisirModeMobile('orange_money')" disabled title="Payer en Orange Money">🟠 Orange</button>
+        <button class="btn-mobile-quick btn-mq-mtn"    id="btnMqMtn"    onclick="choisirModeMobile('mtn_money')"    disabled title="Payer en MTN">🟡 MTN</button>
       </div>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Encaisser la commande
@@ -1278,8 +1282,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="modal-overlay" id="modalPaiement">
   <div class="modal-box">
     <div class="modal-title">Encaissement</div>
-    <div class="modal-subtitle" id="modalSubtitle">Restaurant — <span id="modalMode">Espèces</span></div>
+    <div class="modal-subtitle" id="modalSubtitle">Restaurant</div>
     <div class="modal-total" id="modalTotal">0 F <span>FCFA</span></div>
+
+    <!-- Onglets mode de paiement -->
+    <div class="modal-mode-tabs">
+      <button class="mmt active" data-mode="especes"      onclick="setModalMode('especes')">💵 Espèces</button>
+      <button class="mmt"        data-mode="wave"         onclick="setModalMode('wave')">🌊 Wave</button>
+      <button class="mmt"        data-mode="orange_money" onclick="setModalMode('orange_money')">🟠 Orange</button>
+      <button class="mmt"        data-mode="mtn_money"    onclick="setModalMode('mtn_money')">🟡 MTN</button>
+      <button class="mmt"        data-mode="carte"        onclick="setModalMode('carte')">💳 Carte</button>
+      <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')">🏨 Chambre</button>
+    </div>
+
     <!-- Report Chambre -->
     <div id="chambreSection" style="display:none;margin-bottom:14px">
       <label style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:8px">Chambre du client</label>
@@ -1291,24 +1306,43 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </select>
     </div>
 
-    <div class="rendu-section" id="renduSection">
-      <label>MONTANT REÇU (FCFA)</label>
-      <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
-      <div class="rendu-display" id="renduDisplay">Rendu : <span id="renduVal">0</span> F</div>
+    <!-- Section espèces -->
+    <div id="sectionEspeces">
+      <div class="rendu-section">
+        <label>MONTANT REÇU (FCFA)</label>
+        <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
+        <div class="rendu-display" id="renduDisplay">Rendu : <span id="renduVal">0</span> F</div>
+      </div>
+      <div class="billets-grid" id="billetsGrid">
+        <button class="billet-btn" onclick="setBillet(500)">500</button>
+        <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
+        <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
+        <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
+        <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
+        <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
+        <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
+        <button class="billet-btn" onclick="setBillet(0,true)">Exact</button>
+      </div>
     </div>
-    <div class="billets-grid" id="billetsGrid">
-      <button class="billet-btn" onclick="setBillet(500)">500</button>
-      <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
-      <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
-      <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
-      <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
-      <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
-      <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
-      <button class="billet-btn" onclick="setBillet(0,true)">Exact</button>
+
+    <!-- Section mobile money (Wave / Orange / MTN) -->
+    <div id="sectionMobile" style="display:none">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">
+        Paiement partiel espèces <span style="font-weight:400;color:#6b7280;text-transform:none">(laisser vide si 100% mobile)</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input type="number" id="montantEspeces" class="mixte-input" placeholder="0" oninput="calcMontantMobile()" min="0">
+        <span style="color:#6b7280;font-size:12px;white-space:nowrap">FCFA espèces</span>
+      </div>
+      <div class="mixte-reste">
+        <span style="color:#93c5fd;font-size:13px">Montant mobile :</span>
+        <span id="montantMobileVal" style="font-weight:700;color:white;font-size:15px">0 F</span>
+      </div>
     </div>
-    <div class="modal-actions">
+
+    <div class="modal-actions" style="margin-top:18px">
       <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
-      <button class="modal-btn-confirm" onclick="confirmerPaiement()">
+      <button class="modal-btn-confirm" id="btnConfirmerPaiement" onclick="confirmerPaiement()">
         <i class="fas fa-check"></i> Confirmer & Imprimer
       </button>
     </div>
@@ -1329,7 +1363,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <script>
 const CSRF = '{{ csrf_token }}';
 const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
-const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };
+const modeLabels = { especes:'Espèces', carte:'Carte / TPE', mobile:'Mobile Money', wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN Mobile Money', chambre:'Report Chambre' };
+const MOBILE_MODES = ['wave','orange_money','mtn_money'];
 
 // ── STATE ──
 let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null, remise_pct:0, nb_couverts:1, statut:null, emporter:false } };
@@ -1791,7 +1826,6 @@ function renderTicket() {
     document.getElementById('remiseInput').value = 0;
     document.getElementById('couvertsVal').textContent = '1';
     document.getElementById('btnValider').disabled = true;
-    document.getElementById('btnQuickPay').disabled = true;
     document.getElementById('btnAddition').disabled = true;
     document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = true);
     _majStatutBadge(null);
@@ -1850,7 +1884,6 @@ function renderTicket() {
   document.getElementById('couvertsVal').textContent = t.nb_couverts || 1;
 
   document.getElementById('btnValider').disabled = false;
-  document.getElementById('btnQuickPay').disabled = false;
   document.getElementById('btnAddition').disabled = !t.commandeDbId;
   document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = !t.commandeDbId);
   if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
@@ -1941,31 +1974,6 @@ async function changerCouverts(delta) {
   }
 }
 
-async function paiementRapide() {
-  const t = tickets[ticketActifId];
-  if (!t || !t.lignes.length) return;
-  if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
-  if (!t.addition_imprimee) {
-    toast('🖨️ Imprimez l\'addition avant l\'encaissement rapide', 'error');
-    return;
-  }
-  const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
-  if (!serveurVal) {
-    toast('👤 Sélectionnez un serveur avant d\'encaisser', 'error');
-    const sel = document.getElementById('selectServeur');
-    sel.style.border = '2px solid #dc2626'; sel.style.background = 'rgba(220,38,38,0.15)';
-    setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
-    return;
-  }
-  t.serveur = serveurVal;
-  modePaiement = 'especes';
-  document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === 'especes'));
-  const total = t.totalNet !== undefined ? t.totalNet : (t.total || 0);
-  const inp = document.getElementById('montantRecu');
-  if (inp) inp.value = Math.round(total);
-  await confirmerPaiement();
-}
-
 function imprimerAddition() {
   const t = tickets[ticketActifId];
   if (!t || !t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
@@ -1974,118 +1982,6 @@ function imprimerAddition() {
   t.addition_imprimee = true;
 }
 
-// ── ENCAISSEMENT RAPIDE MOBILE MONEY (Wave / Orange Money / MTN) ──
-let _popupMobile = null;
-
-function paiementRapideMobile(mode) {
-  const t = tickets[ticketActifId];
-  if (!t || !t.lignes.length) return;
-  if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
-  const serveurVal = t.serveur || document.getElementById('selectServeur')?.value || '';
-  if (!serveurVal) { toast('👤 Sélectionnez un serveur', 'error'); return; }
-  t.serveur = serveurVal;
-
-  const modeNom = { wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN Mobile Money' };
-  const total = getTotal();
-
-  window._mobilePayPending = { mode, commandeDbId: t.commandeDbId, total, serveur: serveurVal, client: t.client || '' };
-
-  const date = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  const lignesHTML = t.lignes.map(l =>
-    `<tr><td style="padding:3px 2px">${l.nom}</td><td style="text-align:center;padding:3px 4px">${l.quantite} × ${parseInt(l.prix).toLocaleString('fr-FR')}</td><td style="text-align:right;font-weight:600;padding:3px 2px">${parseInt(l.prix*l.quantite).toLocaleString('fr-FR')} F</td></tr>`
-  ).join('');
-  const totalBrut = t.lignes.reduce((s,l)=>s+l.prix*l.quantite,0);
-  const remiseMt  = t.remise_pct > 0 ? totalBrut * t.remise_pct / 100 : 0;
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reçu ${modeNom[mode]||mode}</title>
-  <style>
-    @page{size:80mm auto;margin:3mm}*{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Courier New',monospace;font-size:11px;width:74mm;background:#fff;color:#000}
-    .center{text-align:center}.sep-dash{border:none;border-top:1px dashed #000;margin:5px 0}.sep-solid{border:none;border-top:1px solid #000;margin:5px 0}
-    .meta-row{display:flex;justify-content:space-between;padding:1px 0}
-    table{width:100%;border-collapse:collapse;font-size:10px}
-    .total-row{display:flex;justify-content:space-between;font-weight:bold;font-size:13px;padding:6px 0 2px;border-top:1px solid #000;margin-top:4px}
-    .mode-badge{text-align:center;padding:6px;background:#f3f4f6;border-radius:4px;font-weight:bold;font-size:12px;margin:6px 0;border:1px dashed #555}
-    .no-print{text-align:center;padding:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-    .btn-print{padding:10px 18px;font-size:13px;font-weight:bold;background:#1a1a2e;color:#c9a84c;border:2px solid #c9a84c;border-radius:8px;cursor:pointer}
-    .btn-confirm{padding:10px 18px;font-size:13px;font-weight:bold;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer}
-    .btn-cancel{padding:10px 14px;font-size:12px;background:#6b7280;color:white;border:none;border-radius:8px;cursor:pointer}
-    @media print{.no-print{display:none!important}body{background:white}}
-  </style></head><body>
-  <div class="center"><div style="font-size:12px;font-weight:bold">{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}</div>
-  <div style="font-size:9px;font-style:italic">Restaurant</div></div>
-  <hr class="sep-solid">
-  <div class="meta-row"><span>Date :</span><span>${date}</span></div>
-  <div class="meta-row"><span>Serveur :</span><span>${serveurVal}</span></div>
-  ${t.client ? `<div class="meta-row"><span>Client :</span><span>${t.client}</span></div>` : ''}
-  <hr class="sep-dash">
-  <table><tbody>${lignesHTML}</tbody></table>
-  <hr class="sep-dash">
-  ${remiseMt > 0 ? `<div class="meta-row"><span style="color:#6b7280">Sous-total :</span><span>${parseInt(totalBrut).toLocaleString('fr-FR')} F</span></div>
-  <div class="meta-row" style="color:#dc2626"><span>Remise (${t.remise_pct}%) :</span><span>- ${parseInt(remiseMt).toLocaleString('fr-FR')} F</span></div>` : ''}
-  <div class="total-row"><span>TOTAL</span><span>${parseInt(total).toLocaleString('fr-FR')} F</span></div>
-  <div class="mode-badge">📱 ${modeNom[mode]||mode}</div>
-  <div class="center" style="font-size:9px;margin-top:6px">Merci de votre visite</div>
-  <div class="no-print">
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
-    <button class="btn-confirm" id="btnValiderMobile" onclick="validerEtFermer()">✅ Valider le paiement</button>
-    <button class="btn-cancel" onclick="window.close()">Annuler</button>
-  </div>
-  <script>
-    function validerEtFermer() {
-      const btn = document.getElementById('btnValiderMobile');
-      btn.disabled = true; btn.textContent = 'Traitement…';
-      if (window.opener && window.opener._validerMobilePaiement) {
-        window.opener._validerMobilePaiement();
-      }
-      setTimeout(() => window.close(), 800);
-    }
-  </script></body></html>`;
-
-  if (_popupMobile && !_popupMobile.closed) _popupMobile.close();
-  _popupMobile = window.open('', '_blank', 'width=440,height=680,top=80,left=80');
-  if (_popupMobile) { _popupMobile.document.write(html); _popupMobile.document.close(); _popupMobile.focus(); }
-}
-
-window._validerMobilePaiement = async function() {
-  const pending = window._mobilePayPending;
-  if (!pending) return;
-  window._mobilePayPending = null;
-  try {
-    const r = await fetch("{% url 'restaurant:valider_commande' %}", {
-      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body: JSON.stringify({
-        commande_id: pending.commandeDbId, action:'paiement',
-        mode_paiement: pending.mode, montant_encaisse: pending.total,
-        client: pending.client, serveur: pending.serveur, operateur_mobile:'',
-      })
-    });
-    const data = await r.json();
-    if (!data.success) { toast('❌ ' + data.message, 'error'); return; }
-    const modeNom = { wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN' };
-    toast(`✅ Encaissé ${modeNom[pending.mode]||pending.mode} — ${parseInt(pending.total).toLocaleString('fr-FR')} F`, 'success');
-    if (data.ticket_html) {
-      const w = window.open('', '_blank', 'width=420,height=720');
-      if (w) { w.document.write(data.ticket_html); w.document.close(); w.focus(); }
-    }
-    delierChambre();
-    const t = tickets[ticketActifId];
-    if (t) majTableCard(t.tableId, 'disponible', 0, '');
-    const oldId = ticketActifId;
-    delete tickets[oldId];
-    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
-    ticketCounter++;
-    const newTid = ticketCounter;
-    const newNom = `T-${String(newTid).padStart(3,'0')}`;
-    tickets[newTid] = {id:newTid,nom:newNom,tableId:null,tableNum:null,client:'',serveur:'',lignes:[],paiement:'especes',commandeDbId:null};
-    ajouterBoutonTicket(newTid, newNom);
-    _chargerTicketInterne(newTid);
-    document.getElementById('tableSelbadge').style.display='none';
-    tableSelActif = null;
-    const badge = document.getElementById('badge-encours');
-    if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent||'0') - 1);
-  } catch(e) { toast('❌ Erreur réseau', 'error'); }
-};
 
 // ── RÉSUMÉ VENTES DU JOUR ──
 let _ventesData = null;
@@ -2590,31 +2486,11 @@ function majTableCard(tableId, statut, total, clientNom) {
 }
 
 // ── PAIEMENT ──
-let mobileMoneyOperateur = null;
-
 function selectPaiement(btn) {
   modePaiement = btn.dataset.mode;
   tickets[ticketActifId].paiement = modePaiement;
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  // Afficher/masquer le sélecteur opérateurs Mobile Money
-  const mobileOps = document.getElementById('mobileMoneyOps');
-  if (mobileOps) mobileOps.style.display = (modePaiement === 'mobile') ? 'block' : 'none';
-  if (modePaiement !== 'mobile') {
-    mobileMoneyOperateur = null;
-    document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor='rgba(255,255,255,0.15)'; b.style.background='rgba(255,255,255,0.07)'; });
-    const sel = document.getElementById('mobileOpSelectedResto');
-    if (sel) sel.style.display = 'none';
-  }
-}
-
-function selectMobileOp(btn) {
-  document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor='rgba(255,255,255,0.15)'; b.style.background='rgba(255,255,255,0.07)'; });
-  btn.style.borderColor = 'rgba(16,185,129,0.6)';
-  btn.style.background  = 'rgba(16,185,129,0.15)';
-  mobileMoneyOperateur = btn.dataset.op;
-  const sel = document.getElementById('mobileOpSelectedResto');
-  if (sel) { sel.style.display='block'; sel.textContent='✓ ' + mobileMoneyOperateur; }
 }
 
 function getTotal() {
@@ -2673,19 +2549,44 @@ function setBillet(val, exact=false) {
 
 
 
+function setModalMode(mode) {
+  modePaiement = mode;
+  if (tickets[ticketActifId]) tickets[ticketActifId].paiement = mode;
+  document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+  document.querySelectorAll('.mmt').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.getElementById('sectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
+  document.getElementById('sectionMobile').style.display  = MOBILE_MODES.includes(mode) ? '' : 'none';
+  document.getElementById('chambreSection').style.display = (mode === 'chambre') ? 'block' : 'none';
+  if (mode === 'especes') {
+    document.getElementById('montantRecu').value = '';
+    document.getElementById('renduDisplay').classList.remove('show');
+  }
+  if (MOBILE_MODES.includes(mode)) {
+    document.getElementById('montantEspeces').value = '';
+    calcMontantMobile();
+  }
+}
+
+function calcMontantMobile() {
+  const total   = getTotal();
+  const especes = parseFloat(document.getElementById('montantEspeces').value) || 0;
+  document.getElementById('montantMobileVal').textContent = formatF(Math.max(0, total - especes));
+}
+
+function choisirModeMobile(mode) {
+  const t = tickets[ticketActifId];
+  if (!t || !t.lignes.length) return;
+  modePaiement = mode;
+  if (t) t.paiement = mode;
+  ouvrirModalPaiement();
+}
+
 function _ouvrirModalPaiementNormal() {
   const t = tickets[ticketActifId];
   const total = getTotal();
   document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
-  document.getElementById('modalMode').textContent = modeLabels[modePaiement] || modePaiement;
-  document.getElementById('montantRecu').value = '';
-  document.getElementById('renduDisplay').classList.remove('show');
-  const hide = modePaiement === 'carte' || modePaiement === 'chambre';
-  document.getElementById('renduSection').style.display = hide ? 'none' : '';
-  document.getElementById('billetsGrid').style.display = hide ? 'none' : '';
-  const chambreSection = document.getElementById('chambreSection');
-  if (chambreSection) chambreSection.style.display = modePaiement === 'chambre' ? 'block' : 'none';
-  document.getElementById('modalSubtitle').innerHTML = `Restaurant${t.ref ? ' — ' + t.ref : ''} — <span id="modalMode">${modeLabels[modePaiement]}</span>`;
+  document.getElementById('modalSubtitle').textContent = `Restaurant${t.ref ? ' — ' + t.ref : ''}`;
+  setModalMode(modePaiement);
   document.getElementById('modalPaiement').classList.add('open');
 }
 
@@ -2736,22 +2637,27 @@ async function confirmerPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); return; }
   const total = getTotal();
-  let montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
-  if ((modePaiement==='especes'||modePaiement==='mobile') && montantRecu < total) {
-    toast('❌ Montant insuffisant', 'error'); return;
+
+  let montantRecu = total;
+  let montantEspeces = 0;
+  const isMobile = MOBILE_MODES.includes(modePaiement);
+
+  if (modePaiement === 'especes') {
+    montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
+    if (montantRecu < total) { toast('❌ Montant insuffisant', 'error'); return; }
+  } else if (isMobile) {
+    montantEspeces = parseFloat(document.getElementById('montantEspeces').value) || 0;
+    if (montantEspeces < 0 || montantEspeces > total) { toast('❌ Montant espèces invalide', 'error'); return; }
+    montantRecu = total;
   }
-  // Opérateur Mobile Money obligatoire
-  if (modePaiement === 'mobile' && !mobileMoneyOperateur) {
-    toast('❌ Sélectionnez un opérateur Mobile Money', 'error'); return;
-  }
-  // Chambre obligatoire en mode report
+
   const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
   if (modePaiement === 'chambre' && !reservation_hotel_id) {
     toast('❌ Veuillez sélectionner la chambre du client', 'error'); return;
   }
 
-  const btn = document.querySelector('.modal-btn-confirm');
-  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…';
+  const btn = document.getElementById('btnConfirmerPaiement');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…'; }
 
   try {
     const r = await fetch("{% url 'restaurant:valider_commande' %}", {
@@ -2759,22 +2665,30 @@ async function confirmerPaiement() {
       body: JSON.stringify({
         commande_id: t.commandeDbId, action: 'paiement',
         mode_paiement: modePaiement, montant_encaisse: montantRecu,
+        montant_especes: montantEspeces,
         client: t.client || '',
         serveur: t.serveur || document.getElementById('selectServeur').value || '',
         reservation_hotel_id: chambreLieeId || reservation_hotel_id,
-        operateur_mobile: mobileMoneyOperateur || '',
+        operateur_mobile: '',
       })
     });
+    if (!r.ok) {
+      const txt = await r.text();
+      if (r.status === 403 || txt.includes('login')) {
+        toast('Session expirée — reconnectez-vous', 'error'); setTimeout(()=>location.reload(),1500);
+      } else { toast(`Erreur serveur (${r.status})`, 'error'); }
+      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer'; }
+      return;
+    }
     const data = await r.json();
     if (!data.success) {
       toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error');
-      btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';
+      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer'; }
       return;
     }
 
     fermerModal();
     delierChambre();
-    mobileMoneyOperateur = null;
     toast(`✅ Commande encaissée — ${formatF(total)}`, 'success');
 
     // Impression ticket thermique

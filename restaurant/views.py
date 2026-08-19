@@ -119,6 +119,7 @@ def valider_commande(request):
         commande_id = data.get('commande_id')
         action = data.get('action', 'paiement')
         montant_encaisse = Decimal(str(data.get('montant_encaisse', 0)))
+        montant_especes  = Decimal(str(data.get('montant_especes', 0) or 0))
         client_name = data.get('client', '')
 
         if not commande_id:
