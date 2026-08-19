@@ -684,6 +684,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
 {% block content %}
 {% load breadcrumb %}
+<form id="csrf-form" style="display:none">{% csrf_token %}</form>
 <div style="padding:4px 12px;background:#f4f1f9;border-bottom:1px solid #e8e2f0;">
 {% breadcrumb "Cave" "bar:stock_management" "Vente rapide" "" %}
 </div>
@@ -1052,6 +1053,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+// Lecture du cookie CSRF — défini en tête pour être disponible partout
+function getCsrfToken() {
+  var v = document.cookie.match('(^|;) ?csrftoken=([^;]*)(;|$)');
+  return v ? v[2] : (document.querySelector('[name=csrfmiddlewaretoken]')?.value || '');
+}
 // ============================================================
 // STATE
 // ============================================================
@@ -1064,7 +1070,7 @@ let modePaiement  = 'especes';
 let chambreLieeId  = null;
 let chambreLieeNom = null;
 const SESSION_TOKEN = crypto.randomUUID();
-var CSRF = '{{ csrf_token }}';
+var CSRF = getCsrfToken() || '{{ csrf_token }}';
 
 // ============================================================
 // UTILITAIRES
@@ -1128,7 +1134,7 @@ async function _ajusterStockTpe(boissonId, delta) {
   try {
     const r = await fetch("{% url 'bar:api_ajuster_stock_tpe' %}", {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken()},
       body: JSON.stringify({boisson_id: boissonId, delta, session_token: SESSION_TOKEN})
     });
     if (!r.ok) {
