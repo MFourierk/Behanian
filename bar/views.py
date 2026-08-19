@@ -1708,16 +1708,15 @@ def resume_ventes_cave(request):
         total_net   = 0
 
         for tk in tickets_qs:
-            montant = float(tk.montant_paye or 0)
+            # montant_total = vente réelle ; montant_paye = ce que le client donne (peut dépasser en espèces)
+            montant = float(tk.montant_total or tk.montant_paye or 0)
             total_net += montant
 
             m_raw = tk.mode_paiement or 'especes'
             m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
             par_mode[m] = par_mode.get(m, 0) + montant
 
-            caissier_nom = ''
-            if tk.cree_par:
-                caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username
+            caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username if tk.cree_par else ''
             par_caissier.setdefault(caissier_nom or 'Inconnu', {'nb': 0, 'total': 0})
             par_caissier[caissier_nom or 'Inconnu']['nb']    += 1
             par_caissier[caissier_nom or 'Inconnu']['total'] += montant
@@ -1731,7 +1730,7 @@ def resume_ventes_cave(request):
             liste_tickets.append({
                 'numero':   tk.numero or '—',
                 'heure':    heure_aff,
-                'montant':  montant,
+                'montant':  montant,  # montant_total (vente réelle)
                 'mode':     m,
                 'caissier': caissier_nom,
                 'ref':      getattr(tk, 'reference', '') or '',
