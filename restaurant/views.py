@@ -1115,26 +1115,23 @@ def resume_ventes_jour(request):
             'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
             'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
         }
+        # Map commande_id → total_net pour éviter de sommer montant_paye
+        # (montant_paye = ce que le client donne, peut dépasser le total en espèces)
+        commande_net_map = {c.id: c.total_net for c in commandes}
+        commande_table_map = {c.id: (c.table.numero if c.table else ('À emporter' if c.emporter else '')) for c in commandes}
+
         for tk in tickets_jour:
             m_raw = tk.mode_paiement or 'especes'
             m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
-            par_mode[m] = par_mode.get(m, 0) + float(tk.montant_paye or 0)
-            caissier_nom = ''
-            if tk.cree_par:
-                caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username
-            # Retrouver la table via objet_id → Commande
-            table_ref = ''
-            if tk.objet_id:
-                try:
-                    cmd = Commande.objects.select_related('table').get(pk=tk.objet_id)
-                    table_ref = cmd.table.numero if cmd.table else ('À emporter' if cmd.emporter else '')
-                except Commande.DoesNotExist:
-                    pass
+            montant_reel = commande_net_map.get(tk.objet_id, float(tk.montant_paye or 0))
+            par_mode[m] = par_mode.get(m, 0) + float(montant_reel)
+            caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username if tk.cree_par else ''
+            table_ref = commande_table_map.get(tk.objet_id, '')
             liste_tickets.append({
                 'numero':   tk.numero,
                 'heure':    tk.date_creation.strftime('%H:%M'),
-                'montant':  float(tk.montant_paye or 0),
-                'mode':     mode_noms.get(m, m),
+                'montant':  float(montant_reel),
+                'mode':     m,
                 'caissier': caissier_nom,
                 'table':    table_ref,
             })
