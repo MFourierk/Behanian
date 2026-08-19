@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import json
@@ -755,6 +755,165 @@ def api_reconciliation(request):
     today = timezone.localdate()
     data = get_reconciliation_jour(today)
     return JsonResponse({'success': True, 'reconciliation': data})
+
+
+@require_module_access('caisse')
+def rapport_transactions(request):
+    """Rapport des transactions par module, mode de paiement et opérateur sur une période."""
+    from datetime import datetime
+    from collections import defaultdict
+
+    today = timezone.localdate()
+
+    def _parse_date(s):
+        try:
+            return datetime.strptime(s, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            return today
+
+    date_debut     = _parse_date(request.GET.get('date_debut'))
+    date_fin       = _parse_date(request.GET.get('date_fin')) if request.GET.get('date_fin') else date_debut
+    filtre_module  = request.GET.get('module', '').strip()
+    filtre_mode    = request.GET.get('mode', '').strip()
+
+    if date_fin < date_debut:
+        date_fin = date_debut
+
+    MODE_LABELS = {
+        'especes':        ('Espèces',            '#16a34a', '💵'),
+        'wave':           ('Wave',               '#1d4ed8', '🔵'),
+        'orange_money':   ('Orange Money',       '#c2410c', '🟠'),
+        'mtn_money':      ('MTN Mobile Money',   '#854d0e', '🟡'),
+        'moov_money':     ('Moov Money',         '#0f766e', '🟢'),
+        'mobile_money':   ('Mobile Money',       '#7c3aed', '📱'),
+        'mobile':         ('Mobile Money',       '#7c3aed', '📱'),
+        'carte_bancaire': ('Carte Bancaire',     '#0891b2', '💳'),
+        'carte':          ('Carte Bancaire',     '#0891b2', '💳'),
+        'cheque':         ('Chèque',             '#475569', '🏷️'),
+        'virement':       ('Virement',           '#d97706', '🏦'),
+        'chambre':        ('Sur chambre',        '#6d28d9', '🛏️'),
+        'autre':          ('Autre',              '#64748b', '—'),
+    }
+
+    MODULE_ORDER = ['hotel', 'restaurant', 'cave', 'piscine', 'espace', 'caisse']
+    MODULE_LABELS = {
+        'hotel':      ('Hôtel',                  '🏨'),
+        'restaurant': ('Restaurant',             '🍽️'),
+        'cave':       ('Cave / Bar',             '🍷'),
+        'piscine':    ('Piscine',                '🏊'),
+        'espace':     ('Espaces Événementiels',  '🎪'),
+        'caisse':     ('Caisse',                 '🏦'),
+    }
+
+    # ── Queryset ────────────────────────────────────────────────────────────
+    tickets_qs = Ticket.objects.filter(
+        date_creation__date__gte=date_debut,
+        date_creation__date__lte=date_fin,
+    ).select_related('cree_par')
+
+    if filtre_module:
+        tickets_qs = tickets_qs.filter(module__startswith=filtre_module)
+
+    MOBILE_SLUGS = ['mobile', 'mobile_money', 'wave', 'orange_money', 'mtn_money', 'moov_money']
+    if filtre_mode:
+        if filtre_mode == 'mobile':
+            tickets_qs = tickets_qs.filter(mode_paiement__in=MOBILE_SLUGS)
+        else:
+            tickets_qs = tickets_qs.filter(mode_paiement=filtre_mode)
+
+    # ── Agrégats module × mode ───────────────────────────────────────────────
+    agg = (
+        tickets_qs
+        .values('module', 'mode_paiement')
+        .annotate(total=Sum('montant_total'), nb=Count('id'))
+        .order_by('module', 'mode_paiement')
+    )
+
+    par_module_raw = defaultdict(lambda: {'modes': {}, 'total': 0, 'nb': 0})
+    par_mode_raw   = {}
+    grand_total    = 0
+    grand_nb       = 0
+
+    for row in agg:
+        mod_key  = (row['module'] or 'autre')
+        mode_raw = (row['mode_paiement'] or 'especes')
+        mode_info = MODE_LABELS.get(mode_raw, (mode_raw.replace('_', ' ').capitalize(), '#64748b', '—'))
+        mode_lbl  = mode_info[0]
+        amount    = int(row['total'] or 0)
+        nb        = int(row['nb'] or 0)
+
+        par_module_raw[mod_key]['modes'][mode_lbl] = par_module_raw[mod_key]['modes'].get(mode_lbl, 0) + amount
+        par_module_raw[mod_key]['total'] += amount
+        par_module_raw[mod_key]['nb']    += nb
+        par_mode_raw[mode_lbl]            = par_mode_raw.get(mode_lbl, 0) + amount
+        grand_total += amount
+        grand_nb    += nb
+
+    # Trier les modules dans l'ordre défini
+    def _mod_sort(key):
+        for i, prefix in enumerate(MODULE_ORDER):
+            if key.startswith(prefix):
+                return i
+        return 99
+
+    modules_list = []
+    for mod_key in sorted(par_module_raw.keys(), key=_mod_sort):
+        data     = par_module_raw[mod_key]
+        mod_info = MODULE_LABELS.get(mod_key, (mod_key.capitalize(), '—'))
+        modules_list.append({
+            'key':   mod_key,
+            'label': mod_info[0],
+            'emoji': mod_info[1],
+            'modes': sorted(data['modes'].items(), key=lambda x: -x[1]),
+            'total': data['total'],
+            'nb':    data['nb'],
+        })
+
+    global_modes = sorted(par_mode_raw.items(), key=lambda x: -x[1])
+
+    # ── Détail tickets (max 1000) ────────────────────────────────────────────
+    tickets_list = []
+    for tk in tickets_qs.order_by('-date_creation')[:1000]:
+        mod_key  = tk.module or 'autre'
+        mode_raw = tk.mode_paiement or 'especes'
+        mode_info = MODE_LABELS.get(mode_raw, (mode_raw.replace('_', ' ').capitalize(), '#64748b', '—'))
+        mod_info  = MODULE_LABELS.get(mod_key, (mod_key.capitalize(), '—'))
+        tickets_list.append({
+            'numero':   tk.numero,
+            'date':     tk.date_creation.strftime('%d/%m/%Y'),
+            'heure':    tk.date_creation.strftime('%H:%M'),
+            'module':   mod_info[0],
+            'mod_emoji':mod_info[1],
+            'mode':     mode_info[0],
+            'mode_clr': mode_info[1],
+            'mode_ico': mode_info[2],
+            'montant':  int(tk.montant_total or 0),
+            'caissier': (tk.cree_par.get_full_name() or tk.cree_par.username) if tk.cree_par else '—',
+        })
+
+    # Options de filtres pour le formulaire
+    all_modules = [(k, v[0]) for k, v in MODULE_LABELS.items()]
+    all_modes   = [(k, v[0]) for k, v in MODE_LABELS.items() if k not in ('mobile', 'carte')]
+
+    periode = (
+        f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}"
+        if date_debut != date_fin else date_debut.strftime('%d/%m/%Y')
+    )
+
+    return render(request, 'caisse/rapport_transactions.html', {
+        'date_debut':    date_debut,
+        'date_fin':      date_fin,
+        'filtre_module': filtre_module,
+        'filtre_mode':   filtre_mode,
+        'modules_list':  modules_list,
+        'global_modes':  global_modes,
+        'grand_total':   grand_total,
+        'grand_nb':      grand_nb,
+        'tickets_list':  tickets_list,
+        'all_modules':   all_modules,
+        'all_modes':     all_modes,
+        'periode':       periode,
+    })
 
 
 @require_module_access('caisse')

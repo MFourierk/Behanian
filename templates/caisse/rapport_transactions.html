@@ -1,0 +1,266 @@
+{% extends 'print_base.html' %}
+{% load humanize %}
+{% block doc_title %}Rapport Transactions — {{ periode }}{% endblock %}
+
+{% block extra_style %}
+<style>
+/* ── Formulaire de filtres (masqué à l'impression) ── */
+.filters-bar {
+  display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
+  padding:14px 30px; background:#f0f4f8;
+  border-bottom:2px solid #e0e6ed;
+}
+.filters-bar label { font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:#4a5568; display:block; margin-bottom:4px; }
+.filters-bar input[type=date], .filters-bar select {
+  padding:7px 10px; border:1.5px solid #d4dce8; border-radius:8px;
+  font-size:12px; background:white; color:#1a2535; cursor:pointer; }
+.filters-bar input[type=date]:focus, .filters-bar select:focus {
+  outline:none; border-color:#1a2535; }
+.btn-filter {
+  padding:8px 18px; background:#1a2535; color:#c9a84c; border:none;
+  border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
+.btn-filter:hover { background:#2d3f55; }
+.btn-reset {
+  padding:8px 14px; background:white; color:#6b7a8d; border:1.5px solid #d4dce8;
+  border-radius:8px; font-size:12px; cursor:pointer; }
+
+/* ── Badges modes ── */
+.mode-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700; }
+
+/* ── Tableau détail ── */
+.doc-table tbody td.mod-cell { font-size:10px; white-space:nowrap; }
+.doc-table tbody td.num { text-align:right; font-weight:700; }
+.doc-table tfoot td.total-val { font-size:13px; }
+</style>
+{% endblock %}
+
+{% block doc_actions %}
+<!-- Formulaire filtres -->
+<form method="get" class="filters-bar no-print" style="flex-wrap:wrap;width:100%;padding:14px 20px;background:#f0f4f8;border-bottom:2px solid #e0e6ed;border-radius:0">
+  <div>
+    <label>Du</label>
+    <input type="date" name="date_debut" value="{{ date_debut|date:'Y-m-d' }}">
+  </div>
+  <div>
+    <label>Au</label>
+    <input type="date" name="date_fin" value="{{ date_fin|date:'Y-m-d' }}">
+  </div>
+  <div>
+    <label>Module</label>
+    <select name="module">
+      <option value="">Tous les modules</option>
+      {% for key, lbl in all_modules %}
+      <option value="{{ key }}" {% if filtre_module == key %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Mode / Opérateur</label>
+    <select name="mode">
+      <option value="">Tous les modes</option>
+      {% for key, lbl in all_modes %}
+      <option value="{{ key }}" {% if filtre_mode == key %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div style="display:flex;gap:6px;align-items:flex-end">
+    <button type="submit" class="btn-filter">🔍 Filtrer</button>
+    <a href="{% url 'caisse:rapport_transactions' %}" class="btn-reset">✕ Réinitialiser</a>
+    <button type="button" onclick="window.print()" class="btn-doc btn-doc-print" style="padding:8px 16px;font-size:12px">🖨️ Imprimer</button>
+    <button type="button" onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close" style="padding:8px 14px;font-size:12px">✕ Fermer</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block doc_content %}
+<!-- TITRE -->
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">RAPPORT DES TRANSACTIONS</div>
+    <div class="doc-title-sub">
+      Complexe Hôtelier Behanian
+      {% if filtre_module or filtre_mode %} · Filtré :
+        {% if filtre_module %}{{ filtre_module|upper }}{% endif %}
+        {% if filtre_mode %}· {{ filtre_mode|upper }}{% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ periode }}</span>
+  </div>
+</div>
+
+<!-- KPI GLOBAUX -->
+<div class="meta-grid cols-3">
+  <div class="meta-box">
+    <div class="meta-box-title">Période analysée</div>
+    <div class="meta-row"><span class="meta-lbl">Du</span><span class="meta-val bold">{{ date_debut|date:"d/m/Y" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Au</span><span class="meta-val bold">{{ date_fin|date:"d/m/Y" }}</span></div>
+    {% if filtre_module %}<div class="meta-row"><span class="meta-lbl">Module</span><span class="meta-val">{{ filtre_module|upper }}</span></div>{% endif %}
+    {% if filtre_mode %}<div class="meta-row"><span class="meta-lbl">Mode</span><span class="meta-val">{{ filtre_mode|upper }}</span></div>{% endif %}
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Vue globale</div>
+    <div class="meta-row"><span class="meta-lbl">Transactions</span><span class="meta-val bold" style="font-size:14px;color:#1a2535">{{ grand_nb }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val bold" style="font-size:14px;color:#16a34a">{{ grand_total|intcomma }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl">Modules actifs</span><span class="meta-val">{{ modules_list|length }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Par mode / opérateur</div>
+    {% for mode_lbl, mt in global_modes %}
+    <div class="meta-row">
+      <span class="meta-lbl">{{ mode_lbl }}</span>
+      <span class="meta-val bold">{{ mt|intcomma }} F</span>
+    </div>
+    {% empty %}
+    <div class="meta-row"><span class="meta-lbl" style="color:#8a9ab0">Aucune transaction</span></div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if not modules_list %}
+<div style="text-align:center;padding:60px 20px;color:#7a8b9c;font-size:13px">
+  <div style="font-size:2.5rem;margin-bottom:12px">📋</div>
+  Aucune transaction pour les critères sélectionnés
+</div>
+{% else %}
+
+<!-- SYNTHÈSE PAR MODULE -->
+{% for mod in modules_list %}
+<div class="content-section">
+  <div class="section-title">{{ mod.emoji }} {{ mod.label }} — {{ mod.nb }} transaction{{ mod.nb|pluralize }}</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Mode de paiement / Opérateur</th>
+        <th class="r" style="width:120px">Montant (FCFA)</th>
+        <th class="r" style="width:60px">%</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mode_lbl, mt in mod.modes %}
+      <tr>
+        <td>{{ mode_lbl }}</td>
+        <td class="r bold">{{ mt|intcomma }}</td>
+        <td class="r muted" style="font-size:10px">{% if mod.total %}{% widthratio mt mod.total 100 %}%{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label">TOTAL {{ mod.label|upper }}</td>
+        <td class="total-val" colspan="2">{{ mod.total|intcomma }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endfor %}
+
+<!-- RÉCAPITULATIF GÉNÉRAL -->
+{% if modules_list|length > 1 %}
+<div class="content-section">
+  <div class="section-title">📊 Récapitulatif général — Tous modules</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Module</th>
+        <th class="r">Transactions</th>
+        {% for mode_lbl, _ in global_modes %}<th class="r" style="font-size:9px;white-space:nowrap">{{ mode_lbl }}</th>{% endfor %}
+        <th class="r">Total FCFA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mod in modules_list %}
+      <tr>
+        <td class="bold">{{ mod.emoji }} {{ mod.label }}</td>
+        <td class="r muted">{{ mod.nb }}</td>
+        {% for mode_lbl, _ in global_modes %}
+        <td class="r" style="font-size:10px;color:#4a5568">
+          {% for m_lbl, mt in mod.modes %}{% if m_lbl == mode_lbl %}{{ mt|intcomma }}{% endif %}{% endfor %}
+        </td>
+        {% endfor %}
+        <td class="r bold">{{ mod.total|intcomma }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label" colspan="2">TOTAL GÉNÉRAL ({{ grand_nb }} tx)</td>
+        {% for mode_lbl, mt in global_modes %}
+        <td class="total-val" style="font-size:11px">{{ mt|intcomma }}</td>
+        {% endfor %}
+        <td class="total-val">{{ grand_total|intcomma }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endif %}
+
+<!-- DÉTAIL DES TICKETS -->
+{% if tickets_list %}
+<div class="content-section">
+  <div class="section-title">🧾 Détail des transactions{% if tickets_list|length == 1000 %} (1 000 dernières){% endif %}</div>
+  <div style="overflow-x:auto">
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>N° Ticket</th>
+        <th>Date</th>
+        <th>Heure</th>
+        <th>Module</th>
+        <th>Mode / Opérateur</th>
+        <th>Caissier</th>
+        <th class="r">Montant FCFA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tk in tickets_list %}
+      <tr>
+        <td class="muted" style="font-family:monospace;font-size:9px">{{ tk.numero }}</td>
+        <td style="font-size:10px">{{ tk.date }}</td>
+        <td style="font-size:10px">{{ tk.heure }}</td>
+        <td class="mod-cell">{{ tk.mod_emoji }} {{ tk.module }}</td>
+        <td>
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600">
+            {{ tk.mode_ico }} {{ tk.mode }}
+          </span>
+        </td>
+        <td class="muted" style="font-size:10px">{{ tk.caissier }}</td>
+        <td class="num">{{ tk.montant|intcomma }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label" colspan="6">TOTAL — {{ grand_nb }} transaction{{ grand_nb|pluralize }}</td>
+        <td class="total-val">{{ grand_total|intcomma }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box">
+    <div class="sig-line">Chef Caissier(e)</div>
+    <div class="sig-hint">Nom &amp; Signature</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line">Responsable</div>
+    <div class="sig-hint">Nom &amp; Signature</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line">Direction</div>
+    <div class="sig-hint">Visa &amp; Cachet</div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block doc_footer_right %}Rapport transactions {{ periode }} · Édité le {% now "d/m/Y H:i" %}{% endblock %}

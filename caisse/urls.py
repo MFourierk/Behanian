@@ -14,6 +14,7 @@ urlpatterns = [
     path('rapport/<int:session_id>/', views.rapport_caisse, name='rapport_session'),
     path('rapport/excel/', views.rapport_caisse_excel, name='rapport_excel'),
     path('rapport/<int:session_id>/excel/', views.rapport_caisse_excel, name='rapport_session_excel'),
+    path('rapport/transactions/', views.rapport_transactions, name='rapport_transactions'),
     path('etat-journee/', views.etat_journee, name='etat_journee'),
     path('historique/', views.historique, name='historique'),
     path('sync/', views.sync_centrale, name='sync'),
