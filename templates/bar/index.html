@@ -899,6 +899,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="btn-attente" onclick="mettreEnAttente()">
         <i class="fas fa-pause-circle"></i> Mettre en attente
       </button>
+      <button class="btn-attente" id="btnAddition" onclick="imprimerAddition()" disabled>
+        <i class="fas fa-receipt"></i> Imprimer l'addition
+      </button>
       <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
         <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
       </button>
@@ -1034,6 +1037,7 @@ let ticketCounter = 1;
 let modePaiement  = 'especes';
 let chambreLieeId  = null;
 let chambreLieeNom = null;
+const SESSION_TOKEN = crypto.randomUUID();
 
 // ============================================================
 // UTILITAIRES
@@ -1098,7 +1102,7 @@ async function _ajusterStockTpe(boissonId, delta) {
     const r = await fetch("{% url 'bar:api_ajuster_stock_tpe' %}", {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
-      body: JSON.stringify({boisson_id: boissonId, delta})
+      body: JSON.stringify({boisson_id: boissonId, delta, session_token: SESSION_TOKEN})
     });
     const data = await r.json();
     if (!data.ok) { toast(data.error, 'error'); return false; }
@@ -1143,6 +1147,7 @@ function renderTicket() {
     document.getElementById('remiseInput').value = 0;
     document.getElementById('btnValider').disabled = true;
     document.getElementById('btnQuickPay').disabled = true;
+    document.getElementById('btnAddition').disabled = true;
     return;
   }
 
@@ -1185,6 +1190,7 @@ function renderTicket() {
 
   document.getElementById('btnValider').disabled = false;
   document.getElementById('btnQuickPay').disabled = false;
+  document.getElementById('btnAddition').disabled = false;
 
   // Maj badge tickets en attente
   document.querySelectorAll('.ticket-attente-btn').forEach(btn => {
@@ -1608,6 +1614,7 @@ async function confirmerPaiement() {
       reservation_id : chambreLieeId || (modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : ''),
       operateur_mobile: mobileMoneyOperateur || '',
       stock_live     : true,
+      session_token  : SESSION_TOKEN,
     };
 
     const resp = await fetch("{% url 'bar:api_vente' %}", {
@@ -1809,6 +1816,106 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
   w.focus();
   w.onafterprint = () => w.close();
   setTimeout(() => w.print(), 350);
+}
+
+// ============================================================
+// IMPRESSION ADDITION (pré-facture, ne clôture pas le ticket)
+// ============================================================
+function imprimerAddition() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.lignes.length) { toast('Aucun article à imprimer', 'error'); return; }
+
+  const nomComplexe = "{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}";
+  const adresse     = "{{ config.adresse|default:'Yopougon Beago à 200m du Palais de justice' }}";
+  const telephone   = "{{ config.telephone|default:'07 58 29 11 10 / 01 43 09 76 16' }}";
+  const logoUrl     = "{% static 'images/Logo.png' %}";
+  const date        = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const selectEspace = document.getElementById('selectEspace');
+  const espaceLabel  = selectEspace.options[selectEspace.selectedIndex]?.text.replace(/^[^\s]+\s/, '') || 'Cave';
+  const total = t.totalNet || t.lignes.reduce((s, l) => s + l.prix * l.qty, 0);
+
+  const lignesHTML = t.lignes.map(l => {
+    const montantLigne = parseInt(l.prix * l.qty).toLocaleString('fr-FR');
+    const prixUnit     = parseInt(l.prix).toLocaleString('fr-FR');
+    return `<tr>
+      <td style="padding:3px 2px;max-width:110px;word-wrap:break-word;">${l.nom}</td>
+      <td style="padding:3px 4px;text-align:center;white-space:nowrap;">${l.qty} × ${prixUnit}</td>
+      <td style="padding:3px 2px;text-align:right;white-space:nowrap;font-weight:600;">${montantLigne} F</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>Addition ${t.nom}</title>
+    <style>
+      @page { size: 80mm auto; margin: 3mm; }
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family:'Courier New',monospace; font-size:11px; width:74mm; background:#fff; color:#000; }
+      .center { text-align:center; }
+      .sep-dash { border:none; border-top:1px dashed #000; margin:5px 0; }
+      .sep-solid { border:none; border-top:1px solid #000; margin:5px 0; }
+      .meta-row { display:flex; justify-content:space-between; padding:1px 0; }
+      .meta-label { font-weight:bold; }
+      table { width:100%; border-collapse:collapse; }
+      thead tr th { font-size:9px; padding:3px 2px; border-bottom:1px solid #000; text-align:left; }
+      thead tr th:nth-child(2) { text-align:center; }
+      thead tr th:nth-child(3) { text-align:right; }
+      .total-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 2px 2px; }
+      .total-label { font-size:12px; font-weight:bold; }
+      .total-val { font-size:15px; font-weight:bold; }
+      .addition-banner { background:#1a1a2e; color:#fff; text-align:center; padding:6px 0; font-size:14px; font-weight:bold; letter-spacing:2px; margin:8px 0; border-radius:4px; }
+      .non-encaisse { text-align:center; font-size:9px; color:#888; font-style:italic; margin-bottom:6px; }
+      .footer { margin-top:8px; font-size:9px; text-align:center; line-height:1.5; }
+      .no-print { text-align:center; padding:14px; }
+      .btn-print { background:#1a1225; color:#c9a84c; border:2px solid #c9a84c; border-radius:8px; padding:10px 30px; font-size:14px; font-weight:bold; cursor:pointer; }
+      @media print { .no-print { display:none !important; } }
+    </style>
+  </head>
+  <body>
+    <div class="no-print">
+      <button class="btn-print" onclick="window.print()">Imprimer l'addition</button>
+    </div>
+    <div class="center">
+      <img src="${logoUrl}" alt="Logo" style="width:60px;height:60px;object-fit:contain;margin-bottom:4px;" onerror="this.style.display='none'">
+      <div style="font-size:14px;font-weight:bold;letter-spacing:1px;">${nomComplexe}</div>
+      <div style="font-size:9px;font-style:italic;margin-top:2px;">Votre confort, notre priorité</div>
+      <div style="font-size:9px;margin-top:3px;">${adresse}</div>
+      <div style="font-size:9px;">Tél: ${telephone}</div>
+    </div>
+    <div class="addition-banner">ADDITION</div>
+    <div class="non-encaisse">Non encaissé — en attente de règlement</div>
+    <hr class="sep-solid">
+    <div class="meta-row"><span class="meta-label">Date :</span><span>${date}</span></div>
+    <div class="meta-row"><span class="meta-label">Réf :</span><span>${t.nom}</span></div>
+    <div class="meta-row"><span class="meta-label">Service :</span><span>${espaceLabel}</span></div>
+    ${t.ref ? '<div class="meta-row"><span class="meta-label">Réf client :</span><span>' + t.ref + '</span></div>' : ''}
+    ${t.serveur ? '<div class="meta-row"><span class="meta-label">Serveur :</span><span>' + t.serveur + '</span></div>' : ''}
+    <hr class="sep-dash">
+    <table>
+      <thead><tr>
+        <th>Désignation</th>
+        <th style="text-align:center;">Qté × P.U</th>
+        <th style="text-align:right;">Montant</th>
+      </tr></thead>
+      <tbody>${lignesHTML}</tbody>
+    </table>
+    <hr class="sep-dash">
+    <div class="total-row">
+      <span class="total-label">TOTAL À PAYER</span>
+      <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} F</span>
+    </div>
+    <hr class="sep-solid">
+    <div class="footer">Merci de votre visite<br>Conservez ce document jusqu'au règlement</div>
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=400,height=700');
+  if (w) {
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.onafterprint = () => w.close();
+    setTimeout(() => w.print(), 350);
+  }
 }
 
 function getCookie(name) {

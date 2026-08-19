@@ -1151,6 +1151,9 @@
         </div>
       </div>
 
+      <button class="btn-addition-paiement" id="btnAddition" onclick="imprimerAdditionResto()" style="width:100%;padding:14px;margin-bottom:10px;background:rgba(201,168,76,0.12);color:#c9a84c;border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.12)'">
+        Imprimer l'addition
+      </button>
       <button class="btn-confirm-paiement" id="btnConfirm" onclick="confirmerPaiement()">
         ✓ Confirmer & Imprimer
       </button>
@@ -1784,6 +1787,17 @@ function calculerRendu() {
     document.getElementById('renduVal').textContent = formatF(rendu);
     div.classList.add('show');
   } else { div.classList.remove('show'); }
+}
+
+// URL template pour l'addition (0 est remplacé par l'ID réel)
+const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
+
+function imprimerAdditionResto() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) { toast('Aucune commande à imprimer', 'error'); return; }
+  const url = ADDITION_URL_TPL.replace('/0/', '/' + t.commandeDbId + '/');
+  const w = window.open(url, '_blank', 'width=400,height=700');
+  if (w) w.focus();
 }
 
 async function confirmerPaiement() {

@@ -1703,3 +1703,19 @@ def reservation_api_statut(request):
         return _JsonResponse({'success': True})
     except Exception as e:
         return _JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@require_module_access('restaurant')
+def imprimer_addition(request, commande_id):
+    """Pré-facture (addition) : affiche les articles sans encaisser ni clôturer le ticket."""
+    commande = get_object_or_404(Commande, id=commande_id)
+    lignes = commande.lignes.select_related('plat').prefetch_related('accompagnements').all()
+    from dashboard.models import Configuration
+    config = Configuration.load()
+    montant_remise = float(commande.total) * float(commande.remise_pct) / 100 if commande.remise_pct else 0
+    return render(request, 'restaurant/addition_print.html', {
+        'commande': commande,
+        'lignes': lignes,
+        'config': config,
+        'montant_remise': montant_remise,
+    })

@@ -28,6 +28,7 @@ urlpatterns = [
     path('resume-ventes-jour/', views.resume_ventes_jour, name='resume_ventes_jour'),
     path('create-reservation/', views.create_reservation, name='create_reservation'),
     path('update-reservation-status/', views.update_reservation_status, name='update_reservation_status'),
+    path('addition/<int:commande_id>/', views.imprimer_addition, name='imprimer_addition'),
 
     # ── Réservations ──────────────────────────────────────────────────────────
     path('reservations/', views.reservation_list,   name='reservation_list'),

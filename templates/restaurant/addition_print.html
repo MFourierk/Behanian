@@ -1,0 +1,169 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Addition — {{ commande.table.numero|default:commande.nom_client|default:"Table" }}</title>
+  <style>
+    @page { size: 80mm auto; margin: 3mm; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      background: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 90vh;
+    }
+    .ticket {
+      width: 300px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    .center { text-align: center; }
+    .sep-solid { border: none; border-top: 2px solid #000; margin: 6px 0; }
+    .sep-dash  { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+    .meta-row  { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; }
+    .meta-label { font-weight: bold; }
+    .addition-banner {
+      background: #1a1a2e; color: #fff;
+      text-align: center; padding: 6px 0;
+      font-size: 14px; font-weight: bold;
+      letter-spacing: 2px; margin: 8px 0;
+    }
+    .non-encaisse {
+      text-align: center; font-size: 9px;
+      color: #888; font-style: italic; margin-bottom: 6px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    thead th { font-size: 10px; padding: 3px 2px; border-bottom: 1px solid #000; text-align: left; }
+    thead th:nth-child(2) { text-align: center; }
+    thead th:nth-child(3) { text-align: right; }
+    tbody td { padding: 3px 2px; vertical-align: top; }
+    tbody td:nth-child(2) { text-align: center; white-space: nowrap; }
+    tbody td:nth-child(3) { text-align: right; white-space: nowrap; font-weight: bold; }
+    .total-row {
+      display: flex; justify-content: space-between;
+      align-items: baseline; padding: 5px 2px 3px;
+    }
+    .total-label { font-size: 13px; font-weight: bold; }
+    .total-val   { font-size: 16px; font-weight: bold; }
+    .footer { margin-top: 8px; font-size: 9px; text-align: center; line-height: 1.6; }
+    .no-print { text-align: center; margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+    .btn-imprimer {
+      padding: 10px 24px; font-size: 15px; font-weight: bold;
+      background: #1a1225; color: #c9a84c;
+      border: 2px solid #c9a84c; border-radius: 8px; cursor: pointer;
+    }
+    .btn-fermer {
+      padding: 10px 24px; font-size: 15px; font-weight: bold;
+      background: #6c757d; color: white;
+      border: none; border-radius: 8px; cursor: pointer;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .ticket { box-shadow: none; width: 100%; padding: 0; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="ticket">
+  <div class="center">
+    <img src="{% static 'images/Logo.png' %}" alt="Logo"
+         style="width:55px;height:55px;object-fit:contain;margin-bottom:4px;"
+         onerror="this.style.display='none'">
+    <div style="font-size:13px;font-weight:bold;letter-spacing:1px;">{{ config.nom_complexe|default:"COMPLEXE HÔTELIER BEHANIAN" }}</div>
+    <div style="font-size:9px;font-style:italic;margin-top:2px;">Votre confort, notre priorité</div>
+    <div style="font-size:9px;margin-top:3px;">{{ config.adresse|default:"Yopougon Beago à 200m du Palais de justice" }}</div>
+    <div style="font-size:9px;">Tél: {{ config.telephone|default:"07 58 29 11 10 / 01 43 09 76 16" }}</div>
+  </div>
+
+  <div class="addition-banner">ADDITION</div>
+  <div class="non-encaisse">Non encaissé — en attente de règlement</div>
+  <hr class="sep-solid">
+
+  <div class="meta-row">
+    <span class="meta-label">Date :</span>
+    <span>{% now "d/m/Y H:i" %}</span>
+  </div>
+  {% if commande.table %}
+  <div class="meta-row">
+    <span class="meta-label">Table :</span>
+    <span>{{ commande.table.numero }}</span>
+  </div>
+  {% endif %}
+  {% if commande.nom_client %}
+  <div class="meta-row">
+    <span class="meta-label">Client :</span>
+    <span>{{ commande.nom_client }}</span>
+  </div>
+  {% endif %}
+  {% if commande.serveur %}
+  <div class="meta-row">
+    <span class="meta-label">Serveur :</span>
+    <span>{{ commande.serveur.get_full_name|default:commande.serveur.username }}</span>
+  </div>
+  {% endif %}
+  <hr class="sep-dash">
+
+  <table>
+    <thead>
+      <tr>
+        <th>Désignation</th>
+        <th>Qté × P.U</th>
+        <th>Montant</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ligne in lignes %}
+      <tr>
+        <td style="max-width:120px;word-wrap:break-word;">
+          {{ ligne.plat.nom }}
+          {% if ligne.note %}<div style="font-size:9px;color:#888;">{{ ligne.note }}</div>{% endif %}
+        </td>
+        <td>{{ ligne.quantite }} × {{ ligne.prix_unitaire|floatformat:0 }}</td>
+        <td>{{ ligne.get_total|floatformat:0 }} F</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <hr class="sep-dash">
+
+  {% if commande.remise_pct and commande.remise_pct > 0 %}
+  <div style="display:flex;justify-content:space-between;padding:2px;font-size:11px;">
+    <span>Sous-total :</span>
+    <span>{{ commande.total|floatformat:0 }} F</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;padding:2px;font-size:11px;">
+    <span>Remise ({{ commande.remise_pct }}%) :</span>
+    <span>-{{ montant_remise|floatformat:0 }} F</span>
+  </div>
+  <hr class="sep-dash">
+  {% endif %}
+
+  <div class="total-row">
+    <span class="total-label">TOTAL À PAYER</span>
+    <span class="total-val">{{ commande.total_net|floatformat:0 }} FCFA</span>
+  </div>
+  <hr class="sep-solid">
+
+  <div class="footer">
+    Merci de votre visite<br>
+    Conservez ce document jusqu'au règlement
+  </div>
+</div>
+
+<div class="no-print">
+  <button class="btn-imprimer" onclick="window.print()">Imprimer l'addition</button>
+  <button class="btn-fermer" onclick="window.close()">Fermer</button>
+</div>
+
+<script>
+window.addEventListener('afterprint', () => window.close());
+</script>
+</body>
+</html>

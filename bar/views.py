@@ -100,7 +100,20 @@ def stock_management(request):
 
     # Mouvements du mois
     debut_mois = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    mouvements = MouvementStockBar.objects.select_related('boisson', 'utilisateur').order_by('-date')[:100]
+    _raw_mvts = (MouvementStockBar.objects
+        .exclude(commentaire__startswith='TPE Cave')
+        .select_related('boisson', 'utilisateur')
+        .order_by('-date'))[:500]
+    _seen_keys = {}
+    mouvements = []
+    for _mv in _raw_mvts:
+        _key = (_mv.commentaire, _mv.boisson_id, _mv.type_mouvement)
+        if _key in _seen_keys:
+            _seen_keys[_key].quantite += _mv.quantite
+        else:
+            _seen_keys[_key] = _mv
+            mouvements.append(_mv)
+    mouvements = mouvements[:100]
     mv_entrees_mois = MouvementStockBar.objects.filter(type_mouvement='entree', date__gte=debut_mois).count()
     mv_sorties_mois = MouvementStockBar.objects.filter(type_mouvement__in=['sortie', 'prelevement'], date__gte=debut_mois).count()
     mv_casses_mois = MouvementStockBar.objects.filter(type_mouvement='casse', date__gte=debut_mois).count()
@@ -1753,6 +1766,7 @@ def api_ajuster_stock_tpe(request):
         data      = json.loads(request.body)
         boisson_id = int(data['boisson_id'])
         delta      = int(data['delta'])
+        session_token = data.get('session_token', '')
 
         with transaction.atomic():
             boisson = BoissonBar.objects.select_for_update().get(pk=boisson_id)
@@ -1764,13 +1778,13 @@ def api_ajuster_stock_tpe(request):
                     })
                 MouvementStockBar.objects.create(
                     boisson=boisson, type_mouvement='sortie', quantite=delta,
-                    commentaire='TPE Cave — prévisionnel',
+                    commentaire=f'TPE Cave — {session_token}' if session_token else 'TPE Cave — prévisionnel',
                     utilisateur=request.user,
                 )
             else:
                 MouvementStockBar.objects.create(
                     boisson=boisson, type_mouvement='entree', quantite=abs(delta),
-                    commentaire='TPE Cave — retrait prévisionnel',
+                    commentaire=f'TPE Cave — retrait {session_token}' if session_token else 'TPE Cave — retrait prévisionnel',
                     utilisateur=request.user,
                 )
             boisson.refresh_from_db()
@@ -1801,6 +1815,7 @@ def api_vente_create(request):
         serveur_nom  = data.get('serveur', '')
         serveur_id   = data.get('serveur_id')
         stock_live   = data.get('stock_live', False)  # True = stock déjà prélevé en temps réel
+        session_token = data.get('session_token', '')
         serveur_obj  = None
         if serveur_id:
             from django.contrib.auth.models import User as AuthUser
@@ -1923,7 +1938,17 @@ def api_vente_create(request):
                             quantite=qty, commentaire=f'Cave → Chambre {reservation.chambre.numero}',
                             utilisateur=request.user, serveur=serveur_obj,
                         )
-                # Retourner succès sans ticket
+                # Lier mouvements provisoires TPE (sur chambre)
+                if session_token and stock_live:
+                    try:
+                        MouvementStockBar.objects.filter(
+                            commentaire__in=[
+                                f'TPE Cave — {session_token}',
+                                f'TPE Cave — retrait {session_token}',
+                            ]
+                        ).update(commentaire=f'Cave → Chambre {reservation.chambre.numero}')
+                    except Exception:
+                        pass
                 return JsonResponse({'ok': True, 'ticket_numero': 'CHAMBRE', 'total': float(total), 'erreurs_stock': []})
             except Exception as e:
                 return JsonResponse({'ok': False, 'error': str(e)})
@@ -1965,6 +1990,15 @@ def api_vente_create(request):
                     )
             except Exception as e:
                 pass  # Ne pas bloquer la vente si erreur liaison
+
+        # Lier mouvements provisoires TPE au ticket
+        if session_token and stock_live:
+            MouvementStockBar.objects.filter(
+                commentaire__in=[
+                    f'TPE Cave — {session_token}',
+                    f'TPE Cave — retrait {session_token}',
+                ]
+            ).update(commentaire=f'Vente Cave — {ticket.numero}')
 
         # Decrementer stock + tracer mouvements (ignoré si déjà prélevé en temps réel)
         erreurs_stock = []
