@@ -35,7 +35,14 @@
     <div class="meta-box-title">Récapitulatif</div>
     <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val bold" style="color:#16a34a">{{ stats.total|montant }} FCFA</span></div>
     <div class="meta-row"><span class="meta-lbl">Espèces</span><span class="meta-val">{{ stats.especes|montant }} FCFA</span></div>
+    {% if stats.par_mobile %}
+      {% for lbl, mt, clr, badge in stats.par_mobile %}
+      <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ {{ lbl }}</span><span class="meta-val">{{ mt|montant }} FCFA</span></div>
+      {% endfor %}
+      <div class="meta-row"><span class="meta-lbl bold">Mobile Money (total)</span><span class="meta-val bold">{{ stats.mobile|montant }} FCFA</span></div>
+    {% else %}
     <div class="meta-row"><span class="meta-lbl">Mobile Money</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
+    {% endif %}
     <div class="meta-row"><span class="meta-lbl">Carte bancaire</span><span class="meta-val">{{ stats.carte|montant }} FCFA</span></div>
     <div class="meta-row"><span class="meta-lbl">Prélèvement banque</span><span class="meta-val" style="color:#dc2626">- {{ stats.prelevements|montant }} FCFA</span></div>
     <div class="meta-row"><span class="meta-lbl">Net en caisse</span><span class="meta-val bold">{{ stats.net|montant }} FCFA</span></div>

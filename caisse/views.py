@@ -93,11 +93,25 @@ def get_stats_jour(date=None, type_caisse=None):
     elif type_caisse == 'module':
         tickets = tickets.exclude(module__in=['hotel'])
 
-    total    = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
-    especes  = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
-    mobile   = tickets.filter(mode_paiement__in=['mobile', 'mobile_money', 'orange_money', 'wave', 'moov_money', 'mtn_money']).aggregate(s=Sum('montant_total'))['s'] or 0
-    carte    = tickets.filter(mode_paiement='carte_bancaire').aggregate(s=Sum('montant_total'))['s'] or 0
-    virement = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
+    total        = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
+    especes      = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
+    carte        = tickets.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0
+    virement     = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
+
+    # Mobile money — détail par opérateur
+    _wave        = int(tickets.filter(mode_paiement='wave').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _orange      = int(tickets.filter(mode_paiement='orange_money').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _mtn         = int(tickets.filter(mode_paiement='mtn_money').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _moov        = int(tickets.filter(mode_paiement='moov_money').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _mobile_gen  = int(tickets.filter(mode_paiement__in=['mobile', 'mobile_money']).aggregate(s=Sum('montant_total'))['s'] or 0)
+    mobile       = _wave + _orange + _mtn + _moov + _mobile_gen
+
+    par_mobile = []
+    if _wave:       par_mobile.append(('Wave',             _wave,   '#1d4ed8', 'W'))
+    if _orange:     par_mobile.append(('Orange Money',     _orange, '#c2410c', 'O'))
+    if _mtn:        par_mobile.append(('MTN Mobile Money', _mtn,    '#854d0e', 'M'))
+    if _moov:       par_mobile.append(('Moov Money',       _moov,   '#0f766e', 'V'))
+    if _mobile_gen: par_mobile.append(('Mobile Money',     _mobile_gen, '#7c3aed', '📱'))
 
     par_module = {}
     for mod, label in [('hotel', 'Hôtel'), ('restaurant', 'Restaurant'), ('cave', 'Cave'),
@@ -112,18 +126,19 @@ def get_stats_jour(date=None, type_caisse=None):
     total_depenses = depenses.aggregate(s=Sum('montant'))['s'] or 0
 
     return {
-        'date': date,
-        'total': int(total),
-        'nb_tickets': tickets.count(),
-        'especes': int(especes),
-        'mobile': int(mobile),
-        'carte': int(carte),
-        'virement': int(virement),
-        'par_module': par_module,
+        'date':         date,
+        'total':        int(total),
+        'nb_tickets':   tickets.count(),
+        'especes':      int(especes),
+        'mobile':       mobile,       # total agrégé (backward compat)
+        'par_mobile':   par_mobile,   # [(label, montant, couleur, badge), ...]
+        'carte':        int(carte),
+        'virement':     int(virement),
+        'par_module':   par_module,
         'prelevements': int(total_prelev),
-        'depenses': int(total_depenses),
-        'net': int(total) - int(total_prelev) - int(total_depenses),
-        'tickets': tickets.select_related('client', 'cree_par').order_by('-date_creation'),
+        'depenses':     int(total_depenses),
+        'net':          int(total) - int(total_prelev) - int(total_depenses),
+        'tickets':      tickets.select_related('client', 'cree_par').order_by('-date_creation'),
     }
 
 

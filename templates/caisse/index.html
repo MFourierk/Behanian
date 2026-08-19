@@ -228,9 +228,9 @@
       <div class="ksub">En caisse physique</div>
     </div>
     <div class="kpi k-bleu">
-      <div class="klbl">Mobile / Carte</div>
+      <div class="klbl">Mobile Money</div>
       <div class="kval">{{ stats.mobile|montant }} F</div>
-      <div class="ksub">Électronique</div>
+      <div class="ksub">{% for lbl, mt, clr, badge in stats.par_mobile %}{{ lbl }}{% if not forloop.last %} · {% endif %}{% empty %}Électronique{% endfor %}</div>
     </div>
     <div class="kpi k-rouge">
       <div class="klbl">Prélèvements banque</div>
@@ -370,10 +370,22 @@
                 <span style="font-size:12px;font-weight:600">💵 Espèces</span>
                 <span style="font-size:13px;font-weight:700;color:#16a34a">{{ stats.especes|montant }} F</span>
               </div>
+              {% if stats.par_mobile %}
+                {% for lbl, mt, clr, badge in stats.par_mobile %}
+                <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#eff6ff;border-radius:8px;border-left:3px solid {{ clr }}">
+                  <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+                    <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:{{ clr }};color:white;font-size:9px;font-weight:700;flex-shrink:0">{{ badge }}</span>
+                    {{ lbl }}
+                  </span>
+                  <span style="font-size:13px;font-weight:700;color:{{ clr }}">{{ mt|montant }} F</span>
+                </div>
+                {% endfor %}
+              {% else %}
               <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#eff6ff;border-radius:8px;border-left:3px solid #2563eb">
                 <span style="font-size:12px;font-weight:600">📱 Mobile Money</span>
-                <span style="font-size:13px;font-weight:700;color:#2563eb">{{ stats.mobile|montant }} F</span>
+                <span style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
               </div>
+              {% endif %}
               <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f5f3ff;border-radius:8px;border-left:3px solid #7c3aed">
                 <span style="font-size:12px;font-weight:600">💳 Carte bancaire</span>
                 <span style="font-size:13px;font-weight:700;color:#7c3aed">{{ stats.carte|montant }} F</span>
@@ -627,7 +639,8 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
           <div>Total encaissé : <strong>{{ stats.total|montant }} F</strong></div>
           <div>Espèces : <strong>{{ stats.especes|montant }} F</strong></div>
-          <div>Mobile / Carte : <strong>{{ stats.mobile|montant }} F</strong></div>
+          {% for lbl, mt, clr, badge in stats.par_mobile %}<div>{{ lbl }} : <strong style="color:{{ clr }}">{{ mt|montant }} F</strong></div>{% endfor %}
+          {% if stats.carte %}<div>Carte : <strong>{{ stats.carte|montant }} F</strong></div>{% endif %}
           <div>Fond initial : <strong>{% if session_active %}{{ session_active.fond_caisse|montant }}{% else %}0{% endif %} F</strong></div>
         </div>
       </div>
