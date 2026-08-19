@@ -1102,10 +1102,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <span class="total-value" id="totalDisplay">0 F</span>
       </div>
 
-      <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
-        <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
-      </button>
-
       <div class="paiement-grid">
         <button class="pay-btn selected" data-mode="especes" onclick="selectPaiement(this)">
           <i class="fas fa-money-bill-wave"></i> Espèces
@@ -1142,14 +1138,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <i class="fas fa-bed"></i> <span id="chambre-liee-nom">Ch. ---</span>
         <span onclick="event.stopPropagation();delierChambre()" style="margin-left:4px;opacity:.7;font-size:11px">✕</span>
       </div>
-      <button class="btn-attente" id="btnLierChambre" onclick="ouvrirModalLierChambre()" title="Lier à une chambre hôtel">
-        <i class="fas fa-bed"></i> Lier chambre
-      </button>
-      <button class="btn-attente" onclick="mettreEnAttente()">
-        <i class="fas fa-pause-circle"></i> Mettre en attente
-      </button>
-      <button class="btn-attente" id="btnAnnulerTicket" onclick="annulerTicket()" style="display:none;background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.3)">
+
+      <!-- Actions compactes -->
+      <div style="display:flex;gap:7px;margin-bottom:8px;margin-top:8px;">
+        <button class="btn-attente" id="btnLierChambre" onclick="ouvrirModalLierChambre()" style="flex:1;width:auto;margin-bottom:0;padding:8px 4px;font-size:0.72rem;" title="Lier à une chambre hôtel">
+          <i class="fas fa-bed"></i> Chambre
+        </button>
+        <button class="btn-attente" onclick="mettreEnAttente()" style="flex:1;width:auto;margin-bottom:0;padding:8px 4px;font-size:0.72rem;">
+          <i class="fas fa-pause-circle"></i> Attente
+        </button>
+        <button class="btn-attente" id="btnAddition" onclick="imprimerAddition()" disabled style="flex:1;width:auto;margin-bottom:0;padding:8px 4px;font-size:0.72rem;">
+          <i class="fas fa-receipt"></i> Addition
+        </button>
+      </div>
+      <button class="btn-attente" id="btnAnnulerTicket" onclick="annulerTicket()" style="display:none;margin-bottom:8px;background:rgba(220,38,38,0.15);color:#f87171;border:1px solid rgba(220,38,38,0.3)">
         <i class="fas fa-times-circle"></i> Annuler le ticket
+      </button>
+      <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
+        <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
       </button>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Encaisser la commande
@@ -1308,6 +1314,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
 <script>
 const CSRF = '{{ csrf_token }}';
+const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
 const modeLabels = { especes: 'Espèces', carte: 'Carte / TPE', mobile: 'Mobile Money', chambre: 'Report Chambre' };
 
 // ── STATE ──
@@ -1771,6 +1778,7 @@ function renderTicket() {
     document.getElementById('couvertsVal').textContent = '1';
     document.getElementById('btnValider').disabled = true;
     document.getElementById('btnQuickPay').disabled = true;
+    document.getElementById('btnAddition').disabled = true;
     _majStatutBadge(null);
     if (btnAnnuler) btnAnnuler.style.display = 'none';
     return;
@@ -1828,6 +1836,7 @@ function renderTicket() {
 
   document.getElementById('btnValider').disabled = false;
   document.getElementById('btnQuickPay').disabled = false;
+  document.getElementById('btnAddition').disabled = !t.commandeDbId;
   if (btnAnnuler) btnAnnuler.style.display = t.commandeDbId ? '' : 'none';
 
   // Statut
@@ -1916,17 +1925,32 @@ async function changerCouverts(delta) {
   }
 }
 
-function paiementRapide() {
+async function paiementRapide() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) return;
+  if (!t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
+  const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
+  if (!serveurVal) {
+    toast('👤 Sélectionnez un serveur avant d\'encaisser', 'error');
+    const sel = document.getElementById('selectServeur');
+    sel.style.border = '2px solid #dc2626'; sel.style.background = 'rgba(220,38,38,0.15)';
+    setTimeout(() => { sel.style.border = ''; sel.style.background = ''; }, 3000);
+    return;
+  }
+  t.serveur = serveurVal;
   modePaiement = 'especes';
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === 'especes'));
   const total = t.totalNet !== undefined ? t.totalNet : (t.total || 0);
-  ouvrirModalPaiement();
-  setTimeout(() => {
-    const inp = document.getElementById('montantEncaisse');
-    if (inp) { inp.value = Math.round(total); inp.dispatchEvent(new Event('input')); }
-  }, 80);
+  const inp = document.getElementById('montantRecu');
+  if (inp) inp.value = Math.round(total);
+  await confirmerPaiement();
+}
+
+function imprimerAddition() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) { toast('❌ Aucune commande en cours', 'error'); return; }
+  const url = ADDITION_URL_TPL.replace('/0/', '/' + t.commandeDbId + '/');
+  window.open(url, '_blank', 'width=420,height=700');
 }
 
 // ── RÉSUMÉ VENTES DU JOUR ──
