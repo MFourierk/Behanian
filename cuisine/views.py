@@ -246,19 +246,26 @@ def ingredient_delete(request, pk):
 @require_module_access('cuisine')
 def mouvement_create(request):
     if request.method == 'POST':
-        ing_id  = request.POST.get('ingredient')
-        type_m  = request.POST.get('type_mouvement')
-        quantite = request.POST.get('quantite')
+        ing_ids    = request.POST.getlist('ingredient[]')
+        type_m     = request.POST.get('type_mouvement')
+        quantites  = request.POST.getlist('quantite[]')
         commentaire = request.POST.get('commentaire', '')
-        if ing_id and type_m and quantite:
-            MouvementStockCuisine.objects.create(
-                ingredient_id  = ing_id,
-                type_mouvement = type_m,
-                quantite       = quantite,
-                commentaire    = commentaire,
-                utilisateur    = request.user,
-            )
-            messages.success(request, "Mouvement enregistré.")
+        nb = 0
+        for ing_id, qte in zip(ing_ids, quantites):
+            if ing_id and qte:
+                try:
+                    MouvementStockCuisine.objects.create(
+                        ingredient_id  = ing_id,
+                        type_mouvement = type_m,
+                        quantite       = qte,
+                        commentaire    = commentaire,
+                        utilisateur    = request.user,
+                    )
+                    nb += 1
+                except Exception as e:
+                    messages.error(request, f"Erreur : {str(e)}")
+        if nb:
+            messages.success(request, f"{nb} mouvement(s) enregistré(s).")
     return redirect('/cuisine/stock/?tab=mouvements')
 
 

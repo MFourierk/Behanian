@@ -743,32 +743,38 @@ def get_bon_commande_lignes(request, pk):
 
 @require_module_access('bar')
 def mouvement_create(request):
-    """Créer un mouvement manuel depuis le modal"""
+    """Créer un ou plusieurs mouvements manuels depuis le modal multi-articles"""
     if request.method == 'POST':
-        boisson_id = request.POST.get('boisson_id')
+        boisson_ids = request.POST.getlist('boisson_id[]')
         type_mv = request.POST.get('type_mouvement')
-        quantite = request.POST.get('quantite', 0)
+        quantites = request.POST.getlist('quantite[]')
         commentaire = request.POST.get('commentaire', '')
 
         TYPE_LABELS = {
             'entree': 'Entrée manuelle',
             'sortie': 'Sortie manuelle',
             'casse': 'Casse / Perte',
-            'inventaire': 'Ajustement inventaire',
+            'prelevement': 'Prélèvement',
         }
 
-        try:
-            boisson = BoissonBar.objects.get(pk=boisson_id)
-            MouvementStockBar.objects.create(
-                boisson=boisson,
-                type_mouvement=type_mv,
-                quantite=int(quantite),
-                commentaire=commentaire or TYPE_LABELS.get(type_mv, type_mv),
-                utilisateur=request.user,
-            )
-            messages.success(request, f"Mouvement enregistré : {boisson.nom} ({type_mv})")
-        except Exception as e:
-            messages.error(request, f"Erreur : {str(e)}")
+        nb = 0
+        for b_id, qte in zip(boisson_ids, quantites):
+            if not b_id or not qte:
+                continue
+            try:
+                boisson = BoissonBar.objects.get(pk=b_id)
+                MouvementStockBar.objects.create(
+                    boisson=boisson,
+                    type_mouvement=type_mv,
+                    quantite=int(qte),
+                    commentaire=commentaire or TYPE_LABELS.get(type_mv, type_mv),
+                    utilisateur=request.user,
+                )
+                nb += 1
+            except Exception as e:
+                messages.error(request, f"Erreur ({b_id}) : {str(e)}")
+        if nb:
+            messages.success(request, f"{nb} mouvement(s) enregistré(s).")
 
     return redirect(reverse('bar:stock_management') + '?tab=mouvements')
 

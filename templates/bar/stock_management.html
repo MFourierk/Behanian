@@ -888,37 +888,27 @@
 
     <!-- ===== MODAL NOUVEAU MOUVEMENT ===== -->
     <div id="modal-mouvement" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:white;border-radius:20px;padding:32px;width:500px;max-width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div style="background:white;border-radius:20px;padding:28px;width:640px;max-width:95%;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,0.2);display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
                 <h3 id="modal-titre" style="font-weight:700;color:#2c3e50;margin:0;font-size:1.2rem;"></h3>
                 <button onclick="fermerModal()" style="background:#f0f0f0;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">×</button>
             </div>
-            <form method="post" action="{% url 'bar:mouvement_create' %}">
+            <form method="post" action="{% url 'bar:mouvement_create' %}" onsubmit="return validerFormMouvement()">
                 {% csrf_token %}
                 <input type="hidden" name="type_mouvement" id="modal-type">
-                <div style="display:flex;flex-direction:column;gap:14px;">
-                    <div>
-                        <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Article *</label>
-                        <input type="text" id="modal-search-bar" placeholder="🔍 Rechercher un article..."
-                               oninput="filtrerModalBar(this.value)"
-                               autocomplete="off"
-                               style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#fff;margin-bottom:6px;box-sizing:border-box;">
-                        <select name="boisson_id" id="modal-boisson" required size="5"
-                                style="width:100%;padding:6px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
-                            <option value="">— Sélectionner —</option>
-                            {% for b in boissons %}
-                            <option value="{{ b.pk }}">{{ b.nom }} {% if b.reference %}[{{ b.reference }}]{% endif %} — Stock: {{ b.quantite_stock }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Quantité *</label>
-                        <input type="number" name="quantite" min="1" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
-                    </div>
-                    <div id="motif-group">
-                        <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Motif / Commentaire *</label>
-                        <textarea name="commentaire" rows="2" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;resize:none;" placeholder="Précisez la raison..."></textarea>
-                    </div>
+                <!-- Lignes articles dynamiques -->
+                <div id="modal-lignes" style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding-right:2px;margin-bottom:8px;"></div>
+                <!-- Ajouter une ligne -->
+                <button type="button" onclick="ajouterLigneMouvement()"
+                        style="width:100%;padding:8px;border:2px dashed #bdc3c7;background:transparent;border-radius:10px;cursor:pointer;color:#7f8c8d;font-size:0.88rem;font-weight:600;margin-bottom:14px;">
+                    ＋ Ajouter un article
+                </button>
+                <!-- Commentaire commun -->
+                <div>
+                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Motif / Commentaire *</label>
+                    <textarea name="commentaire" id="modal-commentaire" rows="2" required
+                              style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;resize:none;box-sizing:border-box;"
+                              placeholder="Précisez la raison..."></textarea>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
                     <button type="button" onclick="fermerModal()" style="padding:10px 20px;border-radius:10px;border:2px solid #e9ecef;background:white;font-weight:600;cursor:pointer;color:#7f8c8d;">Annuler</button>
@@ -1197,31 +1187,59 @@ const MODAL_CONFIGS = {
     'prelevement': { titre: '👤 Prélèvement Propriétaire',        color: '#8e44ad', label: 'Enregistrer le prélèvement' },
 };
 
-function filtrerModalBar(q) {
-    const sel = document.getElementById('modal-boisson');
-    const ql = q.toLowerCase();
-    Array.from(sel.options).forEach(opt => {
-        if (!opt.value) { opt.hidden = false; return; }
-        opt.hidden = !opt.textContent.toLowerCase().includes(ql);
+const BAR_ARTICLES = [{% for b in boissons %}{ v: "{{ b.pk }}", t: "{{ b.nom|escapejs }}{% if b.reference %} [{{ b.reference|escapejs }}]{% endif %} — Stock: {{ b.quantite_stock }}" },{% endfor %}];
+
+function ajouterLigneMouvement(preselectId) {
+    const div = document.createElement('div');
+    div.className = 'mv-ligne';
+    div.style.cssText = 'padding:10px;background:#f8f9fa;border-radius:10px;border:1px solid #e9ecef;';
+    const optHtml = BAR_ARTICLES.map(a => `<option value="${a.v}">${a.t}</option>`).join('');
+    div.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 100px 32px;gap:6px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="mv-search" placeholder="🔍 Rechercher un article..." autocomplete="off"
+                   style="padding:7px 10px;border:1px solid #dee2e6;border-radius:8px;font-size:0.85rem;box-sizing:border-box;">
+            <input type="number" name="quantite[]" min="1" required placeholder="Qté"
+                   style="padding:7px 8px;border:1px solid #dee2e6;border-radius:8px;font-size:0.92rem;width:100%;box-sizing:border-box;">
+            <button type="button" onclick="this.closest('.mv-ligne').remove()"
+                    style="width:32px;height:32px;border:none;background:#fde8e8;color:#e74c3c;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;">✕</button>
+        </div>
+        <select name="boisson_id[]" required size="3"
+                style="width:100%;border:1px solid #dee2e6;border-radius:8px;font-size:0.84rem;background:white;">
+            <option value="">— Sélectionner —</option>${optHtml}
+        </select>
+    `;
+    const search = div.querySelector('.mv-search');
+    const sel = div.querySelector('select');
+    search.addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        Array.from(sel.options).forEach(o => { o.hidden = q ? !o.textContent.toLowerCase().includes(q) : false; });
+        const vis = Array.from(sel.options).filter(o => o.value && !o.hidden);
+        if (vis.length === 1) sel.value = vis[0].value;
     });
-    const visibles = Array.from(sel.options).filter(o => o.value && !o.hidden);
-    if (visibles.length === 1) sel.value = visibles[0].value;
+    if (preselectId) sel.value = String(preselectId);
+    document.getElementById('modal-lignes').appendChild(div);
+    if (!preselectId) search.focus();
 }
 
 function ouvrirModalMouvement(type) {
     const cfg = MODAL_CONFIGS[type];
     document.getElementById('modal-titre').textContent = cfg.titre;
     document.getElementById('modal-type').value = type;
-    document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`;
+    document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg,${cfg.color},${cfg.color}cc)`;
     document.getElementById('modal-btn-submit').textContent = cfg.label;
-    // Réinitialiser la recherche
-    const search = document.getElementById('modal-search-bar');
-    search.value = '';
-    filtrerModalBar('');
-    document.getElementById('modal-boisson').value = '';
-    const modal = document.getElementById('modal-mouvement');
-    modal.style.display = 'flex';
-    setTimeout(() => search.focus(), 100);
+    document.getElementById('modal-commentaire').value = '';
+    document.getElementById('modal-lignes').innerHTML = '';
+    ajouterLigneMouvement();
+    document.getElementById('modal-mouvement').style.display = 'flex';
+}
+
+function validerFormMouvement() {
+    const lignes = document.querySelectorAll('#modal-lignes .mv-ligne');
+    if (!lignes.length) { alert('Ajoutez au moins un article.'); return false; }
+    for (const l of lignes) {
+        if (!l.querySelector('select').value) { alert('Sélectionnez un article pour chaque ligne.'); return false; }
+    }
+    return true;
 }
 
 function fermerModal() {

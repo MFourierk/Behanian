@@ -903,41 +903,31 @@
 
 <!-- ===== MODAL MOUVEMENT ===== -->
 <div id="modal-mouvement" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:white;border-radius:20px;padding:32px;width:500px;max-width:95%;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+    <div style="background:white;border-radius:20px;padding:28px;width:640px;max-width:95%;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,0.2);display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
             <h3 id="modal-titre" style="font-weight:700;color:#2c3e50;margin:0;font-size:1.2rem;"></h3>
             <button onclick="fermerModal()" style="background:#f0f0f0;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">×</button>
         </div>
-        <form method="post" action="{% url 'cuisine:mouvement_create' %}">
+        <form method="post" action="{% url 'cuisine:mouvement_create' %}" onsubmit="return validerFormMouvement()">
             {% csrf_token %}
             <input type="hidden" name="type_mouvement" id="modal-type">
-            <div style="display:flex;flex-direction:column;gap:14px;">
-                <div>
-                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Ingrédient *</label>
-                    <input type="text" id="modal-search-ing" placeholder="🔍 Rechercher un ingrédient..."
-                           oninput="filtrerModalIng(this.value)"
-                           autocomplete="off"
-                           style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#fff;margin-bottom:6px;box-sizing:border-box;">
-                    <select name="ingredient" id="modal-ingredient" required size="5"
-                            style="width:100%;padding:6px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
-                        <option value="">— Sélectionner —</option>
-                        {% for ing in ingredients %}
-                        <option value="{{ ing.pk }}">{{ ing.nom }} — Stock: {{ ing.quantite_stock|floatformat:2 }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Quantité *</label>
-                    <input type="number" name="quantite" min="0.001" step="0.001" required style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;">
-                </div>
-                <div>
-                    <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Commentaire</label>
-                    <textarea name="commentaire" rows="2" style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;resize:none;" placeholder="Précisez la raison..."></textarea>
-                </div>
+            <!-- Lignes articles dynamiques -->
+            <div id="modal-lignes" style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding-right:2px;margin-bottom:8px;"></div>
+            <!-- Ajouter une ligne -->
+            <button type="button" onclick="ajouterLigneMouvement()"
+                    style="width:100%;padding:8px;border:2px dashed #bdc3c7;background:transparent;border-radius:10px;cursor:pointer;color:#7f8c8d;font-size:0.88rem;font-weight:600;margin-bottom:14px;">
+                ＋ Ajouter un ingrédient
+            </button>
+            <!-- Commentaire commun -->
+            <div>
+                <label style="font-size:0.85rem;font-weight:600;color:#4a4a6a;display:block;margin-bottom:6px;">Commentaire</label>
+                <textarea name="commentaire" id="modal-commentaire" rows="2"
+                          style="width:100%;padding:10px 14px;border:1px solid #e9ecef;border-radius:10px;font-size:0.92rem;background:#f8f9fa;resize:none;box-sizing:border-box;"
+                          placeholder="Précisez la raison..."></textarea>
             </div>
             <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
                 <button type="button" onclick="fermerModal()" style="padding:10px 20px;border-radius:10px;border:2px solid #e9ecef;background:white;font-weight:600;cursor:pointer;color:#7f8c8d;">Annuler</button>
-                <button type="submit" id="modal-btn-submit" style="padding:10px 24px;border-radius:10px;border:none;font-weight:700;cursor:pointer;color:white;font-size:0.95rem;background:linear-gradient(135deg,#c0392b,#e74c3c);">Enregistrer</button>
+                <button type="submit" id="modal-btn-submit" style="padding:10px 24px;border-radius:10px;border:none;font-weight:700;cursor:pointer;color:white;font-size:0.95rem;">Enregistrer</button>
             </div>
         </form>
     </div>
@@ -985,42 +975,67 @@ function filtrerMouvements() {
     });
 }
 
-// Modal mouvements
+// Modal mouvements multi-articles
 const MODAL_CONFIGS = {
-    'entree':     { titre: '➕ Nouvelle Entrée de Stock',    color: '#27ae60' },
-    'sortie':     { titre: '➖ Nouvelle Sortie de Stock',     color: '#e74c3c' },
-    'casse':      { titre: '⚠️ Déclarer une Casse / Perte',   color: '#e67e22' },
-    'inventaire': { titre: '📋 Ajustement d\'Inventaire',     color: '#3498db' },
+    'entree':     { titre: '➕ Nouvelle Entrée de Stock',    color: '#27ae60', label: 'Enregistrer l\'entrée' },
+    'sortie':     { titre: '➖ Nouvelle Sortie de Stock',     color: '#e74c3c', label: 'Enregistrer la sortie' },
+    'casse':      { titre: '⚠️ Déclarer une Casse / Perte',   color: '#e67e22', label: 'Déclarer la casse' },
+    'inventaire': { titre: '📋 Ajustement d\'Inventaire',     color: '#3498db', label: 'Enregistrer l\'ajustement' },
 };
 
-function filtrerModalIng(q) {
-    const sel = document.getElementById('modal-ingredient');
-    const ql = q.toLowerCase();
-    Array.from(sel.options).forEach(opt => {
-        if (!opt.value) { opt.hidden = false; return; }
-        opt.hidden = !opt.textContent.toLowerCase().includes(ql);
+const ING_ARTICLES = [{% for ing in ingredients %}{ v: "{{ ing.pk }}", t: "{{ ing.nom|escapejs }} — Stock: {{ ing.quantite_stock|floatformat:2 }}" },{% endfor %}];
+
+function ajouterLigneMouvement(preselectId) {
+    const div = document.createElement('div');
+    div.className = 'mv-ligne';
+    div.style.cssText = 'padding:10px;background:#f8f9fa;border-radius:10px;border:1px solid #e9ecef;';
+    const optHtml = ING_ARTICLES.map(a => `<option value="${a.v}">${a.t}</option>`).join('');
+    div.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 120px 32px;gap:6px;align-items:center;margin-bottom:6px;">
+            <input type="text" class="mv-search" placeholder="🔍 Rechercher un ingrédient..." autocomplete="off"
+                   style="padding:7px 10px;border:1px solid #dee2e6;border-radius:8px;font-size:0.85rem;box-sizing:border-box;">
+            <input type="number" name="quantite[]" min="0.001" step="0.001" required placeholder="Quantité"
+                   style="padding:7px 8px;border:1px solid #dee2e6;border-radius:8px;font-size:0.88rem;width:100%;box-sizing:border-box;">
+            <button type="button" onclick="this.closest('.mv-ligne').remove()"
+                    style="width:32px;height:32px;border:none;background:#fde8e8;color:#e74c3c;border-radius:8px;cursor:pointer;font-size:16px;line-height:1;">✕</button>
+        </div>
+        <select name="ingredient[]" required size="3"
+                style="width:100%;border:1px solid #dee2e6;border-radius:8px;font-size:0.84rem;background:white;">
+            <option value="">— Sélectionner —</option>${optHtml}
+        </select>
+    `;
+    const search = div.querySelector('.mv-search');
+    const sel = div.querySelector('select');
+    search.addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        Array.from(sel.options).forEach(o => { o.hidden = q ? !o.textContent.toLowerCase().includes(q) : false; });
+        const vis = Array.from(sel.options).filter(o => o.value && !o.hidden);
+        if (vis.length === 1) sel.value = vis[0].value;
     });
-    // Auto-sélectionner si un seul résultat visible
-    const visibles = Array.from(sel.options).filter(o => o.value && !o.hidden);
-    if (visibles.length === 1) sel.value = visibles[0].value;
+    if (preselectId) sel.value = String(preselectId);
+    document.getElementById('modal-lignes').appendChild(div);
+    if (!preselectId) search.focus();
 }
 
-function ouvrirModalMouvement(type, ingId, ingNom) {
+function ouvrirModalMouvement(type, ingId) {
     const cfg = MODAL_CONFIGS[type];
     document.getElementById('modal-titre').textContent = cfg.titre;
     document.getElementById('modal-type').value = type;
     document.getElementById('modal-btn-submit').style.background = `linear-gradient(135deg,${cfg.color},${cfg.color}cc)`;
-    // Réinitialiser la recherche
-    const search = document.getElementById('modal-search-ing');
-    search.value = '';
-    filtrerModalIng('');
-    if (ingId) {
-        document.getElementById('modal-ingredient').value = ingId;
-    } else {
-        document.getElementById('modal-ingredient').value = '';
-    }
+    document.getElementById('modal-btn-submit').textContent = cfg.label;
+    document.getElementById('modal-commentaire').value = '';
+    document.getElementById('modal-lignes').innerHTML = '';
+    ajouterLigneMouvement(ingId || null);
     document.getElementById('modal-mouvement').style.display = 'flex';
-    setTimeout(() => search.focus(), 100);
+}
+
+function validerFormMouvement() {
+    const lignes = document.querySelectorAll('#modal-lignes .mv-ligne');
+    if (!lignes.length) { alert('Ajoutez au moins un ingrédient.'); return false; }
+    for (const l of lignes) {
+        if (!l.querySelector('select').value) { alert('Sélectionnez un ingrédient pour chaque ligne.'); return false; }
+    }
+    return true;
 }
 
 function fermerModal() {
