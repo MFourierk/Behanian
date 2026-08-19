@@ -1709,7 +1709,7 @@ def reservation_api_statut(request):
 def imprimer_addition(request, commande_id):
     """Pré-facture (addition) : affiche les articles sans encaisser ni clôturer le ticket."""
     commande = get_object_or_404(Commande, id=commande_id)
-    lignes = commande.lignes.select_related('plat').prefetch_related('accompagnements').all()
+    lignes = commande.lignes.select_related('plat', 'accompagnement').all()
     from dashboard.models import Configuration
     config = Configuration.load()
     montant_remise = float(commande.total) * float(commande.remise_pct) / 100 if commande.remise_pct else 0
