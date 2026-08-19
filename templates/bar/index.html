@@ -893,15 +893,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <i class="fas fa-bed"></i> <span id="chambre-liee-nom">Ch. ---</span>
         <span onclick="event.stopPropagation();delierChambre()" style="margin-left:4px;opacity:.7;font-size:11px">✕</span>
       </div>
-      <button class="btn-attente" id="btnLierChambre" onclick="ouvrirModalLierChambre()" title="Associer ce ticket à une chambre hôtel">
-        <i class="fas fa-bed"></i> Lier chambre
-      </button>
-      <button class="btn-attente" onclick="mettreEnAttente()">
-        <i class="fas fa-pause-circle"></i> Mettre en attente
-      </button>
-      <button class="btn-attente" id="btnAddition" onclick="imprimerAddition()" disabled>
-        <i class="fas fa-receipt"></i> Imprimer l'addition
-      </button>
+      <!-- Actions secondaires compactes -->
+      <div style="display:flex;gap:7px;margin-bottom:8px;">
+        <button class="btn-attente" id="btnLierChambre" onclick="ouvrirModalLierChambre()" title="Associer à une chambre hôtel" style="flex:1;width:auto;margin-bottom:0;padding:8px 4px;font-size:0.72rem;">
+          <i class="fas fa-bed"></i> Chambre
+        </button>
+        <button class="btn-attente" onclick="mettreEnAttente()" style="flex:1;width:auto;margin-bottom:0;padding:8px 4px;font-size:0.72rem;">
+          <i class="fas fa-pause-circle"></i> Attente
+        </button>
+        <button class="btn-attente" id="btnAddition" onclick="imprimerAddition()" disabled style="flex:1;width:auto;margin-bottom:0;padding:8px 4px;font-size:0.72rem;">
+          <i class="fas fa-receipt"></i> Addition
+        </button>
+      </div>
       <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
         <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
       </button>
@@ -1210,18 +1213,17 @@ function appliquerRemise() {
   if (pct > 0) toast(`✅ Remise de ${pct}% appliquée`, 'success');
 }
 
-function paiementRapide() {
+async function paiementRapide() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) return;
   modePaiement = 'especes';
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === 'especes'));
   t.paiement = 'especes';
-  const total = t.totalNet !== undefined ? t.totalNet : (t.total || 0);
-  ouvrirModalPaiement();
-  setTimeout(() => {
-    const inp = document.getElementById('montantEncaisse');
-    if (inp) { inp.value = Math.round(total); inp.dispatchEvent(new Event('input')); }
-  }, 80);
+  const total = getTotal();
+  // Remplir le champ (dans le DOM même si modal fermée) et confirmer directement
+  const inp = document.getElementById('montantRecu');
+  if (inp) inp.value = Math.round(total);
+  await confirmerPaiement();
 }
 
 async function changerQty(id, delta) {

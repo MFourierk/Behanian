@@ -534,7 +534,7 @@
   font-family: var(--font-serif); font-size: 1.6rem;
   color: var(--gold-light); font-weight: 800; letter-spacing: -0.5px;
 }
-.cmd-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.cmd-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
 .btn-attente {
   padding: 10px 8px; border-radius: 10px;
   border: 1.5px solid rgba(255,255,255,0.15);
@@ -564,6 +564,28 @@
 }
 .btn-encaisser:hover { box-shadow: 0 6px 20px rgba(201,148,58,0.5); transform: translateY(-1px); }
 .btn-encaisser:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-addition-cmd {
+  padding: 10px 4px; border-radius: 10px;
+  border: 1.5px solid rgba(201,148,58,0.3);
+  background: rgba(201,148,58,0.08); color: rgba(201,148,58,0.9);
+  font-size: 0.75rem; font-weight: 600; cursor: pointer;
+  font-family: var(--font-sans); transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.btn-addition-cmd:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-addition-cmd:hover:not(:disabled) { background: rgba(201,148,58,0.18); border-color: var(--gold); color: var(--gold-light); }
+
+.btn-rapide-cmd {
+  grid-column: 1 / -1; padding: 10px;
+  background: rgba(22,163,74,0.12); border: 1.5px solid rgba(22,163,74,0.3);
+  color: #4ade80; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  font-family: var(--font-sans);
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.2s;
+}
+.btn-rapide-cmd:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-rapide-cmd:hover:not(:disabled) { background: rgba(22,163,74,0.22); }
 
 /* ─── BARRE DE TICKETS ─── */
 .ticket-tabbar {
@@ -662,7 +684,7 @@
   transition: all 0.15s;
 }
 .modal-close-btn:hover { background: var(--bg-hover); color: var(--cream); }
-.modal-body { padding: 20px; }
+.modal-body { padding: 20px; max-height: calc(90vh - 80px); overflow-y: auto; }
 .modal-total-display {
   text-align: center;
   padding: 16px;
@@ -1082,10 +1104,16 @@
         <span class="cmd-total-val" id="totalDisplay">0 F</span>
       </div>
       <div class="cmd-actions">
-        <button class="btn-attente" onclick="mettreEnAttente()">⏸ En attente</button>
+        <button class="btn-attente" onclick="mettreEnAttente()">⏸ Attente</button>
         <button class="btn-annuler-cmd" onclick="annulerCommande()">✕ Annuler</button>
+        <button class="btn-addition-cmd" id="btnAdditionCmd" onclick="imprimerAdditionResto()" disabled title="Imprimer l'addition">
+          🧾 Addition
+        </button>
+        <button class="btn-rapide-cmd" id="btnRapide" onclick="paiementRapide()" disabled>
+          ⚡ Encaissement rapide
+        </button>
         <button class="btn-encaisser" id="btnEncaisser" onclick="ouvrirModal()" disabled>
-          💳 Encaisser la commande
+          💳 Encaisser
         </button>
       </div>
     </div>
@@ -1151,9 +1179,6 @@
         </div>
       </div>
 
-      <button class="btn-addition-paiement" id="btnAddition" onclick="imprimerAdditionResto()" style="width:100%;padding:14px;margin-bottom:10px;background:rgba(201,168,76,0.12);color:#c9a84c;border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.12)'">
-        Imprimer l'addition
-      </button>
       <button class="btn-confirm-paiement" id="btnConfirm" onclick="confirmerPaiement()">
         ✓ Confirmer & Imprimer
       </button>
@@ -1587,6 +1612,8 @@ function renderTicket() {
     document.getElementById('sousTotal').textContent = '0 F';
     document.getElementById('totalDisplay').textContent = '0 F';
     document.getElementById('btnEncaisser').disabled = true;
+    document.getElementById('btnRapide').disabled = true;
+    document.getElementById('btnAdditionCmd').disabled = true;
     return;
   }
 
@@ -1624,6 +1651,8 @@ function renderTicket() {
   document.getElementById('sousTotal').textContent = formatF(total);
   document.getElementById('totalDisplay').textContent = formatF(total);
   document.getElementById('btnEncaisser').disabled = false;
+  document.getElementById('btnRapide').disabled = false;
+  document.getElementById('btnAdditionCmd').disabled = false;
   t.total = total;
 
   // MAJ badge ticket
@@ -1789,6 +1818,20 @@ function calculerRendu() {
   } else { div.classList.remove('show'); }
 }
 
+// ═══════════════════════════════════════════
+// ENCAISSEMENT RAPIDE (espèces, montant exact, sans saisie)
+// ═══════════════════════════════════════════
+async function paiementRapide() {
+  const t = tickets[ticketActifId];
+  if (!t || !t.commandeDbId) { toast('Aucune commande en cours', 'error'); return; }
+  modePaiement = t.paiement || 'especes';
+  document.querySelectorAll('.pay-mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
+  // Remplir le champ montant (dans le DOM même si modal fermée) et confirmer directement
+  const inp = document.getElementById('montantRecu');
+  if (inp) inp.value = Math.round(t.total);
+  await confirmerPaiement();
+}
+
 // URL template pour l'addition (0 est remplacé par l'ID réel)
 const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
 
@@ -1825,6 +1868,7 @@ async function confirmerPaiement() {
     operateur_mobile: mobileMoneyOperateur || '',
     montant_encaisse: montantRecu,
     client:           t.client || '',
+    serveur:          t.serveur || document.getElementById('selectServeur')?.value || '',
   };
 
   try {

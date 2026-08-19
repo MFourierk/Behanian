@@ -1993,12 +1993,15 @@ def api_vente_create(request):
 
         # Lier mouvements provisoires TPE au ticket
         if session_token and stock_live:
+            _cmt = f'Vente Cave — {ticket.numero}'
+            if espace:
+                _cmt += f' [{espace_label}]'
             MouvementStockBar.objects.filter(
                 commentaire__in=[
                     f'TPE Cave — {session_token}',
                     f'TPE Cave — retrait {session_token}',
                 ]
-            ).update(commentaire=f'Vente Cave — {ticket.numero}')
+            ).update(commentaire=_cmt)
 
         # Decrementer stock + tracer mouvements (ignoré si déjà prélevé en temps réel)
         erreurs_stock = []
