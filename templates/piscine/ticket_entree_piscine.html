@@ -160,8 +160,7 @@
 </div>
 
 <script>
-    /* Impression manuelle uniquement — ce ticket ne génère pas de Ticket facturation.
-       L'impression automatique est désactivée pour éviter l'impression à la consultation. */
+    window.addEventListener('afterprint', () => window.close());
 </script>
 </body>
 </html>

@@ -275,6 +275,9 @@ function handlePrint() {
     window.print();
     {% endif %}
 }
+window.addEventListener('afterprint', () => {
+    {% if not finalize_url %}window.close();{% endif %}
+});
 </script>
 </body>
 </html>

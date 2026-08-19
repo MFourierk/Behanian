@@ -1751,6 +1751,10 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
     <div class="no-print">
       <button class="btn-print" onclick="window.print()">🖨️ &nbsp; Imprimer le ticket</button>
     </div>
+    <script>
+      window.addEventListener('afterprint', () => window.close());
+      window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+    </script>
 
     <!-- EN-TÊTE OFFICIEL (dynamique depuis Configuration) -->
     <div class="center">

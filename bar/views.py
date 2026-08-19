@@ -1670,7 +1670,7 @@ def resume_ventes_cave(request):
     try:
         from facturation.models import Ticket as TicketCaisse
         tickets_qs = TicketCaisse.objects.filter(
-            module='bar',
+            module='cave',
             date_creation__date__gte=date_debut,
             date_creation__date__lte=date_fin,
         ).select_related('cree_par').order_by('-date_creation')
