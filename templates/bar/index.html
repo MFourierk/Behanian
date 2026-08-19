@@ -2088,86 +2088,133 @@ function exportCavePrint() {
   window.open(`{% url 'dashboard:resume_ventes_print' %}?modules=cave&date_debut=${debut}&date_fin=${fin}`, '_blank');
 }
 
+function _modeIcon(mode) {
+  const m = mode.toLowerCase();
+  if (m.includes('wave'))   return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;flex-shrink:0">W</span>';
+  if (m.includes('orange')) return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fed7aa;color:#c2410c;font-size:10px;font-weight:700;flex-shrink:0">O</span>';
+  if (m.includes('mtn'))    return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;flex-shrink:0">M</span>';
+  if (m.includes('mobile')) return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#ede9fe;color:#7c3aed;font-size:9px;flex-shrink:0"><i class="fas fa-mobile-alt"></i></span>';
+  if (m.includes('esp'))    return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#dcfce7;color:#15803d;font-size:9px;flex-shrink:0"><i class="fas fa-money-bill"></i></span>';
+  if (m.includes('carte'))  return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#f3e8ff;color:#7e22ce;font-size:9px;flex-shrink:0"><i class="fas fa-credit-card"></i></span>';
+  if (m.includes('chambre'))return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#e0f2fe;color:#0369a1;font-size:9px;flex-shrink:0"><i class="fas fa-bed"></i></span>';
+  return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#f1f5f9;color:#64748b;font-size:9px;flex-shrink:0"><i class="fas fa-circle"></i></span>';
+}
+
 function chargerResumeVentes() {
   const debut = document.getElementById('caveVentesDebut').value;
   const fin   = document.getElementById('caveVentesFin').value;
   if (!debut || !fin) { showToast('Sélectionnez une période', 'info'); return; }
 
   const body = document.getElementById('resumeCaveBody');
-  body.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;opacity:0.4;"></i>Chargement…</div>';
+  body.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;display:block;margin-bottom:10px;color:var(--cave-violet);opacity:0.6;"></i><span style="font-size:0.85rem">Chargement…</span></div>`;
 
   const url = `{% url 'bar:resume_ventes_cave' %}?date_debut=${debut}&date_fin=${fin}`;
   fetch(url, { headers: { 'X-CSRFToken': getCookie('csrftoken') } })
     .then(r => r.json())
     .then(d => {
-      if (!d.success) { body.innerHTML = `<div class="empty-state" style="color:var(--danger);">Erreur : ${d.error}</div>`; return; }
+      if (!d.success) { body.innerHTML = `<div class="empty-state" style="color:#dc2626;">❌ ${d.error}</div>`; return; }
 
       const fmt = v => Number(v).toLocaleString('fr-FR') + ' F';
+      const pct = (v, t) => t > 0 ? Math.round(v / t * 100) : 0;
 
-      // KPI
+      // ── Bandeau période ──
       let html = `
-        <div style="font-size:0.75rem;font-weight:600;color:var(--cave-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">
-          Période : ${d.date}
-        </div>
-        <div class="resume-kpi-row">
-          <div class="resume-kpi">
-            <div class="resume-kpi-label">Tickets</div>
-            <div class="resume-kpi-value violet">${d.nb_tickets}</div>
-          </div>
-          <div class="resume-kpi">
-            <div class="resume-kpi-label">Total encaissé</div>
-            <div class="resume-kpi-value gold">${fmt(d.total_net)}</div>
-          </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:linear-gradient(135deg,var(--cave-purple),var(--cave-violet));border-radius:10px;color:white">
+          <i class="fas fa-calendar-alt" style="opacity:.8"></i>
+          <span style="font-size:0.78rem;font-weight:600;letter-spacing:0.5px;opacity:.85;text-transform:uppercase">Période</span>
+          <span style="margin-left:auto;font-size:0.85rem;font-weight:700">${d.date}</span>
         </div>`;
 
-      // Par mode de paiement
-      if (Object.keys(d.par_mode).length > 0) {
-        html += `<div class="resume-section-title">Par mode de paiement</div>
-          <table class="resume-table">
-            <thead><tr><th>Mode</th><th class="num">Montant</th></tr></thead><tbody>`;
-        for (const [mode, total] of Object.entries(d.par_mode)) {
-          html += `<tr><td>${mode}</td><td class="num">${fmt(total)}</td></tr>`;
+      // ── KPI cards ──
+      html += `<div class="resume-kpi-row">
+        <div class="resume-kpi" style="border-left:3px solid var(--cave-violet)">
+          <div class="resume-kpi-label"><i class="fas fa-receipt" style="margin-right:5px;opacity:.6"></i>Tickets</div>
+          <div class="resume-kpi-value violet" style="font-size:1.6rem">${d.nb_tickets}</div>
+        </div>
+        <div class="resume-kpi" style="border-left:3px solid var(--cave-gold)">
+          <div class="resume-kpi-label"><i class="fas fa-coins" style="margin-right:5px;opacity:.6"></i>Total encaissé</div>
+          <div class="resume-kpi-value gold" style="font-size:1.35rem">${fmt(d.total_net)}</div>
+        </div>
+      </div>`;
+
+      // ── Par mode de paiement ──
+      const modes = Object.entries(d.par_mode);
+      if (modes.length > 0) {
+        const totalMode = modes.reduce((s, [,v]) => s + v, 0);
+        html += `<div class="resume-section-title"><i class="fas fa-wallet" style="margin-right:6px;color:var(--cave-violet);opacity:.7"></i>Par mode de paiement</div>`;
+        html += `<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:16px">`;
+        for (const [mode, total] of modes.sort((a,b)=>b[1]-a[1])) {
+          const p = pct(total, totalMode);
+          html += `
+            <div style="background:white;border:1.5px solid var(--cave-border);border-radius:10px;padding:10px 12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                ${_modeIcon(mode)}
+                <span style="font-size:0.82rem;font-weight:600;color:var(--cave-text);flex:1">${mode}</span>
+                <span style="font-size:0.9rem;font-weight:700;color:var(--cave-violet)">${fmt(total)}</span>
+                <span style="font-size:0.72rem;color:var(--cave-muted);min-width:30px;text-align:right">${p}%</span>
+              </div>
+              <div style="height:4px;background:var(--cave-border);border-radius:99px;overflow:hidden">
+                <div style="height:4px;width:${p}%;background:linear-gradient(90deg,var(--cave-purple),var(--cave-violet));border-radius:99px;transition:width 0.6s ease"></div>
+              </div>
+            </div>`;
         }
-        html += `</tbody></table>`;
+        html += `</div>`;
       }
 
-      // Par caissier
+      // ── Par caissier ──
       if (d.par_caissier && d.par_caissier.length > 0) {
-        html += `<div class="resume-section-title">Par caissier</div>
-          <table class="resume-table">
+        html += `<div class="resume-section-title"><i class="fas fa-user-tie" style="margin-right:6px;color:var(--cave-violet);opacity:.7"></i>Par caissier</div>
+          <table class="resume-table" style="margin-bottom:16px">
             <thead><tr><th>Caissier</th><th class="num">Tickets</th><th class="num">Total</th></tr></thead><tbody>`;
         d.par_caissier.forEach(c => {
-          html += `<tr><td>${c.nom}</td><td class="num">${c.nb}</td><td class="num">${fmt(c.total)}</td></tr>`;
-        });
-        html += `</tbody></table>`;
-      }
-
-      // Liste tickets
-      if (d.tickets && d.tickets.length > 0) {
-        html += `<div class="resume-section-title">Détail des tickets</div>
-          <table class="resume-table">
-            <thead><tr><th>N°</th><th>Heure</th><th>Mode</th><th class="num">Montant</th></tr></thead><tbody>`;
-        d.tickets.forEach(tk => {
           html += `<tr>
-            <td style="color:var(--cave-muted);font-size:0.78rem;">${tk.numero}</td>
-            <td>${tk.heure}</td>
-            <td>${tk.mode}</td>
-            <td class="num">${fmt(tk.montant)}</td>
+            <td style="display:flex;align-items:center;gap:8px">
+              <span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cave-purple),var(--cave-violet));color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">
+                ${c.nom ? c.nom.charAt(0).toUpperCase() : '?'}
+              </span>
+              <span style="font-weight:600">${c.nom || '—'}</span>
+            </td>
+            <td class="num"><span style="background:var(--cave-light);padding:2px 8px;border-radius:20px;font-size:0.78rem">${c.nb}</span></td>
+            <td class="num">${fmt(c.total)}</td>
           </tr>`;
         });
         html += `</tbody></table>`;
       }
 
+      // ── Détail des tickets ──
+      if (d.tickets && d.tickets.length > 0) {
+        html += `<div class="resume-section-title"><i class="fas fa-list" style="margin-right:6px;color:var(--cave-violet);opacity:.7"></i>Détail des tickets</div>
+          <table class="resume-table">
+            <thead><tr><th>N°</th><th>Heure</th><th>Mode</th><th class="num">Montant</th></tr></thead><tbody>`;
+        d.tickets.forEach((tk, i) => {
+          html += `<tr style="${i%2===0?'':'background:var(--cave-light)'}">
+            <td style="font-family:monospace;font-size:0.75rem;color:var(--cave-muted)">${tk.numero}</td>
+            <td><span style="background:var(--cave-light);padding:2px 7px;border-radius:20px;font-size:0.78rem;font-weight:600">${tk.heure}</span></td>
+            <td>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.78rem">
+                ${_modeIcon(tk.mode)}${tk.mode}
+              </span>
+            </td>
+            <td class="num" style="font-weight:700;font-size:0.85rem">${fmt(tk.montant)}</td>
+          </tr>`;
+        });
+        // Total row
+        html += `</tbody><tfoot><tr style="border-top:2px solid var(--cave-border)">
+          <td colspan="3" style="font-weight:700;color:var(--cave-deep);font-size:0.8rem;text-align:right;padding:8px 10px">TOTAL</td>
+          <td class="num" style="font-weight:800;color:var(--cave-violet);font-size:0.9rem">${fmt(d.total_net)}</td>
+        </tr></tfoot></table>`;
+      }
+
       if (d.nb_tickets === 0) {
-        html += `<div class="empty-state" style="margin-top:20px;">
-          <i class="fas fa-receipt" style="font-size:1.8rem;display:block;margin-bottom:10px;opacity:0.25;"></i>
-          Aucune vente sur cette période
+        html += `<div class="empty-state" style="margin-top:20px;padding:40px 20px">
+          <i class="fas fa-wine-bottle" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.15;color:var(--cave-violet)"></i>
+          <div style="font-size:0.9rem;color:var(--cave-muted)">Aucune vente sur cette période</div>
         </div>`;
       }
 
       body.innerHTML = html;
     })
-    .catch(() => { body.innerHTML = '<div class="empty-state" style="color:var(--danger);">Erreur réseau</div>'; });
+    .catch(() => { body.innerHTML = '<div class="empty-state" style="color:#dc2626;">❌ Erreur réseau</div>'; });
 }
 </script>
 

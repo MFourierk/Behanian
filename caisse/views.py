@@ -95,7 +95,7 @@ def get_stats_jour(date=None, type_caisse=None):
 
     total    = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
     especes  = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
-    mobile   = tickets.filter(mode_paiement__in=['mobile_money', 'orange_money', 'wave', 'moov_money', 'mtn_money']).aggregate(s=Sum('montant_total'))['s'] or 0
+    mobile   = tickets.filter(mode_paiement__in=['mobile', 'mobile_money', 'orange_money', 'wave', 'moov_money', 'mtn_money']).aggregate(s=Sum('montant_total'))['s'] or 0
     carte    = tickets.filter(mode_paiement='carte_bancaire').aggregate(s=Sum('montant_total'))['s'] or 0
     virement = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
 
@@ -740,6 +740,110 @@ def api_reconciliation(request):
     today = timezone.localdate()
     data = get_reconciliation_jour(today)
     return JsonResponse({'success': True, 'reconciliation': data})
+
+
+@require_module_access('caisse')
+def etat_journee(request):
+    """État de fin de journée — point général des transactions par module et par mode de paiement."""
+    from datetime import date as date_type
+    date_str = request.GET.get('date')
+    try:
+        from datetime import datetime
+        date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+    except ValueError:
+        date = timezone.localdate()
+
+    # Labels pour les modes de paiement
+    MODE_LABELS = {
+        'especes':        'Espèces',
+        'wave':           'Wave',
+        'orange_money':   'Orange Money',
+        'mtn_money':      'MTN Mobile Money',
+        'moov_money':     'Moov Money',
+        'mobile_money':   'Mobile Money',
+        'mobile':         'Mobile Money',
+        'carte_bancaire': 'Carte Bancaire',
+        'carte':          'Carte Bancaire',
+        'cheque':         'Chèque',
+        'virement':       'Virement',
+        'chambre':        'Sur chambre',
+        'autre':          'Autre',
+    }
+
+    MODULES = [
+        ('hotel',      'Hôtel'),
+        ('restaurant', 'Restaurant'),
+        ('cave',       'Cave / Bar'),
+        ('piscine',    'Piscine'),
+        ('espace',     'Espaces Événementiels'),
+    ]
+
+    tickets_jour = (
+        Ticket.objects
+        .filter(date_creation__date=date)
+        .values('module', 'mode_paiement')
+        .annotate(total=Sum('montant_total'))
+        .order_by('module', 'mode_paiement')
+    )
+
+    # Construire {module: {mode_label: montant}}
+    raw = {}
+    for row in tickets_jour:
+        mod  = row['module'] or 'autre'
+        mode = row['mode_paiement'] or 'especes'
+        lbl  = MODE_LABELS.get(mode, mode.replace('_', ' ').capitalize())
+        raw.setdefault(mod, {})
+        raw[mod][lbl] = raw[mod].get(lbl, 0) + int(row['total'] or 0)
+
+    # Fusionner 'carte' + 'carte_bancaire' → 'Carte Bancaire'
+    for mod_data in raw.values():
+        # déjà fait via MODE_LABELS (les deux mappent au même label)
+        pass
+
+    # Construire la liste ordonnée pour le template
+    modules_data = []
+    grand_total = 0
+    global_modes = {}
+
+    for mod_key, mod_label in MODULES:
+        modes = raw.get(mod_key, {})
+        total_mod = sum(modes.values())
+        if total_mod == 0:
+            continue
+        grand_total += total_mod
+        for lbl, mt in modes.items():
+            global_modes[lbl] = global_modes.get(lbl, 0) + mt
+        modules_data.append({
+            'label':      mod_label,
+            'modes':      sorted(modes.items(), key=lambda x: -x[1]),
+            'modes_dict': modes,
+            'total':      total_mod,
+        })
+
+    # Trier les modes globaux par montant décroissant
+    sorted_modes = sorted(global_modes.items(), key=lambda x: -x[1])
+    mode_labels = [lbl for lbl, _ in sorted_modes]
+
+    # Construire la matrice récapitulatif : une ligne par module avec valeur par mode
+    recap_rows = []
+    for mod in modules_data:
+        vals = [mod['modes_dict'].get(lbl, 0) for lbl in mode_labels]
+        recap_rows.append({
+            'label': mod['label'],
+            'vals':  vals,
+            'total': mod['total'],
+        })
+    recap_mode_totals = [global_modes.get(lbl, 0) for lbl in mode_labels]
+
+    return render(request, 'caisse/etat_journee.html', {
+        'date':               date,
+        'modules_data':       modules_data,
+        'global_modes':       sorted_modes,
+        'grand_total':        grand_total,
+        'recap_rows':         recap_rows,
+        'recap_mode_labels':  mode_labels,
+        'recap_mode_totals':  recap_mode_totals,
+    })
 
 
 @require_manager

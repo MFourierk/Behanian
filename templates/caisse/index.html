@@ -113,6 +113,7 @@
       <button class="btn-a btn-or" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus-circle"></i> Mouvement</button>
       <button class="btn-a btn-bleu" onclick="ouvrirModal('modalPrelevement')"><i class="fas fa-university"></i> Banque</button>
       <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport</button>
+      <button class="btn-a" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)" onclick="window.open('{% url 'caisse:etat_journee' %}','_blank','width=900,height=950')"><i class="fas fa-calendar-check"></i> État journée</button>
       <button class="btn-a btn-dark" id="btnSync" onclick="syncCentrale()"><i class="fas fa-sync-alt"></i> Synchroniser modules</button>
       <button class="btn-a btn-rouge" onclick="ouvrirModalCloturer()"><i class="fas fa-lock"></i> Clôturer</button>
     </div>

@@ -1,0 +1,170 @@
+{% extends 'print_base.html' %}
+{% load humanize %}
+{% block doc_title %}État de Fin de Journée — {{ date|date:"d/m/Y" }}{% endblock %}
+
+{% block doc_actions %}
+<form method="get" style="display:inline-flex;align-items:center;gap:8px;margin-right:12px">
+  <label style="font-size:13px;font-weight:600;color:#1a2535">Date :</label>
+  <input type="date" name="date" value="{{ date|date:'Y-m-d' }}"
+    style="padding:6px 10px;border:1.5px solid #d4dce8;border-radius:8px;font-size:13px;cursor:pointer">
+  <button type="submit" style="padding:7px 16px;background:#1a2535;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+    Actualiser
+  </button>
+</form>
+<button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+<button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endblock %}
+
+{% block doc_content %}
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">ÉTAT DE FIN DE JOURNÉE</div>
+    <div class="doc-title-sub">Complexe Hôtelier Behanian · {{ date|date:"l d F Y" }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ date|date:"d/m/Y" }}</span>
+  </div>
+</div>
+
+{% if not modules_data %}
+<div style="text-align:center;padding:60px 20px;color:#7a8b9c;font-size:15px">
+  <div style="font-size:2.5rem;margin-bottom:12px">📋</div>
+  Aucune transaction enregistrée pour le {{ date|date:"d/m/Y" }}
+</div>
+{% else %}
+
+<!-- SYNTHÈSE GLOBALE -->
+<div class="meta-grid cols-2" style="margin-bottom:0">
+  <div class="meta-box">
+    <div class="meta-box-title">Synthèse de la journée</div>
+    <div class="meta-row">
+      <span class="meta-lbl">Date</span>
+      <span class="meta-val bold">{{ date|date:"l d F Y" }}</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-lbl">Modules actifs</span>
+      <span class="meta-val">{{ modules_data|length }}</span>
+    </div>
+    <div class="meta-row" style="border-top:2px solid #e2e8f0;margin-top:8px;padding-top:8px">
+      <span class="meta-lbl bold" style="color:#1a2535">TOTAL GÉNÉRAL</span>
+      <span class="meta-val bold" style="color:#16a34a;font-size:15px">{{ grand_total|intcomma }} FCFA</span>
+    </div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Par mode de paiement (tous modules)</div>
+    {% for mode_lbl, mt in global_modes %}
+    <div class="meta-row">
+      <span class="meta-lbl">
+        {% if mode_lbl == "Wave" %}🔵 {% elif mode_lbl == "Orange Money" %}🟠 {% elif mode_lbl == "MTN Mobile Money" %}🟡 {% elif mode_lbl == "Espèces" %}💵 {% elif mode_lbl == "Carte Bancaire" %}💳 {% elif mode_lbl == "Sur chambre" %}🛏️ {% endif %}
+        {{ mode_lbl }}
+      </span>
+      <span class="meta-val bold">{{ mt|intcomma }} FCFA</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- DÉTAIL PAR MODULE -->
+{% for mod in modules_data %}
+<div class="content-section">
+  <div class="section-title">{{ mod.label }}</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Mode de paiement</th>
+        <th class="r">Montant (FCFA)</th>
+        <th class="r" style="width:90px">%</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mode_lbl, mt in mod.modes %}
+      <tr>
+        <td>
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            {% if mode_lbl == "Wave" %}<span style="width:10px;height:10px;border-radius:50%;background:#0066cc;display:inline-block"></span>
+            {% elif mode_lbl == "Orange Money" %}<span style="width:10px;height:10px;border-radius:50%;background:#ff6600;display:inline-block"></span>
+            {% elif mode_lbl == "MTN Mobile Money" %}<span style="width:10px;height:10px;border-radius:50%;background:#ffcc00;display:inline-block"></span>
+            {% elif mode_lbl == "Espèces" %}<span style="width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block"></span>
+            {% elif mode_lbl == "Carte Bancaire" %}<span style="width:10px;height:10px;border-radius:50%;background:#7c3aed;display:inline-block"></span>
+            {% elif mode_lbl == "Sur chambre" %}<span style="width:10px;height:10px;border-radius:50%;background:#0891b2;display:inline-block"></span>
+            {% else %}<span style="width:10px;height:10px;border-radius:50%;background:#94a3b8;display:inline-block"></span>
+            {% endif %}
+            {{ mode_lbl }}
+          </span>
+        </td>
+        <td class="r bold">{{ mt|intcomma }}</td>
+        <td class="r muted" style="font-size:11px">
+          {% if mod.total %}{% widthratio mt mod.total 100 %} %{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label">TOTAL {{ mod.label|upper }}</td>
+        <td class="total-val">{{ mod.total|intcomma }} FCFA</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endfor %}
+
+<!-- RÉCAPITULATIF FINAL -->
+<div class="content-section">
+  <div class="section-title">Récapitulatif général</div>
+  <div style="overflow-x:auto">
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Module</th>
+        {% for mode_lbl in recap_mode_labels %}<th class="r" style="font-size:10px;white-space:nowrap">{{ mode_lbl }}</th>{% endfor %}
+        <th class="r">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in recap_rows %}
+      <tr>
+        <td class="bold">{{ row.label }}</td>
+        {% for val in row.vals %}
+        <td class="r" style="font-size:11px;color:{% if val %}#1a2535{% else %}#c0ccd8{% endif %}">
+          {% if val %}{{ val|intcomma }}{% else %}—{% endif %}
+        </td>
+        {% endfor %}
+        <td class="r bold" style="color:#1a2535">{{ row.total|intcomma }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label">TOTAL GÉNÉRAL</td>
+        {% for mt in recap_mode_totals %}
+        <td class="total-val" style="font-size:11px">{{ mt|intcomma }}</td>
+        {% endfor %}
+        <td class="total-val">{{ grand_total|intcomma }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>
+</div>
+
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box">
+    <div class="sig-line">Chef Caissier(e)</div>
+    <div class="sig-hint">Nom &amp; Signature</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line">Responsable</div>
+    <div class="sig-hint">Nom &amp; Signature</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line">Direction</div>
+    <div class="sig-hint">Visa &amp; Cachet</div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block doc_footer_right %}État journée {{ date|date:"d/m/Y" }} · Édité le {% now "d/m/Y H:i" %}{% endblock %}
