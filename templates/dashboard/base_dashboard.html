@@ -417,6 +417,11 @@
             clearInterval(countdownTimer);
             overlay.style.display = 'none';
             resetTimer();
+            // Rafraîchir la session Django pour éviter l'expiration serveur
+            fetch("{% url 'dashboard:keep_alive' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+            }).catch(function() {});
         };
 
         function resetTimer() {

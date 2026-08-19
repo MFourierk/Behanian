@@ -468,6 +468,13 @@ def api_stats(request):
     return JsonResponse(stats)
 
 
+@login_required
+def keep_alive(request):
+    """Rafraîchit la session Django (appelé par le bouton 'Je suis là')."""
+    request.session.modified = True
+    return JsonResponse({'ok': True})
+
+
 # ═══════════════════════════════════════════════════════════════
 #  RÉSUMÉ VENTES — Multi-module (Vue Direction + exports)
 # ═══════════════════════════════════════════════════════════════

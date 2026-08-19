@@ -1534,11 +1534,14 @@ async function chargerCommandeParTable(tableId) {
   }
 }
 
-async function chargerCommande(cmdId) {
+async function chargerCommande(cmdId, silent=false) {
   try {
     const r = await fetch(`{% url 'restaurant:recuperer_commande_details' 0 %}`.replace('0', cmdId));
     const data = await r.json();
     if (!data.success) return;
+    // Éviter les doublons si le ticket est déjà ouvert
+    const dejaCree = Object.values(tickets).find(t => t.commandeDbId === data.commande.id);
+    if (dejaCree) { if (!silent) { chargerTicket(dejaCree.id); switchTab('catalogue'); } return; }
     ticketCounter++;
     const tid = ticketCounter;
     tickets[tid] = {
@@ -1553,10 +1556,17 @@ async function chargerCommande(cmdId) {
       paiement: 'especes'
     };
     ajouterBoutonTicket(tid, '#' + cmdId);
-    chargerTicket(tid);
-    switchTab('catalogue');
-  } catch(e) { toast('Erreur chargement', 'error'); }
+    if (!silent) { chargerTicket(tid); switchTab('catalogue'); }
+  } catch(e) { if (!silent) toast('Erreur chargement', 'error'); }
 }
+
+// Restauration automatique des commandes en cours au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.commande-row[data-cmd-id]').forEach(function(row) {
+    var cmdId = parseInt(row.getAttribute('data-cmd-id'));
+    if (cmdId) chargerCommande(cmdId, true);
+  });
+});
 
 // ═══════════════════════════════════════════
 // RENDER TICKET (panneau droit)

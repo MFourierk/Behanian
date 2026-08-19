@@ -231,6 +231,7 @@ CSRF_USE_SESSIONS    = False   # Token dans cookie (défaut Django, compatible A
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE             = 20 * 60   # 20 min côté serveur (marge > 15 min frontend)
+SESSION_SAVE_EVERY_REQUEST     = True       # Rafraîchit l'expiration à chaque requête
 
 
 # ---------------------------------------------------------------------------
