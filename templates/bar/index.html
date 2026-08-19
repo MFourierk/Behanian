@@ -382,6 +382,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 }
 .btn-quick-pay:hover { background: rgba(22,163,74,0.28); }
 .btn-quick-pay:disabled { opacity: 0.3; pointer-events: none; }
+.btn-mobile-quick {
+  flex: 1; padding: 8px 4px; margin-bottom: 8px;
+  border-radius: 10px; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.btn-mobile-quick:disabled { opacity: 0.3; pointer-events: none; }
+.btn-mq-wave   { background:rgba(29,78,216,0.15); border:1.5px solid rgba(29,78,216,0.35); color:#93c5fd; }
+.btn-mq-orange { background:rgba(194,65,12,0.15);  border:1.5px solid rgba(194,65,12,0.35);  color:#fb923c; }
+.btn-mq-mtn    { background:rgba(161,98,7,0.15);   border:1.5px solid rgba(161,98,7,0.35);   color:#fbbf24; }
 
 /* Bouton mettre en attente */
 .btn-attente {
@@ -908,6 +917,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="btn-quick-pay" id="btnQuickPay" onclick="paiementRapide()" disabled>
         <i class="fas fa-bolt"></i> Encaissement rapide — espèces exact
       </button>
+      <div style="display:flex;gap:6px">
+        <button class="btn-mobile-quick btn-mq-wave"   onclick="paiementRapideMobile('wave')"         disabled title="Encaissement rapide Wave">🌊 Wave</button>
+        <button class="btn-mobile-quick btn-mq-orange" onclick="paiementRapideMobile('orange_money')" disabled title="Encaissement rapide Orange Money">🟠 Orange</button>
+        <button class="btn-mobile-quick btn-mq-mtn"    onclick="paiementRapideMobile('mtn_money')"    disabled title="Encaissement rapide MTN">🟡 MTN</button>
+      </div>
       <button class="btn-valider" id="btnValider" onclick="ouvrirModalPaiement()" disabled>
         <i class="fas fa-check-circle"></i> Valider le paiement
       </button>
@@ -1152,6 +1166,7 @@ function renderTicket() {
     document.getElementById('btnValider').disabled = true;
     document.getElementById('btnQuickPay').disabled = true;
     document.getElementById('btnAddition').disabled = true;
+    document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = true);
     return;
   }
 
@@ -1195,6 +1210,7 @@ function renderTicket() {
   document.getElementById('btnValider').disabled = false;
   document.getElementById('btnQuickPay').disabled = false;
   document.getElementById('btnAddition').disabled = false;
+  document.querySelectorAll('.btn-mobile-quick').forEach(b => b.disabled = false);
 
   // Maj badge tickets en attente
   document.querySelectorAll('.ticket-attente-btn').forEach(btn => {
@@ -1930,6 +1946,124 @@ function getCookie(name) {
   const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
   return v ? v[2] : null;
 }
+
+// ── ENCAISSEMENT RAPIDE MOBILE MONEY (Wave / Orange Money / MTN) ──
+let _popupMobile = null;
+
+function paiementRapideMobile(mode) {
+  const t = tickets[ticketActifId];
+  if (!t || !t.lignes.length) return;
+  const serveurVal = t.serveur || document.getElementById('selectServeur')?.value || '';
+  if (!serveurVal) { toast('👤 Sélectionnez un serveur', 'error'); return; }
+  t.serveur = serveurVal;
+
+  const modeNom = { wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN Mobile Money' };
+  const total = t.totalNet || t.lignes.reduce((s,l)=>s+l.prix*l.qty, 0);
+
+  window._mobilePayPending = { mode, total, serveur: serveurVal, ticketSnapshot: JSON.parse(JSON.stringify(t)) };
+
+  const date = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const lignesHTML = t.lignes.map(l =>
+    `<tr><td style="padding:3px 2px">${l.nom}</td><td style="text-align:center;padding:3px 4px">${l.qty} × ${parseInt(l.prix).toLocaleString('fr-FR')}</td><td style="text-align:right;font-weight:600;padding:3px 2px">${parseInt(l.prix*l.qty).toLocaleString('fr-FR')} F</td></tr>`
+  ).join('');
+  const totalBrut = t.lignes.reduce((s,l)=>s+l.prix*l.qty, 0);
+  const remiseMt  = t.remise_pct > 0 ? totalBrut * t.remise_pct / 100 : 0;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reçu ${modeNom[mode]||mode}</title>
+  <style>
+    @page{size:80mm auto;margin:3mm}*{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Courier New',monospace;font-size:11px;width:74mm;background:#fff;color:#000}
+    .center{text-align:center}.sep-dash{border:none;border-top:1px dashed #000;margin:5px 0}.sep-solid{border:none;border-top:1px solid #000;margin:5px 0}
+    .meta-row{display:flex;justify-content:space-between;padding:1px 0}
+    table{width:100%;border-collapse:collapse;font-size:10px}
+    .total-row{display:flex;justify-content:space-between;font-weight:bold;font-size:13px;padding:6px 0 2px;border-top:1px solid #000;margin-top:4px}
+    .mode-badge{text-align:center;padding:6px;background:#f3f4f6;border-radius:4px;font-weight:bold;font-size:12px;margin:6px 0;border:1px dashed #555}
+    .no-print{text-align:center;padding:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .btn-print{padding:10px 18px;font-size:13px;font-weight:bold;background:#1a1a2e;color:#c9a84c;border:2px solid #c9a84c;border-radius:8px;cursor:pointer}
+    .btn-confirm{padding:10px 18px;font-size:13px;font-weight:bold;background:#16a34a;color:white;border:none;border-radius:8px;cursor:pointer}
+    .btn-cancel{padding:10px 14px;font-size:12px;background:#6b7280;color:white;border:none;border-radius:8px;cursor:pointer}
+    @media print{.no-print{display:none!important}body{background:white}}
+  </style></head><body>
+  <div class="center"><div style="font-size:12px;font-weight:bold">{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}</div>
+  <div style="font-size:9px;font-style:italic">Cave</div></div>
+  <hr class="sep-solid">
+  <div class="meta-row"><span>Date :</span><span>${date}</span></div>
+  <div class="meta-row"><span>Serveur :</span><span>${serveurVal}</span></div>
+  <hr class="sep-dash">
+  <table><tbody>${lignesHTML}</tbody></table>
+  <hr class="sep-dash">
+  ${remiseMt > 0 ? `<div class="meta-row"><span style="color:#6b7280">Sous-total :</span><span>${parseInt(totalBrut).toLocaleString('fr-FR')} F</span></div>
+  <div class="meta-row" style="color:#dc2626"><span>Remise (${t.remise_pct}%) :</span><span>- ${parseInt(remiseMt).toLocaleString('fr-FR')} F</span></div>` : ''}
+  <div class="total-row"><span>TOTAL</span><span>${parseInt(total).toLocaleString('fr-FR')} F</span></div>
+  <div class="mode-badge">📱 ${modeNom[mode]||mode}</div>
+  <div class="center" style="font-size:9px;margin-top:6px">Merci de votre visite</div>
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+    <button class="btn-confirm" id="btnValiderMobile" onclick="validerEtFermer()">✅ Valider le paiement</button>
+    <button class="btn-cancel" onclick="window.close()">Annuler</button>
+  </div>
+  <script>
+    function validerEtFermer() {
+      const btn = document.getElementById('btnValiderMobile');
+      btn.disabled = true; btn.textContent = 'Traitement…';
+      if (window.opener && window.opener._validerMobilePaiement) {
+        window.opener._validerMobilePaiement();
+      }
+      setTimeout(() => window.close(), 800);
+    }
+  </script></body></html>`;
+
+  if (_popupMobile && !_popupMobile.closed) _popupMobile.close();
+  _popupMobile = window.open('', '_blank', 'width=440,height=680,top=80,left=80');
+  if (_popupMobile) { _popupMobile.document.write(html); _popupMobile.document.close(); _popupMobile.focus(); }
+}
+
+window._validerMobilePaiement = async function() {
+  const pending = window._mobilePayPending;
+  if (!pending) return;
+  window._mobilePayPending = null;
+  const t = tickets[ticketActifId];
+  if (!t) return;
+  try {
+    const payload = {
+      ticket_nom: t.nom,
+      lignes: t.lignes.map(l => ({ id: l.id, nom: l.nom, prix: l.prix, qty: l.qty })),
+      total: pending.total,
+      paiement: pending.mode,
+      espace: t.espace || '', ref: t.ref || '',
+      serveur: pending.serveur, serveur_id: t.serveur_id || null,
+      montant_recu: pending.total,
+      operateur_mobile: '',
+      stock_live: true, session_token: SESSION_TOKEN,
+    };
+    const resp = await fetch("{% url 'bar:api_vente' %}", {
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!data.ok) { afficherErreurStock(data); return; }
+    const modeNom = { wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN' };
+    toast(`✅ Ticket ${data.ticket_numero} — ${modeNom[pending.mode]||pending.mode} — ${formatF(data.total)}`, 'success');
+    imprimerTicket(pending.ticketSnapshot, pending.total, data.ticket_numero, 0);
+    setTimeout(() => {
+      const oldId = ticketActifId;
+      delete tickets[oldId];
+      document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+      ticketCounter++;
+      const newTid = ticketCounter;
+      const newNom = `T-${String(newTid).padStart(3,'0')}`;
+      tickets[newTid] = {id:newTid,nom:newNom,espace:'',ref:'',serveur:'',lignes:[],paiement:'especes'};
+      ticketActifId = newTid;
+      const container = document.getElementById('ticketsAttente');
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'ticket-attente-btn active'; btn.dataset.tid = newTid;
+      btn.innerHTML = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${newTid}, event)">×</span>`;
+      btn.onclick = () => chargerTicket(newTid);
+      container.appendChild(btn);
+      chargerTicket(newTid);
+    }, 300);
+  } catch(e) { toast(`Erreur réseau : ${e.message}`, 'error'); }
+};
 
 // Init
 document.addEventListener('keydown', e => {
