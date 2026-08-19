@@ -2710,7 +2710,7 @@ async function confirmerPaiement() {
 
   } catch(e) {
     toast('❌ Erreur réseau', 'error');
-    btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';
+    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer'; }
   }
 }
 

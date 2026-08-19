@@ -1460,6 +1460,8 @@ function ouvrirModalPaiement() {
 
 function fermerModal() {
   document.getElementById('modalPaiement').classList.remove('open');
+  const btnC = document.getElementById('btnConfirmerPaiement');
+  if (btnC) { btnC.disabled = false; btnC.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
 }
 
 function calcRendu() {
@@ -2007,8 +2009,8 @@ function confirmerLierChambre(){
   document.getElementById('chambre-liee-badge').style.display='flex';
   document.getElementById('chambre-liee-nom').textContent=opt.text;
   document.getElementById('btnLierChambre').style.display='none';
-  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.pay-btn[data-mode="chambre"]').classList.add('active');
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelector('.pay-btn[data-mode="chambre"]')?.classList.add('selected');
   modePaiement='chambre';
   fermerModalLierChambre();
   toast('Commande liée à '+opt.text,'success');
@@ -2019,8 +2021,8 @@ function delierChambre(){
   chambreLieeNom=null;
   document.getElementById('chambre-liee-badge').style.display='none';
   document.getElementById('btnLierChambre').style.display='';
-  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.pay-btn[data-mode="especes"]').classList.add('active');
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelector('.pay-btn[data-mode="especes"]')?.classList.add('selected');
   modePaiement='especes';
 }
 
