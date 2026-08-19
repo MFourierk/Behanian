@@ -1115,6 +1115,23 @@
         <button class="pay-mode-btn" data-mode="chambre" onclick="selectMode(this)">🛏 Report Chambre</button>
       </div>
 
+      <!-- Sélecteur opérateurs Mobile Money -->
+      <div id="mobileMoneyOps" style="display:none;margin:10px 0 4px;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px">
+        <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Opérateur Mobile Money</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          {% for op in operateurs_mobile_money %}
+          <button type="button" class="mobile-op-btn" data-op="{{ op.nom }}" onclick="selectMobileOp(this)"
+            style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg-card);color:var(--cream-dim);cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;font-family:var(--font-sans)">
+            {% if op.image %}<img src="{{ op.image.url }}" alt="{{ op.nom }}" style="width:24px;height:24px;object-fit:contain;border-radius:5px">{% else %}<i class="fas fa-mobile-alt"></i>{% endif %}
+            {{ op.nom }}
+          </button>
+          {% empty %}
+          <span style="color:#6b7280;font-size:12px">Aucun opérateur — <a href="{% url 'parametres:mobile_money_list' %}" style="color:var(--gold)">configurer</a></span>
+          {% endfor %}
+        </div>
+        <div id="mobileOpSelectedResto" style="display:none;margin-top:8px;padding:5px 10px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.35);border-radius:8px;font-size:12px;color:#34d399;font-weight:600"></div>
+      </div>
+
       <div id="sectionEspeces">
         <div class="modal-field">
           <label>Montant reçu (F)</label>
@@ -1169,6 +1186,7 @@ let tickets = {};
 let ticketCounter = 0;
 let ticketActifId = null;
 let modePaiement = 'especes';
+let mobileMoneyOperateur = null;
 let commandeIdEnCours = null; // ID DB de la commande en cours
 let tableSelActif = null;     // { id, numero }
 let pendingPlatId = null;     // Plat en attente d'acc
@@ -1697,6 +1715,12 @@ function ouvrirModal() {
   modePaiement = t.paiement || 'especes';
   document.querySelectorAll('.pay-mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
   toggleSectionEspeces(modePaiement === 'especes' || modePaiement === 'mobile');
+  const mobileOpsEl = document.getElementById('mobileMoneyOps');
+  if (mobileOpsEl) mobileOpsEl.style.display = (modePaiement === 'mobile') ? 'block' : 'none';
+  mobileMoneyOperateur = null;
+  document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor = ''; b.style.background = ''; });
+  const selOpEl = document.getElementById('mobileOpSelectedResto');
+  if (selOpEl) selOpEl.style.display = 'none';
   document.getElementById('btnConfirm').disabled = false;
   document.getElementById('btnConfirm').textContent = '✓ Confirmer & Imprimer';
   document.getElementById('modalOverlay').classList.add('open');
@@ -1711,8 +1735,26 @@ function fermerModal() { document.getElementById('modalOverlay').classList.remov
 
 function selectMode(btn) {
   modePaiement = btn.dataset.mode;
+  const t = tickets[ticketActifId];
+  if (t) t.paiement = modePaiement;
   document.querySelectorAll('.pay-mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === modePaiement));
   toggleSectionEspeces(modePaiement === 'especes' || modePaiement === 'mobile');
+  const mobileOps = document.getElementById('mobileMoneyOps');
+  if (mobileOps) mobileOps.style.display = (modePaiement === 'mobile') ? 'block' : 'none';
+  if (modePaiement !== 'mobile') {
+    mobileMoneyOperateur = null;
+    document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor = ''; b.style.background = ''; });
+    const sel = document.getElementById('mobileOpSelectedResto');
+    if (sel) sel.style.display = 'none';
+  }
+}
+function selectMobileOp(btn) {
+  document.querySelectorAll('.mobile-op-btn').forEach(b => { b.style.borderColor = ''; b.style.background = ''; });
+  btn.style.borderColor = 'rgba(16,185,129,0.6)';
+  btn.style.background  = 'rgba(16,185,129,0.15)';
+  mobileMoneyOperateur = btn.dataset.op;
+  const sel = document.getElementById('mobileOpSelectedResto');
+  if (sel) { sel.style.display = 'block'; sel.textContent = '✓ ' + mobileMoneyOperateur; }
 }
 function toggleSectionEspeces(show) {
   document.getElementById('sectionEspeces').style.display = show ? 'block' : 'none';
@@ -1744,17 +1786,21 @@ async function confirmerPaiement() {
   if ((modePaiement === 'especes' || modePaiement === 'mobile') && montantRecu < total) {
     toast('Montant insuffisant', 'error'); return;
   }
+  if (modePaiement === 'mobile' && !mobileMoneyOperateur && document.querySelectorAll('.mobile-op-btn').length > 0) {
+    toast('Sélectionnez l\'opérateur Mobile Money', 'error'); return;
+  }
 
   const btn = document.getElementById('btnConfirm');
   btn.disabled = true;
   btn.textContent = '⏳ Traitement…';
 
   const payload = {
-    commande_id:    t.commandeDbId,
-    action:         'paiement',
-    mode_paiement:  modePaiement,
+    commande_id:      t.commandeDbId,
+    action:           'paiement',
+    mode_paiement:    modePaiement,
+    operateur_mobile: mobileMoneyOperateur || '',
     montant_encaisse: montantRecu,
-    client:         t.client || '',
+    client:           t.client || '',
   };
 
   try {
@@ -1780,6 +1826,7 @@ async function confirmerPaiement() {
     majTableCard(t.tableId, 'disponible', 0, '');
 
     // Supprimer ticket
+    mobileMoneyOperateur = null;
     delete tickets[ticketActifId];
     document.querySelector(`.ticket-badge[data-tid="${ticketActifId}"]`)?.remove();
     ticketActifId = null;
