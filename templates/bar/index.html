@@ -1689,7 +1689,7 @@ async function confirmerPaiement() {
     // 1. Ouvrir la fenêtre d'impression EN PREMIER (avant tout changement d'état)
     //    On passe une copie du ticket pour éviter qu'il soit effacé
     const ticketSnapshot = JSON.parse(JSON.stringify(t));
-    imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu);
+    imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu, montantEspeces);
 
     // 2. Seulement après : créer le nouveau ticket vide
     setTimeout(() => {
@@ -1723,7 +1723,7 @@ async function confirmerPaiement() {
 // ============================================================
 // IMPRESSION TICKET THERMIQUE (80mm)
 // ============================================================
-function imprimerTicket(t, total, ticketNumero, rendu) {
+function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
   const selectEspace = document.getElementById('selectEspace');
   const espaceLabel  = selectEspace.options[selectEspace.selectedIndex]?.text.replace(/^[^\s]+\s/, '') || '';
   const ref          = t.ref || '';
@@ -1839,6 +1839,10 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
       <span class="total-label">TOTAL</span>
       <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} FCFA</span>
     </div>
+    ${(MOBILE_MODES.includes(modePaiement) && montantEspeces > 0) ? `
+    <hr class="sep-dash">
+    <div class="paiement-row"><span>ESP :</span><span>${parseInt(montantEspeces).toLocaleString('fr-FR')} F</span></div>
+    <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePaiement]||modePaiement} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
     ${showRendu ? `
     <hr class="sep-dash">
     <div class="paiement-row"><span>Reçu :</span><span>${montantRecuVal.toLocaleString('fr-FR')} F</span></div>

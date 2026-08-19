@@ -156,6 +156,11 @@
         <span class="total-label">TOTAL</span>
         <span class="total-val">{{ ticket.montant_total|montant }} FCFA</span>
     </div>
+    {% if montant_especes %}
+    <hr class="sep-dash">
+    <div class="paiement-row"><span>ESP :</span><span>{{ montant_especes|montant }} F</span></div>
+    <div class="paiement-row"><span>{{ mode_short }} :</span><span>{{ montant_mobile|montant }} F</span></div>
+    {% endif %}
     {% if ticket.montant_paye and ticket.mode_paiement != 'carte_bancaire' %}
     <hr class="sep-dash">
     <div class="paiement-row">

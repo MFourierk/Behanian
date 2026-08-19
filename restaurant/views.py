@@ -250,10 +250,16 @@ def valider_commande(request):
                         )
 
                 # Rendu ticket thermique avec serveur
+                mode_short_map = {'wave':'WAVE','orange_money':'ORANGE','mtn_money':'MTN','especes':'ESP','carte_bancaire':'CARTE'}
+                tp = ticket.mode_paiement or 'especes'
+                montant_mobile = max(Decimal('0'), ticket.montant_total - montant_especes) if montant_especes > 0 else Decimal('0')
                 ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
-                    'ticket':  ticket,
-                    'serveur': serveur_nom,
-                    'is_original': True
+                    'ticket':           ticket,
+                    'serveur':          serveur_nom,
+                    'is_original':      True,
+                    'montant_especes':  montant_especes if montant_especes > 0 else None,
+                    'montant_mobile':   montant_mobile  if montant_especes > 0 else None,
+                    'mode_short':       mode_short_map.get(tp, tp.upper()),
                 })
                 
                 return JsonResponse({'success': True, 'ticket_html': ticket_html, 'action': 'paiement'})
