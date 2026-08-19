@@ -532,7 +532,7 @@ def encaisser_sortie(request, acces_id):
         for c in acces.consommations.all():
             contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
         if montant_remise > 0:
-            contenu += f'<div class="row" style="color:#dc2626"><span class="item-name">Remise {int(remise_pct)}%</span><span class="item-price">-{int(montant_remise):,} F</span></div>'
+            contenu += f'<div class="row" style="color:#dc2626"><span class="item-name">Remise</span><span class="item-price">-{int(montant_remise):,} F</span></div>'
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',

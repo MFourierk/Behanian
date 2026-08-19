@@ -124,9 +124,19 @@
     </div>
     {% endif %}
     <div class="meta-row">
-        <span class="meta-label">Entrée :</span>
+        <span class="meta-label">{% if acces.remise_montant > 0 %}Tarif brut :{% else %}Entrée :{% endif %}</span>
         <span>{% if acces.prix_total > 0 %}{{ acces.prix_total|floatformat:0 }} FCFA{% else %}Gratuite{% endif %}</span>
     </div>
+    {% if acces.remise_montant > 0 %}
+    <div class="meta-row" style="color:#dc2626">
+        <span class="meta-label">Remise :</span>
+        <span>- {{ acces.remise_montant|floatformat:0 }} FCFA</span>
+    </div>
+    <div class="meta-row" style="font-weight:bold;border-top:1px solid #000;padding-top:4px;margin-top:2px">
+        <span class="meta-label">À PAYER :</span>
+        <span>{{ acces.total_net|floatformat:0 }} FCFA</span>
+    </div>
+    {% endif %}
     {% if acces.enregistre_par %}
     <div class="meta-row">
         <span class="meta-label">Agent :</span>
