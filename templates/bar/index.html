@@ -1751,10 +1751,6 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
     <div class="no-print">
       <button class="btn-print" onclick="window.print()">🖨️ &nbsp; Imprimer le ticket</button>
     </div>
-    <script>
-      window.addEventListener('afterprint', () => window.close());
-      window.addEventListener('load', () => setTimeout(() => window.print(), 300));
-    </script>
 
     <!-- EN-TÊTE OFFICIEL (dynamique depuis Configuration) -->
     <div class="center">
@@ -1807,12 +1803,12 @@ function imprimerTicket(t, total, ticketNumero, rendu) {
     </div>
   </body></html>`;
 
-  // Ouvrir dans une nouvelle fenêtre — le caissier clique lui-même sur Imprimer
   const w = window.open('', '_blank', 'width=360,height=620');
   w.document.write(html);
   w.document.close();
   w.focus();
-  // PAS d'impression automatique — le bouton dans la fenêtre laisse le choix
+  w.onafterprint = () => w.close();
+  setTimeout(() => w.print(), 350);
 }
 
 function getCookie(name) {
