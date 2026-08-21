@@ -126,8 +126,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
 
   <!-- Onglets -->
   <div class="sage-tabs">
-    <button type="button" class="tab-btn active" onclick="switchTab('entete',this)"><i class="fas fa-file-invoice"></i> En-tête</button>
-    <button type="button" class="tab-btn" onclick="switchTab('articles',this)"><i class="fas fa-boxes"></i> Articles reçus <span class="tab-count" id="tc-articles">1</span></button>
+    <button type="button" class="tab-btn active" data-tab="entete"><i class="fas fa-file-invoice"></i> En-tête</button>
+    <button type="button" class="tab-btn" data-tab="articles"><i class="fas fa-boxes"></i> Articles reçus <span class="tab-count" id="tc-articles">1</span></button>
   </div>
 
   <!-- Onglet : En-tête -->
@@ -279,14 +279,24 @@ let rowCounter = 1;
 window.addEventListener('load', ()=>chargerLignesBc({{ bc_prefill.pk }}));
 {% endif %}
 
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.remove('active');p.style.display='none';});
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const panel=document.getElementById('tab-'+id);
-  panel.classList.add('active');
-  panel.style.display='block';
-  btn.classList.add('active');
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');p.style.display='none';});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  var panel=document.getElementById('tab-'+id);
+  if(panel){panel.classList.add('active');panel.style.display='block';}
+  document.querySelectorAll('.tab-btn[data-tab="'+id+'"]').forEach(function(b){b.classList.add('active');});
 }
+
+document.addEventListener('DOMContentLoaded',function(){
+  // Initialisation styles inline
+  document.querySelectorAll('.tab-panel').forEach(function(p){
+    p.style.display=p.classList.contains('active')?'block':'none';
+  });
+  // Attacher les clics sur les onglets
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
+    btn.addEventListener('click',function(){switchTab(this.getAttribute('data-tab'));});
+  });
+});
 
 function onBcChange(sel) {
   const pk = sel.value;
