@@ -1687,31 +1687,29 @@ async function confirmerPaiement() {
       setTimeout(() => toast(`⚠️ Stock : ${data.erreurs_stock.join(' | ')}`, 'error'), 800);
     }
 
-    // 1. Ouvrir la fenêtre d'impression EN PREMIER (avant tout changement d'état)
-    //    On passe une copie du ticket pour éviter qu'il soit effacé
+    // 1. Réinitialiser l'interface (avant impression pour éviter le blocage si popup bloqué)
     const ticketSnapshot = JSON.parse(JSON.stringify(t));
-    imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu, montantEspeces);
+    const oldId = ticketActifId;
+    delete tickets[oldId];
+    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+    ticketCounter++;
+    const newTid = ticketCounter;
+    const newNom = `T-${String(newTid).padStart(3, '0')}`;
+    tickets[newTid] = { id: newTid, nom: newNom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes', remise_pct: 0 };
+    ticketActifId = newTid;
+    const container = document.getElementById('ticketsAttente');
+    const btnNew    = document.createElement('button');
+    btnNew.type        = 'button';
+    btnNew.className   = 'ticket-attente-btn active';
+    btnNew.dataset.tid = newTid;
+    btnNew.innerHTML   = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${newTid}, event)">×</span>`;
+    btnNew.onclick     = () => chargerTicket(newTid);
+    container.appendChild(btnNew);
+    _chargerTicketInterne(newTid);
 
-    // 2. Seulement après : créer le nouveau ticket vide
-    setTimeout(() => {
-      const oldId = ticketActifId;
-      delete tickets[oldId];
-      document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
-      ticketCounter++;
-      const newTid = ticketCounter; // capturer correctement
-      const newNom = `T-${String(newTid).padStart(3, '0')}`;
-      tickets[newTid] = { id: newTid, nom: newNom, espace: '', ref: '', serveur: '', lignes: [], paiement: 'especes' };
-      ticketActifId = newTid;
-      const container = document.getElementById('ticketsAttente');
-      const btn       = document.createElement('button');
-      btn.type        = 'button';
-      btn.className   = 'ticket-attente-btn active';
-      btn.dataset.tid = newTid;
-      btn.innerHTML   = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${newTid}, event)">×</span>`;
-      btn.onclick     = () => chargerTicket(newTid);
-      container.appendChild(btn);
-      chargerTicket(newTid);
-    }, 300);
+    // 2. Impression (dans son propre try pour ne pas bloquer le flux si popup refusé)
+    try { imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu, montantEspeces); }
+    catch(printErr) { toast('⚠️ Impression bloquée — autorisez les popups', 'error'); }
 
   } catch(err) {
     toast(`Erreur réseau : ${err.message}`, 'error');
@@ -1858,6 +1856,7 @@ function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
   </body></html>`;
 
   const w = window.open('', '_blank', 'width=360,height=620');
+  if (!w) { toast('⚠️ Popup bloqué — autorisez les popups pour imprimer', 'error'); return; }
   w.document.write(html);
   w.document.close();
   w.focus();
