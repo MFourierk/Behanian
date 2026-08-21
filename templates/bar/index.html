@@ -1069,7 +1069,7 @@ let ticketCounter = 1;
 let modePaiement  = 'especes';
 let chambreLieeId  = null;
 let chambreLieeNom = null;
-const SESSION_TOKEN = crypto.randomUUID();
+var SESSION_TOKEN = crypto.randomUUID();
 var CSRF = getCsrfToken() || '{{ csrf_token }}';
 
 // ============================================================
