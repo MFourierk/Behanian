@@ -270,9 +270,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-const artData = {
-  {% for art in articles %}"{{ art.pk }}":{nom:"{{ art.nom|escapejs }}",ref:"{{ art.reference|default:''|escapejs }}",prix:{{ art.prix_achat|default:0 }}},{% endfor %}
-};
+const artData = {{ art_data_json|safe }};
 let rowCounter = 1;
 
 {% if bc_prefill %}

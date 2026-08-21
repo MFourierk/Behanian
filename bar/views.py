@@ -1,3 +1,4 @@
+import json
 from utils.permissions import require_module_access
 from functools import wraps
 from django.shortcuts import redirect as _redirect
@@ -630,6 +631,11 @@ def bon_reception_create(request):
     if bc_id:
         bc_prefill = BonCommandeBar.objects.filter(pk=bc_id).first()
 
+    art_data_json = json.dumps({
+        str(a.pk): {'nom': a.nom, 'ref': a.reference or '', 'prix': float(a.prix_achat or 0)}
+        for a in articles
+    }, ensure_ascii=False)
+
     context = {
         'page_title': 'Nouveau Bon de Réception',
         'fournisseurs': fournisseurs,
@@ -637,6 +643,7 @@ def bon_reception_create(request):
         'bons_commande': bons_commande,
         'bc_prefill': bc_prefill,
         'mode': 'create',
+        'art_data_json': art_data_json,
     }
     return render(request, 'bar/bon_reception_form.html', context)
 
