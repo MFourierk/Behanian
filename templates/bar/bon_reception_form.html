@@ -131,7 +131,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
   </div>
 
   <!-- Onglet : En-tête -->
-  <div id="tab-entete" class="sage-card tab-panel active">
+  <div id="tab-entete" class="sage-card tab-panel active" style="display:block">
     <div class="doc-info-grid">
       <div class="doc-info-block">
         <div class="doc-info-block-label">Fournisseur & Bon de commande</div>
@@ -186,7 +186,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
   </div>
 
   <!-- Onglet : Articles -->
-  <div id="tab-articles" class="sage-card tab-panel">
+  <div id="tab-articles" class="sage-card tab-panel" style="display:none">
     <div class="bc-toolbar">
       <button type="button" class="btn-load-bc" id="btn-load-bc" onclick="chargerLignesBc()" disabled>
         <i class="fas fa-magic"></i> Importer depuis le BC
@@ -287,15 +287,11 @@ function switchTab(id) {
   document.querySelectorAll('.tab-btn[data-tab="'+id+'"]').forEach(function(b){b.classList.add('active');});
 }
 
-document.addEventListener('DOMContentLoaded',function(){
-  // Initialisation styles inline
-  document.querySelectorAll('.tab-panel').forEach(function(p){
-    p.style.display=p.classList.contains('active')?'block':'none';
-  });
-  // Attacher les clics sur les onglets
-  document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
-    btn.addEventListener('click',function(){switchTab(this.getAttribute('data-tab'));});
-  });
+// Délégation d'événement sur document — fonctionne même si le bouton est rendu après
+document.addEventListener('click',function(e){
+  var btn=e.target.closest ? e.target.closest('.tab-btn[data-tab]') : null;
+  if(!btn && e.target.getAttribute && e.target.getAttribute('data-tab')) btn=e.target;
+  if(btn){e.preventDefault();switchTab(btn.getAttribute('data-tab'));}
 });
 
 function onBcChange(sel) {
