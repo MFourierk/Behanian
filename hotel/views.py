@@ -67,7 +67,7 @@ def hotel_index(request):
     chambres_disponibles = Chambre.objects.filter(statut='disponible').count()
     chambres_occupees = Chambre.objects.filter(statut='occupee').count()
     chambres_maintenance = Chambre.objects.filter(statut='maintenance').count()
-    chambres_reservees = Chambre.objects.filter(statut='reservation').count()
+    chambres_reservees = Reservation.objects.filter(statut__in=['en_attente', 'confirmee']).count()
     
     # Liste des chambres (Read Only for Hotel Module)
     chambres = Chambre.objects.all().order_by('numero')
