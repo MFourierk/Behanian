@@ -1,265 +1,529 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+function exporterPDFReception() {
+    const btn = document.getElementById('btn-pdf-br');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+    btn.disabled = true;
+    document.getElementById('signature-zone-br').style.display = 'block';
+    const options = {
+        margin: [10,10,10,10],
+        filename: 'BonReception_Cave_Behanian_' + new Date().toISOString().slice(0,10) + '.pdf',
+        image: { type: 'jpeg', quality: 0.97 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(options).from(document.getElementById('printable-zone')).save().then(() => {
+        btn.innerHTML = '<i class="fas fa-file-pdf"></i> Télécharger PDF';
+        btn.disabled = false;
+        document.getElementById('signature-zone-br').style.display = 'none';
+    });
+}
+window.addEventListener('beforeprint', () => {
+    document.getElementById('signature-zone-br').style.display = 'block';
+});
+window.addEventListener('afterprint', () => {
+    document.getElementById('signature-zone-br').style.display = 'none';
+});
+</script>
+{% endblock %}
+
 {% block content %}
-{% breadcrumb "Cave" "bar:stock_management" "Gestion de stock" "bar:stock_management" "Bon de réception" "" %}
 <style>
-    .page-header {
-        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
-        color: white; padding: 24px 30px; border-radius: 18px;
-        margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2);
-        display: flex; justify-content: space-between; align-items: center;
-    }
-    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
-    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
-    .back-link { display:inline-flex; align-items:center; gap:6px; color:#8e44ad; font-weight:600; margin-bottom:16px; text-decoration:none; }
-    .back-link:hover { color:#6c3483; }
+.form-header {
+    background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+    color: white; padding: 28px 32px; border-radius: 18px;
+    margin-bottom: 8px; box-shadow: 0 10px 30px rgba(142,68,173,0.3);
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; overflow: hidden;
+}
+.form-header::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+}
+.form-header::after {
+    content: '📦'; position: absolute; right: 28px; bottom: -18px;
+    font-size: 90px; opacity: 0.1; pointer-events: none;
+}
+.form-header h2 { font-size: 1.55rem; font-weight: 800; margin: 0; letter-spacing: -0.3px; }
+.form-header p  { margin: 5px 0 0; opacity: 0.85; font-size: 0.88rem; }
+.header-badge {
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 12px; padding: 10px 20px; text-align: center; flex-shrink: 0;
+}
+.header-badge .badge-label { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+.header-badge .badge-val   { font-size: 1.1rem; font-weight: 800; margin-top: 2px; }
 
-    .form-card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    .form-section-title { font-weight: 700; color: #8e44ad; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f3e5f5; display:flex; align-items:center; gap:8px; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-    .form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
-    .form-group input, .form-group select, .form-group textarea {
-        padding: 10px 14px; border: 1px solid #e9ecef; border-radius: 10px;
-        font-size: 0.92rem; background: #f8f9fa; transition: all 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-        outline: none; border-color: #8e44ad; background: white;
-        box-shadow: 0 0 0 3px rgba(142,68,173,0.1);
-    }
-    .form-group.full { grid-column: 1 / -1; }
+.alert-info {
+    background: linear-gradient(135deg, #f3e5f5, #e8d5f0);
+    border: 1px solid #c39bd3; border-radius: 12px;
+    padding: 14px 20px; margin-bottom: 20px;
+    display: flex; align-items: flex-start; gap: 12px; font-size: 0.87rem; color: #6c3483;
+}
+.alert-info i { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
 
-    /* Alert BC lié */
-    .bc-alert { background: #e8f4fd; border-left: 4px solid #3498db; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display:flex; align-items:center; gap:10px; font-size:0.9rem; color:#2980b9; }
-    .bc-alert i { font-size:1.1rem; }
+.form-card {
+    background: white; border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    overflow: hidden; margin-bottom: 20px;
+}
+.form-section { padding: 24px 28px; border-bottom: 1px solid #f4f4f4; }
+.form-section:last-child { border-bottom: none; }
+.section-title {
+    font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1.2px; color: #8e44ad; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+}
 
-    /* Lignes */
-    .lignes-table { width: 100%; border-collapse: collapse; }
-    .lignes-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.8rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; white-space:nowrap; }
-    .lignes-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
-    .lignes-table input, .lignes-table select { padding: 8px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; }
-    .lignes-table input:focus, .lignes-table select:focus { outline: none; border-color: #8e44ad; background: white; }
+.form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
 
-    .ecart-positif { color: #27ae60; font-weight: 700; }
-    .ecart-negatif { color: #e74c3c; font-weight: 700; }
-    .ecart-zero    { color: #7f8c8d; }
+label { font-size: 0.82rem; font-weight: 700; color: #4a5568; display: flex; align-items: center; gap: 5px; }
+label .req { color: #8e44ad; }
 
-    .btn-add-ligne { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; background: #f3e5f5; color: #8e44ad; border-radius: 10px; font-weight: 600; font-size: 0.88rem; border: 2px dashed #d7aef0; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
-    .btn-add-ligne:hover { background: #8e44ad; color: white; border-style: solid; }
-    .btn-del-ligne { background: #fdecea; color: #e74c3c; border: none; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 13px; }
-    .btn-del-ligne:hover { background: #e74c3c; color: white; }
+input[type=text], input[type=date], input[type=number], select, textarea {
+    padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid #e8ecf0; background: #f8fafc;
+    font-size: 0.9rem; color: #2d3748; transition: all 0.2s;
+    width: 100%; box-sizing: border-box; font-family: inherit;
+}
+input:focus, select:focus, textarea:focus {
+    outline: none; border-color: #8e44ad;
+    background: #fff; box-shadow: 0 0 0 3px rgba(142,68,173,0.1);
+}
+.hint { font-size: 0.75rem; color: #a0aec0; margin-top: 1px; }
 
-    .total-bar { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 16px 24px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
-    .total-info { font-size: 0.88rem; opacity: 0.85; }
-    .total-value { font-size: 1.5rem; font-weight: 700; }
+.bc-info {
+    display: none; background: #f9f0ff; border: 1px solid #d7aef0;
+    border-radius: 10px; padding: 12px 16px; margin-top: 10px;
+    font-size: 0.85rem; color: #6c3483; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.bc-info.visible { display: flex; }
+.bc-chip {
+    background: #e8d5f0; border-radius: 6px; padding: 4px 10px;
+    font-size: 0.78rem; font-weight: 700; color: #6c3483;
+}
 
-    .actions-bar { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; flex-wrap:wrap; }
-    .btn-save { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 12px 28px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(142,68,173,0.3); transition: all 0.2s; }
-    .btn-save:hover { transform: translateY(-2px); }
-    .btn-valider { background: linear-gradient(135deg, #27ae60, #2ecc71); box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
-    .btn-valider:hover { box-shadow: 0 6px 16px rgba(39,174,96,0.4); }
-    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 0.95rem; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
-    .btn-cancel-form:hover { border-color: #bdc3c7; color: #2c3e50; }
+/* LIGNES */
+.lignes-toolbar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.btn-load-bc {
+    padding: 9px 18px; border-radius: 8px; border: 2px solid #8e44ad;
+    background: #f3e5f5; color: #6c3483; font-weight: 700;
+    font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+}
+.btn-load-bc:hover:not(:disabled) { background: #8e44ad; color: white; }
+.btn-load-bc:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    .spinner { display:none; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+.lignes-head {
+    display: grid;
+    grid-template-columns: 2fr 0.85fr 0.85fr 0.65fr 1.1fr 1.2fr 40px;
+    gap: 10px; padding: 10px 16px;
+    background: #f7f8fa; border-radius: 10px 10px 0 0;
+    font-size: 0.72rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.8px; color: #7f8c8d;
+    border: 1px solid #edf2f7; border-bottom: 2px solid #8e44ad;
+}
+#lignes-container {
+    border: 1px solid #edf2f7; border-top: none;
+    border-radius: 0 0 10px 10px; overflow: hidden;
+}
+.ligne-row {
+    display: grid;
+    grid-template-columns: 2fr 0.85fr 0.85fr 0.65fr 1.1fr 1.2fr 40px;
+    gap: 10px; align-items: center; padding: 10px 16px;
+    border-bottom: 1px solid #f4f6f8; transition: background 0.15s;
+}
+.ligne-row:last-child { border-bottom: none; }
+.ligne-row:hover { background: #fdf8ff; }
+.ligne-row input, .ligne-row select { padding: 8px 10px; font-size: 0.87rem; border-radius: 8px; }
+
+.ligne-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #e8d5f0; color: #6c3483;
+    font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.total-ligne { font-weight: 800; color: #8e44ad; font-size: 0.9rem; text-align: right; }
+
+.ecart-cell { font-weight: 700; font-size: 0.88rem; text-align: center; }
+.ecart-positif { color: #27ae60; }
+.ecart-negatif { color: #e74c3c; }
+.ecart-zero    { color: #a0aec0; }
+
+.btn-del {
+    width: 32px; height: 32px; border-radius: 8px; border: none;
+    background: #fdecea; color: #e74c3c; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.18s;
+}
+.btn-del:hover { background: #e74c3c; color: white; }
+.btn-add-ligne {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; margin-top: 14px;
+    border-radius: 10px; border: 2px dashed #8e44ad;
+    background: #f9f0ff; color: #6c3483;
+    font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+}
+.btn-add-ligne:hover { background: #e8d5f0; }
+
+/* TOTAL BAR */
+.total-bar {
+    background: linear-gradient(135deg, #f9f0ff, #e8d5f0);
+    border: 1px solid #d7aef0; border-radius: 12px;
+    padding: 16px 22px; display: flex;
+    justify-content: space-between; align-items: center; margin-top: 16px;
+}
+.total-stats { display: flex; gap: 28px; }
+.ts { display: flex; flex-direction: column; gap: 2px; }
+.ts-label { font-size: 0.7rem; color: #95a5a6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+.ts-val { font-size: 1rem; font-weight: 800; color: #2d3748; }
+.total-main .tm-label { font-size: 0.7rem; color: #95a5a6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; text-align: right; }
+.total-main .tm-val { font-size: 1.6rem; font-weight: 900; color: #8e44ad; line-height: 1.1; }
+
+/* Boutons impression */
+.btn-print { padding: 9px 18px; border-radius: 10px; border: 2px solid #2c3e50; background: white; color: #2c3e50; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s; }
+.btn-print:hover { background: #2c3e50; color: white; }
+.btn-pdf { padding: 9px 18px; border-radius: 10px; border: none; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 3px 10px rgba(142,68,173,0.3); transition: all 0.2s; }
+.btn-pdf:hover { transform: translateY(-1px); }
+.print-btn-group { display: flex; gap: 10px; }
+
+/* Impression */
+@media print {
+    body > * { display: none !important; }
+    #printable-zone { display: block !important; position: fixed; top: 0; left: 0; width: 100%; padding: 20px; }
+    #printable-zone * { display: revert !important; visibility: visible; }
+    .print-btn-group, .btn-cancel, .btn-draft, .btn-validate, .btn-add-ligne, .btn-del,
+    .form-actions, .form-header, nav, .sidebar, .breadcrumb-bar, .lignes-toolbar { display: none !important; }
+    .print-header { display: flex !important; justify-content: space-between; align-items: flex-start; }
+    .print-doc-title { display: block !important; }
+    #signature-zone-br { display: block !important; }
+    .form-card { box-shadow: none !important; border: 1px solid #e0e0e0; }
+    input, select, textarea { border: 1px solid #ccc !important; background: white !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+.print-header { display: none; padding: 0 0 16px; border-bottom: 3px solid #8e44ad; margin-bottom: 20px; }
+.print-logo { font-size: 1.5rem; font-weight: 800; color: #8e44ad; }
+.print-logo small { display: block; font-size: 0.75rem; font-weight: 400; color: #7f8c8d; margin-top: 2px; }
+.print-doc-title { display: none; text-align: center; font-size: 1.1rem; font-weight: 700; color: #8e44ad; letter-spacing: 1px; text-transform: uppercase; margin: 12px 0; padding: 8px; border: 2px solid #8e44ad; border-radius: 8px; }
+
+/* ACTIONS */
+.form-actions {
+    padding: 20px 28px; background: #f9fafb;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.actions-right { display: flex; gap: 12px; }
+.btn-cancel {
+    padding: 11px 22px; border-radius: 10px; border: 2px solid #e2e8f0;
+    background: white; font-weight: 600; color: #718096;
+    text-decoration: none; font-size: 0.9rem;
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;
+}
+.btn-cancel:hover { border-color: #8e44ad; color: #8e44ad; }
+.btn-draft {
+    padding: 11px 22px; border-radius: 10px;
+    border: 2px solid #8e44ad; background: #f3e5f5;
+    color: #6c3483; font-weight: 700; font-size: 0.9rem;
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s;
+}
+.btn-draft:hover { background: #8e44ad; color: white; }
+.btn-validate {
+    padding: 11px 28px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white; font-weight: 800; font-size: 0.9rem;
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(39,174,96,0.35); transition: all 0.2s;
+}
+.btn-validate:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(39,174,96,0.45); }
 </style>
 
 <div class="container-fluid py-4">
 
-    <div class="page-header">
+    <div class="form-header">
         <div>
             <h2><i class="fas fa-dolly mr-2"></i> {{ page_title }}</h2>
-            <p>Cave BEHANIAN — Réception des marchandises</p>
+            <p>Cave BEHANIAN — Enregistrez les marchandises reçues, le stock sera mis à jour à la validation</p>
+        </div>
+        <div class="header-badge">
+            <div class="badge-label">Référence</div>
+            <div class="badge-val">BR-BAR-{% now "Y" %}-XXXX</div>
+        </div>
+    </div>
+    {% breadcrumb "Cave" "bar:stock_management" "Gestion de stock" "bar:stock_management" "Bon de réception" "" %}
+
+    <div id="printable-zone">
+
+    <!-- En-tête impression uniquement -->
+    <div class="print-header">
+        <div><div class="print-logo">🍷 COMPLEXE BEHANIAN<small>Département Cave — Bon de Réception</small></div></div>
+        <div style="text-align:right;">
+            <div style="font-size:1rem;font-weight:700;color:#2c3e50;">{% now "d/m/Y" %}</div>
+            <div style="font-size:0.8rem;color:#7f8c8d;">Imprimé le {% now "d/m/Y à H:i" %}</div>
+        </div>
+    </div>
+    <div class="print-doc-title">BON DE RÉCEPTION FOURNISSEUR — CAVE</div>
+
+    <div class="alert-info">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            Liez cette réception à un <strong>Bon de Commande</strong> pour importer les articles automatiquement.
+            À la validation, le <strong>stock est incrémenté</strong> pour chaque article reçu.
         </div>
     </div>
 
     <form method="post" id="br-form">
         {% csrf_token %}
-
-        <!-- LIEN BON DE COMMANDE -->
-        <div class="form-card">
-            <div class="form-section-title"><i class="fas fa-link"></i> Lier à un Bon de Commande (optionnel)</div>
-
-            {% if bc_prefill %}
-            <div class="bc-alert">
-                <i class="fas fa-info-circle"></i>
-                Pré-rempli depuis le bon de commande <strong>{{ bc_prefill.numero }}</strong> — {{ bc_prefill.fournisseur|default:"Sans fournisseur" }}
-            </div>
-            {% endif %}
-
-            <div class="form-group">
-                <label>Bon de commande lié</label>
-                <select name="bon_commande" id="bc-select" onchange="chargerLignesBC(this.value)">
-                    <option value="">— Aucun (réception indépendante) —</option>
-                    {% for bc in bons_commande %}
-                    <option value="{{ bc.pk }}"
-                        {% if bc_prefill and bc_prefill.pk == bc.pk %}selected{% endif %}>
-                        {{ bc.numero }} — {{ bc.fournisseur|default:"Sans fournisseur" }} ({{ bc.date_commande|date:"d/m/Y" }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div id="bc-loading" style="display:none;color:#8e44ad;font-size:0.88rem;margin-top:8px;">
-                <i class="fas fa-spinner fa-spin"></i> Chargement des lignes...
-            </div>
-        </div>
+        <input type="hidden" name="statut" id="statut-input" value="brouillon">
 
         <!-- EN-TÊTE -->
         <div class="form-card">
-            <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations de réception</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Fournisseur</label>
-                    <select name="fournisseur" id="fournisseur-select">
-                        <option value="">— Sélectionner —</option>
-                        {% for f in fournisseurs %}
-                        <option value="{{ f.pk }}"
-                            {% if bc_prefill and bc_prefill.fournisseur_id == f.pk %}selected{% endif %}>
-                            {{ f.nom }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>N° Document Fournisseur <span style="color:#7f8c8d;font-weight:400;">(facture, BL, etc.)</span></label>
-                    <input type="text" name="numero_document_fournisseur" placeholder="Ex: FAC-2026-0042">
-                </div>
-                <div class="form-group">
-                    <label>Date de réception</label>
-                    <input type="date" lang="fr" name="date_reception" value="{{ today|date:'Y-m-d' }}">
-                </div>
-                <div class="form-group">
-                    <label>Statut</label>
-                    <select name="statut">
-                        <option value="brouillon">Brouillon</option>
-                        <option value="en_cours">En cours</option>
-                        <option value="valide">Valider maintenant (met à jour le stock)</option>
-                    </select>
-                </div>
-                <div class="form-group full">
-                    <label>Notes / Observations</label>
-                    <textarea name="notes" rows="2" placeholder="Remarques sur la réception..."></textarea>
+            <div class="form-section">
+                <div class="section-title"><i class="fas fa-file-invoice"></i> Informations générales</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Fournisseur</label>
+                        <select name="fournisseur" id="fournisseur-select">
+                            <option value="">— Sélectionner un fournisseur —</option>
+                            {% for f in fournisseurs %}
+                            <option value="{{ f.pk }}"
+                                {% if bc_prefill and bc_prefill.fournisseur_id == f.pk %}selected{% endif %}>
+                                {{ f.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Bon de commande lié <span style="font-size:0.7rem;font-weight:400;color:#a0aec0;">(optionnel)</span></label>
+                        <select name="bon_commande" id="sel-bc" onchange="onBcChange(this)">
+                            <option value="">— Aucun —</option>
+                            {% for bc in bons_commande %}
+                            <option value="{{ bc.pk }}"
+                                {% if bc_prefill and bc_prefill.pk == bc.pk %}selected{% endif %}>
+                                {{ bc.numero }} — {{ bc.fournisseur|default:"Sans fournisseur" }} ({{ bc.date_commande|date:"d/m/Y" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="hint">Sélectionnez pour pré-remplir les articles</span>
+                        <div class="bc-info" id="bc-info">
+                            <i class="fas fa-link"></i>
+                            <span id="bc-info-text"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Date de réception <span class="req">*</span></label>
+                        <input type="date" lang="fr" name="date_reception" value="{% now 'Y-m-d' %}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>N° Facture / Bon de livraison</label>
+                        <input type="text" name="numero_document_fournisseur" placeholder="Ex: FAC-2026-00452">
+                        <span class="hint">Référence du document reçu avec la livraison</span>
+                    </div>
+                    <div class="form-group full">
+                        <label>Observations / Écarts constatés</label>
+                        <textarea name="notes" rows="2" placeholder="Ex: 2 colis endommagés, quantité incomplète..."></textarea>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- LIGNES -->
         <div class="form-card">
-            <div class="form-section-title"><i class="fas fa-list"></i> Articles reçus</div>
+            <div class="form-section" style="border-bottom:none;">
+                <div class="section-title"><i class="fas fa-boxes"></i> Articles reçus</div>
 
-            <div style="overflow-x:auto;">
-                <table class="lignes-table">
-                    <thead>
-                        <tr>
-                            <th style="width:30%;">Article</th>
-                            <th style="width:13%;">Qté commandée</th>
-                            <th style="width:13%;">Qté reçue</th>
-                            <th style="width:10%;">Écart</th>
-                            <th style="width:14%;">Prix unitaire (FCFA)</th>
-                            <th style="width:12%;">Total ligne</th>
-                            <th style="width:4%;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="lignes-body">
-                        <tr class="ligne-row">
-                            <td>
-                                <select name="article_id[]" class="article-select" onchange="majPrixReception(this)">
-                                    <option value="">— Choisir un article —</option>
-                                    {% for art in articles %}
-                                    <option value="{{ art.pk }}" data-prix="{{ art.prix_achat }}">
-                                        {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                            <td><input type="number" name="quantite_commandee[]" value="0" min="0" step="0.01" class="qte-cmd-input" oninput="majEcart(this)"></td>
-                            <td><input type="number" name="quantite_recue[]" value="0" min="0" step="0.01" class="qte-recue-input" oninput="majEcart(this)"></td>
-                            <td class="ecart-cell ecart-zero">—</td>
-                            <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotalLigne(this)"></td>
-                            <td class="ligne-total" style="font-weight:700;color:#8e44ad;text-align:right;">0 FCFA</td>
-                            <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <button type="button" class="btn-add-ligne" onclick="ajouterLigne()">
-                <i class="fas fa-plus"></i> Ajouter une ligne
-            </button>
-
-            <div class="total-bar">
-                <div class="total-info">
-                    <span id="nb-lignes">1</span> article(s) •
-                    Stock mis à jour automatiquement à la validation
+                <div class="lignes-toolbar">
+                    <button type="button" class="btn-load-bc" id="btn-load-bc" onclick="chargerLignesBc()" disabled>
+                        <i class="fas fa-magic"></i> Importer depuis le BC
+                    </button>
+                    <span style="font-size:0.8rem;color:#a0aec0;" id="bc-hint-text">
+                        Sélectionnez un BC ci-dessus pour activer l'import automatique
+                    </span>
+                    <span id="bc-loading" style="display:none;color:#8e44ad;font-size:0.88rem;">
+                        <i class="fas fa-spinner fa-spin"></i> Chargement...
+                    </span>
                 </div>
-                <div>
-                    <span style="opacity:0.8;font-size:0.9rem;">Total réception : </span>
-                    <span class="total-value" id="grand-total">0 FCFA</span>
+
+                <div class="lignes-head">
+                    <span>Article</span>
+                    <span style="text-align:center;">Qté cmdée</span>
+                    <span style="text-align:center;">Qté reçue</span>
+                    <span style="text-align:center;">Écart</span>
+                    <span>Prix U. (FCFA)</span>
+                    <span style="text-align:right;">Total ligne</span>
+                    <span></span>
+                </div>
+
+                <div id="lignes-container">
+                    <div class="ligne-row">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="ligne-num">1</span>
+                            <select name="article_id[]" class="art-select" onchange="onArtChange(this)" style="flex:1;">
+                                <option value="">— Choisir un article —</option>
+                                {% for art in articles %}
+                                <option value="{{ art.pk }}" data-prix="{{ art.prix_achat|default:0 }}">
+                                    {{ art.nom }}{% if art.reference %} [{{ art.reference }}]{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <input type="number" name="quantite_commandee[]" class="qte-cmd-input" value="" min="0" step="0.01" placeholder="0" oninput="majEcart(this)">
+                        <input type="number" name="quantite_recue[]" class="qte-recue-input" value="" min="0" step="0.01" placeholder="0" oninput="majEcart(this)">
+                        <span class="ecart-cell ecart-zero">—</span>
+                        <input type="number" name="prix_unitaire[]" class="prix-input" value="" min="0" step="1" placeholder="0" oninput="majTotalLigne(this)">
+                        <span class="total-ligne" id="tl-0">0 FCFA</span>
+                        <button type="button" class="btn-del" onclick="delLigne(this)"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-add-ligne" onclick="addLigne()">
+                    <i class="fas fa-plus-circle"></i> Ajouter un article
+                </button>
+
+                <div class="total-bar">
+                    <div class="total-stats">
+                        <div class="ts">
+                            <span class="ts-label">Lignes</span>
+                            <span class="ts-val" id="nb-articles">1</span>
+                        </div>
+                        <div class="ts">
+                            <span class="ts-label">Remplies</span>
+                            <span class="ts-val" id="nb-lignes">0</span>
+                        </div>
+                    </div>
+                    <div class="total-main">
+                        <div class="tm-label">Total réception</div>
+                        <div class="tm-val" id="grand-total">0 FCFA</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone signature impression -->
+        <div id="signature-zone-br" style="display:none;" class="form-card">
+            <div class="form-section">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;">
+                    <div style="text-align:center;"><div style="border-top:1px solid #ccc;margin-top:60px;padding-top:8px;font-size:0.8rem;color:#666;">Réceptionné par</div></div>
+                    <div style="text-align:center;"><div style="border-top:1px solid #ccc;margin-top:60px;padding-top:8px;font-size:0.8rem;color:#666;">Validé par</div></div>
+                    <div style="text-align:center;"><div style="border-top:1px solid #ccc;margin-top:60px;padding-top:8px;font-size:0.8rem;color:#666;">Fournisseur (tampon)</div></div>
                 </div>
             </div>
         </div>
 
         <!-- ACTIONS -->
-        <div class="actions-bar">
-            <a href="{% url 'bar:stock_management' %}" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
-            <button type="submit" class="btn-save" onclick="document.querySelector('[name=statut]').value='brouillon'">
-                <i class="fas fa-save"></i> Enregistrer en brouillon
-            </button>
-            <button type="submit" class="btn-save btn-valider" onclick="document.querySelector('[name=statut]').value='valide';return confirm('Valider ce bon et mettre à jour le stock immédiatement ?')">
-                <i class="fas fa-check"></i> Valider & Mettre à jour le stock
-            </button>
+        <div class="form-card">
+            <div class="form-actions">
+                <div class="print-btn-group">
+                    <button type="button" class="btn-print" onclick="window.print()">
+                        <i class="fas fa-print"></i> Imprimer
+                    </button>
+                    <button type="button" class="btn-pdf" id="btn-pdf-br" onclick="exporterPDFReception()">
+                        <i class="fas fa-file-pdf"></i> Télécharger PDF
+                    </button>
+                </div>
+                <a href="{% url 'bar:stock_management' %}" class="btn-cancel">
+                    <i class="fas fa-arrow-left"></i> Annuler
+                </a>
+                <div class="actions-right">
+                    <button type="submit" class="btn-draft"
+                            onclick="document.getElementById('statut-input').value='brouillon'">
+                        <i class="fas fa-save"></i> Enregistrer brouillon
+                    </button>
+                    <button type="submit" class="btn-validate"
+                            onclick="document.getElementById('statut-input').value='valide'; return confirmValidation();">
+                        <i class="fas fa-check-circle"></i> Valider & Mettre à jour le stock
+                    </button>
+                </div>
+            </div>
         </div>
+
     </form>
+    </div><!-- /printable-zone -->
 </div>
 
-<!-- Template ligne -->
-<template id="ligne-template">
-    <tr class="ligne-row">
-        <td>
-            <select name="article_id[]" class="article-select" onchange="majPrixReception(this)">
-                <option value="">— Choisir un article —</option>
-                {% for art in articles %}
-                <option value="{{ art.pk }}" data-prix="{{ art.prix_achat }}">
-                    {{ art.nom }} {% if art.reference %}[{{ art.reference }}]{% endif %}
-                </option>
-                {% endfor %}
-            </select>
-        </td>
-        <td><input type="number" name="quantite_commandee[]" value="0" min="0" step="0.01" class="qte-cmd-input" oninput="majEcart(this)"></td>
-        <td><input type="number" name="quantite_recue[]" value="0" min="0" step="0.01" class="qte-recue-input" oninput="majEcart(this)"></td>
-        <td class="ecart-cell ecart-zero">—</td>
-        <td><input type="number" name="prix_unitaire[]" value="0" min="0" step="1" class="prix-input" oninput="majTotalLigne(this)"></td>
-        <td class="ligne-total" style="font-weight:700;color:#8e44ad;text-align:right;">0 FCFA</td>
-        <td><button type="button" class="btn-del-ligne" onclick="supprimerLigne(this)"><i class="fas fa-trash"></i></button></td>
-    </tr>
-</template>
-
 <script>
+const artData = {
+    {% for art in articles %}"{{ art.pk }}": {"nom": "{{ art.nom|escapejs }}", "ref": "{{ art.reference|default:''|escapejs }}", "prix": {{ art.prix_achat|default:0 }}},
+    {% endfor %}
+};
+
+let rowCounter = 1;
+
 // Pré-remplir depuis un BC si sélectionné au chargement
 {% if bc_prefill %}
-window.addEventListener('load', () => chargerLignesBC({{ bc_prefill.pk }}));
+window.addEventListener('load', () => chargerLignesBc({{ bc_prefill.pk }}));
 {% endif %}
 
-function majPrixReception(sel) {
+function onBcChange(sel) {
+    const pk  = sel.value;
+    const btn = document.getElementById('btn-load-bc');
+    const info= document.getElementById('bc-info');
+    const hint= document.getElementById('bc-hint-text');
+    if (pk) {
+        btn.disabled = false;
+        info.className = 'bc-info visible';
+        const txt = sel.options[sel.selectedIndex].text;
+        document.getElementById('bc-info-text').innerHTML =
+            `<span class="bc-chip">${txt.split(' — ')[0]}</span> ${txt.split(' — ').slice(1).join(' — ')} — prêt à importer`;
+        hint.textContent = txt.split(' — ')[0] + ' sélectionné';
+    } else {
+        btn.disabled = true;
+        info.className = 'bc-info';
+        hint.textContent = "Sélectionnez un BC ci-dessus pour activer l'import automatique";
+    }
+}
+
+function chargerLignesBc(bcId) {
+    const id = bcId || document.getElementById('sel-bc').value;
+    if (!id) return;
+    document.getElementById('bc-loading').style.display = '';
+    fetch(`/bar/commandes/${id}/lignes/`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('bc-loading').style.display = 'none';
+            if (data.fournisseur_id) {
+                document.getElementById('fournisseur-select').value = data.fournisseur_id;
+            }
+            const c = document.getElementById('lignes-container');
+            c.innerHTML = '';
+            rowCounter = 0;
+            if (data.lignes && data.lignes.length) {
+                data.lignes.forEach(l => addLigneWithData(l.article_id, l.reliquat, l.reliquat, l.prix_unitaire));
+                calcTotal();
+                showToast(`✅ ${data.lignes.length} article(s) importé(s)`);
+            } else {
+                addLigne();
+                showToast('ℹ️ Aucune ligne disponible dans ce BC.');
+            }
+        })
+        .catch(() => {
+            document.getElementById('bc-loading').style.display = 'none';
+            showToast('❌ Erreur lors du chargement des lignes.');
+        });
+}
+
+function onArtChange(sel) {
+    const row = sel.closest('.ligne-row');
     const opt = sel.options[sel.selectedIndex];
-    const row = sel.closest('tr');
     const prix = opt.dataset.prix || 0;
-    row.querySelector('.prix-input').value = prix;
-    majTotalLigne(sel);
+    const prixInput = row.querySelector('.prix-input');
+    if (!prixInput.value || parseFloat(prixInput.value) === 0) prixInput.value = prix;
+    majTotalLigne(prixInput);
 }
 
 function majEcart(el) {
-    const row = el.closest('tr');
-    const cmd = parseFloat(row.querySelector('.qte-cmd-input').value) || 0;
+    const row = el.closest('.ligne-row');
+    const cmd  = parseFloat(row.querySelector('.qte-cmd-input').value)  || 0;
     const recu = parseFloat(row.querySelector('.qte-recue-input').value) || 0;
-    const ecart = recu - cmd;
     const cell = row.querySelector('.ecart-cell');
+    const ecart = recu - cmd;
     if (cmd === 0) {
         cell.textContent = '—';
         cell.className = 'ecart-cell ecart-zero';
@@ -277,82 +541,87 @@ function majEcart(el) {
 }
 
 function majTotalLigne(el) {
-    const row = el.closest('tr');
+    const row  = el.closest('.ligne-row');
     const recu = parseFloat(row.querySelector('.qte-recue-input').value) || 0;
     const prix = parseFloat(row.querySelector('.prix-input').value) || 0;
-    row.querySelector('.ligne-total').textContent = (recu * prix).toLocaleString('fr-FR') + ' FCFA';
-    majGrandTotal();
+    row.querySelector('.total-ligne').textContent = (recu * prix).toLocaleString('fr-FR') + ' FCFA';
+    calcTotal();
 }
 
-function majGrandTotal() {
-    let total = 0;
-    let nb = 0;
+function calcTotal() {
+    let total = 0, ok = 0;
     document.querySelectorAll('.ligne-row').forEach(row => {
-        const recu = parseFloat(row.querySelector('.qte-recue-input')?.value) || 0;
-        const prix = parseFloat(row.querySelector('.prix-input')?.value) || 0;
+        const art  = row.querySelector('.art-select').value;
+        const recu = parseFloat(row.querySelector('.qte-recue-input').value) || 0;
+        const prix = parseFloat(row.querySelector('.prix-input').value) || 0;
+        if (art && recu > 0) ok++;
         total += recu * prix;
-        if (row.querySelector('.article-select')?.value) nb++;
     });
-    document.getElementById('grand-total').textContent = total.toLocaleString('fr-FR') + ' FCFA';
-    document.getElementById('nb-lignes').textContent = document.querySelectorAll('.ligne-row').length;
+    document.getElementById('grand-total').textContent  = total.toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('nb-articles').textContent  = document.querySelectorAll('.ligne-row').length;
+    document.getElementById('nb-lignes').textContent    = ok;
 }
 
-function ajouterLigne() {
-    const tpl = document.getElementById('ligne-template');
-    document.getElementById('lignes-body').appendChild(tpl.content.cloneNode(true));
-    majGrandTotal();
+function buildOptions(selected) {
+    return '<option value="">— Choisir un article —</option>' +
+        Object.entries(artData).map(([pk, d]) =>
+            `<option value="${pk}" data-prix="${d.prix}" ${selected==pk?'selected':''}>${d.nom}${d.ref?' ['+d.ref+']':''}</option>`
+        ).join('');
 }
 
-function supprimerLigne(btn) {
-    if (document.querySelectorAll('.ligne-row').length <= 1) {
-        alert('Au moins une ligne est requise.');
-        return;
+function addLigne() { addLigneWithData('', '', '', ''); }
+
+function addLigneWithData(artId, qteCmd, qteRecu, prix) {
+    rowCounter++;
+    const c   = document.getElementById('lignes-container');
+    const num = c.children.length + 1;
+    const div = document.createElement('div');
+    div.className = 'ligne-row';
+    const tlText = (qteRecu && prix) ?
+        (parseFloat(qteRecu) * parseFloat(prix)).toLocaleString('fr-FR') + ' FCFA' : '0 FCFA';
+    div.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span class="ligne-num">${num}</span>
+            <select name="article_id[]" class="art-select" onchange="onArtChange(this)" style="flex:1;">
+                ${buildOptions(artId)}
+            </select>
+        </div>
+        <input type="number" name="quantite_commandee[]" class="qte-cmd-input" value="${qteCmd||''}" min="0" step="0.01" placeholder="0" oninput="majEcart(this)">
+        <input type="number" name="quantite_recue[]" class="qte-recue-input" value="${qteRecu||''}" min="0" step="0.01" placeholder="0" oninput="majEcart(this)">
+        <span class="ecart-cell ecart-zero">—</span>
+        <input type="number" name="prix_unitaire[]" class="prix-input" value="${prix||''}" min="0" step="1" placeholder="0" oninput="majTotalLigne(this)">
+        <span class="total-ligne" id="tl-${rowCounter}">${tlText}</span>
+        <button type="button" class="btn-del" onclick="delLigne(this)"><i class="fas fa-times"></i></button>
+    `;
+    c.appendChild(div);
+    if (artId && qteRecu && prix) {
+        const newRow = c.lastElementChild;
+        majEcart(newRow.querySelector('.qte-recue-input'));
     }
-    btn.closest('tr').remove();
-    majGrandTotal();
+    calcTotal();
 }
 
-function chargerLignesBC(bcId) {
-    if (!bcId) return;
-    document.getElementById('bc-loading').style.display = 'block';
-    fetch(`/bar/commandes/${bcId}/lignes/`)
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById('bc-loading').style.display = 'none';
-
-            // Pré-remplir fournisseur
-            if (data.fournisseur_id) {
-                document.getElementById('fournisseur-select').value = data.fournisseur_id;
-            }
-
-            // Reconstruire les lignes
-            const tbody = document.getElementById('lignes-body');
-            tbody.innerHTML = '';
-            const tpl = document.getElementById('ligne-template');
-
-            data.lignes.forEach(l => {
-                const clone = tpl.content.cloneNode(true);
-                const row = clone.querySelector('tr');
-
-                const artSelect = row.querySelector('.article-select');
-                artSelect.value = l.article_id;
-
-                row.querySelector('.qte-cmd-input').value = l.reliquat;
-                row.querySelector('.qte-recue-input').value = l.reliquat;
-                row.querySelector('.prix-input').value = l.prix_unitaire;
-
-                tbody.appendChild(clone);
-
-                // Calculer écart et total
-                const newRow = tbody.lastElementChild;
-                majEcart(newRow.querySelector('.qte-recue-input'));
-            });
-
-            majGrandTotal();
-        })
-        .catch(() => {
-            document.getElementById('bc-loading').style.display = 'none';
-        });
+function delLigne(btn) {
+    if (document.querySelectorAll('.ligne-row').length > 1) {
+        btn.closest('.ligne-row').remove();
+        renum(); calcTotal();
+    }
 }
+
+function renum() {
+    document.querySelectorAll('.ligne-row').forEach((row, i) => {
+        const n = row.querySelector('.ligne-num');
+        if (n) n.textContent = i + 1;
+    });
+}
+
+function confirmValidation() {
+    const ok = parseInt(document.getElementById('nb-lignes').textContent) || 0;
+    if (ok === 0) { alert('⚠️ Ajoutez au moins un article avant de valider.'); return false; }
+    return confirm(`Confirmer la validation ?\n\n${ok} article(s) seront mis à jour en stock.\n\nCette action est irréversible.`);
+}
+
+function showToast(msg) { alert(msg); }
 </script>
+
 {% endblock %}
