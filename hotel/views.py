@@ -504,8 +504,8 @@ def reservation_create(request):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
-            return redirect('hotel:index')
-            
+            return redirect(reverse('hotel:index') + '?tab=reservations')
+
         # Validation Dates
         type_sejour = request.POST.get('type_sejour', 'nuitee')
         d_arrivee = timezone.datetime.strptime(date_arrivee, '%Y-%m-%d').date()
@@ -517,27 +517,27 @@ def reservation_create(request):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
-            return redirect('hotel:index')
+            return redirect(reverse('hotel:index') + '?tab=reservations')
         elif d_depart < d_arrivee:
             msg = "La date de départ ne peut pas être avant la date d'arrivée."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
-            return redirect('hotel:index')
-            
+            return redirect(reverse('hotel:index') + '?tab=reservations')
+
         chambre = get_object_or_404(Chambre, id=chambre_id)
         if chambre.statut == 'maintenance':
             msg = f"La chambre {chambre.numero} est en maintenance. Choisissez une autre chambre."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
-            return redirect('hotel:index')
+            return redirect(reverse('hotel:index') + '?tab=reservations')
         elif chambre.statut == 'occupee':
             msg = f"La chambre {chambre.numero} est actuellement occupée. Choisissez une autre chambre."
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
-            return redirect('hotel:index')
+            return redirect(reverse('hotel:index') + '?tab=reservations')
 
         # Validation Disponibilité (Chevauchement)
         # On vérifie s'il existe une réservation pour cette chambre qui chevauche la période demandée
@@ -558,7 +558,7 @@ def reservation_create(request):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': msg})
             messages.error(request, msg)
-            return redirect('hotel:index')
+            return redirect(reverse('hotel:index') + '?tab=reservations')
 
         # Client (Get or Create)
         client_id = request.POST.get('client_id')
@@ -616,9 +616,9 @@ def reservation_create(request):
         # (géré par l'auto-correction dans hotel_index)
         
         messages.success(request, f"Réservation confirmée pour {client.nom_complet} — Ch. {chambre.numero} du {d_arrivee.strftime('%d/%m/%Y')} au {d_depart.strftime('%d/%m/%Y')}.")
-        return redirect('hotel:index')
-        
-    return redirect('hotel:index')
+        return redirect(reverse('hotel:index') + '?tab=reservations')
+
+    return redirect(reverse('hotel:index') + '?tab=reservations')
 
 @require_module_access('hotel')
 def print_checkin_form(request, reservation_id):
