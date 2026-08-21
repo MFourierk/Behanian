@@ -108,11 +108,22 @@ def bon_reception_create(request):
 
     # Pour la requête GET
     fournisseurs = Fournisseur.objects.all().order_by('nom')
-    articles = Ingredient.objects.exclude(categorie__nom__in=['Boisson', 'Boissons']).order_by('nom')
+    ingredients = Ingredient.objects.exclude(categorie__nom__in=['Boisson', 'Boissons']).select_related('unite_stock').order_by('nom')
+    ing_data = {
+        str(ing.pk): {
+            'nom':   ing.nom,
+            'unite': ing.unite_stock.abreviation if ing.unite_stock else '-',
+            'cmup':  float(ing.cmup or 0),
+            'stock': float(ing.quantite_stock or 0),
+        }
+        for ing in ingredients
+    }
     context = {
         'fournisseurs': fournisseurs,
-        'articles': articles,
-        'page_title': 'Nouvelle Réception de Stock'
+        'ingredients': ingredients,
+        'page_title': 'Nouvelle Réception de Stock',
+        'ing_data_json': json.dumps(ing_data, ensure_ascii=False),
+        'bc_data_json':  json.dumps({}, ensure_ascii=False),
     }
     return render(request, 'cuisine/bon_reception_form.html', context)
 

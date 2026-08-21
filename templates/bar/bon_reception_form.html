@@ -336,9 +336,12 @@ function chargerLignesBc(bcId) {
 
 function onArtChange(sel) {
   const row = sel.closest('.ligne-row');
-  const opt = sel.options[sel.selectedIndex];
-  const px = row.querySelector('.prix-input');
-  if (!px.value || parseFloat(px.value)===0) px.value = opt.dataset.prix||0;
+  const pk  = sel.value;
+  const px  = row.querySelector('.prix-input');
+  if (pk && artData[pk] && artData[pk].prix > 0) {
+    if (!px.value || parseFloat(px.value)===0)
+      px.value = parseFloat(artData[pk].prix).toFixed(2);
+  }
   majTotalLigne(px);
 }
 
