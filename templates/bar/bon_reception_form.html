@@ -280,9 +280,11 @@ window.addEventListener('load', ()=>chargerLignesBc({{ bc_prefill.pk }}));
 {% endif %}
 
 function switchTab(id, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.classList.remove('active');p.style.display='none';});
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
+  const panel=document.getElementById('tab-'+id);
+  panel.classList.add('active');
+  panel.style.display='block';
   btn.classList.add('active');
 }
 
@@ -423,7 +425,7 @@ function exporterPDFReception() {
   const btn = document.getElementById('btn-pdf-br');
   btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';
   btn.disabled=true;
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('force-show'));
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display='block';});
   document.getElementById('signature-zone-br').style.display='block';
   html2pdf().set({
     margin:[10,10,10,10],
@@ -434,17 +436,17 @@ function exporterPDFReception() {
   }).from(document.getElementById('printable-zone')).save().then(()=>{
     btn.innerHTML='<i class="fas fa-file-pdf"></i> PDF';
     btn.disabled=false;
-    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('force-show'));
+    document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display=p.classList.contains('active')?'block':'none';});
     document.getElementById('signature-zone-br').style.display='none';
   });
 }
 
 window.addEventListener('beforeprint',()=>{
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('force-show'));
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display='block';});
   document.getElementById('signature-zone-br').style.display='block';
 });
 window.addEventListener('afterprint',()=>{
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('force-show'));
+  document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display=p.classList.contains('active')?'block':'none';});
   document.getElementById('signature-zone-br').style.display='none';
 });
 </script>
