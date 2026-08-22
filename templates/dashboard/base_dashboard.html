@@ -382,10 +382,16 @@
         var TIMEOUT_MS  = 15 * 60 * 1000;   // 15 minutes → déconnexion
         var WARNING_MS  = 2  * 60 * 1000;   // avertissement 2 min avant
         var LOGOUT_URL  = "{% url 'logout' %}";
+        var KEEPALIVE   = "{% url 'dashboard:keep_alive' %}";
 
-        var timer, countdownTimer;
-        var overlay    = document.getElementById('idle-overlay');
+        var timer, countdownTimer, logoutTimer;
+        var overlay     = document.getElementById('idle-overlay');
         var countdownEl = document.getElementById('idle-countdown');
+
+        function getCsrf() {
+            var m = document.cookie.match(/csrftoken=([^;]+)/);
+            return m ? m[1] : '';
+        }
 
         function fmt(ms) {
             var s = Math.ceil(ms / 1000);
@@ -394,7 +400,11 @@
         }
 
         function doLogout() {
-            window.location.href = LOGOUT_URL;
+            // Délai 3s supplémentaires après le décompte → idleReset() peut encore annuler
+            countdownEl.textContent = '…';
+            logoutTimer = setTimeout(function() {
+                window.location.href = LOGOUT_URL;
+            }, 3000);
         }
 
         function showWarning() {
@@ -414,13 +424,16 @@
         }
 
         window.idleReset = function() {
+            clearTimeout(logoutTimer);      // annule la navigation différée
             clearInterval(countdownTimer);
             overlay.style.display = 'none';
             resetTimer();
-            // Rafraîchir la session Django pour éviter l'expiration serveur
-            fetch("{% url 'dashboard:keep_alive' %}", {
+            // Rafraîchir la session Django
+            fetch(KEEPALIVE, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' }
+                headers: { 'X-CSRFToken': getCsrf() }
+            }).then(function(r) {
+                if (!r.ok) { console.warn('keep_alive:', r.status); }
             }).catch(function() {});
         };
 
