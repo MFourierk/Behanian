@@ -68,6 +68,11 @@ urlpatterns = [
     path('casses/<int:pk>/', views.casse_detail, name='casse_detail'),
     path('casses/<int:pk>/valider/', views.casse_valider, name='casse_valider'),
     path('casses/<int:pk>/annuler/', views.casse_annuler, name='casse_annuler'),
+
+    # Shots / Liqueurs au verre
+    path('shots/', views.shot_vente, name='shot_vente'),
+    path('shots/parametrage/', views.shot_parametrage, name='shot_parametrage'),
+    path('shots/historique/', views.shot_historique, name='shot_historique'),
 ]
 
 

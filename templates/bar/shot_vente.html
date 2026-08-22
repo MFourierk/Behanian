@@ -1,0 +1,169 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+  :root { --cave: #8e44ad; --cave-d: #6c3483; --cave-bg: #f5eefb; }
+  .page-header { background: linear-gradient(135deg, var(--cave) 0%, var(--cave-d) 100%); color:white; padding:24px 30px; border-radius:18px; margin-bottom:24px; box-shadow:0 10px 25px rgba(142,68,173,.25); }
+  .page-header h2 { font-size:1.6rem; font-weight:700; margin:0; }
+  .page-header p  { margin:4px 0 0; opacity:.85; font-size:.9rem; }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .card { background:white; border-radius:16px; padding:22px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .section-title { font-weight:700; color:var(--cave); font-size:.9rem; text-transform:uppercase; letter-spacing:.5px; margin-bottom:16px; padding-bottom:8px; border-bottom:2px solid var(--cave-bg); }
+  .shot-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:14px; }
+  .shot-card { border:2px solid #e8d5f5; border-radius:14px; padding:16px; background:#faf5ff; transition:all .2s; position:relative; }
+  .shot-card:hover { border-color:var(--cave); box-shadow:0 4px 12px rgba(142,68,173,.15); }
+  .shot-card .nom { font-weight:700; font-size:1rem; color:#2d2d2d; margin-bottom:6px; }
+  .shot-card .stock { font-size:.8rem; color:#7f8c8d; margin-bottom:10px; }
+  .shot-card .stock-bar { background:#e8e8e8; border-radius:4px; height:6px; margin-bottom:12px; overflow:hidden; }
+  .shot-card .stock-bar-fill { background:var(--cave); height:6px; border-radius:4px; transition:width .4s; }
+  .shot-card .btns { display:flex; gap:8px; }
+  .btn-shot { flex:1; padding:9px 0; border:none; border-radius:9px; font-weight:700; cursor:pointer; font-size:.88rem; transition:all .2s; }
+  .btn-shot.shot  { background:#e8d5f5; color:var(--cave-d); }
+  .btn-shot.shot:hover  { background:var(--cave); color:white; }
+  .btn-shot.tournee  { background:var(--cave); color:white; }
+  .btn-shot.tournee:hover  { background:var(--cave-d); }
+  .btn-shot:disabled { opacity:.4; cursor:not-allowed; }
+  .prix-badge { font-size:.78rem; font-weight:600; color:#6c3483; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  thead th { background:var(--cave-bg); color:var(--cave-d); font-weight:700; padding:9px 10px; text-align:left; }
+  td { padding:9px 10px; border-bottom:1px solid #f3f3f3; }
+  .badge-shot    { background:#e8d5f5; color:var(--cave-d); padding:2px 8px; border-radius:10px; font-size:.75rem; font-weight:700; }
+  .badge-tournee { background:var(--cave); color:white; padding:2px 8px; border-radius:10px; font-size:.75rem; font-weight:700; }
+  .alert { padding:12px 16px; border-radius:10px; margin-bottom:14px; font-weight:600; }
+  .alert-error   { background:#fdecea; color:#c0392b; }
+  .alert-success { background:#eafaf1; color:#1e8449; }
+  .lien-param { display:inline-flex; align-items:center; gap:6px; color:var(--cave); font-size:.85rem; font-weight:600; text-decoration:none; float:right; }
+  .lien-param:hover { color:var(--cave-d); text-decoration:underline; }
+  @media(max-width:768px) { .grid-2 { grid-template-columns:1fr; } }
+</style>
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+  <h1 style="margin:0;"></h1>
+  <div style="display:flex; gap:12px; align-items:center;">
+    <a href="{% url 'bar:shot_historique' %}" class="lien-param"><i class="fas fa-history"></i> Historique</a>
+    <a href="{% url 'bar:shot_parametrage' %}" class="lien-param"><i class="fas fa-cog"></i> Paramétrage</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <h2><i class="fas fa-glass-whiskey"></i> Vente au Shot — Liqueurs</h2>
+  <p>Shot = 30 ml &nbsp;|&nbsp; Tournée = 2 × 30 ml = 60 ml</p>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert {% if msg.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="grid-2">
+
+  <!-- Colonne gauche : vente -->
+  <div class="card">
+    <div class="section-title"><i class="fas fa-glass-whiskey"></i> Vente rapide</div>
+    {% if parametrages %}
+      <div class="shot-cards">
+        {% for p in parametrages %}
+          {% with total_ml=p.boisson.quantite_stock|add:0 shots_dispo=p.shots_restants_bouteille %}
+          <div class="shot-card">
+            <div class="nom">{{ p.boisson.nom }}</div>
+            <div class="stock">
+              Stock : {{ p.boisson.quantite_stock }} bout.
+              &nbsp;|&nbsp; {{ p.ml_en_cours|floatformat:0 }} ml consommés
+            </div>
+            <div class="stock-bar">
+              <div class="stock-bar-fill"
+                style="width:{% if p.volume_contenant_ml > 0 %}{% widthratio p.ml_en_cours p.volume_contenant_ml 100 %}{% else %}0{% endif %}%">
+              </div>
+            </div>
+            <div class="prix-badge">
+              Shot : {{ p.prix_shot|floatformat:0 }} F &nbsp;|&nbsp;
+              Tournée : {{ p.prix_tournee|floatformat:0 }} F
+            </div>
+            <div class="btns" style="margin-top:10px;">
+              <form method="post" style="flex:1; display:flex;">
+                {% csrf_token %}
+                <input type="hidden" name="parametrage_id" value="{{ p.pk }}">
+                <input type="hidden" name="type_vente" value="shot">
+                <button type="submit" class="btn-shot shot"
+                  {% if p.boisson.quantite_stock == 0 and p.ml_en_cours == 0 %}disabled{% endif %}>
+                  Shot<br><small>{{ p.volume_shot_ml }} ml</small>
+                </button>
+              </form>
+              <form method="post" style="flex:1; display:flex;">
+                {% csrf_token %}
+                <input type="hidden" name="parametrage_id" value="{{ p.pk }}">
+                <input type="hidden" name="type_vente" value="tournee">
+                <button type="submit" class="btn-shot tournee"
+                  {% if p.boisson.quantite_stock == 0 and p.ml_en_cours == 0 %}disabled{% endif %}>
+                  Tournée<br><small>{{ p.volume_shot_ml|add:p.volume_shot_ml }} ml</small>
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align:center; padding:30px; color:#7f8c8d;">
+        <i class="fas fa-cog" style="font-size:2rem; margin-bottom:10px; display:block; opacity:.4;"></i>
+        <p>Aucun article configuré pour la vente au shot.</p>
+        <a href="{% url 'bar:shot_parametrage' %}" style="color:var(--cave); font-weight:600;">
+          → Configurer maintenant
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Colonne droite : historique du jour -->
+  <div class="card">
+    <div class="section-title"><i class="fas fa-receipt"></i> Ventes du jour</div>
+    {% if historique %}
+      <table>
+        <thead>
+          <tr>
+            <th>Heure</th>
+            <th>Article</th>
+            <th>Type</th>
+            <th>ml</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in historique %}
+          <tr>
+            <td>{{ v.date|time:"H:i" }}</td>
+            <td>{{ v.boisson.nom }}</td>
+            <td>
+              {% if v.type_vente == 'tournee' %}
+                <span class="badge-tournee">Tournée</span>
+              {% else %}
+                <span class="badge-shot">Shot</span>
+              {% endif %}
+            </td>
+            <td>{{ v.ml_debites|floatformat:0 }} ml</td>
+            <td><strong>{{ v.prix_encaisse|floatformat:0 }} F</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div style="margin-top:12px; padding-top:10px; border-top:2px solid var(--cave-bg); display:flex; justify-content:flex-end; gap:24px;">
+        <span style="font-size:.85rem; color:#555;">
+          Total : <strong>{{ historique|length }} vente(s)</strong>
+        </span>
+        <span style="font-size:.85rem; color:var(--cave-d); font-weight:700;">
+          {% with total=historique %}
+            CA : {% for v in historique %}{% if forloop.first %}{{ v.prix_encaisse|floatformat:0 }}{% endif %}{% endfor %} F
+          {% endwith %}
+        </span>
+      </div>
+    {% else %}
+      <p style="color:#7f8c8d; text-align:center; padding:20px;">Aucune vente aujourd'hui.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

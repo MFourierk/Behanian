@@ -1,0 +1,182 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
+
+{% block content %}
+<style>
+  :root { --cave: #8e44ad; --cave-d: #6c3483; --cave-bg: #f5eefb; }
+  .page-header { background: linear-gradient(135deg, var(--cave) 0%, var(--cave-d) 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 24px; box-shadow: 0 10px 25px rgba(142,68,173,0.25); }
+  .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+  .page-header p  { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+  .back-link { display:inline-flex; align-items:center; gap:6px; color:var(--cave); font-weight:600; margin-bottom:16px; text-decoration:none; }
+  .back-link:hover { color:var(--cave-d); }
+  .card { background:white; border-radius:16px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,0.06); margin-bottom:24px; }
+  .section-title { font-weight:700; color:var(--cave); font-size:.9rem; text-transform:uppercase; letter-spacing:.5px; margin-bottom:16px; padding-bottom:8px; border-bottom:2px solid var(--cave-bg); }
+  .form-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .form-grid .full { grid-column:1/-1; }
+  .form-group { display:flex; flex-direction:column; gap:5px; }
+  .form-group label { font-size:.82rem; font-weight:600; color:#444; }
+  .form-group select, .form-group input { border:1.5px solid #ddd; border-radius:8px; padding:8px 10px; font-size:.9rem; outline:none; transition:border .2s; }
+  .form-group select:focus, .form-group input:focus { border-color:var(--cave); }
+  .btn-submit { background:var(--cave); color:white; border:none; border-radius:10px; padding:10px 24px; font-weight:700; cursor:pointer; font-size:.95rem; transition:background .2s; }
+  .btn-submit:hover { background:var(--cave-d); }
+  table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  thead th { background:var(--cave-bg); color:var(--cave-d); font-weight:700; padding:10px 12px; text-align:left; border-bottom:2px solid #e0c3f0; }
+  tbody tr:hover { background:#faf5ff; }
+  td { padding:10px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  .badge-actif   { background:#d4edda; color:#155724; padding:2px 9px; border-radius:12px; font-size:.78rem; font-weight:700; }
+  .badge-inactif { background:#f8d7da; color:#721c24; padding:2px 9px; border-radius:12px; font-size:.78rem; font-weight:700; }
+  .edit-btn { background:none; border:1.5px solid var(--cave); color:var(--cave); border-radius:7px; padding:4px 12px; font-size:.8rem; cursor:pointer; transition:all .2s; }
+  .edit-btn:hover { background:var(--cave); color:white; }
+  .ml-badge { font-size:.78rem; color:#7f8c8d; }
+</style>
+
+<a href="{% url 'bar:shot_vente' %}" class="back-link"><i class="fas fa-arrow-left"></i> Vente Shot</a>
+
+<div class="page-header">
+  <h2><i class="fas fa-cog"></i> Paramétrage — Vente au Shot</h2>
+  <p>Configurez quels articles peuvent être vendus au shot ou à la tournée</p>
+</div>
+
+{% if messages %}
+  {% for msg in messages %}
+    <div style="padding:12px 18px; border-radius:10px; margin-bottom:14px; font-weight:600;
+      background:{% if msg.tags == 'error' %}#fdecea{% else %}#eafaf1{% endif %};
+      color:{% if msg.tags == 'error' %}#c0392b{% else %}#1e8449{% endif %};">
+      {{ msg }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Formulaire ajout/modif -->
+<div class="card">
+  <div class="section-title"><i class="fas fa-plus-circle"></i> Ajouter / Modifier un paramétrage</div>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Article (liqueur)</label>
+        <select name="boisson_id" required id="sel-boisson">
+          <option value="">— Choisir un article —</option>
+          {% for art in articles %}
+            <option value="{{ art.pk }}"
+              data-vol="{{ art.parametrage_shot.volume_contenant_ml|default:700 }}"
+              data-shot="{{ art.parametrage_shot.volume_shot_ml|default:30 }}"
+              data-pshot="{{ art.parametrage_shot.prix_shot|default:'' }}"
+              data-ptournee="{{ art.parametrage_shot.prix_tournee|default:'' }}"
+              data-actif="{% if art.parametrage_shot %}{{ art.parametrage_shot.actif|yesno:'1,0' }}{% else %}1{% endif %}">
+              {{ art.nom }}{% if art.parametrage_shot %} ✓{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Volume du contenant (ml)</label>
+        <input type="number" name="volume_contenant_ml" id="inp-vol" value="700" min="1" required>
+        <span class="ml-badge">Ex: 700 pour 70cl</span>
+      </div>
+      <div class="form-group">
+        <label>Volume d'un shot (ml)</label>
+        <input type="number" name="volume_shot_ml" id="inp-shot" value="30" min="1" required>
+      </div>
+      <div class="form-group">
+        <label>Actif</label>
+        <select name="actif" id="inp-actif">
+          <option value="1">Oui</option>
+          <option value="0">Non</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prix du shot (FCFA)</label>
+        <input type="number" name="prix_shot" id="inp-pshot" value="" min="0" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>Prix de la tournée — 2 shots (FCFA)</label>
+        <input type="number" name="prix_tournee" id="inp-ptournee" value="" min="0" step="0.01" required>
+      </div>
+    </div>
+    <div style="margin-top:18px; text-align:right;">
+      <button type="submit" class="btn-submit"><i class="fas fa-save"></i> Enregistrer</button>
+    </div>
+  </form>
+</div>
+
+<!-- Tableau des paramétrages existants -->
+<div class="card">
+  <div class="section-title"><i class="fas fa-list"></i> Paramétrages configurés</div>
+  {% with configs=articles %}
+    {% if articles %}
+      <table>
+        <thead>
+          <tr>
+            <th>Article</th>
+            <th>Contenant</th>
+            <th>Shot</th>
+            <th>Tournée</th>
+            <th>Prix Shot</th>
+            <th>Prix Tournée</th>
+            <th>ml en cours</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for art in articles %}
+            {% if art.parametrage_shot %}
+            <tr>
+              <td><strong>{{ art.nom }}</strong></td>
+              <td>{{ art.parametrage_shot.volume_contenant_ml }} ml</td>
+              <td>{{ art.parametrage_shot.volume_shot_ml }} ml</td>
+              <td>{{ art.parametrage_shot.volume_shot_ml|add:art.parametrage_shot.volume_shot_ml }} ml</td>
+              <td>{{ art.parametrage_shot.prix_shot|floatformat:0 }} F</td>
+              <td>{{ art.parametrage_shot.prix_tournee|floatformat:0 }} F</td>
+              <td>
+                {{ art.parametrage_shot.ml_en_cours|floatformat:0 }} /
+                {{ art.parametrage_shot.volume_contenant_ml }} ml
+                <div style="background:#f0f0f0;border-radius:4px;height:5px;margin-top:3px;overflow:hidden;width:80px;">
+                  <div style="background:var(--cave);height:5px;width:{% widthratio art.parametrage_shot.ml_en_cours art.parametrage_shot.volume_contenant_ml 80 %}px;"></div>
+                </div>
+              </td>
+              <td>
+                {% if art.parametrage_shot.actif %}
+                  <span class="badge-actif">Actif</span>
+                {% else %}
+                  <span class="badge-inactif">Inactif</span>
+                {% endif %}
+              </td>
+              <td>
+                <button class="edit-btn" onclick="chargerParametrage({{ art.pk }})">
+                  <i class="fas fa-edit"></i> Modifier
+                </button>
+              </td>
+            </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color:#7f8c8d;text-align:center;padding:20px;">Aucun paramétrage configuré.</p>
+    {% endif %}
+  {% endwith %}
+</div>
+
+<script>
+const sel = document.getElementById('sel-boisson');
+sel.addEventListener('change', function() {
+  const opt = this.selectedOptions[0];
+  if (!opt.value) return;
+  document.getElementById('inp-vol').value     = opt.dataset.vol || 700;
+  document.getElementById('inp-shot').value    = opt.dataset.shot || 30;
+  document.getElementById('inp-pshot').value   = opt.dataset.pshot || '';
+  document.getElementById('inp-ptournee').value = opt.dataset.ptournee || '';
+  document.getElementById('inp-actif').value   = opt.dataset.actif || '1';
+});
+
+function chargerParametrage(pk) {
+  sel.value = pk;
+  sel.dispatchEvent(new Event('change'));
+  sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+{% endblock %}

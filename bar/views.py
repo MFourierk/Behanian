@@ -39,7 +39,8 @@ from .models import (
     MouvementStockBar, CategorieBar, UniteVente, Client,
     BonReceptionBar, LigneBonReceptionBar,
     InventaireBar, LigneInventaireBar,
-    CasseBar, LigneCasseBar
+    CasseBar, LigneCasseBar,
+    ParametrageShot, VenteShot,
 )
 from .models import FournisseurBar
 
@@ -2046,6 +2047,146 @@ def api_vente_create(request):
         return JsonResponse({'ok': False, 'error': str(e), 'trace': traceback.format_exc()}, status=500)
 
 
+# ─────────────────────────────────────────────────────────
+#  SHOTS / LIQUEURS AU VERRE
+# ─────────────────────────────────────────────────────────
+
+@require_module_access('bar')
+@require_bar_gestion
+def shot_parametrage(request):
+    """Liste des articles configurés pour la vente au shot + formulaire d'ajout/modif."""
+    articles_avec_config = BoissonBar.objects.filter(
+        statut='actif', disponible=True
+    ).select_related('parametrage_shot').order_by('categorie__nom', 'nom')
+
+    if request.method == 'POST':
+        boisson_id  = request.POST.get('boisson_id')
+        vol_cont    = request.POST.get('volume_contenant_ml', 700)
+        vol_shot    = request.POST.get('volume_shot_ml', 30)
+        prix_shot   = request.POST.get('prix_shot', 0)
+        prix_tournee = request.POST.get('prix_tournee', 0)
+        actif        = request.POST.get('actif') == '1'
+
+        boisson = get_object_or_404(BoissonBar, pk=boisson_id)
+        param, created = ParametrageShot.objects.update_or_create(
+            boisson=boisson,
+            defaults={
+                'volume_contenant_ml': int(vol_cont),
+                'volume_shot_ml':      int(vol_shot),
+                'prix_shot':           Decimal(str(prix_shot)),
+                'prix_tournee':        Decimal(str(prix_tournee)),
+                'actif':               actif,
+            }
+        )
+        action = "créé" if created else "mis à jour"
+        messages.success(request, f"Paramétrage shot pour « {boisson.nom} » {action}.")
+        return redirect('bar:shot_parametrage')
+
+    context = {
+        'articles': articles_avec_config,
+        'page_title': 'Paramétrage — Vente au Shot',
+    }
+    return render(request, 'bar/shot_parametrage.html', context)
 
 
+@require_module_access('bar')
+def shot_vente(request):
+    """Page de vente shot + historique du jour."""
+    parametrages = ParametrageShot.objects.filter(
+        actif=True, boisson__statut='actif', boisson__disponible=True
+    ).select_related('boisson').order_by('boisson__nom')
+
+    if request.method == 'POST':
+        param_id   = request.POST.get('parametrage_id')
+        type_vente = request.POST.get('type_vente', 'shot')
+
+        param = get_object_or_404(ParametrageShot, pk=param_id, actif=True)
+        boisson = param.boisson
+
+        nb_shots   = 2 if type_vente == 'tournee' else 1
+        ml_a_debiter = Decimal(nb_shots * param.volume_shot_ml)
+        prix_encaisse = param.prix_tournee if type_vente == 'tournee' else param.prix_shot
+
+        # Vérification stock
+        ml_total_stock = Decimal(boisson.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+        if ml_a_debiter > ml_total_stock:
+            messages.error(request, f"Stock insuffisant — {boisson.nom} : seulement {int(ml_total_stock)} ml restants.")
+            return redirect('bar:shot_vente')
+
+        with transaction.atomic():
+            # Mise à jour bouteille en cours
+            param.ml_en_cours += ml_a_debiter
+            bouteilles_consommees = int(param.ml_en_cours // param.volume_contenant_ml)
+            param.ml_en_cours = param.ml_en_cours % param.volume_contenant_ml
+            param.save()
+
+            # Décrémenter le stock bouteilles si nécessaire
+            if bouteilles_consommees > 0:
+                from django.db.models import F
+                BoissonBar.objects.filter(pk=boisson.pk).update(
+                    quantite_stock=F('quantite_stock') - bouteilles_consommees
+                )
+                MouvementStockBar.objects.create(
+                    boisson=boisson,
+                    type_mouvement='sortie',
+                    quantite=bouteilles_consommees,
+                    commentaire=f"Vente shot — {bouteilles_consommees} bouteille(s) épuisée(s)",
+                    utilisateur=request.user,
+                )
+
+            VenteShot.objects.create(
+                boisson=boisson,
+                type_vente=type_vente,
+                nb_shots=nb_shots,
+                ml_debites=ml_a_debiter,
+                prix_encaisse=prix_encaisse,
+                operateur=request.user,
+            )
+
+        label = "Tournée (2 shots)" if type_vente == 'tournee' else "Shot"
+        messages.success(request, f"{label} de {boisson.nom} enregistré — {int(ml_a_debiter)} ml débités.")
+        return redirect('bar:shot_vente')
+
+    # Historique du jour
+    today = timezone.now().date()
+    historique = VenteShot.objects.filter(
+        date__date=today
+    ).select_related('boisson', 'operateur').order_by('-date')
+
+    context = {
+        'parametrages': parametrages,
+        'historique':   historique,
+        'page_title':   'Vente au Shot',
+    }
+    return render(request, 'bar/shot_vente.html', context)
+
+
+@require_module_access('bar')
+@require_bar_gestion
+def shot_historique(request):
+    """Historique complet des ventes shot avec filtres date."""
+    from django.db.models import Sum as DSum
+    date_debut = request.GET.get('date_debut')
+    date_fin   = request.GET.get('date_fin')
+
+    qs = VenteShot.objects.select_related('boisson', 'operateur').order_by('-date')
+    if date_debut:
+        qs = qs.filter(date__date__gte=date_debut)
+    if date_fin:
+        qs = qs.filter(date__date__lte=date_fin)
+
+    totaux = qs.aggregate(
+        total_shots=DSum('nb_shots'),
+        total_ml=DSum('ml_debites'),
+        total_ca=DSum('prix_encaisse'),
+    )
+
+    context = {
+        'ventes':      qs[:200],
+        'totaux':      totaux,
+        'date_debut':  date_debut or '',
+        'date_fin':    date_fin or '',
+        'page_title':  'Historique Ventes Shot',
+    }
+    return render(request, 'bar/shot_historique.html', context)
 

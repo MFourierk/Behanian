@@ -606,3 +606,80 @@ class LigneCasseBar(models.Model):
 
     def __str__(self):
         return f"{self.article.nom} x {self.quantite}"
+
+
+class ParametrageShot(models.Model):
+    """Configuration shot/tournée pour un article de la Cave (liqueur vendue au verre)."""
+    boisson = models.OneToOneField(
+        BoissonBar, on_delete=models.CASCADE,
+        related_name='parametrage_shot',
+        verbose_name="Article"
+    )
+    volume_contenant_ml = models.IntegerField(
+        default=700,
+        verbose_name="Volume du contenant (ml)",
+        help_text="Ex: 700 pour une bouteille 70cl"
+    )
+    volume_shot_ml = models.IntegerField(
+        default=30,
+        verbose_name="Volume d'un shot (ml)"
+    )
+    prix_shot = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Prix du shot (FCFA)"
+    )
+    prix_tournee = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="Prix de la tournée (2 shots, FCFA)"
+    )
+    # ml consommés dans la bouteille actuellement ouverte
+    ml_en_cours = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name="ml consommés (bouteille en cours)"
+    )
+    actif = models.BooleanField(default=True, verbose_name="Actif")
+    date_modification = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Paramétrage Shot"
+        verbose_name_plural = "Paramétrages Shot"
+
+    def __str__(self):
+        return f"Shot — {self.boisson.nom}"
+
+    @property
+    def ml_restants_bouteille(self):
+        """ml restants dans la bouteille en cours."""
+        if self.ml_en_cours == 0:
+            return self.volume_contenant_ml
+        return self.volume_contenant_ml - self.ml_en_cours
+
+    @property
+    def shots_restants_bouteille(self):
+        """Nombre de shots encore disponibles dans la bouteille en cours."""
+        from decimal import Decimal
+        import math
+        return math.floor(float(self.ml_restants_bouteille) / self.volume_shot_ml)
+
+
+class VenteShot(models.Model):
+    TYPE_VENTE = [
+        ('shot',    'Shot (1 verre)'),
+        ('tournee', 'Tournée (2 shots)'),
+    ]
+    boisson     = models.ForeignKey(BoissonBar, on_delete=models.PROTECT, related_name='ventes_shot')
+    type_vente  = models.CharField(max_length=10, choices=TYPE_VENTE, default='shot')
+    nb_shots    = models.IntegerField(default=1, verbose_name="Nombre de shots")
+    ml_debites  = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="ml débités")
+    prix_encaisse = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix encaissé (FCFA)")
+    operateur   = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='ventes_shot')
+    commentaire = models.CharField(max_length=200, blank=True)
+    date        = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Vente Shot"
+        verbose_name_plural = "Ventes Shot"
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.boisson.nom} — {self.get_type_vente_display()} — {self.date.strftime('%d/%m/%Y %H:%M')}"
