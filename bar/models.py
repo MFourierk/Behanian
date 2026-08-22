@@ -168,22 +168,89 @@ class BoissonBar(models.Model):
         return self.get_unite_standard_display()
 
     @property
-    def est_en_rupture(self):
+    def stock_disponible(self):
+        """Unités vendables : shots possibles pour un article shot, bouteilles sinon."""
         if self.est_shot and self.shot_parent_id:
-            # Rupture si plus aucun ml disponible dans la bouteille parente
             try:
                 param = self.shot_parent.parametrage_shot
                 ml_total = Decimal(self.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
-                return ml_total < (self.shot_ml or 30)
+                return int(ml_total // (self.shot_ml or 30))
             except Exception:
-                pass
-        return self.quantite_stock == 0
+                return 0
+        return self.quantite_stock
+
+    @property
+    def est_en_rupture(self):
+        return self.stock_disponible == 0
 
     @property
     def est_stock_bas(self):
         if self.est_shot:
-            return False  # Pas de seuil d'alerte pour les shots
+            return False
         return 0 < self.quantite_stock <= self.seuil_alerte
+
+    def destock(self, qty, commentaire, utilisateur, serveur=None):
+        """Décrémente le stock : ml pour un shot dérivé, bouteille pour un article normal."""
+        if self.est_shot and self.shot_parent_id:
+            try:
+                param = ParametrageShot.objects.select_for_update().get(boisson_id=self.shot_parent_id)
+                ml_a_debiter = Decimal(self.shot_ml or 30) * qty
+                param.ml_en_cours += ml_a_debiter
+                bouteilles = int(param.ml_en_cours // param.volume_contenant_ml)
+                param.ml_en_cours = param.ml_en_cours % param.volume_contenant_ml
+                param.save(update_fields=['ml_en_cours'])
+                if bouteilles > 0:
+                    from django.db.models import F
+                    BoissonBar.objects.filter(pk=self.shot_parent_id).update(
+                        quantite_stock=F('quantite_stock') - bouteilles
+                    )
+                    MouvementStockBar.objects.create(
+                        boisson_id=self.shot_parent_id,
+                        type_mouvement='sortie',
+                        quantite=bouteilles,
+                        commentaire=f"{commentaire} [shot — {int(ml_a_debiter)} ml]",
+                        utilisateur=utilisateur,
+                        serveur=serveur,
+                    )
+                VenteShot.objects.create(
+                    boisson_id=self.shot_parent_id,
+                    type_vente='tournee' if (self.shot_ml or 30) >= 60 else 'shot',
+                    nb_shots=qty * (2 if (self.shot_ml or 30) >= 60 else 1),
+                    ml_debites=ml_a_debiter,
+                    prix_encaisse=self.prix * qty,
+                    operateur=utilisateur,
+                    commentaire=commentaire,
+                )
+            except Exception:
+                pass
+        else:
+            MouvementStockBar.objects.create(
+                boisson=self,
+                type_mouvement='sortie',
+                quantite=qty,
+                commentaire=commentaire,
+                utilisateur=utilisateur,
+                serveur=serveur,
+            )
+
+    def restock(self, qty, commentaire, utilisateur):
+        """Remet du stock (retrait commande) : ml pour shot, bouteille pour normal."""
+        if self.est_shot and self.shot_parent_id:
+            try:
+                param = ParametrageShot.objects.select_for_update().get(boisson_id=self.shot_parent_id)
+                ml_a_rendre = Decimal(self.shot_ml or 30) * qty
+                param.ml_en_cours = max(Decimal('0'), param.ml_en_cours - ml_a_rendre)
+                param.save(update_fields=['ml_en_cours'])
+            except Exception:
+                pass
+        else:
+            MouvementStockBar.objects.create(
+                boisson=self,
+                type_mouvement='entree',
+                quantite=qty,
+                commentaire=commentaire,
+                utilisateur=utilisateur,
+            )
 
     class Meta:
         verbose_name = "Article (Cave)"
@@ -718,13 +785,13 @@ class ParametrageShot(models.Model):
 
         art_s = _upsert(
             self.article_shot,
-            f"Shot {self.volume_shot_ml}ml",
+            "Shot",
             self.volume_shot_ml,
             self.prix_shot,
         )
         art_t = _upsert(
             self.article_tournee,
-            f"Tournée {self.volume_shot_ml * 2}ml",
+            "Tournée",
             self.volume_shot_ml * 2,
             self.prix_tournee,
         )

@@ -1805,45 +1805,9 @@ def api_ajuster_stock_tpe(request):
 
 @require_module_access('bar')
 def _appliquer_deduction_shot(boisson_shot, qty, commentaire, utilisateur, serveur=None):
-    """
-    Déduit qty shots (en ml) du paramétrage de la bouteille parente.
-    Décrémente quantite_stock de la bouteille quand une bouteille complète est épuisée.
-    """
-    from django.db import transaction as _tx
-    from django.db.models import F
-    param = boisson_shot.shot_parent.parametrage_shot
-    ml_a_debiter = Decimal(boisson_shot.shot_ml or 30) * qty
-
-    with _tx.atomic():
-        # Recharger avec lock pour éviter les race conditions
-        param = ParametrageShot.objects.select_for_update().get(pk=param.pk)
-        param.ml_en_cours += ml_a_debiter
-        bouteilles = int(param.ml_en_cours // param.volume_contenant_ml)
-        param.ml_en_cours = param.ml_en_cours % param.volume_contenant_ml
-        param.save(update_fields=['ml_en_cours'])
-
-        if bouteilles > 0:
-            BoissonBar.objects.filter(pk=boisson_shot.shot_parent_id).update(
-                quantite_stock=F('quantite_stock') - bouteilles
-            )
-            MouvementStockBar.objects.create(
-                boisson        = boisson_shot.shot_parent,
-                type_mouvement = 'sortie',
-                quantite       = bouteilles,
-                commentaire    = f"{commentaire} [shot — {int(ml_a_debiter)} ml]",
-                utilisateur    = utilisateur,
-                serveur        = serveur,
-            )
-        # Tracer la vente shot
-        VenteShot.objects.create(
-            boisson       = boisson_shot.shot_parent,
-            type_vente    = 'tournee' if (boisson_shot.shot_ml or 30) >= 60 else 'shot',
-            nb_shots      = qty * (2 if (boisson_shot.shot_ml or 30) >= 60 else 1),
-            ml_debites    = ml_a_debiter,
-            prix_encaisse = boisson_shot.prix * qty,
-            operateur     = utilisateur,
-            commentaire   = commentaire,
-        )
+    """Délègue au modèle BoissonBar.destock() qui gère la logique ml."""
+    with transaction.atomic():
+        boisson_shot.destock(qty, commentaire, utilisateur, serveur)
 
 
 @require_POST

@@ -765,8 +765,8 @@ def update_ligne_quantite(request):
                 if not is_available: return JsonResponse({'success': False, 'message': error_msg})
 
                 # Check stock Boisson (bar)
-                if boisson and boisson.quantite_stock < 1:
-                    return JsonResponse({'success': False, 'message': f"{boisson.nom} : stock insuffisant ({boisson.quantite_stock} disponible)"})
+                if boisson and boisson.est_en_rupture:
+                    return JsonResponse({'success': False, 'message': f"{boisson.nom} : stock insuffisant"})
 
                 # Check stock Accompagnement
                 if ligne.accompagnement:
@@ -783,11 +783,7 @@ def update_ligne_quantite(request):
                     process_stock_movement(ligne.accompagnement, 1, 'sortie', request.user, f"Ajout Accompagnement #{commande.id}")
                 # Destock boisson bar
                 if boisson:
-                    MouvementStockBar.objects.create(
-                        boisson=boisson, type_mouvement='sortie', quantite=1,
-                        commentaire=f"Ajout Restaurant #{commande.id}",
-                        utilisateur=request.user,
-                    )
+                    boisson.destock(1, f"Ajout Restaurant #{commande.id}", request.user)
 
                 commande.total = float(commande.total) + float(prix_unit)
 
@@ -803,11 +799,7 @@ def update_ligne_quantite(request):
                         process_stock_movement(ligne.accompagnement, 1, 'entree', request.user, f"Retrait Accompagnement #{commande.id}")
                     # Restock boisson bar
                     if boisson:
-                        MouvementStockBar.objects.create(
-                            boisson=boisson, type_mouvement='entree', quantite=1,
-                            commentaire=f"Retrait Restaurant #{commande.id}",
-                            utilisateur=request.user,
-                        )
+                        boisson.restock(1, f"Retrait Restaurant #{commande.id}", request.user)
 
                     commande.total = float(commande.total) - float(prix_unit)
 
@@ -817,11 +809,7 @@ def update_ligne_quantite(request):
                     if ligne.accompagnement:
                         process_stock_movement(ligne.accompagnement, 1, 'entree', request.user, f"Retrait Accompagnement #{commande.id}")
                     if boisson:
-                        MouvementStockBar.objects.create(
-                            boisson=boisson, type_mouvement='entree', quantite=1,
-                            commentaire=f"Retrait Restaurant #{commande.id}",
-                            utilisateur=request.user,
-                        )
+                        boisson.restock(1, f"Retrait Restaurant #{commande.id}", request.user)
 
                     ligne.delete()
                     commande.total = float(commande.total) - float(prix_unit)
@@ -1263,7 +1251,7 @@ def restaurant_tpe(request):
 
     # ── Vérification stock boissons ──
     for b in boissons_bar:
-        b.stock_quantity = int(b.quantite_stock)
+        b.stock_quantity = b.stock_disponible
 
     from django.contrib.auth.models import Group, User as AuthUser
     try:
@@ -1306,7 +1294,7 @@ def restaurant_tpe(request):
                 except Exception:
                     pass
             elif ligne.boisson:
-                if ligne.boisson.quantite_stock < ligne.quantite:
+                if ligne.boisson.stock_disponible < ligne.quantite:
                     en_stock = False
                     break
         forfait.en_stock = en_stock
@@ -1398,13 +1386,7 @@ def ajouter_boisson_commande(request):
                 )
 
             # Décrémenter stock Cave
-            MouvementStockBar.objects.create(
-                boisson=boisson,
-                type_mouvement='sortie',
-                quantite=1,
-                commentaire=f'Vente Restaurant #{commande.id}',
-                utilisateur=request.user
-            )
+            boisson.destock(1, f'Vente Restaurant #{commande.id}', request.user)
 
             commande.total = float(commande.total) + float(boisson.prix)
             commande.save()
@@ -1446,10 +1428,10 @@ def ajouter_forfait_commande(request):
                     if not ok:
                         erreurs.append(f"{lf.plat.nom}: {msg}")
             elif lf.boisson:
-                if lf.boisson.quantite_stock < lf.quantite:
+                if lf.boisson.stock_disponible < lf.quantite:
                     erreurs.append(
                         f"{lf.boisson.nom}: stock insuffisant "
-                        f"({lf.boisson.quantite_stock} dispo, {lf.quantite} requis)"
+                        f"({lf.boisson.stock_disponible} dispo, {lf.quantite} requis)"
                     )
         if erreurs:
             return JsonResponse({'success': False, 'message': "Stock insuffisant :\n" + "\n".join(erreurs)})
@@ -1505,13 +1487,10 @@ def ajouter_forfait_commande(request):
                             f"Forfait {forfait.nom} — Commande #{commande.id}"
                         )
                 elif lf.boisson:
-                    from bar.models import MouvementStockBar
-                    MouvementStockBar.objects.create(
-                        boisson=lf.boisson,
-                        type_mouvement='sortie',
-                        quantite=lf.quantite,
-                        commentaire=f'Forfait {forfait.nom} — Commande #{commande.id}',
-                        utilisateur=request.user
+                    lf.boisson.destock(
+                        lf.quantite,
+                        f'Forfait {forfait.nom} — Commande #{commande.id}',
+                        request.user,
                     )
 
         data_out = _serialize_commande(commande)
