@@ -58,7 +58,7 @@ def bar_dashboard(request):
 @require_module_access('bar')
 @require_bar_gestion
 def stock_management(request):
-    boissons = BoissonBar.objects.filter(statut='actif')
+    boissons = BoissonBar.objects.filter(statut='actif', est_shot=False)
 
     total_articles = boissons.count()
     valeur_stock = sum(b.prix_achat * b.quantite_stock for b in boissons)
@@ -195,7 +195,7 @@ def stock_management(request):
 @require_module_access('bar')
 @require_bar_gestion
 def articles_list(request):
-    articles = BoissonBar.objects.exclude(statut='supprime')
+    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False)
     categories = CategorieBar.objects.all()
     q = request.GET.get('q', '')
     categorie_id = request.GET.get('categorie', '')
@@ -1804,6 +1804,48 @@ def api_ajuster_stock_tpe(request):
 
 
 @require_module_access('bar')
+def _appliquer_deduction_shot(boisson_shot, qty, commentaire, utilisateur, serveur=None):
+    """
+    Déduit qty shots (en ml) du paramétrage de la bouteille parente.
+    Décrémente quantite_stock de la bouteille quand une bouteille complète est épuisée.
+    """
+    from django.db import transaction as _tx
+    from django.db.models import F
+    param = boisson_shot.shot_parent.parametrage_shot
+    ml_a_debiter = Decimal(boisson_shot.shot_ml or 30) * qty
+
+    with _tx.atomic():
+        # Recharger avec lock pour éviter les race conditions
+        param = ParametrageShot.objects.select_for_update().get(pk=param.pk)
+        param.ml_en_cours += ml_a_debiter
+        bouteilles = int(param.ml_en_cours // param.volume_contenant_ml)
+        param.ml_en_cours = param.ml_en_cours % param.volume_contenant_ml
+        param.save(update_fields=['ml_en_cours'])
+
+        if bouteilles > 0:
+            BoissonBar.objects.filter(pk=boisson_shot.shot_parent_id).update(
+                quantite_stock=F('quantite_stock') - bouteilles
+            )
+            MouvementStockBar.objects.create(
+                boisson        = boisson_shot.shot_parent,
+                type_mouvement = 'sortie',
+                quantite       = bouteilles,
+                commentaire    = f"{commentaire} [shot — {int(ml_a_debiter)} ml]",
+                utilisateur    = utilisateur,
+                serveur        = serveur,
+            )
+        # Tracer la vente shot
+        VenteShot.objects.create(
+            boisson       = boisson_shot.shot_parent,
+            type_vente    = 'tournee' if (boisson_shot.shot_ml or 30) >= 60 else 'shot',
+            nb_shots      = qty * (2 if (boisson_shot.shot_ml or 30) >= 60 else 1),
+            ml_debites    = ml_a_debiter,
+            prix_encaisse = boisson_shot.prix * qty,
+            operateur     = utilisateur,
+            commentaire   = commentaire,
+        )
+
+
 @require_POST
 def api_vente_create(request):
     """
@@ -1840,12 +1882,20 @@ def api_vente_create(request):
             manques = []
             for l in lignes:
                 try:
-                    b = BoissonBar.objects.get(pk=int(l['id']))
+                    b = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=int(l['id']))
                     qty = int(l['qty'])
-                    if b.quantite_stock < qty:
-                        manques.append(
-                            f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé"
-                        )
+                    if b.est_shot and b.shot_parent_id:
+                        # Vérification en ml pour les shots
+                        try:
+                            param = b.shot_parent.parametrage_shot
+                            ml_total = Decimal(b.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+                            ml_requis = Decimal(b.shot_ml or 30) * qty
+                            if ml_requis > ml_total:
+                                manques.append(f"• {b.nom} : {int(ml_total)} ml disponibles / {int(ml_requis)} ml requis")
+                        except ParametrageShot.DoesNotExist:
+                            manques.append(f"• {b.nom} : paramétrage shot introuvable")
+                    elif b.quantite_stock < qty:
+                        manques.append(f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé")
                 except BoissonBar.DoesNotExist:
                     manques.append(f"• Article introuvable (id={l['id']})")
             if manques:
@@ -1945,11 +1995,15 @@ def api_vente_create(request):
                     # Décrémenter stock (ignoré si déjà prélevé en temps réel)
                     if boisson_obj and not stock_live:
                         qty = int(l['qty'])
-                        MouvementStockBar.objects.create(
-                            boisson=boisson_obj, type_mouvement='sortie',
-                            quantite=qty, commentaire=f'Cave → Chambre {reservation.chambre.numero}',
-                            utilisateur=request.user, serveur=serveur_obj,
-                        )
+                        cmt_ch = f'Cave → Chambre {reservation.chambre.numero}'
+                        if boisson_obj.est_shot and boisson_obj.shot_parent_id:
+                            _appliquer_deduction_shot(boisson_obj, qty, cmt_ch, request.user, serveur_obj)
+                        else:
+                            MouvementStockBar.objects.create(
+                                boisson=boisson_obj, type_mouvement='sortie',
+                                quantite=qty, commentaire=cmt_ch,
+                                utilisateur=request.user, serveur=serveur_obj,
+                            )
                 # Lier mouvements provisoires TPE (sur chambre)
                 if session_token and stock_live:
                     try:
@@ -2020,16 +2074,21 @@ def api_vente_create(request):
         if not stock_live:
             for l in lignes:
                 try:
-                    boisson = BoissonBar.objects.get(pk=int(l['id']))
+                    boisson = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=int(l['id']))
                     qty     = int(l['qty'])
-                    MouvementStockBar.objects.create(
-                        boisson        = boisson,
-                        type_mouvement = 'sortie',
-                        quantite       = qty,
-                        commentaire    = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -'),
-                        utilisateur    = request.user,
-                        serveur        = serveur_obj,
-                    )
+                    cmt     = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -')
+                    if boisson.est_shot and boisson.shot_parent_id:
+                        # Logique ml pour articles shot dérivés
+                        _appliquer_deduction_shot(boisson, qty, cmt, request.user, serveur_obj)
+                    else:
+                        MouvementStockBar.objects.create(
+                            boisson        = boisson,
+                            type_mouvement = 'sortie',
+                            quantite       = qty,
+                            commentaire    = cmt,
+                            utilisateur    = request.user,
+                            serveur        = serveur_obj,
+                        )
                 except BoissonBar.DoesNotExist:
                     erreurs_stock.append(f"Article id={l['id']} introuvable")
 

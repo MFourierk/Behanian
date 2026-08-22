@@ -129,6 +129,15 @@ class BoissonBar(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='actif', verbose_name="Statut")
     est_compose = models.BooleanField(default=False, verbose_name="Article composé (pack/nomenclature)")
 
+    # Shot dérivé — article virtuel représentant un shot ou une tournée
+    est_shot = models.BooleanField(default=False, verbose_name="Article shot (dérivé d'une bouteille)")
+    shot_ml  = models.IntegerField(null=True, blank=True, verbose_name="Volume en ml (si shot dérivé)")
+    shot_parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='articles_shot',
+        verbose_name="Bouteille parente (si shot dérivé)"
+    )
+
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
 
@@ -160,10 +169,20 @@ class BoissonBar(models.Model):
 
     @property
     def est_en_rupture(self):
+        if self.est_shot and self.shot_parent_id:
+            # Rupture si plus aucun ml disponible dans la bouteille parente
+            try:
+                param = self.shot_parent.parametrage_shot
+                ml_total = Decimal(self.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+                return ml_total < (self.shot_ml or 30)
+            except Exception:
+                pass
         return self.quantite_stock == 0
 
     @property
     def est_stock_bas(self):
+        if self.est_shot:
+            return False  # Pas de seuil d'alerte pour les shots
         return 0 < self.quantite_stock <= self.seuil_alerte
 
     class Meta:
@@ -640,12 +659,81 @@ class ParametrageShot(models.Model):
     actif = models.BooleanField(default=True, verbose_name="Actif")
     date_modification = models.DateTimeField(auto_now=True)
 
+    # Liens vers les articles BoissonBar virtuels auto-créés
+    article_shot    = models.OneToOneField(
+        BoissonBar, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='param_shot_source',
+        verbose_name="Article shot (auto-créé)"
+    )
+    article_tournee = models.OneToOneField(
+        BoissonBar, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='param_tournee_source',
+        verbose_name="Article tournée (auto-créé)"
+    )
+
     class Meta:
         verbose_name = "Paramétrage Shot"
         verbose_name_plural = "Paramétrages Shot"
 
     def __str__(self):
         return f"Shot — {self.boisson.nom}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._sync_articles_virtuels()
+
+    def _sync_articles_virtuels(self):
+        """Crée ou met à jour les articles BoissonBar virtuels shot et tournée."""
+        if not self.actif:
+            # Désactiver les articles virtuels si paramétrage inactif
+            for art in [self.article_shot, self.article_tournee]:
+                if art:
+                    BoissonBar.objects.filter(pk=art.pk).update(disponible=False)
+            return
+
+        categorie = self.boisson.categorie
+
+        def _upsert(art_existant, nom_suffix, ml, prix):
+            nom = f"{self.boisson.nom} — {nom_suffix}"
+            if art_existant:
+                BoissonBar.objects.filter(pk=art_existant.pk).update(
+                    nom=nom, prix=prix, shot_ml=ml,
+                    disponible=True, statut='actif',
+                )
+                return art_existant
+            else:
+                return BoissonBar.objects.create(
+                    nom=nom,
+                    categorie=categorie,
+                    prix=prix,
+                    unite_standard='verre',
+                    quantite_stock=0,
+                    seuil_alerte=0,
+                    disponible=True,
+                    statut='actif',
+                    est_shot=True,
+                    shot_ml=ml,
+                    shot_parent=self.boisson,
+                )
+
+        art_s = _upsert(
+            self.article_shot,
+            f"Shot {self.volume_shot_ml}ml",
+            self.volume_shot_ml,
+            self.prix_shot,
+        )
+        art_t = _upsert(
+            self.article_tournee,
+            f"Tournée {self.volume_shot_ml * 2}ml",
+            self.volume_shot_ml * 2,
+            self.prix_tournee,
+        )
+        # Lier si nouvellement créés
+        if self.article_shot_id != art_s.pk or self.article_tournee_id != art_t.pk:
+            ParametrageShot.objects.filter(pk=self.pk).update(
+                article_shot=art_s,
+                article_tournee=art_t,
+            )
 
     @property
     def ml_restants_bouteille(self):
