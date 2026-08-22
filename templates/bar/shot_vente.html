@@ -1,9 +1,11 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
 {% load static %}
 
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
+{% breadcrumb "Cave" "bar:dashboard" "Vente au Shot" "" %}
 <style>
   :root { --cave: #8e44ad; --cave-d: #6c3483; --cave-bg: #f5eefb; }
   .page-header { background: linear-gradient(135deg, var(--cave) 0%, var(--cave-d) 100%); color:white; padding:24px 30px; border-radius:18px; margin-bottom:24px; box-shadow:0 10px 25px rgba(142,68,173,.25); }
@@ -40,12 +42,9 @@
   @media(max-width:768px) { .grid-2 { grid-template-columns:1fr; } }
 </style>
 
-<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-  <h1 style="margin:0;"></h1>
-  <div style="display:flex; gap:12px; align-items:center;">
-    <a href="{% url 'bar:shot_historique' %}" class="lien-param"><i class="fas fa-history"></i> Historique</a>
-    <a href="{% url 'bar:shot_parametrage' %}" class="lien-param"><i class="fas fa-cog"></i> Paramétrage</a>
-  </div>
+<div style="display:flex; justify-content:flex-end; gap:12px; margin-bottom:6px;">
+  <a href="{% url 'bar:shot_historique' %}" class="lien-param"><i class="fas fa-history"></i> Historique</a>
+  <a href="{% url 'bar:shot_parametrage' %}" class="lien-param"><i class="fas fa-cog"></i> Paramétrage</a>
 </div>
 
 <div class="page-header">
