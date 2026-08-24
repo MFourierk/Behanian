@@ -702,9 +702,10 @@ def ticket_detail(request, pk):
 def ticket_delete(request, pk):
     """
     Supprime définitivement un ticket : restaure le stock des articles vendus
-    quand la transaction source est traçable (restaurant, hôtel) et supprime
-    les transactions liées (avoirs émis sur ce ticket). Action irréversible,
-    réservée au Super Administrateur.
+    (restaurant, hôtel, cave, piscine) et supprime la transaction source
+    (commande, réservation, vente, accès piscine) ainsi que les transactions
+    liées (avoirs émis sur ce ticket). Action irréversible, réservée au
+    Super Administrateur.
     """
     ticket = get_object_or_404(Ticket, pk=pk)
     numero = ticket.numero
@@ -779,6 +780,67 @@ def ticket_delete(request, pk):
                         infos.append("le séjour a été remis en cours")
                 else:
                     avertissement = "La réservation d'origine est introuvable — aucun stock n'a été modifié."
+
+            elif ticket.module == 'cave' and ticket.objet_id:
+                from bar.models import VenteCave
+                vente = VenteCave.objects.filter(id=ticket.objet_id).first()
+                if vente:
+                    lignes_cave = list(vente.lignes.select_related('boisson').all())
+                    restaurees = 0
+                    for ligne in lignes_cave:
+                        if ligne.boisson:
+                            ligne.boisson.restock(ligne.quantite, f"Suppression Ticket {numero}", request.user)
+                            restaurees += 1
+                    if restaurees:
+                        infos.append("le stock des articles a été restauré")
+                    if len(lignes_cave) > restaurees:
+                        avertissement = (
+                            "Certains articles de la vente n'ont pas pu être identifiés en stock "
+                            "(article supprimé depuis) — vérifiez le stock manuellement."
+                        )
+                    vente.delete()
+                else:
+                    avertissement = "La vente d'origine est introuvable — aucun stock n'a été modifié."
+
+            elif ticket.module == 'piscine' and ticket.objet_id:
+                from piscine.models import AccesPiscine
+                from bar.models import BoissonBar, MouvementStockBar
+                from restaurant.models import PlatMenu
+                from cuisine.utils import process_stock_movement
+                acces = AccesPiscine.objects.filter(id=ticket.objet_id).first()
+                if acces:
+                    consos = list(acces.consommations.all())
+                    restaurees = 0
+                    for conso in consos:
+                        boisson = BoissonBar.objects.filter(nom=conso.produit).first()
+                        if boisson:
+                            MouvementStockBar.objects.create(
+                                boisson=boisson, type_mouvement='entree', quantite=conso.quantite,
+                                commentaire=f"Suppression Ticket {numero}", utilisateur=request.user,
+                            )
+                            restaurees += 1
+                            continue
+                        plat = PlatMenu.objects.filter(nom=conso.produit).first()
+                        if plat:
+                            process_stock_movement(
+                                plat, conso.quantite, 'entree', request.user,
+                                f"Suppression Ticket {numero}"
+                            )
+                            restaurees += 1
+                    if restaurees:
+                        infos.append("le stock des articles a été restauré")
+                    acces.delete()
+                else:
+                    avertissement = "L'accès piscine d'origine est introuvable — aucun stock n'a été modifié."
+
+            elif ticket.module == 'espace' and ticket.objet_id:
+                from espaces_evenementiels.models import ReservationEspace
+                reservation_espace = ReservationEspace.objects.filter(id=ticket.objet_id).first()
+                if reservation_espace:
+                    reservation_espace.delete()
+                    infos.append("la réservation d'espace a été supprimée")
+                else:
+                    avertissement = "La réservation d'espace d'origine est introuvable."
             else:
                 avertissement = (
                     "Ce module ne permet pas de retrouver automatiquement les articles vendus : "

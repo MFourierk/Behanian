@@ -261,6 +261,7 @@ def api_encaisser(request, reservation_id):
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='espace',
+            objet_id=res.id,
             montant_total=restant, montant_paye=montant_recu,
             mode_paiement=mode_paiement, cree_par=request.user,
             contenu=contenu, imprime=True,
