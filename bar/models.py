@@ -747,6 +747,10 @@ class ParametrageShot(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        # Ne pas re-synchroniser si on ne sauvegarde que ml_en_cours (vente shot)
+        update_fields = kwargs.get('update_fields')
+        if update_fields and set(update_fields) <= {'ml_en_cours'}:
+            return
         self._sync_articles_virtuels()
 
     def _sync_articles_virtuels(self):
@@ -766,6 +770,7 @@ class ParametrageShot(models.Model):
                 BoissonBar.objects.filter(pk=art_existant.pk).update(
                     nom=nom, prix=prix, shot_ml=ml,
                     disponible=True, statut='actif',
+                    est_shot=True, shot_parent=self.boisson,
                 )
                 return art_existant
             else:

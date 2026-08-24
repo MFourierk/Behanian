@@ -1196,7 +1196,9 @@ def restaurant_tpe(request):
     # ── Boissons de la Cave ──
     boissons_bar = BoissonBar.objects.filter(
         disponible=True, statut='actif'
-    ).select_related('categorie').order_by('categorie__nom', 'nom')
+    ).select_related(
+        'categorie', 'shot_parent', 'shot_parent__parametrage_shot'
+    ).order_by('categorie__nom', 'nom')
 
     tables = Table.objects.all()
     commandes_en_cours_list = Commande.objects.filter(

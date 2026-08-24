@@ -1637,7 +1637,9 @@ def bar_tpe(request):
     from django.contrib.auth.models import User, Group
     from dashboard.models import Configuration
 
-    boissons   = BoissonBar.objects.select_related('categorie').filter(
+    boissons   = BoissonBar.objects.select_related(
+        'categorie', 'shot_parent', 'shot_parent__parametrage_shot'
+    ).filter(
         statut='actif', disponible=True
     ).order_by('categorie__nom', 'nom')
     categories = CategorieBar.objects.order_by('nom')
