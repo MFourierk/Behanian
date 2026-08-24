@@ -184,8 +184,12 @@
                     </div>
                     <div class="form-group">
                         <label>Prix d'achat unitaire (FCFA)</label>
-                        <input type="number" name="prix_achat" value="{{ ingredient.prix_achat|default:'0' }}" step="0.01" min="0">
-                        <span class="hint">Prix unitaire hors CMUP</span>
+                        <input type="number" name="prix_achat" value="{{ ingredient.prix_achat|default:ingredient.cmup|default:'0' }}" step="0.01" min="0">
+                        {% if ingredient and ingredient.cmup %}
+                        <span class="hint">CMUP calculé : <strong>{{ ingredient.cmup }} FCFA</strong></span>
+                        {% else %}
+                        <span class="hint">Prix unitaire d'achat</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
