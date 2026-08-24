@@ -44,6 +44,13 @@
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <a href="{% url 'facturation:ticket_reprint' ticket.pk %}" class="btn-p btn-primary"><i class="fas fa-redo"></i> Réimprimer</a>
     <a href="{% url 'facturation:create_avoir_from_ticket' ticket.pk %}" class="btn-p btn-danger" onclick="return confirm('Créer un avoir pour ce ticket ?')"><i class="fas fa-undo"></i> Créer Avoir</a>
+    {% if request.user.is_superuser %}
+    <form method="post" action="{% url 'facturation:ticket_delete' ticket.pk %}" style="display:inline"
+          onsubmit="return confirm('Supprimer définitivement le ticket {{ ticket.numero }} ?\n\nLe stock des articles vendus sera restauré si la transaction d\'origine est traçable, et les avoirs liés seront supprimés.\n\nCette action est irréversible.');">
+      {% csrf_token %}
+      <button type="submit" class="btn-p btn-outline" style="color:#dc2626;border-color:#dc2626"><i class="fas fa-trash"></i> Supprimer</button>
+    </form>
+    {% endif %}
   </div>
 
   <!-- INFOS -->
