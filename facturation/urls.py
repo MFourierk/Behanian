@@ -26,6 +26,7 @@ urlpatterns = [
     path('tickets/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('tickets/<int:pk>/create_avoir/', views.create_avoir_from_ticket, name='create_avoir_from_ticket'),
     path('tickets/<int:pk>/reprint/', views.ticket_reprint, name='ticket_reprint'),
+    path('tickets/<int:pk>/delete/', views.ticket_delete, name='ticket_delete'),
     path('tickets/<int:pk>/thermal/', views.ticket_print_thermal, name='ticket_print_thermal'),
     path('tickets/<int:pk>/pdf/', views.ticket_pdf, name='ticket_pdf'),
     
