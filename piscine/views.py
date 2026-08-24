@@ -537,6 +537,7 @@ def encaisser_sortie(request, acces_id):
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',
+            objet_id=acces.id,
             montant_total=total, montant_paye=montant_recu,
             mode_paiement=mode_paiement, cree_par=request.user,
             contenu=contenu, imprime=True,

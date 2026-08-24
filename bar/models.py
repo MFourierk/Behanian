@@ -331,6 +331,41 @@ class MouvementStockBar(models.Model):
         ordering = ['-date']
 
 
+class VenteCave(models.Model):
+    """Vente comptoir de la Cave (TPE) — regroupe les articles d'un même ticket
+    pour permettre la traçabilité et la restauration du stock si le ticket est supprimé."""
+    date_vente  = models.DateTimeField(auto_now_add=True)
+    espace      = models.CharField(max_length=50, blank=True, default='')
+    reference   = models.CharField(max_length=100, blank=True, default='')
+    total       = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    serveur     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ventes_cave_servies')
+    utilisateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ventes_cave_encaissees')
+
+    class Meta:
+        verbose_name = "Vente Cave"
+        verbose_name_plural = "Ventes Cave"
+        ordering = ['-date_vente']
+
+    def __str__(self):
+        return f"Vente Cave #{self.pk} — {self.date_vente.strftime('%d/%m/%Y %H:%M')}"
+
+
+class LigneVenteCave(models.Model):
+    vente         = models.ForeignKey(VenteCave, on_delete=models.CASCADE, related_name='lignes')
+    boisson       = models.ForeignKey(BoissonBar, on_delete=models.SET_NULL, null=True, blank=True)
+    nom_article   = models.CharField(max_length=200, blank=True, default='')
+    quantite      = models.IntegerField(default=1)
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Ligne de vente (Cave)"
+        verbose_name_plural = "Lignes de vente (Cave)"
+
+    def __str__(self):
+        nom = self.nom_article or (self.boisson.nom if self.boisson else '?')
+        return f"{self.quantite}x {nom}"
+
+
 class BonCommandeBar(models.Model):
     TYPE_CHOICES = [
         ('achat', 'Commande Fournisseur (Achat)'),

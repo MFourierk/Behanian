@@ -41,6 +41,7 @@ from .models import (
     InventaireBar, LigneInventaireBar,
     CasseBar, LigneCasseBar,
     ParametrageShot, VenteShot,
+    VenteCave, LigneVenteCave,
 )
 from .models import FournisseurBar
 
@@ -1985,11 +1986,29 @@ def api_vente_create(request):
             except Exception as e:
                 return JsonResponse({'ok': False, 'error': str(e)})
 
+        # Enregistrer la vente (traçabilité + restauration du stock si le ticket est supprimé)
+        vente_cave = VenteCave.objects.create(
+            espace=espace, reference=ref, total=total,
+            serveur=serveur_obj, utilisateur=request.user,
+        )
+        for l in lignes:
+            boisson_ligne = None
+            try:
+                boisson_ligne = BoissonBar.objects.get(pk=int(l['id']))
+            except (BoissonBar.DoesNotExist, ValueError, KeyError):
+                pass
+            LigneVenteCave.objects.create(
+                vente=vente_cave, boisson=boisson_ligne,
+                nom_article=l.get('nom', ''), quantite=int(l['qty']),
+                prix_unitaire=Decimal(str(l['prix'])),
+            )
+
         # Creer le Ticket dans facturation
         from facturation.models import Ticket, generate_ticket_numero
         ticket = Ticket.objects.create(
             numero        = generate_ticket_numero(),
             module        = 'cave',
+            objet_id      = vente_cave.id,
             montant_total = total,
             mode_paiement = mode_fact,
             montant_paye  = montant_recu,
