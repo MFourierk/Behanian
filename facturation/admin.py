@@ -1,5 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.db import transaction
 from .models import Facture, Proforma, Avoir, Client, Service, Article, LigneFacture, LigneProforma, LigneAvoir, Ticket
+from .services import supprimer_ticket
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
@@ -54,4 +56,21 @@ class TicketAdmin(admin.ModelAdmin):
     list_display = ['numero', 'date_creation', 'montant_total', 'module', 'est_duplicata']
     list_filter = ['module', 'date_creation']
     search_fields = ['numero', 'contenu']
+
+    def delete_model(self, request, obj):
+        """Supprimer un ticket depuis l'admin doit aussi restaurer le stock
+        et supprimer les transactions liées — même logique que le bouton
+        "Supprimer" du module Facturation, pour éviter toute suppression
+        "brute" qui laisserait le stock et les transactions en désynchro."""
+        numero = obj.numero
+        with transaction.atomic():
+            infos, avertissement = supprimer_ticket(obj, request.user)
+        if infos:
+            self.message_user(request, f"Ticket {numero} : {', '.join(infos)}.")
+        if avertissement:
+            self.message_user(request, f"Ticket {numero} : {avertissement}", level=messages.WARNING)
+
+    def delete_queryset(self, request, queryset):
+        for ticket in list(queryset):
+            self.delete_model(request, ticket)
 
