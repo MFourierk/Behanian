@@ -1270,6 +1270,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')">🏨 Chambre</button>
     </div>
 
+    <!-- Salon privé — durée -->
+    <div id="salonSection" style="display:none;margin-bottom:16px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:12px 14px">
+      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:10px">🛋️ Salon privé — Durée</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="number" id="heuresSalon" min="1" max="24" value="1" oninput="majTotalSalon()"
+               style="width:72px;padding:10px 8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.3rem;font-weight:800;text-align:center;appearance:none">
+        <span style="color:rgba(255,255,255,0.55);font-size:12px;line-height:1.4">heure(s) × 5&nbsp;000&nbsp;F<br>= <strong id="montantSalon" style="color:#c9a84c;font-size:14px">5&nbsp;000 F</strong></span>
+      </div>
+    </div>
+
     <!-- Report Chambre -->
     <div id="chambreSection" style="display:none;margin-bottom:14px">
       <label style="font-size:12px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:8px">Chambre du client</label>
@@ -2472,6 +2482,26 @@ function getTotal() {
   return (t?.remise_pct > 0) ? brut * (1 - t.remise_pct / 100) : brut;
 }
 
+function isSalonPrive() {
+  const num = tickets[ticketActifId]?.tableNum || '';
+  return num.startsWith('SAPR') || num.startsWith('SSPRI');
+}
+
+function getTotalAvecSalon() {
+  const base = getTotal();
+  if (!isSalonPrive()) return base;
+  const h = parseInt(document.getElementById('heuresSalon')?.value) || 0;
+  return base + h * 5000;
+}
+
+function majTotalSalon() {
+  const h = parseInt(document.getElementById('heuresSalon')?.value) || 0;
+  document.getElementById('montantSalon').textContent = formatF(h * 5000);
+  document.getElementById('modalTotal').innerHTML = `${formatF(getTotalAvecSalon())} <span>FCFA</span>`;
+  if (modePaiement === 'especes') calcRendu();
+  else calcMontantMobile();
+}
+
 function ouvrirModalPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.lignes.length) { toast('❌ Ticket vide', 'error'); return; }
@@ -2503,7 +2533,7 @@ function fermerModal() {
 }
 
 function calcRendu() {
-  const total = getTotal();
+  const total = getTotalAvecSalon();
   const recu = parseFloat(document.getElementById('montantRecu').value) || 0;
   const div = document.getElementById('renduDisplay');
   if (recu >= total) {
@@ -2516,7 +2546,7 @@ function calcRendu() {
 }
 
 function setBillet(val, exact=false) {
-  document.getElementById('montantRecu').value = exact ? getTotal() : val;
+  document.getElementById('montantRecu').value = exact ? getTotalAvecSalon() : val;
   calcRendu();
 }
 
@@ -2541,7 +2571,7 @@ function setModalMode(mode) {
 }
 
 function calcMontantMobile() {
-  const total   = getTotal();
+  const total   = getTotalAvecSalon();
   const especes = parseFloat(document.getElementById('montantEspeces').value) || 0;
   document.getElementById('montantMobileVal').textContent = formatF(Math.max(0, total - especes));
 }
@@ -2556,7 +2586,14 @@ function choisirModeMobile(mode) {
 
 function _ouvrirModalPaiementNormal() {
   const t = tickets[ticketActifId];
-  const total = getTotal();
+  const salon = isSalonPrive();
+  const salonSection = document.getElementById('salonSection');
+  salonSection.style.display = salon ? '' : 'none';
+  if (salon) {
+    document.getElementById('heuresSalon').value = 1;
+    document.getElementById('montantSalon').textContent = formatF(5000);
+  }
+  const total = getTotalAvecSalon();
   document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
   document.getElementById('modalSubtitle').textContent = `Restaurant${t.ref ? ' — ' + t.ref : ''}`;
   setModalMode(modePaiement);
@@ -2609,7 +2646,9 @@ function payerMaintenant() {
 async function confirmerPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); return; }
-  const total = getTotal();
+  const heuresSalon = isSalonPrive() ? (parseInt(document.getElementById('heuresSalon')?.value) || 1) : 0;
+  if (isSalonPrive() && heuresSalon < 1) { toast('❌ Indiquez le nombre d\'heures de salon', 'error'); return; }
+  const total = getTotalAvecSalon();
 
   let montantRecu = total;
   let montantEspeces = 0;
@@ -2643,6 +2682,7 @@ async function confirmerPaiement() {
         serveur: t.serveur || document.getElementById('selectServeur').value || '',
         reservation_hotel_id: chambreLieeId || reservation_hotel_id,
         operateur_mobile: '',
+        heures_salon: heuresSalon,
       })
     });
     if (!r.ok) {

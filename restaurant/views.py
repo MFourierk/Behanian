@@ -12,7 +12,6 @@ from django.template.loader import render_to_string
 from django.db.models import Sum, Q
 from django.utils import timezone
 import json
-import math
 from .models import Table, CategorieMenu, PlatMenu, Commande, LigneCommande, Reservation
 from decimal import Decimal
 from django.contrib.auth.models import User as AuthUser
@@ -146,15 +145,13 @@ def valider_commande(request):
             if not serveur_nom:
                 return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un serveur avant de valider.'})
 
-            # Frais salon privé (calculé hors bloc atomique — lecture seule)
+            # Frais salon privé (heures saisies manuellement par la caissière)
             frais_salon = Decimal('0')
-            heures_salon = 0
+            heures_salon = int(data.get('heures_salon', 0) or 0)
             tarif_salon = Decimal('0')
-            if commande.table_id:
+            if heures_salon > 0 and commande.table_id:
                 table_obj = commande.table
                 if getattr(table_obj, 'est_salon_prive', False):
-                    delta_sec = (timezone.now() - commande.date_creation).total_seconds()
-                    heures_salon = max(1, math.ceil(delta_sec / 3600))
                     tarif_salon = table_obj.tarif_horaire
                     frais_salon = Decimal(str(heures_salon)) * tarif_salon
 
