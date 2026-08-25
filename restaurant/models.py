@@ -17,7 +17,9 @@ class Table(models.Model):
         default='disponible',
         verbose_name="Statut"
     )
-    
+    est_salon_prive = models.BooleanField(default=False, verbose_name="Salon privé")
+    tarif_horaire = models.DecimalField(max_digits=10, decimal_places=2, default=5000, verbose_name="Tarif horaire (F)")
+
     class Meta:
         verbose_name = "Table"
         verbose_name_plural = "Tables"

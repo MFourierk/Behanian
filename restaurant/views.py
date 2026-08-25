@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from django.db.models import Sum, Q
 from django.utils import timezone
 import json
+import math
 from .models import Table, CategorieMenu, PlatMenu, Commande, LigneCommande, Reservation
 from decimal import Decimal
 from django.contrib.auth.models import User as AuthUser
@@ -145,13 +146,25 @@ def valider_commande(request):
             if not serveur_nom:
                 return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un serveur avant de valider.'})
 
+            # Frais salon privé (calculé hors bloc atomique — lecture seule)
+            frais_salon = Decimal('0')
+            heures_salon = 0
+            tarif_salon = Decimal('0')
+            if commande.table_id:
+                table_obj = commande.table
+                if getattr(table_obj, 'est_salon_prive', False):
+                    delta_sec = (timezone.now() - commande.date_creation).total_seconds()
+                    heures_salon = max(1, math.ceil(delta_sec / 3600))
+                    tarif_salon = table_obj.tarif_horaire
+                    frais_salon = Decimal(str(heures_salon)) * tarif_salon
+
             with transaction.atomic():
                 commande.statut = 'payee'
                 # Caissier = utilisateur connecté
                 commande.caissier = request.user
                 # Montant rendu
                 total_net = commande.total_net
-                commande.montant_rendu = max(Decimal('0'), montant_encaisse - Decimal(str(total_net)))
+                commande.montant_rendu = max(Decimal('0'), montant_encaisse - Decimal(str(total_net)) - frais_salon)
                 # Sauvegarder le serveur sélectionné dans la commande
                 if serveur_nom:
                     from django.contrib.auth.models import User as AuthUser
@@ -208,11 +221,22 @@ def valider_commande(request):
                     </div>
                     """
 
+                # Ligne salon privé dans le contenu du ticket
+                if frais_salon > 0:
+                    services_html += f"""
+                    <div class="row salon-prive">
+                        <span class="item-name">Salon privé {heures_salon}h × {int(tarif_salon):,} F</span>
+                        <span class="item-price">{int(frais_salon):,} F</span>
+                    </div>
+                    """
+
+                montant_total_ticket = commande.total + frais_salon
+
                 # Création du Ticket
                 ticket = Ticket.objects.create(
                     numero=numero_ticket,
                     module='restaurant',
-                    montant_total=commande.total,
+                    montant_total=montant_total_ticket,
                     client=None,
                     contenu=services_html,
                     objet_id=commande.id,
@@ -260,6 +284,9 @@ def valider_commande(request):
                     'montant_especes':  montant_especes if montant_especes > 0 else None,
                     'montant_mobile':   montant_mobile  if montant_especes > 0 else None,
                     'mode_short':       mode_short_map.get(tp, tp.upper()),
+                    'frais_salon':      frais_salon if frais_salon > 0 else None,
+                    'heures_salon':     heures_salon if frais_salon > 0 else None,
+                    'tarif_salon':      tarif_salon if frais_salon > 0 else None,
                 })
                 
                 return JsonResponse({'success': True, 'ticket_html': ticket_html, 'action': 'paiement'})
