@@ -345,9 +345,9 @@
                     <div class="critique-item">
                         <div>
                             <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ article.nom }}</div>
-                            <div style="font-size:0.82rem;color:#7f8c8d;">Stock : {{ article.quantite_stock }} unités</div>
+                            <div style="font-size:0.82rem;color:#7f8c8d;">Stock : {{ article.stock_disponible }} unités</div>
                         </div>
-                        {% if article.quantite_stock == 0 %}
+                        {% if article.est_en_rupture %}
                             <span class="badge-rupture">Rupture</span>
                         {% else %}
                             <span class="badge-bas">Stock bas</span>
@@ -438,12 +438,12 @@
                             <td><span class="prix-tag">{{ article.prix|montant }} FCFA</span></td>
                             <td style="font-size:0.85rem;">{{ article.unite_affichee }}</td>
                             <td>
-                                {% if article.quantite_stock == 0 %}
+                                {% if article.est_en_rupture %}
                                     <span class="stock-zero"><i class="fas fa-times-circle"></i> Rupture</span>
-                                {% elif article.quantite_stock <= article.seuil_alerte %}
-                                    <span class="stock-bas"><i class="fas fa-exclamation-triangle"></i> {{ article.quantite_stock }}</span>
+                                {% elif article.est_stock_bas %}
+                                    <span class="stock-bas"><i class="fas fa-exclamation-triangle"></i> {{ article.stock_disponible }}</span>
                                 {% else %}
-                                    <span class="stock-ok"><i class="fas fa-check-circle"></i> {{ article.quantite_stock }}</span>
+                                    <span class="stock-ok"><i class="fas fa-check-circle"></i> {{ article.stock_disponible }}</span>
                                 {% endif %}
                             </td>
                             <td><span class="badge-statut statut-{{ article.statut }}">{{ article.get_statut_display }}</span></td>
@@ -1187,7 +1187,7 @@ const MODAL_CONFIGS = {
     'prelevement': { titre: '👤 Prélèvement Propriétaire',        color: '#8e44ad', label: 'Enregistrer le prélèvement' },
 };
 
-const BAR_ARTICLES = [{% for b in boissons %}{ v: "{{ b.pk }}", t: "{{ b.nom|escapejs }}{% if b.reference %} [{{ b.reference|escapejs }}]{% endif %} — Stock: {{ b.quantite_stock }}" },{% endfor %}];
+const BAR_ARTICLES = [{% for b in boissons %}{ v: "{{ b.pk }}", t: "{{ b.nom|escapejs }}{% if b.reference %} [{{ b.reference|escapejs }}]{% endif %} — Stock: {{ b.stock_disponible }}" },{% endfor %}];
 
 function ajouterLigneMouvement(preselectId) {
     const div = document.createElement('div');
