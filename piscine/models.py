@@ -42,6 +42,11 @@ class AccesPiscine(models.Model):
         return self.prix_total + self.total_consommations
 
     @property
+    def prix_net_entree(self):
+        """Prix d'entrée après remise (affiché dans le tableau des clients)"""
+        return max(self.prix_total - self.remise_montant, 0)
+
+    @property
     def total_net(self):
         """Total après remise (entrée + consos - remise_montant)"""
         return max(self.total_general - self.remise_montant, 0)

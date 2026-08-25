@@ -748,7 +748,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
               🍶
               {% endif %}
               <span class="bc-stock-badge {% if b.est_en_rupture %}rupture{% elif b.est_stock_bas %}bas{% else %}ok{% endif %}">
-                {% if b.est_en_rupture %}Rupture{% elif b.est_stock_bas %}Stock bas{% else %}{{ b.quantite_stock }}{% endif %}
+                {% if b.est_en_rupture %}Rupture{% elif b.est_stock_bas %}Stock bas{% else %}{{ b.stock_disponible }}{% endif %}
               </span>
             </div>
             <div class="bc-body">
@@ -1319,6 +1319,12 @@ function chargerTicket(tid) {
 }
 
 function _chargerTicketInterne(tid) {
+  // Sauvegarder le serveur du ticket actif avant de basculer
+  if (ticketActifId && tickets[ticketActifId]) {
+    const sel = document.getElementById('selectServeur');
+    tickets[ticketActifId].serveur    = sel.value;
+    tickets[ticketActifId].serveur_id = sel.options[sel.selectedIndex]?.dataset?.id || null;
+  }
   ticketActifId = tid;
   document.querySelectorAll('.ticket-attente-btn').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.tid) === tid);

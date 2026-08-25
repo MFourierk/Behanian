@@ -205,9 +205,9 @@
               </td>
               <td><span class="badge {% if a.type_client == 'visiteur' %}b-visiteur{% else %}b-heberge{% endif %}">{{ a.get_type_client_display }}</span></td>
               <td>{{ a.nombre_personnes }}</td>
-              <td>{{ a.prix_total|montant }} F</td>
+              <td>{{ a.prix_net_entree|montant }} F</td>
               <td>{{ a.consommations.count }} art. — {{ a.total_consommations|montant }} F</td>
-              <td style="font-weight:700;color:#2563eb">{{ a.total_general|montant }} F</td>
+              <td style="font-weight:700;color:#2563eb">{{ a.total_net|montant }} F</td>
               <td>{% if a.date_sortie %}<span class="badge" style="background:#f1f5f9;color:#64748b">Sorti</span>{% else %}<span class="badge" style="background:#dcfce7;color:#15803d">Présent</span>{% endif %}</td>
               <td>
                 <div style="display:flex;gap:4px">
