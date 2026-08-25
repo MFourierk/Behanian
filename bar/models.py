@@ -138,6 +138,14 @@ class BoissonBar(models.Model):
         verbose_name="Bouteille parente (si shot dérivé)"
     )
 
+    # Ingrédient secondaire — débité automatiquement à chaque vente (ex: cornet pour la glace)
+    ingredient_secondaire = models.ForeignKey(
+        'self', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='articles_utilisant',
+        verbose_name="Ingrédient secondaire (débité automatiquement)"
+    )
+    quantite_secondaire = models.IntegerField(default=1, verbose_name="Quantité débitée par vente")
+
     date_creation = models.DateTimeField(auto_now_add=True)
     date_modification = models.DateTimeField(auto_now=True)
 
@@ -233,6 +241,17 @@ class BoissonBar(models.Model):
                 serveur=serveur,
             )
 
+        # Déduction automatique de l'ingrédient secondaire (ex : cornet pour la glace)
+        if self.ingredient_secondaire_id:
+            MouvementStockBar.objects.create(
+                boisson_id=self.ingredient_secondaire_id,
+                type_mouvement='sortie',
+                quantite=self.quantite_secondaire * qty,
+                commentaire=f"{commentaire} [auto — {self.nom}]",
+                utilisateur=utilisateur,
+                serveur=serveur,
+            )
+
     def restock(self, qty, commentaire, utilisateur):
         """Remet du stock (retrait commande) : ml pour shot, bouteille pour normal."""
         if self.est_shot and self.shot_parent_id:
@@ -249,6 +268,16 @@ class BoissonBar(models.Model):
                 type_mouvement='entree',
                 quantite=qty,
                 commentaire=commentaire,
+                utilisateur=utilisateur,
+            )
+
+        # Restitution automatique de l'ingrédient secondaire
+        if self.ingredient_secondaire_id:
+            MouvementStockBar.objects.create(
+                boisson_id=self.ingredient_secondaire_id,
+                type_mouvement='entree',
+                quantite=self.quantite_secondaire * qty,
+                commentaire=f"{commentaire} [restitution — {self.nom}]",
                 utilisateur=utilisateur,
             )
 
