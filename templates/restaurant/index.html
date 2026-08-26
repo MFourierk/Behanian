@@ -29,11 +29,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 /* ===== LAYOUT TPE ===== */
 .tpe-wrap {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr clamp(320px, 30vw, 420px);
   height: calc(100vh - 60px);
   gap: 0;
   overflow: hidden;
 }
+.panel-catalogue { min-width: 0; }
 
 /* ===== PANNEAU GAUCHE ===== */
 .panel-catalogue {
@@ -363,8 +364,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .ticket-tabbar-nav:last-of-type { border-right: none; border-left: 1px solid rgba(255,255,255,0.08); }
 .ticket-tabbar-nav:hover { color: var(--cave-gold); background: rgba(201,168,76,0.08); }
 .tickets-attente {
-  flex: 1; display: flex; gap: 6px; overflow-x: hidden; padding: 6px 8px;
+  flex: 1; display: flex; gap: 6px; overflow-x: auto; padding: 6px 8px;
+  scrollbar-width: none;
 }
+.tickets-attente::-webkit-scrollbar { display: none; }
 .ticket-attente-btn {
   flex-shrink: 0; padding: 5px 8px 5px 12px;
   background: rgba(201,168,76,0.12); border: 1.5px solid rgba(201,168,76,0.35);
@@ -675,6 +678,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .toast.info    { background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet)); }
 
 /* ===== RESPONSIVE MOBILE ===== */
+@media (max-width: 1200px) {
+  .articles-grid  { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .tables-grid    { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .ticket-header  { padding: 10px 14px; }
+  .ticket-footer  { padding: 10px 14px; }
+  .ticket-lignes  { padding: 10px 14px; }
+  .paiement-grid  { grid-template-columns: 1fr; }
+  .cat-header     { padding: 10px 14px 0; }
+}
 @media (max-width: 768px) {
   .tpe-wrap {
     grid-template-columns: 1fr;

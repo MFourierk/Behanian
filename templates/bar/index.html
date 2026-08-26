@@ -29,11 +29,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 /* ===== LAYOUT TPE ===== */
 .tpe-wrap {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr clamp(320px, 30vw, 420px);
   height: calc(100vh - 60px);
   gap: 0;
   overflow: hidden;
 }
+.panel-catalogue { min-width: 0; }
 
 /* ===== PANNEAU GAUCHE — CATALOGUE ===== */
 .panel-catalogue {
@@ -504,6 +505,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 .toast.info    { background: linear-gradient(135deg, var(--cave-purple), var(--cave-violet)); }
 
 /* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .cat-header   { padding: 10px 14px 0; }
+  .articles-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .ticket-header { padding: 10px 14px; }
+  .ticket-footer { padding: 10px 14px; }
+  .ticket-lignes { padding: 10px 14px; }
+  .paiement-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 900px) {
   .tpe-wrap { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   .panel-ticket { max-height: 55vh; }
