@@ -1771,13 +1771,25 @@ def api_ajuster_stock_tpe(request):
     Ajustement de stock en temps réel depuis le TPE Cave (+/- article).
     delta > 0 : sortie (déduction)  — bloque si stock insuffisant
     delta < 0 : entrée (restauration) — toujours autorisé
+    Articles shot/tournée : validation uniquement (déduction ml faite à l'enregistrement de la vente).
     """
     try:
-        data      = json.loads(request.body)
+        data       = json.loads(request.body)
         boisson_id = int(data['boisson_id'])
         delta      = int(data['delta'])
         session_token = data.get('session_token', '')
 
+        # Articles shot/tournée : stock_disponible calculé en ml, déduction réelle à la vente
+        boisson = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=boisson_id)
+        if boisson.est_shot and boisson.shot_parent_id:
+            if delta > 0 and boisson.stock_disponible < delta:
+                return JsonResponse({
+                    'ok': False,
+                    'error': f"{boisson.nom} : stock insuffisant ({boisson.stock_disponible} disponible)"
+                })
+            return JsonResponse({'ok': True, 'stock': boisson.stock_disponible})
+
+        # Articles normaux : ajustement temps réel via MouvementStockBar
         with transaction.atomic():
             boisson = BoissonBar.objects.select_for_update().get(pk=boisson_id)
             if delta > 0:
@@ -1844,33 +1856,34 @@ def api_vente_create(request):
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
 
-        # Vérification stock avant toute transaction (ignorée si déjà prélevé en temps réel)
-        if not stock_live:
-            manques = []
-            for l in lignes:
-                try:
-                    b = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=int(l['id']))
-                    qty = int(l['qty'])
-                    if b.est_shot and b.shot_parent_id:
-                        # Vérification en ml pour les shots
-                        try:
-                            param = b.shot_parent.parametrage_shot
-                            ml_total = Decimal(b.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
-                            ml_requis = Decimal(b.shot_ml or 30) * qty
-                            if ml_requis > ml_total:
-                                manques.append(f"• {b.nom} : {int(ml_total)} ml disponibles / {int(ml_requis)} ml requis")
-                        except ParametrageShot.DoesNotExist:
-                            manques.append(f"• {b.nom} : paramétrage shot introuvable")
-                    elif b.quantite_stock < qty:
-                        manques.append(f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé")
-                except BoissonBar.DoesNotExist:
-                    manques.append(f"• Article introuvable (id={l['id']})")
-            if manques:
-                return JsonResponse({
-                    'ok': False,
-                    'error': "Vente bloquée — stock insuffisant :",
-                    'details': manques,
-                }, status=400)
+        # Vérification stock avant toute transaction
+        # Pour les articles normaux, ignorée si déjà prélevée en temps réel (stock_live=True)
+        # Pour les shots/tournées, toujours vérifiée (api_ajuster_stock_tpe ne décompte pas le ml)
+        manques = []
+        for l in lignes:
+            try:
+                b = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=int(l['id']))
+                qty = int(l['qty'])
+                if b.est_shot and b.shot_parent_id:
+                    # Vérification en ml pour les shots (toujours, même en mode stock_live)
+                    try:
+                        param = b.shot_parent.parametrage_shot
+                        ml_total = Decimal(b.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+                        ml_requis = Decimal(b.shot_ml or 30) * qty
+                        if ml_requis > ml_total:
+                            manques.append(f"• {b.nom} : {int(ml_total)} ml disponibles / {int(ml_requis)} ml requis")
+                    except ParametrageShot.DoesNotExist:
+                        manques.append(f"• {b.nom} : paramétrage shot introuvable")
+                elif not stock_live and b.quantite_stock < qty:
+                    manques.append(f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé")
+            except BoissonBar.DoesNotExist:
+                manques.append(f"• Article introuvable (id={l['id']})")
+        if manques:
+            return JsonResponse({
+                'ok': False,
+                'error': "Vente bloquée — stock insuffisant :",
+                'details': manques,
+            }, status=400)
 
         # Map mode paiement TPE -> choix Ticket facturation
         operateur_mobile = data.get('operateur_mobile', '')
@@ -1959,13 +1972,15 @@ def api_vente_create(request):
                         prix_unitaire=Decimal(str(l['prix'])),
                         serveur=serveur_obj,
                     )
-                    # Décrémenter stock (ignoré si déjà prélevé en temps réel)
-                    if boisson_obj and not stock_live:
+                    # Décrémenter stock
+                    # Shots/tournées : toujours décompté (ml_en_cours non géré en temps réel)
+                    # Articles normaux : ignoré si déjà prélevé en temps réel (stock_live=True)
+                    if boisson_obj:
                         qty = int(l['qty'])
                         cmt_ch = f'Cave → Chambre {reservation.chambre.numero}'
                         if boisson_obj.est_shot and boisson_obj.shot_parent_id:
                             _appliquer_deduction_shot(boisson_obj, qty, cmt_ch, request.user, serveur_obj)
-                        else:
+                        elif not stock_live:
                             MouvementStockBar.objects.create(
                                 boisson=boisson_obj, type_mouvement='sortie',
                                 quantite=qty, commentaire=cmt_ch,
@@ -2054,28 +2069,29 @@ def api_vente_create(request):
                 ]
             ).update(commentaire=_cmt)
 
-        # Decrementer stock + tracer mouvements (ignoré si déjà prélevé en temps réel)
+        # Decrementer stock + tracer mouvements
+        # Articles normaux : ignoré si déjà prélevé en temps réel (stock_live=True)
+        # Articles shot/tournée : toujours décompté ici (ml_en_cours non géré en temps réel)
         erreurs_stock = []
-        if not stock_live:
-            for l in lignes:
-                try:
-                    boisson = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=int(l['id']))
-                    qty     = int(l['qty'])
-                    cmt     = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -')
-                    if boisson.est_shot and boisson.shot_parent_id:
-                        # Logique ml pour articles shot dérivés
-                        _appliquer_deduction_shot(boisson, qty, cmt, request.user, serveur_obj)
-                    else:
-                        MouvementStockBar.objects.create(
-                            boisson        = boisson,
-                            type_mouvement = 'sortie',
-                            quantite       = qty,
-                            commentaire    = cmt,
-                            utilisateur    = request.user,
-                            serveur        = serveur_obj,
-                        )
-                except BoissonBar.DoesNotExist:
-                    erreurs_stock.append(f"Article id={l['id']} introuvable")
+        for l in lignes:
+            try:
+                boisson = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=int(l['id']))
+                qty     = int(l['qty'])
+                cmt     = f"Vente TPE - {ticket.numero} - {espace_label} {ref}".strip(' -')
+                if boisson.est_shot and boisson.shot_parent_id:
+                    # Logique ml pour articles shot/tournée (jamais prélevé en temps réel)
+                    _appliquer_deduction_shot(boisson, qty, cmt, request.user, serveur_obj)
+                elif not stock_live:
+                    MouvementStockBar.objects.create(
+                        boisson        = boisson,
+                        type_mouvement = 'sortie',
+                        quantite       = qty,
+                        commentaire    = cmt,
+                        utilisateur    = request.user,
+                        serveur        = serveur_obj,
+                    )
+            except BoissonBar.DoesNotExist:
+                erreurs_stock.append(f"Article id={l['id']} introuvable")
 
         return JsonResponse({
             'ok'            : True,
