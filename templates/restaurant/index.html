@@ -2355,6 +2355,10 @@ function chargerTicket(tid) {
 }
 
 function _chargerTicketInterne(tid) {
+  // Sauvegarder le serveur du ticket actif avant de basculer
+  if (ticketActifId && tickets[ticketActifId]) {
+    tickets[ticketActifId].serveur = document.getElementById('selectServeur').value;
+  }
   ticketActifId = tid;
   document.querySelectorAll('.ticket-attente-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.tid) === tid));
   const t = tickets[tid];
@@ -2786,7 +2790,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       ticketCounter++;
       const tid = ticketCounter;
       const label = 'Table {{ cmd.table.numero|escapejs }}';
-      tickets[tid] = { id: tid, nom: label, tableId: {{ cmd.table.id }}, tableNum: '{{ cmd.table.numero|escapejs }}', client: data.commande.client || '', serveur: '', lignes: data.commande.items, total: data.commande.total, commandeDbId: {{ cmd.id }}, paiement: 'especes' };
+      tickets[tid] = { id: tid, nom: label, tableId: {{ cmd.table.id }}, tableNum: '{{ cmd.table.numero|escapejs }}', client: data.commande.client || '', serveur: data.commande.serveur || '', lignes: data.commande.items, total: data.commande.total, commandeDbId: {{ cmd.id }}, paiement: 'especes' };
       const totalFmt = formatF(data.commande.total);
       ajouterBoutonTicket(tid, label + ' · ' + totalFmt);
     } catch(e) {}
