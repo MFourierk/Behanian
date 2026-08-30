@@ -55,6 +55,7 @@ urlpatterns = [
     path('api/resume-ventes/', views.resume_ventes_cave, name='resume_ventes_cave'),
     path('api/ajuster-stock-tpe/', views.api_ajuster_stock_tpe, name='api_ajuster_stock_tpe'),
     path('rapport/stock/', views.rapport_stock_cave, name='rapport_stock'),
+    path('stock/fiche-comptage/', views.fiche_comptage, name='fiche_comptage'),
     path('stock/etat-stock/print/', views.etat_stock_print_bar, name='etat_stock_print'),
     path('stock/etat-stock/excel/', views.etat_stock_excel_bar, name='etat_stock_excel'),
     path('stock/etat-date/', views.etat_stock_date_bar, name='etat_stock_date'),

@@ -66,7 +66,7 @@ urlpatterns = [
     path('casses/nouveau/', views.casse_create, name='casse_create'),
     path('casses/<int:pk>/valider/', views.casse_valider, name='casse_valider'),
 
-    # AJAX
+    # Rapports et états
     path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('etat-stock/print/', views.etat_stock_print, name='etat_stock_print'),
     path('etat-stock/excel/', views.etat_stock_excel, name='etat_stock_excel'),
@@ -76,8 +76,9 @@ urlpatterns = [
     path('mouvements/imprimer/', views.mouvements_print_cuisine, name='mouvements_print'),
     path('mouvements/document/', views.mouvements_doc_cuisine, name='mouvements_doc'),
     path('mouvements/excel/', views.mouvements_excel_cuisine, name='mouvements_excel'),
+    path('stock/fiche-comptage/', views.fiche_comptage, name='fiche_comptage'),
+    # AJAX
     path('api/ingredient/<int:pk>/prix/', views.get_ingredient_prix, name='get_ingredient_prix'),
-    path('rapport/stock/', views.rapport_stock_cuisine, name='rapport_stock'),
     path('api/commande/<int:pk>/lignes/', views.get_bc_lignes, name='get_bc_lignes'),
     path('epuration/', views.epurer_plats, name='epuration'),
 

@@ -1,0 +1,168 @@
+{% extends 'print_base.html' %}
+{% load static %}
+
+{% block doc_title %}Fiche de Comptage Cuisine{% endblock %}
+
+{% block content %}
+<style>
+.band-top { background: linear-gradient(90deg,#1a2535 0%,#c0392b 60%,#1a2535 100%); }
+.cat-header {
+    background:#1a2535; color:#e8c96d; font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.8px;
+    padding:6px 12px; margin-top:10px; border-radius:4px;
+}
+.comptage-table { width:100%; border-collapse:collapse; margin-top:4px; }
+.comptage-table thead th {
+    background:#f0f4f8; font-size:9px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.5px; color:#4a5568; padding:6px 8px;
+    border-bottom:2px solid #1a2535; text-align:left;
+}
+.comptage-table tbody tr { border-bottom:1px solid #e0e6ed; }
+.comptage-table tbody tr:last-child { border-bottom:none; }
+.comptage-table tbody td { padding:7px 8px; font-size:10px; color:#1a2535; vertical-align:middle; }
+.ref-cell { font-family:monospace; font-size:9px; color:#c0392b; font-weight:700; }
+.qte-box {
+    width:80px; height:24px; border:1.5px solid #bdc3c7;
+    border-radius:4px; display:inline-block; background:white;
+}
+.stock-th { font-size:9.5px; font-weight:700; color:#c0392b; }
+.signature-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:18px; }
+.sig-box { border-top:1.5px solid #1a2535; padding-top:6px; font-size:9px; color:#4a5568; }
+.sig-label { font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:20px; }
+@media print {
+    @page { size:A4; margin:10mm; }
+    .no-print { display:none; }
+    .comptage-table tbody tr { page-break-inside:avoid; }
+}
+</style>
+
+<div class="page">
+    <div class="band-top"></div>
+    <div class="band-gold"></div>
+
+    <!-- EN-TÊTE -->
+    <div class="doc-header">
+        <div class="logo-zone">
+            <img src="{% static 'images/logo.png' %}" alt="Logo Behanian">
+        </div>
+        <div class="company-block">
+            <div class="company-name">COMPLEXE HÔTELIER <span>BEHANIAN</span></div>
+            <div class="company-tagline">Excellence et hospitalité au cœur de l'Afrique</div>
+            <div class="company-coords">
+                <strong>Département :</strong> Cuisine<br>
+                <strong>Responsable :</strong> ___________________________
+            </div>
+        </div>
+    </div>
+    <div class="band-gold"></div>
+
+    <!-- BANDEAU TITRE -->
+    <div class="doc-title-band">
+        <div>
+            <div class="doc-title-text">Fiche de Comptage — Inventaire Physique Cuisine</div>
+            <div class="doc-title-sub">Réservé à l'usage interne — ne pas diffuser</div>
+        </div>
+        <div class="doc-title-right">
+            <div style="text-align:right;">
+                <div style="font-size:10px;font-weight:700;color:#4a5568;">Date de comptage</div>
+                <div style="font-size:13px;font-weight:800;color:#1a2535;border:1.5px solid #c9a84c;border-radius:6px;padding:3px 14px;margin-top:3px;">
+                    {{ date_impression|date:"d/m/Y" }}
+                </div>
+                <div style="font-size:9px;color:#7a8b9c;margin-top:3px;">Imprimé le {{ date_impression|date:"d/m/Y à H\hi" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INSTRUCTION -->
+    <div style="padding:8px 30px;background:#fef9e7;border-bottom:1px solid #e0e6ed;">
+        <span style="font-size:9.5px;color:#856404;font-weight:600;">&#9432; Instructions :</span>
+        <span style="font-size:9px;color:#856404;">
+            Comptez physiquement chaque ingrédient et notez la quantité réelle dans la colonne <strong>« Qté comptée »</strong>.
+            Le champ <em>Stock théorique</em> est fourni à titre indicatif — ne le copiez pas.
+            Signez en bas de la fiche à la fin du comptage.
+        </span>
+    </div>
+
+    <!-- CONTENU PAR CATÉGORIE -->
+    <div class="content-section" style="padding:8px 30px;">
+        {% regroup ingredients by categorie as cat_groups %}
+        {% for group in cat_groups %}
+        <div class="cat-header">
+            <i>&#9632;</i>
+            {% if group.grouper %}{{ group.grouper.nom|upper }}{% else %}SANS CATÉGORIE{% endif %}
+            &nbsp;<span style="font-weight:400;font-size:9px;opacity:.8;">({{ group.list|length }} article{{ group.list|length|pluralize }})</span>
+        </div>
+        <table class="comptage-table">
+            <thead>
+                <tr>
+                    <th style="width:90px;">Référence</th>
+                    <th>Désignation</th>
+                    <th style="width:55px;text-align:center;">Unité</th>
+                    <th style="width:80px;text-align:center;" class="stock-th">Stock théorique</th>
+                    <th style="width:100px;text-align:center;">Qté comptée</th>
+                    <th style="width:90px;">Observations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ing in group.list %}
+                <tr>
+                    <td class="ref-cell">{{ ing.reference|default:"—" }}</td>
+                    <td style="font-weight:600;">{{ ing.nom }}</td>
+                    <td style="text-align:center;font-size:9.5px;color:#4a5568;">
+                        {% if ing.unite_stock %}{{ ing.unite_stock.abreviation }}{% else %}—{% endif %}
+                    </td>
+                    <td style="text-align:center;font-size:10px;color:#c0392b;font-weight:700;">
+                        {{ ing.quantite_stock|floatformat:2 }}
+                    </td>
+                    <td style="text-align:center;">
+                        <div class="qte-box"></div>
+                    </td>
+                    <td style="font-size:8.5px;color:#aaa;border-left:1px dashed #e0e6ed;padding-left:6px;">
+                        &nbsp;
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% empty %}
+        <p style="text-align:center;padding:20px;color:#7a8b9c;">Aucun ingrédient actif.</p>
+        {% endfor %}
+
+        <!-- RÉSUMÉ -->
+        <div style="margin-top:14px;padding:10px 14px;background:#f0f4f8;border-radius:6px;display:flex;justify-content:space-between;font-size:10px;">
+            <span style="font-weight:700;color:#1a2535;">Total ingrédients à compter :</span>
+            <span style="font-weight:800;color:#c0392b;font-size:13px;">{{ ingredients|length }}</span>
+        </div>
+
+        <!-- SIGNATURES -->
+        <div class="signature-grid">
+            <div class="sig-box">
+                <div class="sig-label">Responsable du comptage</div>
+                <div style="margin-top:6px;font-size:9px;color:#7a8b9c;">Nom : ______________________________</div>
+                <div style="margin-top:4px;font-size:9px;color:#7a8b9c;">Signature :</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-label">Visé par (Chef Cuisinier)</div>
+                <div style="margin-top:6px;font-size:9px;color:#7a8b9c;">Nom : ______________________________</div>
+                <div style="margin-top:4px;font-size:9px;color:#7a8b9c;">Signature :</div>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;padding:10px 14px;background:#f8f9fb;border:1px solid #e0e6ed;border-radius:6px;font-size:9px;color:#6b7a8d;">
+            Cette fiche est un document comptable interne du Complexe Hôtelier Behanian. Toute discordance entre le stock théorique et le stock compté doit être signalée et justifiée. Conserver 1 an minimum.
+        </div>
+    </div>
+
+    <div class="band-gold"></div>
+    <div class="band-top" style="height:4px;"></div>
+</div>
+
+<div class="no-print" style="text-align:center;margin-top:20px;">
+    <button onclick="window.print()" style="padding:12px 28px;background:#c0392b;color:white;border:none;border-radius:8px;font-weight:700;font-size:1rem;cursor:pointer;">
+        &#128438; Imprimer la fiche
+    </button>
+    <a href="javascript:history.back()" style="margin-left:12px;padding:12px 20px;background:#f0f0f0;color:#333;border:none;border-radius:8px;font-weight:600;font-size:0.95rem;text-decoration:none;display:inline-block;">
+        ← Retour
+    </a>
+</div>
+{% endblock %}

@@ -187,8 +187,54 @@ def stock_management(request):
         'mv_casses_mois': mv_casses_mois,
         'mv_total_mois': mv_total_mois,
         'is_manager': _is_manager_bar(request.user),
+        # Analyse des ventes
+        'ventes_par_module': _ventes_par_module_cave(),
+        'top_articles_cave': list(
+            MouvementStockBar.objects
+            .filter(type_mouvement__in=['sortie', 'prelevement'])
+            .values('boisson__nom', 'boisson__reference', 'boisson__categorie__nom')
+            .annotate(total_qte=Sum('quantite'))
+            .order_by('-total_qte')[:15]
+        ),
+        'ventes_cat_cave': list(
+            MouvementStockBar.objects
+            .filter(type_mouvement__in=['sortie', 'prelevement'])
+            .values('boisson__categorie__nom')
+            .annotate(total_qte=Sum('quantite'))
+            .order_by('-total_qte')
+        ),
     }
     return render(request, 'bar/stock_management.html', context)
+
+
+def _ventes_par_module_cave():
+    """Agrège les sorties de stock cave par module source (via le commentaire)."""
+    from collections import defaultdict
+    sorties = (MouvementStockBar.objects
+               .filter(type_mouvement__in=['sortie', 'prelevement'])
+               .values('commentaire', 'quantite', 'boisson__prix_achat'))
+    _vpm = defaultdict(lambda: {'qte': 0, 'valeur': 0, 'nb': 0})
+    for mv in sorties:
+        cmt = (mv['commentaire'] or '').lower()
+        if 'restaurant' in cmt:
+            module = 'Restaurant'
+        elif 'piscine' in cmt:
+            module = 'Piscine'
+        elif 'tpe' in cmt or 'vente cave' in cmt:
+            module = 'Cave TPE'
+        elif 'chambre' in cmt or 'hôtel' in cmt or 'hotel' in cmt or 'sur chambre' in cmt:
+            module = 'Hôtel'
+        else:
+            module = 'Manuel / Autre'
+        _vpm[module]['qte'] += mv['quantite']
+        _vpm[module]['valeur'] += mv['quantite'] * float(mv['boisson__prix_achat'] or 0)
+        _vpm[module]['nb'] += 1
+    total_qte = sum(v['qte'] for v in _vpm.values()) or 1
+    return [
+        {'module': k, 'qte': v['qte'], 'valeur': v['valeur'], 'nb': v['nb'],
+         'pct': round(v['qte'] * 100 / total_qte)}
+        for k, v in sorted(_vpm.items(), key=lambda x: -x[1]['qte'])
+    ]
 
 
 # ===== ARTICLES =====
@@ -799,6 +845,23 @@ def mouvement_create(request):
             messages.success(request, f"{nb} mouvement(s) enregistré(s).")
 
     return redirect(reverse('bar:stock_management') + '?tab=mouvements')
+
+
+# ===== FICHE DE COMPTAGE =====
+
+@require_module_access('bar')
+@require_bar_gestion
+def fiche_comptage(request):
+    """Fiche de comptage vierge pour l'inventaire physique terrain."""
+    boissons = (BoissonBar.objects
+                .filter(statut='actif', est_shot=False)
+                .select_related('categorie')
+                .order_by('categorie__nom', 'nom'))
+    return render(request, 'bar/fiche_comptage.html', {
+        'page_title': 'Fiche de Comptage — Cave',
+        'boissons': boissons,
+        'date_impression': timezone.now(),
+    })
 
 
 # ===== INVENTAIRE =====

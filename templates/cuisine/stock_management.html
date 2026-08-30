@@ -248,6 +248,9 @@
         <button class="tab-btn" onclick="showTab('casses', this)">
             <i class="fas fa-exclamation-triangle"></i> Casses / Pertes
         </button>
+        <button class="tab-btn" onclick="showTab('analyse', this)">
+            <i class="fas fa-chart-pie"></i> Analyse des sorties
+        </button>
     </div>
 
     <!-- ===== ONGLET : TABLEAU DE BORD ===== -->
@@ -763,13 +766,18 @@
     <!-- ===== ONGLET : INVENTAIRE ===== -->
     <div id="tab-inventaire" class="tab-content">
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
             <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
                 <i class="fas fa-clipboard-list" style="color:#c0392b;"></i> Inventaires Physiques
             </div>
-            <a href="{% url 'cuisine:inventaire_create' %}" class="btn-red">
-                <i class="fas fa-plus"></i> Nouvel Inventaire
-            </a>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <a href="{% url 'cuisine:fiche_comptage' %}" class="btn-red" style="background:linear-gradient(135deg,#27ae60,#2ecc71);" target="_blank">
+                    <i class="fas fa-print"></i> Fiche de comptage terrain
+                </a>
+                <a href="{% url 'cuisine:inventaire_create' %}" class="btn-red">
+                    <i class="fas fa-plus"></i> Nouvel Inventaire
+                </a>
+            </div>
         </div>
 
         <div class="table-card">
@@ -932,6 +940,144 @@
         </form>
     </div>
 </div>
+
+    <!-- ===== ONGLET : ANALYSE DES SORTIES ===== -->
+    <div id="tab-analyse" class="tab-content">
+
+        <!-- Boutons d'accès rapide -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+            <a href="{% url 'cuisine:etat_stock_date' %}" class="btn-red" style="background:linear-gradient(135deg,#1a6fa8,#2980b9);">
+                <i class="fas fa-calendar-check"></i> État du stock à une période
+            </a>
+            <a href="{% url 'cuisine:etat_stock_print' %}" class="btn-red" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">
+                <i class="fas fa-print"></i> État du stock instantané
+            </a>
+            <a href="{% url 'cuisine:fiche_comptage' %}" class="btn-red" target="_blank">
+                <i class="fas fa-clipboard-list"></i> Fiche de comptage terrain
+            </a>
+            <a href="{% url 'cuisine:mouvements_print' %}" class="btn-red" style="background:linear-gradient(135deg,#2c3e50,#34495e);">
+                <i class="fas fa-exchange-alt"></i> Journal des mouvements
+            </a>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+
+            <!-- Sorties par type -->
+            <div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                <div class="panel-title" style="margin-bottom:18px;">
+                    <i class="fas fa-sitemap" style="color:#c0392b;"></i> Consommations par type de sortie
+                    <span style="font-size:0.78rem;font-weight:400;color:#7f8c8d;margin-left:6px;">(depuis l'ouverture)</span>
+                </div>
+                {% if sorties_par_type %}
+                {% for st in sorties_par_type %}
+                <div style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <span style="font-weight:700;font-size:0.9rem;color:#2c3e50;">
+                            {% if st.type == 'production' %}<i class="fas fa-fire" style="color:#e74c3c;width:16px;"></i>
+                            {% elif st.type == 'casse' %}<i class="fas fa-exclamation-triangle" style="color:#e67e22;width:16px;"></i>
+                            {% elif st.type == 'inventaire_manquant' %}<i class="fas fa-clipboard-list" style="color:#3498db;width:16px;"></i>
+                            {% else %}<i class="fas fa-arrow-up" style="color:#c0392b;width:16px;"></i>{% endif %}
+                            {{ st.label }}
+                        </span>
+                        <span style="font-size:0.82rem;color:#7f8c8d;">
+                            <strong style="color:#2c3e50;">{{ st.qte|floatformat:2 }}</strong> &nbsp;|&nbsp;
+                            <strong style="color:#c0392b;">{{ st.pct }}%</strong>
+                        </span>
+                    </div>
+                    <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                        <div style="height:100%;border-radius:4px;width:{{ st.pct }}%;
+                            background:{% if st.type == 'production' %}#c0392b{% elif st.type == 'casse' %}#e67e22{% elif st.type == 'inventaire_manquant' %}#3498db{% else %}#e74c3c{% endif %};">
+                        </div>
+                    </div>
+                    <div style="font-size:0.78rem;color:#7f8c8d;margin-top:2px;">
+                        Valeur estimée : <strong>{{ st.valeur|floatformat:0 }} FCFA</strong>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="text-align:center;padding:30px;color:#7f8c8d;">
+                    <i class="fas fa-chart-pie" style="font-size:2rem;color:#fadbd8;margin-bottom:10px;display:block;"></i>
+                    <p>Aucune sortie enregistrée pour l'instant.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Par catégorie d'ingrédient -->
+            <div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                <div class="panel-title" style="margin-bottom:18px;">
+                    <i class="fas fa-layer-group" style="color:#c0392b;"></i> Consommations par catégorie
+                </div>
+                {% if sorties_par_categorie %}
+                {% for sc in sorties_par_categorie %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;">
+                    <span style="font-weight:600;font-size:0.88rem;color:#2c3e50;">
+                        {{ sc.ingredient__categorie__nom|default:"Sans catégorie" }}
+                    </span>
+                    <span style="background:#fdecea;color:#c0392b;padding:4px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;">
+                        {{ sc.total_qte|floatformat:2 }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="text-align:center;padding:30px;color:#7f8c8d;">
+                    <i class="fas fa-layer-group" style="font-size:2rem;color:#fadbd8;margin-bottom:10px;display:block;"></i>
+                    <p>Aucune donnée disponible.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Top ingrédients consommés -->
+        <div style="background:white;border-radius:16px;padding:24px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <div class="panel-title" style="margin-bottom:0;">
+                    <i class="fas fa-trophy" style="color:#e67e22;"></i> Top ingrédients consommés (sorties cumulées)
+                </div>
+                <a href="{% url 'cuisine:rapport_stock' %}" class="btn-red" style="font-size:0.82rem;padding:7px 14px;">
+                    <i class="fas fa-chart-bar"></i> Rapport complet
+                </a>
+            </div>
+            {% if top_ingredients %}
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f8f9fa;">
+                            <th style="padding:10px 14px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7f8c8d;text-align:left;">#</th>
+                            <th style="padding:10px 14px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7f8c8d;text-align:left;">Référence</th>
+                            <th style="padding:10px 14px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7f8c8d;text-align:left;">Désignation</th>
+                            <th style="padding:10px 14px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7f8c8d;text-align:left;">Catégorie</th>
+                            <th style="padding:10px 14px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7f8c8d;text-align:right;">Qté consommée</th>
+                            <th style="padding:10px 14px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7f8c8d;">Unité</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ing in top_ingredients %}
+                        <tr style="border-bottom:1px solid #f5f5f5;">
+                            <td style="padding:10px 14px;font-size:0.88rem;font-weight:700;color:{% if forloop.counter == 1 %}#e67e22{% elif forloop.counter == 2 %}#7f8c8d{% elif forloop.counter == 3 %}#c9a84c{% else %}#bdc3c7{% endif %};">{{ forloop.counter }}</td>
+                            <td style="padding:10px 14px;font-family:monospace;font-size:0.78rem;color:#c0392b;font-weight:700;">{{ ing.ingredient__reference|default:"—" }}</td>
+                            <td style="padding:10px 14px;font-weight:700;color:#2c3e50;">{{ ing.ingredient__nom }}</td>
+                            <td style="padding:10px 14px;">
+                                {% if ing.ingredient__categorie__nom %}
+                                <span style="background:#fdecea;color:#c0392b;padding:3px 9px;border-radius:20px;font-size:0.78rem;font-weight:600;">{{ ing.ingredient__categorie__nom }}</span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td style="padding:10px 14px;text-align:right;font-weight:700;font-size:1rem;color:{% if forloop.counter <= 3 %}#c0392b{% else %}#2c3e50{% endif %};">
+                                {{ ing.total_qte|floatformat:2 }}
+                            </td>
+                            <td style="padding:10px 14px;font-size:0.85rem;color:#7f8c8d;">{{ ing.ingredient__unite_stock__abreviation|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="text-align:center;padding:40px;color:#7f8c8d;">
+                <i class="fas fa-trophy" style="font-size:2.5rem;color:#fadbd8;margin-bottom:12px;display:block;"></i>
+                <p>Aucune consommation enregistrée.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
 <script>
 // Gestion des onglets

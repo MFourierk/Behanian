@@ -128,8 +128,53 @@ def stock_management(request):
         # Inventaires & Casses
         'inventaires':    inventaires,
         'casses':         casses,
+        # Analyse des sorties
+        'sorties_par_type': _sorties_par_type_cuisine(),
+        'top_ingredients': list(
+            MouvementStockCuisine.objects
+            .filter(type_mouvement__in=['sortie', 'casse', 'production'])
+            .values('ingredient__nom', 'ingredient__reference', 'ingredient__categorie__nom',
+                    'ingredient__unite_stock__abreviation')
+            .annotate(total_qte=Sum('quantite'))
+            .order_by('-total_qte')[:15]
+        ),
+        'sorties_par_categorie': list(
+            MouvementStockCuisine.objects
+            .filter(type_mouvement__in=['sortie', 'casse', 'production'])
+            .values('ingredient__categorie__nom')
+            .annotate(total_qte=Sum('quantite'))
+            .order_by('-total_qte')
+        ),
+        'fiches_count': FicheTechnique.objects.filter(statut='active').count(),
     }
     return render(request, 'cuisine/stock_management.html', context)
+
+
+def _sorties_par_type_cuisine():
+    """Agrège les sorties cuisine par type de mouvement."""
+    from collections import defaultdict
+    LABELS = {
+        'sortie': 'Sortie manuelle',
+        'casse': 'Casse / Perte',
+        'production': 'Production (recette)',
+        'inventaire_manquant': 'Inventaire — Manquant',
+    }
+    sorties = (MouvementStockCuisine.objects
+               .filter(type_mouvement__in=['sortie', 'casse', 'production', 'inventaire_manquant'])
+               .values('type_mouvement', 'quantite', 'ingredient__prix_achat'))
+    _spt = defaultdict(lambda: {'qte': 0, 'valeur': 0, 'nb': 0})
+    for mv in sorties:
+        t = mv['type_mouvement']
+        _spt[t]['qte'] += float(mv['quantite'])
+        _spt[t]['valeur'] += float(mv['quantite']) * float(mv['ingredient__prix_achat'] or 0)
+        _spt[t]['nb'] += 1
+    total_qte = sum(v['qte'] for v in _spt.values()) or 1
+    return [
+        {'type': k, 'label': LABELS.get(k, k), 'qte': v['qte'],
+         'valeur': v['valeur'], 'nb': v['nb'],
+         'pct': round(v['qte'] * 100 / total_qte)}
+        for k, v in sorted(_spt.items(), key=lambda x: -x[1]['qte'])
+    ]
 
 
 # ==============================================================================
@@ -934,6 +979,24 @@ def fournisseur_delete(request, pk):
         messages.success(request, f"Fournisseur '{f.nom}' désactivé.")
         return redirect('/cuisine/fournisseurs/')
     return render(request, 'cuisine/fournisseur_confirm_delete.html', {'fournisseur': f})
+
+
+# ==============================================================================
+# FICHE DE COMPTAGE
+# ==============================================================================
+
+@require_module_access('cuisine')
+def fiche_comptage(request):
+    """Fiche de comptage vierge pour l'inventaire physique terrain."""
+    ingredients = (Ingredient.objects
+                   .filter(statut=True)
+                   .select_related('categorie', 'unite_stock')
+                   .order_by('categorie__nom', 'nom'))
+    return render(request, 'cuisine/fiche_comptage.html', {
+        'page_title': 'Fiche de Comptage — Cuisine',
+        'ingredients': ingredients,
+        'date_impression': timezone.now(),
+    })
 
 
 # ==============================================================================
