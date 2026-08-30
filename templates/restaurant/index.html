@@ -1534,27 +1534,39 @@ function selectionnerTable(tableId, tableNum, statut) {
 }
 
 function _selectionnerTableInterne(tableId, tableNum, statut) {
+  // Mise à jour visuelle de la carte table (toujours)
   document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('table-card-' + tableId)?.classList.add('selected');
   tableSelActif = { id: tableId, numero: tableNum };
-
   document.getElementById('tableSelbadge').style.display = 'flex';
   document.getElementById('tableSelLabel').textContent = 'Table ' + tableNum;
 
-  const t = tickets[ticketActifId];
-  t.tableId = tableId;
-  t.tableNum = tableNum;
-  document.getElementById('ticketNum').textContent = 'Table ' + tableNum;
-
   if (statut === 'occupee') {
+    // Chercher un ticket en attente déjà chargé pour cette table
+    const tidExistant = Object.keys(tickets).map(Number).find(tid => tickets[tid].tableId === tableId);
+    if (tidExistant !== undefined) {
+      // Basculer vers le ticket existant (serveur inclus)
+      _chargerTicketInterne(tidExistant);
+      toast('📋 Table ' + tableNum + ' — ticket en attente affiché', 'info');
+      switchView(document.querySelector('.nav-tab[data-view="plats"]'));
+      return;
+    }
+    // Aucun ticket local : charger depuis la BDD dans le ticket actif
+    const t = tickets[ticketActifId];
+    t.tableId = tableId;
+    t.tableNum = tableNum;
+    document.getElementById('ticketNum').textContent = 'Table ' + tableNum;
     chargerCommandeParTable(tableId);
     toast('📋 Table ' + tableNum + ' — commande en cours chargée', 'info');
     switchView(document.querySelector('.nav-tab[data-view="plats"]'));
   } else {
-    // Table libre : exiger sélection du serveur avant de commencer
+    // Table libre : affecter au ticket actif et demander le serveur
+    const t = tickets[ticketActifId];
+    t.tableId = tableId;
+    t.tableNum = tableNum;
+    document.getElementById('ticketNum').textContent = 'Table ' + tableNum;
     document.getElementById('modalServeurTitre').textContent = 'Qui prend la Table ' + tableNum + ' ?';
-    const modal = document.getElementById('modalServeur');
-    modal.style.display = 'flex';
+    document.getElementById('modalServeur').style.display = 'flex';
   }
 }
 
