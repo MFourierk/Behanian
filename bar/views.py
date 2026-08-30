@@ -62,7 +62,7 @@ def stock_management(request):
     boissons = BoissonBar.objects.filter(statut='actif', est_shot=False)
 
     total_articles = boissons.count()
-    valeur_stock = sum(b.prix_achat * b.quantite_stock for b in boissons)
+    valeur_stock = sum((b.cmup or b.prix_achat) * b.quantite_stock for b in boissons)
     stock_bas = boissons.filter(quantite_stock__lte=10, quantite_stock__gt=0).count()
     ruptures = boissons.filter(quantite_stock=0).count()
     commandes_en_cours = BonCommandeBar.objects.filter(statut__in=['brouillon', 'confirme', 'envoye', 'partiel']).count()
@@ -728,22 +728,25 @@ def bon_reception_valider(request, pk):
 
 
 def _valider_reception(br, user):
-    """Fonction interne : valider réception et mettre à jour stock + CMUP"""
+    """Valider réception → mise à jour stock + CMUP (Coût Moyen Unitaire Pondéré)."""
     for ligne in br.lignes.all():
         article = ligne.article
-        qte = ligne.quantite_recue
-        prix = ligne.prix_unitaire
+        qte = Decimal(str(ligne.quantite_recue))
+        prix = Decimal(str(ligne.prix_unitaire))
 
-        # Calcul CMUP
         if qte > 0 and prix > 0:
-            from decimal import Decimal
-            valeur_actuelle = article.quantite_stock * article.prix_achat
-            valeur_nouvelle = Decimal(str(qte)) * Decimal(str(prix))
-            nouvelle_qte = article.quantite_stock + int(qte)
+            # CMUP = (valeur stock actuel + valeur nouvelle entrée) / nouveau stock total
+            cmup_actuel = article.cmup if article.cmup else article.prix_achat
+            valeur_actuelle = Decimal(str(article.quantite_stock)) * cmup_actuel
+            valeur_nouvelle = qte * prix
+            nouvelle_qte = Decimal(str(article.quantite_stock)) + qte
             if nouvelle_qte > 0:
-                article.prix_achat = (valeur_actuelle + valeur_nouvelle) / Decimal(str(nouvelle_qte))
+                article.cmup = (valeur_actuelle + valeur_nouvelle) / nouvelle_qte
+            # Conserver le dernier prix d'achat réel (distinct du CMUP)
+            article.prix_achat = prix
+            article.save(update_fields=['cmup', 'prix_achat'])
 
-        # Mise à jour stock
+        # Mise à jour stock via le signal du modèle
         MouvementStockBar.objects.create(
             boisson=article,
             type_mouvement='entree',

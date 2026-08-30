@@ -77,6 +77,7 @@ urlpatterns = [
     path('mouvements/document/', views.mouvements_doc_cuisine, name='mouvements_doc'),
     path('mouvements/excel/', views.mouvements_excel_cuisine, name='mouvements_excel'),
     path('stock/fiche-comptage/', views.fiche_comptage, name='fiche_comptage'),
+    path('stock/food-cost/', views.food_cost, name='food_cost'),
     # AJAX
     path('api/ingredient/<int:pk>/prix/', views.get_ingredient_prix, name='get_ingredient_prix'),
     path('api/commande/<int:pk>/lignes/', views.get_bc_lignes, name='get_bc_lignes'),

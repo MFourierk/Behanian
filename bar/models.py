@@ -116,7 +116,8 @@ class BoissonBar(models.Model):
     image = models.ImageField(upload_to='boissons/', blank=True, null=True, verbose_name="Image")
 
     mode_prix = models.CharField(max_length=10, choices=MODE_PRIX_CHOICES, default='manuel', verbose_name="Mode de calcul du prix")
-    prix_achat = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix d'achat (FCFA)")
+    prix_achat = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Dernier prix d'achat (FCFA)")
+    cmup = models.DecimalField(max_digits=10, decimal_places=4, default=0, verbose_name="CMUP (Coût Moyen Unitaire Pondéré)")
     marge = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Marge (%)")
     prix = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix de vente (FCFA)")
 

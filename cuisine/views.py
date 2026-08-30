@@ -986,6 +986,117 @@ def fournisseur_delete(request, pk):
 # ==============================================================================
 
 @require_module_access('cuisine')
+def food_cost(request):
+    """Food Cost automatique : consommation théorique (fiches techniques) vs CA restaurant."""
+    from datetime import date, timedelta
+    from collections import defaultdict
+    from restaurant.models import Commande, LigneCommande
+
+    today = date.today()
+    date_debut_str = request.GET.get('date_debut', (today.replace(day=1)).isoformat())
+    date_fin_str = request.GET.get('date_fin', today.isoformat())
+    try:
+        date_debut = date.fromisoformat(date_debut_str)
+        date_fin = date.fromisoformat(date_fin_str)
+    except ValueError:
+        date_debut = today.replace(day=1)
+        date_fin = today
+
+    # ── Commandes payées/servies sur la période ──────────────────────────────
+    commandes = Commande.objects.filter(
+        statut__in=['servie', 'payee'],
+        date_creation__date__gte=date_debut,
+        date_creation__date__lte=date_fin,
+    )
+    ca_total = sum(float(c.total_net) for c in commandes)
+    nb_commandes = commandes.count()
+
+    # ── Consommation théorique par ingrédient (via fiches techniques) ─────────
+    lignes = (LigneCommande.objects
+              .filter(commande__in=commandes, plat__isnull=False)
+              .select_related('plat'))
+
+    conso_theorique = defaultdict(Decimal)  # ingredient_id → qte théorique
+    ingredients_map = {}
+    plats_sans_fiche = set()
+
+    for ligne in lignes:
+        fiche = ligne.plat.fiche_technique
+        if not fiche:
+            plats_sans_fiche.add(ligne.plat.nom)
+            continue
+        nb_portions = fiche.nb_portions or Decimal('1')
+        for lft in fiche.lignes.select_related('ingredient').all():
+            qte_par_portion = lft.quantite / nb_portions
+            qte_totale = qte_par_portion * Decimal(str(ligne.quantite))
+            conso_theorique[lft.ingredient.id] += qte_totale
+            ingredients_map[lft.ingredient.id] = lft.ingredient
+
+    # ── Consommation réelle (mouvements stock production) ──────────────────────
+    mouvements_prod = (MouvementStockCuisine.objects
+                       .filter(
+                           type_mouvement='production',
+                           date_mouvement__date__gte=date_debut,
+                           date_mouvement__date__lte=date_fin,
+                       )
+                       .select_related('ingredient'))
+    conso_reelle = defaultdict(Decimal)
+    for mv in mouvements_prod:
+        conso_reelle[mv.ingredient.id] += abs(Decimal(str(mv.quantite)))
+        ingredients_map[mv.ingredient.id] = mv.ingredient
+
+    # ── Coût matière théorique (base CA) ──────────────────────────────────────
+    cout_matiere_theorique = Decimal('0')
+    for ing_id, qte in conso_theorique.items():
+        ing = ingredients_map.get(ing_id)
+        if ing:
+            cout_matiere_theorique += qte * (ing.cmup or ing.prix_achat or Decimal('0'))
+
+    # ── Tableau par ingrédient ──────────────────────────────────────────────
+    all_ids = set(conso_theorique.keys()) | set(conso_reelle.keys())
+    lignes_rapport = []
+    cout_reel_total = Decimal('0')
+    for ing_id in sorted(all_ids, key=lambda x: ingredients_map.get(x, type('', (), {'nom': ''})()).nom if ing_id in ingredients_map else ''):
+        ing = ingredients_map.get(ing_id)
+        if not ing:
+            continue
+        qt = conso_theorique.get(ing_id, Decimal('0'))
+        qr = conso_reelle.get(ing_id, Decimal('0'))
+        ecart = qr - qt
+        cout_unit = ing.cmup or ing.prix_achat or Decimal('0')
+        cout_reel_ligne = qr * cout_unit
+        cout_reel_total += cout_reel_ligne
+        pct_ecart = (ecart / qt * 100) if qt else None
+        lignes_rapport.append({
+            'ingredient': ing,
+            'unite': ing.unite_stock.abreviation if ing.unite_stock else '',
+            'qte_theorique': qt,
+            'qte_reelle': qr,
+            'ecart': ecart,
+            'pct_ecart': pct_ecart,
+            'cout_unitaire': cout_unit,
+            'cout_reel': cout_reel_ligne,
+        })
+
+    food_cost_pct = (cout_reel_total / Decimal(str(ca_total)) * 100) if ca_total else None
+    food_cost_theorique_pct = (cout_matiere_theorique / Decimal(str(ca_total)) * 100) if ca_total else None
+
+    return render(request, 'cuisine/food_cost.html', {
+        'page_title': 'Food Cost',
+        'date_debut': date_debut,
+        'date_fin': date_fin,
+        'ca_total': ca_total,
+        'nb_commandes': nb_commandes,
+        'lignes_rapport': lignes_rapport,
+        'cout_reel_total': cout_reel_total,
+        'cout_matiere_theorique': cout_matiere_theorique,
+        'food_cost_pct': food_cost_pct,
+        'food_cost_theorique_pct': food_cost_theorique_pct,
+        'plats_sans_fiche': sorted(plats_sans_fiche),
+    })
+
+
+@require_module_access('cuisine')
 def fiche_comptage(request):
     """Fiche de comptage vierge pour l'inventaire physique terrain."""
     ingredients = (Ingredient.objects

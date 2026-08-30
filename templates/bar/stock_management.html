@@ -407,7 +407,8 @@
                             <th>Référence</th>
                             <th>Désignation</th>
                             <th>Famille</th>
-                            <th>Prix achat</th>
+                            <th>Dernier px achat</th>
+                            <th>CMUP</th>
                             <th>Prix vente</th>
                             <th>Unité</th>
                             <th>Stock</th>
@@ -436,6 +437,11 @@
                             <td><span class="badge-cat">{{ article.categorie.nom }}</span></td>
                             <td>
                                 <div class="prix-achat-small">{{ article.prix_achat|montant }} FCFA</div>
+                            </td>
+                            <td>
+                                <div class="prix-achat-small" style="color:#8e44ad;font-weight:600;">
+                                    {{ article.cmup|montant }} FCFA
+                                </div>
                                 {% if article.marge %}<div class="prix-achat-small">Marge : {{ article.marge }}%</div>{% endif %}
                             </td>
                             <td><span class="prix-tag">{{ article.prix|montant }} FCFA</span></td>
