@@ -27,6 +27,7 @@ class AccesPiscine(models.Model):
         null=True, blank=True, related_name='acces_piscine',
         verbose_name="Forfait VIP souscrit"
     )
+    nb_forfaits = models.IntegerField(default=1, verbose_name="Nombre de menus VIP")
 
     @property
     def nombre_personnes(self):

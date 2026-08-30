@@ -167,6 +167,7 @@ def enregistrer_entree(request):
         nb_adultes   = int(data.get('nb_adultes', 1))
         nb_enfants   = int(data.get('nb_enfants', 0))
         forfait_id   = data.get('forfait_id')
+        nb_menus     = max(1, int(data.get('nb_menus', 1) or 1))
         substitutions = {str(k): v for k, v in data.get('substitutions', {}).items()}
 
         if type_client != 'heberge' and nb_adultes < 1 and nb_enfants < 1:
@@ -182,9 +183,9 @@ def enregistrer_entree(request):
                 forfait = Forfait.objects.prefetch_related('lignes__boisson', 'lignes__plat').get(
                     pk=forfait_id, module='piscine', disponible=True
                 )
-                prix_total = forfait.prix
-                # Le forfait VIP couvre 1 adulte ; adultes suppl. et enfants au tarif standard
-                extras_adultes = max(0, nb_adultes - 1)
+                prix_total = forfait.prix * nb_menus
+                # Le forfait VIP couvre 1 adulte par menu ; adultes suppl. et enfants au tarif standard
+                extras_adultes = max(0, nb_adultes - nb_menus)
                 if extras_adultes > 0 or nb_enfants > 0:
                     t_adulte_vip = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
                     t_enfant_vip = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
@@ -199,40 +200,41 @@ def enregistrer_entree(request):
             problemes_final = []
             for ligne in forfait.lignes.select_related('boisson', 'plat').all():
                 sub = substitutions.get(str(ligne.id))
+                qte_requise = ligne.quantite * nb_menus
                 if sub:
-                    # Valider le substitut
+                    # Valider le substitut (quantite × nb_menus)
                     if sub['type'] == 'boisson':
                         try:
                             b_sub = BoissonBar.objects.get(id=sub['id'])
-                            if b_sub.quantite_stock < ligne.quantite:
+                            if b_sub.quantite_stock < qte_requise:
                                 problemes_final.append(
                                     f"Substitut « {b_sub.nom} » insuffisant "
-                                    f"(stock : {int(b_sub.quantite_stock)}, requis : {int(ligne.quantite)})"
+                                    f"(stock : {int(b_sub.quantite_stock)}, requis : {int(qte_requise)})"
                                 )
                         except BoissonBar.DoesNotExist:
                             problemes_final.append(f"Substitut boisson introuvable (id={sub['id']})")
                     elif sub['type'] == 'plat':
                         try:
                             plat_sub = PlatMenu.objects.get(id=sub['id'])
-                            ok, msg = check_stock_availability(plat_sub, ligne.quantite)
+                            ok, msg = check_stock_availability(plat_sub, qte_requise)
                             if not ok:
                                 problemes_final.append(f"Substitut « {plat_sub.nom} » : {msg}")
                         except PlatMenu.DoesNotExist:
                             problemes_final.append(f"Substitut plat introuvable (id={sub['id']})")
                 else:
-                    # Valider l'article original
+                    # Valider l'article original (quantite × nb_menus)
                     if ligne.type_item == 'boisson' and ligne.boisson:
                         b = ligne.boisson
-                        if b.quantite_stock < ligne.quantite:
+                        if b.quantite_stock < qte_requise:
                             problemes_final.append(
                                 f"« {ligne.nom_affiche} » en rupture "
-                                f"(stock : {int(b.quantite_stock)}, requis : {int(ligne.quantite)})"
+                                f"(stock : {int(b.quantite_stock)}, requis : {int(qte_requise)})"
                             )
                     elif ligne.type_item == 'plat' and ligne.plat:
                         try:
                             plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
                             if plat_menu:
-                                ok, msg = check_stock_availability(plat_menu, ligne.quantite)
+                                ok, msg = check_stock_availability(plat_menu, qte_requise)
                                 if not ok:
                                     problemes_final.append(f"« {ligne.nom_affiche} » : {msg}")
                         except Exception:
@@ -282,6 +284,7 @@ def enregistrer_entree(request):
             enregistre_par=request.user,
             reservation_hotel=reservation_hotel,
             forfait=forfait,
+            nb_forfaits=nb_menus if forfait else 1,
         )
 
         # ── Articles inclus dans le forfait VIP ───────────────────────
@@ -291,46 +294,47 @@ def enregistrer_entree(request):
             from cuisine.utils import process_stock_movement
             for ligne in forfait.lignes.select_related('boisson', 'plat').all():
                 sub = substitutions.get(str(ligne.id))
+                qte = ligne.quantite * nb_menus  # multiplié par le nombre de menus
 
                 if sub:
-                    # ── Article de substitution ──
+                    # ── Article de substitution (boisson choisie ou article de remplacement) ──
                     if sub['type'] == 'boisson':
                         b_sub = BoissonBar.objects.get(id=sub['id'])
-                        nom_article = f"{b_sub.nom} (remplace {ligne.nom_affiche})"
+                        nom_article = f"{b_sub.nom} ×{nb_menus}" if nb_menus > 1 else b_sub.nom
                         ConsommationPiscine.objects.create(
                             acces=acces, produit=nom_article,
-                            quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
+                            quantite=qte, prix_unitaire=Decimal('0'), inclus_forfait=True,
                         )
                         MouvementStockBar.objects.create(
-                            boisson=b_sub, type_mouvement='sortie', quantite=ligne.quantite,
-                            commentaire=f'Menu VIP #{acces.id} (substitut)', utilisateur=request.user,
+                            boisson=b_sub, type_mouvement='sortie', quantite=qte,
+                            commentaire=f'Menu VIP #{acces.id} ×{nb_menus}', utilisateur=request.user,
                         )
                     elif sub['type'] == 'plat':
                         plat_sub = PlatMenu.objects.get(id=sub['id'])
-                        nom_article = f"{plat_sub.nom} (remplace {ligne.nom_affiche})"
+                        nom_article = f"{plat_sub.nom} ×{nb_menus}" if nb_menus > 1 else plat_sub.nom
                         ConsommationPiscine.objects.create(
                             acces=acces, produit=nom_article,
-                            quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
+                            quantite=qte, prix_unitaire=Decimal('0'), inclus_forfait=True,
                         )
-                        process_stock_movement(plat_sub, ligne.quantite, 'sortie', request.user, f'Menu VIP #{acces.id} (substitut)')
+                        process_stock_movement(plat_sub, qte, 'sortie', request.user, f'Menu VIP #{acces.id} ×{nb_menus}')
                 else:
                     # ── Article original ──
                     nom_article = ligne.nom_affiche
                     ConsommationPiscine.objects.create(
                         acces=acces, produit=nom_article,
-                        quantite=ligne.quantite, prix_unitaire=Decimal('0'), inclus_forfait=True,
+                        quantite=qte, prix_unitaire=Decimal('0'), inclus_forfait=True,
                     )
                     if ligne.type_item == 'boisson' and ligne.boisson:
                         b = ligne.boisson
                         MouvementStockBar.objects.create(
-                            boisson=b, type_mouvement='sortie', quantite=ligne.quantite,
-                            commentaire=f'Menu VIP piscine #{acces.id}', utilisateur=request.user,
+                            boisson=b, type_mouvement='sortie', quantite=qte,
+                            commentaire=f'Menu VIP piscine #{acces.id} ×{nb_menus}', utilisateur=request.user,
                         )
                     elif ligne.type_item == 'plat' and ligne.plat:
                         try:
                             plat_menu = PlatMenu.objects.filter(cuisine_plat_id=ligne.plat.id).first()
                             if plat_menu:
-                                process_stock_movement(plat_menu, ligne.quantite, 'sortie', request.user, f'Menu VIP #{acces.id}')
+                                process_stock_movement(plat_menu, qte, 'sortie', request.user, f'Menu VIP #{acces.id} ×{nb_menus}')
                         except Exception:
                             pass
 

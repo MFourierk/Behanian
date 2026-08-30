@@ -316,7 +316,15 @@
     </div>
 
     <div id="vipComposition" style="display:none;margin-bottom:12px;padding:12px;background:#fffbeb;border-radius:10px;border:1px solid #fde68a">
-      <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">⭐ Articles inclus dans le forfait :</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;font-weight:700;color:#92400e">⭐ Articles inclus dans le forfait :</div>
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(217,119,6,0.08);border:1px solid #fde68a;border-radius:8px;padding:4px 10px">
+          <span style="font-size:11px;font-weight:600;color:#92400e">Nb menus :</span>
+          <button type="button" onclick="changeNbMenus(-1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #d97706;background:white;color:#92400e;font-weight:700;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">−</button>
+          <span id="nbMenusDisplay" style="font-size:14px;font-weight:800;color:#92400e;min-width:18px;text-align:center">1</span>
+          <button type="button" onclick="changeNbMenus(1)" style="width:22px;height:22px;border-radius:6px;border:1px solid #d97706;background:white;color:#92400e;font-weight:700;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">+</button>
+        </div>
+      </div>
       <div id="vipItems" style="font-size:12px;color:#78350f"></div>
     </div>
 
@@ -588,6 +596,7 @@ const PLATS_SUB    = [{% for p in plats %}{id:{{ p.pk }},nom:"{{ p.nom|escapejs 
 let vipForfaitId = null;
 let vipForfaitNom = '';
 let vipForfaitPrix = 0;
+let vipNbMenus = 1;
 let vipSubstitutions = {};  // {ligne_id: {type, id, nom}}
 let vipRuptureIds = new Set(); // ligne_ids en rupture non résolus
 
@@ -600,7 +609,7 @@ function ouvrirEntree(type){
   document.getElementById('entreeRemise').value=0;
   document.getElementById('entreeNetRow').style.display='none';
   document.getElementById('entreeType').value=type;
-  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipSubstitutions = {}; vipRuptureIds = new Set();
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipNbMenus = 1; vipSubstitutions = {}; vipRuptureIds = new Set();
   setType(type);
   document.getElementById('modalEntree').classList.add('open');
 }
@@ -608,7 +617,7 @@ function ouvrirEntree(type){
 function ouvrirEntreeVip(forfaitId, nom, prix){
   document.getElementById('entreeAdultes').value=1;
   document.getElementById('entreeEnfants').value=0;
-  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipSubstitutions = {}; vipRuptureIds = new Set();
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipNbMenus = 1; vipSubstitutions = {}; vipRuptureIds = new Set();
   setType('visiteur');
   document.getElementById('modalEntree').classList.add('open');
   // Sélectionner automatiquement ce forfait VIP
@@ -633,7 +642,7 @@ function ouvrirEntreeResident(resId, nom, chambre){
 }
 
 function setType(type){
-  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0;
+  vipForfaitId = null; vipForfaitNom = ''; vipForfaitPrix = 0; vipNbMenus = 1;
   document.getElementById('entreeType').value=type;
   document.getElementById('entreeReservationId').value='';
   document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
@@ -648,9 +657,17 @@ function setType(type){
   updatePrix();
 }
 
+function changeNbMenus(delta){
+  vipNbMenus = Math.max(1, vipNbMenus + delta);
+  document.getElementById('nbMenusDisplay').textContent = vipNbMenus;
+  updatePrix();
+}
+
 async function setVip(forfaitId, nom, prix){
   vipForfaitId = null;
   vipForfaitNom = nom; vipForfaitPrix = prix;
+  vipNbMenus = 1;
+  document.getElementById('nbMenusDisplay').textContent = 1;
   vipSubstitutions = {};
   vipRuptureIds = new Set();
   document.getElementById('entreeType').value='visiteur';
@@ -702,6 +719,24 @@ async function setVip(forfaitId, nom, prix){
 
 function _renderLigneForfait(l){
   if(l.ok){
+    const sub = vipSubstitutions[l.id];
+    // Lignes boisson : toujours proposer le choix de la sucrerie
+    if(l.type === 'boisson'){
+      const subTag = sub
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600">
+             ↗ ${sub.nom}
+             <span onclick="annulerSubBoisson(${l.id})" style="cursor:pointer;font-weight:700;margin-left:4px;opacity:.7">×</span>
+           </span>`
+        : `<button type="button" onclick="ouvrirChoixBoisson(${l.id})"
+             style="margin-left:8px;padding:2px 8px;border:1px solid #d97706;border-radius:6px;background:white;color:#92400e;font-size:11px;font-weight:600;cursor:pointer">
+             Choisir ▾
+           </button>`;
+      return `<div id="ligne_${l.id}" style="padding:4px 0;display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+        <span style="color:#15803d;font-weight:700">✓</span>
+        <span style="color:#15803d">${l.nom} × ${l.quantite}</span>
+        ${subTag}
+      </div>`;
+    }
     return `<div style="padding:4px 0;display:flex;align-items:center;gap:6px">
       <span style="color:#15803d;font-weight:700">✓</span>
       <span style="color:#15803d">${l.nom} × ${l.quantite}</span>
@@ -722,6 +757,44 @@ function _renderLigneForfait(l){
       </div>
     </div>
   </div>`;
+}
+
+function ouvrirChoixBoisson(ligneId){
+  const div = document.getElementById('ligne_'+ligneId);
+  if(!div) return;
+  const btn = div.querySelector('button');
+  if(!btn) return;
+  const opts = BOISSONS_SUB.filter(b => b.stock > 0)
+    .map(b=>`<option value="boisson:${b.id}:${b.nom.replace(/"/g,'&quot;')}">${b.nom} (stock: ${b.stock})</option>`)
+    .join('');
+  const sel = document.createElement('select');
+  sel.className = 'sub-select';
+  sel.style.marginLeft = '8px';
+  sel.innerHTML = `<option value="">— Choisir une boisson —</option>${opts}`;
+  sel.onchange = () => choisirSubBoisson(ligneId, sel);
+  btn.replaceWith(sel);
+}
+
+function choisirSubBoisson(ligneId, sel){
+  if(!sel.value) return;
+  const parts = sel.value.split(':');
+  const type = parts[0], id = parseInt(parts[1]), nom = parts.slice(2).join(':');
+  vipSubstitutions[ligneId] = {type, id, nom};
+  const div = document.getElementById('ligne_'+ligneId);
+  if(div){
+    const subTag = document.createElement('span');
+    subTag.style.cssText = 'display:inline-flex;align-items:center;gap:4px;margin-left:8px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600';
+    subTag.innerHTML = `↗ ${nom} <span onclick="annulerSubBoisson(${ligneId})" style="cursor:pointer;font-weight:700;margin-left:4px;opacity:.7">×</span>`;
+    sel.replaceWith(subTag);
+  }
+}
+
+function annulerSubBoisson(ligneId){
+  delete vipSubstitutions[ligneId];
+  if(vipForfaitId || vipForfaitNom){
+    const pill = document.querySelector('.type-pill.vip.active');
+    if(pill) pill.click();
+  }
 }
 
 function _renderSubSelect(l){
@@ -812,12 +885,14 @@ function updatePrix(){
   if(vipForfaitPrix>0){
     const ta={% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
     const te={% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
-    const extrasA=Math.max(0,na-1);
-    totalBrut=vipForfaitPrix+extrasA*ta+ne*te;
-    let detail=`⭐ ${vipForfaitNom} — ${vipForfaitPrix.toLocaleString('fr-FR')} F`;
+    const extrasA=Math.max(0,na-vipNbMenus);  // les menus VIP couvrent vipNbMenus adultes
+    totalBrut=vipForfaitPrix*vipNbMenus+Math.max(0,extrasA)*ta+ne*te;
+    let detail=vipNbMenus>1
+      ? `⭐ ${vipForfaitNom} × ${vipNbMenus} — ${(vipForfaitPrix*vipNbMenus).toLocaleString('fr-FR')} F`
+      : `⭐ ${vipForfaitNom} — ${vipForfaitPrix.toLocaleString('fr-FR')} F`;
     if(extrasA>0)detail+=` + ${extrasA} adulte${extrasA>1?'s':''} × ${ta.toLocaleString('fr-FR')} F`;
     if(ne>0)detail+=` + ${ne} enfant${ne>1?'s':''} × ${te.toLocaleString('fr-FR')} F`;
-    if(extrasA>0||ne>0)detail+=` = ${totalBrut.toLocaleString('fr-FR')} F`;
+    if(extrasA>0||ne>0||vipNbMenus>1)detail+=` = ${totalBrut.toLocaleString('fr-FR')} F`;
     row.style.background='#fffbeb';row.style.color='#92400e';row.style.borderColor='#fde68a';
     row.textContent=detail;
   } else if(type==='heberge'){
@@ -861,6 +936,7 @@ async function validerEntree(){
   const payload={type_client:type,nb_adultes:na,nb_enfants:ne,reservation_id:document.getElementById('entreeReservationId').value,remise_montant:remiseMontant};
   if(vipForfaitId){
     payload.forfait_id = vipForfaitId;
+    payload.nb_menus = vipNbMenus;
     if(Object.keys(vipSubstitutions).length) payload.substitutions = vipSubstitutions;
   }
   const btnVal = document.querySelector('#modalEntree .btn-primary[onclick="validerEntree()"]');
