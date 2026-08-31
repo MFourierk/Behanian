@@ -122,7 +122,7 @@
       {% for ligne in lignes %}
       <tr>
         <td style="max-width:120px;word-wrap:break-word;">
-          {{ ligne.plat.nom }}
+          {% if ligne.plat %}{{ ligne.plat.nom }}{% if ligne.accompagnement %} + {{ ligne.accompagnement.nom }}{% endif %}{% else %}{{ ligne.nom_article }}{% endif %}
           {% if ligne.note %}<div style="font-size:9px;color:#888;">{{ ligne.note }}</div>{% endif %}
         </td>
         <td>{{ ligne.quantite }} × {{ ligne.prix_unitaire|floatformat:0 }}</td>

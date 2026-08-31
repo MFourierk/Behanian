@@ -2700,19 +2700,25 @@ async function confirmerPaiement() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…'; }
 
   try {
-    const r = await fetch("{% url 'restaurant:valider_commande' %}", {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({
-        commande_id: t.commandeDbId, action: 'paiement',
-        mode_paiement: modePaiement, montant_encaisse: montantRecu,
-        montant_especes: montantEspeces,
-        client: t.client || '',
-        serveur: t.serveur || document.getElementById('selectServeur').value || '',
-        reservation_hotel_id: chambreLieeId || reservation_hotel_id,
-        operateur_mobile: '',
-        heures_salon: heuresSalon,
-      })
-    });
+    const _abortCtrl = new AbortController();
+    const _abortTimer = setTimeout(() => _abortCtrl.abort(), 30000);
+    let r;
+    try {
+      r = await fetch("{% url 'restaurant:valider_commande' %}", {
+        signal: _abortCtrl.signal,
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+          commande_id: t.commandeDbId, action: 'paiement',
+          mode_paiement: modePaiement, montant_encaisse: montantRecu,
+          montant_especes: montantEspeces,
+          client: t.client || '',
+          serveur: t.serveur || document.getElementById('selectServeur').value || '',
+          reservation_hotel_id: chambreLieeId || reservation_hotel_id,
+          operateur_mobile: '',
+          heures_salon: heuresSalon,
+        })
+      });
+    } finally { clearTimeout(_abortTimer); }
     if (!r.ok) {
       const txt = await r.text();
       if (r.status === 403 || txt.includes('login')) {

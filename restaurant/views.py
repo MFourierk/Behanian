@@ -183,7 +183,7 @@ def valider_commande(request):
                 # Génération Ticket
                 numero_ticket = generate_ticket_numero()
                 
-                all_items_objs = LigneCommande.objects.filter(commande=commande)
+                all_items_objs = LigneCommande.objects.filter(commande=commande).select_related('plat', 'accompagnement', 'boisson')
                 
                 # Génération du contenu HTML pour le Ticket
                 services_html = '<span class="ticket-meta" data-serveur="' + serveur_nom + '"></span>'
@@ -1718,7 +1718,7 @@ def reservation_api_statut(request):
 def imprimer_addition(request, commande_id):
     """Pré-facture (addition) : affiche les articles sans encaisser ni clôturer le ticket."""
     commande = get_object_or_404(Commande, id=commande_id)
-    lignes = commande.lignes.select_related('plat', 'accompagnement').all()
+    lignes = commande.lignes.select_related('plat', 'accompagnement', 'boisson').all()
     from dashboard.models import Configuration
     config = Configuration.load()
     montant_remise = float(commande.total) * float(commande.remise_pct) / 100 if commande.remise_pct else 0
