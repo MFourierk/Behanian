@@ -1551,15 +1551,19 @@ function choisirModeMobile(mode) {
 }
 
 function _ouvrirModalPaiementNormal() {
-  const t = tickets[ticketActifId];
-  const total = getTotal();
-  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
-  const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
-  const ref = t.ref ? ` (${t.ref})` : '';
-  document.getElementById('modalSubtitle').textContent = `Cave Behanian${espace}${ref}`;
-  // Activer le bon onglet et la bonne section
-  setModalMode(modePaiement);
-  document.getElementById('modalPaiement').classList.add('open');
+  try {
+    const t = tickets[ticketActifId];
+    const total = getTotal();
+    document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+    const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
+    const ref = t.ref ? ` (${t.ref})` : '';
+    document.getElementById('modalSubtitle').textContent = `Cave Behanian${espace}${ref}`;
+    setModalMode(modePaiement);
+    document.getElementById('modalPaiement').classList.add('open');
+  } catch(err) {
+    toast('❌ Erreur ouverture paiement : ' + err.message, 'error');
+    console.error('_ouvrirModalPaiementNormal:', err);
+  }
 }
 
 async function mettreOnChambre() {
@@ -1671,11 +1675,17 @@ async function confirmerPaiement() {
       session_token   : SESSION_TOKEN,
     };
 
-    const resp = await fetch("{% url 'bar:api_vente' %}", {
-      method : 'POST',
-      headers: { 'Content-Type':'application/json', 'X-CSRFToken':CSRF },
-      body: JSON.stringify(payload),
-    });
+    const _abortCtrlVente = new AbortController();
+    const _abortTimerVente = setTimeout(() => _abortCtrlVente.abort(), 30000);
+    let resp;
+    try {
+      resp = await fetch("{% url 'bar:api_vente' %}", {
+        signal: _abortCtrlVente.signal,
+        method : 'POST',
+        headers: { 'Content-Type':'application/json', 'X-CSRFToken':CSRF },
+        body: JSON.stringify(payload),
+      });
+    } finally { clearTimeout(_abortTimerVente); }
 
     if (!resp.ok) {
       const txt = await resp.text();
