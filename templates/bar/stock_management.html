@@ -1084,6 +1084,29 @@
             </div>
         </div>
 
+        {% for br in inv_brouillons %}
+        <div style="background:#fff8e1;border:2px solid #f9a825;border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <i class="fas fa-clock" style="color:#f9a825;font-size:1.3rem;"></i>
+                <div>
+                    <div style="font-weight:700;color:#e65100;">Inventaire en cours — {{ br.numero }}</div>
+                    <div style="font-size:0.83rem;color:#795548;">Démarré le {{ br.date_creation|date:"d/m/Y à H:i" }}{% if br.notes %} · {{ br.notes }}{% endif %}</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a href="{% url 'bar:inventaire_edit' br.pk %}" class="btn-purple" style="background:linear-gradient(135deg,#3498db,#2980b9);">
+                    <i class="fas fa-edit"></i> Continuer la saisie
+                </a>
+                <form method="post" action="{% url 'bar:inventaire_valider' br.pk %}" style="display:inline;" onsubmit="return confirm('Valider et ajuster le stock maintenant ?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-purple" style="background:linear-gradient(135deg,#27ae60,#2ecc71);">
+                        <i class="fas fa-check"></i> Valider &amp; Conclure
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
             <div style="font-weight:700;color:#2c3e50;font-size:1.05rem;">
                 <i class="fas fa-clipboard-list" style="color:#8e44ad;"></i> Inventaires Physiques

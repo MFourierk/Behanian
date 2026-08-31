@@ -96,7 +96,8 @@ def stock_management(request):
         mouvements = mouvements.filter(type_mouvement=mvt_type)
 
     # Inventaires
-    inventaires = InventaireCuisine.objects.select_related('cree_par').all()
+    inventaires = InventaireCuisine.objects.select_related('cree_par').order_by('-date_creation')
+    inv_brouillons = inventaires.filter(statut='brouillon')
 
     # Casses
     casses = CasseCuisine.objects.select_related('cree_par').all()
@@ -127,6 +128,7 @@ def stock_management(request):
         'mvt_type':       mvt_type,
         # Inventaires & Casses
         'inventaires':    inventaires,
+        'inv_brouillons': inv_brouillons,
         'casses':         casses,
         # Analyse des sorties
         'sorties_par_type': _sorties_par_type_cuisine(),

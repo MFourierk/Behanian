@@ -176,10 +176,11 @@ def stock_management(request):
         'css_valeur_mois': sum(c.total_valeur for c in CasseBar.objects.filter(date_casse__gte=timezone.now().replace(day=1).date(), statut='valide')),
         'css_en_attente': CasseBar.objects.filter(statut='declare').count(),
         # Inventaires
-        'inventaires': InventaireBar.objects.select_related('cree_par').all()[:20],
+        'inventaires': InventaireBar.objects.select_related('cree_par').order_by('-date_creation')[:50],
         'inv_total': InventaireBar.objects.count(),
         'inv_en_cours': InventaireBar.objects.filter(statut='brouillon').count(),
         'inv_valides': InventaireBar.objects.filter(statut='valide').count(),
+        'inv_brouillons': InventaireBar.objects.filter(statut='brouillon').order_by('-date_creation'),
         # Mouvements
         'mouvements': mouvements,
         'mv_entrees_mois': mv_entrees_mois,
