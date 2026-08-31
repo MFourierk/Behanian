@@ -165,7 +165,7 @@
 <div class="actions-row">
     {% if inv.statut == 'brouillon' %}
     <a href="{% url 'bar:inventaire_edit' inv.pk %}" class="btn-action btn-continuer">✏ Continuer l'inventaire</a>
-    <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" onsubmit="return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités comptées.');">
+    <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" onsubmit="try{localStorage.removeItem('inv_bar_draft')}catch(e){};return confirm('Valider cet inventaire ? Le stock sera ajusté selon les quantités comptées.');">
         {% csrf_token %}
         <button type="submit" class="btn-action btn-valider">✔ Valider l'inventaire</button>
     </form>
