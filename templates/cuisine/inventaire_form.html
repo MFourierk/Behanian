@@ -379,13 +379,7 @@ document.addEventListener('click', function() {
     document.getElementById('stock-menu').classList.remove('show');
 });
 
-// Désactiver les lignes cachées avant soumission pour ne pas écraser les articles non inventoriés
 document.getElementById('inv-form').addEventListener('submit', function() {
-    document.querySelectorAll('.inv-row').forEach(row => {
-        if (row.style.display === 'none') {
-            row.querySelectorAll('input').forEach(inp => inp.disabled = true);
-        }
-    });
     try { localStorage.removeItem('inv_cuisine_draft'); } catch(e) {}
 });
 
