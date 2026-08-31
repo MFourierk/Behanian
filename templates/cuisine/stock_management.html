@@ -385,10 +385,11 @@
                             <th>Référence</th>
                             <th>Désignation</th>
                             <th>Catégorie</th>
-                            <th>Unité stock</th>
-                            <th>Stock actuel</th>
-                            <th>Seuil alerte</th>
+                            <th>Dernier px achat</th>
                             <th>CMUP</th>
+                            <th>Unité</th>
+                            <th>Stock</th>
+                            <th>Seuil alerte</th>
                             <th>Valeur stock</th>
                             <th>Fournisseur</th>
                             <th style="text-align:right;">Actions</th>
@@ -407,6 +408,12 @@
                                 {% if ing.description %}<div style="font-size:0.78rem;color:#7f8c8d;">{{ ing.description|truncatechars:40 }}</div>{% endif %}
                             </td>
                             <td><span class="badge-cat">{{ ing.categorie.nom|default:"—" }}</span></td>
+                            <td>
+                                <div style="font-size:0.85rem;color:#7f8c8d;">{{ ing.prix_achat|montant }} F</div>
+                            </td>
+                            <td>
+                                <div style="color:#8e44ad;font-weight:600;">{{ ing.cmup|montant }} F</div>
+                            </td>
                             <td style="font-size:0.85rem;">{{ ing.unite_stock.abreviation|default:"—" }}</td>
                             <td>
                                 {% if ing.quantite_stock <= 0 %}
@@ -418,7 +425,6 @@
                                 {% endif %}
                             </td>
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ ing.seuil_alerte|floatformat:2 }}</td>
-                            <td style="font-weight:600;color:#2c3e50;">{{ ing.cmup|montant }} F</td>
                             <td style="font-weight:700;color:#c0392b;">{{ ing.valeur_stock|montant }} F</td>
                             <td style="font-size:0.82rem;color:#7f8c8d;">{{ ing.fournisseur_principal.nom|default:"—" }}</td>
                             <td>
@@ -430,7 +436,7 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="10">
+                        <tr><td colspan="11">
                             <div class="empty-state">
                                 <i class="fas fa-carrot"></i>
                                 <p>Aucun ingrédient créé.</p>
