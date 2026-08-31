@@ -381,6 +381,60 @@ document.getElementById('inv-form').addEventListener('submit', function() {
             row.querySelectorAll('input').forEach(inp => inp.disabled = true);
         }
     });
+    try { localStorage.removeItem('inv_bar_draft'); } catch(e) {}
 });
+
+// ── KEEPALIVE : ping toutes les 8 min pour maintenir la session ──────────────
+setInterval(function() {
+    fetch('/session/ping/', {credentials: 'same-origin'}).catch(function(){});
+}, 8 * 60 * 1000);
+
+// ── SAUVEGARDE LOCALE (localStorage) ─────────────────────────────────────────
+const LS_KEY = 'inv_bar_draft';
+
+function sauvegarderLocalement() {
+    try {
+        const data = {};
+        document.querySelectorAll('input[name="article_id[]"]').forEach(function(hidden) {
+            const row   = hidden.closest('tr');
+            const qte   = row.querySelector('.qte-comptee');
+            const notes = row.querySelector('input[name="notes_ligne[]"]');
+            if (qte) data[hidden.value] = { qte: qte.value, notes: notes ? notes.value : '' };
+        });
+        localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), data: data }));
+    } catch(e) {}
+}
+
+function restaurerDepuisLocal() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+        if (!saved || !saved.data || Object.keys(saved.data).length === 0) return;
+        const age = Math.round((Date.now() - saved.ts) / 60000);
+        if (age > 480) { localStorage.removeItem(LS_KEY); return; } // expirer après 8h
+        if (!confirm('Des données de saisie non sauvegardées ont été retrouvées (il y a ' + age + ' min).\nVoulez-vous les restaurer ?')) {
+            localStorage.removeItem(LS_KEY); return;
+        }
+        document.querySelectorAll('input[name="article_id[]"]').forEach(function(hidden) {
+            const d = saved.data[hidden.value];
+            if (!d) return;
+            const row   = hidden.closest('tr');
+            const qte   = row.querySelector('.qte-comptee');
+            const notes = row.querySelector('input[name="notes_ligne[]"]');
+            if (qte)   { qte.value = d.qte; majEcartInv(qte); }
+            if (notes) notes.value = d.notes || '';
+        });
+    } catch(e) {}
+}
+
+// Auto-save toutes les 2 minutes + à chaque saisie
+document.querySelectorAll('.qte-comptee, input[name="notes_ligne[]"]').forEach(function(inp) {
+    inp.addEventListener('input', sauvegarderLocalement);
+});
+setInterval(sauvegarderLocalement, 2 * 60 * 1000);
+
+// Restaurer au chargement de la page (seulement si pas déjà en mode édition PREFILL)
+if (Object.keys(PREFILL).length === 0) {
+    restaurerDepuisLocal();
+}
 </script>
 {% endblock %}

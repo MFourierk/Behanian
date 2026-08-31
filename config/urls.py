@@ -3,8 +3,16 @@ from django.urls import path, include
 from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def session_ping(request):
+    """Maintient la session active — appelé en AJAX depuis les formulaires longs."""
+    return JsonResponse({'ok': True})
 
 urlpatterns = [
+    path('session/ping/', session_ping, name='session_ping'),
     path('admin/', admin.site.urls),
     path('', lambda request: redirect('login'), name='home'),
     path('salle/', lambda _: redirect('restaurant:kds_salle')),
