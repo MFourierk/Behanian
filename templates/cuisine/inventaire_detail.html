@@ -181,6 +181,9 @@
         <button type="submit" class="btn-action btn-annuler">✕ Annuler</button>
     </form>
     {% endif %}
+    <a href="{% url 'cuisine:inventaire_print' inv.pk %}" target="_blank" class="btn-action" style="background:#2c3e50;color:white;">
+        <i class="fas fa-print"></i> Imprimer
+    </a>
     <a href="{% url 'cuisine:stock_management' %}?tab=inventaire" class="btn-action btn-back">← Retour</a>
 </div>
 {% endblock %}

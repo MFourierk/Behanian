@@ -1,0 +1,105 @@
+{% extends 'print_base.html' %}
+{% load static montant_filter %}
+{% block doc_title %}Inventaire {{ inv.numero }} — Cuisine{% endblock %}
+
+{% block doc_content %}
+
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Inventaire Physique — Cuisine</div>
+    <div class="doc-title-sub">{{ inv.numero }} · {% if inv.statut == 'valide' %}Validé{% else %}En cours (brouillon){% endif %}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">{{ lignes|length }} ingrédient(s)</span>
+  </div>
+</div>
+
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations de l'inventaire</div>
+    <div class="meta-row"><span class="meta-lbl">Numéro</span><span class="meta-val bold">{{ inv.numero }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date inventaire</span><span class="meta-val">{{ inv.date_inventaire|date:"d/m/Y" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ inv.cree_par.get_full_name|default:inv.cree_par.username }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y à H:i" %}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Résumé des écarts</div>
+    <div class="meta-row"><span class="meta-lbl">Ingrédients inventoriés</span><span class="meta-val bold">{{ lignes|length }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Articles avec écart</span><span class="meta-val" style="color:#c0392b;font-weight:700;">{{ ecarts|length }}</span></div>
+    {% if inv.statut == 'valide' %}
+    <div class="meta-row"><span class="meta-lbl">Valeur totale écarts</span><span class="meta-val bold" style="color:#c0392b;">{{ valeur_ecart_total|montant }} FCFA</span></div>
+    {% else %}
+    <div class="meta-row"><span class="meta-lbl">Statut</span><span class="meta-val" style="color:#e67e22;font-weight:700;">Brouillon — non validé</span></div>
+    {% endif %}
+    {% if inv.notes %}<div class="meta-row"><span class="meta-lbl">Observations</span><span class="meta-val">{{ inv.notes }}</span></div>{% endif %}
+  </div>
+</div>
+
+<div class="content-section">
+  <div class="section-title">Détail des ingrédients inventoriés</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:28px">#</th>
+        <th>Ingrédient</th>
+        <th style="width:90px">Catégorie</th>
+        <th style="width:40px;text-align:center">Unité</th>
+        <th class="r" style="width:80px">Qté théorique</th>
+        <th class="r" style="width:80px">Qté comptée</th>
+        <th class="r" style="width:70px">Écart</th>
+        {% if inv.statut == 'valide' %}<th class="r" style="width:95px">Valeur écart</th>{% endif %}
+        <th style="width:110px">Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in lignes %}
+      <tr {% if l.ecart != 0 %}style="background:#fff8f8"{% endif %}>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td class="bold">{{ l.ingredient.nom }}</td>
+        <td style="font-size:9px;color:#6b7a8d">{{ l.ingredient.categorie.nom|default:"—" }}</td>
+        <td style="text-align:center;font-size:9px">{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
+        <td class="r">{{ l.quantite_theorique|floatformat:3 }}</td>
+        <td class="r bold">{{ l.quantite_physique|floatformat:3 }}</td>
+        <td class="r">
+          {% if l.ecart > 0 %}<span style="color:#27ae60;font-weight:700">+{{ l.ecart|floatformat:3 }}</span>
+          {% elif l.ecart < 0 %}<span style="color:#c0392b;font-weight:700">{{ l.ecart|floatformat:3 }}</span>
+          {% else %}<span style="color:#b0bec5">—</span>{% endif %}
+        </td>
+        {% if inv.statut == 'valide' %}
+        <td class="r">
+          {% if l.valeur_ecart and l.ecart != 0 %}<span style="color:#c0392b">{{ l.valeur_ecart|montant }}</span>{% else %}—{% endif %}
+        </td>
+        {% endif %}
+        <td style="font-size:9px;color:#6b7a8d">{{ l.notes_ligne|default:"" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if inv.statut == 'valide' %}
+    <tfoot>
+      <tr>
+        <td colspan="6"></td>
+        <td class="total-label" style="text-align:right">Valeur totale écarts</td>
+        <td class="total-val">{{ valeur_ecart_total|montant }} FCFA</td>
+        <td></td>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+</div>
+
+{% if inv.statut != 'valide' %}
+<div style="margin:8px 30px;padding:8px 12px;background:#fff8e1;border:1px solid #f9a825;border-radius:6px;font-size:9px;color:#795548;">
+  <strong>⚠ Brouillon non validé</strong> — Cet inventaire n'a pas encore été validé. Le stock n'a pas été ajusté. Imprimé le {% now "d/m/Y à H:i" %}.
+</div>
+{% endif %}
+
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Cuisine</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+</div>
+
+{% endblock %}
+{% block doc_footer_right %}Inventaire {{ inv.numero }} · Cuisine Behanian · {% now "d/m/Y H:i" %}{% endblock %}

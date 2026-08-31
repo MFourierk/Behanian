@@ -61,6 +61,7 @@ urlpatterns = [
     path('inventaire/<int:pk>/modifier/', views.inventaire_edit, name='inventaire_edit'),
     path('inventaire/<int:pk>/valider/', views.inventaire_valider, name='inventaire_valider'),
     path('inventaire/<int:pk>/annuler/', views.inventaire_annuler, name='inventaire_annuler'),
+    path('inventaire/<int:pk>/print/', views.inventaire_print, name='inventaire_print'),
 
     # Casses
     path('casses/nouveau/', views.casse_create, name='casse_create'),

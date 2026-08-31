@@ -1236,6 +1236,19 @@ def inventaire_edit(request, pk):
 
 
 @require_module_access('cuisine')
+def inventaire_print(request, pk):
+    inv = get_object_or_404(InventaireCuisine, pk=pk)
+    lignes = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
+    ecarts = [l for l in lignes if l.ecart != 0]
+    return render(request, 'cuisine/inventaire_print.html', {
+        'inv':               inv,
+        'lignes':            lignes,
+        'ecarts':            ecarts,
+        'valeur_ecart_total': sum(abs(l.valeur_ecart or 0) for l in ecarts),
+    })
+
+
+@require_module_access('cuisine')
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
     if request.method == 'POST':

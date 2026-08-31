@@ -998,6 +998,20 @@ def inventaire_detail(request, pk):
 
 
 @require_module_access('bar')
+@require_bar_gestion
+def inventaire_print(request, pk):
+    inv = get_object_or_404(InventaireBar, pk=pk)
+    lignes = inv.lignes.select_related('article', 'article__categorie').order_by('article__categorie__nom', 'article__nom')
+    ecarts = [l for l in lignes if l.ecart_quantite != 0]
+    return render(request, 'bar/inventaire_print.html', {
+        'inv':               inv,
+        'lignes':            lignes,
+        'ecarts':            ecarts,
+        'valeur_ecart_total': sum(abs(l.valeur_ecart or 0) for l in ecarts),
+    })
+
+
+@require_module_access('bar')
 @require_POST
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
