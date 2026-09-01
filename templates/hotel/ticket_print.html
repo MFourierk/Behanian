@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -50,10 +50,10 @@
         }
         .page-cut { height: 0; margin: 0; padding: 0; }
         @media print {
-            body { background: white; padding: 0; }
-            .ticket { box-shadow: none; width: 100%; padding: 0; margin-bottom: 0; }
+            body { background: white; padding: 0; display: block !important; }
+            .ticket { box-shadow: none; width: 100%; padding: 0; margin-bottom: 0; display: block; }
             .no-print { display: none; }
-            .page-cut { display: block !important; page-break-after: always; }
+            .page-cut { display: block !important; page-break-after: always; break-after: page; }
         }
     </style>
 </head>
