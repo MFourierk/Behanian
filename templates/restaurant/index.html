@@ -2516,8 +2516,6 @@ function getTotal() {
   return (t?.remise_pct > 0) ? brut * (1 - t.remise_pct / 100) : brut;
 }
 
-const SALONS_VIP_RESTO = {{ salons_vip_json|safe }};
-
 function isSalonPrive() {
   return !!(document.getElementById('selectSalonVIP')?.value);
 }

@@ -84,12 +84,7 @@ def restaurant_index(request):
     # Accompagnements — extraits de la liste déjà évaluée pour conserver en_stock/stock_quantity
     accompagnements = [p for p in plats if p.is_accompagnement]
 
-    import json as _json_mod
     salons_vip = Table.objects.filter(est_salon_prive=True).order_by('numero')
-    salons_vip_json = _json_mod.dumps([
-        {'id': s.id, 'numero': s.numero, 'tarif': float(s.tarif_horaire)}
-        for s in salons_vip
-    ])
 
     context = {
         'categories': categories,
@@ -100,7 +95,6 @@ def restaurant_index(request):
         'tables': tables,
         'reservations': reservations,
         'salons_vip': salons_vip,
-        'salons_vip_json': salons_vip_json,
     }
 
     return render(request, 'restaurant/index.html', context)
