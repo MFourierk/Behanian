@@ -214,6 +214,7 @@
                   <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" title="Réimprimer le ticket" onclick="window.open('{% url 'piscine:ticket_entree' 0 %}'.replace('/0/','/'+'{{ a.id }}'+'/'), '_blank','width=400,height=620')"><i class="fas fa-print"></i></button>
                   {% if not a.date_sortie %}
                   <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" title="Commander" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')"><i class="fas fa-utensils"></i></button>
+                  <button class="btn-p btn-outline" style="padding:5px 10px;font-size:11px" title="Modifier composition" onclick="ouvrirModifierAcces({{ a.id }}, '{{ a.nom_client|escapejs }}', '{{ a.type_client }}', {{ a.nb_adultes }}, {{ a.nb_enfants }}, {{ a.remise_montant|floatformat:3 }}, {% if a.forfait %}{{ a.forfait.prix|floatformat:0 }}{% else %}0{% endif %}, {{ a.nb_forfaits }})">✏️</button>
                   <button class="btn-p btn-primary" style="padding:5px 10px;font-size:11px" title="Sortie / Encaisser" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})"><i class="fas fa-sign-out-alt"></i></button>
                   {% endif %}
                 </div>
@@ -251,6 +252,7 @@
             <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
               <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" onclick="ouvrirCommande({{ a.id }}, '{{ a.nom_client|escapejs }}')">+ Conso</button>
               <button class="btn-p btn-primary" style="padding:4px 8px;font-size:10px" onclick="ouvrirSortie({{ a.id }}, '{{ a.nom_client|escapejs }}', {{ a.total_general|floatformat:0 }})">Sortie</button>
+              <button class="btn-p btn-outline" style="padding:4px 8px;font-size:10px" title="Modifier composition" onclick="ouvrirModifierAcces({{ a.id }}, '{{ a.nom_client|escapejs }}', '{{ a.type_client }}', {{ a.nb_adultes }}, {{ a.nb_enfants }}, {{ a.remise_montant|floatformat:3 }}, {% if a.forfait %}{{ a.forfait.prix|floatformat:0 }}{% else %}0{% endif %}, {{ a.nb_forfaits }})">✏️</button>
               <button class="btn-p btn-outline" style="padding:3px 6px;font-size:9px;color:#7a8b9c" title="Réimprimer le ticket" onclick="window.open('{% url 'piscine:ticket_entree' 0 %}'.replace('/0/','/'+'{{ a.id }}'+'/'), '_blank','width=400,height=620')"><i class="fas fa-print"></i></button>
             </div>
           </div>
@@ -574,6 +576,67 @@
   </div>
 </div>
 
+<!-- MODAL MODIFIER COMPOSITION -->
+<div class="modal-ov" id="modalModifierAcces">
+  <div class="modal-box" style="width:380px">
+    <div class="modal-head">
+      <h3>Modifier — <span id="modifNom"></span></h3>
+      <button class="close-btn" onclick="fermerModal('modalModifierAcces')">×</button>
+    </div>
+
+    <div id="modifVipNote" style="display:none;padding:8px 12px;background:#fef3c7;border-radius:8px;font-size:12px;color:#92400e;margin-bottom:12px">
+      ⭐ Forfait VIP : le nombre de menus reste fixe. Seuls les participants supplémentaires et enfants peuvent être modifiés.
+    </div>
+
+    <!-- Adultes -->
+    <div class="form-row">
+      <label>Adultes</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" class="btn-p btn-outline" style="width:32px;height:32px;padding:0;font-size:18px;line-height:1" onclick="_modifAdj('modifAdultes',-1)">−</button>
+        <input type="number" id="modifAdultes" min="0" style="width:70px;text-align:center;padding:6px" oninput="calcModifPrix()">
+        <button type="button" class="btn-p btn-outline" style="width:32px;height:32px;padding:0;font-size:18px;line-height:1" onclick="_modifAdj('modifAdultes',+1)">+</button>
+      </div>
+    </div>
+
+    <!-- Enfants -->
+    <div class="form-row" style="margin-top:10px">
+      <label>Enfants</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" class="btn-p btn-outline" style="width:32px;height:32px;padding:0;font-size:18px;line-height:1" onclick="_modifAdj('modifEnfants',-1)">−</button>
+        <input type="number" id="modifEnfants" min="0" style="width:70px;text-align:center;padding:6px" oninput="calcModifPrix()">
+        <button type="button" class="btn-p btn-outline" style="width:32px;height:32px;padding:0;font-size:18px;line-height:1" onclick="_modifAdj('modifEnfants',+1)">+</button>
+      </div>
+    </div>
+
+    <!-- Remise -->
+    <div class="form-row" style="margin-top:10px">
+      <label>Remise (FCFA)</label>
+      <input type="number" id="modifRemise" min="0" placeholder="0" style="width:100%" oninput="calcModifPrix()">
+    </div>
+
+    <!-- Aperçu prix -->
+    <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="color:#64748b">Prix entrée brut</span>
+        <span id="modifPrixBrut" style="font-weight:600">0 F</span>
+      </div>
+      <div id="modifRemiseRow" style="display:none;justify-content:space-between;margin-bottom:4px;color:#dc2626">
+        <span>Remise</span>
+        <span id="modifRemiseAff">− 0 F</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;border-top:1px solid #e2e8f0;padding-top:8px;margin-top:4px">
+        <span>Net à payer</span>
+        <span id="modifPrixNet" style="color:#2563eb">0 F</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn-p btn-outline" style="flex:1" onclick="fermerModal('modalModifierAcces')">Annuler</button>
+      <button class="btn-p btn-primary" style="flex:2" onclick="validerModifAcces()"><i class="fas fa-save"></i> Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 {% localize off %}
 <script>
 const CSRF = '{{ csrf_token }}';
@@ -602,6 +665,90 @@ let vipRuptureIds = new Set(); // ligne_ids en rupture non résolus
 
 function fermerModal(id){ document.getElementById(id).classList.remove('open'); }
 function ouvrirModalTarif(){ document.getElementById('modalTarif').classList.add('open'); }
+
+// ── Modifier composition d'un accès ───────────────────────────────────────
+const TARIF_ADULTE = {% if tarif_v_adulte %}{{ tarif_v_adulte.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+const TARIF_ENFANT = {% if tarif_v_enfant %}{{ tarif_v_enfant.prix_unitaire|floatformat:0 }}{% else %}0{% endif %};
+const URL_MODIFIER_ACCES_TPL = '{% url "piscine:modifier_acces" 0 %}';
+
+let _modifAccesId     = null;
+let _modifTypeClient  = 'visiteur';
+let _modifForfaitPrix = 0;
+let _modifNbMenus     = 1;
+
+function ouvrirModifierAcces(id, nom, type_client, nb_adultes, nb_enfants, remise, forfait_prix, nb_forfaits) {
+  _modifAccesId     = id;
+  _modifTypeClient  = type_client;
+  _modifForfaitPrix = forfait_prix || 0;
+  _modifNbMenus     = nb_forfaits  || 1;
+  document.getElementById('modifNom').textContent     = nom;
+  document.getElementById('modifAdultes').value       = nb_adultes;
+  document.getElementById('modifEnfants').value       = nb_enfants;
+  document.getElementById('modifRemise').value        = remise > 0 ? remise : '';
+  document.getElementById('modifVipNote').style.display = _modifForfaitPrix > 0 ? 'block' : 'none';
+  calcModifPrix();
+  document.getElementById('modalModifierAcces').classList.add('open');
+}
+
+function _modifAdj(fieldId, delta) {
+  const el = document.getElementById(fieldId);
+  const v  = Math.max(0, (parseInt(el.value) || 0) + delta);
+  el.value = v;
+  calcModifPrix();
+}
+
+function calcModifPrix() {
+  const na     = parseInt(document.getElementById('modifAdultes').value) || 0;
+  const ne     = parseInt(document.getElementById('modifEnfants').value) || 0;
+  const remise = parseFloat(document.getElementById('modifRemise').value) || 0;
+  let prix = 0;
+  if (_modifTypeClient === 'heberge') {
+    prix = 0;
+  } else if (_modifForfaitPrix > 0) {
+    prix = _modifForfaitPrix * _modifNbMenus;
+    const extras = Math.max(0, na - _modifNbMenus);
+    prix += TARIF_ADULTE * extras + TARIF_ENFANT * ne;
+  } else {
+    prix = TARIF_ADULTE * na + TARIF_ENFANT * ne;
+  }
+  const net = Math.max(0, prix - remise);
+  document.getElementById('modifPrixBrut').textContent = prix.toLocaleString('fr-FR') + ' F';
+  document.getElementById('modifPrixNet').textContent  = net.toLocaleString('fr-FR') + ' F';
+  const remiseRow = document.getElementById('modifRemiseRow');
+  if (remise > 0) {
+    remiseRow.style.display = 'flex';
+    document.getElementById('modifRemiseAff').textContent = '− ' + remise.toLocaleString('fr-FR') + ' F';
+  } else {
+    remiseRow.style.display = 'none';
+  }
+}
+
+async function validerModifAcces() {
+  const na     = parseInt(document.getElementById('modifAdultes').value) || 0;
+  const ne     = parseInt(document.getElementById('modifEnfants').value) || 0;
+  const remise = parseFloat(document.getElementById('modifRemise').value) || 0;
+  if (_modifTypeClient !== 'heberge' && na < 1 && ne < 1) {
+    piscineNotif('Veuillez indiquer au moins 1 personne.', 'error'); return;
+  }
+  const url = URL_MODIFIER_ACCES_TPL.replace('/0/', '/' + _modifAccesId + '/');
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ nb_adultes: na, nb_enfants: ne, remise_montant: remise }),
+    });
+    const d = await r.json();
+    if (d.success) {
+      fermerModal('modalModifierAcces');
+      piscineNotif('Composition mise à jour — rechargement…', 'success');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      piscineNotif(d.error || 'Une erreur est survenue.', 'error');
+    }
+  } catch(e) {
+    piscineNotif('Erreur de connexion — rechargez la page.', 'error');
+  }
+}
 
 function ouvrirEntree(type){
   document.getElementById('entreeAdultes').value=1;

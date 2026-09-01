@@ -451,6 +451,66 @@ def ajouter_consommation(request, acces_id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+@_json_piscine_access_required
+@require_POST
+def modifier_acces_personnes(request, acces_id):
+    """Modifier la composition (adultes/enfants/remise) d'un accès en cours après validation."""
+    try:
+        data = json.loads(request.body)
+        nb_adultes    = int(data.get('nb_adultes', 1))
+        nb_enfants    = int(data.get('nb_enfants', 0))
+        remise_montant = Decimal(str(data.get('remise_montant', 0) or 0))
+
+        acces = get_object_or_404(AccesPiscine, pk=acces_id, date_sortie__isnull=True)
+
+        if acces.type_client != 'heberge' and nb_adultes < 1 and nb_enfants < 1:
+            return JsonResponse({'success': False, 'error': 'Veuillez indiquer au moins 1 personne.'})
+
+        # Recalcul du prix selon le type d'accès
+        if acces.type_client == 'heberge':
+            prix_total = Decimal('0')
+        elif acces.forfait:
+            # VIP : nb_forfaits fixe, extras adultes/enfants au tarif visiteur standard
+            nb_menus = acces.nb_forfaits
+            prix_total = acces.forfait.prix * nb_menus
+            extras_adultes = max(0, nb_adultes - nb_menus)
+            if extras_adultes > 0 or nb_enfants > 0:
+                t_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
+                t_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
+                if extras_adultes > 0 and t_adulte:
+                    prix_total += t_adulte.prix_unitaire * extras_adultes
+                if nb_enfants > 0 and t_enfant:
+                    prix_total += t_enfant.prix_unitaire * nb_enfants
+        else:
+            # Visiteur ordinaire
+            t_adulte = TarifPiscine.objects.filter(type_tarif='adulte_visiteur').first()
+            t_enfant = TarifPiscine.objects.filter(type_tarif='enfant_visiteur').first()
+            if not t_adulte:
+                return JsonResponse({'success': False, 'error': 'Tarif adulte non configuré.'})
+            prix_total = (
+                (t_adulte.prix_unitaire * nb_adultes if nb_adultes else Decimal('0')) +
+                (t_enfant.prix_unitaire * nb_enfants if t_enfant and nb_enfants else Decimal('0'))
+            )
+
+        acces.nb_adultes    = nb_adultes
+        acces.nb_enfants    = nb_enfants
+        acces.prix_total    = prix_total
+        acces.remise_montant = remise_montant
+        acces.save(update_fields=['nb_adultes', 'nb_enfants', 'prix_total', 'remise_montant'])
+
+        return JsonResponse({
+            'success': True,
+            'nb_adultes':      nb_adultes,
+            'nb_enfants':      nb_enfants,
+            'prix_total':      float(prix_total),
+            'remise_montant':  float(remise_montant),
+            'total_net':       float(max(prix_total - remise_montant, Decimal('0'))),
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
 @require_module_access('piscine')
 @require_POST
 def encaisser_sortie(request, acces_id):
