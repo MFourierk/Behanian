@@ -500,7 +500,16 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
         date_creation__date__lte=date_fin,
     ).select_related('cree_par').order_by('-date_creation'))
 
-    total_net, par_module, par_mode, par_caissier, tickets = 0, {}, {}, {}, []
+    # Serveur mapping: restaurant ticket → Commande.serveur
+    from restaurant.models import Commande as RestaurantCommande
+    rest_ids = [tk.objet_id for tk in qs if tk.module == 'restaurant' and tk.objet_id]
+    serveur_map = {}
+    if rest_ids:
+        for cmd in RestaurantCommande.objects.filter(pk__in=rest_ids).select_related('serveur'):
+            nom = (cmd.serveur.get_full_name() or cmd.serveur.username) if cmd.serveur else 'Non assigné'
+            serveur_map[cmd.pk] = nom
+
+    total_net, par_module, par_mode, par_caissier, par_serveur, tickets = 0, {}, {}, {}, {}, []
     same_day = (date_debut == date_fin)
     for tk in qs:
         montant = float(tk.montant_paye or 0)
@@ -516,6 +525,11 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
         par_caissier.setdefault(caissier, {'nb': 0, 'total': 0})
         par_caissier[caissier]['nb']    += 1
         par_caissier[caissier]['total'] += montant
+        if tk.module == 'restaurant':
+            serveur = serveur_map.get(tk.objet_id, 'Non assigné')
+            par_serveur.setdefault(serveur, {'nb': 0, 'total': 0})
+            par_serveur[serveur]['nb']    += 1
+            par_serveur[serveur]['total'] += montant
         tickets.append({
             'numero':   tk.numero or '—',
             'module':   mod,
@@ -531,7 +545,7 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
     return {
         'periode': periode, 'nb_tickets': len(tickets), 'total_net': total_net,
         'par_module': par_module, 'par_mode': par_mode,
-        'par_caissier': par_caissier, 'tickets': tickets,
+        'par_caissier': par_caissier, 'par_serveur': par_serveur, 'tickets': tickets,
     }
 
 
@@ -582,6 +596,7 @@ def api_resume_ventes(request):
             'par_module':  [{'nom': k, **v} for k, v in data['par_module'].items()],
             'par_mode':    data['par_mode'],
             'par_caissier': [{'nom': k, **v} for k, v in data['par_caissier'].items()],
+            'par_serveur':  [{'nom': k, **v} for k, v in data['par_serveur'].items()],
             'tickets':     [{k: v for k, v in t.items() if k != 'date'} for t in data['tickets']],
         })
     except Exception as e:
