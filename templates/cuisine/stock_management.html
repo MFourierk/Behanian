@@ -285,8 +285,19 @@
         <div class="bottom-grid">
             <!-- Ingrédients critiques -->
             <div class="panel">
-                <div class="panel-title">
-                    <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Ingrédients critiques
+                <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    <span><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Ingrédients critiques</span>
+                    <div style="display:flex;gap:5px;align-items:center;">
+                        <select id="select-crit-filtre-cuisine" style="font-size:0.76rem;padding:3px 6px;border-radius:4px;border:1px solid #ddd;cursor:pointer;">
+                            <option value="both">Rupture + Stock bas</option>
+                            <option value="rupture">Rupture seulement</option>
+                            <option value="stockbas">Stock bas seulement</option>
+                        </select>
+                        <button onclick="imprimerCritiquesCuisine()" title="Imprimer les ingrédients critiques"
+                                style="padding:3px 8px;font-size:0.78rem;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer;">
+                            🖨️
+                        </button>
+                    </div>
                 </div>
                 <!-- Onglets Rupture / Stock bas -->
                 <div style="display:flex;border-bottom:2px solid #f0f0f0;margin-bottom:10px;gap:0;">
@@ -1146,6 +1157,74 @@ function setCritiqueTabCuisine(tab, btn) {
     document.getElementById('tab-cuit-btn-rupture').style.color = tab === 'rupture' ? '#e74c3c' : '#7f8c8d';
     document.getElementById('tab-cuit-btn-stockbas').style.borderBottomColor = tab === 'stockbas' ? '#f39c12' : 'transparent';
     document.getElementById('tab-cuit-btn-stockbas').style.color = tab === 'stockbas' ? '#f39c12' : '#7f8c8d';
+}
+
+function imprimerCritiquesCuisine() {
+    const filtre = document.getElementById('select-crit-filtre-cuisine').value;
+    const lignes = [];
+
+    function collectItems(sectionId, type) {
+        document.querySelectorAll('#' + sectionId + ' .critique-item').forEach(item => {
+            const divs = item.querySelectorAll('div > div');
+            const nom  = divs[0] ? divs[0].textContent.trim() : '—';
+            const info = divs[1] ? divs[1].textContent.trim() : '—';
+            lignes.push({ nom, info, type });
+        });
+    }
+
+    if (filtre === 'rupture' || filtre === 'both') collectItems('critique-cuit-rupture', 'rupture');
+    if (filtre === 'stockbas' || filtre === 'both')  collectItems('critique-cuit-stockbas', 'stockbas');
+
+    if (lignes.length === 0) { alert('Aucun ingrédient à imprimer pour ce filtre.'); return; }
+
+    const titres = { rupture: 'Ruptures de stock', stockbas: 'Ingrédients en stock bas', both: 'Ruptures & Stock bas' };
+    const date = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const rows = lignes.map(l => `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${l.nom}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;color:#555;font-size:12px;">${l.info}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;">
+            <span style="padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;
+                ${l.type === 'rupture' ? 'background:#fdecea;color:#e74c3c;' : 'background:#fef9e7;color:#f39c12;'}">
+                ${l.type === 'rupture' ? 'Rupture' : 'Stock bas'}
+            </span>
+        </td>
+    </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Ingrédients critiques — Cuisine</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 13px; color: #2c3e50; margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #c0392b; padding-bottom: 12px; }
+        .header h2 { margin: 4px 0; font-size: 16px; }
+        .header p  { margin: 2px 0; color: #666; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { background: #c0392b; color: white; padding: 8px 10px; text-align: left; font-size: 12px; }
+        tbody tr:hover { background: #f8f9fa; }
+        .footer { text-align: center; margin-top: 16px; font-size: 11px; color: #aaa; }
+        .no-print { text-align: center; margin-bottom: 14px; }
+        .btn-print { background:#c0392b;color:white;border:none;padding:8px 24px;border-radius:4px;cursor:pointer;font-size:13px; }
+        @media print { .no-print { display: none !important; } }
+    </style></head><body>
+    <div class="no-print"><button class="btn-print" onclick="window.print()">🖨️ Imprimer</button></div>
+    <div class="header">
+        <h2>COMPLEXE HÔTELIER BEHANIAN — Cuisine</h2>
+        <h2>${titres[filtre]}</h2>
+        <p>Édité le ${date}</p>
+    </div>
+    <table>
+        <thead><tr><th>Ingrédient</th><th>Stock actuel</th><th>Statut</th></tr></thead>
+        <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">Total : ${lignes.length} ingrédient(s)</div>
+    </body></html>`;
+
+    const w = window.open('', '_blank', 'width=700,height=600');
+    if (!w) { alert('Autorisez les popups pour imprimer.'); return; }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.onafterprint = () => w.close();
+    setTimeout(() => w.print(), 300);
 }
 
 // Gestion des onglets
