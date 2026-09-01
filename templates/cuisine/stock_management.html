@@ -288,31 +288,57 @@
                 <div class="panel-title">
                     <i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i> Ingrédients critiques
                 </div>
-                {% with critiques=ingredients|dictsort:"quantite_stock" %}
-                {% for ing in ingredients %}
-                {% if ing.quantite_stock <= ing.seuil_alerte %}
-                <div class="critique-item">
-                    <div>
-                        <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ ing.nom }}</div>
-                        <div style="font-size:0.82rem;color:#7f8c8d;">
-                            Stock : {{ ing.quantite_stock|floatformat:2 }}
-                            {% if ing.unite_stock %} {{ ing.unite_stock.abreviation }}{% endif %}
+                <!-- Onglets Rupture / Stock bas -->
+                <div style="display:flex;border-bottom:2px solid #f0f0f0;margin-bottom:10px;gap:0;">
+                    <button onclick="setCritiqueTabCuisine('rupture',this)" id="tab-cuit-btn-rupture"
+                            style="padding:5px 14px;font-size:0.82rem;font-weight:700;border:none;border-bottom:2px solid #e74c3c;background:none;cursor:pointer;color:#e74c3c;margin-bottom:-2px;">
+                        Rupture <span style="background:#e74c3c;color:white;border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-left:3px;">{{ ingredients_rupture|length }}</span>
+                    </button>
+                    <button onclick="setCritiqueTabCuisine('stockbas',this)" id="tab-cuit-btn-stockbas"
+                            style="padding:5px 14px;font-size:0.82rem;font-weight:700;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;color:#7f8c8d;margin-bottom:-2px;">
+                        Stock bas <span style="background:#f39c12;color:white;border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-left:3px;">{{ ingredients_stock_bas|length }}</span>
+                    </button>
+                </div>
+                <!-- Rupture -->
+                <div id="critique-cuit-rupture">
+                    {% if ingredients_rupture %}
+                        {% for ing in ingredients_rupture %}
+                        <div class="critique-item">
+                            <div>
+                                <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ ing.nom }}</div>
+                                <div style="font-size:0.82rem;color:#7f8c8d;">Stock : 0{% if ing.unite_stock %} {{ ing.unite_stock.abreviation }}{% endif %}</div>
+                            </div>
+                            <span class="badge-rupture">Rupture</span>
                         </div>
-                    </div>
-                    {% if ing.quantite_stock <= 0 %}
-                        <span class="badge-rupture">Rupture</span>
+                        {% endfor %}
                     {% else %}
-                        <span class="badge-bas">Stock bas</span>
+                        <div class="empty-critique">
+                            <i class="fas fa-check-circle" style="color:#27ae60;"></i>
+                            <p>Aucune rupture de stock</p>
+                        </div>
                     {% endif %}
                 </div>
-                {% endif %}
-                {% empty %}
-                <div class="empty-critique">
-                    <i class="fas fa-check-circle" style="color:#27ae60;"></i>
-                    <p>Tous les stocks sont au niveau requis</p>
+                <!-- Stock bas -->
+                <div id="critique-cuit-stockbas" style="display:none;">
+                    {% if ingredients_stock_bas %}
+                        {% for ing in ingredients_stock_bas %}
+                        <div class="critique-item">
+                            <div>
+                                <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ ing.nom }}</div>
+                                <div style="font-size:0.82rem;color:#7f8c8d;">
+                                    Stock : {{ ing.quantite_stock|floatformat:2 }}{% if ing.unite_stock %} {{ ing.unite_stock.abreviation }}{% endif %} / seuil {{ ing.seuil_alerte|floatformat:2 }}
+                                </div>
+                            </div>
+                            <span class="badge-bas">Stock bas</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-critique">
+                            <i class="fas fa-check-circle" style="color:#27ae60;"></i>
+                            <p>Aucun ingrédient en stock bas</p>
+                        </div>
+                    {% endif %}
                 </div>
-                {% endfor %}
-                {% endwith %}
             </div>
 
             <!-- Derniers mouvements -->
@@ -1112,6 +1138,16 @@
     </div>
 
 <script>
+// Onglets Ingrédients critiques
+function setCritiqueTabCuisine(tab, btn) {
+    document.getElementById('critique-cuit-rupture').style.display = tab === 'rupture' ? '' : 'none';
+    document.getElementById('critique-cuit-stockbas').style.display = tab === 'stockbas' ? '' : 'none';
+    document.getElementById('tab-cuit-btn-rupture').style.borderBottomColor = tab === 'rupture' ? '#e74c3c' : 'transparent';
+    document.getElementById('tab-cuit-btn-rupture').style.color = tab === 'rupture' ? '#e74c3c' : '#7f8c8d';
+    document.getElementById('tab-cuit-btn-stockbas').style.borderBottomColor = tab === 'stockbas' ? '#f39c12' : 'transparent';
+    document.getElementById('tab-cuit-btn-stockbas').style.color = tab === 'stockbas' ? '#f39c12' : '#7f8c8d';
+}
+
 // Gestion des onglets
 function showTab(name, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));

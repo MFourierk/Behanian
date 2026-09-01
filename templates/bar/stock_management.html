@@ -343,26 +343,55 @@
                 <div class="panel-title">
                     <i class="fas fa-exclamation-triangle text-danger"></i> Articles critiques
                 </div>
-                {% if articles_critiques %}
-                    {% for article in articles_critiques %}
-                    <div class="critique-item">
-                        <div>
-                            <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ article.nom }}</div>
-                            <div style="font-size:0.82rem;color:#7f8c8d;">Stock : {{ article.stock_disponible }} unités</div>
-                        </div>
-                        {% if article.est_en_rupture %}
+                <!-- Onglets Rupture / Stock bas -->
+                <div style="display:flex;border-bottom:2px solid #f0f0f0;margin-bottom:10px;gap:0;">
+                    <button onclick="setCritiqueTab('rupture',this)" id="tab-crit-btn-rupture"
+                            style="padding:5px 14px;font-size:0.82rem;font-weight:700;border:none;border-bottom:2px solid #e74c3c;background:none;cursor:pointer;color:#e74c3c;margin-bottom:-2px;">
+                        Rupture <span style="background:#e74c3c;color:white;border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-left:3px;">{{ articles_rupture|length }}</span>
+                    </button>
+                    <button onclick="setCritiqueTab('stockbas',this)" id="tab-crit-btn-stockbas"
+                            style="padding:5px 14px;font-size:0.82rem;font-weight:700;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;color:#7f8c8d;margin-bottom:-2px;">
+                        Stock bas <span style="background:#f39c12;color:white;border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-left:3px;">{{ articles_stock_bas|length }}</span>
+                    </button>
+                </div>
+                <!-- Rupture -->
+                <div id="critique-cave-rupture">
+                    {% if articles_rupture %}
+                        {% for article in articles_rupture %}
+                        <div class="critique-item">
+                            <div>
+                                <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ article.nom }}</div>
+                                <div style="font-size:0.82rem;color:#7f8c8d;">Stock : 0 unités</div>
+                            </div>
                             <span class="badge-rupture">Rupture</span>
-                        {% else %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-critique">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Aucune rupture de stock</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <!-- Stock bas -->
+                <div id="critique-cave-stockbas" style="display:none;">
+                    {% if articles_stock_bas %}
+                        {% for article in articles_stock_bas %}
+                        <div class="critique-item">
+                            <div>
+                                <div style="font-weight:600;color:#2c3e50;font-size:0.9rem;">{{ article.nom }}</div>
+                                <div style="font-size:0.82rem;color:#7f8c8d;">Stock : {{ article.stock_disponible }} / {{ article.seuil_alerte }} unités</div>
+                            </div>
                             <span class="badge-bas">Stock bas</span>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty-critique">
-                        <i class="fas fa-check-circle"></i>
-                        <p>Tous les stocks sont au niveau requis</p>
-                    </div>
-                {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-critique">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Aucun article en stock bas</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -1299,6 +1328,16 @@
 </div>
 
 <script>
+// Onglets Articles critiques
+function setCritiqueTab(tab, btn) {
+    document.getElementById('critique-cave-rupture').style.display = tab === 'rupture' ? '' : 'none';
+    document.getElementById('critique-cave-stockbas').style.display = tab === 'stockbas' ? '' : 'none';
+    document.getElementById('tab-crit-btn-rupture').style.borderBottomColor = tab === 'rupture' ? '#e74c3c' : 'transparent';
+    document.getElementById('tab-crit-btn-rupture').style.color = tab === 'rupture' ? '#e74c3c' : '#7f8c8d';
+    document.getElementById('tab-crit-btn-stockbas').style.borderBottomColor = tab === 'stockbas' ? '#f39c12' : 'transparent';
+    document.getElementById('tab-crit-btn-stockbas').style.color = tab === 'stockbas' ? '#f39c12' : '#7f8c8d';
+}
+
 // Gestion des onglets
 function showTab(name, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));

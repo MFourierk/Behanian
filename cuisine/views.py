@@ -67,8 +67,10 @@ def stock_management(request):
     # Stats
     total_articles = ingredients.count()
     valeur_stock   = sum(i.valeur_stock for i in ingredients)
-    stock_bas      = ingredients.filter(quantite_stock__gt=0, quantite_stock__lte=F('seuil_alerte')).count()
-    ruptures       = ingredients.filter(quantite_stock__lte=0).count()
+    stock_bas           = ingredients.filter(quantite_stock__gt=0, quantite_stock__lte=F('seuil_alerte')).count()
+    ruptures            = ingredients.filter(quantite_stock__lte=0).count()
+    ingredients_rupture   = ingredients.filter(quantite_stock__lte=0).order_by('nom')
+    ingredients_stock_bas = ingredients.filter(quantite_stock__gt=0, quantite_stock__lte=F('seuil_alerte')).order_by('quantite_stock')
     bc_en_cours    = BonCommandeCuisine.objects.filter(statut__in=['brouillon', 'confirme', 'envoye', 'partiel']).count()
 
     # Bons de commande
@@ -103,14 +105,16 @@ def stock_management(request):
     casses = CasseCuisine.objects.select_related('cree_par').all()
 
     context = {
-        'page_title':     'Stock Cuisine',
-        'ingredients':    ingredients,
-        'categories':     CategorieIngredient.objects.all(),
-        'fournisseurs':   Fournisseur.objects.filter(actif=True),
-        'total_articles': total_articles,
-        'valeur_stock':   valeur_stock,
-        'stock_bas':      stock_bas,
-        'ruptures':       ruptures,
+        'page_title':             'Stock Cuisine',
+        'ingredients':            ingredients,
+        'categories':             CategorieIngredient.objects.all(),
+        'fournisseurs':           Fournisseur.objects.filter(actif=True),
+        'total_articles':         total_articles,
+        'valeur_stock':           valeur_stock,
+        'stock_bas':              stock_bas,
+        'ruptures':               ruptures,
+        'ingredients_rupture':    ingredients_rupture,
+        'ingredients_stock_bas':  ingredients_stock_bas,
         'bc_en_cours':    bc_en_cours,
         # BC
         'bons':           bons,

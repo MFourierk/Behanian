@@ -388,5 +388,23 @@ function previewImage(input) {
 
 // Init calcul (mode marge uniquement)
 if (document.getElementById('mode_prix').value === 'marge') calculerPrix();
+
+// Seuil d'alerte par défaut selon la catégorie
+(function() {
+    const catSelect = document.querySelector('select[name="categorie"]');
+    const seuilInput = document.querySelector('input[name="seuil_alerte"]');
+    if (!catSelect || !seuilInput) return;
+    const SEULS = { biere: 24, spiritueux: 1, liqueur: 1, vin: 6 };
+    function suggereSeuil() {
+        const txt = (catSelect.options[catSelect.selectedIndex]?.text || '').toLowerCase();
+        let val = null;
+        if (txt.includes('biere') || txt.includes('bière')) val = SEULS.biere;
+        else if (txt.includes('spiritueux')) val = SEULS.spiritueux;
+        else if (txt.includes('liqueur')) val = SEULS.liqueur;
+        else if (txt.includes('vin')) val = SEULS.vin;
+        if (val !== null) seuilInput.value = val;
+    }
+    catSelect.addEventListener('change', suggereSeuil);
+})();
 </script>
 {% endblock %}

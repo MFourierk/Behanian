@@ -27,7 +27,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, F
 from django.db import transaction
 from django.utils import timezone
 from django.http import JsonResponse
@@ -80,7 +80,8 @@ def stock_management(request):
         {'ok': categories_definies, 'titre': 'Catégories définies pour tous les articles', 'detail': 'Tous les articles ont une catégorie.' if categories_definies else "Certains articles n'ont pas de catégorie."},
     ]
     score = sum(1 for p in bonnes_pratiques if p['ok'])
-    articles_critiques = boissons.filter(Q(quantite_stock=0) | Q(quantite_stock__lte=10)).order_by('quantite_stock')
+    articles_rupture = boissons.filter(quantite_stock__lte=0).order_by('nom')
+    articles_stock_bas = boissons.filter(quantite_stock__gt=0, quantite_stock__lte=F('seuil_alerte')).order_by('quantite_stock')
 
     # Bons de commande pour l'onglet
     bons = BonCommandeBar.objects.select_related('fournisseur', 'client', 'cree_par').all()
@@ -147,7 +148,8 @@ def stock_management(request):
         'bonnes_pratiques': bonnes_pratiques,
         'score': score,
         'score_total': len(bonnes_pratiques),
-        'articles_critiques': articles_critiques,
+        'articles_rupture': articles_rupture,
+        'articles_stock_bas': articles_stock_bas,
         'boissons': BoissonBar.objects.exclude(statut='supprime'),
         'categories': CategorieBar.objects.all(),
         # Bons de commande
