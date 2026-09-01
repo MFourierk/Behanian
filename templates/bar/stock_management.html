@@ -355,7 +355,7 @@
                     </button>
                 </div>
                 <!-- Rupture -->
-                <div id="critique-cave-rupture">
+                <div id="critique-cave-rupture" style="max-height:260px;overflow-y:auto;">
                     {% if articles_rupture %}
                         {% for article in articles_rupture %}
                         <div class="critique-item">
@@ -374,7 +374,7 @@
                     {% endif %}
                 </div>
                 <!-- Stock bas -->
-                <div id="critique-cave-stockbas" style="display:none;">
+                <div id="critique-cave-stockbas" style="display:none;max-height:260px;overflow-y:auto;">
                     {% if articles_stock_bas %}
                         {% for article in articles_stock_bas %}
                         <div class="critique-item">
