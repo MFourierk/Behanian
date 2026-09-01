@@ -1518,6 +1518,7 @@ function setBillet(val, exact = false) {
 
 
 function setModalMode(mode) {
+  const prevMode = modePaiement;
   modePaiement = mode;
   tickets[ticketActifId].paiement = mode;
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
@@ -1530,7 +1531,10 @@ function setModalMode(mode) {
     document.getElementById('renduDisplay').classList.remove('show');
   }
   if (MOBILE_MODES.includes(mode)) {
-    document.getElementById('montantEspeces').value = '';
+    // Ne réinitialiser le partiel espèces que si on vient d'un mode non-mobile
+    if (!MOBILE_MODES.includes(prevMode)) {
+      document.getElementById('montantEspeces').value = '';
+    }
     calcMontantMobile();
   }
 }
