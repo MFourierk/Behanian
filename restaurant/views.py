@@ -240,7 +240,7 @@ def valider_commande(request):
                     </div>
                     """
 
-                montant_total_ticket = commande.total + frais_salon
+                montant_total_ticket = Decimal(str(commande.total_net)) + frais_salon
 
                 # Création du Ticket
                 ticket = Ticket.objects.create(
@@ -1150,8 +1150,13 @@ def resume_ventes_jour(request):
         }
         commande_table_map = {c.id: (c.table.numero if c.table else ('À emporter' if c.emporter else '')) for c in commandes}
 
-        # Total net = somme des montant_total tickets (frais salon inclus, cohérent avec dashboard)
+        # Total net = somme des montant_total tickets (après remise + frais salon VIP)
         total_net = sum(float(tk.montant_total or 0) for tk in tickets_jour)
+        # Ajuster total_brut pour inclure les frais salon → remise = brut - net = réduction articles seuls
+        total_articles_net = sum(c.total_net for c in commandes)
+        total_salon = total_net - total_articles_net
+        if total_salon > 0:
+            total_brut += total_salon
 
         for tk in tickets_jour:
             m_raw = tk.mode_paiement or 'especes'
