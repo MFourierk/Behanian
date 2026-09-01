@@ -509,7 +509,7 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
             nom = (cmd.serveur.get_full_name() or cmd.serveur.username) if cmd.serveur else 'Non assigné'
             serveur_map[cmd.pk] = nom
 
-    total_net, par_module, par_mode, par_caissier, par_serveur, tickets = 0, {}, {}, {}, {}, []
+    total_net, par_module, par_mode, par_caissier, par_serveur, par_module_mode, tickets = 0, {}, {}, {}, {}, {}, []
     same_day = (date_debut == date_fin)
     for tk in qs:
         montant = float(tk.montant_total or 0)
@@ -521,6 +521,8 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
         m = MODE_LABELS.get(tk.mode_paiement or 'especes',
                             (tk.mode_paiement or 'especes').replace('_', ' ').capitalize())
         par_mode[m] = par_mode.get(m, 0) + montant
+        par_module_mode.setdefault(mod, {})
+        par_module_mode[mod][m] = par_module_mode[mod].get(m, 0) + montant
         caissier = (tk.cree_par.get_full_name() or tk.cree_par.username) if tk.cree_par else 'Inconnu'
         par_caissier.setdefault(caissier, {'nb': 0, 'total': 0})
         par_caissier[caissier]['nb']    += 1
@@ -545,7 +547,8 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
     return {
         'periode': periode, 'nb_tickets': len(tickets), 'total_net': total_net,
         'par_module': par_module, 'par_mode': par_mode,
-        'par_caissier': par_caissier, 'par_serveur': par_serveur, 'tickets': tickets,
+        'par_caissier': par_caissier, 'par_serveur': par_serveur,
+        'par_module_mode': par_module_mode, 'tickets': tickets,
     }
 
 
@@ -595,9 +598,10 @@ def api_resume_ventes(request):
             'total_net':   data['total_net'],
             'par_module':  [{'nom': k, **v} for k, v in data['par_module'].items()],
             'par_mode':    data['par_mode'],
-            'par_caissier': [{'nom': k, **v} for k, v in data['par_caissier'].items()],
-            'par_serveur':  [{'nom': k, **v} for k, v in data['par_serveur'].items()],
-            'tickets':     [{k: v for k, v in t.items() if k != 'date'} for t in data['tickets']],
+            'par_caissier':    [{'nom': k, **v} for k, v in data['par_caissier'].items()],
+            'par_serveur':     [{'nom': k, **v} for k, v in data['par_serveur'].items()],
+            'par_module_mode': data['par_module_mode'],
+            'tickets':         [{k: v for k, v in t.items() if k != 'date'} for t in data['tickets']],
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})

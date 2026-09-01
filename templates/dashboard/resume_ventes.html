@@ -403,7 +403,8 @@ async function chargerResume() {
   });
   if (!serveurRows) serveurRows = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">Aucune donnée restaurant</td></tr>';
 
-  // Opérateurs mobile (sous-ensemble de par_mode)
+  // Opérateurs mobile (sous-ensemble de par_mode) — totaux globaux
+  const MOBILE_OPS = ['Wave', 'Orange Money', 'MTN Money', 'Moov Money'];
   let opRows = '';
   for (const [mode, total] of Object.entries(parMode)) {
     if (OPERATEUR_LABELS.has(mode)) {
@@ -411,6 +412,96 @@ async function chargerResume() {
     }
   }
   if (!opRows) opRows = '<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:20px;">Aucune transaction mobile</td></tr>';
+
+  // Mobile Money par module
+  const parModuleMode = d.par_module_mode || {};
+  const allModules = (d.par_module || []).map(m => m.nom);
+  const presentOps = MOBILE_OPS.filter(op => allModules.some(mod => (parModuleMode[mod] || {})[op]));
+
+  let mobileModuleRows = '';
+  if (presentOps.length) {
+    const mobColTotals = {};
+    presentOps.forEach(op => mobColTotals[op] = 0);
+    let mobGrandTotal = 0;
+    allModules.forEach(mod => {
+      const mdata = parModuleMode[mod] || {};
+      const rowTotal = presentOps.reduce((s, op) => s + (mdata[op] || 0), 0);
+      if (!rowTotal) return;
+      mobGrandTotal += rowTotal;
+      mobileModuleRows += `<tr><td>${mod}</td>`;
+      presentOps.forEach(op => {
+        const v = mdata[op] || 0;
+        mobColTotals[op] += v;
+        mobileModuleRows += `<td class="num">${v ? fmt(v) : '—'}</td>`;
+      });
+      mobileModuleRows += `<td class="num gold-val">${fmt(rowTotal)}</td></tr>`;
+    });
+    if (mobGrandTotal) {
+      mobileModuleRows += '<tr style="background:#f8f9fb;font-weight:700;border-top:2px solid var(--border);"><td>TOTAL</td>';
+      presentOps.forEach(op => {
+        mobileModuleRows += `<td class="num gold-val">${mobColTotals[op] ? fmt(mobColTotals[op]) : '—'}</td>`;
+      });
+      mobileModuleRows += `<td class="num gold-val">${fmt(mobGrandTotal)}</td></tr>`;
+    }
+  }
+  const mobileOpHeaders = presentOps.map(op => `<th class="num">${op}</th>`).join('');
+  const mobileModuleHtml = (mobileModuleRows && presentOps.length) ? `
+    <div class="rv-tickets-panel" style="margin-bottom:24px;">
+      <div class="rv-panel-hdr"><i class="fas fa-mobile-alt" style="color:#7c3aed;"></i><h3>Mobile Money par module</h3></div>
+      <div class="rv-tickets-scroll">
+        <table class="rv-table">
+          <thead><tr><th>Module</th>${mobileOpHeaders}<th class="num">Total Mobile</th></tr></thead>
+          <tbody>${mobileModuleRows}</tbody>
+        </table>
+      </div>
+    </div>` : '';
+
+  // Tableau croisé Module × Mode de paiement
+  const allModes = [...new Set(Object.values(parModuleMode).flatMap(md => Object.keys(md)))];
+  // Trier : Espèces, Carte en tête, puis Mobile, puis reste
+  const modeOrder = ['Espèces','Carte/TPE','Wave','Orange Money','MTN Money','Moov Money','Chèque','Virement','Chambre'];
+  allModes.sort((a,b) => {
+    const ia = modeOrder.indexOf(a), ib = modeOrder.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+
+  let crosstabHtml = '';
+  if (allModes.length && allModules.length) {
+    const ctColTotals = {};
+    allModes.forEach(m => ctColTotals[m] = 0);
+    let ctGrand = 0;
+    let ctBody = '';
+    allModules.forEach(mod => {
+      const mdata = parModuleMode[mod] || {};
+      const rowTotal = allModes.reduce((s, m) => s + (mdata[m] || 0), 0);
+      if (!rowTotal) return;
+      ctGrand += rowTotal;
+      ctBody += `<tr><td><strong>${mod}</strong></td>`;
+      allModes.forEach(mode => {
+        const v = mdata[mode] || 0;
+        ctColTotals[mode] += v;
+        ctBody += `<td class="num">${v ? fmt(v) : '—'}</td>`;
+      });
+      ctBody += `<td class="num gold-val">${fmt(rowTotal)}</td></tr>`;
+    });
+    ctBody += '<tr style="background:#f8f9fb;font-weight:700;border-top:2px solid var(--border);"><td>TOTAL</td>';
+    allModes.forEach(mode => {
+      ctBody += `<td class="num gold-val">${ctColTotals[mode] ? fmt(ctColTotals[mode]) : '—'}</td>`;
+    });
+    ctBody += `<td class="num gold-val">${fmt(ctGrand)}</td></tr>`;
+
+    const ctHeaders = allModes.map(m => `<th class="num">${m}</th>`).join('');
+    crosstabHtml = `
+    <div class="rv-tickets-panel" style="margin-bottom:24px;">
+      <div class="rv-panel-hdr"><i class="fas fa-table" style="color:var(--gold);"></i><h3>Tableau croisé — Mode de paiement par module</h3><span style="margin-left:auto;font-size:0.72rem;color:var(--muted);">Imprimable</span></div>
+      <div class="rv-tickets-scroll">
+        <table class="rv-table">
+          <thead><tr><th>Module</th>${ctHeaders}<th class="num">Total</th></tr></thead>
+          <tbody>${ctBody}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
 
   const tablesHtml = `
     <div class="rv-cols-3">
@@ -450,7 +541,9 @@ async function chargerResume() {
           <canvas id="chartModes"></canvas>
         </div>
       </div>
-    </div>`;
+    </div>
+    ${mobileModuleHtml}
+    ${crosstabHtml}`;
 
   // Graphe performances
   const chartsHtml = `
