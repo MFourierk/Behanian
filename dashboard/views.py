@@ -512,7 +512,7 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
     total_net, par_module, par_mode, par_caissier, par_serveur, tickets = 0, {}, {}, {}, {}, []
     same_day = (date_debut == date_fin)
     for tk in qs:
-        montant = float(tk.montant_paye or 0)
+        montant = float(tk.montant_total or 0)
         total_net += montant
         mod = MODULE_LABELS.get(tk.module, tk.module)
         par_module.setdefault(mod, {'nb': 0, 'total': 0})
