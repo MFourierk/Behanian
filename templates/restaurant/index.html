@@ -827,11 +827,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="btn-emporter" id="btnEmporter" onclick="activerModeEmporter()">
           <i class="fas fa-shopping-bag"></i> Commande À Emporter (sans table)
         </button>
-        {% if salons_vip %}
         <button class="btn-emporter" style="background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.4);" onclick="ouvrirModalSalonDirect()">
           🛋️ Facturer Salon Privé seul
         </button>
-        {% endif %}
       </div>
       <div class="salle-header">
         <input type="text" class="salle-search" placeholder="Rechercher une table…" oninput="filtrerTables(this.value)">
@@ -1382,6 +1380,11 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }} ({{ s.tarif_horaire|floatformat:0 }} F/h)</option>
         {% endfor %}
       </select>
+      {% if not salons_vip %}
+      <div style="margin-top:10px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:12px;color:#991b1b;">
+        ⚠️ Aucun salon privé configuré. Allez dans <strong>Paramètres → Tables</strong>, modifiez chaque table SAPR et cochez <strong>"Salon Privé"</strong>.
+      </div>
+      {% endif %}
     </div>
 
     <!-- Heures -->
