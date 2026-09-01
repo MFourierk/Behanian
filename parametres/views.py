@@ -210,7 +210,7 @@ class TableListView(ListView):
 class TableCreateView(CreateView):
     model = Table
     template_name = 'parametres/table_form.html'
-    fields = ['numero', 'capacite', 'statut']
+    fields = ['numero', 'capacite', 'statut', 'est_salon_prive', 'tarif_horaire']
     success_url = reverse_lazy('parametres:table_list')
 
     def form_valid(self, form):
@@ -221,7 +221,7 @@ class TableCreateView(CreateView):
 class TableUpdateView(UpdateView):
     model = Table
     template_name = 'parametres/table_form.html'
-    fields = ['numero', 'capacite', 'statut']
+    fields = ['numero', 'capacite', 'statut', 'est_salon_prive', 'tarif_horaire']
     success_url = reverse_lazy('parametres:table_list')
     
     def form_valid(self, form):
