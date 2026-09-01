@@ -100,7 +100,7 @@ class Ingredient(models.Model):
                                               help_text="Ex : 5 Bananes = 1 Portion Alloco → saisir 5")
 
     # Prix & CMUP
-    prix_achat        = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix d'achat unitaire (FCFA)")
+    prix_achat        = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Prix d'achat unitaire (FCFA)")
     cmup              = models.DecimalField(max_digits=10, decimal_places=4, default=0, verbose_name="CMUP (FCFA)")
 
     # Stock
@@ -257,7 +257,7 @@ class LigneBonCommandeCuisine(models.Model):
     ingredient          = models.ForeignKey(Ingredient, on_delete=models.PROTECT, verbose_name="Ingrédient")
     quantite_commandee  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté commandée")
     quantite_recue      = models.DecimalField(max_digits=12, decimal_places=3, default=0, verbose_name="Qté reçue")
-    prix_unitaire       = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire (FCFA)")
+    prix_unitaire       = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix unitaire (FCFA)")
     notes_ligne         = models.CharField(max_length=200, blank=True, verbose_name="Note")
 
     @property
@@ -356,7 +356,7 @@ class LigneBonReceptionCuisine(models.Model):
     bon             = models.ForeignKey(BonReceptionCuisine, on_delete=models.CASCADE, related_name='lignes')
     ingredient      = models.ForeignKey(Ingredient, on_delete=models.PROTECT, verbose_name="Ingrédient")
     quantite_recue  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté reçue")
-    prix_unitaire   = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire (FCFA)")
+    prix_unitaire   = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix unitaire (FCFA)")
     notes_ligne     = models.CharField(max_length=200, blank=True, verbose_name="Note")
 
     @property
@@ -507,7 +507,7 @@ class Plat(models.Model):
     description_carte = models.TextField(blank=True, verbose_name="Description pour la carte client")
     fiche_technique   = models.OneToOneField(FicheTechnique, on_delete=models.SET_NULL, null=True, blank=True,
                                               related_name='plat', verbose_name="Fiche Technique liée")
-    prix_vente        = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+    prix_vente        = models.DecimalField(max_digits=10, decimal_places=3, default=0,
                                             verbose_name="Prix de vente (FCFA)")
     statut            = models.CharField(max_length=20, choices=STATUT_CHOICES, default='disponible')
     image             = models.ImageField(upload_to='plats/', blank=True, null=True)
@@ -636,7 +636,7 @@ class LigneInventaireCuisine(models.Model):
     ingredient          = models.ForeignKey(Ingredient, on_delete=models.PROTECT, verbose_name="Ingrédient")
     quantite_theorique  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté théorique (stock)")
     quantite_physique   = models.DecimalField(max_digits=12, decimal_places=3, default=0, verbose_name="Qté physique (comptée)")
-    valeur_ecart        = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
+    valeur_ecart        = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne         = models.CharField(max_length=200, blank=True, verbose_name="Note")
 
     @property

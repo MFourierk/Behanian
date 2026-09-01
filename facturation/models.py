@@ -99,14 +99,14 @@ class Facture(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
 
     # Champs de calcul
-    sous_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    remise = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    montant_tva = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    sous_total = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    remise = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    taux_tva = models.DecimalField(max_digits=5, decimal_places=3, default=Decimal('0.00'))
+    montant_tva = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
 
     # Champs de paiement
-    montant_paye = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    montant_paye = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
     date_paiement = models.DateTimeField(blank=True, null=True)
     
     # Métadonnées
@@ -145,9 +145,9 @@ class LigneFacture(models.Model):
     article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True, blank=True)
     designation = models.CharField(max_length=200, blank=True, verbose_name='Désignation')
     description = models.TextField(blank=True)
-    quantite = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
-    taux_remise = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    quantite = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('1.00'))
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3)
+    taux_remise = models.DecimalField(max_digits=5, decimal_places=3, default=Decimal('0.00'))
     
     class Meta:
         ordering = ['id']
@@ -188,11 +188,11 @@ class Proforma(models.Model):
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente')
 
     # Champs de calcul
-    sous_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    remise = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    montant_tva = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    sous_total = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    remise = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    taux_tva = models.DecimalField(max_digits=5, decimal_places=3, default=Decimal('0.00'))
+    montant_tva = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
 
     # Métadonnées
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -252,9 +252,9 @@ class LigneProforma(models.Model):
     article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True, blank=True)
     designation = models.CharField(max_length=200, blank=True, verbose_name='Désignation')
     description = models.TextField(blank=True)
-    quantite = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
-    taux_remise = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    quantite = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('1.00'))
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3)
+    taux_remise = models.DecimalField(max_digits=5, decimal_places=3, default=Decimal('0.00'))
     
     class Meta:
         ordering = ['id']
@@ -297,11 +297,11 @@ class Avoir(models.Model):
     motif = models.TextField(help_text="Motif obligatoire de l'avoir")
     
     # Champs de calcul
-    sous_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    remise = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    taux_tva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('20.00'))
-    montant_tva = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    sous_total = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    remise = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    taux_tva = models.DecimalField(max_digits=5, decimal_places=3, default=Decimal('20.00'))
+    montant_tva = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('0.00'))
     
     # Métadonnées
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -345,9 +345,9 @@ class LigneAvoir(models.Model):
     article = models.ForeignKey(Article, on_delete=models.SET_NULL, null=True, blank=True)
     designation = models.CharField(max_length=200, blank=True, verbose_name='Désignation')
     description = models.TextField(blank=True)
-    quantite = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
-    taux_remise = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    quantite = models.DecimalField(max_digits=10, decimal_places=3, default=Decimal('1.00'))
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3)
+    taux_remise = models.DecimalField(max_digits=5, decimal_places=3, default=Decimal('0.00'))
     
     class Meta:
         ordering = ['id']
@@ -384,7 +384,7 @@ class Ticket(models.Model):
     numero = models.CharField(max_length=50, unique=True)
     module = models.CharField(max_length=20, choices=MODULE_CHOICES)
     date_creation = models.DateTimeField(default=timezone.now)
-    montant_total = models.DecimalField(max_digits=10, decimal_places=2)
+    montant_total = models.DecimalField(max_digits=10, decimal_places=3)
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)
     
     PAIEMENT_CHOICES = [
@@ -404,7 +404,7 @@ class Ticket(models.Model):
 
     # Informations Paiement
     mode_paiement = models.CharField(max_length=50, choices=PAIEMENT_CHOICES, default='especes')
-    montant_paye = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    montant_paye = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     # Informations du ticket

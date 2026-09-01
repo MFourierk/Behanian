@@ -36,24 +36,24 @@ class CaisseSession(models.Model):
     is_open         = models.BooleanField(default=True)
 
     # Fond de caisse
-    fond_caisse     = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    fond_caisse_reel= models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'),
+    fond_caisse     = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    fond_caisse_reel= models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                                            help_text="Fond compté physiquement à la clôture")
 
     # Totaux calculés à la clôture
-    total_especes   = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    total_mobile    = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    total_carte     = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    total_virement  = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    total_general   = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
+    total_especes   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    total_mobile    = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    total_carte     = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    total_virement  = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    total_general   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
 
     # Prélèvement banque effectué lors de la clôture
-    prelevement_banque = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
+    prelevement_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
 
     # Contrôle de caisse (calculés à la clôture)
-    solde_theorique = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'),
+    solde_theorique = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                                           help_text="Fond initial + espèces encaissées − prélèvements banque")
-    ecart           = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'),
+    ecart           = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                                           help_text="Écart = Solde théorique − Fond réel compté (négatif = manquant)")
 
     notes           = models.TextField(blank=True)
@@ -128,7 +128,7 @@ class MouvementCaisse(models.Model):
     session       = models.ForeignKey(CaisseSession, on_delete=models.CASCADE, related_name='mouvements', null=True, blank=True)
     type          = models.CharField(max_length=20, choices=TYPE_CHOICES)
     module        = models.CharField(max_length=20, choices=MODULE_CHOICES, default='caisse')
-    montant       = models.DecimalField(max_digits=12, decimal_places=2)
+    montant       = models.DecimalField(max_digits=12, decimal_places=3)
     mode_paiement = models.CharField(max_length=20, choices=MODE_CHOICES, default='especes')
     description   = models.CharField(max_length=300, blank=True)
     reference     = models.CharField(max_length=100, blank=True, help_text="N° ticket, facture, bon…")
@@ -154,7 +154,7 @@ class MouvementCaisse(models.Model):
 class PrelevementBanque(models.Model):
     """Enregistrement des prélèvements vers la banque."""
     session     = models.ForeignKey(CaisseSession, on_delete=models.CASCADE, related_name='prelevements', null=True, blank=True)
-    montant     = models.DecimalField(max_digits=12, decimal_places=2)
+    montant     = models.DecimalField(max_digits=12, decimal_places=3)
     date        = models.DateTimeField(default=timezone.now)
     banque      = models.CharField(max_length=100, blank=True, help_text="Nom de la banque")
     reference   = models.CharField(max_length=100, blank=True, help_text="N° bordereau")

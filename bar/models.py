@@ -116,10 +116,10 @@ class BoissonBar(models.Model):
     image = models.ImageField(upload_to='boissons/', blank=True, null=True, verbose_name="Image")
 
     mode_prix = models.CharField(max_length=10, choices=MODE_PRIX_CHOICES, default='manuel', verbose_name="Mode de calcul du prix")
-    prix_achat = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Dernier prix d'achat (FCFA)")
+    prix_achat = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Dernier prix d'achat (FCFA)")
     cmup = models.DecimalField(max_digits=10, decimal_places=4, default=0, verbose_name="CMUP (Coût Moyen Unitaire Pondéré)")
-    marge = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Marge (%)")
-    prix = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix de vente (FCFA)")
+    marge = models.DecimalField(max_digits=5, decimal_places=3, default=0, verbose_name="Marge (%)")
+    prix = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Prix de vente (FCFA)")
 
     unite_standard = models.CharField(max_length=20, choices=UNITE_STANDARD_CHOICES, default='bouteille', verbose_name="Unité standard")
     unite_personnalisee = models.ForeignKey(UniteVente, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Unité personnalisée")
@@ -368,7 +368,7 @@ class VenteCave(models.Model):
     date_vente  = models.DateTimeField(auto_now_add=True)
     espace      = models.CharField(max_length=50, blank=True, default='')
     reference   = models.CharField(max_length=100, blank=True, default='')
-    total       = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total       = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     serveur     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ventes_cave_servies')
     utilisateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='ventes_cave_encaissees')
 
@@ -386,7 +386,7 @@ class LigneVenteCave(models.Model):
     boisson       = models.ForeignKey(BoissonBar, on_delete=models.SET_NULL, null=True, blank=True)
     nom_article   = models.CharField(max_length=200, blank=True, default='')
     quantite      = models.IntegerField(default=1)
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3, default=0)
 
     class Meta:
         verbose_name = "Ligne de vente (Cave)"
@@ -495,9 +495,9 @@ class BonCommandeBar(models.Model):
 class LigneBonCommandeBar(models.Model):
     bon = models.ForeignKey(BonCommandeBar, on_delete=models.CASCADE, related_name='lignes')
     article = models.ForeignKey(BoissonBar, on_delete=models.PROTECT, verbose_name="Article")
-    quantite_commandee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Qté commandée")
-    quantite_recue = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Qté reçue / livrée")
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire (FCFA)")
+    quantite_commandee = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Qté commandée")
+    quantite_recue = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Qté reçue / livrée")
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix unitaire (FCFA)")
     notes_ligne = models.CharField(max_length=200, blank=True, verbose_name="Note ligne")
 
     @property
@@ -590,15 +590,15 @@ class LigneBonReceptionBar(models.Model):
     bon = models.ForeignKey(BonReceptionBar, on_delete=models.CASCADE, related_name='lignes')
     article = models.ForeignKey(BoissonBar, on_delete=models.PROTECT, verbose_name="Article")
     quantite_commandee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
+        max_digits=10, decimal_places=3, default=0,
         verbose_name="Qté commandée (référence)"
     )
     quantite_recue = models.DecimalField(
-        max_digits=10, decimal_places=2,
+        max_digits=10, decimal_places=3,
         verbose_name="Qté reçue"
     )
     prix_unitaire = models.DecimalField(
-        max_digits=10, decimal_places=2,
+        max_digits=10, decimal_places=3,
         verbose_name="Prix unitaire (FCFA)"
     )
     notes_ligne = models.CharField(max_length=200, blank=True)
@@ -670,9 +670,9 @@ class InventaireBar(models.Model):
 class LigneInventaireBar(models.Model):
     inventaire = models.ForeignKey(InventaireBar, on_delete=models.CASCADE, related_name='lignes')
     article = models.ForeignKey(BoissonBar, on_delete=models.PROTECT)
-    quantite_theorique = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Qté théorique (système)")
-    quantite_comptee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Qté comptée (physique)")
-    valeur_ecart = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
+    quantite_theorique = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Qté théorique (système)")
+    quantite_comptee = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Qté comptée (physique)")
+    valeur_ecart = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne = models.CharField(max_length=200, blank=True)
 
     @property
@@ -744,8 +744,8 @@ class CasseBar(models.Model):
 class LigneCasseBar(models.Model):
     casse = models.ForeignKey(CasseBar, on_delete=models.CASCADE, related_name='lignes')
     article = models.ForeignKey(BoissonBar, on_delete=models.PROTECT)
-    quantite = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantité perdue")
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix unitaire (FCFA)")
+    quantite = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Quantité perdue")
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Prix unitaire (FCFA)")
     notes_ligne = models.CharField(max_length=200, blank=True)
 
     @property
@@ -777,16 +777,16 @@ class ParametrageShot(models.Model):
         verbose_name="Volume d'un shot (ml)"
     )
     prix_shot = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
+        max_digits=10, decimal_places=3, default=0,
         verbose_name="Prix du shot (FCFA)"
     )
     prix_tournee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
+        max_digits=10, decimal_places=3, default=0,
         verbose_name="Prix de la tournée (2 shots, FCFA)"
     )
     # ml consommés dans la bouteille actuellement ouverte
     ml_en_cours = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0,
+        max_digits=10, decimal_places=3, default=0,
         verbose_name="ml consommés (bouteille en cours)"
     )
     actif = models.BooleanField(default=True, verbose_name="Actif")
@@ -896,8 +896,8 @@ class VenteShot(models.Model):
     boisson     = models.ForeignKey(BoissonBar, on_delete=models.PROTECT, related_name='ventes_shot')
     type_vente  = models.CharField(max_length=10, choices=TYPE_VENTE, default='shot')
     nb_shots    = models.IntegerField(default=1, verbose_name="Nombre de shots")
-    ml_debites  = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="ml débités")
-    prix_encaisse = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix encaissé (FCFA)")
+    ml_debites  = models.DecimalField(max_digits=8, decimal_places=3, verbose_name="ml débités")
+    prix_encaisse = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix encaissé (FCFA)")
     operateur   = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='ventes_shot')
     commentaire = models.CharField(max_length=200, blank=True)
     date        = models.DateTimeField(auto_now_add=True)

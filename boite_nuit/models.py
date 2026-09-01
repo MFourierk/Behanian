@@ -11,7 +11,7 @@ class TableBoite(models.Model):
     numero = models.CharField(max_length=10, unique=True, verbose_name="Numéro")
     type_table = models.CharField(max_length=20, choices=TYPE_TABLE, verbose_name="Type")
     capacite = models.IntegerField(verbose_name="Capacité (personnes)")
-    prix_reservation = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix réservation (FCFA)")
+    prix_reservation = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Prix réservation (FCFA)")
     statut = models.CharField(
         max_length=20,
         choices=[
@@ -39,7 +39,7 @@ class Evenement(models.Model):
     date_evenement = models.DateField(verbose_name="Date de l'événement")
     heure_debut = models.TimeField(verbose_name="Heure de début")
     heure_fin = models.TimeField(null=True, blank=True, verbose_name="Heure de fin")
-    prix_entree = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix d'entrée (FCFA)")
+    prix_entree = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix d'entrée (FCFA)")
     capacite_max = models.IntegerField(null=True, blank=True, verbose_name="Capacité maximale")
     
     date_creation = models.DateTimeField(auto_now_add=True)
@@ -57,7 +57,7 @@ class EntreeBoite(models.Model):
     """Entrées à la boîte de nuit"""
     nom_client = models.CharField(max_length=100, verbose_name="Nom du client")
     nombre_personnes = models.IntegerField(default=1, verbose_name="Nombre de personnes")
-    prix_entree = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix d'entrée (FCFA)")
+    prix_entree = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix d'entrée (FCFA)")
     evenement = models.ForeignKey(Evenement, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Événement")
     
     date_entree = models.DateTimeField(auto_now_add=True)
@@ -78,8 +78,8 @@ class ConsommationBoite(models.Model):
     nom_client = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nom du client")
     produit = models.CharField(max_length=100, verbose_name="Produit")
     quantite = models.IntegerField(default=1, verbose_name="Quantité")
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire (FCFA)")
-    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Total (FCFA)")
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix unitaire (FCFA)")
+    total = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Total (FCFA)")
     
     date_creation = models.DateTimeField(auto_now_add=True)
     serveur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="Serveur")

@@ -12,8 +12,8 @@ class AccesPiscine(models.Model):
     type_client    = models.CharField(max_length=20, choices=TYPE_CLIENT)
     nb_adultes     = models.IntegerField(default=1)
     nb_enfants     = models.IntegerField(default=0)
-    prix_total     = models.DecimalField(max_digits=10, decimal_places=2)
-    remise_montant = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Remise (montant)")
+    prix_total     = models.DecimalField(max_digits=10, decimal_places=3)
+    remise_montant = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Remise (montant)")
     date_entree    = models.DateTimeField(auto_now_add=True)
     date_sortie    = models.DateTimeField(null=True, blank=True)
     reservation_hotel = models.ForeignKey(
@@ -68,7 +68,7 @@ class TarifPiscine(models.Model):
         ('enfant_heberge',  'Enfant hébergé'),
     ]
     type_tarif    = models.CharField(max_length=30, choices=TYPE, unique=True)
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3)
 
     def __str__(self):
         return f"{self.get_type_tarif_display()} — {self.prix_unitaire} F"
@@ -78,7 +78,7 @@ class ConsommationPiscine(models.Model):
     acces          = models.ForeignKey(AccesPiscine, on_delete=models.CASCADE, related_name='consommations')
     produit        = models.CharField(max_length=100)
     quantite       = models.IntegerField(default=1)
-    prix_unitaire  = models.DecimalField(max_digits=10, decimal_places=2)
+    prix_unitaire  = models.DecimalField(max_digits=10, decimal_places=3)
     date_creation  = models.DateTimeField(auto_now_add=True)
     inclus_forfait = models.BooleanField(default=False, verbose_name="Inclus dans forfait VIP")
     serveur        = models.ForeignKey(

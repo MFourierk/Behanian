@@ -23,9 +23,9 @@ class EspaceEvenementiel(models.Model):
     nom = models.CharField(max_length=100, verbose_name="Nom de l'espace")
     type_espace = models.CharField(max_length=50, choices=TYPE_ESPACE, verbose_name="Type")
     capacite = models.IntegerField(verbose_name="Capacité (personnes)")
-    prix_jour = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix par jour (FCFA)", default=0)
-    prix_demi_journee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix demi-journée (FCFA)", default=0, blank=True, null=True)
-    superficie = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Superficie (m²)")
+    prix_jour = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix par jour (FCFA)", default=0)
+    prix_demi_journee = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix demi-journée (FCFA)", default=0, blank=True, null=True)
+    superficie = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name="Superficie (m²)")
     
     # Équipements
     projecteur = models.BooleanField(default=False, verbose_name="Projecteur")
@@ -123,10 +123,10 @@ class ReservationEspace(models.Model):
     nombre_personnes = models.IntegerField(verbose_name="Nombre de personnes")
     
     # Tarification
-    prix_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total (FCFA)")
-    remise = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Remise (FCFA)")
+    prix_total = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix total (FCFA)")
+    remise = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Remise (FCFA)")
     numero = models.CharField(max_length=20, unique=True, blank=True, null=True, verbose_name="N° Réservation")
-    avance = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Avance payée (FCFA)")
+    avance = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Avance payée (FCFA)")
     mode_paiement = models.CharField(max_length=30, blank=True, null=True, verbose_name="Mode de paiement")
     motif_annulation = models.TextField(blank=True, null=True, verbose_name="Motif d'annulation")
     

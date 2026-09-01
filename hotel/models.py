@@ -23,9 +23,9 @@ class Chambre(models.Model):
     type_chambre = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type")
     etage = models.IntegerField(verbose_name="Étage")
     capacite = models.IntegerField(default=2, verbose_name="Capacité (personnes)")
-    prix_nuit    = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix Repos 4h (FCFA)")
-    prix_sejour  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix Journée 10h (FCFA)")
-    prix_nuitee  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Prix Nuitée 24h (FCFA)")
+    prix_nuit    = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix Repos 4h (FCFA)")
+    prix_sejour  = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Prix Journée 10h (FCFA)")
+    prix_nuitee  = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Prix Nuitée 24h (FCFA)")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='disponible', verbose_name="Statut")
     
     # Détails & Image
@@ -128,8 +128,8 @@ class Reservation(models.Model):
     
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
     
-    prix_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total (FCFA)")
-    avance = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Avance payée (FCFA)")
+    prix_total = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix total (FCFA)")
+    avance = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Avance payée (FCFA)")
     mode_paiement = models.CharField(max_length=20, choices=PAIEMENT_CHOICES, default='especes', verbose_name="Mode de Paiement")
     
     commentaire = models.TextField(blank=True, null=True, verbose_name="Commentaire")
@@ -222,7 +222,7 @@ class Consommation(models.Model):
     
     nom = models.CharField(max_length=200, verbose_name="Désignation")
     quantite = models.IntegerField(default=1)
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3)
     date_ajout = models.DateTimeField(auto_now_add=True)
     serveur = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,

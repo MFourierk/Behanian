@@ -18,7 +18,7 @@ class Table(models.Model):
         verbose_name="Statut"
     )
     est_salon_prive = models.BooleanField(default=False, verbose_name="Salon privé")
-    tarif_horaire = models.DecimalField(max_digits=10, decimal_places=2, default=5000, verbose_name="Tarif horaire (F)")
+    tarif_horaire = models.DecimalField(max_digits=10, decimal_places=3, default=5000, verbose_name="Tarif horaire (F)")
 
     class Meta:
         verbose_name = "Table"
@@ -57,7 +57,7 @@ class PlatMenu(models.Model):
     """Plats du menu"""
     nom = models.CharField(max_length=100, verbose_name="Nom du plat")
     categorie = models.ForeignKey(CategorieMenu, on_delete=models.CASCADE, verbose_name="Catégorie")
-    prix = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix (FCFA)", default=0)
+    prix = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix (FCFA)", default=0)
     image = models.ImageField(upload_to='plats/', blank=True, null=True, verbose_name="Image du plat")
     temps_preparation = models.IntegerField(verbose_name="Temps de préparation (min)")
     disponible = models.BooleanField(default=True, verbose_name="Disponible")
@@ -115,13 +115,13 @@ class Commande(models.Model):
     table = models.ForeignKey(Table, on_delete=models.CASCADE, verbose_name="Table", null=True, blank=True)
     nom_client = models.CharField(max_length=100, blank=True, null=True, verbose_name="Nom du client")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Total brut (FCFA)")
-    remise_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Remise (%)")
+    total = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Total brut (FCFA)")
+    remise_pct = models.DecimalField(max_digits=5, decimal_places=3, default=0, verbose_name="Remise (%)")
     nb_couverts = models.PositiveSmallIntegerField(default=1, verbose_name="Nombre de couverts")
 
     # Numérotation fiscale séquentielle (Sprint 2)
     numero_fiscal = models.CharField(max_length=20, blank=True, null=True, unique=True, verbose_name="N° fiscal (CMD-YYYY-XXXX)")
-    montant_rendu = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Montant rendu (FCFA)")
+    montant_rendu = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name="Montant rendu (FCFA)")
     caissier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name='encaissements', verbose_name="Caissier (encaissement)")
 
@@ -171,7 +171,7 @@ class LigneCommande(models.Model):
     boisson = models.ForeignKey('bar.BoissonBar', on_delete=models.SET_NULL, null=True, blank=True, related_name='lignes_commande', verbose_name="Boisson")
     accompagnement = models.ForeignKey(PlatMenu, on_delete=models.SET_NULL, null=True, blank=True, related_name='lignes_accompagnement', verbose_name="Accompagnement")
     quantite = models.IntegerField(default=1, verbose_name="Quantité")
-    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
+    prix_unitaire = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix unitaire")
     nom_article = models.CharField(max_length=200, blank=True, default='', verbose_name="Nom article")
     note = models.CharField(max_length=200, blank=True, default='', verbose_name="Note / instructions")
 
@@ -248,7 +248,7 @@ class Forfait(models.Model):
     nom           = models.CharField(max_length=200, verbose_name="Nom du forfait")
     module        = models.CharField(max_length=20, choices=MODULE_CHOICES, default='piscine',
                                      verbose_name="Module concerné")
-    prix          = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix forfait (FCFA)")
+    prix          = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix forfait (FCFA)")
     description   = models.TextField(blank=True, verbose_name="Description")
     disponible    = models.BooleanField(default=True, verbose_name="Disponible")
     image         = models.ImageField(upload_to='forfaits/', blank=True, null=True)
@@ -343,7 +343,7 @@ class SouscriptionForfait(models.Model):
                                         verbose_name="Date de validité")
     statut           = models.CharField(max_length=20, choices=STATUT_CHOICES, default='active',
                                         verbose_name="Statut")
-    montant_paye     = models.DecimalField(max_digits=10, decimal_places=2,
+    montant_paye     = models.DecimalField(max_digits=10, decimal_places=3,
                                            verbose_name="Montant encaissé (FCFA)")
     mode_paiement    = models.CharField(max_length=30, choices=MODE_PAIEMENT_CHOICES,
                                         default='especes', verbose_name="Mode de paiement")
