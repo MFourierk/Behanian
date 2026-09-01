@@ -823,10 +823,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 
     <!-- ── VUE : PLAN DE SALLE ── -->
     <div class="view-panel active" id="view-salle">
-      <div style="padding:10px 16px 0;flex-shrink:0;">
+      <div style="padding:10px 16px 0;flex-shrink:0;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn-emporter" id="btnEmporter" onclick="activerModeEmporter()">
           <i class="fas fa-shopping-bag"></i> Commande À Emporter (sans table)
         </button>
+        {% if salons_vip %}
+        <button class="btn-emporter" style="background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.4);" onclick="ouvrirModalSalonDirect()">
+          🛋️ Facturer Salon Privé seul
+        </button>
+        {% endif %}
       </div>
       <div class="salle-header">
         <input type="text" class="salle-search" placeholder="Rechercher une table…" oninput="filtrerTables(this.value)">
@@ -1360,6 +1365,76 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   </div>
 </div>
 
+<!-- MODAL SALON DIRECT (facturation salon seul, sans commande) -->
+<div class="modal-overlay" id="modalSalonDirect" style="z-index:3001;">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">🛋️ Salon Privé — Facturation directe</div>
+      <button class="modal-close" onclick="fermerModalSalonDirect()">✕</button>
+    </div>
+
+    <!-- Sélection salon -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;">Salon</label>
+      <select id="sdSalon" onchange="sdMajTotal()" style="width:100%;padding:10px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px;">
+        <option value="">— Choisir un salon —</option>
+        {% for s in salons_vip %}
+        <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }} ({{ s.tarif_horaire|floatformat:0 }} F/h)</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Heures -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;">Nombre d'heures</label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <input type="number" id="sdHeures" min="1" max="24" value="1" oninput="sdMajTotal()"
+               style="width:80px;padding:10px 8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.4rem;font-weight:800;text-align:center;">
+        <span style="color:rgba(255,255,255,0.55);font-size:13px;">h × <span id="sdTarif">0</span> F/h<br>= <strong id="sdMontantTotal" style="color:#c9a84c;font-size:16px;">0 F</strong></span>
+      </div>
+    </div>
+
+    <!-- Client (optionnel) -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;">Client (optionnel)</label>
+      <input type="text" id="sdNomClient" placeholder="Nom du client…"
+             style="width:100%;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:13px;box-sizing:border-box;">
+    </div>
+
+    <!-- Mode de paiement -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:8px;">Mode de paiement</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <button class="mmt sd-pay active" data-mode="especes"      onclick="sdSetMode('especes')">💵 Espèces</button>
+        <button class="mmt sd-pay"        data-mode="wave"         onclick="sdSetMode('wave')">🌊 Wave</button>
+        <button class="mmt sd-pay"        data-mode="orange_money" onclick="sdSetMode('orange_money')">🟠 Orange</button>
+        <button class="mmt sd-pay"        data-mode="mtn_money"    onclick="sdSetMode('mtn_money')">🟡 MTN</button>
+        <button class="mmt sd-pay"        data-mode="carte"        onclick="sdSetMode('carte')">💳 Carte</button>
+      </div>
+      <!-- Espèces -->
+      <div id="sdSectionEspeces">
+        <div class="rendu-section" style="margin:0;">
+          <label>MONTANT REÇU (FCFA)</label>
+          <input type="number" id="sdMontantRecu" placeholder="Saisir le montant" oninput="sdCalcRendu()"
+                 style="width:100%;padding:10px 14px;background:#0f172a;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:1rem;box-sizing:border-box;margin-bottom:8px;">
+          <div class="rendu-display" id="sdRenduDisplay">Rendu : <span id="sdRenduVal">0</span> F</div>
+        </div>
+      </div>
+      <!-- Mobile -->
+      <div id="sdSectionMobile" style="display:none;font-size:13px;color:#93c5fd;">
+        Montant mobile : <strong id="sdMontantMobileVal" style="color:white;font-size:15px;">0 F</strong>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:18px;">
+      <button class="modal-btn-cancel" onclick="fermerModalSalonDirect()">Annuler</button>
+      <button class="modal-btn-confirm" id="btnSdConfirmer" onclick="confirmerSalonDirect()">
+        <i class="fas fa-check"></i> Encaisser & Imprimer
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ALERTE MODALE -->
 <div class="alerte-overlay" id="alerteOverlay">
   <div class="alerte-box">
@@ -1374,6 +1449,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <script>
 var CSRF = '{{ csrf_token }}';
 const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
+const SALON_DIRECT_URL = "{% url 'restaurant:salon_direct' %}";
 const modeLabels = { especes:'Espèces', carte:'Carte / TPE', mobile:'Mobile Money', wave:'Wave', orange_money:'Orange Money', mtn_money:'MTN Mobile Money', chambre:'Report Chambre' };
 const MOBILE_MODES = ['wave','orange_money','mtn_money'];
 
@@ -2607,6 +2683,125 @@ function fermerModal() {
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmer & Imprimer'; }
   // Replier la section salon et réinitialiser
   toggleSalonSection(false);
+}
+
+// ── SALON DIRECT (facturation salon seul, sans commande) ──
+let sdModePaiement = 'especes';
+
+function ouvrirModalSalonDirect() {
+  sdModePaiement = 'especes';
+  document.getElementById('sdSalon').value    = '';
+  document.getElementById('sdHeures').value   = 1;
+  document.getElementById('sdNomClient').value = '';
+  document.getElementById('sdMontantRecu').value = '';
+  document.getElementById('sdRenduDisplay').classList.remove('show');
+  document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === 'especes'));
+  document.getElementById('sdSectionEspeces').style.display = '';
+  document.getElementById('sdSectionMobile').style.display  = 'none';
+  document.getElementById('btnSdConfirmer').disabled = false;
+  document.getElementById('btnSdConfirmer').innerHTML = '<i class="fas fa-check"></i> Encaisser & Imprimer';
+  sdMajTotal();
+  document.getElementById('modalSalonDirect').classList.add('open');
+}
+
+function fermerModalSalonDirect() {
+  document.getElementById('modalSalonDirect').classList.remove('open');
+}
+
+function sdGetTarif() {
+  const sel = document.getElementById('sdSalon');
+  if (!sel || !sel.value) return 0;
+  return parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0;
+}
+
+function sdMajTotal() {
+  const tarif  = sdGetTarif();
+  const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
+  const total  = heures * tarif;
+  document.getElementById('sdTarif').textContent       = formatF(tarif).replace(' F', '');
+  document.getElementById('sdMontantTotal').textContent = formatF(total);
+  if (sdModePaiement === 'especes') sdCalcRendu();
+  else document.getElementById('sdMontantMobileVal').textContent = formatF(total);
+}
+
+function sdSetMode(mode) {
+  sdModePaiement = mode;
+  document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.getElementById('sdSectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
+  document.getElementById('sdSectionMobile').style.display  = MOBILE_MODES.includes(mode) ? '' : 'none';
+  if (mode !== 'especes') {
+    const tarif  = sdGetTarif();
+    const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
+    document.getElementById('sdMontantMobileVal').textContent = formatF(heures * tarif);
+  }
+}
+
+function sdCalcRendu() {
+  const tarif  = sdGetTarif();
+  const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
+  const total  = heures * tarif;
+  const recu   = parseFloat(document.getElementById('sdMontantRecu').value) || 0;
+  const div    = document.getElementById('sdRenduDisplay');
+  if (recu >= total && total > 0) {
+    div.classList.add('show'); div.style.background='rgba(22,163,74,0.15)'; div.style.color='#4ade80';
+    document.getElementById('sdRenduVal').textContent = formatF(recu - total);
+  } else if (recu > 0) {
+    div.classList.add('show'); div.style.background='rgba(220,38,38,0.15)'; div.style.color='#f87171';
+    document.getElementById('sdRenduVal').textContent = `Manque ${formatF(total - recu)}`;
+  } else { div.classList.remove('show'); }
+}
+
+async function confirmerSalonDirect() {
+  const salonId = document.getElementById('sdSalon').value;
+  const heures  = parseInt(document.getElementById('sdHeures').value) || 0;
+  if (!salonId) { toast('❌ Sélectionnez un salon', 'error'); return; }
+  if (heures < 1) { toast('❌ Indiquez au moins 1 heure', 'error'); return; }
+
+  const tarif  = sdGetTarif();
+  const total  = heures * tarif;
+  let montantEncaisse = total;
+  let montantEspeces  = 0;
+
+  if (sdModePaiement === 'especes') {
+    montantEncaisse = parseFloat(document.getElementById('sdMontantRecu').value) || total;
+  } else if (MOBILE_MODES.includes(sdModePaiement)) {
+    const esp = parseFloat(document.getElementById('sdMontantRecu')?.value) || 0;
+    montantEspeces  = esp;
+    montantEncaisse = total;
+  }
+
+  const btn = document.getElementById('btnSdConfirmer');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours…';
+
+  const payload = {
+    salon_id:        salonId,
+    heures:          heures,
+    nom_client:      document.getElementById('sdNomClient').value.trim(),
+    mode_paiement:   sdModePaiement,
+    operateur_mobile: '',
+    montant_encaisse: montantEncaisse,
+    montant_especes:  montantEspeces,
+  };
+
+  try {
+    const resp = await fetch(SALON_DIRECT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!data.success) {
+      toast('❌ ' + (data.message || 'Erreur'), 'error');
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Encaisser & Imprimer';
+      return;
+    }
+    fermerModalSalonDirect();
+    imprimerTicket(data.ticket_html);
+    toast('✅ Salon facturé et ticket imprimé', 'success');
+  } catch (e) {
+    toast('❌ Erreur réseau', 'error');
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Encaisser & Imprimer';
+  }
 }
 
 function calcRendu() {

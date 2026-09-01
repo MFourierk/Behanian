@@ -84,7 +84,9 @@ def restaurant_index(request):
     # Accompagnements — extraits de la liste déjà évaluée pour conserver en_stock/stock_quantity
     accompagnements = [p for p in plats if p.is_accompagnement]
 
-    salons_vip = Table.objects.filter(est_salon_prive=True).order_by('numero')
+    salons_vip = Table.objects.filter(
+        Q(est_salon_prive=True) | Q(numero__icontains='SAPR') | Q(numero__icontains='SSPRI')
+    ).distinct().order_by('numero')
 
     context = {
         'categories': categories,
@@ -161,7 +163,7 @@ def valider_commande(request):
                     frais_salon = Decimal(str(heures_salon)) * tarif_salon
                 elif salon_vip_id:
                     try:
-                        _salon = Table.objects.get(pk=int(salon_vip_id), est_salon_prive=True)
+                        _salon = Table.objects.get(pk=int(salon_vip_id))
                         tarif_salon = _salon.tarif_horaire
                         salon_nom = _salon.numero
                         frais_salon = Decimal(str(heures_salon)) * tarif_salon
@@ -311,6 +313,81 @@ def valider_commande(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
+
+@require_module_access('restaurant')
+@require_POST
+def facturer_salon_direct(request):
+    """Facturation salon privé sans commande restaurant (séjour salon seul)."""
+    try:
+        data = json.loads(request.body)
+        salon_id = data.get('salon_id')
+        heures = int(data.get('heures', 0) or 0)
+        nom_client = data.get('nom_client', '').strip()
+        mode_paiement = data.get('mode_paiement', 'especes')
+        operateur_mobile = data.get('operateur_mobile', '')
+        montant_encaisse = Decimal(str(data.get('montant_encaisse', 0) or 0))
+        montant_especes  = Decimal(str(data.get('montant_especes', 0) or 0))
+
+        if not salon_id:
+            return JsonResponse({'success': False, 'message': 'Aucun salon sélectionné.'})
+        if heures < 1:
+            return JsonResponse({'success': False, 'message': 'Indiquez au moins 1 heure.'})
+
+        salon = get_object_or_404(Table, pk=salon_id)
+        tarif = salon.tarif_horaire
+        montant_total = Decimal(str(heures)) * tarif
+
+        services_html = ''
+        if nom_client:
+            services_html += (
+                '<div class="border-bottom" style="margin-bottom:10px;">'
+                '<div class="row"><span class="bold">Client:</span>'
+                f'<span>{nom_client}</span></div></div>'
+            )
+        services_html += (
+            '<div class="row salon-prive">'
+            f'<span class="item-name">Salon {salon.numero} — {heures}h × {int(tarif):,} F</span>'
+            f'<span class="item-price">{int(montant_total):,} F</span>'
+            '</div>'
+        )
+
+        mode_mapped = _map_mode_paiement(mode_paiement, operateur_mobile)
+        numero_ticket = generate_ticket_numero()
+
+        ticket = Ticket.objects.create(
+            numero=numero_ticket,
+            module='restaurant',
+            montant_total=montant_total,
+            contenu=services_html,
+            objet_id=None,
+            montant_paye=montant_encaisse,
+            mode_paiement=mode_mapped,
+            cree_par=request.user,
+            imprime=True,
+        )
+
+        mode_short_map = {'wave': 'WAVE', 'orange_money': 'ORANGE', 'mtn_money': 'MTN',
+                          'especes': 'ESP', 'carte_bancaire': 'CARTE'}
+        tp = ticket.mode_paiement or 'especes'
+        montant_mobile = max(Decimal('0'), montant_total - montant_especes) if montant_especes > 0 else Decimal('0')
+        ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
+            'ticket':          ticket,
+            'serveur':         '',
+            'is_original':     True,
+            'montant_especes': montant_especes if montant_especes > 0 else None,
+            'montant_mobile':  montant_mobile  if montant_especes > 0 else None,
+            'mode_short':      mode_short_map.get(tp, tp.upper()),
+            'frais_salon':     montant_total,
+            'heures_salon':    heures,
+            'tarif_salon':     tarif,
+        })
+
+        return JsonResponse({'success': True, 'ticket_html': ticket_html})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'message': str(e)})
+
 
 @require_module_access('restaurant')
 @require_POST

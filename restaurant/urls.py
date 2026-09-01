@@ -6,6 +6,7 @@ app_name = 'restaurant'
 urlpatterns = [
     path('', views.restaurant_tpe, name='index'),
     path('valider-commande/', views.valider_commande, name='valider_commande'),
+    path('salon-direct/', views.facturer_salon_direct, name='salon_direct'),
     path('annuler-commande/', views.annuler_commande, name='annuler_commande'),
     path('recuperer-commande/<int:commande_id>/', views.recuperer_commande, name='recuperer_commande_details'),
     path('supprimer-ligne-commande/', views.supprimer_ligne_commande, name='supprimer_ligne_commande'),
