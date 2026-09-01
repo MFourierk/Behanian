@@ -75,17 +75,10 @@
             background: #6c757d; color: white;
             border: none; border-radius: 8px; cursor: pointer;
         }
-        .copy-label {
-            text-align: center; font-weight: bold; font-size: 10px;
-            border: 1px dashed #000; padding: 3px; margin-bottom: 6px;
-            letter-spacing: 1px;
-        }
-        .page-cut { height: 0; margin: 0; padding: 0; }
         @media print {
-            body { background: white; padding: 0; display: block !important; }
-            .ticket { box-shadow: none; width: 100%; padding: 4px; margin-bottom: 0; display: block; }
+            body { background: white; padding: 0; }
+            .ticket { box-shadow: none; width: 100%; padding: 4px; }
             .no-print { display: none !important; }
-            .page-cut { display: block !important; page-break-after: always; break-after: page; }
         }
     </style>
 </head>
@@ -177,19 +170,6 @@
 </div>
 
 <script>
-(function() {
-    const orig = document.querySelector('.ticket');
-    if (!orig) return;
-    const lbl1 = document.createElement('div');
-    lbl1.className = 'copy-label';
-    lbl1.textContent = '— COPIE CLIENT —';
-    orig.insertBefore(lbl1, orig.firstChild);
-    const cut = document.createElement('div');
-    cut.className = 'page-cut';
-    const clone = orig.cloneNode(true);
-    clone.querySelector('.copy-label').textContent = '— COPIE CAISSE —';
-    orig.after(cut, clone);
-})();
 window.addEventListener('afterprint', () => window.close());
 </script>
 </body>
