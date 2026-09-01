@@ -1283,18 +1283,26 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     </div>
 
     <!-- Salon VIP — disponible pour toutes les tables -->
-    <div id="salonSection" style="margin-bottom:16px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:12px 14px">
-      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:8px">🛋️ Salon VIP</label>
-      <select id="selectSalonVIP" onchange="onSalonVIPChange()" style="width:100%;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:13px">
-        <option value="">— Aucun salon VIP —</option>
-        {% for s in salons_vip %}
-        <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }}</option>
-        {% endfor %}
-      </select>
-      <div id="salonHeuresSection" style="display:none;margin-top:10px;align-items:center;gap:12px">
-        <input type="number" id="heuresSalon" min="1" max="24" value="1" oninput="majTotalSalon()"
-               style="width:72px;padding:10px 8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.3rem;font-weight:800;text-align:center;appearance:none">
-        <span style="color:rgba(255,255,255,0.55);font-size:12px;line-height:1.4">h × <span id="salonTarifLabel">0</span> F<br>= <strong id="montantSalon" style="color:#c9a84c;font-size:14px">0 F</strong></span>
+    <div id="salonSection" style="margin-bottom:16px;">
+      <!-- Bouton toggle (visible par défaut pour les tables non-salon) -->
+      <button id="btnSalonToggle" type="button" onclick="toggleSalonSection()"
+              style="width:100%;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:10px 14px;color:#c9a84c;font-weight:700;font-size:13px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;">
+        🛋️ Ajouter un Salon Privé <span id="salonToggleArrow" style="margin-left:auto;font-size:16px;">▸</span>
+      </button>
+      <!-- Contenu (caché jusqu'au clic ou auto-sélection) -->
+      <div id="salonInner" style="display:none;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-top:none;border-radius:0 0 12px 12px;padding:12px 14px;">
+        <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:8px">🛋️ Salon Privé</label>
+        <select id="selectSalonVIP" onchange="onSalonVIPChange()" style="width:100%;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:13px">
+          <option value="">— Choisir un salon —</option>
+          {% for s in salons_vip %}
+          <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }}</option>
+          {% endfor %}
+        </select>
+        <div id="salonHeuresSection" style="display:none;margin-top:10px;align-items:center;gap:12px">
+          <input type="number" id="heuresSalon" min="1" max="24" value="1" oninput="majTotalSalon()"
+                 style="width:72px;padding:10px 8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.3rem;font-weight:800;text-align:center;appearance:none">
+          <span style="color:rgba(255,255,255,0.55);font-size:12px;line-height:1.4">h × <span id="salonTarifLabel">0</span> F<br>= <strong id="montantSalon" style="color:#c9a84c;font-size:14px">0 F</strong></span>
+        </div>
       </div>
     </div>
 
@@ -2524,6 +2532,23 @@ function getSalonVIPTarif() {
   if (!sel || !sel.value) return 0;
   return parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0;
 }
+function toggleSalonSection(forceOpen) {
+  const inner = document.getElementById('salonInner');
+  const arrow = document.getElementById('salonToggleArrow');
+  const btn   = document.getElementById('btnSalonToggle');
+  const isOpen = inner.style.display !== 'none';
+  const willOpen = (forceOpen !== undefined) ? forceOpen : !isOpen;
+  inner.style.display = willOpen ? '' : 'none';
+  arrow.textContent   = willOpen ? '▾' : '▸';
+  btn.style.borderRadius = willOpen ? '12px 12px 0 0' : '12px';
+  if (!willOpen) {
+    // Fermeture : réinitialiser la sélection
+    const sel = document.getElementById('selectSalonVIP');
+    if (sel) sel.value = '';
+    onSalonVIPChange();
+  }
+}
+
 function onSalonVIPChange() {
   const sel = document.getElementById('selectSalonVIP');
   const heuresDiv = document.getElementById('salonHeuresSection');
@@ -2580,6 +2605,8 @@ function fermerModal() {
   // Restaurer le bouton confirmer pour la prochaine ouverture
   const btn = document.querySelector('.modal-btn-confirm');
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmer & Imprimer'; }
+  // Replier la section salon et réinitialiser
+  toggleSalonSection(false);
 }
 
 function calcRendu() {
@@ -2656,6 +2683,8 @@ function _ouvrirModalPaiementNormal() {
       if (opt.text === tableNum) { sel.value = opt.value; found = true; break; }
     }
     if (!found) sel.value = '';
+    // Ouvrir automatiquement la section si table = salon privé, sinon fermer
+    toggleSalonSection(found);
     onSalonVIPChange();
     if (isSalonPrive()) document.getElementById('heuresSalon').value = 1;
   }
