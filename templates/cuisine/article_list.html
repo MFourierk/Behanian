@@ -1,4 +1,4 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 
 {% block title %}Gestion du Stock - Cuisine{% endblock %}
@@ -85,7 +85,7 @@
                             <div class="form-group">
                                 <label>Quantité à retirer</label>
                                 <div class="input-group">
-                                    <input type="number" name="qty_source" id="qty_source" class="form-control" step="0.01" required>
+                                    <input type="number" name="qty_source" id="qty_source" class="form-control" step="0.001" required>
                                     <div class="input-group-append">
                                         <span class="input-group-text" id="unitSource">-</span>
                                     </div>
@@ -106,7 +106,7 @@
                             <div class="form-group">
                                 <label>Quantité obtenue</label>
                                 <div class="input-group">
-                                    <input type="number" name="qty_target" id="qty_target" class="form-control" step="0.01" required>
+                                    <input type="number" name="qty_target" id="qty_target" class="form-control" step="0.001" required>
                                     <div class="input-group-append">
                                         <span class="input-group-text" id="unitTarget">-</span>
                                     </div>

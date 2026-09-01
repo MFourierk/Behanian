@@ -1,4 +1,4 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 {% block title %}Facturation — BEHANIAN{% endblock %}
 
@@ -525,7 +525,7 @@
       <div id="facArticlesContainer">
         <div class="article-line">
           <input type="text" name="designations[]" class="fc" placeholder="Désignation *" required>
-          <input type="number" name="quantites[]" class="fc" placeholder="Qté" value="1" min="1" step="0.01" oninput="calculerTotalFacture()">
+          <input type="number" name="quantites[]" class="fc" placeholder="Qté" value="1" min="1" step="0.001" oninput="calculerTotalFacture()">
           <input type="number" name="prix_unitaires[]" class="fc" placeholder="Prix U." min="0" oninput="calculerTotalFacture()">
           <button type="button" onclick="this.closest('.article-line').remove();calculerTotalFacture()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px">×</button>
         </div>
@@ -858,7 +858,7 @@ function proAjouterLigne(serviceId) {
   ligne.className = 'pro-ligne';
   ligne.innerHTML = `
     <input type="text" class="fc pro-designation" placeholder="Désignation *" style="padding:7px 10px" oninput="proCalculerTotal()">
-    <input type="number" class="fc pro-qte" value="1" min="0.01" step="0.01" style="padding:7px 8px;text-align:right" oninput="proCalculerTotal()">
+    <input type="number" class="fc pro-qte" value="1" min="0.01" step="0.001" style="padding:7px 8px;text-align:right" oninput="proCalculerTotal()">
     <input type="number" class="fc pro-prix" placeholder="Prix" min="0" style="padding:7px 8px;text-align:right" oninput="proCalculerTotal()">
     <button onclick="this.closest('.pro-ligne').remove();proCalculerTotal()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px">×</button>`;
   container.appendChild(ligne);

@@ -202,7 +202,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
         </div>
         <span class="unite-disp">—</span>
         <input type="number" name="quantite_recue[]" class="qte-input" step="0.001" min="0.001" placeholder="0.000" oninput="calcLigne(this)">
-        <input type="number" name="prix_unitaire[]" class="prix-input" step="0.01" min="0" placeholder="0.00" oninput="calcLigne(this)">
+        <input type="number" name="prix_unitaire[]" class="prix-input" step="0.001" min="0" placeholder="0.00" oninput="calcLigne(this)">
         <span class="total-ligne" id="tl-0">0 FCFA</span>
         <button type="button" class="btn-del" onclick="delLigne(this)"><i class="fas fa-times"></i></button>
       </div>
@@ -402,7 +402,7 @@ function addLigneWithData(ingId, qte, prix) {
     <span class="unite-disp">${unite}</span>
     <input type="number" name="quantite_recue[]" class="qte-input" step="0.001" min="0.001"
       value="${qte?parseFloat(qte).toFixed(3):''}" placeholder="0.000" oninput="calcLigne(this)">
-    <input type="number" name="prix_unitaire[]" class="prix-input" step="0.01" min="0"
+    <input type="number" name="prix_unitaire[]" class="prix-input" step="0.001" min="0"
       value="${prix?parseFloat(prix).toFixed(2):''}" placeholder="0.00" oninput="calcLigne(this)">
     <span class="total-ligne" id="tl-${rowCounter}">${tlText}</span>
     <button type="button" class="btn-del" onclick="delLigne(this)"><i class="fas fa-times"></i></button>`;

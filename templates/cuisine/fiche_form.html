@@ -183,7 +183,7 @@
                                             {% endfor %}
                                         </select>
                                     </td>
-                                    <td><input type="number" name="quantite[]" class="qte-input" step="0.01" min="0" value="{{ ligne.quantite }}" oninput="ficheRecalcCouts()"></td>
+                                    <td><input type="number" name="quantite[]" class="qte-input" step="0.001" min="0" value="{{ ligne.quantite }}" oninput="ficheRecalcCouts()"></td>
                                     <td class="unit-cell">{{ ligne.ingredient.unite_recette.abreviation|default:'—' }}</td>
                                     <td class="cout-cell" style="text-align:right;">— F</td>
                                     <td><button type="button" class="btn-del-row" onclick="this.closest('tr').remove(); ficheRecalcCouts()"><i class="fas fa-times"></i></button></td>
@@ -304,7 +304,7 @@ function ficheAjouterLigne() {
     row.innerHTML = `
         <td><select name="ingredient_id[]" class="ing-select" onchange="ficheUpdateUnite(this);ficheRecalcCouts()">
             <option value="">— Choisir —</option>${options}</select></td>
-        <td><input type="number" name="quantite[]" class="qte-input" step="0.01" min="0" value="" oninput="ficheRecalcCouts()"></td>
+        <td><input type="number" name="quantite[]" class="qte-input" step="0.001" min="0" value="" oninput="ficheRecalcCouts()"></td>
         <td class="unit-cell">—</td>
         <td class="cout-cell" style="text-align:right;">— F</td>
         <td><button type="button" class="btn-del-row" onclick="this.closest('tr').remove();ficheRecalcCouts()"><i class="fas fa-times"></i></button></td>`;

@@ -1,4 +1,4 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 
 {% block title %}Fiches Techniques - Cuisine{% endblock %}
 
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                              <div class="row mb-3">
                                 <div class="col-md-4"><label class="form-label">Portions</label><input type="number" class="form-control" name="nombre_portions" value="${data.nombre_portions}"></div>
-                                <div class="col-md-4"><label class="form-label">Marge (%)</label><input type="number" step="0.01" class="form-control" name="marge_souhaitee" value="${data.marge_souhaitee}"></div>
+                                <div class="col-md-4"><label class="form-label">Marge (%)</label><input type="number" step="0.001" class="form-control" name="marge_souhaitee" value="${data.marge_souhaitee}"></div>
                                 <div class="col-md-4"><label class="form-label">Préparation (min)</label><input type="number" class="form-control" name="temps_preparation" value="${data.temps_preparation}"></div>
                             </div>
                              <p class="text-muted small fst-italic mt-4">La modification des ingrédients et des instructions se fait sur la page de modification complète pour plus de clarté.</p>

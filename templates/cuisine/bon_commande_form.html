@@ -176,7 +176,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
           {% endfor %}
         </select>
         <input type="number" name="quantite[]" class="qte-input" step="0.001" min="0" placeholder="0.000" oninput="updateSousTotal(this)">
-        <input type="number" name="prix_unitaire[]" class="prix-input" step="0.01" min="0" placeholder="0.00" oninput="updateSousTotal(this)">
+        <input type="number" name="prix_unitaire[]" class="prix-input" step="0.001" min="0" placeholder="0.00" oninput="updateSousTotal(this)">
         <span class="sous-total">0 FCFA</span>
         <button type="button" class="btn-del" onclick="supprimerLigne(this)" title="Supprimer"><i class="fas fa-times"></i></button>
       </div>
@@ -272,7 +272,7 @@ function ajouterLigne() {
     <span class="ligne-num">${c.children.length+1}</span>
     <select name="ingredient_id[]" class="ing-select" onchange="updateSousTotal(this)">${buildIngOptions('')}</select>
     <input type="number" name="quantite[]" class="qte-input" step="0.001" min="0" placeholder="0.000" oninput="updateSousTotal(this)">
-    <input type="number" name="prix_unitaire[]" class="prix-input" step="0.01" min="0" placeholder="0.00" oninput="updateSousTotal(this)">
+    <input type="number" name="prix_unitaire[]" class="prix-input" step="0.001" min="0" placeholder="0.00" oninput="updateSousTotal(this)">
     <span class="sous-total">0 FCFA</span>
     <button type="button" class="btn-del" onclick="supprimerLigne(this)"><i class="fas fa-times"></i></button>`;
   c.appendChild(div);
