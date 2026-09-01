@@ -1750,6 +1750,9 @@ def bar_tpe(request):
     from parametres.models import OperateurMobileMoney
     operateurs_mobile_money = OperateurMobileMoney.objects.filter(actif=True)
 
+    from restaurant.models import Table as TableResto
+    salons_vip = TableResto.objects.filter(est_salon_prive=True).order_by('numero')
+
     return render(request, 'bar/index.html', {
         'boissons'                 : boissons,
         'categories'               : categories,
@@ -1758,6 +1761,7 @@ def bar_tpe(request):
         'page_title'               : 'Cave - Vente TPE',
         'chambres_occupees'        : chambres_occupees,
         'operateurs_mobile_money'  : operateurs_mobile_money,
+        'salons_vip'               : salons_vip,
     })
 
 
@@ -1936,6 +1940,22 @@ def api_vente_create(request):
             except (AuthUser.DoesNotExist, ValueError):
                 pass
 
+        # Salon VIP optionnel
+        salon_vip_id = data.get('salon_vip_id')
+        heures_salon = int(data.get('heures_salon', 0) or 0)
+        frais_salon = Decimal('0')
+        tarif_salon_cave = Decimal('0')
+        salon_nom_cave = ''
+        if heures_salon > 0 and salon_vip_id:
+            try:
+                from restaurant.models import Table as TableResto
+                _salon = TableResto.objects.get(pk=int(salon_vip_id), est_salon_prive=True)
+                tarif_salon_cave = _salon.tarif_horaire
+                salon_nom_cave = _salon.numero
+                frais_salon = Decimal(str(heures_salon)) * tarif_salon_cave
+            except Exception:
+                pass
+
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
 
@@ -1993,7 +2013,8 @@ def api_vente_create(request):
             'visite'      : 'Visiteur',
         }
         espace_label = ESPACE_LABELS.get(espace, espace or 'Cave')
-        rendu        = max(Decimal('0'), montant_recu - total)
+        total_final  = total + frais_salon
+        rendu        = max(Decimal('0'), montant_recu - total_final)
 
         # Construire le contenu texte lisible du ticket
         from django.utils import timezone as tz
@@ -2002,6 +2023,8 @@ def api_vente_create(request):
             f"  {l['nom']} x{l['qty']}  {int(Decimal(str(l['prix'])) * int(l['qty'])):,} F"
             for l in lignes
         )
+        if frais_salon > 0:
+            lignes_txt += f"\n  Salon VIP {salon_nom_cave} {heures_salon}h × {int(tarif_salon_cave):,} F  {int(frais_salon):,} F"
         # Label règlement lisible pour le ticket texte
         _REGLEMENT_LABELS = {'especes': 'Espèces', 'carte': 'Carte / TPE', 'chambre': 'Report Chambre'}
         if paiement == 'mobile' and operateur_mobile:
@@ -2021,7 +2044,7 @@ def api_vente_create(request):
             f"{'='*32}\n"
             f"{lignes_txt}\n"
             f"{'='*32}\n"
-            f"TOTAL   : {int(total):,} FCFA\n"
+            f"TOTAL   : {int(total_final):,} FCFA\n"
             f"Reglement : {reglement_label}\n"
         )
         if paiement in ('especes', 'mobile') and rendu > 0:
@@ -2107,7 +2130,7 @@ def api_vente_create(request):
             numero        = generate_ticket_numero(),
             module        = 'cave',
             objet_id      = vente_cave.id,
-            montant_total = total,
+            montant_total = total_final,
             mode_paiement = mode_fact,
             montant_paye  = montant_recu,
             contenu       = contenu,

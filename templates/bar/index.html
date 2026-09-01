@@ -1049,6 +1049,24 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </div>
     </div>
 
+    <!-- Salon VIP optionnel -->
+    {% if salons_vip %}
+    <div id="barSalonSection" style="margin-bottom:14px;background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:10px 12px">
+      <label style="font-size:10px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:7px">🛋️ Salon VIP (optionnel)</label>
+      <select id="barSelectSalonVIP" onchange="onBarSalonChange()" style="width:100%;padding:8px 10px;background:#1a2535;border:1px solid #2d3f55;border-radius:8px;color:white;font-size:13px">
+        <option value="">— Aucun salon VIP —</option>
+        {% for s in salons_vip %}
+        <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }}</option>
+        {% endfor %}
+      </select>
+      <div id="barSalonHeures" style="display:none;margin-top:8px;align-items:center;gap:10px">
+        <input type="number" id="barHeuresSalon" min="1" max="24" value="1" oninput="onBarSalonChange()"
+               style="width:60px;padding:8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:8px;color:white;font-size:1.1rem;font-weight:800;text-align:center">
+        <span style="color:rgba(255,255,255,0.55);font-size:12px">h × <span id="barSalonTarif">0</span> F = <strong id="barMontantSalon" style="color:#c9a84c">0 F</strong></span>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="modal-actions" style="margin-top:18px">
       <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
       <button class="modal-btn-confirm" id="btnConfirmerPaiement" onclick="confirmerPaiement()">
@@ -1490,7 +1508,7 @@ function fermerModal() {
 }
 
 function calcRendu() {
-  const total = getTotal();
+  const total = getTotal() + _barSalonFrais;
   const recu  = parseFloat(document.getElementById('montantRecu').value) || 0;
   const rendu = recu - total;
   const div   = document.getElementById('renduDisplay');
@@ -1510,7 +1528,7 @@ function calcRendu() {
 }
 
 function setBillet(val, exact = false) {
-  if (exact) { document.getElementById('montantRecu').value = getTotal(); }
+  if (exact) { document.getElementById('montantRecu').value = getTotal() + _barSalonFrais; }
   else       { document.getElementById('montantRecu').value = val; }
   calcRendu();
 }
@@ -1564,7 +1582,11 @@ function choisirModeMobile(mode) {
 function _ouvrirModalPaiementNormal() {
   try {
     const t = tickets[ticketActifId];
-    const total = getTotal();
+    // Réinitialiser le salon VIP à chaque ouverture
+    const barSelSalon = document.getElementById('barSelectSalonVIP');
+    if (barSelSalon) { barSelSalon.value = ''; onBarSalonChange(); }
+    _barSalonFrais = 0;
+    const total = getTotal() + _barSalonFrais;
     document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
     const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
     const ref = t.ref ? ` (${t.ref})` : '';
@@ -1626,12 +1648,39 @@ function payerMaintenant() {
   _ouvrirModalPaiementNormal();
 }
 
+let _barSalonFrais = 0;
+function getBarSalonFrais() {
+  const sel = document.getElementById('barSelectSalonVIP');
+  if (!sel || !sel.value) return 0;
+  const h = parseInt(document.getElementById('barHeuresSalon')?.value) || 0;
+  const tarif = parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0;
+  return h * tarif;
+}
+function onBarSalonChange() {
+  const sel = document.getElementById('barSelectSalonVIP');
+  const hdiv = document.getElementById('barSalonHeures');
+  if (sel && sel.value) {
+    hdiv.style.display = 'flex';
+    const tarif = parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0;
+    document.getElementById('barSalonTarif').textContent = formatF(tarif).replace(' F', '');
+  } else {
+    hdiv.style.display = 'none';
+  }
+  _barSalonFrais = getBarSalonFrais();
+  document.getElementById('barMontantSalon').textContent = formatF(_barSalonFrais);
+  const total = getTotal() + _barSalonFrais;
+  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+  if (modePaiement === 'especes') calcRendu();
+}
+
 let _paiementEnCours = false;
 async function confirmerPaiement() {
   if (_paiementEnCours) return;
   _paiementEnCours = true;
   const t     = tickets[ticketActifId];
-  const total = getTotal();
+  const total = getTotal() + _barSalonFrais;
+  const barSalonId = document.getElementById('barSelectSalonVIP')?.value || '';
+  const barHeures  = barSalonId ? (parseInt(document.getElementById('barHeuresSalon')?.value) || 1) : 0;
 
   // Vérifier serveur obligatoire
   const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
@@ -1684,6 +1733,8 @@ async function confirmerPaiement() {
       operateur_mobile: '',
       stock_live      : true,
       session_token   : SESSION_TOKEN,
+      salon_vip_id    : barSalonId || null,
+      heures_salon    : barHeures,
     };
 
     const _abortCtrlVente = new AbortController();

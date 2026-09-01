@@ -1282,13 +1282,19 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')">🏨 Chambre</button>
     </div>
 
-    <!-- Salon privé — durée -->
-    <div id="salonSection" style="display:none;margin-bottom:16px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:12px 14px">
-      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:10px">🛋️ Salon privé — Durée</label>
-      <div style="display:flex;align-items:center;gap:12px">
+    <!-- Salon VIP — disponible pour toutes les tables -->
+    <div id="salonSection" style="margin-bottom:16px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:12px 14px">
+      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:8px">🛋️ Salon VIP</label>
+      <select id="selectSalonVIP" onchange="onSalonVIPChange()" style="width:100%;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:13px">
+        <option value="">— Aucun salon VIP —</option>
+        {% for s in salons_vip %}
+        <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }}</option>
+        {% endfor %}
+      </select>
+      <div id="salonHeuresSection" style="display:none;margin-top:10px;align-items:center;gap:12px">
         <input type="number" id="heuresSalon" min="1" max="24" value="1" oninput="majTotalSalon()"
                style="width:72px;padding:10px 8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.3rem;font-weight:800;text-align:center;appearance:none">
-        <span style="color:rgba(255,255,255,0.55);font-size:12px;line-height:1.4">heure(s) × 5&nbsp;000&nbsp;F<br>= <strong id="montantSalon" style="color:#c9a84c;font-size:14px">5&nbsp;000 F</strong></span>
+        <span style="color:rgba(255,255,255,0.55);font-size:12px;line-height:1.4">h × <span id="salonTarifLabel">0</span> F<br>= <strong id="montantSalon" style="color:#c9a84c;font-size:14px">0 F</strong></span>
       </div>
     </div>
 
@@ -2510,21 +2516,39 @@ function getTotal() {
   return (t?.remise_pct > 0) ? brut * (1 - t.remise_pct / 100) : brut;
 }
 
+const SALONS_VIP_RESTO = {{ salons_vip_json|safe }};
+
 function isSalonPrive() {
-  const num = tickets[ticketActifId]?.tableNum || '';
-  return num.startsWith('SAPR') || num.startsWith('SSPRI');
+  return !!(document.getElementById('selectSalonVIP')?.value);
+}
+function getSalonVIPTarif() {
+  const sel = document.getElementById('selectSalonVIP');
+  if (!sel || !sel.value) return 0;
+  return parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0;
+}
+function onSalonVIPChange() {
+  const sel = document.getElementById('selectSalonVIP');
+  const heuresDiv = document.getElementById('salonHeuresSection');
+  if (sel && sel.value) {
+    heuresDiv.style.display = 'flex';
+    document.getElementById('salonTarifLabel').textContent = formatF(getSalonVIPTarif()).replace(' F', '');
+  } else {
+    heuresDiv.style.display = 'none';
+  }
+  majTotalSalon();
 }
 
 function getTotalAvecSalon() {
   const base = getTotal();
   if (!isSalonPrive()) return base;
   const h = parseInt(document.getElementById('heuresSalon')?.value) || 0;
-  return base + h * 5000;
+  return base + h * getSalonVIPTarif();
 }
 
 function majTotalSalon() {
   const h = parseInt(document.getElementById('heuresSalon')?.value) || 0;
-  document.getElementById('montantSalon').textContent = formatF(h * 5000);
+  const tarif = getSalonVIPTarif();
+  document.getElementById('montantSalon').textContent = formatF(h * tarif);
   document.getElementById('modalTotal').innerHTML = `${formatF(getTotalAvecSalon())} <span>FCFA</span>`;
   if (modePaiement === 'especes') calcRendu();
   else calcMontantMobile();
@@ -2625,12 +2649,17 @@ function choisirModeMobile(mode) {
 
 function _ouvrirModalPaiementNormal() {
   const t = tickets[ticketActifId];
-  const salon = isSalonPrive();
-  const salonSection = document.getElementById('salonSection');
-  salonSection.style.display = salon ? '' : 'none';
-  if (salon) {
-    document.getElementById('heuresSalon').value = 1;
-    document.getElementById('montantSalon').textContent = formatF(5000);
+  // Pré-sélectionner le salon VIP si la table courante est elle-même un salon privé
+  const sel = document.getElementById('selectSalonVIP');
+  if (sel) {
+    const tableNum = t?.tableNum || '';
+    let found = false;
+    for (const opt of sel.options) {
+      if (opt.text === tableNum) { sel.value = opt.value; found = true; break; }
+    }
+    if (!found) sel.value = '';
+    onSalonVIPChange();
+    if (isSalonPrive()) document.getElementById('heuresSalon').value = 1;
   }
   const total = getTotalAvecSalon();
   document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
@@ -2685,6 +2714,7 @@ function payerMaintenant() {
 async function confirmerPaiement() {
   const t = tickets[ticketActifId];
   if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); return; }
+  const salonVIPId  = document.getElementById('selectSalonVIP')?.value || '';
   const heuresSalon = isSalonPrive() ? (parseInt(document.getElementById('heuresSalon')?.value) || 1) : 0;
   if (isSalonPrive() && heuresSalon < 1) { toast('❌ Indiquez le nombre d\'heures de salon', 'error'); return; }
   const total = getTotalAvecSalon();
@@ -2727,6 +2757,7 @@ async function confirmerPaiement() {
           reservation_hotel_id: chambreLieeId || reservation_hotel_id,
           operateur_mobile: '',
           heures_salon: heuresSalon,
+          salon_vip_id: salonVIPId || null,
         })
       });
     } finally { clearTimeout(_abortTimer); }

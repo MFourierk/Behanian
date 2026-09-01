@@ -84,16 +84,25 @@ def restaurant_index(request):
     # Accompagnements — extraits de la liste déjà évaluée pour conserver en_stock/stock_quantity
     accompagnements = [p for p in plats if p.is_accompagnement]
 
+    import json as _json_mod
+    salons_vip = Table.objects.filter(est_salon_prive=True).order_by('numero')
+    salons_vip_json = _json_mod.dumps([
+        {'id': s.id, 'numero': s.numero, 'tarif': float(s.tarif_horaire)}
+        for s in salons_vip
+    ])
+
     context = {
         'categories': categories,
         'plats': plats,
         'accompagnements': accompagnements,
         'commandes_en_cours': commandes_en_cours,
-        'commandes_en_cours_list': commandes_en_cours_list, # Ajouté pour l'onglet
+        'commandes_en_cours_list': commandes_en_cours_list,
         'tables': tables,
         'reservations': reservations,
+        'salons_vip': salons_vip,
+        'salons_vip_json': salons_vip_json,
     }
-    
+
     return render(request, 'restaurant/index.html', context)
 
 def _map_mode_paiement(mode, operateur=''):
@@ -148,12 +157,22 @@ def valider_commande(request):
             # Frais salon privé (heures saisies manuellement par la caissière)
             frais_salon = Decimal('0')
             heures_salon = int(data.get('heures_salon', 0) or 0)
+            salon_vip_id = data.get('salon_vip_id')
             tarif_salon = Decimal('0')
-            if heures_salon > 0 and commande.table_id:
-                table_obj = commande.table
-                if getattr(table_obj, 'est_salon_prive', False):
-                    tarif_salon = table_obj.tarif_horaire
+            salon_nom = ''
+            if heures_salon > 0:
+                if commande.table_id and getattr(commande.table, 'est_salon_prive', False):
+                    tarif_salon = commande.table.tarif_horaire
+                    salon_nom = commande.table.numero
                     frais_salon = Decimal(str(heures_salon)) * tarif_salon
+                elif salon_vip_id:
+                    try:
+                        _salon = Table.objects.get(pk=int(salon_vip_id), est_salon_prive=True)
+                        tarif_salon = _salon.tarif_horaire
+                        salon_nom = _salon.numero
+                        frais_salon = Decimal(str(heures_salon)) * tarif_salon
+                    except (Table.DoesNotExist, ValueError):
+                        pass
 
             with transaction.atomic():
                 commande.statut = 'payee'
@@ -218,11 +237,11 @@ def valider_commande(request):
                     </div>
                     """
 
-                # Ligne salon privé dans le contenu du ticket
+                # Ligne salon VIP dans le contenu du ticket
                 if frais_salon > 0:
                     services_html += f"""
                     <div class="row salon-prive">
-                        <span class="item-name">Salon privé {heures_salon}h × {int(tarif_salon):,} F</span>
+                        <span class="item-name">Salon VIP {salon_nom} {heures_salon}h × {int(tarif_salon):,} F</span>
                         <span class="item-price">{int(frais_salon):,} F</span>
                     </div>
                     """

@@ -491,6 +491,24 @@
 
     <div id="sortieDetail" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px"></div>
 
+    <!-- Salon VIP optionnel -->
+    {% if salons_vip %}
+    <div id="sortieSalonSection" style="margin-bottom:12px;background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.25);border-radius:10px;padding:10px 12px">
+      <label style="font-size:10px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:7px">🛋️ Salon VIP (optionnel)</label>
+      <select id="sortieSalonVIP" onchange="onSortieSalonChange()" style="width:100%;padding:8px 10px;background:#f8fafc;border:1px solid #dde3ec;border-radius:8px;color:#1a2535;font-size:13px">
+        <option value="">— Aucun salon VIP —</option>
+        {% for s in salons_vip %}
+        <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }}</option>
+        {% endfor %}
+      </select>
+      <div id="sortieSalonHeures" style="display:none;margin-top:8px;align-items:center;gap:10px">
+        <input type="number" id="sortieSalonH" min="1" max="24" value="1" oninput="onSortieSalonChange()"
+               style="width:55px;padding:7px;border:1.5px solid #c9a84c;border-radius:8px;font-size:1rem;font-weight:800;text-align:center">
+        <span style="font-size:12px;color:#6b7a8d">h × <span id="sortieSalonTarif">0</span> F = <strong id="sortieSalonMontant" style="color:#c9a84c">0 F</strong></span>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Choix chambre / direct pour résidents -->
     <div id="sortieChoixResident" style="display:none;margin-bottom:14px">
       <div style="font-size:12px;font-weight:600;color:#3d4f63;margin-bottom:8px">Mode de règlement :</div>
@@ -1387,7 +1405,36 @@ async function validerCommande(){
 // ═══ SORTIE / PAIEMENT ═══
 let _sortieIsHeberge = false;
 let _sortieTotal = 0;
+let _sortieSalonFrais = 0;
 let _sortiePayChoice = 'chambre'; // 'chambre' | 'direct'
+
+function getSortieSalonFrais() {
+  const sel = document.getElementById('sortieSalonVIP');
+  if (!sel || !sel.value) return 0;
+  const h = parseInt(document.getElementById('sortieSalonH')?.value) || 0;
+  return h * (parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0);
+}
+function onSortieSalonChange() {
+  const sel = document.getElementById('sortieSalonVIP');
+  const hdiv = document.getElementById('sortieSalonHeures');
+  if (sel && sel.value) {
+    hdiv.style.display = 'flex';
+    const tarif = parseFloat(sel.options[sel.selectedIndex]?.dataset?.tarif) || 0;
+    document.getElementById('sortieSalonTarif').textContent = tarif.toLocaleString('fr-FR');
+  } else {
+    hdiv.style.display = 'none';
+  }
+  _sortieSalonFrais = getSortieSalonFrais();
+  if (document.getElementById('sortieSalonMontant'))
+    document.getElementById('sortieSalonMontant').textContent = _sortieSalonFrais.toLocaleString('fr-FR') + ' F';
+  const totalFinal = _sortieTotal + _sortieSalonFrais;
+  // Mettre à jour le champ "À PAYER" dans le détail
+  const apayerEl = document.querySelector('#sortieDetail [data-apayer]');
+  if (apayerEl) apayerEl.textContent = totalFinal.toLocaleString('fr-FR') + ' F';
+  // Mettre à jour les champs montant reçu
+  if (!_sortieIsHeberge) document.getElementById('sortieRecuNR').value = totalFinal;
+  else if (_sortiePayChoice === 'direct') document.getElementById('sortieRecu').value = totalFinal;
+}
 
 function piscineOuvrirRecuDepot(chambreNom, module, lignes, total) {
   const params = new URLSearchParams({
@@ -1442,6 +1489,11 @@ async function ouvrirSortie(id, nom, prixEntree){
     return;
   }
   _sortieTotal = d.total;
+  _sortieSalonFrais = 0;
+  const sortieSalonSel = document.getElementById('sortieSalonVIP');
+  if (sortieSalonSel) { sortieSalonSel.value = ''; }
+  const sortieSalonHDiv = document.getElementById('sortieSalonHeures');
+  if (sortieSalonHDiv) sortieSalonHDiv.style.display = 'none';
   _sortieIsHeberge = d.is_heberge || false;
   // Construire le récapitulatif
   const det=document.getElementById('sortieDetail');
@@ -1459,7 +1511,7 @@ async function ouvrirSortie(id, nom, prixEntree){
     html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;margin-top:4px;border-top:1px dashed #dde3ec"><span style="color:#6b7a8d">Sous-total brut</span><span style="color:#6b7a8d">${(d.entree+d.total_conso).toLocaleString('fr-FR')} F</span></div>`;
     html+=`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#dc2626">Remise</span><span style="color:#dc2626">- ${d.remise.toLocaleString('fr-FR')} F</span></div>`;
   }
-  html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:6px;padding-top:8px;font-weight:700;color:#1a2535"><span>À PAYER</span><span style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
+  html+=`<div style="display:flex;justify-content:space-between;border-top:1px solid #dde3ec;margin-top:6px;padding-top:8px;font-weight:700;color:#1a2535"><span>À PAYER</span><span data-apayer style="color:#2563eb">${d.total.toLocaleString('fr-FR')} F</span></div>`;
   det.innerHTML=html;
   // Gérer affichage selon type
   document.getElementById('sortieChoixResident').style.display=_sortieIsHeberge?'block':'none';
@@ -1486,11 +1538,16 @@ async function validerSortie(){
     mode = document.getElementById('sortieModeNR').value;
     recu = parseFloat(document.getElementById('sortieRecuNR').value)||0;
   }
+  const sortieSalonId = document.getElementById('sortieSalonVIP')?.value || '';
+  const sortieSalonH  = sortieSalonId ? (parseInt(document.getElementById('sortieSalonH')?.value) || 1) : 0;
   let r, d;
   try {
     r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({mode_paiement:mode,montant_recu:recu,sur_chambre:surChambre})
+      body:JSON.stringify({
+        mode_paiement: mode, montant_recu: recu, sur_chambre: surChambre,
+        salon_vip_id: sortieSalonId || null, heures_salon: sortieSalonH,
+      })
     });
     if(!r.ok){
       piscineNotif(r.status===403?'Session expirée — rechargez la page (F5).':'Erreur serveur ('+r.status+').','error');

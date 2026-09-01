@@ -82,6 +82,9 @@ def piscine_index(request):
         is_active=True, groups__name='Serveuse/Serveur'
     ).order_by('first_name', 'last_name')
 
+    from restaurant.models import Table as TableResto
+    salons_vip = TableResto.objects.filter(est_salon_prive=True).order_by('numero')
+
     context = {
         'entrees_jour': entrees_jour,
         'actuellement': acces_actifs.count(),
@@ -101,6 +104,7 @@ def piscine_index(request):
         'forfaits_alertes': forfaits_alertes,
         'forfaits_rupture_ids': forfaits_rupture_ids,
         'personnel': personnel,
+        'salons_vip': salons_vip,
     }
     return render(request, 'piscine/index.html', context)
 
@@ -523,11 +527,27 @@ def encaisser_sortie(request, acces_id):
         montant_recu  = Decimal(str(data.get('montant_recu', 0)))
         sur_chambre   = data.get('sur_chambre', False)
 
+        # Salon VIP optionnel
+        salon_vip_id = data.get('salon_vip_id')
+        heures_salon = int(data.get('heures_salon', 0) or 0)
+        frais_salon = Decimal('0')
+        tarif_salon_pisc = Decimal('0')
+        salon_nom_pisc = ''
+        if heures_salon > 0 and salon_vip_id:
+            try:
+                from restaurant.models import Table as TableResto
+                _salon = TableResto.objects.get(pk=int(salon_vip_id), est_salon_prive=True)
+                tarif_salon_pisc = _salon.tarif_horaire
+                salon_nom_pisc = _salon.numero
+                frais_salon = Decimal(str(heures_salon)) * tarif_salon_pisc
+            except Exception:
+                pass
+
         # Total brut = entrée + consommations ; remise fixe enregistrée à l'entrée
         total_conso    = sum(c.get_total() for c in acces.consommations.all())
         total_brut     = acces.prix_total + total_conso
         montant_remise = acces.remise_montant if acces.remise_montant else Decimal('0')
-        total          = max(total_brut - montant_remise, Decimal('0'))
+        total          = max(total_brut - montant_remise, Decimal('0')) + frais_salon
 
         # Validation montant pour tout paiement direct
         if not sur_chambre and montant_recu < total:
@@ -598,6 +618,8 @@ def encaisser_sortie(request, acces_id):
             contenu += f'<div class="row"><span class="item-name">{c.produit} x{c.quantite}</span><span class="item-price">{int(c.get_total()):,} F</span></div>'
         if montant_remise > 0:
             contenu += f'<div class="row" style="color:#dc2626"><span class="item-name">Remise</span><span class="item-price">-{int(montant_remise):,} F</span></div>'
+        if frais_salon > 0:
+            contenu += f'<div class="row salon-prive"><span class="item-name">Salon VIP {salon_nom_pisc} {heures_salon}h × {int(tarif_salon_pisc):,} F</span><span class="item-price">{int(frais_salon):,} F</span></div>'
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',
