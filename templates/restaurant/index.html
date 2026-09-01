@@ -2594,9 +2594,16 @@ function setModalMode(mode) {
     document.getElementById('renduDisplay').classList.remove('show');
   }
   if (MOBILE_MODES.includes(mode)) {
-    // Ne réinitialiser le partiel espèces que si on vient d'un mode non-mobile
     if (!MOBILE_MODES.includes(prevMode)) {
-      document.getElementById('montantEspeces').value = '';
+      // Transition non-mobile → mobile
+      if (prevMode === 'especes') {
+        // Reporter le montant espèces saisi (si partiel)
+        const recuVal = parseFloat(document.getElementById('montantRecu')?.value) || 0;
+        const tot = getTotalAvecSalon();
+        document.getElementById('montantEspeces').value = (recuVal > 0 && recuVal < tot) ? recuVal : '';
+      } else {
+        document.getElementById('montantEspeces').value = '';
+      }
     }
     calcMontantMobile();
   }
