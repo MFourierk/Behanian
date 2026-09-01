@@ -1127,19 +1127,20 @@ def resume_ventes_jour(request):
     ).select_related('caissier', 'serveur', 'table')
 
     total_brut = sum(float(c.total) for c in commandes)
-    total_net  = sum(c.total_net for c in commandes)
+    total_net  = sum(c.total_net for c in commandes)  # recalculé depuis tickets si dispo
     nb_cmd     = commandes.count()
 
-    # Tickets facturation : mode de paiement + liste détaillée
+    # Tickets facturation : source de vérité pour les montants (inclut frais salon VIP)
     par_mode = {}
+    par_caissier = {}
     liste_tickets = []
     try:
         from facturation.models import Ticket as TicketCaisse
-        tickets_jour = TicketCaisse.objects.filter(
+        tickets_jour = list(TicketCaisse.objects.filter(
             module='restaurant',
             date_creation__date__gte=date_debut,
             date_creation__date__lte=date_fin,
-        ).select_related('cree_par').order_by('-date_creation')
+        ).select_related('cree_par').order_by('-date_creation'))
         mode_noms = {
             'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
             'mobile': 'Mobile Money', 'mobile_money': 'Mobile Money',
@@ -1147,36 +1148,36 @@ def resume_ventes_jour(request):
             'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
             'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
         }
-        # Map commande_id → total_net pour éviter de sommer montant_paye
-        # (montant_paye = ce que le client donne, peut dépasser le total en espèces)
-        commande_net_map = {c.id: c.total_net for c in commandes}
         commande_table_map = {c.id: (c.table.numero if c.table else ('À emporter' if c.emporter else '')) for c in commandes}
+
+        # Total net = somme des montant_total tickets (frais salon inclus, cohérent avec dashboard)
+        total_net = sum(float(tk.montant_total or 0) for tk in tickets_jour)
 
         for tk in tickets_jour:
             m_raw = tk.mode_paiement or 'especes'
             m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
-            montant_reel = commande_net_map.get(tk.objet_id, float(tk.montant_paye or 0))
-            par_mode[m] = par_mode.get(m, 0) + float(montant_reel)
-            caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username if tk.cree_par else ''
+            montant_reel = float(tk.montant_total or 0)
+            par_mode[m] = par_mode.get(m, 0) + montant_reel
+            caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username if tk.cree_par else 'Inconnu'
+            par_caissier.setdefault(caissier_nom, {'nb': 0, 'total': 0})
+            par_caissier[caissier_nom]['nb'] += 1
+            par_caissier[caissier_nom]['total'] += montant_reel
             table_ref = commande_table_map.get(tk.objet_id, '')
             liste_tickets.append({
                 'numero':   tk.numero,
                 'heure':    tk.date_creation.strftime('%H:%M'),
-                'montant':  float(montant_reel),
+                'montant':  montant_reel,
                 'mode':     m,
                 'caissier': caissier_nom,
                 'table':    table_ref,
             })
     except Exception:
-        pass
-
-    # Par caissier
-    par_caissier = {}
-    for c in commandes:
-        nom = c.caissier.get_full_name() or c.caissier.username if c.caissier else 'Inconnu'
-        par_caissier[nom] = par_caissier.get(nom, {'nb': 0, 'total': 0})
-        par_caissier[nom]['nb'] += 1
-        par_caissier[nom]['total'] += c.total_net
+        # Fallback si tickets non disponibles
+        for c in commandes:
+            nom = c.caissier.get_full_name() or c.caissier.username if c.caissier else 'Inconnu'
+            par_caissier.setdefault(nom, {'nb': 0, 'total': 0})
+            par_caissier[nom]['nb'] += 1
+            par_caissier[nom]['total'] += c.total_net
 
     periode = (date_debut.strftime('%d/%m/%Y') if date_debut == date_fin
                else f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}")
