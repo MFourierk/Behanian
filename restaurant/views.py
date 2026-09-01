@@ -1422,6 +1422,10 @@ def restaurant_tpe(request):
         forfait.en_stock = en_stock
         forfaits.append(forfait)
 
+    salons_vip = Table.objects.filter(
+        Q(est_salon_prive=True) | Q(numero__icontains='SAPR') | Q(numero__icontains='SSPRI')
+    ).distinct().order_by('numero')
+
     context = {
         'categories': CategorieMenu.objects.all(),
         'plats': plats,
@@ -1439,6 +1443,7 @@ def restaurant_tpe(request):
         'chambres_occupees': chambres_occupees,
         'forfaits': forfaits,
         'operateurs_mobile_money': operateurs_mobile_money,
+        'salons_vip': salons_vip,
     }
     return render(request, 'restaurant/index.html', context)
 
