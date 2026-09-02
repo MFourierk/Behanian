@@ -71,11 +71,21 @@ jobs:
               echo TUNNEL_OK
             "
 
-            echo "=== Deploiement ===" && ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 behanian@10.8.0.2 "
+            echo "=== Deploiement ===" &&
+            rsync -az --delete \
+              --exclude='.git/' \
+              --exclude='venv/' \
+              --exclude='__pycache__/' \
+              --exclude='*.pyc' \
+              --exclude='staticfiles/' \
+              --exclude='media/' \
+              --exclude='*.sqlite3' \
+              --exclude='.env' \
+              -e "ssh -o StrictHostKeyChecking=no" \
+              /opt/behanian/ behanian@10.8.0.2:/opt/behanian/ &&
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 behanian@10.8.0.2 "
               set -e
               cd /opt/behanian &&
-              git fetch origin main &&
-              git reset --hard origin/main &&
               source venv/bin/activate &&
               pip install -r requirements.txt --quiet &&
               python manage.py migrate --noinput &&
