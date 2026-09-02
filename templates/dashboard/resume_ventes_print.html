@@ -82,6 +82,35 @@
   </div>
 </div>
 
+<!-- Par serveur (Restaurant) -->
+{% if par_serveur %}
+<div style="padding:0 30px 20px;">
+  <div class="section-title" style="padding:0 0 8px;">Performances par serveur — Restaurant</div>
+  <table class="doc-table">
+    <thead>
+      <tr><th>Serveur</th><th class="r">Commandes</th><th class="r">CA Total (F)</th><th class="r">Moy. / commande</th></tr>
+    </thead>
+    <tbody>
+      {% for s in par_serveur %}
+      <tr>
+        <td style="font-weight:600;">{{ s.nom }}</td>
+        <td class="r muted">{{ s.nb }}</td>
+        <td class="r bold" style="color:#c9a84c;">{{ s.total|floatformat:0 }} F</td>
+        <td class="r muted">{{ s.moy|floatformat:0 }} F</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="muted" style="text-align:center;">Aucune donnée</td></tr>
+      {% endfor %}
+      <tr>
+        <td class="total-label" colspan="2">TOTAL RESTAURANT</td>
+        <td class="total-val r">{{ serveur_total|floatformat:0 }} F</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 <!-- Détail tickets -->
 <div class="content-section">
   <div class="section-title">Détail des tickets</div>

@@ -694,7 +694,14 @@ def resume_ventes_excel(request):
     for caissier, d in data['par_caissier'].items():
         data_row(ws, r, [caissier, d['nb'], int(d['total']), '', ''], bold_cols=(3,)); r += 1
 
-    for i, w in enumerate([28, 14, 18, 12, 10], 1):
+    if data.get('par_serveur'):
+        r += 1
+        hdr_row(ws, r, ['Serveur (Restaurant)', 'Commandes', 'CA (F CFA)', 'Moy./commande', '']); r += 1
+        for serveur, d in sorted(data['par_serveur'].items(), key=lambda x: -x[1]['total']):
+            moy = int(d['total'] / d['nb']) if d['nb'] else 0
+            data_row(ws, r, [serveur, d['nb'], int(d['total']), moy, ''], bold_cols=(3,)); r += 1
+
+    for i, w in enumerate([28, 14, 18, 16, 10], 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
     # ── Feuille 2 : Détail tickets
@@ -761,6 +768,13 @@ def resume_ventes_print(request):
         'par_module':      data['par_module'],
         'par_mode':        data['par_mode'],
         'par_caissier':    data['par_caissier'],
+        'par_serveur':     sorted(
+            [{'nom': k, 'nb': v['nb'], 'total': v['total'],
+              'moy': round(v['total'] / v['nb']) if v['nb'] else 0}
+             for k, v in data['par_serveur'].items()],
+            key=lambda x: -x['total']
+        ),
+        'serveur_total':   sum(v['total'] for v in data['par_serveur'].values()),
         'tickets':         data['tickets'],
         'generated_at':    timezone.now(),
     })
