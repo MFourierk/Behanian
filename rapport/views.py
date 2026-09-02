@@ -211,7 +211,7 @@ def _calcul_marges(date_rapport):
 
     for mod in MODULES:
         tickets = Ticket.objects.filter(module=mod['key'], date_creation__date=date_rapport)
-        ca = tickets.aggregate(s=Sum('montant_paye'))['s'] or Decimal('0')
+        ca = tickets.aggregate(s=Sum('montant_total'))['s'] or Decimal('0')
         nb_tickets = tickets.count()
 
         cout = Decimal('0')

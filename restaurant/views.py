@@ -765,33 +765,34 @@ def ajouter_item_commande(request):
         
         # 1. Gestion Commande / Table
         serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
+        commande = None
         if commande_id:
-            commande = get_object_or_404(Commande, id=commande_id)
-            # Mettre à jour le serveur si pas encore assigné correctement
-            if commande.serveur == request.user and serveur_user != request.user:
+            commande = Commande.objects.filter(id=commande_id).first()
+            if commande and commande.serveur == request.user and serveur_user != request.user:
                 commande.serveur = serveur_user
                 commande.save(update_fields=['serveur'])
-        elif table_id:
-            table = get_object_or_404(Table, id=table_id)
-            commande = Commande.objects.filter(table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']).first()
-            if not commande:
+        if commande is None:
+            if table_id:
+                table = get_object_or_404(Table, id=table_id)
+                commande = Commande.objects.filter(table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']).first()
+                if not commande:
+                    commande = Commande.objects.create(
+                        table=table,
+                        serveur=serveur_user,
+                        statut='en_attente',
+                        nom_client=data.get('client', '')
+                    )
+                    table.statut = 'occupee'
+                    table.save()
+            elif data.get('emporter'):
                 commande = Commande.objects.create(
-                    table=table,
+                    table=None,
                     serveur=serveur_user,
                     statut='en_attente',
-                    nom_client=data.get('client', '')
+                    nom_client=data.get('client', '') or 'À emporter',
                 )
-                table.statut = 'occupee'
-                table.save()
-        elif data.get('emporter'):
-            commande = Commande.objects.create(
-                table=None,
-                serveur=serveur_user,
-                statut='en_attente',
-                nom_client=data.get('client', '') or 'À emporter',
-            )
-        else:
-            return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
 
         # 2. Obtenir le Plat
         if plat_id:
@@ -1474,30 +1475,33 @@ def ajouter_boisson_commande(request):
 
         serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
         # Récupérer ou créer la commande
+        # Si commande_id fourni mais invalide (stale après sync BDD), fallback sur table_id
+        commande = None
         if commande_id:
-            commande = get_object_or_404(Commande, id=commande_id)
-            if commande.serveur == request.user and serveur_user != request.user:
+            commande = Commande.objects.filter(id=commande_id).first()
+            if commande and commande.serveur == request.user and serveur_user != request.user:
                 commande.serveur = serveur_user
                 commande.save(update_fields=['serveur'])
-        elif table_id:
-            table = get_object_or_404(Table, id=table_id)
-            commande = Commande.objects.filter(
-                table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
-            ).first()
-            if not commande:
+        if commande is None:
+            if table_id:
+                table = get_object_or_404(Table, id=table_id)
+                commande = Commande.objects.filter(
+                    table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+                ).first()
+                if not commande:
+                    commande = Commande.objects.create(
+                        table=table, serveur=serveur_user,
+                        statut='en_attente', nom_client=client_nom
+                    )
+                    table.statut = 'occupee'
+                    table.save()
+            elif data.get('emporter'):
                 commande = Commande.objects.create(
-                    table=table, serveur=serveur_user,
-                    statut='en_attente', nom_client=client_nom
+                    table=None, serveur=serveur_user,
+                    statut='en_attente', nom_client=client_nom or 'À emporter',
                 )
-                table.statut = 'occupee'
-                table.save()
-        elif data.get('emporter'):
-            commande = Commande.objects.create(
-                table=None, serveur=serveur_user,
-                statut='en_attente', nom_client=client_nom or 'À emporter',
-            )
-        else:
-            return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
 
         with transaction.atomic():
             # Chercher ligne existante pour cette boisson
@@ -1572,30 +1576,32 @@ def ajouter_forfait_commande(request):
 
         # ── 2. Récupérer ou créer la commande ──
         serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
+        commande = None
         if commande_id:
-            commande = get_object_or_404(Commande, id=commande_id)
-            if commande.serveur == request.user and serveur_user != request.user:
+            commande = Commande.objects.filter(id=commande_id).first()
+            if commande and commande.serveur == request.user and serveur_user != request.user:
                 commande.serveur = serveur_user
                 commande.save(update_fields=['serveur'])
-        elif table_id:
-            table = get_object_or_404(Table, id=table_id)
-            commande = Commande.objects.filter(
-                table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
-            ).first()
-            if not commande:
+        if commande is None:
+            if table_id:
+                table = get_object_or_404(Table, id=table_id)
+                commande = Commande.objects.filter(
+                    table=table, statut__in=['en_attente', 'en_preparation', 'prete', 'servie']
+                ).first()
+                if not commande:
+                    commande = Commande.objects.create(
+                        table=table, serveur=serveur_user,
+                        statut='en_attente', nom_client=client_nom
+                    )
+                    table.statut = 'occupee'
+                    table.save()
+            elif data.get('emporter'):
                 commande = Commande.objects.create(
-                    table=table, serveur=serveur_user,
-                    statut='en_attente', nom_client=client_nom
+                    table=None, serveur=serveur_user,
+                    statut='en_attente', nom_client=client_nom or 'À emporter',
                 )
-                table.statut = 'occupee'
-                table.save()
-        elif data.get('emporter'):
-            commande = Commande.objects.create(
-                table=None, serveur=serveur_user,
-                statut='en_attente', nom_client=client_nom or 'À emporter',
-            )
-        else:
-            return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Table ou mode emporter requis'})
 
         with transaction.atomic():
             # ── 3. Créer une LigneCommande unique pour le forfait ──
