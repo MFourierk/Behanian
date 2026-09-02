@@ -146,6 +146,9 @@ def valider_commande(request):
             if commande.total <= 0:
                 return JsonResponse({'success': False, 'message': 'Le total est nul.'})
 
+            if montant_encaisse <= 0:
+                return JsonResponse({'success': False, 'message': 'Veuillez saisir le montant reçu avant de valider.'})
+
             serveur_id  = data.get('serveur_id') or data.get('serveur', '')
             if not serveur_id:
                 return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un serveur avant de valider.'})
