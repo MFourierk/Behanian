@@ -4,6 +4,50 @@
 
 {% block doc_content %}
 
+<style>
+/* Barre de sélection des sections — visible écran, cachée à l'impression */
+.sections-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  background: #f0f4f8; border: 1.5px solid #d4dce8; border-radius: 10px;
+  padding: 12px 18px; margin: 0 30px 20px;
+}
+.sections-bar-title {
+  font-size: 11px; font-weight: 800; color: #4a5568;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-right: 6px; white-space: nowrap;
+}
+.sec-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: white; border: 1.5px solid #d4dce8; border-radius: 20px;
+  padding: 5px 12px; cursor: pointer; user-select: none;
+  font-size: 11.5px; font-weight: 600; color: #4a5568;
+  transition: all 0.15s;
+}
+.sec-toggle input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: #1a2535; }
+.sec-toggle:has(input:checked) { background: #1a2535; color: white; border-color: #1a2535; }
+.btn-tout { padding: 5px 14px; border-radius: 20px; border: none; cursor: pointer;
+  background: #c9a84c; color: #1a2535; font-size: 11px; font-weight: 800;
+  margin-left: auto; }
+.btn-tout:hover { background: #b8973b; }
+
+@media print {
+  .sections-bar { display: none !important; }
+  .sec-hidden   { display: none !important; }
+}
+</style>
+
+<!-- Barre de sélection des sections -->
+<div class="sections-bar" id="sectionsBar">
+  <span class="sections-bar-title">🗂 Afficher :</span>
+  <label class="sec-toggle"><input type="checkbox" id="chk-resume" checked onchange="toggle('sec-resume',this)"> Résumé global</label>
+  <label class="sec-toggle"><input type="checkbox" id="chk-mode" checked onchange="toggle('sec-mode',this)"> Par mode de paiement</label>
+  <label class="sec-toggle"><input type="checkbox" id="chk-caissier" checked onchange="toggle('sec-caissier',this)"> Par caissier</label>
+  {% if par_serveur %}<label class="sec-toggle"><input type="checkbox" id="chk-serveur" checked onchange="toggle('sec-serveur',this)"> Par serveur</label>{% endif %}
+  <label class="sec-toggle"><input type="checkbox" id="chk-tickets" checked onchange="toggle('sec-tickets',this)"> Détail tickets</label>
+  <label class="sec-toggle"><input type="checkbox" id="chk-note" checked onchange="toggle('sec-note',this)"> Note</label>
+  <button class="btn-tout" onclick="toutCocher()">Tout cocher</button>
+</div>
+
 <div class="doc-title-band">
   <div>
     <div class="doc-title-text">Résumé des Ventes</div>
@@ -17,8 +61,8 @@
   </div>
 </div>
 
-<!-- Méta -->
-<div class="meta-grid cols-3">
+<!-- Résumé global -->
+<div id="sec-resume" class="meta-grid cols-3">
   <div class="meta-box">
     <div class="meta-box-title">Informations</div>
     <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
@@ -41,50 +85,50 @@
   </div>
 </div>
 
-<!-- Par mode + par caissier -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 30px 20px;">
-  <div>
-    <div class="section-title" style="padding:0 0 8px;">Par mode de paiement</div>
-    <table class="doc-table">
-      <thead><tr><th>Mode</th><th class="r">Total (F CFA)</th></tr></thead>
-      <tbody>
-        {% for mode, total in par_mode.items %}
-        <tr>
-          <td>{{ mode }}</td>
-          <td class="r bold" style="color:#c9a84c;">{{ total|floatformat:0 }} F</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="2" class="muted" style="text-align:center;">Aucune donnée</td></tr>
-        {% endfor %}
-        <tr>
-          <td class="total-label">TOTAL</td>
-          <td class="total-val r">{{ total_net|floatformat:0 }} F</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <div class="section-title" style="padding:0 0 8px;">Par caissier</div>
-    <table class="doc-table">
-      <thead><tr><th>Caissier</th><th class="r">Tickets</th><th class="r">Total (F)</th></tr></thead>
-      <tbody>
-        {% for nom, data in par_caissier.items %}
-        <tr>
-          <td>{{ nom }}</td>
-          <td class="r muted">{{ data.nb }}</td>
-          <td class="r bold" style="color:#c9a84c;">{{ data.total|floatformat:0 }} F</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="3" class="muted" style="text-align:center;">Aucune donnée</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<!-- Par mode de paiement -->
+<div id="sec-mode" style="padding:0 30px 20px;">
+  <div class="section-title" style="padding:0 0 8px;">Par mode de paiement</div>
+  <table class="doc-table">
+    <thead><tr><th>Mode</th><th class="r">Total (F CFA)</th></tr></thead>
+    <tbody>
+      {% for mode, total in par_mode.items %}
+      <tr>
+        <td>{{ mode }}</td>
+        <td class="r bold" style="color:#c9a84c;">{{ total|floatformat:0 }} F</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="2" class="muted" style="text-align:center;">Aucune donnée</td></tr>
+      {% endfor %}
+      <tr>
+        <td class="total-label">TOTAL</td>
+        <td class="total-val r">{{ total_net|floatformat:0 }} F</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Par caissier -->
+<div id="sec-caissier" style="padding:0 30px 20px;">
+  <div class="section-title" style="padding:0 0 8px;">Par caissier</div>
+  <table class="doc-table">
+    <thead><tr><th>Caissier</th><th class="r">Tickets</th><th class="r">Total (F)</th></tr></thead>
+    <tbody>
+      {% for nom, data in par_caissier.items %}
+      <tr>
+        <td>{{ nom }}</td>
+        <td class="r muted">{{ data.nb }}</td>
+        <td class="r bold" style="color:#c9a84c;">{{ data.total|floatformat:0 }} F</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3" class="muted" style="text-align:center;">Aucune donnée</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <!-- Par serveur (Restaurant) -->
 {% if par_serveur %}
-<div style="padding:0 30px 20px;">
+<div id="sec-serveur" style="padding:0 30px 20px;">
   <div class="section-title" style="padding:0 0 8px;">Performances par serveur — Restaurant</div>
   <table class="doc-table">
     <thead>
@@ -112,7 +156,7 @@
 {% endif %}
 
 <!-- Détail tickets -->
-<div class="content-section">
+<div id="sec-tickets" class="content-section">
   <div class="section-title">Détail des tickets</div>
   {% if tickets %}
   <table class="doc-table">
@@ -161,12 +205,27 @@
   {% endif %}
 </div>
 
-<div class="notes-box">
+<div id="sec-note" class="notes-box">
   <strong>Note</strong>
   Ce rapport présente les encaissements enregistrés via les modules : {{ modules_display }}.
   Seuls les tickets validés et payés sont inclus.
   Généré le {% now "d/m/Y à H:i" %} — Complexe Hôtelier Behanian.
 </div>
+
+<script>
+function toggle(id, cb) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('sec-hidden', !cb.checked);
+}
+function toutCocher() {
+  document.querySelectorAll('.sections-bar input[type=checkbox]').forEach(cb => {
+    cb.checked = true;
+    const id = cb.id.replace('chk-', 'sec-');
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('sec-hidden');
+  });
+}
+</script>
 
 {% endblock %}
 
