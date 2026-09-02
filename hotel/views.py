@@ -666,10 +666,11 @@ def checkout_reservation(request, reservation_id):
             reservation.prix_total = nouveau_prix_total
             reservation.save()
             
-        montant_paye = Decimal(request.POST.get('montant_encaisse', 0))
+        montant_paye = max(Decimal('0'), Decimal(request.POST.get('montant_encaisse', 0) or 0))
         reste_a_payer = reservation.get_montant_restant()
-        
-        if montant_paye < reste_a_payer:
+
+        # Bloquer seulement si reste > 0 ET montant insuffisant (avance couvre → ok)
+        if reste_a_payer > 0 and montant_paye < reste_a_payer:
             messages.error(request, "Le montant encaissé est inférieur au reste à payer.")
             return redirect(reverse('hotel:index') + '?tab=checkinout')
             
@@ -764,9 +765,19 @@ def checkout_reservation(request, reservation_id):
                 <span class="item-name">Avance reçue</span>
                 <span class="item-price">-{montant_avance:,.0f} F</span>
             </div>
+            """
+            if montant_reste > 0:
+                services_html += f"""
             <div class="row bold">
                 <span class="item-name">Reste à payer</span>
                 <span class="item-price">{montant_reste:,.0f} F</span>
+            </div>
+            """
+            elif montant_reste < 0:
+                services_html += f"""
+            <div class="row bold" style="color:#16a34a">
+                <span class="item-name">Crédit client (remboursement dû)</span>
+                <span class="item-price">{abs(montant_reste):,.0f} F</span>
             </div>
             """
 

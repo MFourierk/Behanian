@@ -723,7 +723,7 @@
 
 <!-- MODAL MODIFIER SÉJOUR EN COURS -->
 <div id="modalModifierSejour" class="modal">
-  <div class="modal-content" style="width:520px;max-height:92vh;overflow-y:auto;padding:0;border-radius:14px;overflow:hidden">
+  <div class="modal-content" style="width:520px;max-height:92vh;overflow-y:auto;padding:0;border-radius:14px;overflow-x:hidden">
 
     <!-- En-tête coloré -->
     <div style="background:linear-gradient(135deg,#1e40af 0%,#3b82f6 100%);padding:20px 24px;display:flex;justify-content:space-between;align-items:center">
@@ -1154,130 +1154,141 @@
 
 <!-- MODAL CHECK-OUT (PAIEMENT) -->
 <div id="modalCheckout" class="modal">
-    <div class="modal-content" style="max-width:580px;max-height:90vh;overflow-y:auto">
-        <h3>💳 Paiement & Départ</h3>
-        <p id="checkout-client-name" style="margin-bottom:12px;color:#7f8c8d;font-size:13px"></p>
+  <div class="modal-content" style="width:560px;padding:0;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;border-radius:14px">
 
-        <!-- Chargement -->
-        <div id="checkout-loading" style="text-align:center;padding:20px;color:#7a8b9c;font-size:13px">
-            ⏳ Chargement des dépenses...
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#065f46,#059669);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:rgba(255,255,255,.65);text-transform:uppercase;margin-bottom:3px">🏨 Check-out · Paiement & Départ</div>
+        <div id="checkout-client-name" style="font-size:14px;font-weight:700;color:#fff"></div>
+      </div>
+      <button onclick="closeModal('modalCheckout')" style="background:rgba(255,255,255,.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">&times;</button>
+    </div>
+
+    <!-- Chargement -->
+    <div id="checkout-loading" style="text-align:center;padding:30px;color:#7a8b9c;font-size:13px;flex-shrink:0">
+      ⏳ Chargement des dépenses...
+    </div>
+
+    <form id="formCheckout" method="POST" style="display:none;flex:1;overflow-y:auto;flex-direction:column">
+      {% csrf_token %}
+
+      <!-- Récapitulatif financier -->
+      <div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Récapitulatif du séjour</div>
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px;font-size:13px">
+
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-weight:600">
+            <span>🏨 Hébergement</span>
+            <span id="bd-hebergement">0 F</span>
+          </div>
+
+          <div id="bd-consos-block" style="display:none">
+            <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">Services chambre</div>
+            <div id="bd-consos-detail"></div>
+            <div style="display:flex;justify-content:space-between;font-weight:600;color:#d35400;margin-top:4px">
+              <span>Sous-total services</span>
+              <span id="bd-consos-total">0 F</span>
+            </div>
+          </div>
+
+          <div id="bd-piscine-block" style="display:none">
+            <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">🏊 Piscine (imputé chambre)</div>
+            <div id="bd-piscine-detail"></div>
+            <div style="display:flex;justify-content:space-between;font-weight:600;color:#0891b2;margin-top:4px">
+              <span>Sous-total piscine</span>
+              <span id="bd-piscine-total">0 F</span>
+            </div>
+            <div style="font-size:11px;color:#16a34a;margin-top:4px;font-style:italic">✅ Sessions piscine clôturées au check-out</div>
+          </div>
+
+          <div id="bd-remise-block" style="display:none">
+            <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:600;margin-top:6px">
+              <span>🎁 Remise accordée</span>
+              <span id="bd-remise">0 F</span>
+            </div>
+          </div>
+
+          <div id="bd-avance-block" style="display:none">
+            <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:600;margin-top:6px">
+              <span>✅ Avance déjà perçue</span>
+              <span id="bd-avance">0 F</span>
+            </div>
+          </div>
+
+          <hr style="margin:10px 0;border-color:#e5e7eb">
+          <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.05em">
+            <span>Total général</span>
+            <span id="bd-total-general" style="color:#1a2535">0 F</span>
+          </div>
+
+          <!-- Reste à payer / Crédit client -->
+          <div id="bd-reste-positif" style="display:flex;justify-content:space-between;font-weight:800;font-size:1.1em;color:#dc2626;margin-top:6px">
+            <span>Reste à payer</span>
+            <span id="bd-reste">0 F</span>
+          </div>
+          <div id="bd-credit-block" style="display:none;justify-content:space-between;font-weight:800;font-size:1.1em;color:#16a34a;margin-top:6px;background:#f0fdf4;padding:8px 10px;border-radius:8px;border:1px solid #bbf7d0">
+            <span>💰 Crédit client (remboursement dû)</span>
+            <span id="bd-credit">0 F</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulaire paiement -->
+      <div style="padding:14px 20px;flex:1;overflow-y:auto">
+        <div class="form-group">
+          <label style="font-weight:600;color:#1a2535;font-size:12px">Réceptionniste <span style="color:#dc2626">*</span></label>
+          <input type="text" name="serveur" id="checkoutReceptionniste" class="form-control"
+                 value="{{ request.user.get_full_name|default:request.user.username }}"
+                 readonly style="background:#f0f6ff;color:#2563eb;font-weight:500;cursor:not-allowed;font-size:13px">
+          <div style="font-size:11px;color:#7a8b9c;margin-top:3px">Connecté en tant que : <strong>{{ request.user.username }}</strong> — Pour changer, modifiez votre profil (Prénom + Nom)</div>
         </div>
 
-        <form id="formCheckout" method="POST" style="display:none">
-            {% csrf_token %}
+        <div class="form-group">
+          <label style="font-weight:600;color:#1a2535;font-size:12px">Serveur / Serveuse</label>
+          <select name="serveur_resto" id="checkoutServeur" class="form-control" style="font-size:13px">
+            <option value="">— Sélectionner —</option>
+            {% for s in serveurs_restaurant %}
+            <option value="{{ s.get_full_name|default:s.username }}">{{ s.get_full_name|default:s.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-            <!-- RÉCAPITULATIF MULTI-MODULES -->
-            <div style="background:#f8fafc;border:1px solid #d4dce8;border-radius:10px;padding:14px;margin-bottom:14px;font-size:13px">
+        <div style="display:flex;gap:10px">
+          <div class="form-group" style="flex:2">
+            <label style="font-weight:600;color:#1a2535;font-size:12px">Montant Encaissé (FCFA)</label>
+            <input type="number" name="montant_encaisse" id="montantEncaisse" class="form-control" required min="0" style="font-size:14px;font-weight:700">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label style="font-weight:600;color:#1a2535;font-size:12px">Mode Paiement</label>
+            <select name="mode_paiement" id="hotelModePaiement" class="form-control" onchange="hotelCheckoutModeChange(this)" style="font-size:13px">
+              <option value="especes">Espèces</option>
+              <option value="wave">Wave</option>
+              <option value="orange_money">Orange Money</option>
+              <option value="mtn_money">MTN Mobile Money</option>
+              <option value="carte_bancaire">Carte Bancaire</option>
+              <option value="cheque">Chèque</option>
+              <option value="virement">Virement</option>
+            </select>
+          </div>
+        </div>
 
-                <!-- Hébergement -->
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-weight:600">
-                    <span>🏨 Hébergement</span>
-                    <span id="bd-hebergement">0 F</span>
-                </div>
+        <div id="hotelEspecesGroup" style="display:none" class="form-group">
+          <label style="font-size:12px">Part en espèces (FCFA)</label>
+          <input type="number" name="montant_especes" id="hotelMontantEspeces" class="form-control" placeholder="0" oninput="hotelCalcMobile()">
+          <div id="hotelMobileInfo" style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:600"></div>
+        </div>
+      </div>
 
-                <!-- Consommations hôtel -->
-                <div id="bd-consos-block" style="display:none">
-                    <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">Services chambre</div>
-                    <div id="bd-consos-detail"></div>
-                    <div style="display:flex;justify-content:space-between;font-weight:600;color:#d35400;margin-top:4px">
-                        <span>Sous-total services</span>
-                        <span id="bd-consos-total">0 F</span>
-                    </div>
-                </div>
-
-                <!-- Piscine -->
-                <div id="bd-piscine-block" style="display:none">
-                    <div style="font-size:11px;font-weight:700;color:#7a8b9c;text-transform:uppercase;letter-spacing:.5px;margin:8px 0 4px">🏊 Piscine (imputé chambre)</div>
-                    <div id="bd-piscine-detail"></div>
-                    <div style="display:flex;justify-content:space-between;font-weight:600;color:#0891b2;margin-top:4px">
-                        <span>Sous-total piscine</span>
-                        <span id="bd-piscine-total">0 F</span>
-                    </div>
-                    <div style="font-size:11px;color:#16a34a;margin-top:4px;font-style:italic">
-                        ✅ Les sessions piscine seront automatiquement clôturées au check-out
-                    </div>
-                </div>
-
-                <!-- Remise -->
-                <div id="bd-remise-block" style="display:none">
-                    <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:600;margin-top:8px">
-                        <span>🎁 Remise accordée</span>
-                        <span id="bd-remise">0 F</span>
-                    </div>
-                </div>
-
-                <!-- Avance -->
-                <div id="bd-avance-block" style="display:none">
-                    <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:600;margin-top:8px">
-                        <span>✅ Avance déjà perçue</span>
-                        <span id="bd-avance">0 F</span>
-                    </div>
-                </div>
-
-                <hr style="margin:10px 0;border-color:#d4dce8">
-                <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.1em">
-                    <span>Total général</span>
-                    <span id="bd-total-general" style="color:#1a2535">0 F</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.15em;color:#dc2626;margin-top:6px">
-                    <span>Reste à payer</span>
-                    <span id="bd-reste">0 F</span>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label style="font-weight:600;color:#1a2535">Réceptionniste <span style="color:#dc2626">*</span></label>
-                <input type="text" name="serveur" id="checkoutReceptionniste" class="form-control"
-                       value="{{ request.user.get_full_name|default:request.user.username }}"
-                       readonly style="background:#f0f6ff;color:#2563eb;font-weight:500;cursor:not-allowed">
-                <div style="font-size:11px;color:#7a8b9c;margin-top:4px">
-                  Connecté en tant que : <strong>{{ request.user.username }}</strong>
-                  — Pour changer, modifiez votre profil (Prénom + Nom)
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label style="font-weight:600;color:#1a2535">Serveur / Serveuse</label>
-                <select name="serveur_resto" id="checkoutServeur" class="form-control">
-                    <option value="">— Sélectionner —</option>
-                    {% for s in serveurs_restaurant %}
-                    <option value="{{ s.get_full_name|default:s.username }}">{{ s.get_full_name|default:s.username }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Montant Encaissé (FCFA)</label>
-                <input type="number" name="montant_encaisse" id="montantEncaisse" class="form-control" required>
-            </div>
-            
-             <div class="form-group">
-                 <label>Mode Paiement</label>
-                 <select name="mode_paiement" id="hotelModePaiement" class="form-control" onchange="hotelCheckoutModeChange(this)">
-                     <option value="especes">Espèces</option>
-                     <option value="wave">Wave</option>
-                     <option value="orange_money">Orange Money</option>
-                     <option value="mtn_money">MTN Mobile Money</option>
-                     <option value="carte_bancaire">Carte Bancaire</option>
-                     <option value="cheque">Chèque</option>
-                     <option value="virement">Virement</option>
-                 </select>
-            </div>
-
-            <div id="hotelEspecesGroup" style="display:none" class="form-group">
-                <label>Part en espèces (FCFA)</label>
-                <input type="number" name="montant_especes" id="hotelMontantEspeces" class="form-control" placeholder="0" oninput="hotelCalcMobile()">
-                <div id="hotelMobileInfo" style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:600"></div>
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn-action primary" style="flex: 1;">
-                    <i class="fas fa-check"></i> Payer & Sortir
-                </button>
-                <button type="button" class="btn-action" style="flex: 1;" onclick="closeModal('modalCheckout')">Annuler</button>
-            </div>
-        </form>
-    </div>
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;padding:12px 20px;border-top:1px solid #e5e7eb;background:white;flex-shrink:0">
+        <button type="button" class="btn-action" style="flex:1" onclick="closeModal('modalCheckout')">Annuler</button>
+        <button type="submit" class="btn-action primary" style="flex:2">
+          <i class="fas fa-check"></i> Payer & Sortir
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- MODAL ADD SERVICE -->
@@ -1950,10 +1961,24 @@
 
                 // Totaux
                 document.getElementById('bd-total-general').textContent = fmt(data.total_general);
-                document.getElementById('bd-reste').textContent = fmt(data.reste);
 
-                // Pré-remplir le montant à encaisser
-                document.getElementById('montantEncaisse').value = Math.round(data.reste);
+                // Reste à payer : si négatif = crédit client (remboursement dû)
+                const restePositifEl = document.getElementById('bd-reste-positif');
+                const creditBlockEl  = document.getElementById('bd-credit-block');
+                if (data.reste <= 0) {
+                    if (restePositifEl) restePositifEl.style.display = 'none';
+                    if (creditBlockEl) {
+                        creditBlockEl.style.display = 'flex';
+                        document.getElementById('bd-credit').textContent = fmt(Math.abs(data.reste));
+                    }
+                } else {
+                    document.getElementById('bd-reste').textContent = fmt(data.reste);
+                    if (restePositifEl) restePositifEl.style.display = 'flex';
+                    if (creditBlockEl) creditBlockEl.style.display = 'none';
+                }
+
+                // Pré-remplir le montant à encaisser : jamais négatif
+                document.getElementById('montantEncaisse').value = Math.max(0, Math.round(data.reste));
 
                 // Afficher le formulaire
                 document.getElementById('checkout-loading').style.display = 'none';
