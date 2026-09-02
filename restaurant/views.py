@@ -735,11 +735,16 @@ def update_reservation_status(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-def _resoudre_serveur(nom):
-    """Retourne l'User correspondant au nom complet ou username, ou None."""
-    if not nom:
+def _resoudre_serveur(nom_ou_id):
+    """Retourne l'User correspondant à l'ID numérique ou au nom complet/username, ou None."""
+    if not nom_ou_id:
         return None
-    mots = nom.strip().split()
+    try:
+        pk = int(nom_ou_id)
+        return AuthUser.objects.filter(pk=pk).first()
+    except (ValueError, TypeError):
+        pass
+    mots = str(nom_ou_id).strip().split()
     qs = AuthUser.objects.filter(first_name__icontains=mots[0])
     if len(mots) > 1:
         qs = qs.filter(last_name__icontains=mots[-1])

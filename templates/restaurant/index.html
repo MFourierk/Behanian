@@ -771,7 +771,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:22px;">Sélectionnez le serveur avant de commencer</p>
         <div id="modalServeurBtns" style="display:flex;flex-direction:column;gap:10px;">
           {% for u in serveurs %}
-          <button onclick="confirmerServeur('{{ u.get_full_name|default:u.username }}')"
+          <button onclick="confirmerServeur('{{ u.id }}', '{{ u.get_full_name|default:u.username }}')"
             style="padding:14px;border-radius:12px;border:1px solid rgba(201,168,76,0.3);background:rgba(201,168,76,0.08);
                    color:rgba(255,255,255,0.88);font-size:0.95rem;font-weight:700;cursor:pointer;
                    font-family:'DM Sans',sans-serif;transition:background 0.2s;"
@@ -1674,12 +1674,12 @@ function _selectionnerTableInterne(tableId, tableNum, statut) {
   }
 }
 
-function confirmerServeur(nom) {
+function confirmerServeur(userId, nom) {
   document.getElementById('modalServeur').style.display = 'none';
   const t = tickets[ticketActifId];
-  t.serveur = nom;
+  t.serveur = String(userId);
   const sel = document.getElementById('selectServeur');
-  sel.value = nom;
+  sel.value = String(userId);
   sel.disabled = true;
   toast('🧑‍🍳 ' + nom + ' — Table ' + t.tableNum, 'success');
   switchView(document.querySelector('.nav-tab[data-view="plats"]'));
@@ -2571,7 +2571,7 @@ async function chargerCommande(cmdId) {
     tickets[tid] = {
       id:tid, nom:'#'+cmdId,
       tableId:data.commande.table_id, tableNum:null,
-      client:data.commande.client||'', serveur:'',
+      client:data.commande.client||'', serveur:data.commande.serveur_id ? String(data.commande.serveur_id) : '',
       lignes:data.commande.items, total:data.commande.total,
       commandeDbId:data.commande.id, paiement:'especes',
       remise_pct:data.commande.remise_pct||0, nb_couverts:data.commande.nb_couverts||1,
