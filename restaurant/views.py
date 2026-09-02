@@ -891,7 +891,9 @@ def update_ligne_quantite(request):
                 is_available, error_msg = check_stock_availability(plat, 1)
                 if not is_available: return JsonResponse({'success': False, 'message': error_msg})
 
-                # Stock boisson non bloquant (vente autorisée jusqu'à 0)
+                # Rupture boisson (stock = 0) bloque la vente
+                if boisson and boisson.est_en_rupture:
+                    return JsonResponse({'success': False, 'message': f"{boisson.nom} : rupture de stock"})
 
                 # Check stock Accompagnement
                 if ligne.accompagnement:
@@ -1429,7 +1431,10 @@ def restaurant_tpe(request):
                             break
                 except Exception:
                     pass
-            # Stock boisson non bloquant pour l'affichage forfait
+            elif ligne.boisson:
+                if ligne.boisson.est_en_rupture:
+                    en_stock = False
+                    break
         forfait.en_stock = en_stock
         forfaits.append(forfait)
 
@@ -1473,7 +1478,8 @@ def ajouter_boisson_commande(request):
 
         boisson = get_object_or_404(BoissonBar, id=boisson_id)
 
-        # Stock non bloquant — vente autorisée même en rupture
+        if boisson.est_en_rupture:
+            return JsonResponse({'success': False, 'message': f'{boisson.nom} : rupture de stock'})
 
         serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user
         # Récupérer ou créer la commande
@@ -1567,8 +1573,11 @@ def ajouter_forfait_commande(request):
                     ok, msg = check_stock_availability(plat_menu, lf.quantite)
                     if not ok:
                         erreurs.append(f"{lf.plat.nom}: {msg}")
-            # Stock boisson non bloquant
-        # Vente forfait autorisée même en stock bas
+            elif lf.boisson:
+                if lf.boisson.est_en_rupture:
+                    erreurs.append(f"{lf.boisson.nom} : rupture de stock")
+        if erreurs:
+            return JsonResponse({'success': False, 'message': "Rupture de stock :\n" + "\n".join(erreurs)})
 
         # ── 2. Récupérer ou créer la commande ──
         serveur_user = _resoudre_serveur(data.get('serveur', '')) or request.user

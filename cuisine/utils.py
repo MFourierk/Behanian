@@ -10,8 +10,28 @@ def _ingredient_par_nom(nom_plat):
 
 def check_stock_availability(plat, quantity=1):
     """
-    Stock bas ne bloque pas la vente — les mouvements sont enregistrés même en stock négatif.
+    Bloque uniquement en rupture totale (stock ≤ 0 sur un ingrédient).
+    Stock bas (> 0 mais < quantité nécessaire) : vente autorisée.
     """
+    nom_plat = getattr(plat, 'nom', 'ce plat')
+
+    if not hasattr(plat, 'fiche_technique') or plat.fiche_technique is None:
+        return True, ""
+
+    fiche = plat.fiche_technique
+    lignes = list(fiche.lignes.select_related('ingredient').all())
+
+    if not lignes:
+        ing = _ingredient_par_nom(nom_plat)
+        if ing and ing.quantite_stock <= 0:
+            return False, f"« {nom_plat} » en rupture de stock."
+        return True, ""
+
+    en_rupture = [l.ingredient for l in lignes if l.ingredient.quantite_stock <= 0]
+    if en_rupture:
+        detail = ", ".join(i.nom for i in en_rupture)
+        return False, f"« {nom_plat} » — rupture : {detail}"
+
     return True, ""
 
 
