@@ -1221,20 +1221,27 @@ def modifier_checkin_en_cours(request, reservation_id):
     """Modifier les champs essentiels d'un séjour en cours : nom client, chambre, date sortie, remise."""
     reservation = get_object_or_404(Reservation, id=reservation_id, statut='en_cours')
 
-    nom        = request.POST.get('nom', '').strip()
-    prenom     = request.POST.get('prenom', '').strip()
-    chambre_id = request.POST.get('chambre_id')
+    nom             = request.POST.get('nom', '').strip()
+    prenom          = request.POST.get('prenom', '').strip()
+    chambre_id      = request.POST.get('chambre_id')
+    date_arrivee_str = request.POST.get('date_arrivee', '').strip()
     date_depart_str = request.POST.get('date_depart', '').strip()
-    remise     = Decimal(request.POST.get('remise', 0) or 0)
+    remise          = Decimal(request.POST.get('remise', 0) or 0)
 
+    today = timezone.now().date()
     try:
-        d_depart = timezone.datetime.strptime(date_depart_str, '%Y-%m-%d').date()
+        d_arrivee = timezone.datetime.strptime(date_arrivee_str, '%Y-%m-%d').date()
+        d_depart  = timezone.datetime.strptime(date_depart_str,  '%Y-%m-%d').date()
     except (ValueError, TypeError):
-        messages.error(request, "Format de date de sortie invalide.")
+        messages.error(request, "Format de date invalide.")
         return redirect(reverse('hotel:index') + '?tab=historique')
 
-    if d_depart < reservation.date_arrivee:
-        messages.error(request, "La date de sortie ne peut pas être avant la date d'arrivée.")
+    if d_arrivee > today:
+        messages.error(request, "La date d'entrée ne peut pas être dans le futur.")
+        return redirect(reverse('hotel:index') + '?tab=historique')
+
+    if d_depart < d_arrivee:
+        messages.error(request, "La date de sortie ne peut pas être avant la date d'entrée.")
         return redirect(reverse('hotel:index') + '?tab=historique')
 
     # Mise à jour nom/prénom client
@@ -1256,8 +1263,8 @@ def modifier_checkin_en_cours(request, reservation_id):
         nouvelle_chambre.statut = 'occupee'
         nouvelle_chambre.save()
 
-    # Recalcul prix sur la nouvelle durée / chambre
-    duree = (d_depart - reservation.date_arrivee).days or 1
+    # Recalcul prix sur la durée corrigée / nouvelle chambre
+    duree = (d_depart - d_arrivee).days or 1
     ts = reservation.type_sejour
     if ts == 'repos':
         prix_unit = nouvelle_chambre.prix_nuit
@@ -1267,10 +1274,11 @@ def modifier_checkin_en_cours(request, reservation_id):
         prix_unit = nouvelle_chambre.prix_nuitee
     prix_total = duree * prix_unit
 
-    reservation.chambre     = nouvelle_chambre
-    reservation.date_depart = d_depart
-    reservation.prix_total  = prix_total
-    reservation.remise      = remise
+    reservation.chambre      = nouvelle_chambre
+    reservation.date_arrivee = d_arrivee
+    reservation.date_depart  = d_depart
+    reservation.prix_total   = prix_total
+    reservation.remise       = remise
     reservation.save()
 
     messages.success(request, f"Séjour #{reservation_id} mis à jour — Ch. {nouvelle_chambre.numero}.")
