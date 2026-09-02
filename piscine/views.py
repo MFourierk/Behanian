@@ -538,6 +538,8 @@ def encaisser_sortie(request, acces_id):
             try:
                 from restaurant.models import Table as TableResto
                 _salon = TableResto.objects.get(pk=int(salon_vip_id))
+                if not _salon.tarif_horaire or _salon.tarif_horaire <= 0:
+                    raise ValueError(f'Tarif horaire non configuré pour le salon {_salon.numero}')
                 tarif_salon_pisc = _salon.tarif_horaire
                 salon_nom_pisc = _salon.numero
                 frais_salon = Decimal(str(heures_salon)) * tarif_salon_pisc

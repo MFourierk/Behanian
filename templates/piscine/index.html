@@ -1503,10 +1503,10 @@ function piscSortieCalcMobile(which){
 
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('sortieRecu').addEventListener('input',function(){
-    _calcRendu(this, _sortieTotal, document.getElementById('sortieRendu'));
+    _calcRendu(this, _sortieTotal + _sortieSalonFrais, document.getElementById('sortieRendu'));
   });
   document.getElementById('sortieRecuNR').addEventListener('input',function(){
-    _calcRendu(this, _sortieTotal, document.getElementById('sortieRenduNR'));
+    _calcRendu(this, _sortieTotal + _sortieSalonFrais, document.getElementById('sortieRenduNR'));
   });
 });
 

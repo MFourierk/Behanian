@@ -336,6 +336,8 @@ def facturer_salon_direct(request):
         salon = get_object_or_404(Table, pk=salon_id)
         tarif = salon.tarif_horaire
         montant_total = Decimal(str(heures)) * tarif
+        if montant_encaisse < montant_total:
+            return JsonResponse({'success': False, 'message': f'Montant insuffisant. Total : {int(montant_total):,} F'})
 
         services_html = ''
         if nom_client:

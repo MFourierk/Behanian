@@ -1735,6 +1735,8 @@
 
     function openCheckoutModal(resId, clientName, roomVal, serviceVal, avance, piscineVal) {
         document.getElementById('checkout-client-name').textContent = 'Client : ' + clientName;
+        const _modeSel = document.getElementById('hotelModePaiement');
+        if (_modeSel) { _modeSel.value = 'especes'; hotelCheckoutModeChange(_modeSel); }
 
         const parseAmount = (val) => {
             if (typeof val === 'number') return val;

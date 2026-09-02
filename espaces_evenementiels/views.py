@@ -255,6 +255,9 @@ def api_encaisser(request, reservation_id):
             })
 
         # Mode PAIEMENT DIRECT
+        if montant_recu < restant:
+            return JsonResponse({'success': False, 'error': f'Montant insuffisant. Restant : {int(restant):,} F'})
+
         duree_label = dict(ReservationEspace.TYPE_DUREE).get(res.type_duree, '')
         contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({duree_label})</span><span class="item-price">{int(montant_net):,} F</span></div>'
         if res.avance > 0:
@@ -315,23 +318,6 @@ def contrat_print(request, pk):
 
 
 @login_required
-@require_POST
-def api_annuler(request, pk):
-    import json
-    res = get_object_or_404(ReservationEspace, id=pk)
-    if res.statut == 'terminee':
-        return JsonResponse({'success': False, 'error': 'Réservation déjà terminée'})
-    data = json.loads(request.body)
-    motif = data.get('motif', '').strip()
-    if not motif:
-        return JsonResponse({'success': False, 'error': 'Motif requis'})
-    res.statut = 'annulee'
-    res.motif_annulation = motif
-    res.save()
-    return JsonResponse({'success': True, 'message': f'Réservation {res.numero} annulée'})
-
-
-@login_required
 def api_calendrier(request):
     from django.utils.timezone import make_aware
     from datetime import datetime
@@ -374,10 +360,10 @@ def api_calendrier(request):
     })
 
 
+@login_required
+@require_POST
 def api_annuler(request, reservation_id):
     """Annuler une réservation avec motif."""
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
     try:
         data = json.loads(request.body)
         motif = data.get('motif', '').strip()
@@ -387,9 +373,9 @@ def api_annuler(request, reservation_id):
         if res.statut in ['terminee', 'annulee']:
             return JsonResponse({'success': False, 'error': 'Réservation déjà clôturée'})
         res.statut = 'annulee'
-        res.commentaire = f"ANNULÉ — {motif}" + (f"\n{res.commentaire}" if res.commentaire else "")
+        res.motif_annulation = motif
         res.save()
-        return JsonResponse({'success': True, 'message': 'Réservation annulée'})
+        return JsonResponse({'success': True, 'message': f'Réservation {res.numero} annulée'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 

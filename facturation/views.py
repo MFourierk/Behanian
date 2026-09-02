@@ -1099,6 +1099,8 @@ def get_document_details(request, doc_type, pk):
         
         articles_data = []
         for line in lines:
+            if not line.article:
+                continue
             # Reconstruct the composite ID for the select box
             composite_id = f"{line.article.content_type.id}:{line.article.object_id}"
             
