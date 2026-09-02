@@ -603,7 +603,9 @@
                   <th>Arrivée</th>
                   <th>Départ</th>
                   <th>Total</th>
+                  <th>Remise</th>
                   <th>Statut</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -613,8 +615,10 @@
                   <td>{{ res.chambre.numero }}</td>
                   <td>{{ res.date_arrivee|date:"d/m/Y" }}</td>
                   <td>{{ res.date_depart|date:"d/m/Y" }}</td>
-                  <td>{{ res.prix_total|montant }} F</td>
+                  <td>{{ res.get_total_general|montant }} F</td>
+                  <td>{% if res.remise %}<span style="color:#16a34a;font-weight:600">-{{ res.remise|montant }} F</span>{% else %}—{% endif %}</td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
+                  <td>{% if res.statut == 'en_cours' %}<button class="check-btn-action" style="font-size:11px;padding:4px 10px" onclick="ouvrirModifierEnCours({'id':{{ res.id }},'date_depart':'{{ res.date_depart|date:'Y-m-d' }}','heure_depart':'{{ res.heure_depart|time:'H:i'|default:'' }}','remise':{{ res.remise|default:0 }},'commentaire':'{{ res.commentaire|default_if_none:''|escapejs }}'})">✏️ Modifier</button>{% endif %}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -909,6 +913,10 @@
                         <input type="number" name="avance" class="form-control" value="0">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Remise accordée (FCFA) <span style="font-size:11px;color:#6b7280">— client fidèle, offre spéciale…</span></label>
+                    <input type="number" name="remise" class="form-control" value="0" min="0" style="border-color:#16a34a">
+                </div>
 
                 <div class="form-group">
                      <label>Mode Paiement</label>
@@ -1033,6 +1041,10 @@
                         <input type="number" name="avance" class="form-control" value="0">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Remise accordée (FCFA) <span style="font-size:11px;color:#6b7280">— client fidèle, offre spéciale…</span></label>
+                    <input type="number" name="remise" class="form-control" value="0" min="0" style="border-color:#16a34a">
+                </div>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1087,6 +1099,14 @@
                     </div>
                     <div style="font-size:11px;color:#16a34a;margin-top:4px;font-style:italic">
                         ✅ Les sessions piscine seront automatiquement clôturées au check-out
+                    </div>
+                </div>
+
+                <!-- Remise -->
+                <div id="bd-remise-block" style="display:none">
+                    <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:600;margin-top:8px">
+                        <span>🎁 Remise accordée</span>
+                        <span id="bd-remise">0 F</span>
                     </div>
                 </div>
 
@@ -1414,14 +1434,18 @@
             <div style="background:#f8f9fa;padding:15px;border-radius:10px;margin-bottom:20px">
                 <h4 style="border-bottom:1px solid #dee2e6;padding-bottom:10px;margin-bottom:15px;font-size:15px">💰 Paiement</h4>
                 <div class="row" style="display:flex;gap:10px">
-                    <div class="form-group" style="flex:1">
+                    <div class="form-group" style="flex:1" id="mod-prix-total-block">
                         <label>Prix Total (FCFA)</label>
                         <input type="number" id="mod-prix-total" name="prix_total_affiche" class="form-control" readonly style="background:#f0f6ff">
                     </div>
-                    <div class="form-group" style="flex:1">
+                    <div class="form-group" style="flex:1" id="mod-avance-block">
                         <label>Avance (FCFA)</label>
                         <input type="number" id="mod-avance" name="avance" class="form-control" value="0">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Remise accordée (FCFA) <span style="font-size:11px;color:#6b7280">— client fidèle, offre spéciale…</span></label>
+                    <input type="number" id="mod-remise" name="remise" class="form-control" value="0" min="0" style="border-color:#16a34a">
                 </div>
             </div>
 
@@ -1807,6 +1831,12 @@
                     document.getElementById('bd-piscine-detail').innerHTML = html;
                     document.getElementById('bd-piscine-total').textContent = fmt(total);
                     document.getElementById('bd-piscine-block').style.display = 'block';
+                }
+
+                // Remise
+                if (data.remise > 0) {
+                    document.getElementById('bd-remise').textContent = '- ' + fmt(data.remise);
+                    document.getElementById('bd-remise-block').style.display = 'block';
                 }
 
                 // Avance
@@ -2207,6 +2237,15 @@
         const urlTpl = "{% url 'hotel:reservation_modifier' 0 %}";
         form.action = urlTpl.replace('0', data.id);
 
+        // Champs complets (en_attente / confirmee)
+        const roFields = ['mod-chambre','mod-type-sejour','mod-date-arrivee','mod-heure-arrivee'];
+        roFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.disabled = false; el.style.background = ''; }
+        });
+        document.getElementById('mod-avance-block').style.display = '';
+        document.getElementById('mod-prix-total-block').style.display = '';
+
         document.getElementById('mod-chambre').value        = data.chambre_id;
         document.getElementById('mod-type-sejour').value    = data.type_sejour;
         document.getElementById('mod-date-arrivee').value   = data.date_arrivee;
@@ -2214,8 +2253,32 @@
         document.getElementById('mod-heure-arrivee').value  = data.heure_arrivee || '';
         document.getElementById('mod-heure-depart').value   = data.heure_depart  || '';
         document.getElementById('mod-avance').value         = data.avance || 0;
+        document.getElementById('mod-remise').value         = data.remise || 0;
 
+        document.querySelector('#modalModifierReservation h3').textContent = '✏️ Modifier la Réservation';
         majPrixModifier();
+        openModal('modalModifierReservation');
+    }
+
+    function ouvrirModifierEnCours(data) {
+        // Mode simplifié pour réservation en cours : seuls date_depart, remise, commentaire
+        const form = document.getElementById('formModifierReservation');
+        const urlTpl = "{% url 'hotel:reservation_modifier' 0 %}";
+        form.action = urlTpl.replace('0', data.id);
+
+        // Verrouiller chambre/type/date_arrivee/heure_arrivee
+        ['mod-chambre','mod-type-sejour','mod-date-arrivee','mod-heure-arrivee'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.disabled = true; el.style.background = '#f0f0f0'; }
+        });
+        document.getElementById('mod-avance-block').style.display = 'none';
+        document.getElementById('mod-prix-total-block').style.display = 'none';
+
+        document.getElementById('mod-date-depart').value  = data.date_depart;
+        document.getElementById('mod-heure-depart').value = data.heure_depart || '';
+        document.getElementById('mod-remise').value       = data.remise || 0;
+
+        document.querySelector('#modalModifierReservation h3').textContent = '✏️ Modifier séjour en cours (date départ / remise)';
         openModal('modalModifierReservation');
     }
 

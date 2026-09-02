@@ -449,6 +449,8 @@ def checkin_direct(request):
         heure_arrivee_str = request.POST.get('heure_arrivee', '').strip() or None
         heure_depart_str  = request.POST.get('heure_depart', '').strip() or None
 
+        remise = Decimal(request.POST.get('remise', 0) or 0)
+
         reservation = Reservation.objects.create(
             client=client,
             chambre=chambre,
@@ -461,6 +463,7 @@ def checkin_direct(request):
             nombre_enfants=nombre_enfants,
             prix_total=prix_total,
             avance=avance,
+            remise=remise,
             provenance=provenance,
             destination=destination,
             statut='en_cours',
@@ -598,6 +601,8 @@ def reservation_create(request):
         heure_arrivee_str = request.POST.get('heure_arrivee', '').strip() or None
         heure_depart_str  = request.POST.get('heure_depart', '').strip() or None
 
+        remise = Decimal(request.POST.get('remise', 0) or 0)
+
         Reservation.objects.create(
             client=client,
             chambre=chambre,
@@ -608,6 +613,7 @@ def reservation_create(request):
             type_sejour=type_sejour,
             prix_total=prix_total,
             avance=avance,
+            remise=remise,
             statut=statut,
         )
         
@@ -731,17 +737,29 @@ def checkout_reservation(request, reservation_id):
         
         # Ajout du récapitulatif financier dans le contenu
         montant_avance = reservation.avance
+        montant_remise = reservation.remise or Decimal('0')
         montant_total_general = reservation.get_total_general()
         montant_reste = montant_total_general - montant_avance
-        
+
         services_html += '<div style="margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px;">'
-        
-        if montant_avance > 0:
-             services_html += f"""
+
+        if montant_remise > 0:
+            services_html += f"""
+            <div class="row" style="color:#16a34a">
+                <span class="item-name">Remise accordée</span>
+                <span class="item-price">-{montant_remise:,.0f} F</span>
+            </div>
+            """
+
+        if montant_avance > 0 or montant_remise > 0:
+            services_html += f"""
             <div class="row">
                 <span class="item-name">Total Général</span>
                 <span class="item-price">{montant_total_general:,.0f} F</span>
             </div>
+            """
+        if montant_avance > 0:
+            services_html += f"""
             <div class="row">
                 <span class="item-name">Avance reçue</span>
                 <span class="item-price">-{montant_avance:,.0f} F</span>
@@ -1102,13 +1120,36 @@ def api_supprimer_consommation(request, conso_id):
 @require_module_access('hotel')
 @transaction.atomic
 def reservation_modifier(request, reservation_id):
-    """Modifier une réservation en attente ou confirmée."""
+    """Modifier une réservation en attente, confirmée ou en cours."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
-    if reservation.statut not in ('en_attente', 'confirmee'):
-        messages.error(request, "Impossible de modifier une réservation déjà en cours, terminée ou annulée.")
+    if reservation.statut not in ('en_attente', 'confirmee', 'en_cours'):
+        messages.error(request, "Impossible de modifier une réservation terminée ou annulée.")
         return redirect(reverse('hotel:index') + '?tab=reservations')
 
     if request.method == 'POST':
+        remise = Decimal(request.POST.get('remise', 0) or 0)
+
+        if reservation.statut == 'en_cours':
+            # Pour une réservation en cours : seules la remise, la date de départ et le commentaire sont modifiables
+            date_depart  = request.POST.get('date_depart')
+            heure_depart = request.POST.get('heure_depart', '').strip() or None
+            try:
+                d_depart = timezone.datetime.strptime(date_depart, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                messages.error(request, "Format de date invalide.")
+                return redirect(reverse('hotel:index') + '?tab=historique')
+            if d_depart < reservation.date_arrivee:
+                messages.error(request, "La date de départ ne peut pas être avant la date d'arrivée.")
+                return redirect(reverse('hotel:index') + '?tab=historique')
+            reservation.date_depart  = d_depart
+            reservation.heure_depart = heure_depart
+            reservation.remise       = remise
+            reservation.commentaire  = request.POST.get('commentaire', '').strip() or reservation.commentaire
+            reservation.save()
+            messages.success(request, f"Réservation #{reservation_id} mise à jour.")
+            return redirect(reverse('hotel:index') + '?tab=historique')
+
+        # En attente / confirmée : modification complète
         chambre_id    = request.POST.get('chambre_id')
         date_arrivee  = request.POST.get('date_arrivee')
         heure_arrivee = request.POST.get('heure_arrivee', '').strip() or None
@@ -1133,7 +1174,6 @@ def reservation_modifier(request, reservation_id):
 
         chambre = get_object_or_404(Chambre, id=chambre_id)
 
-        # Vérification chevauchement (en excluant la réservation en cours de modification)
         overlapping = Reservation.objects.filter(
             chambre=chambre,
             statut__in=['en_attente', 'confirmee', 'en_cours']
@@ -1162,6 +1202,7 @@ def reservation_modifier(request, reservation_id):
         reservation.heure_depart  = heure_depart
         reservation.type_sejour   = type_sejour
         reservation.avance        = avance
+        reservation.remise        = remise
         reservation.prix_total    = prix_total
         if avance > 0 and reservation.statut == 'en_attente':
             reservation.statut = 'confirmee'
@@ -1230,6 +1271,7 @@ def api_checkout_details(request, reservation_id):
         'consos':        consos,
         'piscine_items': piscine_items,
         'avance':        avance,
+        'remise':        float(reservation.remise or 0),
         'total_general': total_general,
         'reste':         reste,
     })

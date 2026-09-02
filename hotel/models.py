@@ -130,6 +130,7 @@ class Reservation(models.Model):
     
     prix_total = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Prix total (FCFA)")
     avance = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Avance payée (FCFA)")
+    remise = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name="Remise (FCFA)")
     mode_paiement = models.CharField(max_length=20, choices=PAIEMENT_CHOICES, default='especes', verbose_name="Mode de Paiement")
     
     commentaire = models.TextField(blank=True, null=True, verbose_name="Commentaire")
@@ -194,8 +195,8 @@ class Reservation(models.Model):
         return sum(c.total for c in self.consommations.exclude(type_service='piscine'))
 
     def get_total_general(self):
-        """Prix hébergement + Services"""
-        return self.get_prix_reel() + self.get_montant_services()
+        """Prix hébergement + Services - Remise"""
+        return self.get_prix_reel() + self.get_montant_services() - (self.remise or 0)
 
     def get_montant_restant_reel(self):
         """Reste à payer basé sur le temps passé et les services"""
