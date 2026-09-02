@@ -2694,7 +2694,7 @@ function ouvrirModalDepuisCmd(cmdId) { chargerCommande(cmdId).then(() => setTime
 function fermerModal() {
   document.getElementById('modalPaiement').classList.remove('open');
   // Restaurer le bouton confirmer pour la prochaine ouverture
-  const btn = document.querySelector('.modal-btn-confirm');
+  const btn = document.getElementById('btnConfirmerPaiement');
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmer & Imprimer'; }
   // Replier la section salon et réinitialiser
   toggleSalonSection(false);
