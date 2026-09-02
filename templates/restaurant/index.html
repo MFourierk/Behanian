@@ -1077,7 +1077,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <select id="selectServeur" onchange="majTicketMeta()">
           <option value="">🧑‍🍳 Serveur</option>
           {% for u in serveurs %}
-          <option value="{{ u.get_full_name|default:u.username }}">{{ u.get_full_name|default:u.username }}</option>
+          <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>
           {% endfor %}
         </select>
         <div class="couverts-row">
@@ -2547,10 +2547,10 @@ async function chargerCommandeParTable(tableId) {
         t.nb_couverts = data.commande.nb_couverts || 1;
         t.statut = data.commande.statut || null;
         if (data.commande.client) { t.client = data.commande.client; document.getElementById('inputClient').value = t.client; }
-        if (data.commande.serveur) {
-          t.serveur = data.commande.serveur;
+        if (data.commande.serveur_id) {
+          t.serveur = String(data.commande.serveur_id);
           const sel = document.getElementById('selectServeur');
-          sel.value = data.commande.serveur;
+          sel.value = String(data.commande.serveur_id);
           sel.disabled = true;
         }
         renderTicket();
@@ -2932,7 +2932,7 @@ async function mettreOnChambre() {
       method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body: JSON.stringify({
         commande_id: t.commandeDbId, action:'paiement', mode_paiement:'chambre',
-        montant_encaisse: 0, client: t.client||'', serveur: serveurVal,
+        montant_encaisse: 0, client: t.client||'', serveur_id: serveurVal,
         reservation_hotel_id: chambreLieeId, sur_chambre: true,
       })
     });
@@ -3006,7 +3006,7 @@ async function confirmerPaiement() {
           mode_paiement: modePaiement, montant_encaisse: montantRecu,
           montant_especes: montantEspeces,
           client: t.client || '',
-          serveur: t.serveur || document.getElementById('selectServeur').value || '',
+          serveur_id: t.serveur || document.getElementById('selectServeur').value || '',
           reservation_hotel_id: chambreLieeId || reservation_hotel_id,
           operateur_mobile: '',
           heures_salon: heuresSalon,

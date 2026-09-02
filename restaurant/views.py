@@ -146,8 +146,8 @@ def valider_commande(request):
             if commande.total <= 0:
                 return JsonResponse({'success': False, 'message': 'Le total est nul.'})
 
-            serveur_nom = data.get('serveur', '')
-            if not serveur_nom:
+            serveur_id  = data.get('serveur_id') or data.get('serveur', '')
+            if not serveur_id:
                 return JsonResponse({'success': False, 'message': 'Veuillez sélectionner un serveur avant de valider.'})
 
             # Frais salon privé (heures saisies manuellement par la caissière)
@@ -178,15 +178,12 @@ def valider_commande(request):
                 total_net = commande.total_net
                 commande.montant_rendu = max(Decimal('0'), montant_encaisse - Decimal(str(total_net)) - frais_salon)
                 # Sauvegarder le serveur sélectionné dans la commande
-                if serveur_nom:
+                if serveur_id:
                     from django.contrib.auth.models import User as AuthUser
-                    srv = AuthUser.objects.filter(
-                        first_name__icontains=serveur_nom.split()[0] if serveur_nom else ''
-                    ).first() or AuthUser.objects.filter(
-                        username__icontains=serveur_nom.split()[0] if serveur_nom else ''
-                    ).first()
-                    if srv:
-                        commande.serveur = srv
+                    try:
+                        commande.serveur = AuthUser.objects.get(pk=int(serveur_id))
+                    except (AuthUser.DoesNotExist, ValueError, TypeError):
+                        pass
                 commande.save()
                 # Numérotation fiscale séquentielle
                 commande.assigner_numero_fiscal()
@@ -957,8 +954,10 @@ def _serialize_commande(commande):
             'has_acc':  bool(l.accompagnement),
         })
     serveur_nom = ''
+    serveur_pk  = None
     if commande.serveur:
         serveur_nom = commande.serveur.get_full_name() or commande.serveur.username
+        serveur_pk  = commande.serveur.pk
     return {
         'id':          commande.id,
         'table_id':    commande.table.id if commande.table else None,
@@ -969,6 +968,7 @@ def _serialize_commande(commande):
         'nb_couverts': commande.nb_couverts,
         'client':      commande.nom_client or '',
         'serveur':     serveur_nom,
+        'serveur_id':  serveur_pk,
         'items':       items,
     }
 
