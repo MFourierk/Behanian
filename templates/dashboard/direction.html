@@ -171,11 +171,16 @@
           {% else %}<strong>{{ s.fond_caisse_reel|floatformat:0 }} F</strong>{% endif %}
         </td>
         <td>
-          {% if s.is_open %}<span style="color:var(--muted)">—</span>
+          {% if s.is_open %}
+            <span style="color:var(--muted);font-style:italic;font-size:11px" title="Écart calculé à la clôture — solde théorique en cours">En cours</span>
           {% else %}
-            <span style="font-weight:700;color:{% if s.ecart < 0 %}#b91c1c{% elif s.ecart > 0 %}#d97706{% else %}#15803d{% endif %}">
-              {% if s.ecart > 0 %}+{% endif %}{{ s.ecart|floatformat:0 }} F
-            </span>
+            {% if s.ecart == 0 %}
+              <span style="font-weight:700;color:#15803d">0 F ✓</span>
+            {% elif s.ecart > 0 %}
+              <span style="font-weight:700;color:#d97706">+{{ s.ecart|floatformat:0 }} F</span>
+            {% else %}
+              <span style="font-weight:700;color:#b91c1c">{{ s.ecart|floatformat:0 }} F</span>
+            {% endif %}
           {% endif %}
         </td>
         <td>
