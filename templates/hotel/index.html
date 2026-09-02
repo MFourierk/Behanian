@@ -1895,6 +1895,19 @@
 
         document.getElementById('montantEncaisse').value = resteAPayer;
 
+        // Réinitialiser tous les blocs du récapitulatif avant chargement
+        ['bd-consos-block','bd-piscine-block','bd-remise-block','bd-avance-block'].forEach(id => {
+            const el = document.getElementById(id); if(el) el.style.display = 'none';
+        });
+        const rpEl = document.getElementById('bd-reste-positif');
+        const cbEl = document.getElementById('bd-credit-block');
+        if(rpEl) rpEl.style.display = 'flex';
+        if(cbEl) cbEl.style.display = 'none';
+        document.getElementById('bd-reste').textContent = '0 F';
+        document.getElementById('bd-credit') && (document.getElementById('bd-credit').textContent = '0 F');
+        document.getElementById('bd-hebergement').textContent = '0 F';
+        document.getElementById('bd-total-general').textContent = '0 F';
+
         // Afficher l'état de chargement
         document.getElementById('checkout-loading').style.display = 'block';
         document.getElementById('formCheckout').style.display = 'none';
@@ -1982,7 +1995,7 @@
 
                 // Afficher le formulaire
                 document.getElementById('checkout-loading').style.display = 'none';
-                document.getElementById('formCheckout').style.display = 'block';
+                document.getElementById('formCheckout').style.display = 'flex';
             })
             .catch(err => {
                 document.getElementById('checkout-loading').textContent = '❌ Erreur de chargement. Réessayez.';
