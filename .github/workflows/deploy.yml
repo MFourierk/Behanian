@@ -43,56 +43,76 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Déploiement serveur local via WireGuard
+      - name: Test connectivité complexe
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 5m
+          command_timeout: 2m
           script: |
-            echo "=== Test WireGuard ===" && if ! ping -c 2 -W 5 10.8.0.2 > /dev/null 2>&1; then
-              echo "WireGuard injoignable, tentative restart..."
+            if ! ping -c 2 -W 5 10.8.0.2 > /dev/null 2>&1; then
+              echo "WireGuard injoignable, restart..."
               sudo systemctl restart wg-quick@wg0
               sleep 8
-              ping -c 2 -W 5 10.8.0.2 || { echo "ERREUR: complexe injoignable via WireGuard apres restart"; exit 1; }
+              ping -c 2 -W 5 10.8.0.2 || { echo "ERREUR: complexe injoignable"; exit 1; }
             fi
             echo "WireGuard OK"
-            echo "=== Test SSH ===" && ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -o BatchMode=yes behanian@10.8.0.2 "echo SSH_OK" || { echo "ERREUR: SSH vers complexe echoue"; exit 1; }
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 -o BatchMode=yes behanian@10.8.0.2 "echo SSH_OK" || { echo "ERREUR: SSH echoue"; exit 1; }
 
-            SVC=$(printf 'W1VuaXRdCkRlc2NyaXB0aW9uPVR1bm5lbCBTU0ggcmV0b3VyIHZlcnMgVlBTCkFmdGVyPW5ldHdvcmsudGFyZ2V0CgpbU2VydmljZV0KVXNlcj1iZWhhbmlhbgpFeGVjU3RhcnQ9L3Vzci9iaW4vc3NoIC1OIC1SIDIyMjI6bG9jYWxob3N0OjIyIC1pIC9ob21lL2JlaGFuaWFuLy5zc2gvdnBzX3R1bm5lbCAtbyBTdHJpY3RIb3N0S2V5Q2hlY2tpbmc9bm8gLW8gU2VydmVyQWxpdmVJbnRlcnZhbD02MCAtbyBTZXJ2ZXJBbGl2ZUNvdW50TWF4PTMgLW8gRXhpdE9uRm9yd2FyZEZhaWx1cmU9eWVzIGJlaGFuaWFuQDg5LjE2Ny42Ni4xOTQKUmVzdGFydD1hbHdheXMKUmVzdGFydFNlYz0zMAoKW0luc3RhbGxdCldhbnRlZEJ5PW11bHRpLXVzZXIudGFyZ2V0' | base64 -d)
-            echo "$SVC" | ssh -o StrictHostKeyChecking=no behanian@10.8.0.2 "
-              ssh-keyscan -H 89.167.66.194 >> ~/.ssh/known_hosts 2>/dev/null
-              sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
-              sudo tee /etc/systemd/system/ssh-reverse-tunnel.service > /dev/null
-              sudo systemctl daemon-reload
-              sudo systemctl enable ssh-reverse-tunnel
-              sudo systemctl restart ssh-reverse-tunnel
-              echo TUNNEL_OK
-            "
-
-            echo "=== Deploiement ===" &&
-            rsync -az --delete \
-              --exclude='.git/' \
-              --exclude='venv/' \
-              --exclude='__pycache__/' \
+      - name: Copier code vers complexe (tar+scp)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 8m
+          script: |
+            echo "=== Création archive code ==="
+            tar -czf /tmp/behanian_code.tar.gz \
+              --exclude='.git' \
+              --exclude='venv' \
+              --exclude='__pycache__' \
               --exclude='*.pyc' \
-              --exclude='staticfiles/' \
-              --exclude='media/' \
+              --exclude='staticfiles' \
+              --exclude='media' \
               --exclude='*.sqlite3' \
               --exclude='.env' \
-              -e "ssh -o StrictHostKeyChecking=no" \
-              /opt/behanian/ behanian@10.8.0.2:/opt/behanian/ &&
-            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 behanian@10.8.0.2 "
+              -C /opt/behanian .
+            echo "Archive créée : $(du -sh /tmp/behanian_code.tar.gz | cut -f1)"
+            echo "=== Envoi vers complexe ==="
+            scp -o StrictHostKeyChecking=no /tmp/behanian_code.tar.gz behanian@10.8.0.2:/tmp/behanian_code.tar.gz
+            echo "Envoi OK"
+            rm -f /tmp/behanian_code.tar.gz
+
+      - name: Appliquer code et migrations sur complexe
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 8m
+          script: |
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 behanian@10.8.0.2 bash << 'REMOTE'
               set -e
-              cd /opt/behanian &&
-              source venv/bin/activate &&
-              pip install -r requirements.txt --quiet &&
-              python manage.py migrate --noinput &&
-              python manage.py collectstatic --noinput &&
-              python manage.py init_plats_simples &&
-              python manage.py init_boissons_bar &&
-              python manage.py init_plats_gibier &&
-              sudo systemctl restart gunicorn &&
-              echo COMPLEXE_OK
-            " && echo "Serveur local mis a jour" || { echo "ERREUR: deploiement complexe echoue"; exit 1; }
+              echo "=== Extraction archive ==="
+              tar -xzf /tmp/behanian_code.tar.gz -C /opt/behanian/ --overwrite
+              rm -f /tmp/behanian_code.tar.gz
+              echo "Extraction OK"
+              cd /opt/behanian
+              source venv/bin/activate
+              echo "=== Dépendances ==="
+              pip install -r requirements.txt --quiet
+              echo "=== Migrations ==="
+              python manage.py migrate --noinput
+              echo "=== Statiques ==="
+              python manage.py collectstatic --noinput
+              echo "=== Init catalogue boissons ==="
+              python manage.py init_boissons_bar
+              echo "=== Init catalogue plats ==="
+              python manage.py init_plats_simples
+              python manage.py init_plats_gibier
+              echo "=== Redémarrage gunicorn ==="
+              sudo systemctl restart gunicorn
+              echo "COMPLEXE_OK"
+            REMOTE
