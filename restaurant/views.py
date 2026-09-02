@@ -187,16 +187,21 @@ def valider_commande(request):
                 commande.save()
                 # Numérotation fiscale séquentielle
                 commande.assigner_numero_fiscal()
-                
+
+                # Nom du serveur (après save pour avoir commande.serveur à jour)
+                serveur_nom = ''
+                if commande.serveur:
+                    serveur_nom = commande.serveur.get_full_name() or commande.serveur.username
+
                 if commande.table:
                     commande.table.statut = 'disponible'
                     commande.table.save()
-                
+
                 # Génération Ticket
                 numero_ticket = generate_ticket_numero()
-                
+
                 all_items_objs = LigneCommande.objects.filter(commande=commande).select_related('plat', 'accompagnement', 'boisson')
-                
+
                 # Génération du contenu HTML pour le Ticket
                 services_html = '<span class="ticket-meta" data-serveur="' + serveur_nom + '"></span>'
 
