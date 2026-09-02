@@ -545,12 +545,20 @@ def rapport_caisse(request, session_id=None):
     stats        = get_stats_jour(date)
     mouvements   = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
     prelevements = PrelevementBanque.objects.filter(session=session, valide=True).order_by('date')
+    reconciliation = get_reconciliation_jour(date)
+    solde_veille, _ = get_solde_veille()
+
+    # Solde théorique final = fond_caisse + espèces – prélèvements – dépenses
+    nouveau_fond = int(session.fond_caisse) + stats['especes'] - stats['prelevements'] - stats['depenses']
 
     return render(request, 'caisse/rapport.html', {
-        'session': session,
-        'stats': stats,
-        'mouvements': mouvements,
-        'prelevements': prelevements,
+        'session':        session,
+        'stats':          stats,
+        'mouvements':     mouvements,
+        'prelevements':   prelevements,
+        'reconciliation': reconciliation,
+        'solde_veille':   solde_veille,
+        'nouveau_fond':   nouveau_fond,
     })
 
 
