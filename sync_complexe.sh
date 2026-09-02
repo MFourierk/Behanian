@@ -56,15 +56,26 @@ fi
 SIZE=$(du -sh "$DUMP" | cut -f1)
 echo "$(date '+%Y-%m-%d %H:%M:%S') --- Dump OK ($SIZE, ${TAILLE} octets, $NB_USERS_DUMP utilisateur(s) dans dump)" >> "$LOG"
 
-# 2. Copie de sauvegarde horodatee (conservee 7 jours)
+# 2. Copie de sauvegarde horodatee (conservee 30 jours)
 cp "$DUMP" "$BACKUP"
 echo "$(date '+%Y-%m-%d %H:%M:%S') --- Backup : $BACKUP" >> "$LOG"
 
-# 3. Nettoyage des backups de plus de 7 jours
-find "$BACKUP_DIR" -name "backup_*.sql"  -mtime +7 -delete
-find "$BACKUP_DIR" -name "backup_*.json" -mtime +7 -delete
-NB=$(ls "$BACKUP_DIR" | wc -l)
-echo "$(date '+%Y-%m-%d %H:%M:%S') --- Backups conserves : $NB fichier(s)" >> "$LOG"
+# 2b. Backup mensuel : un fichier par mois conserve 2 ans
+MONTHLY_DIR="$BACKUP_DIR/monthly"
+mkdir -p "$MONTHLY_DIR"
+MONTH_FILE="$MONTHLY_DIR/backup_$(date +%Y%m)_mensuel.sql"
+if [ ! -f "$MONTH_FILE" ]; then
+    cp "$DUMP" "$MONTH_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') --- Backup mensuel : $MONTH_FILE" >> "$LOG"
+fi
+find "$MONTHLY_DIR" -name "backup_*_mensuel.sql" -mtime +730 -delete
+
+# 3. Nettoyage des backups de plus de 30 jours
+find "$BACKUP_DIR" -maxdepth 1 -name "backup_*.sql"  -mtime +30 -delete
+find "$BACKUP_DIR" -maxdepth 1 -name "backup_*.json" -mtime +30 -delete
+NB=$(ls "$BACKUP_DIR"/*.sql 2>/dev/null | wc -l)
+NB_MONTHLY=$(ls "$MONTHLY_DIR"/*.sql 2>/dev/null | wc -l)
+echo "$(date '+%Y-%m-%d %H:%M:%S') --- Backups conserves : $NB quotidien(s), $NB_MONTHLY mensuel(s)" >> "$LOG"
 
 # 4. Reinitialiser le schema VPS
 PGPASSWORD='Beh@nian2026VPS' psql -U behanian_user -h localhost -d behanian_db -c \
