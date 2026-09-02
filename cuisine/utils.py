@@ -10,56 +10,8 @@ def _ingredient_par_nom(nom_plat):
 
 def check_stock_availability(plat, quantity=1):
     """
-    Vérifie si le stock est suffisant pour préparer un plat (x portions).
-    Retourne (bool, message_erreur).
-
-    Cas couverts :
-    - FT avec lignes       → vérification normale par ingrédient
-    - FT sans lignes       → repli par correspondance de nom sur cuisine_ingredient
-    - Pas de FT            → non bloqué (is_simple ou plat bar)
+    Stock bas ne bloque pas la vente — les mouvements sont enregistrés même en stock négatif.
     """
-    nom_plat = getattr(plat, 'nom', 'ce plat')
-
-    if not hasattr(plat, 'fiche_technique') or plat.fiche_technique is None:
-        return True, ""
-
-    fiche = plat.fiche_technique
-    lignes = list(fiche.lignes.select_related('ingredient').all())
-
-    # FT vide → repli sur l'ingrédient homonyme
-    if not lignes:
-        ing = _ingredient_par_nom(nom_plat)
-        if ing:
-            facteur = ing.facteur_conversion or Decimal('1')
-            qte_necessaire = Decimal(str(quantity)) * facteur
-            if ing.quantite_stock < qte_necessaire:
-                return False, (
-                    f"« {nom_plat} » ne peut pas être servi — stock insuffisant :\n"
-                    f"  • {ing.nom} : {ing.quantite_stock:.0f} disponible / {qte_necessaire:.0f} nécessaire"
-                )
-        return True, ""
-
-    manquants = []
-    for ligne in lignes:
-        facteur        = ligne.ingredient.facteur_conversion or Decimal('1')
-        qte_necessaire = ligne.quantite * quantity * facteur
-        stock_dispo    = ligne.ingredient.quantite_stock
-        if stock_dispo < qte_necessaire:
-            manquants.append({
-                'ingredient': ligne.ingredient,
-                'necessaire': qte_necessaire,
-                'disponible': stock_dispo,
-            })
-
-    if manquants:
-        detail = "\n".join(
-            f"  • {m['ingredient'].nom} : "
-            f"{int(m['disponible']) if m['disponible'] == int(m['disponible']) else float(m['disponible']):.2f} disponible"
-            f" / {int(m['necessaire']) if m['necessaire'] == int(m['necessaire']) else float(m['necessaire']):.2f} nécessaire"
-            for m in manquants
-        )
-        return False, f"« {nom_plat} » ne peut pas être servi — stock insuffisant :\n{detail}"
-
     return True, ""
 
 

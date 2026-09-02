@@ -1869,22 +1869,12 @@ def api_ajuster_stock_tpe(request):
         # Articles shot/tournée : stock_disponible calculé en ml, déduction réelle à la vente
         boisson = BoissonBar.objects.select_related('shot_parent__parametrage_shot').get(pk=boisson_id)
         if boisson.est_shot and boisson.shot_parent_id:
-            if delta > 0 and boisson.stock_disponible < delta:
-                return JsonResponse({
-                    'ok': False,
-                    'error': f"{boisson.nom} : stock insuffisant ({boisson.stock_disponible} disponible)"
-                })
             return JsonResponse({'ok': True, 'stock': boisson.stock_disponible})
 
         # Articles normaux : ajustement temps réel via MouvementStockBar
         with transaction.atomic():
             boisson = BoissonBar.objects.select_for_update().get(pk=boisson_id)
             if delta > 0:
-                if boisson.quantite_stock < delta:
-                    return JsonResponse({
-                        'ok': False,
-                        'error': f"{boisson.nom} : stock insuffisant ({boisson.quantite_stock} disponible)"
-                    })
                 MouvementStockBar.objects.create(
                     boisson=boisson, type_mouvement='sortie', quantite=delta,
                     commentaire=f'TPE Cave — {session_token}' if session_token else 'TPE Cave — prévisionnel',
@@ -1969,22 +1959,14 @@ def api_vente_create(request):
                 qty = int(l['qty'])
                 if b.est_shot and b.shot_parent_id:
                     # Vérification en ml pour les shots (toujours, même en mode stock_live)
-                    try:
-                        param = b.shot_parent.parametrage_shot
-                        ml_total = Decimal(b.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
-                        ml_requis = Decimal(b.shot_ml or 30) * qty
-                        if ml_requis > ml_total:
-                            manques.append(f"• {b.nom} : {int(ml_total)} ml disponibles / {int(ml_requis)} ml requis")
-                    except ParametrageShot.DoesNotExist:
-                        manques.append(f"• {b.nom} : paramétrage shot introuvable")
-                elif not stock_live and b.quantite_stock < qty:
-                    manques.append(f"• {b.nom} : {b.quantite_stock} en stock / {qty} demandé")
+                    pass  # Stock shot non bloquant
+                # Stock non bloquant — vente autorisée même en rupture
             except BoissonBar.DoesNotExist:
                 manques.append(f"• Article introuvable (id={l['id']})")
         if manques:
             return JsonResponse({
                 'ok': False,
-                'error': "Vente bloquée — stock insuffisant :",
+                'error': "Article introuvable :",
                 'details': manques,
             }, status=400)
 
@@ -2273,11 +2255,7 @@ def shot_vente(request):
         ml_a_debiter = Decimal(nb_shots * param.volume_shot_ml)
         prix_encaisse = param.prix_tournee if type_vente == 'tournee' else param.prix_shot
 
-        # Vérification stock
-        ml_total_stock = Decimal(boisson.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
-        if ml_a_debiter > ml_total_stock:
-            messages.error(request, f"Stock insuffisant — {boisson.nom} : seulement {int(ml_total_stock)} ml restants.")
-            return redirect('bar:shot_vente')
+        # Stock shot non bloquant — vente autorisée même en rupture
 
         with transaction.atomic():
             # Mise à jour bouteille en cours
