@@ -444,17 +444,6 @@ async function chargerResume() {
       mobileModuleRows += `<td class="num gold-val">${fmt(mobGrandTotal)}</td></tr>`;
     }
   }
-  const mobileOpHeaders = presentOps.map(op => `<th class="num">${op}</th>`).join('');
-  const mobileModuleHtml = (mobileModuleRows && presentOps.length) ? `
-    <div class="rv-tickets-panel" style="margin-bottom:24px;">
-      <div class="rv-panel-hdr"><i class="fas fa-mobile-alt" style="color:#7c3aed;"></i><h3>Mobile Money par module</h3></div>
-      <div class="rv-tickets-scroll">
-        <table class="rv-table">
-          <thead><tr><th>Module</th>${mobileOpHeaders}<th class="num">Total Mobile</th></tr></thead>
-          <tbody>${mobileModuleRows}</tbody>
-        </table>
-      </div>
-    </div>` : '';
 
   // Tableau croisé Module × Mode de paiement
   const allModes = [...new Set(Object.values(parModuleMode).flatMap(md => Object.keys(md)))];
@@ -542,7 +531,6 @@ async function chargerResume() {
         </div>
       </div>
     </div>
-    ${mobileModuleHtml}
     ${crosstabHtml}`;
 
   // Graphe performances
