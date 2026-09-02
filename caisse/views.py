@@ -1045,7 +1045,7 @@ def historique(request):
         except Exception:
             return fb
 
-    date_debut = _parse('date_debut', today - timedelta(days=30))
+    date_debut = _parse('date_debut', today - timedelta(days=90))
     date_fin   = _parse('date_fin', today)
     if date_fin < date_debut:
         date_fin = date_debut

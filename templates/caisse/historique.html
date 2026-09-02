@@ -37,9 +37,17 @@
       style="padding:9px 16px;background:#f0f4f8;color:#4a5568;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
       Aujourd'hui
     </a>
-    <a href="?"
+    <a href="?date_fin={{ today|date:'Y-m-d' }}"
       style="padding:9px 16px;background:#f0f4f8;color:#4a5568;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
-      30 derniers jours
+      3 mois
+    </a>
+    <a href="?date_debut={% now 'Y' %}-01-01&date_fin={{ today|date:'Y-m-d' }}"
+      style="padding:9px 16px;background:#f0f4f8;color:#4a5568;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      Cette année
+    </a>
+    <a href="?date_debut=2020-01-01&date_fin={{ today|date:'Y-m-d' }}"
+      style="padding:9px 16px;background:#1a2535;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      Tout l'historique
     </a>
   </form>
 
