@@ -620,7 +620,16 @@
                   <td>{{ res.get_total_general|montant }} F</td>
                   <td>{% if res.remise %}<span style="color:#16a34a;font-weight:600">-{{ res.remise|montant }} F</span>{% else %}—{% endif %}</td>
                   <td><span class="statut-pill {{ res.statut }}">{{ res.get_statut_display }}</span></td>
-                  <td>{% if res.statut == 'en_cours' %}<button class="check-btn-action" style="font-size:11px;padding:4px 10px" onclick="ouvrirModifierEnCours({'id':{{ res.id }},'nom':'{{ res.client.nom|escapejs }}','prenom':'{{ res.client.prenom|escapejs }}','chambre_id':{{ res.chambre.id }},'chambre_num':'{{ res.chambre.numero }}','date_arrivee':'{{ res.date_arrivee|date:'Y-m-d' }}','date_depart':'{{ res.date_depart|date:'Y-m-d' }}','remise':{{ res.remise|default:0 }}})">✏️ Modifier</button>{% endif %}</td>
+                  <td>{% if res.statut == 'en_cours' %}<button type="button" class="check-btn-action" style="font-size:11px;padding:4px 10px"
+                    data-res-id="{{ res.id }}"
+                    data-nom="{{ res.client.nom }}"
+                    data-prenom="{{ res.client.prenom }}"
+                    data-chambre-id="{{ res.chambre.id }}"
+                    data-chambre-num="{{ res.chambre.numero }}"
+                    data-date-arrivee="{{ res.date_arrivee|date:'Y-m-d' }}"
+                    data-date-depart="{{ res.date_depart|date:'Y-m-d' }}"
+                    data-remise="{{ res.remise|default:0 }}"
+                    onclick="ouvrirModifierEnCours(this)">✏️ Modifier</button>{% endif %}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -2401,26 +2410,27 @@
         openModal('modalModifierReservation');
     }
 
-    function ouvrirModifierEnCours(data) {
+    function ouvrirModifierEnCours(btn) {
+        const d = btn.dataset;
         const urlTpl = "{% url 'hotel:modifier_checkin_en_cours' 0 %}";
-        document.getElementById('formModifierSejour').action = urlTpl.replace('0', data.id);
+        document.getElementById('formModifierSejour').action = urlTpl.replace('0', d.resId);
 
         // Header visuel
-        const nom = data.nom || '', prenom = data.prenom || '';
+        const nom = d.nom || '', prenom = d.prenom || '';
         const initiales = ((nom[0] || '') + (prenom[0] || '')).toUpperCase() || '?';
-        document.getElementById('msej-avatar').textContent      = initiales;
+        document.getElementById('msej-avatar').textContent       = initiales;
         document.getElementById('msej-client-label').textContent = (nom + ' ' + prenom).trim() || '—';
-        const fmtDate = d => d ? d.split('-').reverse().join('/') : '—';
+        const fmtDate = v => v ? v.split('-').reverse().join('/') : '—';
         document.getElementById('msej-chambre-label').textContent =
-            'Ch. ' + (data.chambre_num || '') + '  ·  Entrée : ' + fmtDate(data.date_arrivee) + '  →  Sortie prévue : ' + fmtDate(data.date_depart);
+            'Ch. ' + (d.chambreNum || '') + '  ·  Entrée : ' + fmtDate(d.dateArrivee) + '  →  Sortie prévue : ' + fmtDate(d.dateDepart);
 
         // Champs
         document.getElementById('msej-nom').value          = nom;
         document.getElementById('msej-prenom').value       = prenom;
-        document.getElementById('msej-chambre').value      = data.chambre_id;
-        document.getElementById('msej-date-arrivee').value = data.date_arrivee || '';
-        document.getElementById('msej-date-depart').value  = data.date_depart  || '';
-        document.getElementById('msej-remise').value       = data.remise || 0;
+        document.getElementById('msej-chambre').value      = d.chambreId;
+        document.getElementById('msej-date-arrivee').value = d.dateArrivee || '';
+        document.getElementById('msej-date-depart').value  = d.dateDepart  || '';
+        document.getElementById('msej-remise').value       = d.remise || 0;
         openModal('modalModifierSejour');
     }
 
