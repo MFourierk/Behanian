@@ -517,15 +517,27 @@ def prelevement_banque(request):
 @require_module_access('caisse')
 def rapport_caisse(request, session_id=None):
     """Rapport imprimable d'une session de caisse."""
+    from utils.permissions import _is_manager
+    from datetime import datetime
+    is_manager = _is_manager(request.user)
+
     if session_id:
         session = get_object_or_404(CaisseSession, pk=session_id)
     else:
-        today = timezone.localdate()
-        session = CaisseSession.objects.filter(
-            opened_at__date=today, user=request.user
-        ).order_by('-opened_at').first()
+        date_str = request.GET.get('date')
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else timezone.localdate()
+        except ValueError:
+            target_date = timezone.localdate()
+
+        qs = CaisseSession.objects.filter(opened_at__date=target_date)
+        if not is_manager:
+            qs = qs.filter(user=request.user)
+        session = qs.order_by('-opened_at').first()
 
     if not session:
+        if is_manager:
+            return redirect('caisse:historique')
         return redirect('caisse:index')
 
     date         = session.date_session or session.opened_at.date()
@@ -1023,16 +1035,28 @@ def etat_journee(request):
 @require_manager
 def historique(request):
     """Historique complet des sessions — Manager."""
-    from datetime import timedelta
+    from datetime import datetime, timedelta
     today = timezone.localdate()
-    debut = today - timedelta(days=30)
+
+    def _parse(p, fb):
+        try:
+            return datetime.strptime(request.GET[p], '%Y-%m-%d').date()
+        except Exception:
+            return fb
+
+    date_debut = _parse('date_debut', today - timedelta(days=30))
+    date_fin   = _parse('date_fin', today)
+    if date_fin < date_debut:
+        date_fin = date_debut
 
     sessions = CaisseSession.objects.filter(
-        opened_at__date__gte=debut
+        opened_at__date__gte=date_debut,
+        opened_at__date__lte=date_fin,
     ).select_related('user').order_by('-opened_at')
 
     return render(request, 'caisse/historique.html', {
-        'sessions': sessions,
-        'today': today,
-        'debut': debut,
+        'sessions':    sessions,
+        'today':       today,
+        'date_debut':  date_debut,
+        'date_fin':    date_fin,
     })

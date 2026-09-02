@@ -1,4 +1,4 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Historique Caisse{% endblock %}
 {% block content %}
@@ -6,13 +6,44 @@
   <div class="header-glam caisse-watermark">
     <div class="header-content">
       <h2 style="font-size:1.5rem;font-weight:700;margin:0">Historique des sessions</h2>
-      <p class="mb-0 opacity-75">30 derniers jours</p>
+      <p class="mb-0 opacity-75">
+        Du {{ date_debut|date:"d/m/Y" }} au {{ date_fin|date:"d/m/Y" }}
+        — {{ sessions|length }} session{% if sessions|length != 1 %}s{% endif %}
+      </p>
     </div>
     <div class="header-clock"><span class="time">--:-- GMT</span><span class="date">Chargement...</span></div>
   </div>
 {% breadcrumb "Caisse" "caisse:index" "Historique" "" %}
 
-    <div style="background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden">
+  <!-- Filtre dates -->
+  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;
+    background:white;border:1px solid #d4dce8;border-radius:12px;
+    padding:14px 20px;margin-bottom:16px;">
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label style="font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.5px;">Du</label>
+      <input type="date" name="date_debut" value="{{ date_debut|date:'Y-m-d' }}"
+        style="padding:8px 12px;border:1.5px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label style="font-size:11px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.5px;">Au</label>
+      <input type="date" name="date_fin" value="{{ date_fin|date:'Y-m-d' }}"
+        style="padding:8px 12px;border:1.5px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;">
+    </div>
+    <button type="submit"
+      style="padding:9px 20px;background:#1a2535;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+      <i class="fas fa-search"></i> Filtrer
+    </button>
+    <a href="?date_debut={{ today|date:'Y-m-d' }}&date_fin={{ today|date:'Y-m-d' }}"
+      style="padding:9px 16px;background:#f0f4f8;color:#4a5568;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      Aujourd'hui
+    </a>
+    <a href="?"
+      style="padding:9px 16px;background:#f0f4f8;color:#4a5568;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      30 derniers jours
+    </a>
+  </form>
+
+  <div style="background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden">
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:#f8fafc">
         <th style="padding:10px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#4a5b6e;border-bottom:1px solid #d4dce8">Date</th>
@@ -36,7 +67,7 @@
           {% else %}<span style="background:#fee2e2;color:#dc2626;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">🔴 Clôturée</span>{% endif %}
         </td>
         <td style="padding:11px 16px">
-          <a href="{% url 'caisse:rapport_session' s.pk %}" style="padding:5px 10px;border-radius:7px;border:1px solid #d4dce8;background:white;color:#3d4f63;font-size:11px;font-weight:600;text-decoration:none" target="_blank"><i class="fas fa-print"></i></a>
+          <a href="{% url 'caisse:rapport_session' s.pk %}" style="padding:5px 10px;border-radius:7px;border:1px solid #d4dce8;background:white;color:#3d4f63;font-size:11px;font-weight:600;text-decoration:none" target="_blank"><i class="fas fa-print"></i> Rapport</a>
         </td>
       </tr>
       {% empty %}
