@@ -166,7 +166,8 @@ def _session_centrale_non_cloturee():
 @require_module_access('caisse')
 def index(request):
     today = timezone.localdate()
-    is_manager = request.user.groups.filter(name=GROUPE_MANAGER_GENERAL).exists() or request.user.is_superuser
+    from utils.permissions import _is_manager as _chk_manager
+    is_manager = _chk_manager(request.user)
     session_active = CaisseSession.objects.filter(user=request.user, is_open=True).first()
 
     user_type = None

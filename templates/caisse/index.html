@@ -129,9 +129,24 @@
         {% if sessions_jour %}Journée terminée · {{ stats.total|montant }} F encaissés{% else %}Aucune session aujourd'hui{% endif %}
       </div>
     </div>
-    {% if can_open_caisse %}
-    <button class="btn-a btn-vert" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir la caisse</button>
-    {% endif %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      {% if can_open_caisse %}
+      <button class="btn-a btn-vert" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir la caisse</button>
+      {% endif %}
+      {% if is_manager %}
+      <a href="{% url 'caisse:historique' %}" class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.35);text-decoration:none">
+        <i class="fas fa-history"></i> Historique sessions
+      </a>
+      <button class="btn-a" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)"
+        onclick="window.open('{% url 'caisse:rapport_transactions' %}','_blank','width=1100,height=950')">
+        <i class="fas fa-table"></i> Rapport transactions
+      </button>
+      <button class="btn-a" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)"
+        onclick="window.open('{% url 'caisse:etat_journee' %}','_blank','width=900,height=950')">
+        <i class="fas fa-calendar-check"></i> État journée
+      </button>
+      {% endif %}
+    </div>
   </div>
   {% endif %}
 
