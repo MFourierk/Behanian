@@ -198,10 +198,12 @@
 .ch-btn.danger:hover { background: #b91c1c; }
 
 /* ── MODAL COMMANDE CHAMBRE ── */
-.svc-pill { padding:6px 14px;border-radius:20px;border:1px solid #d4dce8;background:white;font-size:12px;font-weight:600;cursor:pointer;color:#5a6b7c;transition:all 0.15s; }
-.svc-pill.active,.svc-pill:hover { background:#2563eb;color:white;border-color:#2563eb; }
-.cat-pill { padding:4px 11px;border-radius:16px;border:1px solid #d4dce8;background:white;font-size:11px;font-weight:500;cursor:pointer;color:#5a6b7c;transition:all 0.15s; }
-.cat-pill.active { background:#eef1f5;color:#1a2535;border-color:#93c5fd; }
+.svc-pill { padding:10px 6px;border:none;border-bottom:3px solid transparent;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:#7a8b9c;transition:all 0.15s;white-space:nowrap; }
+.svc-pill.active { color:#2563eb;border-bottom-color:#2563eb; }
+.svc-pill:hover:not(.active) { color:#3d4f63;background:#f8fafc; }
+.cat-pill { padding:4px 12px;border-radius:16px;border:1.5px solid #dde4ed;background:white;font-size:11px;font-weight:500;cursor:pointer;color:#5a6b7c;transition:all 0.15s;white-space:nowrap;flex-shrink:0; }
+.cat-pill.active { background:#2563eb;color:white;border-color:#2563eb; }
+.cat-pill:hover:not(.active) { background:#f0f4f8;border-color:#93c5fd; }
 .art-item { display:flex;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f3f7;transition:background 0.1s; }
 .art-item:last-child { border-bottom:none; }
 .art-item:hover { background:#f0f6ff; }
@@ -1280,25 +1282,25 @@
 
 <!-- MODAL ADD SERVICE -->
 <div id="modalAddService" class="modal">
-  <div class="modal-content" style="width:560px;padding:24px;max-height:92vh;overflow-y:auto">
+  <div class="modal-content" style="width:580px;padding:0;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;border-radius:14px">
 
-    <!-- En-tête -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <h3 style="font-size:16px;font-weight:600;color:#1a2535;margin:0">Commande en chambre</h3>
-      <button onclick="closeModal('modalAddService')" style="background:none;border:none;font-size:20px;color:#7a8b9c;cursor:pointer;line-height:1">×</button>
+    <!-- En-tête gradient -->
+    <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;color:rgba(255,255,255,.65);text-transform:uppercase;margin-bottom:3px">🏨 Commande en chambre</div>
+        <div id="service-room-info" style="font-size:14px;font-weight:700;color:#fff"></div>
+      </div>
+      <button onclick="closeModal('modalAddService')" style="background:rgba(255,255,255,.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">&times;</button>
     </div>
-    <div id="service-room-info" style="font-size:13px;color:#2563eb;font-weight:500;margin-bottom:16px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe"></div>
 
     {% csrf_token %}
     <input type="hidden" id="service-res-id" value="">
 
-    <!-- SERVEUR -->
-    <div style="margin-bottom:14px">
-      <label style="display:block;font-size:12px;font-weight:700;color:#3d4f63;margin-bottom:5px">
-        <i class="fas fa-user-tie" style="color:#7c3aed;margin-right:4px"></i> Serveur / Serveuse
-      </label>
-      <select id="svc-serveur" style="width:100%;padding:8px 10px;border:1.5px solid #7c3aed;border-radius:8px;font-size:13px;color:#1a2535;background:white">
-        <option value="">— Non assigné —</option>
+    <!-- Barre serveur -->
+    <div style="padding:10px 20px;background:#f0f4f8;border-bottom:1px solid #dde4ed;flex-shrink:0;display:flex;align-items:center;gap:10px">
+      <i class="fas fa-user-tie" style="color:#7c3aed;font-size:13px;flex-shrink:0"></i>
+      <select id="svc-serveur" style="flex:1;padding:6px 10px;border:1.5px solid #c4b5fd;border-radius:8px;font-size:12px;color:#1a2535;background:white">
+        <option value="">— Serveur / Serveuse —</option>
         {% for agent in personnel_actif %}
         <option value="{{ agent.pk }}"{% if agent.pk == request.user.pk %} selected{% endif %}>
           {{ agent.get_full_name|default:agent.username }}
@@ -1307,163 +1309,170 @@
       </select>
     </div>
 
-    <!-- TYPE PILLS -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button type="button" class="svc-pill active" data-type="bar" onclick="setServiceType('bar')">🍸 Boissons</button>
-      <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')">🍽️ Plats</button>
-      <button type="button" class="svc-pill" data-type="espace" onclick="setServiceType('espace')">🎪 Espaces</button>
-      <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')">⚙️ Autre</button>
-      <button type="button" class="svc-pill" data-type="encours" onclick="setServiceType('encours')" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0">📋 En cours</button>
+    <!-- Onglets navigation -->
+    <div style="display:flex;border-bottom:2px solid #e5e7eb;flex-shrink:0;background:white">
+      <button type="button" class="svc-pill active" data-type="bar" onclick="setServiceType('bar')" style="flex:1">🍸 Boissons</button>
+      <button type="button" class="svc-pill" data-type="restaurant" onclick="setServiceType('restaurant')" style="flex:1">🍽️ Plats</button>
+      <button type="button" class="svc-pill" data-type="espace" onclick="setServiceType('espace')" style="flex:1">🎪 Espaces</button>
+      <button type="button" class="svc-pill" data-type="autre" onclick="setServiceType('autre')" style="flex:1">⚙️ Autre</button>
+      <button type="button" class="svc-pill" data-type="encours" onclick="setServiceType('encours')" style="flex:1;color:#15803d">📋 En cours</button>
     </div>
 
-    <!-- BOISSONS -->
-    <div id="field-bar" class="service-field">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="bar-cats">
-        <button type="button" class="cat-pill active" onclick="filtrerBoissons(this, '')">Tout</button>
-        {% regroup boissons by categorie.nom as boissons_by_cat %}
-        {% for cat in boissons_by_cat %}
-        <button type="button" class="cat-pill" onclick="filtrerBoissons(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
-        {% endfor %}
-      </div>
-      <div style="position:relative;margin-bottom:10px">
-        <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
-        <input type="text" id="bar-search" placeholder="Rechercher une boisson..." oninput="filtrerBoissons(null,null)"
-          style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
-      </div>
-      <div id="bar-list" style="max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
-        {% for b in boissons %}
-        <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
-             data-nom="{{ b.nom|escapejs }}" data-prix="{{ b.prix }}" data-stock="{{ b.quantite_stock }}"
-             onclick="ajouterAuPanier('bar', this)">
-          <div style="flex:1">
-            <div class="art-nom">{{ b.nom }}</div>
-            <div class="art-cat">{{ b.categorie.nom }}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div class="art-prix">{{ b.prix|montant }} F</div>
-            <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
-          </div>
+    <!-- Zone de contenu défilable -->
+    <div style="flex:1;overflow-y:auto;min-height:0">
+
+      <!-- BOISSONS -->
+      <div id="field-bar" class="service-field" style="padding:14px 20px">
+        <div style="position:relative;margin-bottom:10px">
+          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
+          <input type="text" id="bar-search" placeholder="Rechercher une boisson..." oninput="filtrerBoissons(null,null)"
+            style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #dde4ed;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box;background:#fafbfc">
         </div>
-        {% endfor %}
-      </div>
-      <div style="font-size:11px;color:#7a8b9c;margin-top:6px">Cliquez sur un article pour l'ajouter au panier — recliquez pour augmenter la quantité.</div>
-    </div>
-
-    <!-- PLATS -->
-    <div id="field-restaurant" class="service-field" style="display:none">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="resto-cats">
-        <button type="button" class="cat-pill active" onclick="filtrerPlats(this, '')">Tout</button>
-        {% regroup plats by categorie.nom as plats_by_cat %}
-        {% for cat in plats_by_cat %}
-        <button type="button" class="cat-pill" onclick="filtrerPlats(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
-        {% endfor %}
-      </div>
-      <div style="position:relative;margin-bottom:10px">
-        <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
-        <input type="text" id="resto-search" placeholder="Rechercher un plat..." oninput="filtrerPlats(null,null)"
-          style="width:100%;padding:8px 10px 8px 30px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box">
-      </div>
-      <div id="resto-list" style="max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px">
-        {% for p in plats %}
-        <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
-             data-nom="{{ p.nom|escapejs }}" data-prix="{{ p.prix }}"
-             onclick="ajouterAuPanier('restaurant', this)">
-          <div style="flex:1">
-            <div class="art-nom">{{ p.nom }}</div>
-            <div class="art-cat">{{ p.categorie.nom }}</div>
-          </div>
-          <div style="text-align:right">
-            <div class="art-prix">{{ p.prix|montant }} F</div>
-          </div>
+        <div id="bar-cats" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none;-ms-overflow-style:none;flex-wrap:nowrap">
+          <button type="button" class="cat-pill active" onclick="filtrerBoissons(this, '')">Tout</button>
+          {% regroup boissons by categorie.nom as boissons_by_cat %}
+          {% for cat in boissons_by_cat %}
+          <button type="button" class="cat-pill" onclick="filtrerBoissons(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-      <div style="font-size:11px;color:#7a8b9c;margin-top:6px">Cliquez sur un plat pour l'ajouter au panier — recliquez pour augmenter la quantité.</div>
-    </div>
-
-    <!-- ESPACE LOCATION -->
-    <div id="field-espace" class="service-field" style="display:none">
-      {% if espaces %}
-      <div id="espace-list" style="max-height:200px;overflow-y:auto;border:1px solid #d4dce8;border-radius:10px;margin-bottom:10px">
-        <input type="hidden" id="espace-selected-id" value="">
-        {% for e in espaces %}
-        <div class="art-item" data-id="{{ e.id }}" data-nom="{{ e.nom|escapejs }}" data-prix="{{ e.prix_heure }}"
-             onclick="selectionnerEspace(this)">
-          <div style="flex:1">
-            <div class="art-nom">{{ e.nom }}</div>
-            <div class="art-cat">{{ e.get_type_display|default:"Espace" }} · {{ e.capacite }} pers.</div>
+        <div id="bar-list" style="max-height:220px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px">
+          {% for b in boissons %}
+          <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
+               data-nom="{{ b.nom|escapejs }}" data-prix="{{ b.prix }}" data-stock="{{ b.quantite_stock }}"
+               onclick="ajouterAuPanier('bar', this)">
+            <div style="flex:1;min-width:0">
+              <div class="art-nom">{{ b.nom }}</div>
+              <div class="art-cat">{{ b.categorie.nom }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <div style="text-align:right">
+                <div class="art-prix">{{ b.prix|montant }} F</div>
+                <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
+              </div>
+              <div style="width:28px;height:28px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:300;flex-shrink:0;pointer-events:none">+</div>
+            </div>
           </div>
-          <div style="text-align:right">
+          {% endfor %}
+        </div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px;text-align:center">Cliquez sur un article pour l'ajouter · Recliquez pour augmenter la quantité</div>
+      </div>
+
+      <!-- PLATS -->
+      <div id="field-restaurant" class="service-field" style="display:none;padding:14px 20px">
+        <div style="position:relative;margin-bottom:10px">
+          <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px"></i>
+          <input type="text" id="resto-search" placeholder="Rechercher un plat..." oninput="filtrerPlats(null,null)"
+            style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid #dde4ed;border-radius:8px;font-size:13px;color:#1a2535;box-sizing:border-box;background:#fafbfc">
+        </div>
+        <div id="resto-cats" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none;-ms-overflow-style:none;flex-wrap:nowrap">
+          <button type="button" class="cat-pill active" onclick="filtrerPlats(this, '')">Tout</button>
+          {% regroup plats by categorie.nom as plats_by_cat %}
+          {% for cat in plats_by_cat %}
+          <button type="button" class="cat-pill" onclick="filtrerPlats(this, '{{ cat.grouper|escapejs }}')">{{ cat.grouper }}</button>
+          {% endfor %}
+        </div>
+        <div id="resto-list" style="max-height:220px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px">
+          {% for p in plats %}
+          <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
+               data-nom="{{ p.nom|escapejs }}" data-prix="{{ p.prix }}"
+               onclick="ajouterAuPanier('restaurant', this)">
+            <div style="flex:1;min-width:0">
+              <div class="art-nom">{{ p.nom }}</div>
+              <div class="art-cat">{{ p.categorie.nom }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <div class="art-prix">{{ p.prix|montant }} F</div>
+              <div style="width:28px;height:28px;background:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:300;flex-shrink:0;pointer-events:none">+</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:6px;text-align:center">Cliquez sur un plat pour l'ajouter · Recliquez pour augmenter la quantité</div>
+      </div>
+
+      <!-- ESPACE LOCATION -->
+      <div id="field-espace" class="service-field" style="display:none;padding:14px 20px">
+        {% if espaces %}
+        <div id="espace-list" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:12px">
+          <input type="hidden" id="espace-selected-id" value="">
+          {% for e in espaces %}
+          <div class="art-item" data-id="{{ e.id }}" data-nom="{{ e.nom|escapejs }}" data-prix="{{ e.prix_heure }}"
+               onclick="selectionnerEspace(this)">
+            <div style="flex:1;min-width:0">
+              <div class="art-nom">{{ e.nom }}</div>
+              <div class="art-cat">{{ e.get_type_display|default:"Espace" }} · {{ e.capacite }} pers.</div>
+            </div>
             <div class="art-prix">{{ e.prix_heure|montant }} F/h</div>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <label style="font-size:12px;font-weight:600;color:#3d4f63;white-space:nowrap">Nb d'heures :</label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button type="button" onclick="changerQtyEspace(-1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #d4dce8;background:white;font-size:14px;cursor:pointer">−</button>
-          <input type="number" id="svc-espace-qty" value="1" min="1" style="width:52px;text-align:center;border:1px solid #d4dce8;border-radius:8px;padding:5px;font-size:14px;font-weight:600">
-          <button type="button" onclick="changerQtyEspace(1)" style="width:28px;height:28px;border-radius:6px;border:1px solid #d4dce8;background:white;font-size:14px;cursor:pointer">+</button>
-        </div>
-        <button type="button" onclick="ajouterEspaceAuPanier()"
-                style="padding:7px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">
-          + Ajouter au panier
-        </button>
-      </div>
-      {% else %}
-      <div style="text-align:center;padding:30px;color:#b0b8c1;font-size:13px">Aucun espace disponible actuellement.</div>
-      {% endif %}
-    </div>
-
-    <!-- AUTRE -->
-    <div id="field-autre" class="service-field" style="display:none">
-      <div class="form-group">
-        <label>Description</label>
-        <input type="text" id="autre-desc" class="form-control" placeholder="Ex: Blanchisserie, Taxi, Room service…">
-      </div>
-      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div class="form-group" style="flex:1;min-width:120px">
-          <label>Prix Unitaire (FCFA)</label>
-          <input type="number" id="autre-prix" class="form-control" min="0">
-        </div>
-        <div class="form-group" style="width:80px">
-          <label>Qté</label>
-          <input type="number" id="autre-qty" class="form-control" value="1" min="1">
-        </div>
-        <div class="form-group">
-          <button type="button" onclick="ajouterAutreAuPanier()"
-                  style="padding:9px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f8fafc;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb">
+          <label style="font-size:12px;font-weight:600;color:#3d4f63;white-space:nowrap">Nombre d'heures :</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button type="button" onclick="changerQtyEspace(-1)" style="width:30px;height:30px;border-radius:8px;border:1px solid #d4dce8;background:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+            <input type="number" id="svc-espace-qty" value="1" min="1" style="width:52px;text-align:center;border:1.5px solid #dde4ed;border-radius:8px;padding:5px;font-size:14px;font-weight:600">
+            <button type="button" onclick="changerQtyEspace(1)" style="width:30px;height:30px;border-radius:8px;border:1px solid #d4dce8;background:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
+          </div>
+          <button type="button" onclick="ajouterEspaceAuPanier()"
+                  style="padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">
             + Ajouter au panier
           </button>
         </div>
+        {% else %}
+        <div style="text-align:center;padding:40px;color:#b0b8c1;font-size:13px">Aucun espace disponible actuellement.</div>
+        {% endif %}
       </div>
-    </div>
 
-    <!-- EN COURS -->
-    <div id="field-encours" class="service-field" style="display:none">
-      <div style="font-size:12px;color:#5a6b7c;margin-bottom:8px">Dépenses actuelles du client — modifiables avant le check-out.</div>
-      <div id="hotel-encours-list" style="max-height:260px;overflow-y:auto">
-        <div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Chargement...</div>
+      <!-- AUTRE -->
+      <div id="field-autre" class="service-field" style="display:none;padding:14px 20px">
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="autre-desc" class="form-control" placeholder="Ex: Blanchisserie, Taxi, Room service…">
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:120px">
+            <label>Prix Unitaire (FCFA)</label>
+            <input type="number" id="autre-prix" class="form-control" min="0">
+          </div>
+          <div class="form-group" style="width:80px">
+            <label>Qté</label>
+            <input type="number" id="autre-qty" class="form-control" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <button type="button" onclick="ajouterAutreAuPanier()"
+                    style="padding:9px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+              + Ajouter au panier
+            </button>
+          </div>
+        </div>
       </div>
-      <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between">
-        <span style="font-size:12px;font-weight:600;color:#3d4f63">Total consommations</span>
-        <span id="hotel-encours-total" style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
-      </div>
-    </div>
 
-    <!-- PANIER -->
-    <div id="panier-section" style="display:none;margin-top:14px;border:2px solid #2563eb33;border-radius:12px;padding:12px;background:#f0f6ff">
-      <div style="font-size:12px;font-weight:700;color:#1a2535;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+      <!-- EN COURS -->
+      <div id="field-encours" class="service-field" style="display:none;padding:14px 20px">
+        <div style="font-size:12px;color:#5a6b7c;margin-bottom:8px">Dépenses actuelles du client — modifiables avant le check-out.</div>
+        <div id="hotel-encours-list" style="max-height:260px;overflow-y:auto">
+          <div style="text-align:center;color:#b0b8c1;font-size:12px;padding:20px">Chargement...</div>
+        </div>
+        <div style="margin-top:8px;padding:8px 12px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;display:flex;justify-content:space-between">
+          <span style="font-size:12px;font-weight:600;color:#3d4f63">Total consommations</span>
+          <span id="hotel-encours-total" style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
+        </div>
+      </div>
+
+    </div><!-- fin zone défilable -->
+
+    <!-- PANIER (fixé en bas) -->
+    <div id="panier-section" style="display:none;border-top:2px solid #dde4ed;background:#f0f6ff;flex-shrink:0;padding:12px 20px">
+      <div style="font-size:11px;font-weight:700;color:#1a2535;margin-bottom:8px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.5px">
         🛒 Panier
         <span id="panier-badge" style="background:#2563eb;color:white;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px">0</span>
       </div>
-      <div id="panier-items"></div>
-      <div id="panier-total-row" style="text-align:right;padding-top:8px;border-top:1px solid #bfdbfe;font-size:14px;font-weight:700;color:#2563eb;margin-top:4px"></div>
+      <div id="panier-items" style="max-height:100px;overflow-y:auto"></div>
+      <div id="panier-total-row" style="text-align:right;padding-top:8px;border-top:1px solid #bfdbfe;font-size:15px;font-weight:800;color:#2563eb;margin-top:4px"></div>
     </div>
 
     <!-- Actions -->
-    <div style="display:flex;gap:8px;margin-top:16px">
+    <div style="display:flex;gap:10px;padding:12px 20px;border-top:1px solid #e5e7eb;background:white;flex-shrink:0">
       <button type="button" onclick="closeModal('modalAddService')" class="btn-hotel" style="flex:1">Annuler</button>
       <button type="button" onclick="soumettreCommande()" class="btn-hotel primary" style="flex:2" id="btn-soumettre-commande">
         <i class="fas fa-check"></i> Confirmer la commande

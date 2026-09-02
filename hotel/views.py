@@ -102,7 +102,7 @@ def hotel_index(request):
     chambres_dispo_list = Chambre.objects.filter(statut='disponible').order_by('numero')
     
     # Données pour les Services (Consommations)
-    boissons = BoissonBar.objects.filter(disponible=True).order_by('nom')
+    boissons = BoissonBar.objects.filter(disponible=True).order_by('categorie__nom', 'nom')
     plats = PlatMenu.objects.filter(disponible=True).order_by('categorie__ordre', 'nom')
     espaces = EspaceEvenementiel.objects.filter(statut='disponible').order_by('nom')
 
