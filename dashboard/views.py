@@ -563,7 +563,7 @@ def resume_ventes_direction(request):
     today = timezone.now().date()
     return render(request, 'dashboard/resume_ventes.html', {
         'page_title': 'Résumé Ventes — Vue Direction',
-        'date_debut_default': today.replace(day=1).strftime('%Y-%m-%d'),
+        'date_debut_default': today.strftime('%Y-%m-%d'),
         'date_fin_default':   today.strftime('%Y-%m-%d'),
     })
 
