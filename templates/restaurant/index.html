@@ -1423,9 +1423,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <div class="rendu-display" id="sdRenduDisplay">Rendu : <span id="sdRenduVal">0</span> F</div>
         </div>
       </div>
-      <!-- Mobile -->
-      <div id="sdSectionMobile" style="display:none;font-size:13px;color:#93c5fd;">
-        Montant mobile : <strong id="sdMontantMobileVal" style="color:white;font-size:15px;">0 F</strong>
+      <!-- Mobile — avec champ espèces partiel -->
+      <div id="sdSectionMobile" style="display:none;">
+        <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">
+          Paiement partiel espèces <span style="font-weight:400;color:#6b7280;text-transform:none;">(laisser vide si 100% mobile)</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+          <input type="number" id="sdMontantEspeces" class="mixte-input" placeholder="0" oninput="sdCalcMobile()" min="0"
+                 style="flex:1;padding:10px 14px;background:#0f172a;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:1rem;">
+          <span style="color:#6b7280;font-size:12px;white-space:nowrap;">F espèces</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(147,197,253,0.08);border-radius:8px;padding:8px 12px;">
+          <span style="color:#93c5fd;font-size:13px;">Montant mobile :</span>
+          <strong id="sdMontantMobileVal" style="color:white;font-size:15px;">0 F</strong>
+        </div>
       </div>
     </div>
 
@@ -2693,10 +2704,11 @@ let sdModePaiement = 'especes';
 
 function ouvrirModalSalonDirect() {
   sdModePaiement = 'especes';
-  document.getElementById('sdSalon').value    = '';
-  document.getElementById('sdHeures').value   = 1;
-  document.getElementById('sdNomClient').value = '';
+  document.getElementById('sdSalon').value       = '';
+  document.getElementById('sdHeures').value      = 1;
+  document.getElementById('sdNomClient').value   = '';
   document.getElementById('sdMontantRecu').value = '';
+  document.getElementById('sdMontantEspeces').value = '';
   document.getElementById('sdRenduDisplay').classList.remove('show');
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === 'especes'));
   document.getElementById('sdSectionEspeces').style.display = '';
@@ -2721,21 +2733,34 @@ function sdMajTotal() {
   const tarif  = sdGetTarif();
   const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
   const total  = heures * tarif;
-  document.getElementById('sdTarif').textContent       = formatF(tarif).replace(' F', '');
+  document.getElementById('sdTarif').textContent        = formatF(tarif).replace(' F', '');
   document.getElementById('sdMontantTotal').textContent = formatF(total);
   if (sdModePaiement === 'especes') sdCalcRendu();
-  else document.getElementById('sdMontantMobileVal').textContent = formatF(total);
+  else sdCalcMobile();
+}
+
+function sdCalcMobile() {
+  const tarif  = sdGetTarif();
+  const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
+  const total  = heures * tarif;
+  const esp    = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
+  document.getElementById('sdMontantMobileVal').textContent = formatF(Math.max(0, total - esp));
 }
 
 function sdSetMode(mode) {
+  const prevMode = sdModePaiement;
   sdModePaiement = mode;
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('sdSectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
   document.getElementById('sdSectionMobile').style.display  = MOBILE_MODES.includes(mode) ? '' : 'none';
-  if (mode !== 'especes') {
-    const tarif  = sdGetTarif();
-    const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
-    document.getElementById('sdMontantMobileVal').textContent = formatF(heures * tarif);
+  if (MOBILE_MODES.includes(mode)) {
+    if (!MOBILE_MODES.includes(prevMode)) {
+      // Transition espèces → mobile : reporter le partiel saisi
+      const recuVal = parseFloat(document.getElementById('sdMontantRecu')?.value) || 0;
+      const total   = (parseInt(document.getElementById('sdHeures')?.value) || 0) * sdGetTarif();
+      document.getElementById('sdMontantEspeces').value = (recuVal > 0 && recuVal < total) ? recuVal : '';
+    }
+    sdCalcMobile();
   }
 }
 
@@ -2768,8 +2793,8 @@ async function confirmerSalonDirect() {
   if (sdModePaiement === 'especes') {
     montantEncaisse = parseFloat(document.getElementById('sdMontantRecu').value) || total;
   } else if (MOBILE_MODES.includes(sdModePaiement)) {
-    const esp = parseFloat(document.getElementById('sdMontantRecu')?.value) || 0;
-    montantEspeces  = esp;
+    // Espèces partielles saisies dans sdMontantEspeces (champ de la section mobile)
+    montantEspeces  = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
     montantEncaisse = total;
   }
 
@@ -2799,7 +2824,10 @@ async function confirmerSalonDirect() {
       return;
     }
     fermerModalSalonDirect();
-    imprimerTicket(data.ticket_html);
+    if (data.ticket_html) {
+      const w = window.open('', '_blank', 'width=420,height=720');
+      if (w) { w.document.write(data.ticket_html); w.document.close(); w.focus(); }
+    }
     toast('✅ Salon facturé et ticket imprimé', 'success');
   } catch (e) {
     toast('❌ Erreur réseau', 'error');
