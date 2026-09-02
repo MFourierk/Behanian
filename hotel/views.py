@@ -1217,6 +1217,69 @@ def reservation_modifier(request, reservation_id):
 @require_module_access('hotel')
 @require_POST
 @transaction.atomic
+def modifier_checkin_en_cours(request, reservation_id):
+    """Modifier les champs essentiels d'un séjour en cours : nom client, chambre, date sortie, remise."""
+    reservation = get_object_or_404(Reservation, id=reservation_id, statut='en_cours')
+
+    nom        = request.POST.get('nom', '').strip()
+    prenom     = request.POST.get('prenom', '').strip()
+    chambre_id = request.POST.get('chambre_id')
+    date_depart_str = request.POST.get('date_depart', '').strip()
+    remise     = Decimal(request.POST.get('remise', 0) or 0)
+
+    try:
+        d_depart = timezone.datetime.strptime(date_depart_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        messages.error(request, "Format de date de sortie invalide.")
+        return redirect(reverse('hotel:index') + '?tab=historique')
+
+    if d_depart < reservation.date_arrivee:
+        messages.error(request, "La date de sortie ne peut pas être avant la date d'arrivée.")
+        return redirect(reverse('hotel:index') + '?tab=historique')
+
+    # Mise à jour nom/prénom client
+    client = reservation.client
+    if nom:    client.nom    = nom
+    if prenom: client.prenom = prenom
+    client.save()
+
+    # Changement de chambre
+    ancienne_chambre = reservation.chambre
+    nouvelle_chambre = get_object_or_404(Chambre, id=chambre_id) if chambre_id else ancienne_chambre
+
+    if nouvelle_chambre.id != ancienne_chambre.id:
+        if nouvelle_chambre.statut not in ('disponible', 'reservation'):
+            messages.error(request, f"La chambre {nouvelle_chambre.numero} n'est pas disponible.")
+            return redirect(reverse('hotel:index') + '?tab=historique')
+        ancienne_chambre.statut = 'disponible'
+        ancienne_chambre.save()
+        nouvelle_chambre.statut = 'occupee'
+        nouvelle_chambre.save()
+
+    # Recalcul prix sur la nouvelle durée / chambre
+    duree = (d_depart - reservation.date_arrivee).days or 1
+    ts = reservation.type_sejour
+    if ts == 'repos':
+        prix_unit = nouvelle_chambre.prix_nuit
+    elif ts == 'journee':
+        prix_unit = nouvelle_chambre.prix_sejour
+    else:
+        prix_unit = nouvelle_chambre.prix_nuitee
+    prix_total = duree * prix_unit
+
+    reservation.chambre     = nouvelle_chambre
+    reservation.date_depart = d_depart
+    reservation.prix_total  = prix_total
+    reservation.remise      = remise
+    reservation.save()
+
+    messages.success(request, f"Séjour #{reservation_id} mis à jour — Ch. {nouvelle_chambre.numero}.")
+    return redirect(reverse('hotel:index') + '?tab=historique')
+
+
+@require_module_access('hotel')
+@require_POST
+@transaction.atomic
 def reservation_annuler(request, reservation_id):
     """Annuler une réservation (statut → annulée). Interdit si en_cours ou terminée."""
     reservation = get_object_or_404(Reservation, id=reservation_id)
