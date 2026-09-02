@@ -298,6 +298,58 @@
             });
         });
     }
+
+    /**
+     * _bPost(url, payload, opts) — POST robuste : timeout 15s, 1 retry réseau, gestion bouton.
+     * Retourne toujours {success, error?, ...} — ne lève jamais d'exception.
+     *
+     * opts.btn      : bouton à désactiver pendant le traitement (restauré si erreur)
+     * opts.loadHTML : innerHTML pendant le chargement
+     * opts.timeout  : ms avant abandon (défaut 15000)
+     *
+     * Usage : const d = await _bPost(url, {champ:val}, {btn: monBtn});
+     *         if (d.success) { ... } else { toast('❌ ' + d.error, 'error'); }
+     */
+    async function _bPost(url, payload, {btn=null, loadHTML='<i class="fas fa-spinner fa-spin"></i> Traitement…', timeout=15000}={}) {
+        let _orig = null;
+        if (btn) { _orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = loadHTML; }
+
+        const _do = async (signal) => {
+            const opts = {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken()},
+                body: JSON.stringify(payload),
+            };
+            if (signal) opts.signal = signal;
+            const r = await fetch(url, opts);
+            if (!r.ok) {
+                if (r.status === 403) return {success: false, error: 'Session expirée — rechargez la page (F5)'};
+                if (r.status === 500) return {success: false, error: 'Erreur serveur (500) — contactez un administrateur'};
+                return {success: false, error: `Erreur serveur (${r.status})`};
+            }
+            return r.json();
+        };
+
+        let result;
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), timeout);
+        try {
+            result = await _do(ctrl.signal);
+        } catch(e) {
+            if (e.name === 'AbortError') {
+                result = {success: false, error: 'Délai dépassé (15s) — connexion lente, réessayez'};
+            } else {
+                // Erreur réseau — 1 retry après 2s
+                await new Promise(ok => setTimeout(ok, 2000));
+                try { result = await _do(); }
+                catch(e2) { result = {success: false, error: 'Erreur réseau — transaction non enregistrée. Réessayez.'}; }
+            }
+        } finally {
+            clearTimeout(tid);
+            if (btn && result && !result.success) { btn.disabled = false; btn.innerHTML = _orig; }
+        }
+        return result || {success: false, error: 'Erreur inconnue'};
+    }
     </script>
     <script>
     // Auto-wrap toutes les tables sans conteneur scrollable pour le responsive mobile

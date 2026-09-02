@@ -1461,6 +1461,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+async function post(url,data,opts={}){ return _bPost(url,data,opts); }
 var CSRF = '{{ csrf_token }}';
 const ADDITION_URL_TPL = "{% url 'restaurant:imprimer_addition' 0 %}";
 const SALON_DIRECT_URL = "{% url 'restaurant:salon_direct' %}";

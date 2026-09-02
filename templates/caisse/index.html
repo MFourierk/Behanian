@@ -956,13 +956,7 @@ function toast(msg, type='info'){
   btn.addEventListener('click',()=>{clearTimeout(timer);t.style.opacity='0';t.style.transition='opacity .25s';setTimeout(()=>t.remove(),250);});
 }
 
-async function post(url, data){
-  const r = await fetch(url, {
-    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-    body: JSON.stringify(data)
-  });
-  return r.json();
-}
+async function post(url, data){ return _bPost(url, data); }
 
 // Données session active pour le calcul d'écart
 const SESSION_FOND = {{ session_active.fond_caisse|default:0 }};

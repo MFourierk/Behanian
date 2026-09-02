@@ -671,6 +671,7 @@
 
 {% localize off %}
 <script>
+async function post(url,data,opts={}){ return _bPost(url,data,opts); }
 const CSRF = '{{ csrf_token }}';
 let tabActif = 'boisson';
 let artSelType = null;
@@ -1132,7 +1133,7 @@ async function validerEntree(){
     }
     d = await r.json();
   } catch(e) {
-    piscineNotif('Erreur de connexion — vérifiez le réseau et rechargez la page.', 'error');
+    piscineNotif('Erreur réseau — transaction non enregistrée. Réessayez.', 'error');
     if(btnVal){ btnVal.disabled=false; btnVal.innerHTML='<i class="fas fa-check"></i> Enregistrer l\'entrée'; }
     return;
   }
@@ -1221,7 +1222,7 @@ async function modifConso(id, delta){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     d = await r.json();
   } catch(e) {
-    piscineNotif('Erreur de connexion — rechargez la page.', 'error'); return;
+    piscineNotif('Erreur réseau — transaction non enregistrée. Réessayez.', 'error'); return;
   }
   if(d.success){ chargerEnCours(); }
   else piscineNotif(d.error||'Une erreur est survenue.','error');
@@ -1238,7 +1239,7 @@ async function suppConso(id){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     d = await r.json();
   } catch(e) {
-    piscineNotif('Erreur de connexion — rechargez la page.', 'error'); return;
+    piscineNotif('Erreur réseau — transaction non enregistrée. Réessayez.', 'error'); return;
   }
   if(d.success){ chargerEnCours(); }
   else piscineNotif(d.error||'Une erreur est survenue.','error');
@@ -1401,7 +1402,7 @@ async function validerCommande(){
       if(!r.ok){ erreurs.push('• ' + item.nom + ' : Erreur serveur (' + r.status + ')'); continue; }
       d = await r.json();
     } catch(e) {
-      erreurs.push('• ' + item.nom + ' : Erreur de connexion'); continue;
+      erreurs.push('• ' + item.nom + ' : Erreur réseau — transaction non enregistrée. Réessayez.'); continue;
     }
     if(!d.success) erreurs.push('• ' + item.nom + ' : ' + (d.error||'Erreur'));
     else succès++;
@@ -1596,7 +1597,7 @@ async function validerSortie(){
     }
     d = await r.json();
   } catch(e) {
-    piscineNotif('Erreur de connexion — vérifiez le réseau.', 'error');
+    piscineNotif('Erreur réseau — transaction non enregistrée. Réessayez.', 'error');
     return;
   }
   if(d.success){
@@ -1620,7 +1621,7 @@ async function sauvegarderTarif(){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     d = await r.json();
   } catch(e) {
-    piscineNotif('Erreur de connexion — rechargez la page.', 'error'); return;
+    piscineNotif('Erreur réseau — transaction non enregistrée. Réessayez.', 'error'); return;
   }
   if(d.success){fermerModal('modalTarif');location.reload();}
   else piscineNotif(d.error || 'Une erreur est survenue.', 'error');

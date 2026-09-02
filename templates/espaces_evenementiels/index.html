@@ -551,6 +551,7 @@
 </div>
 
 <script>
+async function post(url,data,opts={}){ return _bPost(url,data,opts); }
 const CSRF='{{ csrf_token }}';
 let _encTotal=0;
 
@@ -615,10 +616,11 @@ async function confirmerAnnulation(){
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({motif})
     });
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(d.success){fermerModal('modalAnnulation');toast('✅ Réservation annulée','success');setTimeout(()=>location.reload(),800);}
     else toast('❌ '+(d.error||'Erreur'),'error');
-  }catch(e){toast('❌ Erreur réseau','error');}
+  }catch(e){toast('❌ Erreur réseau — transaction non enregistrée. Réessayez.','error');}
 }
 
 // ── Imprimer reçu ──
@@ -901,6 +903,7 @@ async function confirmerReservation(){
         motif_tarif:motifTarif,
       })
     });
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(d.success){
       fermerModal('modalReservation');
@@ -910,7 +913,7 @@ async function confirmerReservation(){
       }
       setTimeout(()=>location.reload(),1200);
     } else toast('❌ '+d.error,'error');
-  }catch(e){toast('❌ Erreur réseau','error');}
+  }catch(e){toast('❌ Erreur réseau — transaction non enregistrée. Réessayez.','error');}
 }
 
 // ── Encaissement ──
@@ -966,6 +969,7 @@ async function validerEncaissement(){
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({mode_paiement:mode,montant_recu:montantRecu,montant_especes:montantEspeces,sur_chambre:surChambre})
     });
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(d.success){
       fermerModal('modalEncaissement');
@@ -973,7 +977,7 @@ async function validerEncaissement(){
       else if(d.ticket_html){const w=window.open('','_blank','width=420,height=720');if(w){w.document.write(d.ticket_html);w.document.close();w.focus();}}
       toast('✅ Encaissement effectué','success');setTimeout(()=>location.reload(),800);
     } else toast('❌ '+(d.error||'Erreur'),'error');
-  }catch(e){toast('❌ Erreur réseau','error');}
+  }catch(e){toast('❌ Erreur réseau — transaction non enregistrée. Réessayez.','error');}
   finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer';}
 }
 </script>

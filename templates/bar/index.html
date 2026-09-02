@@ -1080,6 +1080,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
+async function post(url,data,opts={}){ return _bPost(url,data,opts); }
 // Lecture du cookie CSRF — défini en tête pour être disponible partout
 function getCsrfToken() {
   var v = document.cookie.match('(^|;) ?csrftoken=([^;]*)(;|$)');
@@ -1618,6 +1619,7 @@ async function mettreOnChambre() {
       method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
       body: JSON.stringify(payload)
     });
+    if (!resp.ok) throw new Error('HTTP '+resp.status);
     const data = await resp.json();
     if (!data.ok) { afficherErreurStock(data); return; }
 
@@ -1638,7 +1640,7 @@ async function mettreOnChambre() {
     document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
     delierChambre();
     _creerNouveauTicket(true);
-  } catch(e) { toast('Erreur réseau', 'error'); }
+  } catch(e) { toast('Erreur réseau — transaction non enregistrée. Réessayez.', 'error'); }
 }
 
 function payerMaintenant() {

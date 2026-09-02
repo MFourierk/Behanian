@@ -1548,6 +1548,8 @@
 </div>
 
 <script>
+    async function post(url,data,opts={}){ return _bPost(url,data,opts); }
+
     // ── MODALE ERREUR HOTEL ──
     function afficherErreurHotel(msg) {
         document.getElementById('hotelErreurMsg').textContent = msg;
@@ -1982,26 +1984,12 @@
         btn.innerHTML = '⏳ Envoi en cours…';
         const urlTemplate = "{% url 'hotel:ajouter_consommation' 0 %}";
         const url = urlTemplate.replace('0', resId);
-        try {
-            const r = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({items: panier, serveur_id: serveurId || null})
-            });
-            const d = await r.json();
-            if (d.success) {
-                closeModal('modalAddService');
-                location.reload();
-            } else {
-                alert(d.error || 'Erreur lors de la commande');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
-            }
-        } catch(e) {
-            alert('Erreur réseau — réessayez.');
+        const d = await post(url, {items: panier, serveur_id: serveurId || null});
+        if (d.success) {
+            closeModal('modalAddService');
+            location.reload();
+        } else {
+            alert(d.error || 'Erreur réseau — transaction non enregistrée. Réessayez.');
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-check"></i> Confirmer la commande';
         }
@@ -2051,26 +2039,16 @@
     async function modifHotelConso(id, delta) {
         const qtyEl = document.getElementById('hqty_' + id);
         const newQty = Math.max(1, parseInt(qtyEl.textContent) + delta);
-        const r = await fetch(`/hotel/api/consommation/${id}/modifier/`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json','X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
-            body: JSON.stringify({quantite: newQty})
-        });
-        const d = await r.json();
+        const d = await post(`/hotel/api/consommation/${id}/modifier/`, {quantite: newQty});
         if (d.success) chargerHotelEnCours();
-        else alert(d.error || 'Erreur');
+        else alert(d.error || 'Erreur réseau — transaction non enregistrée. Réessayez.');
     }
 
     async function suppHotelConso(id) {
         if (!confirm('Retirer cette consommation ?')) return;
-        const r = await fetch(`/hotel/api/consommation/${id}/supprimer/`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json','X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
-            body: JSON.stringify({})
-        });
-        const d = await r.json();
+        const d = await post(`/hotel/api/consommation/${id}/supprimer/`, {});
         if (d.success) chargerHotelEnCours();
-        else alert(d.error || 'Erreur');
+        else alert(d.error || 'Erreur réseau — transaction non enregistrée. Réessayez.');
     }
 
     function filtrerBoissons(btn, cat) {
