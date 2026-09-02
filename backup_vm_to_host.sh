@@ -7,7 +7,7 @@
 #
 # Setup (une seule fois) :
 #   1. VMware : VM Settings -> Options -> Shared Folders -> Add
-#      Name  : behanian_backup
+#      Name  : Behanian_backup
 #      Path  : D:\.behanian    (sur le Windows host)
 #   2. Sur Ubuntu VM : sudo apt-get install -y open-vm-tools
 #   3. Placer ce script sur la VM : /opt/behanian/backup_vm_to_host.sh
@@ -33,7 +33,7 @@ DB_NAME=$(cd "$DJANGO_DIR" && source venv/bin/activate && \
     django.setup(); from django.conf import settings; \
     print(settings.DATABASES['default']['NAME'])" 2>/dev/null || echo "behanian_db")
 
-HGFS_MOUNT="/mnt/hgfs/behanian_backup"
+HGFS_MOUNT="/mnt/hgfs/Behanian_backup"
 DAILY_DIR="$HGFS_MOUNT/daily"
 MONTHLY_DIR="$HGFS_MOUNT/monthly"
 LOG_FILE="$HGFS_MOUNT/backup_vm.log"
