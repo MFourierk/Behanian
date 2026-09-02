@@ -220,9 +220,10 @@ def api_encaisser(request, reservation_id):
 
         res = get_object_or_404(ReservationEspace, id=reservation_id)
         data = json.loads(request.body)
-        mode_paiement = data.get('mode_paiement', 'especes')
-        montant_recu = Decimal(str(data.get('montant_recu', 0)))
-        sur_chambre = data.get('sur_chambre', False)
+        mode_paiement   = data.get('mode_paiement', 'especes')
+        montant_recu    = Decimal(str(data.get('montant_recu', 0)))
+        montant_especes = Decimal(str(data.get('montant_especes', 0) or 0))
+        sur_chambre     = data.get('sur_chambre', False)
 
         montant_net = res.prix_total - res.remise
         restant = montant_net - res.avance
@@ -258,6 +259,8 @@ def api_encaisser(request, reservation_id):
         contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({duree_label})</span><span class="item-price">{int(montant_net):,} F</span></div>'
         if res.avance > 0:
             contenu += f'<div class="row"><span class="item-name">Avance déjà perçue</span><span class="item-price">-{int(res.avance):,} F</span></div>'
+        if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
+            contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='espace',

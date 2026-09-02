@@ -529,7 +529,7 @@
     <div id="sortiePaiementDirect" style="display:none">
       <div class="form-row">
         <label>Mode de paiement</label>
-        <select id="sortieMode">
+        <select id="sortieMode" onchange="piscSortieSetMode(this,'direct')">
           <option value="especes">Espèces</option>
           <option value="wave">Wave</option>
           <option value="orange_money">Orange Money</option>
@@ -542,13 +542,20 @@
         <input type="number" id="sortieRecu" placeholder="0">
       </div>
       <div id="sortieRendu" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
+      <div id="sortieEspecesRowDirect" style="display:none">
+        <div class="form-row">
+          <label>Part en espèces (FCFA)</label>
+          <input type="number" id="sortieEspecesDirect" placeholder="0" oninput="piscSortieCalcMobile('direct')">
+        </div>
+        <div id="sortieMobileInfoDirect" style="font-size:12px;color:#2563eb;font-weight:600;margin-bottom:8px"></div>
+      </div>
     </div>
 
     <!-- Paiement direct non-résident -->
     <div id="sortiePaiementNonResident">
       <div class="form-row">
         <label>Mode de paiement</label>
-        <select id="sortieModeNR">
+        <select id="sortieModeNR" onchange="piscSortieSetMode(this,'nr')">
           <option value="especes">Espèces</option>
           <option value="wave">Wave</option>
           <option value="orange_money">Orange Money</option>
@@ -561,6 +568,13 @@
         <input type="number" id="sortieRecuNR" placeholder="0">
       </div>
       <div id="sortieRenduNR" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
+      <div id="sortieEspecesRowNR" style="display:none">
+        <div class="form-row">
+          <label>Part en espèces (FCFA)</label>
+          <input type="number" id="sortieEspecesNR" placeholder="0" oninput="piscSortieCalcMobile('nr')">
+        </div>
+        <div id="sortieMobileInfoNR" style="font-size:12px;color:#2563eb;font-weight:600;margin-bottom:8px"></div>
+      </div>
     </div>
 
     <div style="display:flex;gap:8px">
@@ -1467,6 +1481,26 @@ function _calcRendu(recuEl, totalV, renduEl){
   } else renduEl.style.display='none';
 }
 
+function piscSortieIsMobile(mode){return['wave','orange_money','mtn_money','moov_money'].includes(mode);}
+function piscSortieSetMode(sel, which){
+  const isMobile = piscSortieIsMobile(sel.value);
+  const rowId = which==='direct' ? 'sortieEspecesRowDirect' : 'sortieEspecesRowNR';
+  const espId = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
+  document.getElementById(rowId).style.display = isMobile ? '' : 'none';
+  if(!isMobile) document.getElementById(espId).value = '';
+  piscSortieCalcMobile(which);
+}
+function piscSortieCalcMobile(which){
+  const total = _sortieTotal + _sortieSalonFrais;
+  const espId = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
+  const infoId = which==='direct' ? 'sortieMobileInfoDirect' : 'sortieMobileInfoNR';
+  const esp = parseFloat(document.getElementById(espId)?.value||0)||0;
+  const mobile = Math.max(0, total - esp);
+  document.getElementById(infoId).textContent = esp > 0
+    ? 'Montant mobile : '+mobile.toLocaleString('fr-FR')+' F'
+    : '';
+}
+
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('sortieRecu').addEventListener('input',function(){
     _calcRendu(this, _sortieTotal, document.getElementById('sortieRendu'));
@@ -1540,13 +1574,20 @@ async function validerSortie(){
   }
   const sortieSalonId = document.getElementById('sortieSalonVIP')?.value || '';
   const sortieSalonH  = sortieSalonId ? (parseInt(document.getElementById('sortieSalonH')?.value) || 1) : 0;
+  let montantEspeces = 0;
+  if (!surChambre && ['wave','orange_money','mtn_money','moov_money'].includes(mode)) {
+    const espEl = _sortieIsHeberge
+      ? document.getElementById('sortieEspecesDirect')
+      : document.getElementById('sortieEspecesNR');
+    montantEspeces = parseFloat(espEl?.value || 0) || 0;
+  }
   let r, d;
   try {
     r = await fetch(`{% url "piscine:sortie" 0 %}`.replace('/0/','/'+id+'/'),{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
       body:JSON.stringify({
-        mode_paiement: mode, montant_recu: recu, sur_chambre: surChambre,
-        salon_vip_id: sortieSalonId || null, heures_salon: sortieSalonH,
+        mode_paiement: mode, montant_recu: recu, montant_especes: montantEspeces,
+        sur_chambre: surChambre, salon_vip_id: sortieSalonId || null, heures_salon: sortieSalonH,
       })
     });
     if(!r.ok){

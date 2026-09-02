@@ -764,6 +764,10 @@ def checkout_reservation(request, reservation_id):
             if operateur:
                 mode_paiement = operateur
 
+        montant_especes = Decimal(request.POST.get('montant_especes', 0) or 0)
+        if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
+            contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
+
         receptionniste_nom = request.POST.get('serveur', '').strip() or request.user.get_full_name() or request.user.username
         serveur_nom = request.POST.get('serveur_resto', '').strip()
 

@@ -504,6 +504,10 @@
         <button onclick="encSetExact()" style="padding:5px 11px;border-radius:7px;border:1px solid #c9a84c;background:rgba(201,168,76,.1);font-size:11px;font-weight:600;cursor:pointer;color:#b45309">Exact</button>
       </div>
       <div id="encRendu" style="display:none;margin-bottom:12px;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600"></div>
+      <div id="encEspecesRow" style="display:none">
+        <div class="form-row"><label>Part en espèces (FCFA)</label><input type="number" id="encMontantEspeces" placeholder="0" oninput="encCalcMobile()"></div>
+        <div id="encMobileInfo" style="font-size:12px;color:#2563eb;font-weight:600;margin-bottom:8px"></div>
+      </div>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn-p btn-outline" style="flex:1;justify-content:center;padding:10px" onclick="fermerModal('modalEncaissement')">Annuler</button>
@@ -924,7 +928,21 @@ function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotel
   sel.value=resHotelId?'chambre':'especes';encModeChange(sel);
   ouvrirModal('modalEncaissement');
 }
-function encModeChange(sel){document.getElementById('encRecuRow').style.display=sel.value==='chambre'?'none':'';}
+const _encMobileOps = ['wave','orange_money','mtn_money','moov_money'];
+function encModeChange(sel){
+  const isChambre = sel.value==='chambre';
+  const isMobile  = _encMobileOps.includes(sel.value);
+  document.getElementById('encRecuRow').style.display = isChambre ? 'none' : '';
+  document.getElementById('encEspecesRow').style.display = isMobile ? '' : 'none';
+  if(!isMobile) { const e=document.getElementById('encMontantEspeces'); if(e) e.value=''; }
+  encCalcMobile();
+}
+function encCalcMobile(){
+  const esp=parseFloat(document.getElementById('encMontantEspeces')?.value||0)||0;
+  const info=document.getElementById('encMobileInfo');
+  if(esp>0) info.textContent='Montant mobile : '+fmt(Math.max(0,_encTotal-esp));
+  else info.textContent='';
+}
 function encSetMontant(v){document.getElementById('encMontantRecu').value=v;calcRendu();}
 function encSetExact(){document.getElementById('encMontantRecu').value=_encTotal;calcRendu();}
 function calcRendu(){
@@ -939,13 +957,14 @@ async function validerEncaissement(){
   const mode=document.getElementById('encMode').value;
   const surChambre=mode==='chambre';
   const montantRecu=surChambre?_encTotal:(parseFloat(document.getElementById('encMontantRecu').value)||0);
+  const montantEspeces=_encMobileOps.includes(mode)?(parseFloat(document.getElementById('encMontantEspeces')?.value||0)||0):0;
   if(!surChambre&&montantRecu<_encTotal){toast('❌ Montant insuffisant','error');return;}
   const btn=document.getElementById('btnEncaisser');
   btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Traitement…';
   try{
     const r=await fetch("{% url 'espaces_evenementiels:api_encaisser' 0 %}".replace('/0/','/'+resId+'/'),{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({mode_paiement:mode,montant_recu:montantRecu,sur_chambre:surChambre})
+      body:JSON.stringify({mode_paiement:mode,montant_recu:montantRecu,montant_especes:montantEspeces,sur_chambre:surChambre})
     });
     const d=await r.json();
     if(d.success){

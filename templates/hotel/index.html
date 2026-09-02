@@ -1137,7 +1137,7 @@
             
              <div class="form-group">
                  <label>Mode Paiement</label>
-                 <select name="mode_paiement" id="hotelModePaiement" class="form-control">
+                 <select name="mode_paiement" id="hotelModePaiement" class="form-control" onchange="hotelCheckoutModeChange(this)">
                      <option value="especes">Espèces</option>
                      <option value="wave">Wave</option>
                      <option value="orange_money">Orange Money</option>
@@ -1147,7 +1147,13 @@
                      <option value="virement">Virement</option>
                  </select>
             </div>
-            
+
+            <div id="hotelEspecesGroup" style="display:none" class="form-group">
+                <label>Part en espèces (FCFA)</label>
+                <input type="number" name="montant_especes" id="hotelMontantEspeces" class="form-control" placeholder="0" oninput="hotelCalcMobile()">
+                <div id="hotelMobileInfo" style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:600"></div>
+            </div>
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="submit" class="btn-action primary" style="flex: 1;">
                     <i class="fas fa-check"></i> Payer & Sortir
@@ -1711,6 +1717,20 @@
             // But disabling is cleaner UI.
             fieldsDiv.querySelectorAll('input, select').forEach(el => el.disabled = true);
         }
+    }
+
+    const _hotelMobileOps = ['wave','orange_money','mtn_money','moov_money'];
+    function hotelCheckoutModeChange(sel){
+      const isMobile = _hotelMobileOps.includes(sel.value);
+      document.getElementById('hotelEspecesGroup').style.display = isMobile ? 'block' : 'none';
+      if(!isMobile){ const e=document.getElementById('hotelMontantEspeces'); if(e) e.value=''; }
+      hotelCalcMobile();
+    }
+    function hotelCalcMobile(){
+      const total = parseFloat(document.getElementById('montantEncaisse').value)||0;
+      const esp   = parseFloat(document.getElementById('hotelMontantEspeces').value)||0;
+      const info  = document.getElementById('hotelMobileInfo');
+      info.textContent = esp>0 ? 'Montant mobile : '+(Math.max(0,total-esp)).toLocaleString('fr-FR')+' F' : '';
     }
 
     function openCheckoutModal(resId, clientName, roomVal, serviceVal, avance, piscineVal) {

@@ -523,9 +523,10 @@ def encaisser_sortie(request, acces_id):
         from facturation.models import Ticket, generate_ticket_numero
         acces = get_object_or_404(AccesPiscine, id=acces_id)
         data  = json.loads(request.body)
-        mode_paiement = data.get('mode_paiement', 'especes')
-        montant_recu  = Decimal(str(data.get('montant_recu', 0)))
-        sur_chambre   = data.get('sur_chambre', False)
+        mode_paiement   = data.get('mode_paiement', 'especes')
+        montant_recu    = Decimal(str(data.get('montant_recu', 0)))
+        montant_especes = Decimal(str(data.get('montant_especes', 0) or 0))
+        sur_chambre     = data.get('sur_chambre', False)
 
         # Salon VIP optionnel
         salon_vip_id = data.get('salon_vip_id')
@@ -536,7 +537,7 @@ def encaisser_sortie(request, acces_id):
         if heures_salon > 0 and salon_vip_id:
             try:
                 from restaurant.models import Table as TableResto
-                _salon = TableResto.objects.get(pk=int(salon_vip_id), est_salon_prive=True)
+                _salon = TableResto.objects.get(pk=int(salon_vip_id))
                 tarif_salon_pisc = _salon.tarif_horaire
                 salon_nom_pisc = _salon.numero
                 frais_salon = Decimal(str(heures_salon)) * tarif_salon_pisc
@@ -620,6 +621,8 @@ def encaisser_sortie(request, acces_id):
             contenu += f'<div class="row" style="color:#dc2626"><span class="item-name">Remise</span><span class="item-price">-{int(montant_remise):,} F</span></div>'
         if frais_salon > 0:
             contenu += f'<div class="row salon-prive"><span class="item-name">Salon VIP {salon_nom_pisc} {heures_salon}h × {int(tarif_salon_pisc):,} F</span><span class="item-price">{int(frais_salon):,} F</span></div>'
+        if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
+            contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',
