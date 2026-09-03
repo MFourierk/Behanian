@@ -1782,6 +1782,12 @@ async function confirmerPaiement() {
 
     // 1. Réinitialiser l'interface (avant impression pour éviter le blocage si popup bloqué)
     const ticketSnapshot = JSON.parse(JSON.stringify(t));
+    // Capturer avant réinitialisation UI (modePaiement, espace, salon seront écrasés)
+    const _modeCapture    = modePaiement;
+    const _espaceCapture  = t.espace || '';
+    const _salonSel       = document.getElementById('barSelectSalonVIP');
+    const _salonNomCapt   = _salonSel?.options[_salonSel?.selectedIndex]?.text || '';
+    const _salonFraisCapt = _barSalonFrais;
     const oldId = ticketActifId;
     delete tickets[oldId];
     document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
@@ -1801,7 +1807,7 @@ async function confirmerPaiement() {
     _chargerTicketInterne(newTid);
 
     // 2. Impression (dans son propre try pour ne pas bloquer le flux si popup refusé)
-    try { imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu, montantEspeces); }
+    try { imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu, montantEspeces, _modeCapture, _espaceCapture, _salonNomCapt, barHeures, _salonFraisCapt); }
     catch(printErr) { toast('⚠️ Impression bloquée — autorisez les popups', 'error'); }
 
   } catch(err) {
@@ -1815,9 +1821,10 @@ async function confirmerPaiement() {
 // ============================================================
 // IMPRESSION TICKET THERMIQUE (80mm)
 // ============================================================
-function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
-  const selectEspace = document.getElementById('selectEspace');
-  const espaceLabel  = selectEspace.options[selectEspace.selectedIndex]?.text.replace(/^[^\s]+\s/, '') || '';
+function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0, modePayCapture = null, espaceCapture = '', salonNom = '', salonHeures = 0, salonFrais = 0) {
+  const _ESPACE_LABELS_PRINT = { restaurant:'Restaurant', piscine:'Piscine', evenementiel:'Espace/Évènementiel', hotel:'Hôtel', comptoir:'Bar comptoir', plage:'Plage', visite:'Visiteur' };
+  const espaceLabel = _ESPACE_LABELS_PRINT[espaceCapture] || 'Cave';
+  const modePrint   = modePayCapture || modePaiement;
   const ref          = t.ref || '';
   const serveur      = t.serveur || document.getElementById('selectServeur')?.value || '—';
   const operateur    = "{{ request.user.get_full_name|default:request.user.username }}";
@@ -1842,7 +1849,7 @@ function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
       </tr>`;
   }).join('');
 
-  const showRendu = (modePaiement === 'especes' || modePaiement === 'mobile') && renduVal > 0;
+  const showRendu = (modePrint === 'especes' || modePrint === 'mobile') && renduVal > 0;
 
   const html = `<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
@@ -1910,7 +1917,7 @@ function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
     ${ref ? `<div class="meta-row"><span class="meta-label">Réf :</span><span>${ref}</span></div>` : ''}
     <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
     <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
-    <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabels[modePaiement] || modePaiement}</span></div>
+    <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabels[modePrint] || modePrint}</span></div>
     <hr class="sep-dash">
 
     <!-- ARTICLES -->
@@ -1931,10 +1938,13 @@ function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
       <span class="total-label">TOTAL</span>
       <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} FCFA</span>
     </div>
-    ${(MOBILE_MODES.includes(modePaiement) && montantEspeces > 0) ? `
+    ${salonNom && salonFrais > 0 ? `
+    <hr class="sep-dash">
+    <div class="paiement-row" style="font-size:10px;"><span>Salon VIP — ${salonNom} (${salonHeures}h) :</span><span>${parseInt(salonFrais).toLocaleString('fr-FR')} F</span></div>` : ''}
+    ${(MOBILE_MODES.includes(modePrint) && montantEspeces > 0) ? `
     <hr class="sep-dash">
     <div class="paiement-row"><span>ESP :</span><span>${parseInt(montantEspeces).toLocaleString('fr-FR')} F</span></div>
-    <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePaiement]||modePaiement} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
+    <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePrint]||modePrint} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
     ${showRendu ? `
     <hr class="sep-dash">
     <div class="paiement-row"><span>Reçu :</span><span>${montantRecuVal.toLocaleString('fr-FR')} F</span></div>
@@ -1954,7 +1964,6 @@ function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0) {
   w.document.close();
   w.focus();
   w.onafterprint = () => w.close();
-  setTimeout(() => w.print(), 350);
 }
 
 // ============================================================
