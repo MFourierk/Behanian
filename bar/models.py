@@ -631,8 +631,18 @@ class InventaireBar(models.Model):
         ('valide',    'Validé'),
         ('annule',    'Annulé'),
     ]
+    TYPE_CHOICES = [
+        ('complet',    'Inventaire complet'),
+        ('partiel',    'Inventaire partiel'),
+        ('correction', 'Correction'),
+    ]
     numero = models.CharField(max_length=30, unique=True, editable=False)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
+    type_inventaire = models.CharField(max_length=20, choices=TYPE_CHOICES, default='complet', verbose_name='Type')
+    inventaire_source = models.ForeignKey(
+        'self', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='corrections', verbose_name='Inventaire source (correction)'
+    )
     notes = models.TextField(blank=True)
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='inventaires_bar')
     valide_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='validations_inventaire_bar')
@@ -651,12 +661,46 @@ class InventaireBar(models.Model):
         return self.lignes.count()
 
     @property
+    def nb_saisis(self):
+        return self.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
+
+    @property
+    def nb_total(self):
+        return self.lignes.count()
+
+    @property
     def nb_ecarts(self):
         return sum(1 for l in self.lignes.all() if l.ecart_quantite != 0)
 
     @property
     def valeur_ecart_total(self):
         return sum(abs(l.valeur_ecart or 0) for l in self.lignes.all())
+
+    def valider(self, user):
+        from django.db import transaction as _tx
+        with _tx.atomic():
+            for ligne in self.lignes.filter(statut__in=['compte', 'confirme_zero']).select_related('article').all():
+                art = ligne.article
+                qte_ph = int(ligne.quantite_comptee) if ligne.quantite_comptee is not None else 0
+                ecart  = qte_ph - (art.quantite_stock or 0)
+                if ecart > 0:
+                    type_mvt = 'inventaire_excedent'
+                elif ecart < 0:
+                    type_mvt = 'inventaire_manquant'
+                else:
+                    type_mvt = 'inventaire'
+                BoissonBar.objects.filter(pk=art.pk).update(quantite_stock=qte_ph)
+                MouvementStockBar.objects.create(
+                    boisson=art,
+                    type_mouvement=type_mvt,
+                    quantite=abs(ecart) if ecart != 0 else 0,
+                    commentaire=f"Inventaire {self.numero}",
+                    utilisateur=user,
+                )
+            self.statut = 'valide'
+            self.valide_par = user
+            self.date_validation = timezone.now()
+            self.save(update_fields=['statut', 'valide_par', 'date_validation'])
 
     class Meta:
         verbose_name = "Inventaire (Cave)"
@@ -668,15 +712,23 @@ class InventaireBar(models.Model):
 
 
 class LigneInventaireBar(models.Model):
+    STATUT_CHOICES = [
+        ('a_compter',    'À compter'),
+        ('compte',       'Compté'),
+        ('confirme_zero','Confirmé à zéro'),
+    ]
     inventaire = models.ForeignKey(InventaireBar, on_delete=models.CASCADE, related_name='lignes')
     article = models.ForeignKey(BoissonBar, on_delete=models.PROTECT)
     quantite_theorique = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Qté théorique (système)")
-    quantite_comptee = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Qté comptée (physique)")
+    quantite_comptee = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name="Qté comptée (physique)")
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='a_compter', verbose_name='Statut')
     valeur_ecart = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne = models.CharField(max_length=200, blank=True)
 
     @property
     def ecart_quantite(self):
+        if self.quantite_comptee is None:
+            return Decimal('0')
         return self.quantite_comptee - self.quantite_theorique
 
     @property

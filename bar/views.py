@@ -882,41 +882,67 @@ def inventaire_list(request):
 @require_bar_gestion
 def inventaire_create(request):
     """Créer un nouvel inventaire avec toutes les boissons actives"""
-    articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
+    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False).select_related('categorie')
 
     if request.method == 'POST':
-        statut_post = request.POST.get('statut', 'brouillon')
+        type_inv = request.POST.get('type_inventaire', 'complet')
+        if type_inv not in ('complet', 'partiel'):
+            type_inv = 'complet'
         inv = InventaireBar(
-            statut='valide' if statut_post == 'valide' else 'brouillon',
+            statut='brouillon',
+            type_inventaire=type_inv,
             notes=request.POST.get('notes', ''),
             cree_par=request.user,
         )
         inv.save()
 
-        article_ids = request.POST.getlist('article_id[]')
-        qtes_comptees = request.POST.getlist('quantite_comptee[]')
+        article_ids     = request.POST.getlist('article_id[]')
+        qtes_comptees   = request.POST.getlist('quantite_comptee[]')
         qtes_theoriques = request.POST.getlist('quantite_theorique[]')
-        notes_list = request.POST.getlist('notes_ligne[]')
+        notes_list      = request.POST.getlist('notes_ligne[]')
+        zero_ids        = set(request.POST.getlist('confirme_zero[]'))
+
+        def _dec(val):
+            try:
+                from decimal import Decimal
+                return Decimal(str(val).replace('\xa0','').replace(' ','').replace(',','.'))
+            except Exception:
+                return Decimal('0')
 
         for i, art_id in enumerate(article_ids):
-            if art_id:
-                LigneInventaireBar.objects.create(
-                    inventaire=inv,
-                    article_id=art_id,
-                    quantite_theorique=qtes_theoriques[i] if qtes_theoriques[i] else 0,
-                    quantite_comptee=qtes_comptees[i] if qtes_comptees[i] else 0,
-                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
-                )
+            if not art_id:
+                continue
+            qte_raw = (qtes_comptees[i] if i < len(qtes_comptees) else '').strip()
+            art_id_str = str(art_id)
+            if art_id_str in zero_ids:
+                statut = 'confirme_zero'; qte = _dec('0')
+            elif qte_raw:
+                statut = 'compte'; qte = _dec(qte_raw)
+            else:
+                continue
+            LigneInventaireBar.objects.create(
+                inventaire=inv,
+                article_id=art_id,
+                quantite_theorique=_dec(qtes_theoriques[i]) if i < len(qtes_theoriques) else 0,
+                quantite_comptee=qte,
+                statut=statut,
+                notes_ligne=notes_list[i] if i < len(notes_list) else '',
+            )
 
-        if inv.statut == 'valide':
-            _valider_inventaire(inv, request.user)
-
-        messages.success(request, f"Inventaire {inv.numero} créé.")
+        nb_saisis = inv.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
+        if request.POST.get('valider') == '1':
+            if nb_saisis == 0:
+                messages.error(request, "Impossible de valider : aucun article n'a été compté.")
+                inv.delete()
+                return redirect(reverse('bar:stock_management') + '?tab=inventaire')
+            inv.valider(request.user)
+            messages.success(request, f"Inventaire {inv.numero} validé — {nb_saisis} article(s) ajusté(s).")
+        else:
+            messages.success(request, f"Inventaire {inv.numero} enregistré — {nb_saisis} article(s) saisi(s).")
         return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
-    # Pré-remplir avec tous les articles actifs
     context = {
-        'page_title': 'Nouvel Inventaire',
+        'page_title': 'Nouvel Inventaire — Cave',
         'articles': articles,
         'mode': 'create',
     }
@@ -931,54 +957,76 @@ def inventaire_edit(request, pk):
         messages.error(request, "Un inventaire validé ne peut plus être modifié.")
         return redirect(reverse('bar:inventaire_detail', args=[pk]))
 
-    articles = BoissonBar.objects.exclude(statut='supprime').select_related('categorie')
+    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False).select_related('categorie')
 
     if request.method == 'POST':
-        statut_post = request.POST.get('statut', 'brouillon')
-        inv.statut = 'valide' if statut_post == 'valide' else 'brouillon'
         inv.notes = request.POST.get('notes', inv.notes)
-        inv.save()
+        inv.save(update_fields=['notes'])
 
         article_ids     = request.POST.getlist('article_id[]')
         qtes_comptees   = request.POST.getlist('quantite_comptee[]')
         qtes_theoriques = request.POST.getlist('quantite_theorique[]')
         notes_list      = request.POST.getlist('notes_ligne[]')
+        zero_ids        = set(request.POST.getlist('confirme_zero[]'))
+
+        def _dec(val):
+            try:
+                from decimal import Decimal
+                return Decimal(str(val).replace('\xa0','').replace(' ','').replace(',','.'))
+            except Exception:
+                return Decimal('0')
 
         for i, art_id in enumerate(article_ids):
-            if art_id:
-                LigneInventaireBar.objects.update_or_create(
-                    inventaire=inv,
-                    article_id=art_id,
-                    defaults={
-                        'quantite_theorique': qtes_theoriques[i] if qtes_theoriques[i] else 0,
-                        'quantite_comptee':   qtes_comptees[i] if qtes_comptees[i] else 0,
-                        'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
-                    }
-                )
+            if not art_id:
+                continue
+            qte_raw = (qtes_comptees[i] if i < len(qtes_comptees) else '').strip()
+            art_id_str = str(art_id)
+            if art_id_str in zero_ids:
+                statut = 'confirme_zero'; qte = _dec('0')
+            elif qte_raw:
+                statut = 'compte'; qte = _dec(qte_raw)
+            else:
+                # champ vidé → supprimer la ligne existante si elle existe
+                inv.lignes.filter(article_id=art_id).delete()
+                continue
+            LigneInventaireBar.objects.update_or_create(
+                inventaire=inv, article_id=art_id,
+                defaults={
+                    'quantite_theorique': _dec(qtes_theoriques[i]) if i < len(qtes_theoriques) else 0,
+                    'quantite_comptee': qte,
+                    'statut': statut,
+                    'notes_ligne': notes_list[i] if i < len(notes_list) else '',
+                }
+            )
 
-        if inv.statut == 'valide':
-            _valider_inventaire(inv, request.user)
-            messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
+        nb_saisis = inv.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
+        if request.POST.get('valider') == '1':
+            if nb_saisis == 0:
+                messages.error(request, "Impossible de valider : aucun article n'a été compté.")
+                return redirect(reverse('bar:inventaire_edit', args=[pk]))
+            inv.valider(request.user)
+            messages.success(request, f"Inventaire {inv.numero} validé — {nb_saisis} article(s) ajusté(s).")
         else:
-            messages.success(request, f"Inventaire {inv.numero} mis à jour.")
+            messages.success(request, f"Inventaire {inv.numero} mis à jour — {nb_saisis} article(s) saisi(s).")
         return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
     import json
     lignes_dict = {l.article_id: l for l in inv.lignes.all()}
     prefill = {
         art_id: {
-            'qte':   str(l.quantite_comptee),
-            'notes': l.notes_ligne,
+            'qte':    str(l.quantite_comptee) if l.quantite_comptee is not None else '',
+            'notes':  l.notes_ligne,
+            'statut': l.statut,
         }
         for art_id, l in lignes_dict.items()
     }
 
     context = {
-        'page_title':    f'Continuer {inv.numero}',
-        'articles':      articles,
-        'mode':          'edit',
-        'inv':           inv,
-        'prefill_json':  json.dumps(prefill),
+        'page_title':   f'Continuer {inv.numero}',
+        'articles':     articles,
+        'mode':         'edit',
+        'inv':          inv,
+        'prefill_json': json.dumps(prefill),
     }
     return render(request, 'bar/inventaire_form.html', context)
 
@@ -1018,48 +1066,47 @@ def inventaire_print(request, pk):
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     if inv.statut == 'brouillon':
-        _valider_inventaire(inv, request.user)
+        nb_saisis = inv.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
+        if nb_saisis == 0:
+            messages.error(request, "Impossible de valider : aucun article n'a été compté.")
+            return redirect(reverse('bar:stock_management') + '?tab=inventaire')
+        inv.valider(request.user)
         messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
     return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
 
 def _valider_inventaire(inv, user):
-    """Valider inventaire → créer mouvements d'ajustement et corriger le stock."""
-    for ligne in inv.lignes.all():
-        ecart = ligne.ecart_quantite  # positif = excédent, négatif = manquant
-        if ecart > 0:
-            type_mv = 'inventaire_excedent'
-            qte     = int(ecart)
-        elif ecart < 0:
-            type_mv = 'inventaire_manquant'
-            qte     = int(abs(ecart))
-        else:
-            type_mv = 'inventaire'
-            qte     = 0
+    """Compat shim — délègue à inv.valider()."""
+    inv.valider(user)
 
-        MouvementStockBar.objects.create(
-            boisson       = ligne.article,
-            type_mouvement= type_mv,
-            quantite      = qte,
-            commentaire   = (
-                f"Inventaire {inv.numero} — "
-                f"Théorique: {ligne.quantite_theorique} → Compté: {ligne.quantite_comptee}"
-                + (f" (écart: {'+' if ecart > 0 else ''}{ecart})" if ecart != 0 else " (conforme)")
-            ),
-            utilisateur   = user,
+
+@require_module_access('bar')
+@require_POST
+def inventaire_correction(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, "Action réservée aux administrateurs.")
+        return redirect(reverse('bar:stock_management') + '?tab=inventaire')
+    source = get_object_or_404(InventaireBar, pk=pk)
+    from django.db import transaction as _tx
+    with _tx.atomic():
+        correction = InventaireBar.objects.create(
+            type_inventaire='correction',
+            inventaire_source=source,
+            notes=f"Correction de {source.numero} — annule les écarts.",
+            cree_par=request.user,
         )
-        # Forcer le stock à la valeur comptée physiquement
-        ligne.article.refresh_from_db()
-        ligne.article.quantite_stock = int(ligne.quantite_comptee)
-        ligne.article.save()
-        # Persister la valeur de l'écart au CMUP (prix_achat) du moment
-        ligne.valeur_ecart = ligne.ecart_quantite * ligne.article.prix_achat
-        ligne.save()
-
-    inv.statut = 'valide'
-    inv.date_validation = timezone.now()
-    inv.valide_par = user
-    inv.save()
+        for ligne in source.lignes.select_related('article').all():
+            art = ligne.article
+            LigneInventaireBar.objects.create(
+                inventaire=correction,
+                article=art,
+                quantite_theorique=art.quantite_stock,
+                quantite_comptee=ligne.quantite_theorique,
+                statut='compte',
+            )
+        correction.valider(request.user)
+    messages.success(request, f"Correction {correction.numero} créée et validée. Stock restauré.")
+    return redirect(reverse('bar:stock_management') + '?tab=inventaire')
 
 
 @require_module_access('bar')

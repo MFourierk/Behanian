@@ -1,434 +1,679 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
-
 {% block title %}{{ page_title }} - Cave BEHANIAN{% endblock %}
 
 {% block content %}
 {% breadcrumb "Cave" "bar:stock_management" "Gestion de stock" "bar:stock_management" "Inventaire" "" %}
 {% regroup articles by categorie as articles_par_cat %}
 <style>
-    .page-header { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); color: white; padding: 24px 30px; border-radius: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(142,68,173,0.2); }
-    .page-header h2 { font-size: 1.6rem; font-weight: 700; margin: 0; }
-    .page-header p { margin: 4px 0 0; opacity: 0.85; font-size: 0.9rem; }
+:root {
+    --purple:    #7c3aed;
+    --purple-dk: #5b21b6;
+    --gold:      #d4a843;
+    --gold-lt:   #f5e6c0;
+    --green:     #00a86b;
+    --red:       #dc2626;
+    --bg:        #f4f4f8;
+    --white:     #ffffff;
+    --text:      #1e1e2e;
+    --muted:     #7f8c8d;
+    --border:    #e2e8f0;
+    --shadow:    0 4px 24px rgba(30,30,46,.08);
+}
+.inv-header {
+    background: linear-gradient(135deg, #1e1e2e 0%, #1a0933 50%, #1e1e2e 100%);
+    border-radius: 20px; padding: 28px 32px; margin-bottom: 20px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(30,30,46,.35);
+}
+.inv-header::before {
+    content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+    background: radial-gradient(ellipse at 80% 50%, rgba(124,58,237,.15) 0%, transparent 70%);
+    pointer-events:none;
+}
+.inv-header-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(212,168,67,.15); border:1px solid rgba(212,168,67,.3);
+    color:var(--gold); padding:4px 12px; border-radius:20px; font-size:.75rem;
+    font-weight:700; text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px;
+}
+.inv-header h2 { color:#fff; font-size:1.7rem; font-weight:800; margin:0 0 6px; text-shadow:0 2px 12px rgba(0,0,0,.4); }
+.inv-header-sub { color:rgba(255,255,255,.55); font-size:.88rem; margin-bottom:18px; }
+.prog-track { background:rgba(255,255,255,.1); border-radius:999px; height:10px; overflow:hidden; margin:10px 0 8px; width:340px; max-width:100%; }
+.prog-fill { height:100%; border-radius:999px; transition:width .4s cubic-bezier(.4,0,.2,1); background:linear-gradient(90deg,var(--gold) 0%,#f5c842 100%); box-shadow:0 0 10px rgba(212,168,67,.5); }
+.prog-labels { display:flex; gap:18px; font-size:.78rem; }
+.prog-lbl { display:flex; align-items:center; gap:5px; color:rgba(255,255,255,.7); }
+.prog-lbl strong { color:#fff; font-size:.9rem; }
+.prog-lbl .dot { width:8px; height:8px; border-radius:50%; }
+.dot-compte { background:#4ade80; } .dot-zero { background:#f87171; } .dot-reste { background:rgba(255,255,255,.25); }
 
-    /* Précautions */
-    .precautions { background: #fff8e1; border: 1.5px solid #f9a825; border-radius: 14px; padding: 18px 22px; margin-bottom: 20px; }
-    .precautions-title { font-weight: 700; color: #e65100; font-size: 0.95rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .precautions-body { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .precaution-item { display: flex; align-items: flex-start; gap: 8px; font-size: 0.87rem; color: #5d4037; background: white; border-radius: 8px; padding: 10px 12px; border: 1px solid #ffe082; }
-    .precaution-item i { color: #f9a825; margin-top: 2px; flex-shrink: 0; }
+.mode-tabs { display:flex; gap:0; background:var(--white); border-radius:14px; padding:4px; box-shadow:var(--shadow); margin-bottom:18px; }
+.mode-tab { flex:1; padding:12px 18px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:.88rem; color:var(--muted); background:transparent; display:flex; align-items:center; gap:8px; justify-content:center; transition:.2s; }
+.mode-tab.active { background:var(--purple); color:#fff; box-shadow:0 4px 12px rgba(124,58,237,.35); }
 
-    .form-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    .form-section-title { font-weight: 700; color: #8e44ad; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f3e5f5; }
-    .form-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 0.85rem; font-weight: 600; color: #4a4a6a; }
-    .form-group input, .form-group select, .form-group textarea { padding: 10px 14px; border: 1px solid #e9ecef; border-radius: 10px; font-size: 0.92rem; background: #f8f9fa; transition: all 0.2s; }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #8e44ad; background: white; box-shadow: 0 0 0 3px rgba(142,68,173,0.1); }
+.select-panel { background:var(--white); border-radius:16px; padding:20px 24px; box-shadow:var(--shadow); margin-bottom:18px; border-left:4px solid var(--gold); animation:slideIn .25s ease; }
+.select-panel-title { font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.select-panel-title .gold-dot { width:10px; height:10px; border-radius:50%; background:var(--gold); }
+.article-search { width:100%; max-width:320px; padding:9px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:.88rem; margin-bottom:12px; background:#f8f9fa; }
+.article-search:focus { outline:none; border-color:var(--gold); background:#fff; }
+.article-checklist { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:6px; max-height:220px; overflow-y:auto; }
+.article-check-item { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; background:#f8f9fa; border:1px solid var(--border); cursor:pointer; transition:.15s; }
+.article-check-item:hover { border-color:var(--gold); background:var(--gold-lt); }
+.article-check-item input[type=checkbox] { accent-color:var(--gold); }
+.article-check-item label { cursor:pointer; font-size:.82rem; font-weight:500; }
+.select-actions { display:flex; gap:8px; margin-top:12px; }
+.btn-select-all, .btn-select-none { padding:6px 14px; border-radius:8px; font-size:.8rem; font-weight:600; cursor:pointer; border:none; }
+.btn-select-all { background:var(--gold-lt); color:#8a6a00; }
+.btn-select-none { background:#f1f5f9; color:var(--muted); }
 
-    /* Toolbar */
-    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .btn-toolbar { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-stock-avant { background: #e8f4fd; color: #3498db; border-color: #bee3f8; }
-    .btn-stock-avant:hover { background: #3498db; color: white; }
-    .btn-zero { background: #fdecea; color: #e74c3c; border-color: #fad7d7; }
-    .btn-zero:hover { background: #e74c3c; color: white; }
-    .btn-split { position: relative; display: inline-flex; }
-    .btn-split-main { border-radius: 8px 0 0 8px !important; }
-    .btn-split-arrow { border-radius: 0 8px 8px 0 !important; padding: 8px 10px !important; border-left: 1px solid #bee3f8 !important; }
-    .split-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: white; border: 1px solid #e9ecef; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); min-width: 190px; z-index: 300; overflow: hidden; }
-    .split-menu a { display: flex; align-items: center; gap: 9px; padding: 10px 14px; font-size: 0.85rem; font-weight: 600; color: #2c3e50; text-decoration: none; }
-    .split-menu a:hover { background: #f0f7ff; }
-    .split-menu.show { display: block; }
-    .search-inv { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.88rem; background: #f8f9fa; width: 200px; }
-    .search-inv:focus { outline: none; border-color: #8e44ad; background: white; }
-    .filter-cat { padding: 8px 14px; border-radius: 8px; border: 1px solid #e9ecef; font-size: 0.85rem; background: #f8f9fa; cursor: pointer; }
-    .filter-cat:focus { outline: none; border-color: #8e44ad; }
+.form-card { background:var(--white); border-radius:16px; padding:22px 24px; box-shadow:var(--shadow); margin-bottom:18px; }
+.form-section-title { font-weight:700; color:var(--purple); font-size:.88rem; text-transform:uppercase; letter-spacing:.6px; margin-bottom:16px; padding-bottom:8px; border-bottom:2px solid #f3e5f5; display:flex; align-items:center; gap:8px; }
+.form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group label { font-size:.83rem; font-weight:600; color:#4a4a6a; }
+.form-group input, .form-group textarea { padding:9px 13px; border:1.5px solid var(--border); border-radius:10px; font-size:.9rem; background:#f8f9fa; transition:.2s; }
+.form-group input:focus, .form-group textarea:focus { outline:none; border-color:var(--purple); background:#fff; box-shadow:0 0 0 3px rgba(124,58,237,.08); }
 
-    /* Table inventaire */
-    .inv-table { width: 100%; border-collapse: collapse; }
-    .inv-table th { background: #f8f9fa; padding: 10px 14px; font-size: 0.78rem; font-weight: 700; color: #7f8c8d; text-transform: uppercase; border-bottom: 2px solid #ecf0f1; }
-    .inv-table td { padding: 8px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
-    .inv-table tr:hover { background: #fdf8ff; }
-    .inv-table input[type="number"] { padding: 7px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.88rem; background: #f8f9fa; width: 100%; text-align: right; }
-    .inv-table input[type="number"]:focus { outline: none; border-color: #8e44ad; background: white; }
-    .inv-table input[type="text"] { padding: 7px 10px; border: 1px solid #e9ecef; border-radius: 8px; font-size: 0.82rem; background: #f8f9fa; width: 100%; }
-    .cat-header td { background: #f3e5f5; font-weight: 700; color: #8e44ad; font-size: 0.85rem; padding: 8px 14px; }
-    .stock-theorique { color: #3498db; font-weight: 600; }
-    .ecart-pos { color: #27ae60; font-weight: 700; }
-    .ecart-neg { color: #e74c3c; font-weight: 700; }
-    .ecart-zero { color: #7f8c8d; }
+.precautions { background:#fffbeb; border:1.5px solid #fbbf24; border-radius:14px; padding:16px 20px; margin-bottom:18px; }
+.precautions-title { font-weight:700; color:#92400e; font-size:.9rem; margin-bottom:12px; display:flex; align-items:center; gap:8px; cursor:pointer; }
+.precautions-body { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.precaution-item { display:flex; align-items:flex-start; gap:8px; font-size:.83rem; color:#78350f; background:#fff; border-radius:8px; padding:9px 12px; border:1px solid #fde68a; }
+.precaution-item i { color:#f59e0b; margin-top:2px; flex-shrink:0; }
 
-    /* Résumé flottant */
-    .resume-bar { position: sticky; bottom: 20px; background: linear-gradient(135deg, #8e44ad, #9b59b6); color: white; padding: 16px 24px; border-radius: 14px; box-shadow: 0 8px 30px rgba(142,68,173,0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; z-index: 100; }
-    .resume-stat { text-align: center; }
-    .resume-stat .val { font-size: 1.4rem; font-weight: 700; }
-    .resume-stat .lbl { font-size: 0.78rem; opacity: 0.8; }
-    .btn-save { background: #3498db; color: white; padding: 12px 24px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
-    .btn-valider { background: linear-gradient(135deg, #27ae60, #2ecc71); box-shadow: 0 4px 12px rgba(39,174,96,0.3); }
-    .btn-cancel-form { background: white; color: #7f8c8d; padding: 12px 24px; border-radius: 12px; font-weight: 600; border: 2px solid #e9ecef; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.btn-tb { padding:8px 14px; border-radius:9px; border:1.5px solid var(--border); font-size:.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:.15s; background:#fff; }
+.btn-tb:hover { transform:translateY(-1px); box-shadow:0 3px 10px rgba(0,0,0,.1); }
+.btn-tb-violet { border-color:#c4b5fd; color:var(--purple); background:#ede9fe; }
+.btn-tb-violet:hover { background:var(--purple); color:#fff; }
+.btn-tb-gold { border-color:#fbbf24; color:#92400e; background:var(--gold-lt); }
+.btn-tb-gold:hover { background:var(--gold); color:#fff; }
+.search-inv { padding:8px 13px; border-radius:9px; border:1.5px solid var(--border); font-size:.85rem; background:#f8f9fa; width:200px; }
+.search-inv:focus { outline:none; border-color:var(--purple); background:#fff; }
+.filter-cat { padding:8px 13px; border-radius:9px; border:1.5px solid var(--border); font-size:.83rem; background:#f8f9fa; cursor:pointer; }
+.btn-split { position:relative; display:inline-flex; }
+.btn-split-main { border-radius:9px 0 0 9px !important; }
+.btn-split-arrow { border-radius:0 9px 9px 0 !important; padding:8px 10px !important; border-left:1px solid #c4b5fd !important; }
+.split-menu { display:none; position:absolute; top:calc(100% + 4px); left:0; background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); min-width:190px; z-index:300; overflow:hidden; }
+.split-menu a { display:flex; align-items:center; gap:9px; padding:10px 14px; font-size:.83rem; font-weight:600; color:var(--text); text-decoration:none; }
+.split-menu a:hover { background:#f5f0ff; }
+.split-menu.show { display:block; }
+
+.inv-table { width:100%; border-collapse:collapse; }
+.inv-table th { background:#f8f9fa; padding:11px 12px; font-size:.73rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--border); white-space:nowrap; }
+.inv-table td { padding:9px 10px; border-bottom:1px solid #f5f5f5; vertical-align:middle; font-size:.86rem; }
+.inv-table tr.inv-row:hover { background:#fdf8ff; }
+.inv-table input[type="text"] { padding:7px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:.85rem; background:#f8f9fa; transition:.15s; }
+.inv-table input[type="text"]:focus { outline:none; border-color:var(--purple); background:#fff; box-shadow:0 0 0 3px rgba(124,58,237,.08); }
+.inv-table input.qte-comptee { width:90px; text-align:right; font-weight:700; }
+.inv-table input.qte-comptee:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(212,168,67,.12); }
+.cat-header td { background:linear-gradient(135deg,#f3e5f5,#fff); font-weight:800; color:var(--purple); font-size:.8rem; padding:8px 14px; letter-spacing:.3px; }
+.stock-theorique { color:#2563eb; font-weight:700; }
+.ecart-pos { color:var(--green); font-weight:700; }
+.ecart-neg { color:var(--red); font-weight:700; }
+.ecart-zero { color:var(--muted); }
+
+.statut-badge { padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; }
+.badge-a-compter { background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; }
+.badge-compte { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+.badge-confirme-zero { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
+.row-compte { background:#f0fff8 !important; }
+.row-confirme-zero { background:#fff5f5 !important; }
+.row-exclu { opacity:.35; }
+
+.zero-toggle { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px; border:1.5px solid #fca5a5; background:#fff5f5; cursor:pointer; transition:.15s; font-size:.8rem; color:#fca5a5; }
+.zero-toggle:hover { background:#fee2e2; border-color:var(--red); color:var(--red); }
+.zero-toggle.active { background:var(--red); border-color:var(--red); color:#fff; }
+.zero-toggle input { display:none; }
+
+.resume-bar {
+    position:sticky; bottom:18px;
+    background:linear-gradient(135deg,#1e1e2e 0%,#1a0933 100%);
+    color:#fff; padding:16px 24px; border-radius:16px;
+    box-shadow:0 12px 40px rgba(30,30,46,.45);
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+    margin-top:18px; z-index:100; border:1px solid rgba(124,58,237,.2);
+}
+.resume-stat { text-align:center; min-width:70px; }
+.resume-stat .val { font-size:1.35rem; font-weight:800; }
+.resume-stat .lbl { font-size:.72rem; opacity:.65; margin-top:1px; }
+.sep { width:1px; height:40px; background:rgba(255,255,255,.1); align-self:center; }
+.btn-action { padding:11px 22px; border-radius:11px; font-weight:700; font-size:.88rem; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:.2s; }
+.btn-action:hover { transform:translateY(-2px); }
+.btn-cancel-form { background:rgba(255,255,255,.08); color:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.15); text-decoration:none; }
+.btn-save { background:#2563eb; color:#fff; box-shadow:0 4px 14px rgba(37,99,235,.4); }
+.btn-valider { background:linear-gradient(135deg,#00a86b,#00c97f); box-shadow:0 4px 14px rgba(0,168,107,.4); }
+
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:#fff; border-radius:20px; padding:32px; max-width:460px; width:90%; box-shadow:0 24px 60px rgba(0,0,0,.35); animation:popIn .25s ease; }
+.modal-box h3 { margin:0 0 10px; color:var(--text); font-size:1.2rem; }
+.modal-box p { color:var(--muted); font-size:.9rem; margin:0 0 20px; }
+.modal-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px; }
+.ms { background:#f8f9fa; border-radius:10px; padding:12px; text-align:center; }
+.ms .v { font-size:1.3rem; font-weight:800; color:var(--text); }
+.ms .l { font-size:.73rem; color:var(--muted); margin-top:2px; }
+.modal-btns { display:flex; gap:10px; justify-content:flex-end; }
+.btn-modal-cancel { padding:10px 18px; border-radius:9px; border:1.5px solid var(--border); background:#fff; color:var(--muted); cursor:pointer; font-weight:600; font-size:.87rem; }
+.btn-modal-confirm { padding:10px 22px; border-radius:9px; border:none; cursor:pointer; font-weight:700; font-size:.87rem; color:#fff; }
+.btn-modal-confirm.green { background:linear-gradient(135deg,#00a86b,#00c97f); }
+.btn-modal-confirm.red { background:linear-gradient(135deg,var(--red),#e74c3c); }
+@keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes popIn { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+@media(max-width:768px) { .form-grid,.precautions-body{grid-template-columns:1fr} .article-checklist{grid-template-columns:1fr 1fr} }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid" style="padding:16px 20px;">
 
-    <div class="page-header">
-        <div>
-            <h2><i class="fas fa-clipboard-list mr-2"></i> {{ page_title }}</h2>
-            <p>Cave BEHANIAN — Comptage physique des stocks{% if mode == 'edit' %} · {{ inv.numero }}{% endif %}</p>
-        </div>
-        <div style="text-align:right;">
-            <div style="font-size:1.3rem;font-weight:700;">{{ articles|length }} articles</div>
-            <div style="opacity:0.8;font-size:0.88rem;">à inventorier</div>
-        </div>
-    </div>
-
-    <!-- Précautions -->
-    <div class="precautions">
-        <div class="precautions-title" onclick="togglePrecautions()">
-            <i class="fas fa-exclamation-triangle" style="color:#f9a825;"></i>
-            <span>Précautions à prendre avant de commencer l'inventaire</span>
-            <i class="fas fa-chevron-down toggle-icon" id="toggle-icon" style="margin-left:auto;"></i>
-        </div>
-        <div class="precautions-body" id="precautions-body">
-            <div class="precaution-item">
-                <i class="fas fa-ban"></i>
-                <span><strong>Arrêter tout mouvement de stock</strong> — suspendre les réceptions, sorties, casses et entrées pendant toute la durée du comptage.</span>
-            </div>
-            <div class="precaution-item">
-                <i class="fas fa-sync-alt"></i>
-                <span><strong>Tirer le stock avant inventaire</strong> — cliquer sur "Stock avant inventaire" pour pré-remplir les quantités théoriques actuelles comme base de comptage.</span>
-            </div>
-            <div class="precaution-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span><strong>Procéder zone par zone</strong> — compter étagère par étagère, chambre froide puis rayon sec, sans sauter d'article.</span>
-            </div>
-            <div class="precaution-item">
-                <i class="fas fa-user-check"></i>
-                <span><strong>Comptage à deux personnes</strong> — un compteur, un vérificateur. Ne pas interrompre le cycle une fois commencé.</span>
-            </div>
-            <div class="precaution-item">
-                <i class="fas fa-clock"></i>
-                <span><strong>Hors heures de service</strong> — réaliser l'inventaire avant l'ouverture ou après la fermeture pour éviter les mouvements parasites.</span>
-            </div>
-            <div class="precaution-item">
-                <i class="fas fa-check-circle"></i>
-                <span><strong>Valider uniquement quand terminé</strong> — utiliser "Enregistrer" pour sauvegarder en cours, "Valider" uniquement quand tout est compté.</span>
-            </div>
-        </div>
-    </div>
-
-    <form method="post" id="inv-form">
-        {% csrf_token %}
-        <input type="hidden" name="statut" id="statut-input" value="brouillon">
-
-        <!-- En-tête -->
-        <div class="form-card">
-            <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Notes</label>
-                    <input type="text" name="notes" value="{% if mode == 'edit' %}{{ inv.notes }}{% endif %}" placeholder="Ex: Inventaire mensuel Mars 2026">
+<!-- HEADER PREMIUM -->
+<div class="inv-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div style="flex:1;min-width:220px;">
+            <div class="inv-header-badge"><i class="fas fa-wine-bottle"></i> Inventaire Cave</div>
+            <h2><i class="fas fa-layer-group" style="color:var(--gold);margin-right:10px;"></i>{{ page_title }}</h2>
+            <div class="inv-header-sub">Cave BEHANIAN{% if mode == 'edit' %} · {{ inv.numero }}{% endif %} · Comptage physique des stocks boissons</div>
+            <div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <span style="font-size:.8rem;color:rgba(255,255,255,.55);font-weight:600;">Progression :</span>
+                    <span id="progress-label" style="font-size:1rem;font-weight:800;color:var(--gold);">0 / {{ articles|length }}</span>
+                </div>
+                <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+                <div class="prog-labels">
+                    <div class="prog-lbl"><span class="dot dot-compte"></span><strong id="nb-comptes">0</strong> Comptés</div>
+                    <div class="prog-lbl"><span class="dot dot-zero"></span><strong id="nb-zeros">0</strong> Confirmés zéro</div>
+                    <div class="prog-lbl"><span class="dot dot-reste"></span><strong id="nb-restants">{{ articles|length }}</strong> Restants</div>
                 </div>
             </div>
         </div>
-
-        <!-- Toolbar + Table -->
-        <div class="form-card" style="padding:0;overflow:hidden;">
-            <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-                <div style="font-weight:700;color:#2c3e50;"><i class="fas fa-boxes" style="color:#8e44ad;"></i> Articles à inventorier</div>
-                <div class="toolbar">
-                    <input type="text" class="search-inv" id="search-inv" placeholder="🔍 Filtrer un article..." oninput="filtrerInv()">
-                    <select class="filter-cat" id="filter-cat" onchange="filtrerCat(this.value)">
-                        <option value="">Toutes les catégories</option>
-                        {% for cat in articles_par_cat %}
-                        <option value="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">{{ cat.grouper|default:"Sans catégorie" }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="btn-split" id="stock-split">
-                        <button type="button" class="btn-toolbar btn-stock-avant btn-split-main" onclick="copierStock()">
-                            <i class="fas fa-copy"></i> Stock avant inventaire
-                        </button>
-                        <button type="button" class="btn-toolbar btn-stock-avant btn-split-arrow" onclick="toggleStockMenu(event)">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="split-menu" id="stock-menu">
-                            <a href="{% url 'bar:etat_stock_print' %}" target="_blank"><i class="fas fa-print" style="color:#8e44ad;"></i> Éditer en PDF</a>
-                            <a href="{% url 'bar:etat_stock_excel' %}" target="_blank"><i class="fas fa-file-excel" style="color:#27ae60;"></i> Éditer en Excel</a>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-toolbar btn-zero" onclick="toutMettreAZero()">
-                        <i class="fas fa-eraser"></i> Tout à 0
-                    </button>
-                </div>
-            </div>
-            <div style="overflow-x:auto;">
-                <table class="inv-table" id="inv-table">
-                    <thead>
-                        <tr>
-                            <th>Référence</th>
-                            <th>Désignation</th>
-                            <th style="text-align:center;">Unité</th>
-                            <th style="text-align:center;">Stock théorique</th>
-                            <th style="text-align:center;">Qté comptée <span style="color:#8e44ad;">★</span></th>
-                            <th style="text-align:center;">Écart</th>
-                            <th style="text-align:right;">Valeur écart (FCFA)</th>
-                            <th>Note</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cat in articles_par_cat %}
-                        <tr class="cat-header" data-cat="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">
-                            <td colspan="8"><i class="fas fa-tag"></i> {{ cat.grouper|default:"Sans catégorie" }}</td>
-                        </tr>
-                        {% for art in cat.list %}
-                        <tr class="inv-row"
-                            data-nom="{{ art.nom|lower }}"
-                            data-ref="{{ art.reference|lower|default:'' }}"
-                            data-prix="{{ art.prix_achat }}"
-                            data-cat="{{ art.categorie.nom|lower|default:'sans-categorie' }}">
-                            <td><span style="font-family:monospace;font-size:0.82rem;color:#8e44ad;">{{ art.reference|default:"—" }}</span></td>
-                            <td style="font-weight:600;color:#2c3e50;">{{ art.nom }}</td>
-                            <td style="text-align:center;font-size:0.85rem;color:#7f8c8d;">{{ art.unite_affichee }}</td>
-                            <td class="stock-theorique" style="text-align:center;">
-                                {{ art.quantite_stock }}
-                                <input type="hidden" name="article_id[]" value="{{ art.pk }}">
-                                <input type="hidden" name="quantite_theorique[]" class="qte-theorique" value="{{ art.quantite_stock }}">
-                            </td>
-                            <td>
-                                <input type="text" inputmode="numeric" name="quantite_comptee[]"
-                                    class="qte-comptee"
-                                    value="{{ art.quantite_stock }}"
-                                    oninput="majEcartInv(this)"
-                                    style="width:90px;">
-                            </td>
-                            <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;">✓</td>
-                            <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:#7f8c8d;">0</td>
-                            <td>
-                                <input type="text" name="notes_ligne[]" placeholder="Note..." style="width:100px;font-size:0.82rem;">
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div style="text-align:right;color:rgba(255,255,255,.4);font-size:.78rem;font-style:italic;padding-top:8px;">
+            <i class="fas fa-shield-alt" style="color:var(--gold);"></i><br>Logiciel Behanian<br>ERP Hôtelier
         </div>
+    </div>
+</div>
 
-        <!-- Résumé + Actions -->
-        <div class="resume-bar">
-            <div class="resume-stat">
-                <div class="val" id="res-articles">{{ articles|length }}</div>
-                <div class="lbl">Articles</div>
+<!-- MODE TABS -->
+<div class="mode-tabs">
+    <button type="button" class="mode-tab active" id="tab-complet" onclick="setMode('complet')">
+        <i class="fas fa-th-list"></i> Inventaire complet <small style="font-weight:400;opacity:.75;">(tous les articles)</small>
+    </button>
+    <button type="button" class="mode-tab" id="tab-partiel" onclick="setMode('partiel')">
+        <i class="fas fa-sliders-h"></i> Inventaire partiel <small style="font-weight:400;opacity:.75;">(sélection d'articles)</small>
+    </button>
+</div>
+
+<!-- Panel sélection -->
+<div class="select-panel" id="select-panel" style="display:none;">
+    <div class="select-panel-title"><span class="gold-dot"></span> Choisissez les articles à inventorier</div>
+    <input type="text" class="article-search" id="article-search-input" placeholder="🔍 Rechercher..." oninput="filtrerChecklist(this.value)">
+    <div class="article-checklist" id="article-checklist">
+        {% for cat in articles_par_cat %}{% for art in cat.list %}
+        <label class="article-check-item" data-nom="{{ art.nom|lower }}" data-ref="{{ art.reference|lower|default:'' }}">
+            <input type="checkbox" class="article-selector" value="{{ art.pk }}" checked onchange="appliquerSelection()">
+            <div>
+                <div style="font-weight:600;font-size:.82rem;">{{ art.nom }}</div>
+                <div style="font-size:.73rem;color:var(--muted);">{{ art.categorie.nom|default:"—" }}</div>
             </div>
-            <div class="resume-stat">
-                <div class="val" id="res-manquants" style="color:#ff8a80;">0</div>
-                <div class="lbl">⬇ Manquants</div>
-            </div>
-            <div class="resume-stat">
-                <div class="val" id="res-excedents" style="color:#69f0ae;">0</div>
-                <div class="lbl">⬆ Excédents</div>
-            </div>
-            <div class="resume-stat">
-                <div class="val" id="res-valeur">0 FCFA</div>
-                <div class="lbl">Valeur totale écarts</div>
-            </div>
-            <div style="display:flex;gap:10px;">
-                <a href="{% url 'bar:stock_management' %}?tab=inventaire" class="btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
-                <button type="submit" class="btn-save" onclick="document.getElementById('statut-input').value='brouillon';">
-                    <i class="fas fa-save"></i> Enregistrer (continuer plus tard)
-                </button>
-                <button type="submit" class="btn-save btn-valider"
-                    onclick="document.getElementById('statut-input').value='valide';return confirm('Valider et ajuster le stock immédiatement ?');">
-                    <i class="fas fa-check"></i> Valider &amp; Ajuster le stock
-                </button>
-            </div>
+        </label>
+        {% endfor %}{% endfor %}
+    </div>
+    <div class="select-actions">
+        <button type="button" class="btn-select-all" onclick="toutSelectionner(true)"><i class="fas fa-check-square"></i> Tout sélectionner</button>
+        <button type="button" class="btn-select-none" onclick="toutSelectionner(false)"><i class="fas fa-square"></i> Tout décocher</button>
+    </div>
+</div>
+
+<!-- PRÉCAUTIONS -->
+<div class="precautions">
+    <div class="precautions-title" onclick="togglePrec()">
+        <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i>
+        Précautions avant de commencer l'inventaire
+        <i class="fas fa-chevron-down" id="prec-icon" style="margin-left:auto;transition:.2s;"></i>
+    </div>
+    <div class="precautions-body" id="prec-body">
+        <div class="precaution-item"><i class="fas fa-ban"></i><span><strong>Arrêter tout service</strong> — aucune vente ni réception pendant le comptage.</span></div>
+        <div class="precaution-item"><i class="fas fa-sync-alt"></i><span><strong>Copier le stock théorique</strong> — pré-remplir depuis le système pour partir de la bonne base.</span></div>
+        <div class="precaution-item"><i class="fas fa-map-marker-alt"></i><span><strong>Zone par zone</strong> — réfrigérateurs, cave sèche, bar comptoir dans l'ordre.</span></div>
+        <div class="precaution-item"><i class="fas fa-user-check"></i><span><strong>Comptage à deux</strong> — un compteur, un vérificateur pour éviter les erreurs.</span></div>
+        <div class="precaution-item"><i class="fas fa-clock"></i><span><strong>Hors service</strong> — avant ouverture ou après fermeture pour éviter les mouvements parasites.</span></div>
+        <div class="precaution-item"><i class="fas fa-check-circle"></i><span><strong>Valider quand terminé</strong> — "Enregistrer" = sauvegarder, "Valider" = ajuster le stock.</span></div>
+    </div>
+</div>
+
+<!-- FORMULAIRE -->
+<form method="post" id="inv-form">
+{% csrf_token %}
+<input type="hidden" name="valider" id="valider-input" value="0">
+<input type="hidden" name="type_inventaire" id="type-inventaire-input" value="complet">
+
+<div class="form-card">
+    <div class="form-section-title"><i class="fas fa-info-circle"></i> Informations de l'inventaire</div>
+    <div class="form-grid">
+        <div class="form-group">
+            <label><i class="fas fa-calendar-alt" style="color:var(--purple);margin-right:4px;"></i>Notes / Observations</label>
+            <input type="text" name="notes" value="{% if mode == 'edit' %}{{ inv.notes }}{% endif %}" placeholder="Ex : Inventaire mensuel, avant réapprovisionnement...">
         </div>
-    </form>
+    </div>
+</div>
+
+<!-- Table articles -->
+<div class="form-card" style="padding:0;overflow:hidden;">
+    <div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#fafafa;">
+        <div style="font-weight:800;color:var(--text);font-size:.93rem;">
+            <i class="fas fa-wine-bottle" style="color:var(--purple);margin-right:6px;"></i>
+            Articles à inventorier
+            <span id="nb-articles-label" style="font-size:.78rem;font-weight:500;color:var(--muted);margin-left:6px;">{{ articles|length }} articles</span>
+        </div>
+        <div class="toolbar">
+            <input type="text" class="search-inv" id="search-inv" placeholder="🔍 Filtrer..." oninput="filtrerTable()">
+            <select class="filter-cat" id="filter-cat" onchange="filtrerTable()">
+                <option value="">Toutes catégories</option>
+                {% for cat in articles_par_cat %}
+                <option value="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">{{ cat.grouper.nom|default:"Sans catégorie" }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="btn-tb btn-tb-violet" onclick="copierStock()">
+                <i class="fas fa-copy"></i> Stock théorique
+            </button>
+            <button type="button" class="btn-tb btn-tb-gold" onclick="toutZeroVisible()">
+                <i class="fas fa-eraser"></i> Tout à zéro
+            </button>
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="inv-table" id="inv-table">
+            <thead>
+                <tr>
+                    <th style="min-width:180px;">Article</th>
+                    <th>Catégorie</th>
+                    <th style="text-align:center;">Unité</th>
+                    <th style="text-align:center;">Théorique</th>
+                    <th style="text-align:center;min-width:110px;">Statut</th>
+                    <th style="text-align:center;min-width:100px;">Qté comptée</th>
+                    <th style="text-align:center;" title="Cocher si stock réellement à zéro">⓪ Zéro</th>
+                    <th style="text-align:center;">Écart</th>
+                    <th style="text-align:right;">Valeur écart</th>
+                    <th style="min-width:100px;">Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in articles_par_cat %}
+                <tr class="cat-header" data-cat="{{ cat.grouper.nom|lower|default:'sans-categorie' }}">
+                    <td colspan="10"><i class="fas fa-tag" style="margin-right:6px;"></i>{{ cat.grouper.nom|default:"Sans catégorie" }}</td>
+                </tr>
+                {% for art in cat.list %}
+                <tr class="inv-row row-a-compter"
+                    data-id="{{ art.pk }}"
+                    data-nom="{{ art.nom|lower }}"
+                    data-ref="{{ art.reference|lower|default:'' }}"
+                    data-cmup="{{ art.cmup }}"
+                    data-cat="{{ art.categorie.nom|lower|default:'sans-categorie' }}"
+                    data-actif="1">
+                    <td>
+                        <input type="hidden" name="article_id[]" value="{{ art.pk }}">
+                        <input type="hidden" name="quantite_theorique[]" class="qte-theorique" value="{{ art.quantite_stock }}">
+                        <div style="font-weight:700;color:var(--text);">{{ art.nom }}</div>
+                        {% if art.reference %}<div style="font-size:.72rem;color:var(--purple);font-family:monospace;">{{ art.reference }}</div>{% endif %}
+                    </td>
+                    <td style="font-size:.82rem;color:var(--muted);">{{ art.categorie.nom|default:"—" }}</td>
+                    <td style="text-align:center;font-size:.83rem;font-weight:600;">{{ art.unite_affichee }}</td>
+                    <td class="stock-theorique" style="text-align:center;">{{ art.quantite_stock }}</td>
+                    <td style="text-align:center;" class="statut-cell">
+                        <span class="statut-badge badge-a-compter">● À compter</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <input type="text" inputmode="numeric" name="quantite_comptee[]"
+                            class="qte-comptee" value="" placeholder="—"
+                            oninput="majLigne(this)">
+                    </td>
+                    <td style="text-align:center;">
+                        <label class="zero-toggle" title="Confirmer que le stock est réellement à zéro">
+                            <input type="checkbox" name="confirme_zero[]" value="{{ art.pk }}" class="confirme-zero-cb"
+                                onchange="onZeroChange(this)">
+                            <i class="fas fa-circle-notch"></i>
+                        </label>
+                    </td>
+                    <td class="ecart-cell ecart-zero" style="text-align:center;font-weight:700;white-space:nowrap;">—</td>
+                    <td class="valeur-ecart-cell" style="text-align:right;font-weight:600;color:var(--muted);">—</td>
+                    <td><input type="text" name="notes_ligne[]" placeholder="Note..." style="width:100%;font-size:.8rem;"></td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- BARRE FLOTTANTE -->
+<div class="resume-bar">
+    <div class="resume-stat"><div class="val" id="res-total" style="color:var(--gold);">{{ articles|length }}</div><div class="lbl">Articles</div></div>
+    <div class="sep"></div>
+    <div class="resume-stat"><div class="val" id="res-saisis">0</div><div class="lbl">Saisis</div></div>
+    <div class="resume-stat"><div class="val" id="res-manquants" style="color:#f87171;">0</div><div class="lbl">⬇ Manquants</div></div>
+    <div class="resume-stat"><div class="val" id="res-excedents" style="color:#4ade80;">0</div><div class="lbl">⬆ Excédents</div></div>
+    <div class="sep"></div>
+    <div class="resume-stat" style="min-width:130px;"><div class="val" id="res-valeur" style="font-size:1rem;">0 FCFA</div><div class="lbl">Valeur totale écarts</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="{% url 'bar:stock_management' %}?tab=inventaire" class="btn-action btn-cancel-form"><i class="fas fa-times"></i> Annuler</a>
+        <button type="submit" class="btn-action btn-save" onclick="return presaveAction()"><i class="fas fa-save"></i> Enregistrer</button>
+        <button type="button" class="btn-action btn-valider" onclick="demanderValidation()"><i class="fas fa-check-double"></i> Valider & Ajuster</button>
+    </div>
+</div>
+</form>
+
+<!-- MODAL VALIDATION -->
+<div class="modal-overlay" id="modal-valider">
+    <div class="modal-box">
+        <h3><i class="fas fa-chart-bar" style="color:var(--gold);margin-right:8px;"></i>Confirmer la validation</h3>
+        <p id="modal-msg">Résumé du comptage avant validation définitive du stock.</p>
+        <div class="modal-stats">
+            <div class="ms"><div class="v" id="m-saisis">0</div><div class="l">Saisis</div></div>
+            <div class="ms"><div class="v" id="m-restants" style="color:var(--red);">0</div><div class="l">Non comptés</div></div>
+            <div class="ms"><div class="v" id="m-valeur">0</div><div class="l">Fcfa écart</div></div>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-modal-cancel" onclick="fermerModal()"><i class="fas fa-times"></i> Annuler</button>
+            <button class="btn-modal-confirm red" id="modal-btn-partiel" onclick="validerInventaire()" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i> Valider quand même (partiel)
+            </button>
+            <button class="btn-modal-confirm green" id="modal-btn-complet" onclick="validerInventaire()">
+                <i class="fas fa-check-double"></i> Confirmer la validation
+            </button>
+        </div>
+    </div>
+</div>
+
 </div>
 
 <script>
-function majEcartInv(el) {
+const NB_TOTAL = {{ articles|length }};
+let modePartiel = false;
+
+function majLigne(el) {
     const row = el.closest('tr');
-    const theorique = parseFloat(row.querySelector('.qte-theorique').value) || 0;
-    const comptee   = parseFloat(el.value) || 0;
-    const prix      = parseFloat(row.dataset.prix) || 0;
-    const ecart     = comptee - theorique;
-    const valeur    = ecart * prix;
-
-    const ecartCell = row.querySelector('.ecart-cell');
-    if (ecart > 0) {
-        ecartCell.textContent = '⬆ +' + ecart;
-        ecartCell.className   = 'ecart-cell ecart-pos';
-    } else if (ecart < 0) {
-        ecartCell.textContent = '⬇ ' + ecart;
-        ecartCell.className   = 'ecart-cell ecart-neg';
+    const val = el.value.trim();
+    const cb  = row.querySelector('.confirme-zero-cb');
+    if (val !== '') {
+        cb.checked = false;
+        row.querySelector('.zero-toggle').classList.remove('active');
+        row.querySelector('.zero-toggle i').className = 'fas fa-circle-notch';
+        setRowStatut(row, 'compte');
     } else {
-        ecartCell.textContent = '✓';
-        ecartCell.className   = 'ecart-cell ecart-zero';
+        if (!cb.checked) setRowStatut(row, 'a_compter');
     }
+    majEcart(row); majProgress(); majResume(); sauvegarderLocalement();
+}
 
-    const valeurCell = row.querySelector('.valeur-ecart-cell');
-    valeurCell.textContent = Math.abs(valeur).toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' FCFA';
-    valeurCell.style.color = ecart !== 0 ? '#e74c3c' : '#7f8c8d';
-    majResume();
+function onZeroChange(cb) {
+    const row    = cb.closest('tr');
+    const toggle = row.querySelector('.zero-toggle');
+    const qteInp = row.querySelector('.qte-comptee');
+    if (cb.checked) {
+        toggle.classList.add('active');
+        toggle.querySelector('i').className = 'fas fa-times-circle';
+        qteInp.value = ''; qteInp.disabled = true; qteInp.style.opacity = '.4';
+        setRowStatut(row, 'confirme_zero');
+    } else {
+        toggle.classList.remove('active');
+        toggle.querySelector('i').className = 'fas fa-circle-notch';
+        qteInp.disabled = false; qteInp.style.opacity = '1';
+        setRowStatut(row, 'a_compter');
+    }
+    majEcart(row); majProgress(); majResume(); sauvegarderLocalement();
+}
+
+function setRowStatut(row, statut) {
+    const badge = row.querySelector('.statut-badge');
+    row.classList.remove('row-a-compter','row-compte','row-confirme-zero');
+    badge.classList.remove('badge-a-compter','badge-compte','badge-confirme-zero');
+    if (statut === 'compte') { row.classList.add('row-compte'); badge.classList.add('badge-compte'); badge.innerHTML = '✓ Compté'; }
+    else if (statut === 'confirme_zero') { row.classList.add('row-confirme-zero'); badge.classList.add('badge-confirme-zero'); badge.innerHTML = '⓪ Zéro confirmé'; }
+    else { row.classList.add('row-a-compter'); badge.classList.add('badge-a-compter'); badge.innerHTML = '● À compter'; }
+}
+
+function majEcart(row) {
+    const theo = parseFloat(row.querySelector('.qte-theorique').value) || 0;
+    const cb   = row.querySelector('.confirme-zero-cb');
+    const qte  = row.querySelector('.qte-comptee');
+    const cmup = parseFloat(row.dataset.cmup) || 0;
+    const ecC  = row.querySelector('.ecart-cell');
+    const valC = row.querySelector('.valeur-ecart-cell');
+    let comptee, ecart;
+    if (cb.checked) { comptee = 0; ecart = -theo; }
+    else if (qte.value.trim() !== '') { comptee = parseFloat(qte.value) || 0; ecart = comptee - theo; }
+    else { ecC.textContent = '—'; ecC.className = 'ecart-cell ecart-zero'; valC.textContent = '—'; valC.style.color = 'var(--muted)'; return; }
+    const valeur = ecart * cmup;
+    if (ecart > 0) { ecC.textContent = '⬆ +' + ecart; ecC.className = 'ecart-cell ecart-pos'; }
+    else if (ecart < 0) { ecC.textContent = '⬇ ' + ecart; ecC.className = 'ecart-cell ecart-neg'; }
+    else { ecC.textContent = '✓ 0'; ecC.className = 'ecart-cell ecart-zero'; }
+    valC.textContent = Math.abs(valeur).toLocaleString('fr-FR',{maximumFractionDigits:0}) + ' FCFA';
+    valC.style.color = ecart !== 0 ? 'var(--red)' : 'var(--muted)';
+}
+
+function majProgress() {
+    let compte = 0, zero = 0, total = 0;
+    document.querySelectorAll('.inv-row').forEach(row => {
+        if (row.dataset.actif !== '1') return;
+        total++;
+        const cb = row.querySelector('.confirme-zero-cb');
+        const qte = row.querySelector('.qte-comptee');
+        if (cb.checked) zero++; else if (qte.value.trim() !== '') compte++;
+    });
+    const saisis = compte + zero, pct = total > 0 ? Math.round(saisis/total*100) : 0;
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = saisis + ' / ' + total;
+    document.getElementById('nb-comptes').textContent = compte;
+    document.getElementById('nb-zeros').textContent = zero;
+    document.getElementById('nb-restants').textContent = total - saisis;
 }
 
 function majResume() {
-    let nbM = 0, nbE = 0, valTot = 0;
+    let nbM = 0, nbE = 0, valTot = 0, saisis = 0, total = 0;
     document.querySelectorAll('.inv-row').forEach(row => {
-        if (row.style.display === 'none') return;
-        const theo  = parseFloat(row.querySelector('.qte-theorique').value) || 0;
-        const comp  = parseFloat(row.querySelector('.qte-comptee').value) || 0;
-        const prix  = parseFloat(row.dataset.prix) || 0;
-        const ecart = comp - theo;
-        if (ecart < 0) nbM++;
-        if (ecart > 0) nbE++;
-        if (ecart !== 0) valTot += Math.abs(ecart * prix);
+        if (row.dataset.actif !== '1' || row.style.display === 'none') return;
+        total++;
+        const theo = parseFloat(row.querySelector('.qte-theorique').value) || 0;
+        const cb   = row.querySelector('.confirme-zero-cb');
+        const qte  = row.querySelector('.qte-comptee');
+        const cmup = parseFloat(row.dataset.cmup) || 0;
+        let ecart = null;
+        if (cb.checked) { ecart = -theo; saisis++; }
+        else if (qte.value.trim() !== '') { ecart = (parseFloat(qte.value)||0) - theo; saisis++; }
+        if (ecart !== null) { if (ecart < 0) nbM++; if (ecart > 0) nbE++; if (ecart !== 0) valTot += Math.abs(ecart * cmup); }
     });
+    document.getElementById('res-total').textContent = total;
+    document.getElementById('res-saisis').textContent = saisis;
     document.getElementById('res-manquants').textContent = nbM;
     document.getElementById('res-excedents').textContent = nbE;
-    document.getElementById('res-valeur').textContent = valTot.toLocaleString('fr-FR', {maximumFractionDigits:0}) + ' FCFA';
+    document.getElementById('res-valeur').textContent = valTot.toLocaleString('fr-FR',{maximumFractionDigits:0}) + ' FCFA';
 }
 
-function filtrerInv() {
-    const q   = (document.getElementById('search-inv').value || '').toLowerCase();
+function demanderValidation() {
+    let saisis = 0, restants = 0, valTot = 0;
+    document.querySelectorAll('.inv-row').forEach(row => {
+        if (row.dataset.actif !== '1') return;
+        const cb = row.querySelector('.confirme-zero-cb');
+        const qte = row.querySelector('.qte-comptee');
+        const theo = parseFloat(row.querySelector('.qte-theorique').value) || 0;
+        const cmup = parseFloat(row.dataset.cmup) || 0;
+        let ecart = null;
+        if (cb.checked) { saisis++; ecart = -theo; }
+        else if (qte.value.trim() !== '') { saisis++; ecart = (parseFloat(qte.value)||0) - theo; }
+        else restants++;
+        if (ecart !== null && ecart !== 0) valTot += Math.abs(ecart * cmup);
+    });
+    document.getElementById('m-saisis').textContent = saisis;
+    document.getElementById('m-restants').textContent = restants;
+    document.getElementById('m-valeur').textContent = valTot.toLocaleString('fr-FR',{maximumFractionDigits:0});
+    if (saisis === 0) { alert("❌ Impossible de valider : aucun article n'a été compté."); return; }
+    if (restants > 0) {
+        document.getElementById('modal-msg').textContent = '⚠️ ' + restants + ' article(s) non comptés seront ignorés.';
+        document.getElementById('modal-btn-partiel').style.display = '';
+        document.getElementById('modal-btn-complet').style.display = 'none';
+    } else {
+        document.getElementById('modal-msg').textContent = '✅ Tous les articles ont été comptés. La validation ajustera le stock.';
+        document.getElementById('modal-btn-partiel').style.display = 'none';
+        document.getElementById('modal-btn-complet').style.display = '';
+    }
+    document.getElementById('modal-valider').classList.add('open');
+}
+function fermerModal() { document.getElementById('modal-valider').classList.remove('open'); }
+function validerInventaire() { fermerModal(); document.getElementById('valider-input').value = '1'; try{localStorage.removeItem('inv_cave_draft');}catch(e){} document.getElementById('inv-form').submit(); }
+function presaveAction() { document.getElementById('valider-input').value = '0'; try{localStorage.removeItem('inv_cave_draft');}catch(e){} return true; }
+
+function copierStock() {
+    document.querySelectorAll('.inv-row').forEach(row => {
+        if (row.dataset.actif !== '1' || row.style.display === 'none') return;
+        const theo = row.querySelector('.qte-theorique').value;
+        const qte  = row.querySelector('.qte-comptee');
+        const cb   = row.querySelector('.confirme-zero-cb');
+        cb.checked = false; row.querySelector('.zero-toggle').classList.remove('active');
+        row.querySelector('.zero-toggle i').className = 'fas fa-circle-notch';
+        qte.disabled = false; qte.style.opacity = '1';
+        qte.value = parseInt(theo) || 0;
+        setRowStatut(row, 'compte'); majEcart(row);
+    });
+    majProgress(); majResume();
+}
+
+function toutZeroVisible() {
+    if (!confirm('Confirmer que tous les articles visibles sont à zéro ?')) return;
+    document.querySelectorAll('.inv-row').forEach(row => {
+        if (row.dataset.actif !== '1' || row.style.display === 'none') return;
+        const cb = row.querySelector('.confirme-zero-cb');
+        const qte = row.querySelector('.qte-comptee');
+        cb.checked = true; row.querySelector('.zero-toggle').classList.add('active');
+        row.querySelector('.zero-toggle i').className = 'fas fa-times-circle';
+        qte.value = ''; qte.disabled = true; qte.style.opacity = '.4';
+        setRowStatut(row, 'confirme_zero'); majEcart(row);
+    });
+    majProgress(); majResume();
+}
+
+function filtrerTable() {
+    const q = (document.getElementById('search-inv').value || '').toLowerCase();
     const cat = document.getElementById('filter-cat').value;
     document.querySelectorAll('.inv-row').forEach(row => {
-        const nomOk = !q || (row.dataset.nom || '').includes(q) || (row.dataset.ref || '').includes(q);
+        if (row.dataset.actif !== '1') { row.style.display = 'none'; return; }
+        const nomOk = !q || (row.dataset.nom||'').includes(q) || (row.dataset.ref||'').includes(q);
         const catOk = !cat || row.dataset.cat === cat;
         row.style.display = (nomOk && catOk) ? '' : 'none';
     });
-    majCatHeaders();
-    majResume();
-}
-
-function filtrerCat(val) {
-    document.getElementById('search-inv').value = '';
-    document.querySelectorAll('.inv-row').forEach(row => {
-        row.style.display = !val || row.dataset.cat === val ? '' : 'none';
-    });
-    majCatHeaders();
-    majResume();
+    majCatHeaders(); majResume();
 }
 
 function majCatHeaders() {
     document.querySelectorAll('.cat-header').forEach(h => {
-        const cat  = h.dataset.cat;
-        const rows = document.querySelectorAll(`.inv-row[data-cat="${cat}"]`);
-        const any  = Array.from(rows).some(r => r.style.display !== 'none');
+        const cat = h.dataset.cat;
+        const any = Array.from(document.querySelectorAll(`.inv-row[data-cat="${cat}"]`)).some(r => r.style.display !== 'none' && r.dataset.actif === '1');
         h.style.display = any ? '' : 'none';
     });
 }
 
-function copierStock() {
+function setMode(mode) {
+    modePartiel = (mode === 'partiel');
+    document.getElementById('tab-complet').classList.toggle('active', !modePartiel);
+    document.getElementById('tab-partiel').classList.toggle('active', modePartiel);
+    document.getElementById('select-panel').style.display = modePartiel ? '' : 'none';
+    document.getElementById('type-inventaire-input').value = modePartiel ? 'partiel' : 'complet';
+    if (!modePartiel) {
+        document.querySelectorAll('.inv-row').forEach(row => { row.dataset.actif = '1'; row.classList.remove('row-exclu'); });
+    }
+    filtrerTable(); majProgress(); majResume();
+}
+
+function appliquerSelection() {
+    const selected = new Set();
+    document.querySelectorAll('.article-selector:checked').forEach(cb => selected.add(cb.value));
     document.querySelectorAll('.inv-row').forEach(row => {
-        if (row.style.display === 'none') return;
-        const th  = parseFloat(row.querySelector('.qte-theorique').value) || 0;
-        const inp = row.querySelector('.qte-comptee');
-        inp.value = th;
-        majEcartInv(inp);
+        const actif = selected.has(row.dataset.id);
+        row.dataset.actif = actif ? '1' : '0';
+        row.classList.toggle('row-exclu', !actif);
+        const hId = row.querySelector('input[name="article_id[]"]');
+        const hQte = row.querySelector('input[name="quantite_theorique[]"]');
+        if (hId) hId.disabled = !actif;
+        if (hQte) hQte.disabled = !actif;
     });
+    document.getElementById('nb-articles-label').textContent = selected.size + ' article(s) sélectionné(s)';
+    filtrerTable(); majProgress(); majResume();
 }
 
-function toutMettreAZero() {
-    if (!confirm('Mettre toutes les quantités comptées à 0 ?')) return;
-    document.querySelectorAll('.inv-row').forEach(row => {
-        if (row.style.display === 'none') return;
-        const inp = row.querySelector('.qte-comptee');
-        inp.value = 0;
-        majEcartInv(inp);
-    });
+function filtrerChecklist(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('.article-check-item').forEach(item => { item.style.display = !q || (item.dataset.nom||'').includes(q) || (item.dataset.ref||'').includes(q) ? '' : 'none'; });
 }
 
-function togglePrecautions() {
-    const body = document.getElementById('precautions-body');
-    const icon = document.getElementById('toggle-icon');
-    const visible = body.style.display !== 'none';
-    body.style.display = visible ? 'none' : 'grid';
-    icon.style.transform = visible ? 'rotate(-90deg)' : 'rotate(0deg)';
+function toutSelectionner(val) {
+    document.querySelectorAll('.article-selector').forEach(cb => cb.checked = val);
+    appliquerSelection();
 }
 
-// Pré-remplissage (mode continuer)
+function togglePrec() {
+    const b = document.getElementById('prec-body'); const i = document.getElementById('prec-icon');
+    const v = b.style.display !== 'none'; b.style.display = v ? 'none' : 'grid'; i.style.transform = v ? 'rotate(-90deg)' : '';
+}
+
 const PREFILL = {{ prefill_json|default:"{}"|safe }};
 if (Object.keys(PREFILL).length) {
     document.querySelectorAll('input[name="article_id[]"]').forEach(hidden => {
-        const data = PREFILL[parseInt(hidden.value)];
-        if (!data) return;
-        const row      = hidden.closest('tr');
-        const qteInp   = row.querySelector('.qte-comptee');
-        const notesInp = row.querySelector('input[name="notes_ligne[]"]');
-        if (qteInp)   { qteInp.value = data.qte; majEcartInv(qteInp); }
-        if (notesInp && data.notes) notesInp.value = data.notes;
+        const data = PREFILL[parseInt(hidden.value)]; if (!data) return;
+        const row = hidden.closest('tr');
+        const qte = row.querySelector('.qte-comptee');
+        const cb  = row.querySelector('.confirme-zero-cb');
+        const tog = row.querySelector('.zero-toggle');
+        const n   = row.querySelector('input[name="notes_ligne[]"]');
+        if (data.statut === 'confirme_zero') {
+            cb.checked = true; tog.classList.add('active'); tog.querySelector('i').className = 'fas fa-times-circle';
+            if (qte) { qte.disabled = true; qte.style.opacity = '.4'; }
+            setRowStatut(row, 'confirme_zero');
+        } else if (data.statut === 'compte' && data.qte !== '') {
+            if (qte) qte.value = data.qte;
+            setRowStatut(row, 'compte');
+        }
+        if (n && data.notes) n.value = data.notes;
+        majEcart(row);
     });
-} else {
-    // Init écarts
-    document.querySelectorAll('.qte-comptee').forEach(inp => majEcartInv(inp));
 }
 
-function toggleStockMenu(e) {
-    e.stopPropagation();
-    document.getElementById('stock-menu').classList.toggle('show');
-}
-document.addEventListener('click', function() {
-    document.getElementById('stock-menu').classList.remove('show');
-});
-
-document.getElementById('inv-form').addEventListener('submit', function() {
-    try { localStorage.removeItem('inv_bar_draft'); } catch(e) {}
-});
-
-// ── KEEPALIVE : ping toutes les 8 min pour maintenir la session ──────────────
-setInterval(function() {
-    fetch('/session/ping/', {credentials: 'same-origin'}).catch(function(){});
-}, 8 * 60 * 1000);
-
-// ── SAUVEGARDE LOCALE (localStorage) ─────────────────────────────────────────
-const LS_KEY = 'inv_bar_draft';
-
+const LS_KEY = 'inv_cave_draft';
 function sauvegarderLocalement() {
     try {
         const data = {};
-        document.querySelectorAll('input[name="article_id[]"]').forEach(function(hidden) {
-            const row   = hidden.closest('tr');
-            const qte   = row.querySelector('.qte-comptee');
-            const notes = row.querySelector('input[name="notes_ligne[]"]');
-            if (qte) data[hidden.value] = { qte: qte.value, notes: notes ? notes.value : '' };
+        document.querySelectorAll('input[name="article_id[]"]').forEach(h => {
+            const row = h.closest('tr');
+            const qte = row.querySelector('.qte-comptee');
+            const cb  = row.querySelector('.confirme-zero-cb');
+            const n   = row.querySelector('input[name="notes_ligne[]"]');
+            data[h.value] = { qte: qte ? qte.value : '', cb: cb ? cb.checked : false, notes: n ? n.value : '' };
         });
-        localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), data: data }));
+        localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), data }));
     } catch(e) {}
 }
-
 function restaurerDepuisLocal() {
     try {
         const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
         if (!saved || !saved.data || Object.keys(saved.data).length === 0) return;
         const age = Math.round((Date.now() - saved.ts) / 60000);
-        if (age > 480) { localStorage.removeItem(LS_KEY); return; } // expirer après 8h
-        if (!confirm('Des données de saisie non sauvegardées ont été retrouvées (il y a ' + age + ' min).\nVoulez-vous les restaurer ?')) {
-            localStorage.removeItem(LS_KEY); return;
-        }
-        document.querySelectorAll('input[name="article_id[]"]').forEach(function(hidden) {
-            const d = saved.data[hidden.value];
-            if (!d) return;
-            const row   = hidden.closest('tr');
-            const qte   = row.querySelector('.qte-comptee');
-            const notes = row.querySelector('input[name="notes_ligne[]"]');
-            if (qte)   { qte.value = d.qte; majEcartInv(qte); }
-            if (notes) notes.value = d.notes || '';
+        if (age > 480) { localStorage.removeItem(LS_KEY); return; }
+        if (!confirm('Données non enregistrées retrouvées (il y a ' + age + ' min).\nRestaurer ?')) { localStorage.removeItem(LS_KEY); return; }
+        document.querySelectorAll('input[name="article_id[]"]').forEach(h => {
+            const d = saved.data[h.value]; if (!d) return;
+            const row = h.closest('tr'); const qte = row.querySelector('.qte-comptee');
+            const cb = row.querySelector('.confirme-zero-cb'); const tog = row.querySelector('.zero-toggle');
+            const n = row.querySelector('input[name="notes_ligne[]"]');
+            if (d.cb) { cb.checked = true; tog.classList.add('active'); tog.querySelector('i').className = 'fas fa-times-circle'; if (qte) { qte.disabled = true; qte.style.opacity = '.4'; } setRowStatut(row, 'confirme_zero'); }
+            else if (d.qte && qte) { qte.value = d.qte; setRowStatut(row, 'compte'); }
+            if (n && d.notes) n.value = d.notes;
+            majEcart(row);
         });
     } catch(e) {}
 }
-
-// Auto-save toutes les 2 minutes + à chaque saisie
-document.querySelectorAll('.qte-comptee, input[name="notes_ligne[]"]').forEach(function(inp) {
-    inp.addEventListener('input', sauvegarderLocalement);
-});
+document.querySelectorAll('.qte-comptee, input[name="notes_ligne[]"]').forEach(inp => inp.addEventListener('input', sauvegarderLocalement));
 setInterval(sauvegarderLocalement, 2 * 60 * 1000);
+document.getElementById('inv-form').addEventListener('submit', () => { try{localStorage.removeItem(LS_KEY);}catch(e){} });
+setInterval(() => fetch('/session/ping/', {credentials:'same-origin'}).catch(()=>{}), 8 * 60 * 1000);
 
-// Restaurer au chargement de la page (seulement si pas déjà en mode édition PREFILL)
-if (Object.keys(PREFILL).length === 0) {
-    restaurerDepuisLocal();
-}
+if (Object.keys(PREFILL).length === 0) restaurerDepuisLocal();
+document.querySelectorAll('.inv-row').forEach(row => majEcart(row));
+majProgress(); majResume();
 </script>
 {% endblock %}

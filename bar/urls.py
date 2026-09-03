@@ -50,6 +50,7 @@ urlpatterns = [
     path('inventaire/<int:pk>/valider/', views.inventaire_valider, name='inventaire_valider'),
     path('inventaire/<int:pk>/annuler/', views.inventaire_annuler, name='inventaire_annuler'),
     path('inventaire/<int:pk>/print/', views.inventaire_print, name='inventaire_print'),
+    path('inventaire/<int:pk>/correction/', views.inventaire_correction, name='inventaire_correction'),
 
     # Casses
     path('api/vente/', views.api_vente_create, name='api_vente'),

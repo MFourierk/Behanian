@@ -1167,6 +1167,8 @@
                     <thead>
                         <tr>
                             <th>N° Inventaire</th>
+                            <th>Type</th>
+                            <th>Correction de</th>
                             <th>Date création</th>
                             <th>Articles</th>
                             <th>Écarts</th>
@@ -1181,16 +1183,34 @@
                         {% for inv in inventaires %}
                         <tr>
                             <td><span style="font-family:monospace;font-weight:700;color:#8e44ad;font-size:0.85rem;">{{ inv.numero }}</span></td>
+                            <td>
+                                {% if inv.type_inventaire == 'complet' %}
+                                    <span style="background:#ede9fe;color:#5b21b6;padding:3px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;">Complet</span>
+                                {% elif inv.type_inventaire == 'partiel' %}
+                                    <span style="background:#e0f2fe;color:#0369a1;padding:3px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;">Partiel</span>
+                                {% elif inv.type_inventaire == 'correction' %}
+                                    <span style="background:#fff7ed;color:#c2410c;padding:3px 8px;border-radius:12px;font-size:0.75rem;font-weight:700;">⚠ Correction</span>
+                                {% else %}
+                                    <span style="color:#7f8c8d;">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.82rem;">
+                                {% if inv.inventaire_source %}
+                                    <a href="{% url 'bar:inventaire_detail' inv.inventaire_source.pk %}" style="color:#c2410c;font-family:monospace;font-weight:600;">{{ inv.inventaire_source.numero }}</a>
+                                {% else %}—{% endif %}
+                            </td>
                             <td style="font-size:0.85rem;color:#7f8c8d;">{{ inv.date_creation|date:"d/m/Y H:i" }}</td>
-                            <td style="font-weight:600;">{{ inv.nb_lignes }}</td>
+                            <td style="font-weight:600;">
+                                {{ inv.nb_lignes }}
+                                {% if inv.statut == 'brouillon' and inv.nb_lignes > 0 %}
+                                    <small style="color:#f59e0b;font-weight:500;"> ({{ inv.nb_saisis }}/{{ inv.nb_lignes }} saisis)</small>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% with ecarts=inv.nb_ecarts %}
-                                {% if ecarts > 0 %}
-                                    <span style="color:#e74c3c;font-weight:700;">{{ ecarts }}</span>
-                                {% else %}
-                                    <span style="color:#27ae60;font-weight:700;">✓ 0</span>
-                                {% endif %}
-                                {% endwith %}
+                                {% if ecarts > 0 %}<span style="color:#e74c3c;font-weight:700;">{{ ecarts }}</span>
+                                {% else %}<span style="color:#27ae60;font-weight:700;">✓ 0</span>
+                                {% endif %}{% endwith %}
                             </td>
                             <td style="font-weight:600;color:#e74c3c;">{{ inv.valeur_ecart_total|montant }} FCFA</td>
                             <td style="font-size:0.85rem;">{% if inv.cree_par %}{{ inv.cree_par.get_full_name|default:inv.cree_par.username }}{% else %}—{% endif %}</td>
@@ -1206,6 +1226,7 @@
                             <td>
                                 <div class="action-group">
                                     <a href="{% url 'bar:inventaire_detail' inv.pk %}" class="btn-action" style="background:#f3e5f5;color:#8e44ad;" title="Voir détail"><i class="fas fa-eye"></i></a>
+                                    <a href="{% url 'bar:inventaire_print' inv.pk %}" class="btn-action" style="background:#f1f5f9;color:#64748b;" title="Imprimer" target="_blank"><i class="fas fa-print"></i></a>
                                     {% if inv.statut == "brouillon" %}
                                     <a href="{% url 'bar:inventaire_edit' inv.pk %}" class="btn-action" style="background:#e8f4fd;color:#3498db;" title="Continuer la saisie"><i class="fas fa-edit"></i></a>
                                     <form method="post" action="{% url 'bar:inventaire_valider' inv.pk %}" style="display:inline;" onsubmit="return confirm('Valider et ajuster le stock ?')">
@@ -1217,11 +1238,18 @@
                                         <button type="submit" class="btn-action btn-del" title="Annuler"><i class="fas fa-times"></i></button>
                                     </form>
                                     {% endif %}
+                                    {% if inv.statut == "valide" and inv.type_inventaire != 'correction' and request.user.is_superuser %}
+                                    <form method="post" action="{% url 'bar:inventaire_correction' inv.pk %}" style="display:inline;"
+                                        onsubmit="return confirm('Créer une correction pour annuler les écarts de ' + '{{ inv.numero }}' + ' ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;" title="Créer une correction (admin)"><i class="fas fa-undo"></i></button>
+                                    </form>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="9">
+                        <tr><td colspan="11">
                             <div class="empty-state">
                                 <i class="fas fa-clipboard-list"></i>
                                 <p>Aucun inventaire créé.</p>

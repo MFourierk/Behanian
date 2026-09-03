@@ -98,8 +98,9 @@ def stock_management(request):
         mouvements = mouvements.filter(type_mouvement=mvt_type)
 
     # Inventaires
-    inventaires = InventaireCuisine.objects.select_related('cree_par').order_by('-date_creation')
+    inventaires = InventaireCuisine.objects.select_related('cree_par', 'valide_par', 'inventaire_source').order_by('-date_creation')
     inv_brouillons = inventaires.filter(statut='brouillon')
+    nb_ingredients_actifs = ingredients.count()
 
     # Casses
     casses = CasseCuisine.objects.select_related('cree_par').all()
@@ -131,8 +132,9 @@ def stock_management(request):
         'mouvements':     mouvements[:50],
         'mvt_type':       mvt_type,
         # Inventaires & Casses
-        'inventaires':    inventaires,
-        'inv_brouillons': inv_brouillons,
+        'inventaires':           inventaires,
+        'inv_brouillons':        inv_brouillons,
+        'nb_ingredients_actifs': nb_ingredients_actifs,
         'casses':         casses,
         # Analyse des sorties
         'sorties_par_type': _sorties_par_type_cuisine(),
@@ -1124,9 +1126,13 @@ def fiche_comptage(request):
 def inventaire_create(request):
     ingredients = Ingredient.objects.filter(statut=True).select_related('categorie', 'unite_stock')
     if request.method == 'POST':
+        type_inv = request.POST.get('type_inventaire', 'complet')
+        if type_inv not in ('complet', 'partiel'):
+            type_inv = 'complet'
         inv = InventaireCuisine(
             date_inventaire=request.POST.get('date_inventaire') or timezone.now().date(),
             notes=request.POST.get('notes', ''),
+            type_inventaire=type_inv,
             cree_par=request.user,
         )
         inv.save()
@@ -1140,25 +1146,42 @@ def inventaire_create(request):
         th_list    = request.POST.getlist('quantite_theorique[]')
         ph_list    = request.POST.getlist('quantite_physique[]')
         notes_list = request.POST.getlist('notes_ligne[]')
+        zero_ids   = set(request.POST.getlist('confirme_zero[]'))
+
         for i, ing_id in enumerate(ing_ids):
             if not ing_id:
                 continue
             ph_raw = (ph_list[i] if i < len(ph_list) else '').strip()
-            if not ph_raw:
-                # Champ non saisi : ne pas créer de ligne → stock inchangé à la validation
-                continue
+            ing_id_str = str(ing_id)
+
+            if ing_id_str in zero_ids:
+                statut = 'confirme_zero'
+                ph     = Decimal('0')
+            elif ph_raw:
+                statut = 'compte'
+                ph     = _dec(ph_raw)
+            else:
+                continue  # non touché — stock inchangé
+
             LigneInventaireCuisine.objects.create(
                 inventaire=inv,
                 ingredient_id=ing_id,
                 quantite_theorique=_dec(th_list[i]) if i < len(th_list) else 0,
-                quantite_physique=_dec(ph_raw),
+                quantite_physique=ph,
+                statut=statut,
                 notes_ligne=notes_list[i] if i < len(notes_list) else '',
             )
+
+        nb_saisis = inv.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
         if request.POST.get('valider') == '1':
+            if nb_saisis == 0:
+                messages.error(request, "Impossible de valider : aucun article n'a été compté.")
+                inv.delete()
+                return redirect('/cuisine/stock/?tab=inventaire')
             inv.valider(request.user)
-            messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
+            messages.success(request, f"Inventaire {inv.numero} validé — {nb_saisis} article(s) ajusté(s).")
         else:
-            messages.success(request, f"Inventaire {inv.numero} enregistré.")
+            messages.success(request, f"Inventaire {inv.numero} enregistré — {nb_saisis} article(s) saisi(s).")
         return redirect('/cuisine/stock/?tab=inventaire')
     context = {
         'page_title':   'Nouvel Inventaire — Cuisine',
@@ -1208,35 +1231,55 @@ def inventaire_edit(request, pk):
         ph_list    = request.POST.getlist('quantite_physique[]')
         notes_list = request.POST.getlist('notes_ligne[]')
 
+        zero_ids = set(request.POST.getlist('confirme_zero[]'))
+
         for i, ing_id in enumerate(ing_ids):
             if not ing_id:
                 continue
-            ph_raw = (ph_list[i] if i < len(ph_list) else '').strip()
-            if ph_raw:
-                LigneInventaireCuisine.objects.update_or_create(
-                    inventaire=inv,
-                    ingredient_id=ing_id,
-                    defaults={
-                        'quantite_theorique': _dec(th_list[i]) if i < len(th_list) else Decimal('0'),
-                        'quantite_physique':  _dec(ph_raw),
-                        'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
-                    }
-                )
-            else:
-                # Champ effacé : supprimer la ligne si elle existe (stock inchangé à la validation)
-                LigneInventaireCuisine.objects.filter(inventaire=inv, ingredient_id=ing_id).delete()
+            ph_raw     = (ph_list[i] if i < len(ph_list) else '').strip()
+            ing_id_str = str(ing_id)
 
+            if ing_id_str in zero_ids:
+                statut = 'confirme_zero'
+                ph     = Decimal('0')
+            elif ph_raw:
+                statut = 'compte'
+                ph     = _dec(ph_raw)
+            else:
+                # Champ effacé → retirer la ligne (stock inchangé)
+                LigneInventaireCuisine.objects.filter(inventaire=inv, ingredient_id=ing_id).delete()
+                continue
+
+            LigneInventaireCuisine.objects.update_or_create(
+                inventaire=inv,
+                ingredient_id=ing_id,
+                defaults={
+                    'quantite_theorique': _dec(th_list[i]) if i < len(th_list) else Decimal('0'),
+                    'quantite_physique':  ph,
+                    'statut':             statut,
+                    'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
+                }
+            )
+
+        nb_saisis = inv.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
         if request.POST.get('valider') == '1':
+            if nb_saisis == 0:
+                messages.error(request, "Impossible de valider : aucun article n'a été compté.")
+                return redirect('/cuisine/stock/?tab=inventaire')
             inv.valider(request.user)
-            messages.success(request, f"Inventaire {inv.numero} validé.")
+            messages.success(request, f"Inventaire {inv.numero} validé — {nb_saisis} article(s) ajusté(s).")
         else:
-            messages.success(request, f"Inventaire {inv.numero} mis à jour.")
+            messages.success(request, f"Inventaire {inv.numero} mis à jour — {nb_saisis} article(s) saisi(s).")
         return redirect('/cuisine/stock/?tab=inventaire')
 
     import json
     lignes_dict = {l.ingredient_id: l for l in inv.lignes.all()}
     prefill = {
-        ing_id: {'qte': str(l.quantite_physique), 'notes': l.notes_ligne}
+        ing_id: {
+            'qte':    str(l.quantite_physique) if l.quantite_physique is not None else '',
+            'notes':  l.notes_ligne,
+            'statut': l.statut,
+        }
         for ing_id, l in lignes_dict.items()
     }
 
@@ -1267,9 +1310,13 @@ def inventaire_print(request, pk):
 def inventaire_valider(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
     if request.method == 'POST':
+        nb_saisis = inv.nb_saisis
+        if nb_saisis == 0:
+            messages.error(request, f"Impossible de valider {inv.numero} : aucun article n'a été compté.")
+            return redirect('/cuisine/stock/?tab=inventaire')
         ok = inv.valider(request.user)
         if ok:
-            messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
+            messages.success(request, f"Inventaire {inv.numero} validé — {nb_saisis} article(s) ajusté(s).")
         else:
             messages.error(request, "Impossible de valider.")
     return redirect('/cuisine/stock/?tab=inventaire')

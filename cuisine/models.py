@@ -590,14 +590,23 @@ class InventaireCuisine(models.Model):
             self.numero = f"INV-CUI-{timezone.now().year}-{new_id:04d}"
         super().save(*args, **kwargs)
 
+    @property
+    def nb_saisis(self):
+        return self.lignes.filter(statut__in=['compte', 'confirme_zero']).count()
+
+    @property
+    def nb_total(self):
+        return self.lignes.count()
+
     def valider(self, user):
         from django.db import transaction as _tx
         if self.statut != 'brouillon':
             return False
         with _tx.atomic():
-            for ligne in self.lignes.select_related('ingredient').all():
+            for ligne in self.lignes.filter(statut__in=['compte', 'confirme_zero']).select_related('ingredient').all():
                 ing   = ligne.ingredient
-                ecart = ligne.quantite_physique - ligne.quantite_theorique
+                qte_ph = ligne.quantite_physique if ligne.quantite_physique is not None else Decimal('0')
+                ecart = qte_ph - ligne.quantite_theorique
                 if ecart > 0:
                     type_mv = 'inventaire_excedent'
                     qte     = ecart
@@ -615,13 +624,12 @@ class InventaireCuisine(models.Model):
                     quantite       = qte,
                     commentaire    = (
                         f"Inventaire {self.numero} — "
-                        f"Théorique: {ligne.quantite_theorique} → Compté: {ligne.quantite_physique}"
+                        f"Théorique: {ligne.quantite_theorique} → Compté: {qte_ph}"
                         + (f" (écart: {'+' if ecart > 0 else ''}{ecart})" if ecart != 0 else " (conforme)")
                     ),
                     utilisateur    = user,
                 )
-                # Forcer le stock au physique compté (évite les décalages du save() stale)
-                Ingredient.objects.filter(pk=ing.pk).update(quantite_stock=ligne.quantite_physique)
+                Ingredient.objects.filter(pk=ing.pk).update(quantite_stock=qte_ph)
                 ligne.valeur_ecart = ecart * cmup_moment
                 ligne.save()
             self.statut          = 'valide'
@@ -640,15 +648,24 @@ class InventaireCuisine(models.Model):
 
 
 class LigneInventaireCuisine(models.Model):
+    STATUT_CHOICES = [
+        ('a_compter',    'À compter'),
+        ('compte',       'Compté'),
+        ('confirme_zero','Confirmé à zéro'),
+    ]
+
     inventaire          = models.ForeignKey(InventaireCuisine, on_delete=models.CASCADE, related_name='lignes')
     ingredient          = models.ForeignKey(Ingredient, on_delete=models.PROTECT, verbose_name="Ingrédient")
     quantite_theorique  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté théorique (stock)")
-    quantite_physique   = models.DecimalField(max_digits=12, decimal_places=3, default=0, verbose_name="Qté physique (comptée)")
+    quantite_physique   = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Qté physique (comptée)")
+    statut              = models.CharField(max_length=20, choices=STATUT_CHOICES, default='a_compter', verbose_name="Statut")
     valeur_ecart        = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne         = models.CharField(max_length=200, blank=True, verbose_name="Note")
 
     @property
     def ecart(self):
+        if self.quantite_physique is None:
+            return Decimal('0')
         return self.quantite_physique - self.quantite_theorique
 
     class Meta:
