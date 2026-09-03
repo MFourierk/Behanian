@@ -1141,14 +1141,19 @@ def inventaire_create(request):
         ph_list    = request.POST.getlist('quantite_physique[]')
         notes_list = request.POST.getlist('notes_ligne[]')
         for i, ing_id in enumerate(ing_ids):
-            if ing_id:
-                LigneInventaireCuisine.objects.create(
-                    inventaire=inv,
-                    ingredient_id=ing_id,
-                    quantite_theorique=_dec(th_list[i]) if i < len(th_list) else 0,
-                    quantite_physique=_dec(ph_list[i]) if i < len(ph_list) else 0,
-                    notes_ligne=notes_list[i] if i < len(notes_list) else '',
-                )
+            if not ing_id:
+                continue
+            ph_raw = (ph_list[i] if i < len(ph_list) else '').strip()
+            if not ph_raw:
+                # Champ non saisi : ne pas créer de ligne → stock inchangé à la validation
+                continue
+            LigneInventaireCuisine.objects.create(
+                inventaire=inv,
+                ingredient_id=ing_id,
+                quantite_theorique=_dec(th_list[i]) if i < len(th_list) else 0,
+                quantite_physique=_dec(ph_raw),
+                notes_ligne=notes_list[i] if i < len(notes_list) else '',
+            )
         if request.POST.get('valider') == '1':
             inv.valider(request.user)
             messages.success(request, f"Inventaire {inv.numero} validé. Stock ajusté.")
@@ -1204,16 +1209,22 @@ def inventaire_edit(request, pk):
         notes_list = request.POST.getlist('notes_ligne[]')
 
         for i, ing_id in enumerate(ing_ids):
-            if ing_id:
+            if not ing_id:
+                continue
+            ph_raw = (ph_list[i] if i < len(ph_list) else '').strip()
+            if ph_raw:
                 LigneInventaireCuisine.objects.update_or_create(
                     inventaire=inv,
                     ingredient_id=ing_id,
                     defaults={
                         'quantite_theorique': _dec(th_list[i]) if i < len(th_list) else Decimal('0'),
-                        'quantite_physique':  _dec(ph_list[i]) if i < len(ph_list) else Decimal('0'),
+                        'quantite_physique':  _dec(ph_raw),
                         'notes_ligne':        notes_list[i] if i < len(notes_list) else '',
                     }
                 )
+            else:
+                # Champ effacé : supprimer la ligne si elle existe (stock inchangé à la validation)
+                LigneInventaireCuisine.objects.filter(inventaire=inv, ingredient_id=ing_id).delete()
 
         if request.POST.get('valider') == '1':
             inv.valider(request.user)
