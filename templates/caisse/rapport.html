@@ -32,20 +32,19 @@
     <div class="meta-row"><span class="meta-lbl">Fond de caisse</span><span class="meta-val">{{ session.fond_caisse|montant }} FCFA</span></div>
   </div>
   <div class="meta-box">
-    <div class="meta-box-title">Récapitulatif</div>
-    <div class="meta-row"><span class="meta-lbl">Total encaissé</span><span class="meta-val bold" style="color:#16a34a">{{ stats.total|montant }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Espèces</span><span class="meta-val">{{ stats.especes|montant }} FCFA</span></div>
+    <div class="meta-box-title">Recettes modules (théorique)</div>
+    <div class="meta-row"><span class="meta-lbl">Total généré</span><span class="meta-val bold" style="color:#1d4ed8">{{ stats.total|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Espèces</span><span class="meta-val">{{ stats.especes|montant }} FCFA</span></div>
     {% if stats.par_mobile %}
       {% for lbl, mt, clr, badge in stats.par_mobile %}
       <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ {{ lbl }}</span><span class="meta-val">{{ mt|montant }} FCFA</span></div>
       {% endfor %}
-      <div class="meta-row"><span class="meta-lbl bold">Mobile Money (total)</span><span class="meta-val bold">{{ stats.mobile|montant }} FCFA</span></div>
+      <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Mobile Money (total)</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
     {% else %}
-    <div class="meta-row"><span class="meta-lbl">Mobile Money</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Mobile Money</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
     {% endif %}
-    <div class="meta-row"><span class="meta-lbl">Carte bancaire</span><span class="meta-val">{{ stats.carte|montant }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Prélèvement banque</span><span class="meta-val" style="color:#dc2626">- {{ stats.prelevements|montant }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl">Net en caisse</span><span class="meta-val bold">{{ stats.net|montant }} FCFA</span></div>
+    <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Carte bancaire</span><span class="meta-val">{{ stats.carte|montant }} FCFA</span></div>
+    <div class="meta-row" style="margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px"><span class="meta-lbl bold">Versements reçus</span><span class="meta-val bold" style="color:{% if reconciliation.grand_total_verse > 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ reconciliation.grand_total_verse|montant }} FCFA</span></div>
   </div>
 </div>
 
@@ -144,12 +143,12 @@
   <table class="doc-table">
     <tbody>
       <tr style="background:#f8fafc">
-        <td>Solde veille (fond d'ouverture)</td>
+        <td>Fond d'ouverture</td>
         <td class="r bold" style="color:#1d4ed8">{{ session.fond_caisse|montant }} FCFA</td>
       </tr>
       <tr>
-        <td>+ Espèces encaissées</td>
-        <td class="r bold" style="color:#16a34a">+ {{ stats.especes|montant }} FCFA</td>
+        <td>+ Versements reçus des modules</td>
+        <td class="r bold" style="color:{% if reconciliation.grand_total_verse > 0 %}#16a34a{% else %}#6b7280{% endif %}">+ {{ reconciliation.grand_total_verse|montant }} FCFA</td>
       </tr>
       {% if stats.depenses %}
       <tr>

@@ -555,8 +555,8 @@ def rapport_caisse(request, session_id=None):
     reconciliation = get_reconciliation_jour(date)
     solde_veille, _ = get_solde_veille()
 
-    # Solde théorique final = fond_caisse + espèces – prélèvements – dépenses
-    nouveau_fond = int(session.fond_caisse) + stats['especes'] - stats['prelevements'] - stats['depenses']
+    # Fond théorique = fond ouverture + versements reçus des modules – dépenses – prélèvements banque
+    nouveau_fond = int(session.fond_caisse) + reconciliation['grand_total_verse'] - stats['prelevements'] - stats['depenses']
 
     return render(request, 'caisse/rapport.html', {
         'session':        session,
