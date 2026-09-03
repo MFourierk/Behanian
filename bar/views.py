@@ -702,19 +702,75 @@ def bon_reception_create(request):
 @require_module_access('bar')
 @require_bar_gestion
 def bon_reception_detail(request, pk):
-    br = get_object_or_404(BonReceptionBar, pk=pk)
+    br     = get_object_or_404(BonReceptionBar, pk=pk)
     lignes = br.lignes.select_related('article').all()
-    # Aligner les champs sur le template partagé cuisine
-    br.cree_par = br.operateur
-    for l in lignes:
-        l.ingredient = l.article
-    context = {
+    return render(request, 'bar/bon_reception_detail.html', {
         'page_title': f'Réception {br.numero}',
         'br': br,
         'lignes': lignes,
-        'dept_label': 'Cave',
+    })
+
+
+@require_module_access('bar')
+@require_bar_gestion
+def bon_reception_edit(request, pk):
+    br = get_object_or_404(BonReceptionBar, pk=pk)
+    if br.statut not in ['brouillon', 'en_cours']:
+        messages.error(request, "Seuls les bons en brouillon peuvent être modifiés.")
+        return redirect('bar:bon_reception_detail', pk=pk)
+    fournisseurs  = FournisseurBar.objects.filter(actif=True).order_by('nom')
+    articles      = BoissonBar.objects.exclude(statut='supprime')
+    bons_commande = BonCommandeBar.objects.filter(
+        type_commande='achat', statut__in=['confirme', 'envoye', 'partiel']
+    ).order_by('-date_commande')
+    if request.method == 'POST':
+        with transaction.atomic():
+            br.bon_commande_id             = request.POST.get('bon_commande') or None
+            br.fournisseur_id              = request.POST.get('fournisseur') or None
+            br.numero_document_fournisseur = request.POST.get('numero_document_fournisseur', '')
+            br.date_reception              = request.POST.get('date_reception') or timezone.now().date()
+            br.notes                       = request.POST.get('notes', '')
+            br.save()
+            br.lignes.all().delete()
+            article_ids     = request.POST.getlist('article_id[]')
+            qtes_commandees = request.POST.getlist('quantite_commandee[]')
+            qtes_recues     = request.POST.getlist('quantite_recue[]')
+            prix_list       = request.POST.getlist('prix_unitaire[]')
+            notes_list      = request.POST.getlist('notes_ligne[]')
+            for i, art_id in enumerate(article_ids):
+                if art_id and qtes_recues[i]:
+                    LigneBonReceptionBar.objects.create(
+                        bon=br,
+                        article_id=art_id,
+                        quantite_commandee=qtes_commandees[i] if qtes_commandees[i] else 0,
+                        quantite_recue=qtes_recues[i],
+                        prix_unitaire=prix_list[i] if prix_list[i] else 0,
+                        notes_ligne=notes_list[i] if i < len(notes_list) else '',
+                    )
+            if request.POST.get('statut') == 'valide':
+                _valider_reception(br, request.user)
+                messages.success(request, f"Bon {br.numero} validé. Stock mis à jour.")
+                return redirect(reverse('bar:stock_management') + '?tab=reception')
+        messages.success(request, f"Bon {br.numero} modifié.")
+        return redirect('bar:bon_reception_detail', pk=pk)
+    lignes_existantes = list(br.lignes.select_related('article').values(
+        'article_id', 'quantite_commandee', 'quantite_recue', 'prix_unitaire', 'notes_ligne'
+    ))
+    art_data_json = json.dumps({
+        str(a.pk): {'nom': a.nom, 'ref': a.reference or '', 'prix': float(a.prix_achat or 0)}
+        for a in articles
+    }, ensure_ascii=False)
+    context = {
+        'page_title':    f'Modifier {br.numero}',
+        'br':            br,
+        'fournisseurs':  fournisseurs,
+        'articles':      articles,
+        'bons_commande': bons_commande,
+        'mode':          'edit',
+        'art_data_json': art_data_json,
+        'lignes_json':   json.dumps(lignes_existantes, ensure_ascii=False, default=str),
     }
-    return render(request, 'cuisine/bon_reception_print.html', context)
+    return render(request, 'bar/bon_reception_form.html', context)
 
 
 @require_module_access('bar')

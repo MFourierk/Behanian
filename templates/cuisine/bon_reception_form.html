@@ -106,8 +106,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
     </div>
     <div>
       <div class="doc-type">Bon de réception fournisseur</div>
-      <div class="doc-num">Nouveau</div>
-      <div class="doc-meta">{% now "d/m/Y" %} <span class="badge-s s-brouillon">Brouillon</span></div>
+      <div class="doc-num">{% if mode == 'edit' %}{{ br.numero }}{% else %}Nouveau{% endif %}</div>
+      <div class="doc-meta">
+        {% if mode == 'edit' %}{{ br.date_reception|date:"d/m/Y" }} <span class="badge-s s-brouillon">Modification brouillon</span>
+        {% else %}{% now "d/m/Y" %} <span class="badge-s s-brouillon">Brouillon</span>{% endif %}
+      </div>
     </div>
   </div>
   {% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "cuisine:stock_management" "Nouvelle réception" "" %}
@@ -138,7 +141,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
           <select name="fournisseur" id="sel-fournisseur">
             <option value="">— Sélectionner —</option>
             {% for f in fournisseurs %}
-            <option value="{{ f.pk }}">{{ f.nom }}{% if f.telephone %} · {{ f.telephone }}{% endif %}</option>
+            <option value="{{ f.pk }}" {% if mode == 'edit' and br.fournisseur_id == f.pk %}selected{% endif %}>{{ f.nom }}{% if f.telephone %} · {{ f.telephone }}{% endif %}</option>
             {% endfor %}
           </select>
         </div>
@@ -147,7 +150,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
           <select name="bon_commande" id="sel-bc" onchange="onBcChange(this)">
             <option value="">— Aucun —</option>
             {% for bc in bons_cmd %}
-            <option value="{{ bc.pk }}" data-fournisseur="{{ bc.fournisseur_id|default:'' }}">
+            <option value="{{ bc.pk }}" data-fournisseur="{{ bc.fournisseur_id|default:'' }}" {% if mode == 'edit' and br.bon_commande_id == bc.pk %}selected{% endif %}>
               {{ bc.numero }}{% if bc.fournisseur %} · {{ bc.fournisseur.nom }}{% endif %}
             </option>
             {% endfor %}
@@ -161,7 +164,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
         <div class="form-grid">
           <div class="form-group">
             <label>Date de réception <span class="req">*</span></label>
-            <input type="date" lang="fr" name="date_reception" value="{% now 'Y-m-d' %}" required>
+            <input type="date" lang="fr" name="date_reception" value="{% if mode == 'edit' %}{{ br.date_reception|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
           </div>
           <div class="form-group">
             <label>N° Facture / Bon de livraison</label>
@@ -169,7 +172,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
           </div>
           <div class="form-group full">
             <label>Observations / Écarts constatés</label>
-            <textarea name="notes" rows="2" placeholder="Ex: 2 colis endommagés, quantité incomplète..."></textarea>
+            <textarea name="notes" rows="2" placeholder="Ex: 2 colis endommagés, quantité incomplète...">{% if mode == 'edit' %}{{ br.notes }}{% endif %}</textarea>
           </div>
         </div>
       </div>
@@ -237,7 +240,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#c0392b;backgr
       <button type="button" class="btn-pdf" id="btn-pdf-br" onclick="exporterPDFReception()"><i class="fas fa-file-pdf"></i> PDF</button>
     </div>
     <div class="actions-right">
-      <a href="{% url 'cuisine:stock_management' %}?tab=receptions" class="btn-cancel"><i class="fas fa-arrow-left"></i> Annuler</a>
+      <a href="{% if mode == 'edit' %}{% url 'cuisine:bon_reception_detail' br.id %}{% else %}{% url 'cuisine:stock_management' %}?tab=receptions{% endif %}" class="btn-cancel"><i class="fas fa-arrow-left"></i> Annuler</a>
       <button type="submit" class="btn-draft" onclick="document.getElementById('valider-input').value='0'">
         <i class="fas fa-save"></i> Enregistrer brouillon
       </button>
@@ -447,6 +450,20 @@ function exporterPDFReception() {
     document.getElementById('signature-zone-br').style.display='none';
   });
 }
+
+{% if mode == 'edit' %}
+const _lignesEdit = {{ lignes_json|safe }};
+document.addEventListener('DOMContentLoaded', function() {
+  if (!_lignesEdit || !_lignesEdit.length) return;
+  const c = document.getElementById('lignes-container');
+  while (c.children.length) c.lastChild.remove();
+  rowCounter = 0;
+  _lignesEdit.forEach(function(l) {
+    addLigneWithData(String(l.ingredient_id), l.quantite_recue, l.prix_unitaire);
+  });
+  renum(); calcTotal();
+});
+{% endif %}
 
 window.addEventListener('beforeprint',()=>{
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('force-show'));

@@ -489,6 +489,79 @@ def bon_reception_print(request, pk):
     })
 
 
+@require_module_access('cuisine')
+def bon_reception_edit(request, pk):
+    br = get_object_or_404(BonReceptionCuisine, pk=pk)
+    if br.statut != 'brouillon':
+        messages.error(request, "Seuls les bons en brouillon peuvent être modifiés.")
+        return redirect('cuisine:bon_reception_detail', pk=pk)
+    fournisseurs = Fournisseur.objects.filter(actif=True)
+    bons_cmd     = BonCommandeCuisine.objects.filter(statut__in=['confirme', 'envoye', 'partiel'])
+    ingredients  = Ingredient.objects.filter(statut=True)
+    if request.method == 'POST':
+        br.fournisseur_id  = request.POST.get('fournisseur') or None
+        br.bon_commande_id = request.POST.get('bon_commande') or None
+        br.date_reception  = request.POST.get('date_reception') or timezone.now().date()
+        br.notes           = request.POST.get('notes', '')
+        br.save()
+        br.lignes.all().delete()
+        ing_ids = request.POST.getlist('ingredient_id[]')
+        qtes    = request.POST.getlist('quantite_recue[]')
+        prix_l  = request.POST.getlist('prix_unitaire[]')
+        notes_l = request.POST.getlist('notes_ligne[]')
+        for i, ing_id in enumerate(ing_ids):
+            if ing_id and qtes[i]:
+                LigneBonReceptionCuisine.objects.create(
+                    bon=br,
+                    ingredient_id=ing_id,
+                    quantite_recue=qtes[i],
+                    prix_unitaire=prix_l[i] if prix_l[i] else 0,
+                    notes_ligne=notes_l[i] if i < len(notes_l) else '',
+                )
+        if request.POST.get('valider') == '1':
+            ok = br.valider(request.user)
+            if ok:
+                messages.success(request, f"Réception {br.numero} validée — stock mis à jour.")
+            else:
+                messages.error(request, "Erreur lors de la validation.")
+            return redirect('/cuisine/stock/?tab=receptions')
+        messages.success(request, f"Réception {br.numero} modifiée.")
+        return redirect('cuisine:bon_reception_detail', pk=pk)
+    import json
+    lignes_existantes = list(br.lignes.select_related('ingredient').values(
+        'ingredient_id', 'quantite_recue', 'prix_unitaire', 'notes_ligne'
+    ))
+    ing_data = {
+        str(ing.pk): {
+            'nom':   ing.nom,
+            'unite': ing.unite_stock.abreviation if ing.unite_stock else '-',
+            'cmup':  float(ing.cmup or 0),
+            'stock': float(ing.quantite_stock or 0),
+        }
+        for ing in ingredients
+    }
+    bc_data = {
+        str(bc.pk): {
+            'numero':         bc.numero,
+            'fournisseur':    bc.fournisseur.nom if bc.fournisseur else '-',
+            'fournisseur_id': str(bc.fournisseur_id or ''),
+        }
+        for bc in bons_cmd
+    }
+    context = {
+        'page_title':    f'Modifier {br.numero} — Cuisine',
+        'br':            br,
+        'fournisseurs':  fournisseurs,
+        'bons_cmd':      bons_cmd,
+        'ingredients':   ingredients,
+        'ing_data_json': json.dumps(ing_data, ensure_ascii=False),
+        'bc_data_json':  json.dumps(bc_data, ensure_ascii=False),
+        'lignes_json':   json.dumps(lignes_existantes, ensure_ascii=False, default=str),
+        'mode':          'edit',
+    }
+    return render(request, 'cuisine/bon_reception_form.html', context)
+
+
 
 
 @require_module_access('cuisine')

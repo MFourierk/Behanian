@@ -1,7 +1,7 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
-{% block title %}{{ br.numero }} — Cuisine{% endblock %}
+{% block title %}{{ br.numero }} — Cave{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -19,19 +19,23 @@
 .tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl .right{text-align:right}
+.tbl .center{text-align:center}
 .tbl .total-row td{font-weight:700;background:#f2f5f9;border-top:2px solid #dde3ec}
 .badge-s{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
 .s-brouillon{background:#fff3cd;color:#92400e}
+.s-en_cours{background:#fff3cd;color:#92400e}
 .s-valide{background:#dcfce7;color:#15803d}
 .s-annule{background:#fee2e2;color:#b91c1c}
 .btn-p{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;text-decoration:none}
-.btn-print{background:#2563eb;color:white}.btn-print:hover{background:#1d4ed8;color:white}
+.btn-print{background:#5a6b7c;color:white}.btn-print:hover{background:#3d4f63;color:white}
+.btn-edit{background:#2563eb;color:white}.btn-edit:hover{background:#1d4ed8;color:white}
 .btn-back{background:#f8fafc;color:#3d4f63;border:1px solid #d4dce8}.btn-back:hover{background:#eef1f5;color:#1a2535}
 .btn-valid{background:#16a34a;color:white}.btn-valid:hover{background:#15803d}
 .btn-cancel{background:#dc2626;color:white}.btn-cancel:hover{background:#b91c1c}
-.btn-edit{background:#2563eb;color:white;border:none}.btn-edit:hover{background:#1d4ed8;color:white}
+.ecart-pos{color:#16a34a;font-weight:700}
+.ecart-neg{color:#dc2626;font-weight:700}
+.ecart-ok{color:#9ca3af}
 
-/* Print styles */
 @media print {
   .no-print{display:none!important}
   .br-body{background:white;padding:0}
@@ -49,38 +53,36 @@
 <div class="br-body">
 <div class="container-fluid">
 
-  <!-- En-tête print uniquement -->
   <div class="print-header">
     <strong style="font-size:16px">COMPLEXE HÔTELIER BEHANIAN</strong><br>
-    <span style="font-size:12px">BON DE RÉCEPTION — CUISINE</span><br>
+    <span style="font-size:12px">BON DE RÉCEPTION — CAVE</span><br>
     <span style="font-size:11px">Yopougon Beago · Tél: 07 58 29 11 10</span>
   </div>
 
-  <div class="header-glam cuisine-watermark no-print">
+  <div class="header-glam bar-watermark no-print">
     <div class="header-content">
       <h2>{{ br.numero }}</h2>
-      <p class="mb-0 opacity-75">Bon de Réception — Cuisine</p>
+      <p class="mb-0 opacity-75">Bon de Réception — Cave</p>
     </div>
   </div>
-{% breadcrumb "Cuisine" "cuisine:index" "Réceptions" "cuisine:bon_reception_list" "Détail réception" "" %}
-
+  {% breadcrumb "Cave" "bar:stock_management" "Réceptions" "bar:bon_reception_list" "Détail réception" "" %}
 
   <!-- Actions -->
   <div class="no-print" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-        <a href="{% url 'cuisine:bon_reception_print' br.id %}" target="_blank" class="btn-p btn-print">
+    <button type="button" onclick="window.print()" class="btn-p btn-print">
       <i class="fas fa-print"></i> Imprimer / PDF
-    </a>
-    {% if br.statut == 'brouillon' %}
-    <a href="{% url 'cuisine:bon_reception_edit' br.id %}" class="btn-p btn-edit">
+    </button>
+    {% if br.statut == 'brouillon' or br.statut == 'en_cours' %}
+    <a href="{% url 'bar:bon_reception_edit' br.id %}" class="btn-p btn-edit">
       <i class="fas fa-edit"></i> Modifier
     </a>
-    <form method="post" action="{% url 'cuisine:bon_reception_valider' br.id %}" style="margin:0">
+    <form method="post" action="{% url 'bar:bon_reception_valider' br.id %}" style="margin:0">
       {% csrf_token %}
       <button type="submit" class="btn-p btn-valid" onclick="return confirm('Valider ce bon ? Le stock sera mis à jour.')">
         <i class="fas fa-check"></i> Valider la réception
       </button>
     </form>
-    <form method="post" action="{% url 'cuisine:bon_reception_annuler' br.id %}" style="margin:0">
+    <form method="post" action="{% url 'bar:bon_reception_annuler' br.id %}" style="margin:0">
       {% csrf_token %}
       <button type="submit" class="btn-p btn-cancel" onclick="return confirm('Annuler ce bon ?')">
         <i class="fas fa-times"></i> Annuler
@@ -109,12 +111,20 @@
         <div class="meta-val">{{ br.date_reception|date:"d/m/Y" }}</div>
       </div>
       <div class="meta-item">
+        <div class="meta-label">N° document fournisseur</div>
+        <div class="meta-val">{{ br.numero_document_fournisseur|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="meta-grid" style="border-top:1px solid #dde3ec">
+      <div class="meta-item">
+        <div class="meta-label">Opérateur</div>
+        <div class="meta-val">{{ br.operateur.get_full_name|default:br.operateur.username }}</div>
+      </div>
+      <div class="meta-item">
         <div class="meta-label">Bon de commande</div>
         <div class="meta-val">{{ br.bon_commande.numero|default:"—" }}</div>
       </div>
-    </div>
-    {% if br.statut == 'valide' %}
-    <div class="meta-grid" style="border-top:1px solid #dde3ec">
+      {% if br.statut == 'valide' %}
       <div class="meta-item">
         <div class="meta-label">Validé par</div>
         <div class="meta-val">{{ br.valide_par.get_full_name|default:br.valide_par.username }}</div>
@@ -123,16 +133,14 @@
         <div class="meta-label">Date validation</div>
         <div class="meta-val">{{ br.date_validation|date:"d/m/Y H:i" }}</div>
       </div>
+      {% else %}
       <div class="meta-item">
-        <div class="meta-label">Créé par</div>
-        <div class="meta-val">{{ br.cree_par.get_full_name|default:br.cree_par.username }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Date création</div>
+        <div class="meta-label">Créé le</div>
         <div class="meta-val">{{ br.date_creation|date:"d/m/Y H:i" }}</div>
       </div>
+      <div class="meta-item"></div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 
   <!-- Articles -->
@@ -147,27 +155,37 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Ingrédient</th>
-            <th>Unité</th>
+            <th>Article</th>
+            <th class="right">Qté commandée</th>
             <th class="right">Qté reçue</th>
+            <th class="center">Écart</th>
             <th class="right">Prix U. (FCFA)</th>
             <th class="right">Total (FCFA)</th>
           </tr>
         </thead>
         <tbody>
           {% for l in lignes %}
+          {% with ecart=l.ecart %}
           <tr>
             <td style="color:#7a8b9c">{{ forloop.counter }}</td>
-            <td style="font-weight:600">{{ l.ingredient.nom }}</td>
-            <td>{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
+            <td style="font-weight:600">{{ l.article.nom }}</td>
+            <td class="right">{% if l.quantite_commandee %}{{ l.quantite_commandee|floatformat:3 }}{% else %}—{% endif %}</td>
             <td class="right">{{ l.quantite_recue|floatformat:3 }}</td>
-            <td class="right">{{ l.prix_unitaire|montant }}</td>
-            <td class="right" style="font-weight:700;color:#2563eb">{{ l.total_ligne|montant }}</td>
+            <td class="center">
+              {% if l.quantite_commandee %}
+                {% if ecart > 0 %}<span class="ecart-pos">+{{ ecart|floatformat:3 }}</span>
+                {% elif ecart < 0 %}<span class="ecart-neg">{{ ecart|floatformat:3 }}</span>
+                {% else %}<span class="ecart-ok">✓ OK</span>{% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="right">{{ l.prix_unitaire|floatformat:0 }}</td>
+            <td class="right" style="font-weight:700;color:#8e44ad">{{ l.total_ligne|floatformat:0 }}</td>
           </tr>
+          {% endwith %}
           {% endfor %}
           <tr class="total-row">
-            <td colspan="5" class="right">TOTAL RÉCEPTION</td>
-            <td class="right" style="color:#2563eb;font-size:15px">{{ br.total|montant }} FCFA</td>
+            <td colspan="6" class="right">TOTAL RÉCEPTION</td>
+            <td class="right" style="color:#8e44ad;font-size:15px">{{ br.total|floatformat:0 }} FCFA</td>
           </tr>
         </tbody>
       </table>
@@ -187,13 +205,12 @@
   </div>
   {% endif %}
 
-  <!-- Signatures (print) -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px">
     <div style="border-top:1px solid #1a2535;padding-top:8px;text-align:center;font-size:12px;color:#5a6b7c">
       Réceptionné par<br><br><br>______________________
     </div>
     <div style="border-top:1px solid #1a2535;padding-top:8px;text-align:center;font-size:12px;color:#5a6b7c">
-      Responsable Cuisine<br><br><br>______________________
+      Responsable Cave<br><br><br>______________________
     </div>
   </div>
 

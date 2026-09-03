@@ -30,6 +30,7 @@ urlpatterns = [
     path('receptions/', views.bon_reception_list, name='bon_reception_list'),
     path('receptions/nouveau/', views.bon_reception_create, name='bon_reception_create'),
     path('receptions/<int:pk>/', views.bon_reception_detail, name='bon_reception_detail'),
+    path('receptions/<int:pk>/modifier/', views.bon_reception_edit, name='bon_reception_edit'),
     path('receptions/<int:pk>/valider/', views.bon_reception_valider, name='bon_reception_valider'),
     path('receptions/<int:pk>/annuler/', views.bon_reception_annuler, name='bon_reception_annuler'),
     path('receptions/<int:pk>/print/', views.bon_reception_print, name='bon_reception_print'),

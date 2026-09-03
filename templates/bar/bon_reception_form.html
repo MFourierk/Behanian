@@ -108,8 +108,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
     </div>
     <div>
       <div class="doc-type">Bon de réception fournisseur</div>
-      <div class="doc-num">Nouveau</div>
-      <div class="doc-meta">{% now "d/m/Y" %} <span class="badge-s s-brouillon">Brouillon</span></div>
+      <div class="doc-num">{% if mode == 'edit' %}{{ br.numero }}{% else %}Nouveau{% endif %}</div>
+      <div class="doc-meta">
+        {% if mode == 'edit' %}{{ br.date_reception|date:"d/m/Y" }} <span class="badge-s s-brouillon">Modification brouillon</span>
+        {% else %}{% now "d/m/Y" %} <span class="badge-s s-brouillon">Brouillon</span>{% endif %}
+      </div>
     </div>
   </div>
   {% breadcrumb "Cave" "bar:stock_management" "Gestion de stock" "bar:stock_management" "Bon de réception" "" %}
@@ -146,7 +149,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
           <select name="fournisseur" id="fournisseur-select">
             <option value="">— Sélectionner —</option>
             {% for f in fournisseurs %}
-            <option value="{{ f.pk }}" {% if bc_prefill and bc_prefill.fournisseur_id == f.pk %}selected{% endif %}>{{ f.nom }}</option>
+            <option value="{{ f.pk }}" {% if bc_prefill and bc_prefill.fournisseur_id == f.pk %}selected{% elif mode == 'edit' and br.fournisseur_id == f.pk %}selected{% endif %}>{{ f.nom }}</option>
             {% endfor %}
           </select>
         </div>
@@ -155,7 +158,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
           <select name="bon_commande" id="sel-bc" onchange="onBcChange(this)">
             <option value="">— Aucun —</option>
             {% for bc in bons_commande %}
-            <option value="{{ bc.pk }}" {% if bc_prefill and bc_prefill.pk == bc.pk %}selected{% endif %}>
+            <option value="{{ bc.pk }}" {% if bc_prefill and bc_prefill.pk == bc.pk %}selected{% elif mode == 'edit' and br.bon_commande_id == bc.pk %}selected{% endif %}>
               {{ bc.numero }} — {{ bc.fournisseur|default:"Sans fournisseur" }} ({{ bc.date_commande|date:"d/m/Y" }})
             </option>
             {% endfor %}
@@ -169,16 +172,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
         <div class="form-grid">
           <div class="form-group">
             <label>Date de réception <span class="req">*</span></label>
-            <input type="date" lang="fr" name="date_reception" value="{% now 'Y-m-d' %}" required>
+            <input type="date" lang="fr" name="date_reception" value="{% if mode == 'edit' %}{{ br.date_reception|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" required>
           </div>
           <div class="form-group">
             <label>N° Facture / Bon de livraison</label>
-            <input type="text" name="numero_document_fournisseur" placeholder="Ex: FAC-2026-00452">
+            <input type="text" name="numero_document_fournisseur" value="{% if mode == 'edit' %}{{ br.numero_document_fournisseur }}{% endif %}" placeholder="Ex: FAC-2026-00452">
             <span class="hint">Référence du document reçu</span>
           </div>
           <div class="form-group full">
             <label>Observations / Écarts constatés</label>
-            <textarea name="notes" rows="2" placeholder="Ex: 2 colis endommagés, quantité incomplète..."></textarea>
+            <textarea name="notes" rows="2" placeholder="Ex: 2 colis endommagés, quantité incomplète...">{% if mode == 'edit' %}{{ br.notes }}{% endif %}</textarea>
           </div>
         </div>
       </div>
@@ -252,7 +255,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#8e44ad;backgr
       <button type="button" class="btn-pdf" id="btn-pdf-br" onclick="exporterPDFReception()"><i class="fas fa-file-pdf"></i> PDF</button>
     </div>
     <div class="actions-right">
-      <a href="{% url 'bar:stock_management' %}" class="btn-cancel"><i class="fas fa-arrow-left"></i> Annuler</a>
+      <a href="{% if mode == 'edit' %}{% url 'bar:bon_reception_detail' br.id %}{% else %}{% url 'bar:stock_management' %}{% endif %}" class="btn-cancel"><i class="fas fa-arrow-left"></i> Annuler</a>
       <button type="submit" class="btn-draft" onclick="document.getElementById('statut-input').value='brouillon'">
         <i class="fas fa-save"></i> Enregistrer brouillon
       </button>
@@ -447,6 +450,20 @@ function exporterPDFReception() {
     document.getElementById('signature-zone-br').style.display='none';
   });
 }
+
+{% if mode == 'edit' %}
+const _lignesEdit = {{ lignes_json|safe }};
+document.addEventListener('DOMContentLoaded', function() {
+  if (!_lignesEdit || !_lignesEdit.length) return;
+  const c = document.getElementById('lignes-container');
+  c.innerHTML = '';
+  rowCounter = 0;
+  _lignesEdit.forEach(function(l) {
+    addLigneWithData(String(l.article_id), l.quantite_commandee, l.quantite_recue, l.prix_unitaire);
+  });
+  renum(); calcTotal();
+});
+{% endif %}
 
 window.addEventListener('beforeprint',()=>{
   document.querySelectorAll('.tab-panel').forEach(p=>{p.style.display='block';});
