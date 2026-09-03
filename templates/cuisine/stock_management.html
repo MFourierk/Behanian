@@ -852,7 +852,9 @@
                     <thead>
                         <tr>
                             <th>N° Inventaire</th>
-                            <th>Date inventaire</th>
+                            <th>Type</th>
+                            <th>Correction de</th>
+                            <th>Date</th>
                             <th>Créé par</th>
                             <th>Validé par</th>
                             <th>Statut</th>
@@ -863,6 +865,20 @@
                         {% for inv in inventaires %}
                         <tr>
                             <td><span style="font-family:monospace;font-weight:700;color:#c0392b;font-size:0.85rem;">{{ inv.numero }}</span></td>
+                            <td style="font-size:0.82rem;">
+                                {% if inv.type_inventaire == 'correction' %}
+                                    <span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:10px;font-size:0.78rem;font-weight:700;">⚠ Correction</span>
+                                {% elif inv.type_inventaire == 'partiel' %}
+                                    <span style="background:#e8f4fd;color:#2980b9;padding:2px 7px;border-radius:10px;font-size:0.78rem;font-weight:600;">Partiel</span>
+                                {% else %}
+                                    <span style="background:#f1f5f9;color:#64748b;padding:2px 7px;border-radius:10px;font-size:0.78rem;">Complet</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:0.82rem;color:#7f8c8d;">
+                                {% if inv.inventaire_source %}
+                                    <a href="{% url 'cuisine:inventaire_detail' inv.inventaire_source.pk %}" style="color:#c0392b;font-family:monospace;font-size:0.8rem;">{{ inv.inventaire_source.numero }}</a>
+                                {% else %}—{% endif %}
+                            </td>
                             <td style="font-size:0.88rem;color:#7f8c8d;">{{ inv.date_inventaire|date:"d/m/Y" }}</td>
                             <td style="font-size:0.85rem;">{{ inv.cree_par.username|default:"—" }}</td>
                             <td style="font-size:0.85rem;">{{ inv.valide_par.username|default:"—" }}</td>
@@ -881,7 +897,16 @@
                                         {% csrf_token %}
                                         <button type="submit" class="btn-action btn-ok" title="Valider"><i class="fas fa-check"></i></button>
                                     </form>
+                                    {% elif inv.statut == 'valide' and inv.type_inventaire != 'correction' %}
+                                    <form method="post" action="{% url 'cuisine:inventaire_correction' inv.pk %}" style="display:inline;"
+                                          onsubmit="return confirm('Créer un inventaire de correction qui restaure le stock à l\'état AVANT cet inventaire ?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-action" style="background:#fef3c7;color:#92400e;" title="Corriger cet inventaire (restaurer stock théorique)">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
                                     {% endif %}
+                                    <a href="{% url 'cuisine:inventaire_print' inv.pk %}" class="btn-action" style="background:#f1f5f9;color:#64748b;" title="Imprimer" target="_blank"><i class="fas fa-print"></i></a>
                                 </div>
                             </td>
                         </tr>

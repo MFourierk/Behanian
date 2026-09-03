@@ -1277,6 +1277,32 @@ def inventaire_valider(request, pk):
 
 @require_module_access('cuisine')
 @require_POST
+def inventaire_correction(request, pk):
+    """Crée un inventaire de correction pré-rempli avec les quantités théoriques de l'inventaire source.
+    Cela permet de restaurer le stock à l'état qu'il avait AVANT la validation de cet inventaire."""
+    source = get_object_or_404(InventaireCuisine, pk=pk)
+    from django.db import transaction as _tx
+    with _tx.atomic():
+        correction = InventaireCuisine.objects.create(
+            type_inventaire   = 'correction',
+            inventaire_source = source,
+            notes             = f"Correction de {source.numero} — stock restauré aux quantités théoriques",
+            cree_par          = request.user,
+        )
+        for ligne in source.lignes.select_related('ingredient').all():
+            LigneInventaireCuisine.objects.create(
+                inventaire         = correction,
+                ingredient         = ligne.ingredient,
+                quantite_theorique = ligne.ingredient.quantite_stock,
+                quantite_physique  = ligne.quantite_theorique,
+            )
+        correction.valider(request.user)
+    messages.success(request, f"Correction {correction.numero} validée — stock restauré à partir de {source.numero}.")
+    return redirect('/cuisine/stock/?tab=inventaire')
+
+
+@require_module_access('cuisine')
+@require_POST
 def inventaire_annuler(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
     if inv.statut != 'valide':

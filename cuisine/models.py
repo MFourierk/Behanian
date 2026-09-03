@@ -564,16 +564,24 @@ class InventaireCuisine(models.Model):
         ('valide',    'Validé'),
         ('annule',    'Annulé'),
     ]
+    TYPE_CHOICES = [
+        ('complet',    'Inventaire complet'),
+        ('partiel',    'Inventaire partiel'),
+        ('correction', 'Correction'),
+    ]
 
-    numero          = models.CharField(max_length=30, unique=True, editable=False)
-    statut          = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
-    date_inventaire = models.DateField(default=timezone.now, verbose_name="Date de l'inventaire")
-    notes           = models.TextField(blank=True, verbose_name="Observations")
-    valide_par      = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
-                                        related_name='inventaires_cuisine_valides')
-    date_validation = models.DateTimeField(null=True, blank=True)
-    cree_par        = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='inventaires_cuisine')
-    date_creation   = models.DateTimeField(auto_now_add=True)
+    numero              = models.CharField(max_length=30, unique=True, editable=False)
+    statut              = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
+    type_inventaire     = models.CharField(max_length=20, choices=TYPE_CHOICES, default='complet', verbose_name="Type")
+    inventaire_source   = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
+                                            related_name='corrections', verbose_name="Correction de")
+    date_inventaire     = models.DateField(default=timezone.now, verbose_name="Date de l'inventaire")
+    notes               = models.TextField(blank=True, verbose_name="Observations")
+    valide_par          = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                            related_name='inventaires_cuisine_valides')
+    date_validation     = models.DateTimeField(null=True, blank=True)
+    cree_par            = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='inventaires_cuisine')
+    date_creation       = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.numero:
