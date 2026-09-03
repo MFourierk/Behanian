@@ -1,216 +1,349 @@
 {% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% load static %}
-{% block title %}{{ br.numero }} — Cave{% endblock %}
+{% block title %}{{ br.numero }} — Réception Cave{% endblock %}
 
 {% block extra_css %}
 <style>
-.br-body{background:#eef1f5;padding:20px 0 40px}
-.br-card{background:#f8fafc;border:1px solid #d4dce8;border-radius:12px;overflow:hidden;margin-bottom:16px}
-.br-card-head{padding:14px 20px;border-bottom:1px solid #dde3ec;background:#f2f5f9;display:flex;align-items:center;justify-content:space-between}
-.br-card-head h3{font-size:14px;font-weight:600;color:#1a2535;margin:0}
-.meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0}
-.meta-item{padding:16px 20px;border-right:1px solid #dde3ec}
-.meta-item:last-child{border-right:none}
-.meta-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#5a6b7c;margin-bottom:6px}
-.meta-val{font-size:14px;font-weight:600;color:#1a2535}
-.tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{padding:10px 16px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #dde3ec;background:#eef1f5;text-align:left}
-.tbl td{padding:12px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
-.tbl tr:last-child td{border-bottom:none}
-.tbl .right{text-align:right}
-.tbl .center{text-align:center}
-.tbl .total-row td{font-weight:700;background:#f2f5f9;border-top:2px solid #dde3ec}
-.badge-s{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
-.s-brouillon{background:#fff3cd;color:#92400e}
-.s-en_cours{background:#fff3cd;color:#92400e}
-.s-valide{background:#dcfce7;color:#15803d}
-.s-annule{background:#fee2e2;color:#b91c1c}
-.btn-p{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;text-decoration:none}
-.btn-print{background:#5a6b7c;color:white}.btn-print:hover{background:#3d4f63;color:white}
-.btn-edit{background:#2563eb;color:white}.btn-edit:hover{background:#1d4ed8;color:white}
-.btn-back{background:#f8fafc;color:#3d4f63;border:1px solid #d4dce8}.btn-back:hover{background:#eef1f5;color:#1a2535}
-.btn-valid{background:#16a34a;color:white}.btn-valid:hover{background:#15803d}
-.btn-cancel{background:#dc2626;color:white}.btn-cancel:hover{background:#b91c1c}
-.ecart-pos{color:#16a34a;font-weight:700}
-.ecart-neg{color:#dc2626;font-weight:700}
-.ecart-ok{color:#9ca3af}
+/* ===== PAGE ===== */
+.br-page{background:#f0f2f7;min-height:100vh;padding:20px 0 60px}
+.br-wrap{max-width:1100px;margin:0 auto;padding:0 16px}
 
-@media print {
+/* ===== DOC HEADER ===== */
+.sage-doc-header{background:white;border:1px solid #d4dce8;border-radius:12px;padding:16px 24px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start}
+.doc-company{font-size:.95rem;font-weight:800;color:#1a2535}
+.doc-dept{font-size:.75rem;color:#5a6b7c;margin-top:2px}
+.doc-type{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8b9eb0;margin-bottom:3px;text-align:right}
+.doc-num{font-size:1.25rem;font-weight:800;color:#1a2535;text-align:right;font-family:monospace}
+.doc-meta{font-size:.75rem;color:#5a6b7c;margin-top:4px;display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* ===== STATUS BANNERS ===== */
+.status-banner{border-radius:10px;padding:14px 20px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+.status-banner .sb-icon{font-size:1.5rem;flex-shrink:0}
+.status-banner .sb-body{display:flex;flex-direction:column;gap:2px}
+.status-banner .sb-title{font-size:.9rem;font-weight:700}
+.status-banner .sb-sub{font-size:.78rem;font-weight:400;opacity:.8}
+.sb-brouillon{background:#fffbeb;border:1px solid #fbbf24;color:#92400e}
+.sb-en_cours{background:#eff6ff;border:1px solid #93c5fd;color:#1d4ed8}
+.sb-valide{background:#f0fdf4;border:1px solid #86efac;color:#15803d}
+.sb-annule{background:#fff1f2;border:1px solid #fca5a5;color:#b91c1c}
+
+/* ===== ACTIONS ===== */
+.actions-bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.btn-act{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:.82rem;font-weight:700;display:inline-flex;align-items:center;gap:7px;text-decoration:none;transition:all .15s}
+.btn-act-print{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-act-print:hover{background:#3d4f63;color:white}
+.btn-act-edit{background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe}
+.btn-act-edit:hover{background:#6d28d9;color:white}
+.btn-act-validate{background:linear-gradient(135deg,#15803d,#16a34a);color:white;box-shadow:0 3px 10px rgba(21,128,61,.25)}
+.btn-act-validate:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(21,128,61,.35)}
+.btn-act-cancel{background:white;color:#dc2626;border:1px solid #fca5a5}
+.btn-act-cancel:hover{background:#dc2626;color:white}
+
+/* ===== PANELS ===== */
+.panel{background:white;border:1px solid #d4dce8;border-radius:12px;overflow:hidden;margin-bottom:14px}
+.ph{padding:12px 20px;border-bottom:1px solid #d4dce8;display:flex;align-items:center;justify-content:space-between;background:#f8fafc}
+.ph h3{font-size:.76rem;font-weight:700;color:#1a2535;margin:0;text-transform:uppercase;letter-spacing:.7px}
+.ph-right{font-size:.72rem;color:#7a8b9c;font-weight:600}
+
+/* ===== INFO GRID ===== */
+.info-cols{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.info-col{padding:18px 22px}
+.info-col:first-child{border-right:1px solid #eef1f5}
+.info-col-label{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8b9eb0;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #eef1f5}
+.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid #f4f6f9}
+.info-row:last-child{border-bottom:none}
+.info-lbl{font-size:.75rem;color:#7a8b9c;font-weight:500;flex-shrink:0;margin-right:12px}
+.info-val{font-size:.82rem;font-weight:700;color:#1a2535;text-align:right}
+.info-val.mono{font-family:monospace;color:#8e44ad}
+.info-val.muted{font-weight:500;color:#8b9eb0}
+
+/* ===== TABLE ===== */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:.83rem}
+.tbl th{padding:10px 16px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#4a5b6e;border-bottom:1px solid #d4dce8;background:#f0f2f7;text-align:left;white-space:nowrap}
+.tbl th.r{text-align:right}
+.tbl th.c{text-align:center}
+.tbl td{padding:11px 16px;border-bottom:1px solid #f0f3f7;color:#1a2535;vertical-align:middle}
+.tbl tbody tr:hover td{background:#fdf8ff}
+.tbl td.r{text-align:right}
+.tbl td.c{text-align:center}
+.tbl .num{font-size:.72rem;color:#9ca3af;font-weight:600}
+.tbl .art-name{font-weight:700;color:#1a2535}
+.tbl .art-ref{font-size:.72rem;color:#9ca3af;display:block}
+.tbl .price{font-weight:600;color:#5a6b7c}
+.tbl .total-cell{font-weight:800;color:#8e44ad}
+.ecart-pos{color:#15803d;font-weight:700}
+.ecart-neg{color:#dc2626;font-weight:700}
+.ecart-ok{color:#9ca3af;font-weight:600}
+
+/* ===== TOTAL BLOCK ===== */
+.total-block{background:linear-gradient(135deg,#2d1b4e 0%,#4a1d7a 100%);border-radius:12px;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;box-shadow:0 6px 20px rgba(45,27,78,.3)}
+.total-block-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.55)}
+.total-block-val{font-size:2rem;font-weight:900;color:white;letter-spacing:-1px}
+.total-block-unit{font-size:.85rem;font-weight:700;color:rgba(255,255,255,.5);margin-left:6px}
+.total-block-lines{font-size:.78rem;color:rgba(255,255,255,.45);margin-top:4px}
+.total-accent{color:#d8b4fe;font-size:1.5rem;opacity:.7}
+
+/* ===== NOTES ===== */
+.notes-body{padding:16px 22px;font-size:.84rem;color:#3d4f63;line-height:1.6;background:#fffbf0;border-left:4px solid #fbbf24}
+
+/* ===== SIGNATURES PRINT ===== */
+.sig-zone{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;padding:24px 22px}
+.sig-slot{text-align:center}
+.sig-line{border-top:1px solid #1a2535;padding-top:6px;font-size:.72rem;color:#5a6b7c;margin-top:52px}
+
+/* ===== BADGES ===== */
+.badge-sm{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700}
+.bs-brouillon{background:#fff3cd;color:#92400e}
+.bs-en_cours{background:#dbeafe;color:#1d4ed8}
+.bs-valide{background:#dcfce7;color:#15803d}
+.bs-annule{background:#fee2e2;color:#b91c1c}
+
+/* ===== PRINT ===== */
+@media print{
   .no-print{display:none!important}
-  .br-body{background:white;padding:0}
+  .br-page{background:white;padding:0}
   body{background:white}
-  .dashboard-layout,.sidebar,.header{display:none!important}
+  .dashboard-layout,.sidebar,.header,.breadcrumb-bar{display:none!important}
   .main-content,.content-area{margin:0!important;padding:0!important;width:100%!important}
-  .br-card{border:1px solid #ccc;border-radius:0;margin-bottom:10px}
+  .panel{border:1px solid #ccc;border-radius:0;box-shadow:none}
+  .total-block{background:#2d1b4e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .status-banner{display:none}
   .print-header{display:block!important}
+  .actions-bar{display:none!important}
+  .sage-doc-header{border:none;padding:0;margin-bottom:8px}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 }
-.print-header{display:none;text-align:center;margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #000}
+.print-header{display:none;text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #1a2535}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="br-body">
-<div class="container-fluid">
+<div class="br-page">
+<div class="br-wrap">
 
+  <!-- Print header -->
   <div class="print-header">
-    <strong style="font-size:16px">COMPLEXE HÔTELIER BEHANIAN</strong><br>
-    <span style="font-size:12px">BON DE RÉCEPTION — CAVE</span><br>
-    <span style="font-size:11px">Yopougon Beago · Tél: 07 58 29 11 10</span>
+    <div style="font-size:1rem;font-weight:800;color:#1a2535">🍷 COMPLEXE HÔTELIER BEHANIAN</div>
+    <div style="font-size:.75rem;color:#5a6b7c">Département Cave · Bon de Réception Fournisseur</div>
+    <div style="font-size:.7rem;color:#8b9eb0;margin-top:4px">Imprimé le {% now "d/m/Y à H:i" %}</div>
   </div>
 
-  <div class="header-glam bar-watermark no-print">
-    <div class="header-content">
-      <h2>{{ br.numero }}</h2>
-      <p class="mb-0 opacity-75">Bon de Réception — Cave</p>
+  <!-- Doc header -->
+  <div class="sage-doc-header no-print">
+    <div>
+      <div class="doc-company">🍷 COMPLEXE HÔTELIER BEHANIAN</div>
+      <div class="doc-dept">Département Cave · Réceptions fournisseurs</div>
+    </div>
+    <div>
+      <div class="doc-type">Bon de réception fournisseur</div>
+      <div class="doc-num">{{ br.numero }}</div>
+      <div class="doc-meta">
+        {{ br.date_reception|date:"d/m/Y" }}
+        <span class="badge-sm bs-{{ br.statut }}">{{ br.get_statut_display }}</span>
+      </div>
     </div>
   </div>
-  {% breadcrumb "Cave" "bar:stock_management" "Réceptions" "bar:bon_reception_list" "Détail réception" "" %}
+
+  {% breadcrumb "Cave" "bar:stock_management" "Réceptions" "bar:bon_reception_list" br.numero "" %}
+
+  <!-- Status banner -->
+  {% if br.statut == 'brouillon' %}
+  <div class="status-banner sb-brouillon no-print">
+    <span class="sb-icon">⏳</span>
+    <div class="sb-body">
+      <span class="sb-title">Brouillon — En attente de validation</span>
+      <span class="sb-sub">Ce bon est modifiable. Aucun mouvement de stock n'a encore été effectué.</span>
+    </div>
+  </div>
+  {% elif br.statut == 'en_cours' %}
+  <div class="status-banner sb-en_cours no-print">
+    <span class="sb-icon">🔄</span>
+    <div class="sb-body">
+      <span class="sb-title">En cours — Réception partielle</span>
+      <span class="sb-sub">Ce bon est en cours de traitement. Vous pouvez le modifier avant validation.</span>
+    </div>
+  </div>
+  {% elif br.statut == 'valide' %}
+  <div class="status-banner sb-valide no-print">
+    <span class="sb-icon">✅</span>
+    <div class="sb-body">
+      <span class="sb-title">Validé — Stock mis à jour</span>
+      <span class="sb-sub">Validé le {{ br.date_validation|date:"d/m/Y à H:i" }} par {{ br.valide_par.get_full_name|default:br.valide_par.username }}. Les CMUP ont été recalculés.</span>
+    </div>
+  </div>
+  {% elif br.statut == 'annule' %}
+  <div class="status-banner sb-annule no-print">
+    <span class="sb-icon">🚫</span>
+    <div class="sb-body">
+      <span class="sb-title">Annulé — Sans effet sur le stock</span>
+      <span class="sb-sub">Ce bon a été annulé. Aucune modification de stock n'a été effectuée.</span>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Actions -->
-  <div class="no-print" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <button type="button" onclick="window.print()" class="btn-p btn-print">
+  <div class="actions-bar no-print">
+    <button type="button" onclick="window.print()" class="btn-act btn-act-print">
       <i class="fas fa-print"></i> Imprimer / PDF
     </button>
     {% if br.statut == 'brouillon' or br.statut == 'en_cours' %}
-    <a href="{% url 'bar:bon_reception_edit' br.id %}" class="btn-p btn-edit">
+    <a href="{% url 'bar:bon_reception_edit' br.id %}" class="btn-act btn-act-edit">
       <i class="fas fa-edit"></i> Modifier
     </a>
     <form method="post" action="{% url 'bar:bon_reception_valider' br.id %}" style="margin:0">
       {% csrf_token %}
-      <button type="submit" class="btn-p btn-valid" onclick="return confirm('Valider ce bon ? Le stock sera mis à jour.')">
-        <i class="fas fa-check"></i> Valider la réception
+      <button type="submit" class="btn-act btn-act-validate" onclick="return confirm('Valider ce bon ? Le stock et les CMUP seront mis à jour.')">
+        <i class="fas fa-check-circle"></i> Valider la réception
       </button>
     </form>
     <form method="post" action="{% url 'bar:bon_reception_annuler' br.id %}" style="margin:0">
       {% csrf_token %}
-      <button type="submit" class="btn-p btn-cancel" onclick="return confirm('Annuler ce bon ?')">
+      <button type="submit" class="btn-act btn-act-cancel" onclick="return confirm('Annuler ce bon ?')">
         <i class="fas fa-times"></i> Annuler
       </button>
     </form>
     {% endif %}
   </div>
 
-  <!-- Informations générales -->
-  <div class="br-card">
-    <div class="br-card-head">
-      <h3>Informations</h3>
-      <span class="badge-s s-{{ br.statut }}">{{ br.get_statut_display }}</span>
+  <!-- Informations -->
+  <div class="panel">
+    <div class="ph">
+      <h3><i class="fas fa-info-circle" style="color:#8e44ad;margin-right:6px"></i>Informations du bon</h3>
+      <span class="ph-right">{{ br.date_creation|date:"d/m/Y H:i" }}</span>
     </div>
-    <div class="meta-grid">
-      <div class="meta-item">
-        <div class="meta-label">N° Réception</div>
-        <div class="meta-val">{{ br.numero }}</div>
+    <div class="info-cols">
+      <div class="info-col">
+        <div class="info-col-label">Fournisseur & Référence</div>
+        <div class="info-row">
+          <span class="info-lbl">N° Réception</span>
+          <span class="info-val mono">{{ br.numero }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Fournisseur</span>
+          <span class="info-val">{{ br.fournisseur.nom|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">N° document fournisseur</span>
+          <span class="info-val {% if not br.numero_document_fournisseur %}muted{% endif %}">{{ br.numero_document_fournisseur|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Date de réception</span>
+          <span class="info-val">{{ br.date_reception|date:"d/m/Y" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Bon de commande</span>
+          <span class="info-val {% if not br.bon_commande %}muted{% endif %}">{{ br.bon_commande.numero|default:"—" }}</span>
+        </div>
       </div>
-      <div class="meta-item">
-        <div class="meta-label">Fournisseur</div>
-        <div class="meta-val">{{ br.fournisseur.nom|default:"Non spécifié" }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Date de réception</div>
-        <div class="meta-val">{{ br.date_reception|date:"d/m/Y" }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">N° document fournisseur</div>
-        <div class="meta-val">{{ br.numero_document_fournisseur|default:"—" }}</div>
+      <div class="info-col">
+        <div class="info-col-label">Traçabilité</div>
+        <div class="info-row">
+          <span class="info-lbl">Opérateur</span>
+          <span class="info-val">{{ br.operateur.get_full_name|default:br.operateur.username }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Date création</span>
+          <span class="info-val">{{ br.date_creation|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% if br.statut == 'valide' %}
+        <div class="info-row">
+          <span class="info-lbl">Validé par</span>
+          <span class="info-val" style="color:#15803d">{{ br.valide_par.get_full_name|default:br.valide_par.username }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-lbl">Date validation</span>
+          <span class="info-val" style="color:#15803d">{{ br.date_validation|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% else %}
+        <div class="info-row">
+          <span class="info-lbl">Statut</span>
+          <span class="info-val"><span class="badge-sm bs-{{ br.statut }}">{{ br.get_statut_display }}</span></span>
+        </div>
+        {% endif %}
       </div>
     </div>
-    <div class="meta-grid" style="border-top:1px solid #dde3ec">
-      <div class="meta-item">
-        <div class="meta-label">Opérateur</div>
-        <div class="meta-val">{{ br.operateur.get_full_name|default:br.operateur.username }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Bon de commande</div>
-        <div class="meta-val">{{ br.bon_commande.numero|default:"—" }}</div>
-      </div>
-      {% if br.statut == 'valide' %}
-      <div class="meta-item">
-        <div class="meta-label">Validé par</div>
-        <div class="meta-val">{{ br.valide_par.get_full_name|default:br.valide_par.username }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Date validation</div>
-        <div class="meta-val">{{ br.date_validation|date:"d/m/Y H:i" }}</div>
-      </div>
-      {% else %}
-      <div class="meta-item">
-        <div class="meta-label">Créé le</div>
-        <div class="meta-val">{{ br.date_creation|date:"d/m/Y H:i" }}</div>
-      </div>
-      <div class="meta-item"></div>
-      {% endif %}
+    {% if br.notes %}
+    <div class="notes-body">
+      <i class="fas fa-comment-alt" style="margin-right:6px;opacity:.6"></i><strong>Observations :</strong> {{ br.notes }}
     </div>
+    {% endif %}
   </div>
 
   <!-- Articles -->
-  <div class="br-card">
-    <div class="br-card-head">
-      <h3>Articles reçus</h3>
-      <span style="font-size:11px;color:#7a8b9c">{{ lignes.count }} ligne(s)</span>
+  <div class="panel">
+    <div class="ph">
+      <h3><i class="fas fa-wine-bottle" style="color:#8e44ad;margin-right:6px"></i>Articles reçus</h3>
+      <span class="ph-right">{{ lignes.count }} ligne(s)</span>
     </div>
     {% if lignes %}
-    <div style="overflow-x:auto">
+    <div class="tbl-wrap">
       <table class="tbl">
         <thead>
           <tr>
-            <th>#</th>
+            <th style="width:36px">#</th>
             <th>Article</th>
-            <th class="right">Qté commandée</th>
-            <th class="right">Qté reçue</th>
-            <th class="center">Écart</th>
-            <th class="right">Prix U. (FCFA)</th>
-            <th class="right">Total (FCFA)</th>
+            <th class="r">Qté commandée</th>
+            <th class="r">Qté reçue</th>
+            <th class="c">Écart</th>
+            <th class="r">Prix U. (FCFA)</th>
+            <th class="r">Total (FCFA)</th>
           </tr>
         </thead>
         <tbody>
           {% for l in lignes %}
           {% with ecart=l.ecart %}
           <tr>
-            <td style="color:#7a8b9c">{{ forloop.counter }}</td>
-            <td style="font-weight:600">{{ l.article.nom }}</td>
-            <td class="right">{% if l.quantite_commandee %}{{ l.quantite_commandee|floatformat:3 }}{% else %}—{% endif %}</td>
-            <td class="right">{{ l.quantite_recue|floatformat:3 }}</td>
-            <td class="center">
+            <td><span class="num">{{ forloop.counter }}</span></td>
+            <td>
+              <span class="art-name">{{ l.article.nom }}</span>
+              {% if l.article.reference %}<span class="art-ref">{{ l.article.reference }}</span>{% endif %}
+            </td>
+            <td class="r">{% if l.quantite_commandee %}{{ l.quantite_commandee|floatformat:3 }}{% else %}<span style="color:#c9d1d9">—</span>{% endif %}</td>
+            <td class="r" style="font-weight:600">{{ l.quantite_recue|floatformat:3 }}</td>
+            <td class="c">
               {% if l.quantite_commandee %}
                 {% if ecart > 0 %}<span class="ecart-pos">+{{ ecart|floatformat:3 }}</span>
                 {% elif ecart < 0 %}<span class="ecart-neg">{{ ecart|floatformat:3 }}</span>
                 {% else %}<span class="ecart-ok">✓ OK</span>{% endif %}
-              {% else %}—{% endif %}
+              {% else %}<span style="color:#c9d1d9">—</span>{% endif %}
             </td>
-            <td class="right">{{ l.prix_unitaire|floatformat:0 }}</td>
-            <td class="right" style="font-weight:700;color:#8e44ad">{{ l.total_ligne|floatformat:0 }}</td>
+            <td class="r price">{{ l.prix_unitaire|floatformat:0 }}</td>
+            <td class="r total-cell">{{ l.total_ligne|floatformat:0 }}</td>
           </tr>
           {% endwith %}
           {% endfor %}
-          <tr class="total-row">
-            <td colspan="6" class="right">TOTAL RÉCEPTION</td>
-            <td class="right" style="color:#8e44ad;font-size:15px">{{ br.total|floatformat:0 }} FCFA</td>
-          </tr>
         </tbody>
       </table>
     </div>
     {% else %}
-    <div style="text-align:center;padding:40px;color:#b0b8c1;font-size:13px">
-      <i class="fas fa-boxes" style="font-size:2rem;display:block;margin-bottom:12px;opacity:.3"></i>
-      Aucun article enregistré sur ce bon.
+    <div style="text-align:center;padding:48px 20px;color:#b0b8c1">
+      <i class="fas fa-wine-bottle" style="font-size:2rem;display:block;margin-bottom:12px;opacity:.25"></i>
+      <div style="font-size:.84rem">Aucun article enregistré sur ce bon.</div>
     </div>
     {% endif %}
   </div>
 
-  {% if br.notes %}
-  <div class="br-card">
-    <div class="br-card-head"><h3>Observations</h3></div>
-    <div style="padding:16px 20px;font-size:13px;color:#1a2535">{{ br.notes }}</div>
+  <!-- Total -->
+  {% if lignes %}
+  <div class="total-block">
+    <div>
+      <div class="total-block-label">Total réception</div>
+      <div><span class="total-block-val">{{ br.total|floatformat:0 }}</span><span class="total-block-unit">FCFA</span></div>
+      <div class="total-block-lines">{{ lignes.count }} article(s) · {{ br.date_reception|date:"d/m/Y" }}</div>
+    </div>
+    <span class="total-accent">🍷</span>
   </div>
   {% endif %}
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:30px">
-    <div style="border-top:1px solid #1a2535;padding-top:8px;text-align:center;font-size:12px;color:#5a6b7c">
-      Réceptionné par<br><br><br>______________________
-    </div>
-    <div style="border-top:1px solid #1a2535;padding-top:8px;text-align:center;font-size:12px;color:#5a6b7c">
-      Responsable Cave<br><br><br>______________________
+  <!-- Signatures (print) -->
+  <div class="panel">
+    <div class="ph"><h3>Signatures</h3></div>
+    <div class="sig-zone">
+      <div class="sig-slot"><div class="sig-line">Réceptionné par<br><br><br>______________________</div></div>
+      <div class="sig-slot"><div class="sig-line">Responsable Cave<br><br><br>______________________</div></div>
+      <div class="sig-slot"><div class="sig-line">Fournisseur (tampon)<br><br><br>______________________</div></div>
     </div>
   </div>
 
