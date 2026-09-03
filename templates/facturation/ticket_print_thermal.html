@@ -139,7 +139,7 @@
     {% endif %}
     <div class="meta-row">
         <span class="meta-label">Règlement :</span>
-        <span>{{ ticket.get_mode_paiement_display }}</span>
+        <span>{% if montant_especes %}Mixte — Espèces + {{ ticket.get_mode_paiement_display }}{% else %}{{ ticket.get_mode_paiement_display }}{% endif %}</span>
     </div>
     {% if ticket.client %}
     <div class="meta-row">

@@ -1827,6 +1827,9 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
 
   const MBMODES = ['wave','orange_money','mtn_money'];
   const modeLabelsLocal = {especes:'Espèces',carte:'Carte / TPE',mobile:'Mobile Money',wave:'Wave',orange_money:'Orange Money',mtn_money:'MTN Mobile Money',chambre:'Report Chambre'};
+  const reglementLabel = (MBMODES.includes(modePrint) && montantEspeces > 0)
+    ? `Mixte — Espèces + ${modeLabelsLocal[modePrint] || modePrint}`
+    : (modeLabelsLocal[modePrint] || modePrint);
 
   const html = `<!DOCTYPE html><html><head>
   <meta charset="UTF-8"><title>Aperçu ticket</title>
@@ -1859,7 +1862,9 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
     .btn-imprimer:hover { background:#c9a84c; color:#1a1225; }
     .btn-imprimer:disabled { opacity:0.6; cursor:not-allowed; }
     .msg-err { color:#c00; font-size:11px; text-align:center; margin-bottom:8px; display:none; }
-    @media print { .no-print { display:none !important; } }
+    .copy-label { text-align:center; font-weight:bold; font-size:10px; border:1px dashed #000; padding:3px; margin-bottom:6px; letter-spacing:1px; }
+    .page-cut { height:0; margin:0; padding:0; }
+    @media print { .no-print { display:none !important; } .page-cut { display:block !important; page-break-after:always; break-after:page; } }
   </style>
   </head><body>
 
@@ -1873,6 +1878,7 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
     </div>
   </div>
 
+  <div id="tzOne">
   <!-- EN-TÊTE -->
   <div class="center">
     <img src="${logoUrl}" alt="Logo" style="width:60px;height:60px;object-fit:contain;margin-bottom:4px;" onerror="this.style.display='none'">
@@ -1885,12 +1891,12 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
 
   <!-- META -->
   <div class="meta-row"><span class="meta-label">Date :</span><span>${date}</span></div>
-  <div class="meta-row"><span class="meta-label">Ticket N° :</span><span id="_tNum">—</span></div>
+  <div class="meta-row"><span class="meta-label">Ticket N° :</span><span class="_tNum">—</span></div>
   <div class="meta-row"><span class="meta-label">Service :</span><span>${espaceLabel}</span></div>
   ${ref ? `<div class="meta-row"><span class="meta-label">Réf :</span><span>${ref}</span></div>` : ''}
   <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
   <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
-  <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabelsLocal[modePrint] || modePrint}</span></div>
+  <div class="meta-row"><span class="meta-label">Règlement :</span><span>${reglementLabel}</span></div>
   <hr class="sep-dash">
 
   <!-- ARTICLES -->
@@ -1923,6 +1929,7 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
   <hr class="sep-solid">
 
   <div class="footer">Merci de votre visite<br>Conservez ce ticket pour tout litige</div>
+  </div><!-- /tzOne -->
 
   <script>
   const _P = ${payloadJson};
@@ -1946,8 +1953,7 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
         return;
       }
       _ok = true;
-      const numEl = document.getElementById('_tNum');
-      if (numEl && d.ticket_numero) numEl.textContent = d.ticket_numero;
+      document.querySelectorAll('._tNum').forEach(el => { if (d.ticket_numero) el.textContent = d.ticket_numero; });
       if (window.opener && !window.opener.closed) window.opener._finaliserApresApercu(d);
       document.getElementById('actionsApercu').style.display = 'none';
       window.print();
@@ -1957,6 +1963,20 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
       btn.disabled = false; btn.textContent = '🖨️ Confirmer & Imprimer';
     }
   }
+
+  // 2 copies : COPIE CLIENT + COPIE CAISSE (clonage automatique)
+  (function() {
+    const orig = document.getElementById('tzOne');
+    if (!orig) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'copy-label'; lbl.textContent = '— COPIE CLIENT —';
+    orig.insertBefore(lbl, orig.firstChild);
+    const cut = document.createElement('div'); cut.className = 'page-cut';
+    const clone = orig.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.querySelector('.copy-label').textContent = '— COPIE CAISSE —';
+    orig.after(cut, clone);
+  })();
 
   function _annuler() {
     if (window.opener && !window.opener.closed && window.opener._annulerApercu) window.opener._annulerApercu();
