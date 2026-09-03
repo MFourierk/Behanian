@@ -1831,12 +1831,17 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
     ? `Mixte — Espèces + ${modeLabelsLocal[modePrint] || modePrint}`
     : (modeLabelsLocal[modePrint] || modePrint);
 
-  const html = `<!DOCTYPE html><html><head>
+  const html = `<!DOCTYPE html><html lang="fr"><head>
   <meta charset="UTF-8"><title>Aperçu ticket</title>
   <style>
     @page { size: 80mm auto; margin: 3mm; }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Courier New',monospace; font-size:11px; width:74mm; background:#fff; color:#000; }
+    body { font-family:'Courier New',monospace; font-size:11px; background:linear-gradient(160deg,#1a1225 0%,#2a1a3a 50%,#1a1225 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+    .apercu-header { width:100%; background:rgba(201,168,76,0.10); border-bottom:1px solid rgba(201,168,76,0.22); padding:13px 20px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .apercu-title { font-family:Georgia,serif; font-size:14px; font-weight:bold; color:#c9a84c; letter-spacing:2px; text-transform:uppercase; }
+    .apercu-sub { font-size:10px; color:rgba(201,168,76,0.55); letter-spacing:0.5px; }
+    .ticket-wrapper { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:22px 16px; overflow-y:auto; }
+    .ticket-inner { width:300px; background:white; padding:14px; box-shadow:0 10px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,168,76,0.15); border-radius:3px; color:#000; }
     .center { text-align:center; }
     .bold   { font-weight:bold; }
     .sep-dash  { border:none; border-top:1px dashed #000; margin:5px 0; }
@@ -1852,33 +1857,27 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
     .total-val   { font-size:15px; font-weight:bold; }
     .paiement-row { display:flex; justify-content:space-between; padding:2px; font-size:11px; }
     .footer { margin-top:8px; font-size:9px; text-align:center; line-height:1.5; }
-    /* Zone boutons — masquée à l'impression */
-    .no-print { padding:12px 10px; border-bottom:2px dashed #bbb; margin-bottom:6px; }
-    .apercu-lbl { text-align:center; font-size:10px; color:#888; letter-spacing:1px; margin-bottom:10px; }
-    .btn-row { display:flex; gap:8px; justify-content:center; }
-    .btn-annuler  { background:#fff; color:#555; border:1px solid #999; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:bold; cursor:pointer; }
-    .btn-annuler:hover  { background:#f0f0f0; }
-    .btn-imprimer { background:#1a1225; color:#c9a84c; border:2px solid #c9a84c; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:bold; cursor:pointer; letter-spacing:1px; }
-    .btn-imprimer:hover { background:#c9a84c; color:#1a1225; }
-    .btn-imprimer:disabled { opacity:0.6; cursor:not-allowed; }
-    .msg-err { color:#c00; font-size:11px; text-align:center; margin-bottom:8px; display:none; }
+    .actions-bar { width:100%; background:rgba(0,0,0,0.4); border-top:1px solid rgba(201,168,76,0.18); padding:16px 20px; display:flex; flex-direction:column; gap:10px; align-items:center; position:sticky; bottom:0; }
+    .msg-err { color:#f08080; font-size:11px; text-align:center; display:none; font-family:sans-serif; }
+    .btn-row { display:flex; gap:12px; justify-content:center; }
+    .btn-annuler  { padding:12px 24px; font-size:13px; font-weight:bold; background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.65); border:1.5px solid rgba(255,255,255,0.18); border-radius:10px; cursor:pointer; font-family:Georgia,serif; letter-spacing:.3px; transition:all .2s; }
+    .btn-annuler:hover  { background:rgba(220,38,38,0.15); border-color:rgba(220,38,38,0.4); color:#f08080; }
+    .btn-imprimer { padding:12px 28px; font-size:13px; font-weight:bold; background:linear-gradient(135deg,#c9a84c 0%,#e8c97a 100%); color:#1a1225; border:none; border-radius:10px; cursor:pointer; font-family:Georgia,serif; letter-spacing:.3px; box-shadow:0 4px 16px rgba(201,168,76,0.4); transition:all .2s; }
+    .btn-imprimer:hover { box-shadow:0 6px 22px rgba(201,168,76,0.6); transform:translateY(-1px); }
+    .btn-imprimer:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
     .copy-label { text-align:center; font-weight:bold; font-size:10px; border:1px dashed #000; padding:3px; margin-bottom:6px; letter-spacing:1px; }
     .page-cut { height:0; margin:0; padding:0; }
-    @media print { .no-print { display:none !important; } .page-cut { display:block !important; page-break-after:always; break-after:page; } }
+    @media print { body { background:white!important; display:block!important; } .apercu-header,.actions-bar { display:none !important; } .ticket-wrapper { display:block; padding:0; } .ticket-inner { box-shadow:none; width:100%; padding:0; border-radius:0; } .page-cut { display:block !important; page-break-after:always; break-after:page; } }
   </style>
   </head><body>
 
-  <!-- BOUTONS — masqués à l'impression -->
-  <div class="no-print" id="actionsApercu">
-    <div class="apercu-lbl">— APERÇU DU TICKET —</div>
-    <div id="msgErr" class="msg-err"></div>
-    <div class="btn-row">
-      <button class="btn-annuler"  id="btnAnnuler"  onclick="_annuler()">✕ Annuler</button>
-      <button class="btn-imprimer" id="btnImprimer" onclick="_imprimer()">🖨️ Confirmer &amp; Imprimer</button>
-    </div>
+  <div class="apercu-header">
+    <div class="apercu-title">👁 Aperçu avant impression</div>
+    <div class="apercu-sub">Vérifiez le ticket · Confirmez pour clôturer et imprimer</div>
   </div>
 
-  <div id="tzOne">
+  <div class="ticket-wrapper">
+  <div class="ticket-inner" id="tzOne">
   <!-- EN-TÊTE -->
   <div class="center">
     <img src="${logoUrl}" alt="Logo" style="width:60px;height:60px;object-fit:contain;margin-bottom:4px;" onerror="this.style.display='none'">
@@ -1930,6 +1929,15 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
 
   <div class="footer">Merci de votre visite<br>Conservez ce ticket pour tout litige</div>
   </div><!-- /tzOne -->
+  </div><!-- /ticket-wrapper -->
+
+  <div class="actions-bar">
+    <div id="msgErr" class="msg-err"></div>
+    <div class="btn-row">
+      <button class="btn-annuler"  id="btnAnnuler"  onclick="_annuler()">✕ Annuler</button>
+      <button class="btn-imprimer" id="btnImprimer" onclick="_imprimer()">🖨️ Confirmer &amp; Imprimer</button>
+    </div>
+  </div>
 
   <script>
   const _P = ${payloadJson};
@@ -1955,7 +1963,6 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
       _ok = true;
       document.querySelectorAll('._tNum').forEach(el => { if (d.ticket_numero) el.textContent = d.ticket_numero; });
       if (window.opener && !window.opener.closed) window.opener._finaliserApresApercu(d);
-      document.getElementById('actionsApercu').style.display = 'none';
       window.print();
     } catch(e) {
       msg.textContent = 'Erreur réseau : ' + e.message;
@@ -1987,7 +1994,7 @@ function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCa
   <\/script>
   </body></html>`;
 
-  const w = window.open('', '_blank', 'width=380,height=680');
+  const w = window.open('', '_blank', 'width=460,height=780');
   if (!w) {
     toast('⚠️ Popup bloqué — autorisez les popups pour imprimer', 'error');
     _paiementEnCours = false;
