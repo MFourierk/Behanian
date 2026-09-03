@@ -2611,11 +2611,16 @@ function majTableCard(tableId, statut, total, clientNom) {
     badge.className = 'table-statut-badge badge-' + (statut === 'disponible' ? 'libre' : statut);
     badge.textContent = statut === 'disponible' ? 'LIBRE' : statut === 'occupee' ? 'OCCUPÉE' : 'RÉSERVÉE';
   }
-  let totalEl = card.querySelector('.table-total');
   if (total > 0) {
+    let totalEl = card.querySelector('.table-total');
     if (!totalEl) { totalEl = document.createElement('div'); totalEl.className = 'table-total'; card.appendChild(totalEl); }
     totalEl.textContent = formatF(total);
-  } else if (totalEl) totalEl.remove();
+    card.querySelectorAll('.table-total ~ .table-total').forEach(el => el.remove());
+  } else {
+    card.querySelectorAll('.table-total, .table-client').forEach(el => el.remove());
+  }
+  const tableNum = card.dataset.num || '';
+  card.setAttribute('onclick', `selectionnerTable(${tableId}, '${tableNum}', '${statut}')`);
 }
 
 // ── PAIEMENT ──
