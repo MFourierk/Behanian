@@ -536,6 +536,13 @@ def rapport_caisse(request, session_id=None):
             qs = qs.filter(user=request.user)
         session = qs.order_by('-opened_at').first()
 
+        # Fallback : si pas de session à cette date, prendre la session ouverte en cours
+        if not session and not date_str:
+            open_qs = CaisseSession.objects.filter(is_open=True)
+            if not is_manager:
+                open_qs = open_qs.filter(user=request.user)
+            session = open_qs.order_by('-opened_at').first()
+
     if not session:
         if is_manager:
             return redirect('caisse:historique')
