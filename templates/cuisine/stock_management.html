@@ -666,6 +666,7 @@
                                 <div class="action-group">
                                     <a href="{% url 'cuisine:bon_reception_detail' br.pk %}" class="btn-action btn-view" title="Voir"><i class="fas fa-eye"></i></a>
                                     {% if br.statut == 'brouillon' %}
+                                    <a href="{% url 'cuisine:bon_reception_edit' br.pk %}" class="btn-action" style="background:#dbeafe;color:#2563eb;" title="Modifier"><i class="fas fa-edit"></i></a>
                                     <form method="post" action="{% url 'cuisine:bon_reception_valider' br.pk %}" style="display:inline;" onsubmit="return confirm('Valider et mettre à jour le stock ?')">
                                         {% csrf_token %}
                                         <button type="submit" class="btn-action btn-ok" title="Valider"><i class="fas fa-check"></i></button>
