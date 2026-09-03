@@ -1,0 +1,97 @@
+{% extends 'print_base.html' %}
+{% block doc_title %}{{ br.numero }}{% endblock %}
+
+{% block doc_content %}
+<!-- TITRE -->
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Bon de Réception — Cave</div>
+    <div class="doc-title-sub">Département Cave · Approvisionnement</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="badge badge-{{ br.statut }}">{{ br.get_statut_display }}</span>
+    <span class="doc-ref">{{ br.numero }}</span>
+  </div>
+</div>
+
+<!-- META -->
+<div class="meta-grid cols-2">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations du bon</div>
+    <div class="meta-row"><span class="meta-lbl">N° Réception</span><span class="meta-val">{{ br.numero }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date de réception</span><span class="meta-val">{{ br.date_reception|date:"d/m/Y" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Fournisseur</span><span class="meta-val">{{ br.fournisseur.nom|default:"Non spécifié" }}</span></div>
+    {% if br.numero_document_fournisseur %}<div class="meta-row"><span class="meta-lbl">N° doc fournisseur</span><span class="meta-val">{{ br.numero_document_fournisseur }}</span></div>{% endif %}
+    {% if br.bon_commande %}<div class="meta-row"><span class="meta-lbl">Bon de commande</span><span class="meta-val">{{ br.bon_commande.numero }}</span></div>{% endif %}
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">Validation &amp; Traçabilité</div>
+    <div class="meta-row"><span class="meta-lbl">Opérateur</span><span class="meta-val">{{ br.operateur.get_full_name|default:br.operateur.username }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date création</span><span class="meta-val">{{ br.date_creation|date:"d/m/Y H:i" }}</span></div>
+    {% if br.statut == 'valide' %}
+    <div class="meta-row"><span class="meta-lbl">Validé par</span><span class="meta-val">{{ br.valide_par.get_full_name|default:br.valide_par.username|default:"—" }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Date validation</span><span class="meta-val">{{ br.date_validation|date:"d/m/Y H:i" }}</span></div>
+    {% endif %}
+    <div class="meta-row"><span class="meta-lbl">Nb articles</span><span class="meta-val">{{ lignes.count }} ligne(s)</span></div>
+  </div>
+</div>
+
+<!-- ARTICLES -->
+<div class="content-section">
+  <div class="section-title">Détail des articles reçus</div>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Désignation / Article</th>
+        <th class="r" style="width:90px">Qté commandée</th>
+        <th class="r" style="width:90px">Qté reçue</th>
+        <th class="r" style="width:70px">Écart</th>
+        <th class="r" style="width:110px">Prix U. (FCFA)</th>
+        <th class="r" style="width:120px">Total (FCFA)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in lignes %}
+      <tr>
+        <td class="muted">{{ forloop.counter }}</td>
+        <td class="bold">{{ l.article.nom }}</td>
+        <td class="r">{% if l.quantite_commandee %}{{ l.quantite_commandee|floatformat:3 }}{% else %}—{% endif %}</td>
+        <td class="r">{{ l.quantite_recue|floatformat:3 }}</td>
+        <td class="r">
+          {% if l.quantite_commandee %}
+            {% with e=l.ecart %}
+              {% if e > 0 %}+{{ e|floatformat:3 }}{% elif e < 0 %}{{ e|floatformat:3 }}{% else %}✓{% endif %}
+            {% endwith %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="r">{{ l.prix_unitaire|montant }}</td>
+        <td class="r bold">{{ l.total_ligne|montant }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun article</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5"></td>
+        <td class="total-label">Total Réception</td>
+        <td class="total-val">{{ br.total|montant }} FCFA</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+{% if br.notes %}
+<div class="notes-box"><strong>Observations / Écarts</strong>{{ br.notes }}</div>
+{% endif %}
+
+<!-- SIGNATURES -->
+<div class="signatures cols-3">
+  <div class="sig-box"><div class="sig-line">Réceptionné par</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Responsable Cave</div><div class="sig-hint">Nom &amp; Signature</div></div>
+  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+</div>
+{% endblock %}
+
+{% block doc_footer_right %}Document généré le {{ br.date_creation|date:"d/m/Y" }} · Réf : {{ br.numero }}{% endblock %}

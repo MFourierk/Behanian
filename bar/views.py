@@ -713,6 +713,16 @@ def bon_reception_detail(request, pk):
 
 @require_module_access('bar')
 @require_bar_gestion
+def bon_reception_print(request, pk):
+    br     = get_object_or_404(BonReceptionBar, pk=pk)
+    lignes = br.lignes.select_related('article').all()
+    return render(request, 'bar/bon_reception_print.html', {
+        'br': br, 'lignes': lignes,
+    })
+
+
+@require_module_access('bar')
+@require_bar_gestion
 def bon_reception_edit(request, pk):
     br = get_object_or_404(BonReceptionBar, pk=pk)
     if br.statut not in ['brouillon', 'en_cours']:

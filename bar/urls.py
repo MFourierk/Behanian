@@ -39,6 +39,7 @@ urlpatterns = [
     path('receptions/<int:pk>/modifier/', views.bon_reception_edit, name='bon_reception_edit'),
     path('receptions/<int:pk>/valider/', views.bon_reception_valider, name='bon_reception_valider'),
     path('receptions/<int:pk>/annuler/', views.bon_reception_annuler, name='bon_reception_annuler'),
+    path('receptions/<int:pk>/print/', views.bon_reception_print, name='bon_reception_print'),
 
     # Mouvements
     path('mouvements/nouveau/', views.mouvement_create, name='mouvement_create'),

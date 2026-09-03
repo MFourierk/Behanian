@@ -166,6 +166,9 @@
         <button type="submit" class="btn-action btn-annuler">✕ Annuler</button>
     </form>
     {% endif %}
+    <a href="{% url 'bar:bon_reception_print' br.pk %}" target="_blank" class="btn-action btn-print">
+        <i class="fas fa-print"></i> Imprimer
+    </a>
     <a href="{% url 'bar:stock_management' %}?tab=receptions" class="btn-action btn-back">← Retour</a>
 </div>
 {% endblock %}
