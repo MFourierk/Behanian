@@ -765,7 +765,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   <div class="panel-catalogue">
     <!-- ── MODAL SÉLECTION SERVEUR ── -->
     <div id="modalServeur" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.82);display:none;align-items:center;justify-content:center;">
-      <div style="background:#1e1e28;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 28px;width:100%;max-width:380px;text-align:center;">
+      <div style="background:#1e1e28;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:32px 28px;width:100%;max-width:380px;text-align:center;position:relative;">
+        <!-- Bouton fermer — revient au plan de salle sans assigner de serveur -->
+        <button onclick="fermerModalServeur()" title="Annuler"
+          style="position:absolute;top:12px;right:14px;background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.3rem;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;transition:color 0.2s,background 0.2s;"
+          onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'"
+          onmouseout="this.style.color='rgba(255,255,255,0.4)';this.style.background='none'">✕</button>
         <div style="font-size:1.5rem;margin-bottom:6px;">🧑‍🍳</div>
         <h3 style="color:#c9a84c;font-size:1.1rem;font-weight:800;margin-bottom:4px;" id="modalServeurTitre">Qui prend cette table ?</h3>
         <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-bottom:22px;">Sélectionnez le serveur avant de commencer</p>
@@ -1684,6 +1689,18 @@ function confirmerServeur(userId, nom) {
   sel.disabled = true;
   toast('🧑‍🍳 ' + nom + ' — Table ' + t.tableNum, 'success');
   switchView(document.querySelector('.nav-tab[data-view="plats"]'));
+}
+
+function fermerModalServeur() {
+  // Annuler la sélection de table : pas de serveur choisi → retour plan de salle
+  document.getElementById('modalServeur').style.display = 'none';
+  const t = tickets[ticketActifId];
+  if (t) {
+    t.tableId  = null;
+    t.tableNum = null;
+    document.getElementById('ticketNum').textContent = t.nom || 'Ticket';
+  }
+  switchView(document.querySelector('.nav-tab[data-view="salle"]'));
 }
 
 // ── FILTRES PLATS (2 niveaux) ──
