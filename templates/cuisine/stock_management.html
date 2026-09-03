@@ -897,7 +897,7 @@
                                         {% csrf_token %}
                                         <button type="submit" class="btn-action btn-ok" title="Valider"><i class="fas fa-check"></i></button>
                                     </form>
-                                    {% elif inv.statut == 'valide' and inv.type_inventaire != 'correction' %}
+                                    {% elif inv.statut == 'valide' and inv.type_inventaire != 'correction' and user.is_superuser %}
                                     <form method="post" action="{% url 'cuisine:inventaire_correction' inv.pk %}" style="display:inline;"
                                           onsubmit="return confirm('Créer un inventaire de correction qui restaure le stock à l\'état AVANT cet inventaire ?')">
                                         {% csrf_token %}

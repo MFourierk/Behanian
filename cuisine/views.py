@@ -1279,7 +1279,10 @@ def inventaire_valider(request, pk):
 @require_POST
 def inventaire_correction(request, pk):
     """Crée un inventaire de correction pré-rempli avec les quantités théoriques de l'inventaire source.
-    Cela permet de restaurer le stock à l'état qu'il avait AVANT la validation de cet inventaire."""
+    Réservé aux administrateurs (superuser) uniquement."""
+    if not request.user.is_superuser:
+        messages.error(request, "Action réservée aux administrateurs.")
+        return redirect('/cuisine/stock/?tab=inventaire')
     source = get_object_or_404(InventaireCuisine, pk=pk)
     from django.db import transaction as _tx
     with _tx.atomic():
