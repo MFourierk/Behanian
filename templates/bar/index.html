@@ -1070,7 +1070,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     <div class="modal-actions" style="margin-top:18px">
       <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
       <button class="modal-btn-confirm" id="btnConfirmerPaiement" onclick="confirmerPaiement()">
-        <i class="fas fa-check mr-2"></i> Confirmer & Imprimer
+        <i class="fas fa-eye mr-2"></i> Aperçu & Imprimer
       </button>
     </div>
   </div>
@@ -1505,7 +1505,7 @@ function ouvrirModalPaiement() {
 function fermerModal() {
   document.getElementById('modalPaiement').classList.remove('open');
   const btnC = document.getElementById('btnConfirmerPaiement');
-  if (btnC) { btnC.disabled = false; btnC.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
+  if (btnC) { btnC.disabled = false; btnC.innerHTML = '<i class="fas fa-eye mr-2"></i> Aperçu & Imprimer'; }
 }
 
 function calcRendu() {
@@ -1675,7 +1675,42 @@ function onBarSalonChange() {
   if (modePaiement === 'especes') calcRendu();
 }
 
-let _paiementEnCours = false;
+// ============================================================
+// APERÇU + CONFIRMATION TICKET (2 étapes : aperçu → paiement)
+// ============================================================
+let _paiementEnCours  = false;
+let _apercuOldTicketId = null;
+
+// Appelé depuis la popup aperçu après succès API → clôture le ticket dans le TPE
+window._finaliserApresApercu = function(data) {
+  _paiementEnCours = false;
+  toast(`<i class="fas fa-check-circle mr-2"></i> Ticket ${data.ticket_numero} — ${formatF(data.total)} validé`, 'success');
+  if (data.erreurs_stock?.length) setTimeout(() => toast(`⚠️ Stock : ${data.erreurs_stock.join(' | ')}`, 'error'), 800);
+  const oldId = _apercuOldTicketId;
+  _apercuOldTicketId = null;
+  if (oldId !== null) {
+    delete tickets[oldId];
+    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+  }
+  ticketCounter++;
+  const newTid = ticketCounter;
+  const newNom = `T-${String(newTid).padStart(3, '0')}`;
+  tickets[newTid] = { id: newTid, nom: newNom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes', remise_pct: 0 };
+  ticketActifId = newTid;
+  const _ct = document.getElementById('ticketsAttente');
+  const _bn = document.createElement('button');
+  _bn.type = 'button'; _bn.className = 'ticket-attente-btn active'; _bn.dataset.tid = newTid;
+  _bn.innerHTML = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${newTid}, event)">×</span>`;
+  _bn.onclick = () => chargerTicket(newTid);
+  _ct.appendChild(_bn);
+  _chargerTicketInterne(newTid);
+};
+
+// Appelé depuis la popup aperçu quand la caissière clique "Annuler"
+window._annulerApercu = function() {
+  _paiementEnCours = false;
+};
+
 async function confirmerPaiement() {
   if (_paiementEnCours) return;
   _paiementEnCours = true;
@@ -1716,254 +1751,231 @@ async function confirmerPaiement() {
     if (!chambre) { toast('Veuillez sélectionner la chambre du client', 'error'); _paiementEnCours=false; return; }
   }
 
-  const btnConfirm = document.getElementById('btnConfirmerPaiement');
-  if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...'; }
+  // Payload (sera envoyé à l'API depuis la popup aperçu, pas ici)
+  const payload = {
+    ticket_nom      : t.nom,
+    lignes          : t.lignes.map(l => ({ id: l.id, nom: l.nom, prix: l.prix, qty: l.qty })),
+    total           : total,
+    paiement        : modePaiement,
+    espace          : t.espace,
+    ref             : t.ref,
+    serveur         : serveurVal,
+    serveur_id      : t.serveur_id || null,
+    montant_recu    : montantRecu,
+    montant_especes : montantEspeces,
+    reservation_id  : chambreLieeId || (modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : ''),
+    operateur_mobile: '',
+    stock_live      : true,
+    session_token   : SESSION_TOKEN,
+    salon_vip_id    : barSalonId || null,
+    heures_salon    : barHeures,
+  };
 
+  // Capturer tout avant fermeture de la modal
+  const _modeCapture    = modePaiement;
+  const _espaceCapture  = t.espace || '';
+  const _salonSel       = document.getElementById('barSelectSalonVIP');
+  const _salonNomCapt   = _salonSel?.options[_salonSel?.selectedIndex]?.text || '';
+  const _salonFraisCapt = _barSalonFrais;
+  const ticketSnapshot  = JSON.parse(JSON.stringify(t));
+  _apercuOldTicketId    = ticketActifId;
+
+  // Fermer la modal paiement → ouvrir aperçu
+  // Le ticket reste intact dans le TPE jusqu'à ce que la caissière clique "Confirmer & Imprimer"
+  fermerModal();
   try {
-    const payload = {
-      ticket_nom      : t.nom,
-      lignes          : t.lignes.map(l => ({ id: l.id, nom: l.nom, prix: l.prix, qty: l.qty })),
-      total           : total,
-      paiement        : modePaiement,
-      espace          : t.espace,
-      ref             : t.ref,
-      serveur         : serveurVal,
-      serveur_id      : t.serveur_id || null,
-      montant_recu    : montantRecu,
-      montant_especes : montantEspeces,
-      reservation_id  : chambreLieeId || (modePaiement === 'chambre' ? (document.getElementById('selectChambreBar')?.value || '') : ''),
-      operateur_mobile: '',
-      stock_live      : true,
-      session_token   : SESSION_TOKEN,
-      salon_vip_id    : barSalonId || null,
-      heures_salon    : barHeures,
-    };
-
-    const _abortCtrlVente = new AbortController();
-    const _abortTimerVente = setTimeout(() => _abortCtrlVente.abort(), 30000);
-    let resp;
-    try {
-      resp = await fetch("{% url 'bar:api_vente' %}", {
-        signal: _abortCtrlVente.signal,
-        method : 'POST',
-        headers: { 'Content-Type':'application/json', 'X-CSRFToken':CSRF },
-        body: JSON.stringify(payload),
-      });
-    } finally { clearTimeout(_abortTimerVente); }
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      if (resp.status === 403 || txt.includes('login') || txt.includes('connecter')) {
-        toast('Session expirée — veuillez vous reconnecter', 'error');
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        toast(`Erreur serveur (${resp.status})`, 'error');
-      }
-      if (btnConfirm) { btnConfirm.disabled=false; btnConfirm.innerHTML='<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
-      _paiementEnCours=false; return;
-    }
-
-    const data = await resp.json();
-
-    if (!data.ok) {
-      afficherErreurStock(data);
-      if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
-      _paiementEnCours = false;
-      return;
-    }
-
-    fermerModal();
-    toast(`<i class="fas fa-check-circle mr-2"></i> Ticket ${data.ticket_numero} — ${formatF(data.total)} validé`, 'success');
-
-    // Alertes stock insuffisant
-    if (data.erreurs_stock && data.erreurs_stock.length) {
-      setTimeout(() => toast(`⚠️ Stock : ${data.erreurs_stock.join(' | ')}`, 'error'), 800);
-    }
-
-    // 1. Réinitialiser l'interface (avant impression pour éviter le blocage si popup bloqué)
-    const ticketSnapshot = JSON.parse(JSON.stringify(t));
-    // Capturer avant réinitialisation UI (modePaiement, espace, salon seront écrasés)
-    const _modeCapture    = modePaiement;
-    const _espaceCapture  = t.espace || '';
-    const _salonSel       = document.getElementById('barSelectSalonVIP');
-    const _salonNomCapt   = _salonSel?.options[_salonSel?.selectedIndex]?.text || '';
-    const _salonFraisCapt = _barSalonFrais;
-    const oldId = ticketActifId;
-    delete tickets[oldId];
-    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
-    ticketCounter++;
-    const newTid = ticketCounter;
-    const newNom = `T-${String(newTid).padStart(3, '0')}`;
-    tickets[newTid] = { id: newTid, nom: newNom, espace: '', ref: '', serveur: '', serveur_id: null, lignes: [], paiement: 'especes', remise_pct: 0 };
-    ticketActifId = newTid;
-    const container = document.getElementById('ticketsAttente');
-    const btnNew    = document.createElement('button');
-    btnNew.type        = 'button';
-    btnNew.className   = 'ticket-attente-btn active';
-    btnNew.dataset.tid = newTid;
-    btnNew.innerHTML   = `<i class="fas fa-circle" style="font-size:0.45rem;"></i> <span class="ticket-label">${newNom}</span><span class="ticket-close" title="Annuler" onclick="supprimerTicket(${newTid}, event)">×</span>`;
-    btnNew.onclick     = () => chargerTicket(newTid);
-    container.appendChild(btnNew);
-    _chargerTicketInterne(newTid);
-
-    // 2. Impression (dans son propre try pour ne pas bloquer le flux si popup refusé)
-    try { imprimerTicket(ticketSnapshot, total, data.ticket_numero, data.rendu, montantEspeces, _modeCapture, _espaceCapture, _salonNomCapt, barHeures, _salonFraisCapt); }
-    catch(printErr) { toast('⚠️ Impression bloquée — autorisez les popups', 'error'); }
-
+    _ouvrirApercu(ticketSnapshot, total, montantRecu, montantEspeces, payload,
+                  _modeCapture, _espaceCapture, _salonNomCapt, barHeures, _salonFraisCapt);
   } catch(err) {
-    toast(`Erreur réseau : ${err.message}`, 'error');
-    if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fas fa-check mr-2"></i> Confirmer & Imprimer'; }
-  } finally {
+    toast('❌ Popup bloqué — autorisez les popups pour imprimer', 'error');
     _paiementEnCours = false;
   }
+  // _paiementEnCours libéré par _finaliserApresApercu (Imprimer) ou _annulerApercu (Annuler)
 }
 
 // ============================================================
-// IMPRESSION TICKET THERMIQUE (80mm)
+// POPUP APERÇU — 2 boutons : Annuler | Confirmer & Imprimer
+// L'appel API et la clôture du ticket ne se font qu'à "Imprimer"
 // ============================================================
-function imprimerTicket(t, total, ticketNumero, rendu, montantEspeces = 0, modePayCapture = null, espaceCapture = '', salonNom = '', salonHeures = 0, salonFrais = 0) {
-  const _ESPACE_LABELS_PRINT = { restaurant:'Restaurant', piscine:'Piscine', evenementiel:'Espace/Évènementiel', hotel:'Hôtel', comptoir:'Bar comptoir', plage:'Plage', visite:'Visiteur' };
-  const espaceLabel = _ESPACE_LABELS_PRINT[espaceCapture] || 'Cave';
+function _ouvrirApercu(t, total, montantRecu, montantEspeces, payload, modePayCapture, espaceCapture, salonNom, salonHeures, salonFrais) {
+  const _ESPACE_LBL = { restaurant:'Restaurant', piscine:'Piscine', evenementiel:'Espace/Évènementiel', hotel:'Hôtel', comptoir:'Bar comptoir', plage:'Plage', visite:'Visiteur' };
+  const espaceLabel = _ESPACE_LBL[espaceCapture] || 'Cave';
   const modePrint   = modePayCapture || modePaiement;
-  const ref          = t.ref || '';
-  const serveur      = t.serveur || document.getElementById('selectServeur')?.value || '—';
-  const operateur    = "{{ request.user.get_full_name|default:request.user.username }}";
-  // Infos complexe depuis la base (Configuration.load())
-  const nomComplexe  = "{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}";
-  const adresse      = "{{ config.adresse|default:'Yopougon Beago à 200m du Palais de justice' }}";
-  const telephone    = "{{ config.telephone|default:'07 58 29 11 10 / 01 43 09 76 16' }}";
-  const logoUrl      = "{% static 'images/Logo.png' %}";
-  const date         = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  const numAffiche   = ticketNumero || t.nom;
-  const renduVal     = rendu || 0;
-  const montantRecuVal = parseInt(document.getElementById('montantRecu')?.value || total);
+  const ref         = t.ref || '';
+  const serveur     = t.serveur || '—';
+  const operateur   = "{{ request.user.get_full_name|default:request.user.username }}";
+  const nomComplexe = "{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}";
+  const adresse     = "{{ config.adresse|default:'Yopougon Beago à 200m du Palais de justice' }}";
+  const telephone   = "{{ config.telephone|default:'07 58 29 11 10 / 01 43 09 76 16' }}";
+  const logoUrl     = "{% static 'images/Logo.png' %}";
+  const date        = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const renduVal    = (modePrint === 'especes' && montantRecu > total) ? Math.round(montantRecu - total) : 0;
+  const showRendu   = renduVal > 0;
+  const apiUrl      = "{% url 'bar:api_vente' %}";
+  // Sérialisation sûre du payload pour l'embed dans la popup
+  const payloadJson = JSON.stringify(payload).replace(/<\//g, '<\\/');
 
   const lignesHTML = t.lignes.map(l => {
-    const montantLigne = parseInt(l.prix * l.qty).toLocaleString('fr-FR');
-    const prixUnit     = parseInt(l.prix).toLocaleString('fr-FR');
-    return `
-      <tr>
-        <td style="padding:3px 2px; max-width:110px; word-wrap:break-word;">${l.nom}</td>
-        <td style="padding:3px 4px; text-align:center; white-space:nowrap;">${l.qty} × ${prixUnit}</td>
-        <td style="padding:3px 2px; text-align:right; white-space:nowrap; font-weight:600;">${montantLigne} F</td>
-      </tr>`;
+    const ml = parseInt(l.prix * l.qty).toLocaleString('fr-FR');
+    const pu = parseInt(l.prix).toLocaleString('fr-FR');
+    return `<tr>
+      <td style="padding:3px 2px;max-width:110px;word-wrap:break-word;">${l.nom}</td>
+      <td style="padding:3px 4px;text-align:center;white-space:nowrap;">${l.qty} × ${pu}</td>
+      <td style="padding:3px 2px;text-align:right;white-space:nowrap;font-weight:600;">${ml} F</td>
+    </tr>`;
   }).join('');
 
-  const showRendu = (modePrint === 'especes' || modePrint === 'mobile') && renduVal > 0;
+  const MBMODES = ['wave','orange_money','mtn_money'];
+  const modeLabelsLocal = {especes:'Espèces',carte:'Carte / TPE',mobile:'Mobile Money',wave:'Wave',orange_money:'Orange Money',mtn_money:'MTN Mobile Money',chambre:'Report Chambre'};
 
   const html = `<!DOCTYPE html><html><head>
-    <meta charset="UTF-8">
-    <title>Ticket ${numAffiche}</title>
-    <style>
-      @page { size: 80mm auto; margin: 3mm; }
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body {
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-        width: 74mm;
-        background: #fff;
-        color: #000;
+  <meta charset="UTF-8"><title>Aperçu ticket</title>
+  <style>
+    @page { size: 80mm auto; margin: 3mm; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Courier New',monospace; font-size:11px; width:74mm; background:#fff; color:#000; }
+    .center { text-align:center; }
+    .bold   { font-weight:bold; }
+    .sep-dash  { border:none; border-top:1px dashed #000; margin:5px 0; }
+    .sep-solid { border:none; border-top:1px solid  #000; margin:5px 0; }
+    .meta-row  { display:flex; justify-content:space-between; padding:1px 0; }
+    .meta-label { font-weight:bold; }
+    table { width:100%; border-collapse:collapse; }
+    thead tr th { font-size:9px; padding:3px 2px; border-bottom:1px solid #000; text-align:left; }
+    thead tr th:nth-child(2) { text-align:center; }
+    thead tr th:nth-child(3) { text-align:right; }
+    .total-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 2px 2px; }
+    .total-label { font-size:12px; font-weight:bold; }
+    .total-val   { font-size:15px; font-weight:bold; }
+    .paiement-row { display:flex; justify-content:space-between; padding:2px; font-size:11px; }
+    .footer { margin-top:8px; font-size:9px; text-align:center; line-height:1.5; }
+    /* Zone boutons — masquée à l'impression */
+    .no-print { padding:12px 10px; border-bottom:2px dashed #bbb; margin-bottom:6px; }
+    .apercu-lbl { text-align:center; font-size:10px; color:#888; letter-spacing:1px; margin-bottom:10px; }
+    .btn-row { display:flex; gap:8px; justify-content:center; }
+    .btn-annuler  { background:#fff; color:#555; border:1px solid #999; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:bold; cursor:pointer; }
+    .btn-annuler:hover  { background:#f0f0f0; }
+    .btn-imprimer { background:#1a1225; color:#c9a84c; border:2px solid #c9a84c; border-radius:8px; padding:9px 20px; font-size:13px; font-weight:bold; cursor:pointer; letter-spacing:1px; }
+    .btn-imprimer:hover { background:#c9a84c; color:#1a1225; }
+    .btn-imprimer:disabled { opacity:0.6; cursor:not-allowed; }
+    .msg-err { color:#c00; font-size:11px; text-align:center; margin-bottom:8px; display:none; }
+    @media print { .no-print { display:none !important; } }
+  </style>
+  </head><body>
+
+  <!-- BOUTONS — masqués à l'impression -->
+  <div class="no-print" id="actionsApercu">
+    <div class="apercu-lbl">— APERÇU DU TICKET —</div>
+    <div id="msgErr" class="msg-err"></div>
+    <div class="btn-row">
+      <button class="btn-annuler"  id="btnAnnuler"  onclick="_annuler()">✕ Annuler</button>
+      <button class="btn-imprimer" id="btnImprimer" onclick="_imprimer()">🖨️ Confirmer &amp; Imprimer</button>
+    </div>
+  </div>
+
+  <!-- EN-TÊTE -->
+  <div class="center">
+    <img src="${logoUrl}" alt="Logo" style="width:60px;height:60px;object-fit:contain;margin-bottom:4px;" onerror="this.style.display='none'">
+    <div style="font-size:14px;font-weight:bold;letter-spacing:1px;">${nomComplexe}</div>
+    <div style="font-size:9px;font-style:italic;margin-top:2px;">Votre confort, notre priorité</div>
+    <div style="font-size:9px;margin-top:3px;">${adresse}</div>
+    <div style="font-size:9px;">Tél: ${telephone}</div>
+  </div>
+  <hr class="sep-solid">
+
+  <!-- META -->
+  <div class="meta-row"><span class="meta-label">Date :</span><span>${date}</span></div>
+  <div class="meta-row"><span class="meta-label">Ticket N° :</span><span id="_tNum">—</span></div>
+  <div class="meta-row"><span class="meta-label">Service :</span><span>${espaceLabel}</span></div>
+  ${ref ? `<div class="meta-row"><span class="meta-label">Réf :</span><span>${ref}</span></div>` : ''}
+  <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
+  <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
+  <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabelsLocal[modePrint] || modePrint}</span></div>
+  <hr class="sep-dash">
+
+  <!-- ARTICLES -->
+  <table>
+    <thead><tr>
+      <th>Article</th>
+      <th style="text-align:center;">Qté × P.U</th>
+      <th style="text-align:right;">Montant</th>
+    </tr></thead>
+    <tbody>${lignesHTML}</tbody>
+  </table>
+  <hr class="sep-dash">
+
+  <!-- TOTAL + DÉTAILS PAIEMENT -->
+  <div class="total-row">
+    <span class="total-label">TOTAL</span>
+    <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} FCFA</span>
+  </div>
+  ${salonNom && salonFrais > 0 ? `
+  <hr class="sep-dash">
+  <div class="paiement-row" style="font-size:10px;"><span>Salon VIP — ${salonNom} (${salonHeures}h) :</span><span>${parseInt(salonFrais).toLocaleString('fr-FR')} F</span></div>` : ''}
+  ${(MBMODES.includes(modePrint) && montantEspeces > 0) ? `
+  <hr class="sep-dash">
+  <div class="paiement-row"><span>ESP :</span><span>${parseInt(montantEspeces).toLocaleString('fr-FR')} F</span></div>
+  <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePrint]||modePrint} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
+  ${showRendu ? `
+  <hr class="sep-dash">
+  <div class="paiement-row"><span>Reçu :</span><span>${parseInt(montantRecu).toLocaleString('fr-FR')} F</span></div>
+  <div class="paiement-row bold"><span>Monnaie rendue :</span><span>${parseInt(renduVal).toLocaleString('fr-FR')} F</span></div>` : ''}
+  <hr class="sep-solid">
+
+  <div class="footer">Merci de votre visite<br>Conservez ce ticket pour tout litige</div>
+
+  <script>
+  const _P = ${payloadJson};
+  const _U = "${apiUrl}";
+  const _C = "${CSRF}";
+  let _ok = false;
+
+  async function _imprimer() {
+    if (_ok) return;
+    const btn = document.getElementById('btnImprimer');
+    const msg = document.getElementById('msgErr');
+    btn.disabled = true; btn.textContent = '⏳ Enregistrement...';
+    msg.style.display = 'none';
+    try {
+      const r = await fetch(_U, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':_C}, body:JSON.stringify(_P)});
+      const d = await r.json();
+      if (!d.ok) {
+        msg.textContent = d.message || d.erreur || 'Erreur — vérifiez le stock disponible';
+        msg.style.display = 'block';
+        btn.disabled = false; btn.textContent = '🖨️ Confirmer & Imprimer';
+        return;
       }
-      .center  { text-align: center; }
-      .bold    { font-weight: bold; }
-      .right   { text-align: right; }
-      .sep-dash { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-      .sep-solid { border: none; border-top: 1px solid #000; margin: 5px 0; }
-      .header-title { font-size: 14px; font-weight: bold; letter-spacing: 1px; }
-      .header-sub   { font-size: 9px; margin-top: 2px; }
-      .meta-row  { display: flex; justify-content: space-between; padding: 1px 0; }
-      .meta-label { font-weight: bold; }
-      table { width: 100%; border-collapse: collapse; }
-      thead tr th { font-size: 9px; padding: 3px 2px; border-bottom: 1px solid #000; text-align: left; }
-      thead tr th:nth-child(2) { text-align: center; }
-      thead tr th:nth-child(3) { text-align: right; }
-      .total-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 2px 2px; }
-      .total-label { font-size: 12px; font-weight: bold; }
-      .total-val   { font-size: 15px; font-weight: bold; }
-      .paiement-row { display: flex; justify-content: space-between; padding: 2px; font-size: 11px; }
-      .footer { margin-top: 8px; font-size: 9px; text-align: center; line-height: 1.5; }
-      /* Bouton imprime — ne s'imprime pas */
-      .no-print { text-align: center; padding: 14px; }
-      .btn-print {
-        background: #1a1225; color: #c9a84c;
-        border: 2px solid #c9a84c; border-radius: 8px;
-        padding: 10px 30px; font-size: 14px;
-        font-weight: bold; cursor: pointer; letter-spacing: 1px;
-      }
-      .btn-print:hover { background: #c9a84c; color: #1a1225; }
-      @media print { .no-print { display: none !important; } }
-    </style>
-  </head>
-  <body>
-    <!-- BOUTON IMPRESSION — visible à l'écran, masqué à l'impression -->
-    <div class="no-print">
-      <button class="btn-print" onclick="window.print()">🖨️ &nbsp; Imprimer le ticket</button>
-    </div>
+      _ok = true;
+      const numEl = document.getElementById('_tNum');
+      if (numEl && d.ticket_numero) numEl.textContent = d.ticket_numero;
+      if (window.opener && !window.opener.closed) window.opener._finaliserApresApercu(d);
+      document.getElementById('actionsApercu').style.display = 'none';
+      window.print();
+    } catch(e) {
+      msg.textContent = 'Erreur réseau : ' + e.message;
+      msg.style.display = 'block';
+      btn.disabled = false; btn.textContent = '🖨️ Confirmer & Imprimer';
+    }
+  }
 
-    <!-- EN-TÊTE OFFICIEL (dynamique depuis Configuration) -->
-    <div class="center">
-      <img src="${logoUrl}" alt="Logo" style="width:60px; height:60px; object-fit:contain; margin-bottom:4px;" onerror="this.style.display='none'">
-      <div style="font-size:14px; font-weight:bold; letter-spacing:1px;">${nomComplexe}</div>
-      <div style="font-size:9px; font-style:italic; margin-top:2px;">Votre confort, notre priorité</div>
-      <div style="font-size:9px; margin-top:3px;">${adresse}</div>
-      <div style="font-size:9px;">Tél: ${telephone}</div>
-    </div>
-    <hr class="sep-solid">
+  function _annuler() {
+    if (window.opener && !window.opener.closed && window.opener._annulerApercu) window.opener._annulerApercu();
+    window.close();
+  }
 
-    <!-- META -->
-    <div class="meta-row"><span class="meta-label">Date :</span><span>${date}</span></div>
-    <div class="meta-row"><span class="meta-label">Ticket N° :</span><span>${numAffiche}</span></div>
-    <div class="meta-row"><span class="meta-label">Service :</span><span>${espaceLabel || 'Cave'}</span></div>
-    ${ref ? `<div class="meta-row"><span class="meta-label">Réf :</span><span>${ref}</span></div>` : ''}
-    <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
-    <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
-    <div class="meta-row"><span class="meta-label">Règlement :</span><span>${modeLabels[modePrint] || modePrint}</span></div>
-    <hr class="sep-dash">
-
-    <!-- ARTICLES -->
-    <table>
-      <thead>
-        <tr>
-          <th>Article</th>
-          <th style="text-align:center;">Qté × P.U</th>
-          <th style="text-align:right;">Montant</th>
-        </tr>
-      </thead>
-      <tbody>${lignesHTML}</tbody>
-    </table>
-    <hr class="sep-dash">
-
-    <!-- TOTAUX -->
-    <div class="total-row">
-      <span class="total-label">TOTAL</span>
-      <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} FCFA</span>
-    </div>
-    ${salonNom && salonFrais > 0 ? `
-    <hr class="sep-dash">
-    <div class="paiement-row" style="font-size:10px;"><span>Salon VIP — ${salonNom} (${salonHeures}h) :</span><span>${parseInt(salonFrais).toLocaleString('fr-FR')} F</span></div>` : ''}
-    ${(MOBILE_MODES.includes(modePrint) && montantEspeces > 0) ? `
-    <hr class="sep-dash">
-    <div class="paiement-row"><span>ESP :</span><span>${parseInt(montantEspeces).toLocaleString('fr-FR')} F</span></div>
-    <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePrint]||modePrint} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
-    ${showRendu ? `
-    <hr class="sep-dash">
-    <div class="paiement-row"><span>Reçu :</span><span>${montantRecuVal.toLocaleString('fr-FR')} F</span></div>
-    <div class="paiement-row bold"><span>Monnaie rendue :</span><span>${parseInt(renduVal).toLocaleString('fr-FR')} F</span></div>` : ''}
-    <hr class="sep-solid">
-
-    <!-- PIED DE PAGE -->
-    <div class="footer">
-      Merci de votre visite<br>
-      Conservez ce ticket pour tout litige
-    </div>
+  window.onafterprint = () => window.close();
+  <\/script>
   </body></html>`;
 
-  const w = window.open('', '_blank', 'width=360,height=620');
-  if (!w) { toast('⚠️ Popup bloqué — autorisez les popups pour imprimer', 'error'); return; }
+  const w = window.open('', '_blank', 'width=380,height=680');
+  if (!w) {
+    toast('⚠️ Popup bloqué — autorisez les popups pour imprimer', 'error');
+    _paiementEnCours = false;
+    return;
+  }
   w.document.write(html);
   w.document.close();
   w.focus();
-  w.onafterprint = () => w.close();
 }
 
 // ============================================================
