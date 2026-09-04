@@ -240,12 +240,26 @@
   </div>
   {% endif %}
 
+  {% if attente_session %}
+  <!-- Bannière "en attente de session" pour la caissière non encore ouverte -->
+  <div style="background:linear-gradient(135deg,#1a2535 0%,#2d3f55 100%);border-radius:14px;padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;gap:20px">
+    <div style="font-size:40px">🔒</div>
+    <div>
+      <div style="font-size:16px;font-weight:800;color:white;margin-bottom:4px">Votre compteur démarre à l'ouverture de session</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6)">Les ventes des shifts précédents ne vous appartiennent pas. Ouvrez votre session pour commencer votre propre décompte.</div>
+    </div>
+    {% if can_open_caisse and not session_ouverte_par %}
+    <button onclick="ouvrirModal('modalOuverture')" style="margin-left:auto;background:#f59e0b;color:#1a2535;border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap">▶ Ouvrir ma session</button>
+    {% endif %}
+  </div>
+  {% endif %}
+
   <!-- KPIs -->
   <div class="kpi-grid">
     <div class="kpi k-or">
-      <div class="klbl">Total encaissé</div>
+      <div class="klbl">{% if vue_session %}Mon total — shift{% elif is_manager %}Total journée{% else %}Total encaissé{% endif %}</div>
       <div class="kval">{{ stats.total|montant }} F</div>
-      <div class="ksub">{{ stats.nb_tickets }} transaction(s)</div>
+      <div class="ksub">{{ stats.nb_tickets }} transaction(s){% if vue_session %} · {{ session_active.opened_at|date:"H:i" }} → maintenant{% endif %}</div>
     </div>
     <div class="kpi k-vert">
       <div class="klbl">Espèces</div>
@@ -292,6 +306,7 @@
         </div>
 
         <!-- RÉCONCILIATION TRANSACTIONS vs VERSEMENTS -->
+        {% if not attente_session %}
         <div class="panel" id="panel-reconciliation">
           <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
             <h3>⚖️ Suivi versements par module</h3>
@@ -407,6 +422,7 @@
             <i class="fas fa-info-circle"></i> "Versé" = montants physiquement remis à la caisse centrale. Enregistrez un versement via le bouton <strong>Mouvement → Versement module</strong>.
           </div>
         </div>
+        {% endif %}{# fin bloc if not attente_session #}
 
         <!-- Derniers tickets -->
         <div class="panel">

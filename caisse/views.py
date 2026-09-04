@@ -366,24 +366,30 @@ def index(request):
     session_active      = CaisseSession.objects.filter(user=request.user, is_open=True).first()
     session_ouverte_par = None if session_active else CaisseSession.objects.filter(is_open=True, date_session=timezone.localdate()).select_related('user').first()
 
-    user_type = None
     if session_active:
         # Stats limitées au shift de la caissière active (fenêtre horaire)
         stats = get_stats_session(session_active)
+        attente_session = False
+    elif is_manager:
+        # Managers / directeurs : vue journée complète (tous shifts confondus)
+        stats = get_stats_jour(today, type_caisse=None)
+        attente_session = False
     else:
-        if not is_manager:
-            user_groups = list(request.user.groups.values_list('name', flat=True))
-            if 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
-                user_type = 'hotel'
-            elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Chef caissier(e)']):
-                user_type = 'module'
-        stats = get_stats_jour(today, type_caisse=user_type)
+        # Caissière sans session ouverte : zéros — ne pas montrer les shifts des collègues
+        stats = {
+            'date': today, 'total': 0, 'nb_tickets': 0,
+            'especes': 0, 'mobile': 0, 'par_mobile': [],
+            'carte': 0, 'virement': 0, 'par_module': {},
+            'prelevements': 0, 'depenses': 0, 'net': 0,
+            'tickets': Ticket.objects.none(),
+        }
+        attente_session = True
 
     sessions_jour = CaisseSession.objects.filter(
         opened_at__date=today
     ).select_related('user').order_by('-opened_at')
 
-    # Mouvements et prélèvements : si session active, limiter au shift de la caissière
+    # Mouvements, prélèvements, réconciliation — isolés par scope
     if session_active:
         date_fin_session = session_active.closed_at or timezone.now()
         mouvements = MouvementCaisse.objects.filter(
@@ -396,7 +402,7 @@ def index(request):
         ).select_related('cree_par').order_by('-date')
         reconciliation = get_reconciliation_session(session_active)
         vue_session = True
-    else:
+    elif is_manager:
         mouvements = MouvementCaisse.objects.filter(
             date__date=today, valide=True
         ).select_related('cree_par').order_by('-date')
@@ -404,6 +410,12 @@ def index(request):
             date__date=today, valide=True
         ).select_related('cree_par').order_by('-date')
         reconciliation = get_reconciliation_jour(today)
+        vue_session = False
+    else:
+        # Caissière sans session : aucune donnée visible
+        mouvements    = MouvementCaisse.objects.none()
+        prelevements  = PrelevementBanque.objects.none()
+        reconciliation = None
         vue_session = False
 
     solde_veille, last_session = get_solde_veille()
@@ -441,6 +453,7 @@ def index(request):
         'reconciliation': reconciliation,
         'session_ouverte_par': session_ouverte_par,
         'vue_session': vue_session,
+        'attente_session': attente_session,
     }
     return render(request, 'caisse/index.html', context)
 
