@@ -35,6 +35,10 @@ def get_reconciliation_jour(date=None):
     grand_total_verse = 0
     grand_especes     = 0
     grand_mobile      = 0
+    grand_wave        = 0
+    grand_orange      = 0
+    grand_mtn         = 0
+    grand_moov        = 0
     grand_carte       = 0
     grand_virement    = 0
     grand_mixte       = 0
@@ -47,7 +51,11 @@ def get_reconciliation_jour(date=None):
             return int(qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant_total'))['s'] or 0)
 
         especes  = _sum(['especes'])
-        mobile   = _sum(['wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money'])
+        wave     = _sum(['wave'])
+        orange   = _sum(['orange_money'])
+        mtn      = _sum(['mtn_money'])
+        moov     = _sum(['moov_money'])
+        mobile   = wave + orange + mtn + moov + _sum(['mobile_money', 'mobile'])
         carte    = _sum(['carte_bancaire', 'carte'])
         virement = _sum(['virement'])
         mixte    = _sum(['mixte'])
@@ -69,6 +77,10 @@ def get_reconciliation_jour(date=None):
             'total_tx':    total_tx,
             'especes':     especes,
             'mobile':      mobile,
+            'wave':        wave,
+            'orange':      orange,
+            'mtn':         mtn,
+            'moov':        moov,
             'carte':       carte,
             'virement':    virement,
             'mixte':       mixte,
@@ -81,6 +93,10 @@ def get_reconciliation_jour(date=None):
         grand_total_verse += total_verse
         grand_especes     += especes
         grand_mobile      += mobile
+        grand_wave        += wave
+        grand_orange      += orange
+        grand_mtn         += mtn
+        grand_moov        += moov
         grand_carte       += carte
         grand_virement    += virement
         grand_mixte       += mixte
@@ -92,6 +108,10 @@ def get_reconciliation_jour(date=None):
         'grand_solde':        grand_total_tx - grand_total_verse,
         'grand_especes':      grand_especes,
         'grand_mobile':       grand_mobile,
+        'grand_wave':         grand_wave,
+        'grand_orange':       grand_orange,
+        'grand_mtn':          grand_mtn,
+        'grand_moov':         grand_moov,
         'grand_carte':        grand_carte,
         'grand_virement':     grand_virement,
         'grand_mixte':        grand_mixte,
@@ -242,6 +262,10 @@ def get_reconciliation_session(session):
     grand_total_verse = 0
     grand_especes     = 0
     grand_mobile      = 0
+    grand_wave        = 0
+    grand_orange      = 0
+    grand_mtn         = 0
+    grand_moov        = 0
     grand_carte       = 0
     grand_virement    = 0
     grand_mixte       = 0
@@ -258,7 +282,11 @@ def get_reconciliation_session(session):
             return int(qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant_total'))['s'] or 0)
 
         especes  = _sum(['especes'])
-        mobile   = _sum(['wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money'])
+        wave     = _sum(['wave'])
+        orange   = _sum(['orange_money'])
+        mtn      = _sum(['mtn_money'])
+        moov     = _sum(['moov_money'])
+        mobile   = wave + orange + mtn + moov + _sum(['mobile_money', 'mobile'])
         carte    = _sum(['carte_bancaire', 'carte'])
         virement = _sum(['virement'])
         mixte    = _sum(['mixte'])
@@ -275,7 +303,8 @@ def get_reconciliation_session(session):
         solde = total_tx - total_verse
         lignes.append({
             'label': label, 'emoji': emoji,
-            'total_tx': total_tx, 'especes': especes, 'mobile': mobile,
+            'total_tx': total_tx, 'especes': especes,
+            'mobile': mobile, 'wave': wave, 'orange': orange, 'mtn': mtn, 'moov': moov,
             'carte': carte, 'virement': virement, 'mixte': mixte,
             'total_verse': total_verse, 'solde': solde, 'complet': solde <= 0,
         })
@@ -283,6 +312,10 @@ def get_reconciliation_session(session):
         grand_total_verse += total_verse
         grand_especes     += especes
         grand_mobile      += mobile
+        grand_wave        += wave
+        grand_orange      += orange
+        grand_mtn         += mtn
+        grand_moov        += moov
         grand_carte       += carte
         grand_virement    += virement
         grand_mixte       += mixte
@@ -294,6 +327,10 @@ def get_reconciliation_session(session):
         'grand_solde':       grand_total_tx - grand_total_verse,
         'grand_especes':     grand_especes,
         'grand_mobile':      grand_mobile,
+        'grand_wave':        grand_wave,
+        'grand_orange':      grand_orange,
+        'grand_mtn':         grand_mtn,
+        'grand_moov':        grand_moov,
         'grand_carte':       grand_carte,
         'grand_virement':    grand_virement,
         'grand_mixte':       grand_mixte,

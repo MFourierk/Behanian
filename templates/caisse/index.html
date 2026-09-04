@@ -304,14 +304,18 @@
               <thead>
                 <tr>
                   <th>Module</th>
-                  <th style="text-align:right">Espèces</th>
-                  <th style="text-align:right">Mobile Money</th>
-                  <th style="text-align:right">Carte</th>
-                  <th style="text-align:right">Virement</th>
+                  <th style="text-align:right">💵 Espèces</th>
+                  {% if reconciliation.grand_wave %}<th style="text-align:right;color:#1d4ed8">📱 Wave</th>{% endif %}
+                  {% if reconciliation.grand_orange %}<th style="text-align:right;color:#c2410c">📱 Orange</th>{% endif %}
+                  {% if reconciliation.grand_mtn %}<th style="text-align:right;color:#854d0e">📱 MoMo</th>{% endif %}
+                  {% if reconciliation.grand_moov %}<th style="text-align:right;color:#0f766e">📱 Moov</th>{% endif %}
+                  {% if not reconciliation.grand_wave and not reconciliation.grand_orange and not reconciliation.grand_mtn and not reconciliation.grand_moov and reconciliation.grand_mobile %}<th style="text-align:right;color:#7c3aed">📱 Mobile</th>{% endif %}
+                  <th style="text-align:right">💳 Carte</th>
+                  <th style="text-align:right">🏦 Virement</th>
                   <th style="text-align:right">Mixte</th>
-                  <th style="text-align:right;border-left:2px solid #e2e8f0">Total transactions</th>
-                  <th style="text-align:right">Total versé</th>
-                  <th style="text-align:right">Solde à verser</th>
+                  <th style="text-align:right;border-left:2px solid #e2e8f0">Total</th>
+                  <th style="text-align:right">Versé</th>
+                  <th style="text-align:right">Solde</th>
                   <th style="text-align:center">Statut</th>
                 </tr>
               </thead>
@@ -322,9 +326,31 @@
                 <td style="text-align:right;font-family:monospace;color:{% if ligne.especes %}#1e40af{% else %}var(--muted){% endif %}">
                   {% if ligne.especes %}{{ ligne.especes|montant }} F{% else %}—{% endif %}
                 </td>
+                {% if reconciliation.grand_wave %}
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.wave %}#1d4ed8{% else %}var(--muted){% endif %}">
+                  {% if ligne.wave %}{{ ligne.wave|montant }} F{% else %}—{% endif %}
+                </td>
+                {% endif %}
+                {% if reconciliation.grand_orange %}
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.orange %}#c2410c{% else %}var(--muted){% endif %}">
+                  {% if ligne.orange %}{{ ligne.orange|montant }} F{% else %}—{% endif %}
+                </td>
+                {% endif %}
+                {% if reconciliation.grand_mtn %}
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.mtn %}#854d0e{% else %}var(--muted){% endif %}">
+                  {% if ligne.mtn %}{{ ligne.mtn|montant }} F{% else %}—{% endif %}
+                </td>
+                {% endif %}
+                {% if reconciliation.grand_moov %}
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.moov %}#0f766e{% else %}var(--muted){% endif %}">
+                  {% if ligne.moov %}{{ ligne.moov|montant }} F{% else %}—{% endif %}
+                </td>
+                {% endif %}
+                {% if not reconciliation.grand_wave and not reconciliation.grand_orange and not reconciliation.grand_mtn and not reconciliation.grand_moov and reconciliation.grand_mobile %}
                 <td style="text-align:right;font-family:monospace;color:{% if ligne.mobile %}#7c3aed{% else %}var(--muted){% endif %}">
                   {% if ligne.mobile %}{{ ligne.mobile|montant }} F{% else %}—{% endif %}
                 </td>
+                {% endif %}
                 <td style="text-align:right;font-family:monospace;color:{% if ligne.carte %}#0369a1{% else %}var(--muted){% endif %}">
                   {% if ligne.carte %}{{ ligne.carte|montant }} F{% else %}—{% endif %}
                 </td>
@@ -359,7 +385,11 @@
                 <tr style="background:#f1f5f9;font-weight:700">
                   <td>TOTAL</td>
                   <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_especes|montant }} F</td>
-                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_mobile|montant }} F</td>
+                  {% if reconciliation.grand_wave %}<td style="text-align:right;font-family:monospace;color:#1d4ed8">{{ reconciliation.grand_wave|montant }} F</td>{% endif %}
+                  {% if reconciliation.grand_orange %}<td style="text-align:right;font-family:monospace;color:#c2410c">{{ reconciliation.grand_orange|montant }} F</td>{% endif %}
+                  {% if reconciliation.grand_mtn %}<td style="text-align:right;font-family:monospace;color:#854d0e">{{ reconciliation.grand_mtn|montant }} F</td>{% endif %}
+                  {% if reconciliation.grand_moov %}<td style="text-align:right;font-family:monospace;color:#0f766e">{{ reconciliation.grand_moov|montant }} F</td>{% endif %}
+                  {% if not reconciliation.grand_wave and not reconciliation.grand_orange and not reconciliation.grand_mtn and not reconciliation.grand_moov and reconciliation.grand_mobile %}<td style="text-align:right;font-family:monospace;color:#7c3aed">{{ reconciliation.grand_mobile|montant }} F</td>{% endif %}
                   <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_carte|montant }} F</td>
                   <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_virement|montant }} F</td>
                   <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_mixte|montant }} F</td>
@@ -392,8 +422,12 @@
                 <td style="font-size:11px;white-space:nowrap">{{ t.date_creation|date:"H:i" }}</td>
                 <td style="font-size:11px">
                   {% if t.mode_paiement == 'especes' %}💵 Espèces
-                  {% elif t.mode_paiement == 'carte_bancaire' %}💳 Carte
-                  {% elif t.mode_paiement in 'mobile_money,orange_money,wave' %}📱 Mobile
+                  {% elif t.mode_paiement == 'carte_bancaire' or t.mode_paiement == 'carte' %}💳 Carte
+                  {% elif t.mode_paiement == 'wave' %}<span style="color:#1d4ed8">📱 Wave</span>
+                  {% elif t.mode_paiement == 'orange_money' %}<span style="color:#c2410c">📱 Orange Money</span>
+                  {% elif t.mode_paiement == 'mtn_money' %}<span style="color:#854d0e">📱 MTN MoMo</span>
+                  {% elif t.mode_paiement == 'moov_money' %}<span style="color:#0f766e">📱 Moov Money</span>
+                  {% elif t.mode_paiement == 'virement' %}🏦 Virement
                   {% else %}{{ t.get_mode_paiement_display }}{% endif %}
                 </td>
                 <td class="entree">{{ t.montant_total|montant }} F</td>
