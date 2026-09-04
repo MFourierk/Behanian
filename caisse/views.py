@@ -168,7 +168,8 @@ def index(request):
     today = timezone.localdate()
     from utils.permissions import _is_manager as _chk_manager
     is_manager = _chk_manager(request.user)
-    session_active = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+    session_active      = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+    session_ouverte_par = None if session_active else CaisseSession.objects.filter(is_open=True, date_session=timezone.localdate()).select_related('user').first()
 
     user_type = None
     if session_active:
@@ -229,6 +230,7 @@ def index(request):
         'last_session': last_session,
         'sessions_bloquantes': sessions_bloquantes,
         'reconciliation': reconciliation,
+        'session_ouverte_par': session_ouverte_par,
     }
     return render(request, 'caisse/index.html', context)
 

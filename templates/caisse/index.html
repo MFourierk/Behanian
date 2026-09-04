@@ -120,13 +120,13 @@
     </div>
   </div>
   {% else %}
-  <div class="caisse-status {% if sessions_jour %}closed{% else %}no-session{% endif %}">
+  <div class="caisse-status {% if session_ouverte_par %}open{% elif sessions_jour %}closed{% else %}no-session{% endif %}">
     <div>
       <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:4px">
-        {% if sessions_jour %}🔴 CAISSE CLÔTURÉE{% else %}⚪ CAISSE NON OUVERTE{% endif %}
+        {% if session_ouverte_par %}🟢 CAISSE OUVERTE{% elif sessions_jour %}🔴 CAISSE CLÔTURÉE{% else %}⚪ CAISSE NON OUVERTE{% endif %}
       </div>
       <div style="font-size:18px;font-weight:800">
-        {% if sessions_jour %}Journée terminée · {{ stats.total|montant }} F encaissés{% else %}Aucune session aujourd'hui{% endif %}
+        {% if session_ouverte_par %}Session ouverte par {{ session_ouverte_par.user.get_full_name|default:session_ouverte_par.user.username }} depuis {{ session_ouverte_par.opened_at|date:"H:i" }}{% elif sessions_jour %}Journée terminée · {{ stats.total|montant }} F encaissés{% else %}Aucune session aujourd'hui{% endif %}
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
