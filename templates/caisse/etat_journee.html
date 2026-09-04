@@ -64,6 +64,123 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════
+     RÉPARTITION PAR CAISSIÈRE / SHIFT
+     ═══════════════════════════════════════════════════════════ -->
+{% if sessions_avec_stats %}
+<div class="content-section" style="page-break-inside:avoid">
+  <div class="section-title" style="display:flex;align-items:center;gap:8px">
+    👩‍💼 Répartition par caissière
+    <span style="font-size:10px;font-weight:400;color:#7a8b9c;margin-left:4px">— chaque shift est isolé</span>
+  </div>
+
+  {% for item in sessions_avec_stats %}
+  {% with s=item.session st=item.stats %}
+  <div style="border:1.5px solid #e2e8f0;border-radius:14px;margin-bottom:16px;overflow:hidden;page-break-inside:avoid">
+
+    <!-- BANDEAU CAISSIÈRE -->
+    <div style="background:linear-gradient(135deg,#1a2535 0%,#2d3f55 100%);padding:14px 20px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);margin-bottom:4px">Caissière</div>
+        <div style="font-size:15px;font-weight:800;color:white">{{ s.user.get_full_name|default:s.user.username }}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:3px">
+          Shift {{ s.opened_at|date:"H:i" }}
+          {% if s.closed_at %} → {{ s.closed_at|date:"H:i" }} ({{ s.duree }}){% else %} → <span style="color:#fbbf24">En cours</span>{% endif %}
+          {% if s.opened_at|date:"d/m/Y" != s.closed_at|date:"d/m/Y" and s.closed_at %} · <span style="color:#fbbf24">Shift à cheval sur minuit</span>{% endif %}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);margin-bottom:2px">Total shift</div>
+        <div style="font-size:22px;font-weight:900;color:white">{{ st.total|intcomma }}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5)">FCFA · {{ st.nb_tickets }} ticket(s)</div>
+      </div>
+    </div>
+
+    <!-- CORPS : modes + modules -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;background:white">
+
+      <!-- Modes de paiement -->
+      <div style="padding:14px 18px;border-right:1px solid #f0f3f7">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8b9eb0;margin-bottom:10px">Modes de paiement</div>
+        {% if st.especes %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f5f7fa">
+          <span style="font-size:12px;color:#374151;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block"></span>Espèces</span>
+          <span style="font-size:12px;font-weight:700;color:#1a2535">{{ st.especes|intcomma }} F</span>
+        </div>
+        {% endif %}
+        {% if st.mobile %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f5f7fa">
+          <span style="font-size:12px;color:#374151;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;display:inline-block"></span>Mobile Money</span>
+          <span style="font-size:12px;font-weight:700;color:#1a2535">{{ st.mobile|intcomma }} F</span>
+        </div>
+        {% endif %}
+        {% if st.carte %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f5f7fa">
+          <span style="font-size:12px;color:#374151;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#0369a1;display:inline-block"></span>Carte bancaire</span>
+          <span style="font-size:12px;font-weight:700;color:#1a2535">{{ st.carte|intcomma }} F</span>
+        </div>
+        {% endif %}
+        {% if st.virement %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f5f7fa">
+          <span style="font-size:12px;color:#374151;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#0f766e;display:inline-block"></span>Virement</span>
+          <span style="font-size:12px;font-weight:700;color:#1a2535">{{ st.virement|intcomma }} F</span>
+        </div>
+        {% endif %}
+        {% if not st.especes and not st.mobile and not st.carte and not st.virement %}
+        <div style="color:#c0ccd8;font-size:12px;font-style:italic">Aucune transaction</div>
+        {% endif %}
+      </div>
+
+      <!-- Modules -->
+      <div style="padding:14px 18px">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8b9eb0;margin-bottom:10px">Par module</div>
+        {% for mod_label, mod_total in st.par_module.items %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f5f7fa">
+          <span style="font-size:12px;color:#374151">
+            {% if mod_label == "Restaurant" %}🍽️ {% elif mod_label == "Cave" %}🍷 {% elif mod_label == "Hôtel" %}🏨 {% elif mod_label == "Piscine" %}🏊 {% elif mod_label == "Espaces" %}🎪 {% endif %}
+            {{ mod_label }}
+          </span>
+          <span style="font-size:12px;font-weight:700;color:#1a2535">{{ mod_total|intcomma }} F</span>
+        </div>
+        {% empty %}
+        <div style="color:#c0ccd8;font-size:12px;font-style:italic">Aucune transaction</div>
+        {% endfor %}
+      </div>
+
+    </div>
+
+    <!-- FOND DE CAISSE -->
+    <div style="background:#f8fafc;padding:10px 18px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#5a6b7c">
+      <span>Fond déclaré à l'ouverture : <strong>{{ s.fond_caisse|intcomma }} FCFA</strong></span>
+      {% if not s.is_open %}
+      <span>Fond compté à la clôture : <strong>{{ s.fond_caisse_reel|intcomma }} FCFA</strong>
+        {% if s.ecart != 0 %}
+          · Écart : <strong style="color:{% if s.ecart < 0 %}#dc2626{% else %}#16a34a{% endif %}">{% if s.ecart > 0 %}+{% endif %}{{ s.ecart|intcomma }} F</strong>
+        {% else %}
+          · <strong style="color:#16a34a">✓ Équilibré</strong>
+        {% endif %}
+      </span>
+      {% else %}
+      <span style="color:#d97706">⏳ Session en cours — clôture non effectuée</span>
+      {% endif %}
+    </div>
+
+  </div>
+  {% endwith %}
+  {% endfor %}
+
+  <!-- TOTAL TOUS SHIFTS -->
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border-radius:14px;padding:16px 22px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.45)">Total consolidé — tous shifts</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px">{{ sessions_avec_stats|length }} caissière(s) · {{ date|date:"d/m/Y" }}</div>
+    </div>
+    <div style="font-size:26px;font-weight:900;color:white">{{ grand_total|intcomma }} <span style="font-size:13px;font-weight:600;opacity:.5">FCFA</span></div>
+  </div>
+
+</div>
+{% endif %}
+
 <!-- DÉTAIL PAR MODULE -->
 {% for mod in modules_data %}
 <div class="content-section">

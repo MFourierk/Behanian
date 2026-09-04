@@ -172,6 +172,134 @@ def get_stats_jour(date=None, type_caisse=None):
     }
 
 
+def get_stats_session(session):
+    """Stats des tickets encaissés pendant la fenêtre horaire d'une session.
+    Filtre par opened_at → closed_at (ou now() si session encore ouverte).
+    Gère les shifts à cheval sur minuit naturellement.
+    Retourne la même structure que get_stats_jour pour compatibilité.
+    """
+    date_fin = session.closed_at or timezone.now()
+    tickets  = Ticket.objects.filter(
+        date_creation__gte=session.opened_at,
+        date_creation__lt=date_fin,
+    )
+
+    total    = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
+    especes  = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
+    carte    = tickets.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0
+    virement = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
+
+    _wave       = int(tickets.filter(mode_paiement='wave').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _orange     = int(tickets.filter(mode_paiement='orange_money').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _mtn        = int(tickets.filter(mode_paiement='mtn_money').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _moov       = int(tickets.filter(mode_paiement='moov_money').aggregate(s=Sum('montant_total'))['s'] or 0)
+    _mobile_gen = int(tickets.filter(mode_paiement__in=['mobile', 'mobile_money']).aggregate(s=Sum('montant_total'))['s'] or 0)
+    mobile      = _wave + _orange + _mtn + _moov + _mobile_gen
+
+    par_mobile = []
+    if _wave:       par_mobile.append(('Wave',             _wave,       '#1d4ed8', 'W'))
+    if _orange:     par_mobile.append(('Orange Money',     _orange,     '#c2410c', 'O'))
+    if _mtn:        par_mobile.append(('MTN Mobile Money', _mtn,        '#854d0e', 'M'))
+    if _moov:       par_mobile.append(('Moov Money',       _moov,       '#0f766e', 'V'))
+    if _mobile_gen: par_mobile.append(('Mobile Money',     _mobile_gen, '#7c3aed', '📱'))
+
+    par_module = {}
+    for mod, label in [('hotel', 'Hôtel'), ('restaurant', 'Restaurant'), ('cave', 'Cave'),
+                        ('piscine', 'Piscine'), ('espace', 'Espaces'), ('caisse', 'Caisse')]:
+        t = tickets.filter(module__startswith=mod).aggregate(s=Sum('montant_total'))['s'] or 0
+        if t:
+            par_module[label] = int(t)
+
+    total_prelev   = MouvementCaisse.objects.filter(session=session, type='prelevement_banque', valide=True).aggregate(s=Sum('montant'))['s'] or 0
+    total_depenses = MouvementCaisse.objects.filter(session=session, type='depense', valide=True).aggregate(s=Sum('montant'))['s'] or 0
+
+    return {
+        'date':         session.opened_at.date(),
+        'total':        int(total),
+        'nb_tickets':   tickets.count(),
+        'especes':      int(especes),
+        'mobile':       mobile,
+        'par_mobile':   par_mobile,
+        'carte':        int(carte),
+        'virement':     int(virement),
+        'par_module':   par_module,
+        'prelevements': int(total_prelev),
+        'depenses':     int(total_depenses),
+        'net':          int(total) - int(total_prelev) - int(total_depenses),
+        'tickets':      tickets.select_related('client', 'cree_par').order_by('-date_creation'),
+    }
+
+
+def get_reconciliation_session(session):
+    """Réconciliation tickets vs versements pour la fenêtre horaire d'une session.
+    - Tickets : filtrés par opened_at → closed_at (ou now())
+    - Versements : filtrés par session FK (MouvementCaisse.session)
+    """
+    date_fin = session.closed_at or timezone.now()
+
+    lignes            = []
+    grand_total_tx    = 0
+    grand_total_verse = 0
+    grand_especes     = 0
+    grand_mobile      = 0
+    grand_carte       = 0
+    grand_virement    = 0
+    grand_mixte       = 0
+
+    for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
+        qs = Ticket.objects.filter(
+            date_creation__gte=session.opened_at,
+            date_creation__lt=date_fin,
+            module=ticket_mod,
+        )
+        total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
+
+        def _sum(modes):
+            return int(qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant_total'))['s'] or 0)
+
+        especes  = _sum(['especes'])
+        mobile   = _sum(['wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money'])
+        carte    = _sum(['carte_bancaire', 'carte'])
+        virement = _sum(['virement'])
+        mixte    = _sum(['mixte'])
+
+        total_verse = int(
+            MouvementCaisse.objects.filter(
+                session=session,
+                type='versement',
+                module=caisse_mod,
+                valide=True,
+            ).exclude(reference__startswith='CONSOLIDATION')
+            .aggregate(s=Sum('montant'))['s'] or 0
+        )
+        solde = total_tx - total_verse
+        lignes.append({
+            'label': label, 'emoji': emoji,
+            'total_tx': total_tx, 'especes': especes, 'mobile': mobile,
+            'carte': carte, 'virement': virement, 'mixte': mixte,
+            'total_verse': total_verse, 'solde': solde, 'complet': solde <= 0,
+        })
+        grand_total_tx    += total_tx
+        grand_total_verse += total_verse
+        grand_especes     += especes
+        grand_mobile      += mobile
+        grand_carte       += carte
+        grand_virement    += virement
+        grand_mixte       += mixte
+
+    return {
+        'lignes':            lignes,
+        'grand_total_tx':    grand_total_tx,
+        'grand_total_verse': grand_total_verse,
+        'grand_solde':       grand_total_tx - grand_total_verse,
+        'grand_especes':     grand_especes,
+        'grand_mobile':      grand_mobile,
+        'grand_carte':       grand_carte,
+        'grand_virement':    grand_virement,
+        'grand_mixte':       grand_mixte,
+    }
+
+
 def get_solde_veille():
     """Retourne le solde restant après la dernière clôture de la caisse centrale."""
     last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
@@ -203,15 +331,16 @@ def index(request):
 
     user_type = None
     if session_active:
-        user_type = session_active.type_caisse
-    elif not is_manager:
-        user_groups = list(request.user.groups.values_list('name', flat=True))
-        if 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
-            user_type = 'hotel'
-        elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Chef caissier(e)']):
-            user_type = 'module'
-
-    stats = get_stats_jour(today, type_caisse=user_type)
+        # Stats limitées au shift de la caissière active (fenêtre horaire)
+        stats = get_stats_session(session_active)
+    else:
+        if not is_manager:
+            user_groups = list(request.user.groups.values_list('name', flat=True))
+            if 'Réceptionniste' in user_groups or 'Responsable Hôtel' in user_groups:
+                user_type = 'hotel'
+            elif not any(g in user_groups for g in ['Manager Général(e)', 'Directeur Général', 'Chef caissier(e)']):
+                user_type = 'module'
+        stats = get_stats_jour(today, type_caisse=user_type)
 
     sessions_jour = CaisseSession.objects.filter(
         opened_at__date=today
@@ -286,7 +415,7 @@ def ouvrir_caisse(request):
     today = timezone.localdate()
     type_attendu = _get_type_caisse(request.user)
 
-    # 1. Vérifier si une session est déjà ouverte pour cet utilisateur aujourd'hui
+    # 1a. Vérifier si cet utilisateur a déjà une session ouverte
     session_existante = CaisseSession.objects.filter(
         user=request.user, is_open=True, type_caisse=type_attendu
     ).first()
@@ -294,6 +423,15 @@ def ouvrir_caisse(request):
         return JsonResponse({
             'success': False,
             'error': f'Votre caisse {session_existante.get_type_caisse_display()} est déjà ouverte (depuis {session_existante.opened_at.strftime("%H:%M")})',
+        })
+
+    # 1b. Bloquer si une AUTRE caissière a déjà une session ouverte (shifts non-chevauchants)
+    session_autre = CaisseSession.objects.filter(is_open=True).exclude(user=request.user).select_related('user').first()
+    if session_autre:
+        nom = session_autre.user.get_full_name() or session_autre.user.username
+        return JsonResponse({
+            'success': False,
+            'error': f'⛔ Caisse déjà ouverte par {nom} depuis {session_autre.opened_at.strftime("%H:%M")}. Elle doit clôturer sa session avant que vous puissiez ouvrir.',
         })
 
     # 2. Bloquer si la caisse centrale du jour précédent n'a pas été clôturée
@@ -393,9 +531,9 @@ def cloturer_caisse(request):
         banque    = data.get('banque', '')
         notes     = data.get('notes', '')
 
-        stats = get_stats_jour(today, type_caisse=session.type_caisse)
+        stats = get_stats_session(session)
 
-        # Solde théorique = fond initial + espèces encaissées − prélèvements banque
+        # Solde théorique = fond initial + espèces encaissées pendant le shift − prélèvements banque
         solde_th = session.fond_caisse + _dec(stats['especes']) - prelev
         ecart    = solde_th - fond_reel
 
@@ -580,11 +718,11 @@ def rapport_caisse(request, session_id=None):
             return redirect('caisse:historique')
         return redirect('caisse:index')
 
-    date         = session.date_session or session.opened_at.date()
-    stats        = get_stats_jour(date)
-    mouvements   = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
-    prelevements = PrelevementBanque.objects.filter(session=session, valide=True).order_by('date')
-    reconciliation = get_reconciliation_jour(date)
+    # Stats et réconciliation limités au shift (fenêtre horaire de la session)
+    stats          = get_stats_session(session)
+    reconciliation = get_reconciliation_session(session)
+    mouvements     = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
+    prelevements   = PrelevementBanque.objects.filter(session=session, valide=True).order_by('date')
     solde_veille, _ = get_solde_veille()
 
     # Fond théorique = fond ouverture + versements reçus des modules – dépenses – prélèvements banque
@@ -1069,14 +1207,34 @@ def etat_journee(request):
         })
     recap_mode_totals = [global_modes.get(lbl, 0) for lbl in mode_labels]
 
+    # Shifts du jour : chaque session avec ses stats individuelles
+    sessions_jour = CaisseSession.objects.filter(
+        opened_at__date=date
+    ).select_related('user').order_by('opened_at')
+    # Inclure aussi les sessions ouvertes un jour antérieur mais encore actives ce jour
+    sessions_veille_actives = CaisseSession.objects.filter(
+        is_open=True, opened_at__date__lt=date
+    ).select_related('user')
+    toutes_sessions = list(sessions_veille_actives) + list(sessions_jour)
+
+    sessions_avec_stats = []
+    for s in toutes_sessions:
+        s_stats = get_stats_session(s)
+        if s_stats['total'] > 0 or s.is_open:
+            sessions_avec_stats.append({
+                'session': s,
+                'stats':   s_stats,
+            })
+
     return render(request, 'caisse/etat_journee.html', {
-        'date':               date,
-        'modules_data':       modules_data,
-        'global_modes':       sorted_modes,
-        'grand_total':        grand_total,
-        'recap_rows':         recap_rows,
-        'recap_mode_labels':  mode_labels,
-        'recap_mode_totals':  recap_mode_totals,
+        'date':                date,
+        'modules_data':        modules_data,
+        'global_modes':        sorted_modes,
+        'grand_total':         grand_total,
+        'recap_rows':          recap_rows,
+        'recap_mode_labels':   mode_labels,
+        'recap_mode_totals':   recap_mode_totals,
+        'sessions_avec_stats': sessions_avec_stats,
     })
 
 
