@@ -346,13 +346,28 @@ def index(request):
         opened_at__date=today
     ).select_related('user').order_by('-opened_at')
 
-    mouvements = MouvementCaisse.objects.filter(
-        date__date=today, valide=True
-    ).select_related('cree_par').order_by('-date')
-
-    prelevements = PrelevementBanque.objects.filter(
-        date__date=today, valide=True
-    ).select_related('cree_par').order_by('-date')
+    # Mouvements et prélèvements : si session active, limiter au shift de la caissière
+    if session_active:
+        date_fin_session = session_active.closed_at or timezone.now()
+        mouvements = MouvementCaisse.objects.filter(
+            session=session_active, valide=True
+        ).select_related('cree_par').order_by('-date')
+        prelevements = PrelevementBanque.objects.filter(
+            date__gte=session_active.opened_at,
+            date__lt=date_fin_session,
+            valide=True,
+        ).select_related('cree_par').order_by('-date')
+        reconciliation = get_reconciliation_session(session_active)
+        vue_session = True
+    else:
+        mouvements = MouvementCaisse.objects.filter(
+            date__date=today, valide=True
+        ).select_related('cree_par').order_by('-date')
+        prelevements = PrelevementBanque.objects.filter(
+            date__date=today, valide=True
+        ).select_related('cree_par').order_by('-date')
+        reconciliation = get_reconciliation_jour(today)
+        vue_session = False
 
     solde_veille, last_session = get_solde_veille()
 
@@ -373,8 +388,6 @@ def index(request):
         ])
     )
 
-    reconciliation = get_reconciliation_jour(today)
-
     context = {
         'billetage_vals': [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5],
         'today': today,
@@ -390,6 +403,7 @@ def index(request):
         'sessions_bloquantes': sessions_bloquantes,
         'reconciliation': reconciliation,
         'session_ouverte_par': session_ouverte_par,
+        'vue_session': vue_session,
     }
     return render(request, 'caisse/index.html', context)
 

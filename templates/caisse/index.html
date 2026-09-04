@@ -380,7 +380,7 @@
 
         <!-- Derniers tickets -->
         <div class="panel">
-          <div class="ph"><h3>🧾 Dernières transactions</h3></div>
+          <div class="ph"><h3>{% if vue_session %}🧾 Mes dernières transactions{% else %}🧾 Dernières transactions{% endif %}</h3></div>
           <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
             <table class="tbl">
               <thead><tr><th style="position:sticky;top:0;background:#f8fafc">N°</th><th style="position:sticky;top:0;background:#f8fafc">Module</th><th style="position:sticky;top:0;background:#f8fafc">Heure</th><th style="position:sticky;top:0;background:#f8fafc">Mode</th><th style="position:sticky;top:0;background:#f8fafc">Montant</th><th style="position:sticky;top:0;background:#f8fafc">Opérateur</th></tr></thead>
@@ -483,8 +483,11 @@
   <!-- TRANSACTIONS -->
   <div class="tab-content" id="content-transactions">
     <div class="panel">
-      <div class="ph"><h3>💰 Toutes les transactions du jour</h3>
-        <span style="font-size:11px;color:var(--muted)">{{ stats.nb_tickets }} ticket(s) · {{ stats.total|montant }} F</span>
+      <div class="ph">
+        <h3>{% if vue_session %}💰 Mes transactions — shift en cours{% else %}💰 Toutes les transactions du jour{% endif %}</h3>
+        <span style="font-size:11px;color:var(--muted)">{{ stats.nb_tickets }} ticket(s) · {{ stats.total|montant }} F
+          {% if vue_session %} · {{ session_active.opened_at|date:"H:i" }} → maintenant{% endif %}
+        </span>
       </div>
       <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
         <table class="tbl">
@@ -511,7 +514,7 @@
             <td style="font-size:11px;color:var(--muted)">{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Aucune transaction aujourd'hui</td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">{% if vue_session %}Aucune transaction pour ce shift{% else %}Aucune transaction aujourd'hui{% endif %}</td></tr>
           {% endfor %}
           </tbody>
           <tfoot>
@@ -530,7 +533,7 @@
   <div class="tab-content" id="content-mouvements">
     <div class="panel">
       <div class="ph">
-        <h3>📋 Journal de caisse</h3>
+        <h3>{% if vue_session %}📋 Mon journal — shift en cours{% else %}📋 Journal de caisse{% endif %}</h3>
         {% if session_active %}<button class="btn-a btn-or" style="font-size:11px;padding:6px 12px" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus"></i> Nouveau</button>{% endif %}
       </div>
       <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
