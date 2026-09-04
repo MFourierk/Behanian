@@ -750,6 +750,105 @@ def prelevement_banque(request):
 
 
 @require_module_access('caisse')
+@require_POST
+def api_modifier_ticket(request):
+    """Correction d'un ticket pendant le shift actif : mode de paiement et/ou montant reçu."""
+    try:
+        data    = json.loads(request.body)
+        session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+        if not session:
+            return JsonResponse({'success': False, 'error': 'Aucune session ouverte.'})
+
+        ticket_id = data.get('ticket_id')
+        ticket = get_object_or_404(Ticket, pk=ticket_id)
+
+        # Vérifier que le ticket appartient à ce shift (fenêtre horaire)
+        date_fin = session.closed_at or timezone.now()
+        if not (session.opened_at <= ticket.date_creation < date_fin):
+            return JsonResponse({'success': False, 'error': 'Ce ticket n\'appartient pas à votre shift.'})
+
+        MODES_VALIDES = [
+            'especes', 'mobile_money', 'orange_money', 'wave', 'mtn_money',
+            'moov_money', 'carte_bancaire', 'carte', 'virement', 'cheque',
+            'chambre', 'mixte', 'autre',
+        ]
+        nouveau_mode = data.get('mode_paiement')
+        nouveau_montant_paye = data.get('montant_paye')
+
+        if nouveau_mode and nouveau_mode not in MODES_VALIDES:
+            return JsonResponse({'success': False, 'error': 'Mode de paiement invalide.'})
+
+        modifs = []
+        if nouveau_mode and nouveau_mode != ticket.mode_paiement:
+            ticket.mode_paiement = nouveau_mode
+            modifs.append(f'mode → {nouveau_mode}')
+        if nouveau_montant_paye is not None:
+            mp = _dec(nouveau_montant_paye)
+            if mp >= 0:
+                ticket.montant_paye = mp
+                modifs.append(f'montant reçu → {int(mp):,} F')
+
+        if not modifs:
+            return JsonResponse({'success': False, 'error': 'Aucune modification détectée.'})
+
+        ticket.save()
+        return JsonResponse({'success': True, 'message': f'Ticket {ticket.numero} modifié : {", ".join(modifs)}'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
+@require_POST
+def api_modifier_mouvement(request):
+    """Modifier un mouvement du journal (session active uniquement)."""
+    try:
+        data       = json.loads(request.body)
+        session    = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+        if not session:
+            return JsonResponse({'success': False, 'error': 'Aucune session ouverte.'})
+
+        mv = get_object_or_404(MouvementCaisse, pk=data.get('mouvement_id'), session=session)
+
+        nouveau_montant = data.get('montant')
+        if nouveau_montant is not None:
+            m = _dec(nouveau_montant)
+            if m <= 0:
+                return JsonResponse({'success': False, 'error': 'Montant invalide.'})
+            mv.montant = m
+
+        if data.get('description') is not None:
+            mv.description = data['description'][:300]
+        if data.get('mode_paiement'):
+            mv.mode_paiement = data['mode_paiement']
+
+        mv.save()
+        return JsonResponse({'success': True, 'message': 'Mouvement mis à jour.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
+@require_POST
+def api_supprimer_mouvement(request):
+    """Supprimer un mouvement du journal (session active uniquement)."""
+    try:
+        data    = json.loads(request.body)
+        session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+        if not session:
+            return JsonResponse({'success': False, 'error': 'Aucune session ouverte.'})
+
+        mv = get_object_or_404(MouvementCaisse, pk=data.get('mouvement_id'), session=session)
+        desc = str(mv)
+        # Si prélèvement banque, supprimer aussi le PrelevementBanque associé
+        if mv.type in ('prelevement', 'prelevement_banque') and mv.reference:
+            PrelevementBanque.objects.filter(session=session, reference=mv.reference).delete()
+        mv.delete()
+        return JsonResponse({'success': True, 'message': f'Mouvement supprimé : {desc}'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
 def rapport_caisse(request, session_id=None):
     """Rapport imprimable d'une session de caisse."""
     from utils.permissions import _is_manager
