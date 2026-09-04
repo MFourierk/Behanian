@@ -31,14 +31,28 @@ def get_reconciliation_jour(date=None):
         date = timezone.localdate()
 
     lignes = []
-    grand_total_tx = 0
+    grand_total_tx    = 0
     grand_total_verse = 0
+    grand_especes     = 0
+    grand_mobile      = 0
+    grand_carte       = 0
+    grand_virement    = 0
+    grand_mixte       = 0
 
     for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
-        total_tx = int(
-            Ticket.objects.filter(date_creation__date=date, module=ticket_mod)
-            .aggregate(s=Sum('montant_total'))['s'] or 0
-        )
+        qs = Ticket.objects.filter(date_creation__date=date, module=ticket_mod)
+        total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
+
+        def _sum(modes):
+            return int(qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant_total'))['s'] or 0)
+
+        especes  = _sum(['especes'])
+        mobile   = _sum(['wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money'])
+        carte    = _sum(['carte_bancaire', 'carte'])
+        virement = _sum(['virement'])
+        mixte    = _sum(['mixte'])
+        autres   = total_tx - especes - mobile - carte - virement - mixte
+
         total_verse = int(
             MouvementCaisse.objects.filter(
                 date__date=date,
@@ -53,18 +67,34 @@ def get_reconciliation_jour(date=None):
             'label':       label,
             'emoji':       emoji,
             'total_tx':    total_tx,
+            'especes':     especes,
+            'mobile':      mobile,
+            'carte':       carte,
+            'virement':    virement,
+            'mixte':       mixte,
+            'autres':      autres if autres > 0 else 0,
             'total_verse': total_verse,
             'solde':       solde,
             'complet':     solde <= 0,
         })
         grand_total_tx    += total_tx
         grand_total_verse += total_verse
+        grand_especes     += especes
+        grand_mobile      += mobile
+        grand_carte       += carte
+        grand_virement    += virement
+        grand_mixte       += mixte
 
     return {
         'lignes':             lignes,
         'grand_total_tx':     grand_total_tx,
         'grand_total_verse':  grand_total_verse,
         'grand_solde':        grand_total_tx - grand_total_verse,
+        'grand_especes':      grand_especes,
+        'grand_mobile':       grand_mobile,
+        'grand_carte':        grand_carte,
+        'grand_virement':     grand_virement,
+        'grand_mixte':        grand_mixte,
     }
 
 

@@ -304,7 +304,12 @@
               <thead>
                 <tr>
                   <th>Module</th>
-                  <th style="text-align:right">Total transactions</th>
+                  <th style="text-align:right">Espèces</th>
+                  <th style="text-align:right">Mobile Money</th>
+                  <th style="text-align:right">Carte</th>
+                  <th style="text-align:right">Virement</th>
+                  <th style="text-align:right">Mixte</th>
+                  <th style="text-align:right;border-left:2px solid #e2e8f0">Total transactions</th>
                   <th style="text-align:right">Total versé</th>
                   <th style="text-align:right">Solde à verser</th>
                   <th style="text-align:center">Statut</th>
@@ -314,7 +319,22 @@
               {% for ligne in reconciliation.lignes %}
               <tr>
                 <td style="font-weight:600">{{ ligne.emoji }} {{ ligne.label }}</td>
-                <td style="text-align:right;font-family:monospace">{{ ligne.total_tx|montant }} F</td>
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.especes %}#1e40af{% else %}var(--muted){% endif %}">
+                  {% if ligne.especes %}{{ ligne.especes|montant }} F{% else %}—{% endif %}
+                </td>
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.mobile %}#7c3aed{% else %}var(--muted){% endif %}">
+                  {% if ligne.mobile %}{{ ligne.mobile|montant }} F{% else %}—{% endif %}
+                </td>
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.carte %}#0369a1{% else %}var(--muted){% endif %}">
+                  {% if ligne.carte %}{{ ligne.carte|montant }} F{% else %}—{% endif %}
+                </td>
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.virement %}#0f766e{% else %}var(--muted){% endif %}">
+                  {% if ligne.virement %}{{ ligne.virement|montant }} F{% else %}—{% endif %}
+                </td>
+                <td style="text-align:right;font-family:monospace;color:{% if ligne.mixte %}#92400e{% else %}var(--muted){% endif %}">
+                  {% if ligne.mixte %}{{ ligne.mixte|montant }} F{% else %}—{% endif %}
+                </td>
+                <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">{{ ligne.total_tx|montant }} F</td>
                 <td style="text-align:right;font-family:monospace;color:{% if ligne.total_verse > 0 %}#16a34a{% else %}var(--muted){% endif %}">
                   {{ ligne.total_verse|montant }} F
                 </td>
@@ -338,7 +358,12 @@
               <tfoot>
                 <tr style="background:#f1f5f9;font-weight:700">
                   <td>TOTAL</td>
-                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_total_tx|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_especes|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_mobile|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_carte|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_virement|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_mixte|montant }} F</td>
+                  <td style="text-align:right;font-family:monospace;border-left:2px solid #e2e8f0">{{ reconciliation.grand_total_tx|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:#16a34a">{{ reconciliation.grand_total_verse|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:{% if reconciliation.grand_solde <= 0 %}#16a34a{% else %}#dc2626{% endif %}">
                     {{ reconciliation.grand_solde|montant }} F
