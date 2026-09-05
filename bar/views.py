@@ -2084,7 +2084,7 @@ def api_vente_create(request):
                     # Vérification en ml pour les shots (toujours, même en mode stock_live)
                     try:
                         param = b.shot_parent.parametrage_shot
-                        ml_total = Decimal(b.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+                        ml_total = Decimal(b.shot_parent.quantite_stock) * param.volume_contenant_ml + param.ml_ouverts
                         if ml_total <= 0:
                             manques.append(f"• {b.nom} : rupture de stock")
                     except ParametrageShot.DoesNotExist:
@@ -2367,7 +2367,7 @@ def shot_parametrage(request):
             p = art.parametrage_shot
             ml_tournee = p.volume_shot_ml * 2
             if ml_tournee > 0 and p.volume_contenant_ml > 0:
-                ml_total    = Decimal(art.quantite_stock) * p.volume_contenant_ml - p.ml_en_cours
+                ml_total    = Decimal(art.quantite_stock) * p.volume_contenant_ml + p.ml_ouverts
                 tournees    = int(ml_total // ml_tournee) if ml_total > 0 else 0
             else:
                 tournees = 0
@@ -2401,30 +2401,35 @@ def shot_vente(request):
         ml_a_debiter = Decimal(nb_shots * param.volume_shot_ml)
         prix_encaisse = param.prix_tournee if type_vente == 'tournee' else param.prix_shot
 
-        # Blocage uniquement en rupture totale (ml = 0)
-        ml_total_stock = Decimal(boisson.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+        # Rupture totale si bouteilles scellées + ml ouverts = 0
+        ml_total_stock = Decimal(boisson.quantite_stock) * param.volume_contenant_ml + param.ml_ouverts
         if ml_total_stock <= 0:
             messages.error(request, f"Rupture de stock — {boisson.nom}.")
             return redirect('bar:shot_vente')
 
         with transaction.atomic():
-            # Mise à jour bouteille en cours
-            param.ml_en_cours += ml_a_debiter
-            bouteilles_consommees = int(param.ml_en_cours // param.volume_contenant_ml)
-            param.ml_en_cours = param.ml_en_cours % param.volume_contenant_ml
-            param.save()
-
-            # Décrémenter le stock bouteilles si nécessaire
-            if bouteilles_consommees > 0:
-                from django.db.models import F
+            from django.db.models import F
+            if param.ml_ouverts >= ml_a_debiter:
+                # Puiser dans les bouteilles ouvertes
+                ParametrageShot.objects.filter(pk=param.pk).update(
+                    ml_ouverts=param.ml_ouverts - ml_a_debiter
+                )
+            else:
+                # Ouvrir automatiquement une bouteille scellée
+                ml_deficit = ml_a_debiter - param.ml_ouverts
+                bouteilles_a_ouvrir = int(ml_deficit // param.volume_contenant_ml) + 1
+                ml_nouvelles = Decimal(bouteilles_a_ouvrir) * param.volume_contenant_ml
+                ParametrageShot.objects.filter(pk=param.pk).update(
+                    ml_ouverts=param.ml_ouverts + ml_nouvelles - ml_a_debiter
+                )
                 BoissonBar.objects.filter(pk=boisson.pk).update(
-                    quantite_stock=F('quantite_stock') - bouteilles_consommees
+                    quantite_stock=F('quantite_stock') - bouteilles_a_ouvrir
                 )
                 MouvementStockBar.objects.create(
                     boisson=boisson,
                     type_mouvement='sortie',
-                    quantite=bouteilles_consommees,
-                    commentaire=f"Vente shot — {bouteilles_consommees} bouteille(s) épuisée(s)",
+                    quantite=bouteilles_a_ouvrir,
+                    commentaire=f"Vente shot — ouverture auto {bouteilles_a_ouvrir} btl",
                     utilisateur=request.user,
                 )
 
@@ -2477,24 +2482,29 @@ def api_ouvrir_bouteille(request):
         if ml_consommes >= param.volume_contenant_ml:
             return JsonResponse({'ok': False, 'error': 'Volume consommé supérieur ou égal au contenant — entrez une bouteille entière.'})
 
+        ml_restants = Decimal(str(param.volume_contenant_ml)) - ml_consommes
+
         with _tx.atomic():
-            # 1. Entrée bouteille (+1 en stock)
+            # Mouvement neutre pour traçabilité (n'affecte PAS quantite_stock)
             MouvementStockBar.objects.create(
                 boisson        = boisson,
-                type_mouvement = 'entree',
+                type_mouvement = 'ouverture_contenant',
                 quantite       = 1,
-                commentaire    = f"Ouverture bouteille entamée — {int(ml_consommes)} ml déjà consommés",
+                commentaire    = (
+                    f"Bouteille entamée — {int(ml_restants)} ml disponibles"
+                    f" ({int(ml_consommes)} ml préalablement consommés)"
+                ),
                 utilisateur    = request.user,
             )
-            # 2. Cumuler les ml consommés dans ml_en_cours
+            # Les ml restants s'ajoutent au pool des bouteilles ouvertes
             ParametrageShot.objects.filter(pk=param.pk).update(
-                ml_en_cours=param.ml_en_cours + ml_consommes
+                ml_ouverts=param.ml_ouverts + ml_restants
             )
 
         # Recalcul après mise à jour
         param.refresh_from_db()
         boisson.refresh_from_db()
-        ml_total      = Decimal(boisson.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+        ml_total      = Decimal(boisson.quantite_stock) * param.volume_contenant_ml + param.ml_ouverts
         ml_tournee    = param.volume_shot_ml * 2
         shots_dispo   = int(ml_total // param.volume_shot_ml)
         tournees_dispo= int(ml_total // ml_tournee)
@@ -2505,7 +2515,7 @@ def api_ouvrir_bouteille(request):
             'tournees_dispo' : tournees_dispo,
             'shots_dispo'    : shots_dispo,
             'quantite_stock' : boisson.quantite_stock,
-            'ml_en_cours'    : float(param.ml_en_cours),
+            'ml_ouverts'     : float(param.ml_ouverts),
         })
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)})

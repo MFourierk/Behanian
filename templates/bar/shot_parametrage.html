@@ -140,9 +140,9 @@
           <th>Shot / Tournée</th>
           <th>Prix Shot</th>
           <th>Prix Tournée</th>
-          <th>Stock bouteilles</th>
-          <th>Bouteille en cours</th>
-          <th>Tournées dispo</th>
+          <th title="Bouteilles scellées — vendables en entier">🔒 Scellées</th>
+          <th title="ml disponibles dans les bouteilles ouvertes">🔓 Ml ouverts</th>
+          <th title="Tournées totales vendables (scellées + ouvertes)">🥃 Tournées dispo</th>
           <th>Statut</th>
           <th>Actions</th>
         </tr>
@@ -154,7 +154,7 @@
           <tr data-pk="{{ art.pk }}"
               data-vol="{{ p.volume_contenant_ml }}"
               data-shot-ml="{{ p.volume_shot_ml }}"
-              data-ml-en-cours="{{ p.ml_en_cours }}"
+              data-ml-ouverts="{{ p.ml_ouverts }}"
               data-stock="{{ art.quantite_stock }}">
             <td><strong>{{ art.nom }}</strong></td>
             <td>{{ p.volume_contenant_ml }} ml</td>
@@ -165,12 +165,16 @@
               <span style="font-size:1.1rem">🍾</span> {{ art.quantite_stock }}
             </td>
             <td>
-              <div style="font-size:.82rem;color:#374151">
-                {{ p.ml_en_cours|floatformat:0 }} / {{ p.volume_contenant_ml }} ml
+              {% if p.ml_ouverts > 0 %}
+              <div style="font-size:.82rem;color:#c2410c;font-weight:600">
+                {{ p.ml_ouverts|floatformat:0 }} ml dispo
               </div>
               <div style="background:#e5e7eb;border-radius:4px;height:6px;margin-top:4px;overflow:hidden;width:90px;">
-                <div style="background:#8e44ad;height:6px;width:{% widthratio p.ml_en_cours p.volume_contenant_ml 90 %}px;"></div>
+                <div style="background:#f97316;height:6px;width:{% widthratio p.ml_ouverts p.volume_contenant_ml 90 %}px;"></div>
               </div>
+              {% else %}
+              <span style="font-size:.78rem;color:#94a3b8">—</span>
+              {% endif %}
             </td>
             <td style="text-align:center">
               <span class="dispo-pill {% if t == 0 %}dispo-zero{% elif t <= 3 %}dispo-warn{% else %}dispo-ok{% endif %}"
@@ -190,7 +194,7 @@
                 <i class="fas fa-edit"></i> Modifier
               </button>
               <button class="open-btn"
-                onclick="ouvrirModalBouteille({{ art.pk }},'{{ art.nom|escapejs }}',{{ p.volume_contenant_ml }},{{ p.volume_shot_ml }},{{ art.quantite_stock }},{{ p.ml_en_cours }})">
+                onclick="ouvrirModalBouteille({{ art.pk }},'{{ art.nom|escapejs }}',{{ p.volume_contenant_ml }},{{ p.volume_shot_ml }},{{ art.quantite_stock }},{{ p.ml_ouverts }})">
                 🍾 Entamée
               </button>
             </td>
@@ -301,13 +305,13 @@ function chargerParametrage(pk) {
 
 // ── Modal Bouteille Entamée ──────────────────────────────────────────────────
 
-let _modal = { pk:0, nom:'', volCont:700, shotMl:30, stock:0, mlEnCours:0, mode:'tournees' };
+let _modal = { pk:0, nom:'', volCont:700, shotMl:30, stock:0, mlOuverts:0, mode:'tournees' };
 
-function ouvrirModalBouteille(pk, nom, volCont, shotMl, stock, mlEnCours) {
-  _modal = { pk, nom, volCont, shotMl, stock, mlEnCours, mode:'tournees' };
+function ouvrirModalBouteille(pk, nom, volCont, shotMl, stock, mlOuverts) {
+  _modal = { pk, nom, volCont, shotMl, stock, mlOuverts, mode:'tournees' };
   document.getElementById('modal-nom-article').textContent    = nom;
   document.getElementById('modal-info-contenant').textContent =
-    `Contenant : ${volCont} ml — 1 tournée = ${shotMl * 2} ml — Stock actuel : ${stock} bouteille(s)`;
+    `Contenant : ${volCont} ml — 1 tournée = ${shotMl * 2} ml — ${stock} btl scellée(s) + ${Math.round(mlOuverts)} ml ouverts`;
   document.getElementById('hint-tournees').textContent = `1 tournée = ${shotMl * 2} ml`;
   document.getElementById('inp-tournees').value = 0;
   document.getElementById('inp-ml').value       = 0;
@@ -331,7 +335,7 @@ function setMode(mode) {
 }
 
 function recalculer() {
-  const { volCont, shotMl, stock, mlEnCours } = _modal;
+  const { volCont, shotMl, stock, mlOuverts } = _modal;
   const mlTournee = shotMl * 2;
 
   let mlConsommes = 0;
@@ -345,24 +349,24 @@ function recalculer() {
   mlConsommes = Math.max(0, Math.min(mlConsommes, volCont - 1));
   const mlRestants = volCont - mlConsommes;
 
-  // Après enregistrement : stock+1 bouteille, ml_en_cours cumulé
-  const nouveauStock  = stock + 1;
-  const nouveauMlEnCours = mlEnCours + mlConsommes;
-  const mlTotal       = nouveauStock * volCont - nouveauMlEnCours;
-  const tourneesTotal = Math.floor(mlTotal / mlTournee);
+  // Après enregistrement : stock scellé inchangé, ml_ouverts += mlRestants
+  const { stock, mlOuverts } = _modal;
+  const nouveauMlOuverts = mlOuverts + mlRestants;
+  const mlTotal          = stock * volCont + nouveauMlOuverts;
+  const tourneesTotal    = Math.floor(mlTotal / mlTournee);
 
   document.getElementById('prev-ml').textContent      = Math.round(mlConsommes);
   document.getElementById('prev-restant').textContent = Math.round(mlRestants);
   document.getElementById('prev-tournees').textContent= tourneesTotal;
   document.getElementById('prev-detail').textContent  =
-    `(${nouveauStock} btl × ${volCont} ml − ${Math.round(nouveauMlEnCours)} ml) ÷ ${mlTournee} ml`;
+    `(${stock} btl × ${volCont} ml + ${Math.round(nouveauMlOuverts)} ml ouverts) ÷ ${mlTournee} ml`;
 
   const btn = document.getElementById('btn-confirmer');
   btn.disabled = mlConsommes >= volCont;
 }
 
 async function confirmerOuverture() {
-  const { pk, volCont, shotMl, mlEnCours, mode } = _modal;
+  const { pk, volCont, shotMl, mlOuverts, mode } = _modal;
   const mlTournee = shotMl * 2;
 
   let mlConsommes = 0;
@@ -397,8 +401,8 @@ async function confirmerOuverture() {
       // Mettre à jour la ligne (stock + ml en cours)
       const row = document.querySelector(`tr[data-pk="${pk}"]`);
       if (row) {
-        row.dataset.stock      = d.quantite_stock;
-        row.dataset.mlEnCours  = d.ml_en_cours;
+        row.dataset.stock     = d.quantite_stock;
+        row.dataset.mlOuverts = d.ml_ouverts;
       }
       alert('✅ ' + d.message);
     } else {

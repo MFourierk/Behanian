@@ -179,11 +179,18 @@ class BoissonBar(models.Model):
 
     @property
     def stock_disponible(self):
-        """Unités vendables : shots possibles pour un article shot, bouteilles sinon."""
+        """
+        Unités vendables.
+        - Shot/tournée : (bouteilles_scellées × volume_ml + ml_ouverts) ÷ shot_ml
+        - Article normal : quantite_stock (bouteilles scellées)
+        """
         if self.est_shot and self.shot_parent_id:
             try:
                 param = self.shot_parent.parametrage_shot
-                ml_total = Decimal(self.shot_parent.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+                ml_total = (
+                    Decimal(self.shot_parent.quantite_stock) * param.volume_contenant_ml
+                    + param.ml_ouverts
+                )
                 return int(ml_total // (self.shot_ml or 30))
             except Exception:
                 return 0
@@ -200,28 +207,42 @@ class BoissonBar(models.Model):
         return 0 < self.quantite_stock <= self.seuil_alerte
 
     def destock(self, qty, commentaire, utilisateur, serveur=None):
-        """Décrémente le stock : ml pour un shot dérivé, bouteille pour un article normal."""
+        """
+        Décrémente le stock.
+        - Shot/tournée : déduit des ml_ouverts ; si insuffisant, ouvre une bouteille scellée.
+        - Article normal : sortie classique (bouteille entière).
+        """
         if self.est_shot and self.shot_parent_id:
             try:
+                from django.db.models import F
                 param = ParametrageShot.objects.select_for_update().get(boisson_id=self.shot_parent_id)
                 ml_a_debiter = Decimal(self.shot_ml or 30) * qty
-                param.ml_en_cours += ml_a_debiter
-                bouteilles = int(param.ml_en_cours // param.volume_contenant_ml)
-                param.ml_en_cours = param.ml_en_cours % param.volume_contenant_ml
-                param.save(update_fields=['ml_en_cours'])
-                if bouteilles > 0:
-                    from django.db.models import F
+
+                if param.ml_ouverts >= ml_a_debiter:
+                    # Puiser dans les bouteilles déjà ouvertes
+                    ParametrageShot.objects.filter(pk=param.pk).update(
+                        ml_ouverts=param.ml_ouverts - ml_a_debiter
+                    )
+                else:
+                    # Ouvrir automatiquement des bouteilles scellées
+                    ml_deficit = ml_a_debiter - param.ml_ouverts
+                    bouteilles_a_ouvrir = int(ml_deficit // param.volume_contenant_ml) + 1
+                    ml_nouvelles = Decimal(bouteilles_a_ouvrir) * param.volume_contenant_ml
+                    ParametrageShot.objects.filter(pk=param.pk).update(
+                        ml_ouverts=param.ml_ouverts + ml_nouvelles - ml_a_debiter
+                    )
                     BoissonBar.objects.filter(pk=self.shot_parent_id).update(
-                        quantite_stock=F('quantite_stock') - bouteilles
+                        quantite_stock=F('quantite_stock') - bouteilles_a_ouvrir
                     )
                     MouvementStockBar.objects.create(
                         boisson_id=self.shot_parent_id,
                         type_mouvement='sortie',
-                        quantite=bouteilles,
-                        commentaire=f"{commentaire} [shot — {int(ml_a_debiter)} ml]",
+                        quantite=bouteilles_a_ouvrir,
+                        commentaire=f"{commentaire} [ouverture auto — {bouteilles_a_ouvrir} btl]",
                         utilisateur=utilisateur,
                         serveur=serveur,
                     )
+
                 VenteShot.objects.create(
                     boisson_id=self.shot_parent_id,
                     type_vente='tournee' if (self.shot_ml or 30) >= 60 else 'shot',
@@ -260,8 +281,9 @@ class BoissonBar(models.Model):
             try:
                 param = ParametrageShot.objects.select_for_update().get(boisson_id=self.shot_parent_id)
                 ml_a_rendre = Decimal(self.shot_ml or 30) * qty
-                param.ml_en_cours = max(Decimal('0'), param.ml_en_cours - ml_a_rendre)
-                param.save(update_fields=['ml_en_cours'])
+                ParametrageShot.objects.filter(pk=param.pk).update(
+                    ml_ouverts=param.ml_ouverts + ml_a_rendre
+                )
             except Exception:
                 pass
         else:
@@ -320,14 +342,15 @@ class MouvementStockBar(models.Model):
         ('inventaire_excedent',  'Inventaire — Excédent'),
         ('inventaire_manquant',  'Inventaire — Manquant'),
         ('inventaire',           "Inventaire — Conforme"),
+        ('ouverture_contenant',  'Ouverture contenant (bouteille entamée)'),
     ]
 
     # Types qui augmentent le stock
     TYPES_ENTREE = {'entree', 'inventaire_excedent'}
     # Types qui diminuent le stock
     TYPES_SORTIE = {'sortie', 'casse', 'inventaire_manquant'}
-    # Types sans impact sur le stock
-    TYPES_NEUTRES = {'inventaire'}
+    # Types sans impact sur quantite_stock (traçabilité uniquement)
+    TYPES_NEUTRES = {'inventaire', 'ouverture_contenant'}
 
     boisson = models.ForeignKey(BoissonBar, on_delete=models.CASCADE, related_name='mouvements')
     type_mouvement = models.CharField(max_length=30, choices=TYPE_MOUVEMENT)
@@ -836,10 +859,18 @@ class ParametrageShot(models.Model):
         max_digits=10, decimal_places=3, default=0,
         verbose_name="Prix de la tournée (2 shots, FCFA)"
     )
-    # ml consommés dans la bouteille actuellement ouverte
+    # ml disponibles dans toutes les bouteilles en cours d'utilisation (ce qu'il RESTE)
+    # Remplace l'ancienne logique ml_en_cours (ce qui était consommé).
+    # Relation : ml_ouverts = volume_contenant_ml - ml_en_cours (ancienne convention)
+    ml_ouverts = models.DecimalField(
+        max_digits=10, decimal_places=3, default=0,
+        verbose_name="ml disponibles (bouteilles ouvertes)",
+        help_text="Total des ml restants dans toutes les bouteilles en cours d'utilisation"
+    )
+    # Champ hérité — conservé pour compatibilité migrations, doit rester à 0
     ml_en_cours = models.DecimalField(
         max_digits=10, decimal_places=3, default=0,
-        verbose_name="ml consommés (bouteille en cours)"
+        verbose_name="ml consommés (OBSOLÈTE — ne pas utiliser)"
     )
     actif = models.BooleanField(default=True, verbose_name="Actif")
     date_modification = models.DateTimeField(auto_now=True)
@@ -927,17 +958,22 @@ class ParametrageShot(models.Model):
 
     @property
     def ml_restants_bouteille(self):
-        """ml restants dans la bouteille en cours."""
-        if self.ml_en_cours == 0:
-            return self.volume_contenant_ml
-        return self.volume_contenant_ml - self.ml_en_cours
+        """ml disponibles dans toutes les bouteilles ouvertes."""
+        return self.ml_ouverts
 
     @property
     def shots_restants_bouteille(self):
-        """Nombre de shots encore disponibles dans la bouteille en cours."""
-        from decimal import Decimal
+        """Nombre de shots disponibles dans les bouteilles ouvertes."""
         import math
-        return math.floor(float(self.ml_restants_bouteille) / self.volume_shot_ml)
+        return math.floor(float(self.ml_ouverts) / self.volume_shot_ml)
+
+    @property
+    def tournees_dispo(self):
+        """Tournées totales disponibles (scellées + ouvertes)."""
+        import math
+        ml_total = float(self.boisson.quantite_stock) * self.volume_contenant_ml + float(self.ml_ouverts)
+        ml_tournee = self.volume_shot_ml * 2
+        return math.floor(ml_total / ml_tournee) if ml_tournee > 0 else 0
 
 
 class VenteShot(models.Model):
