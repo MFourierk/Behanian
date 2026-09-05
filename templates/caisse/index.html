@@ -316,9 +316,9 @@
   <!-- KPIs -->
   <div class="kpi-grid">
     <div class="kpi k-or">
-      <div class="klbl">{% if vue_session %}Mon total — shift{% elif is_manager %}Total journée{% else %}Total encaissé{% endif %}</div>
+      <div class="klbl">{% if vue_session or is_manager %}Total journée{% else %}Total encaissé{% endif %}</div>
       <div class="kval">{{ stats.total|montant }} F</div>
-      <div class="ksub">{{ stats.nb_tickets }} transaction(s){% if vue_session %} · {{ session_active.opened_at|date:"H:i" }} → maintenant{% endif %}</div>
+      <div class="ksub">{{ stats.nb_tickets }} transaction(s){% if vue_session %} · Session ouverte depuis {{ session_active.opened_at|date:"H:i" }}{% endif %}</div>
     </div>
     <div class="kpi k-vert">
       <div class="klbl">Espèces</div>
@@ -788,7 +788,7 @@
   <div class="tab-content" id="content-mouvements">
     <div class="panel">
       <div class="ph">
-        <h3>{% if vue_session %}📋 Mon journal — shift en cours{% else %}📋 Journal de caisse{% endif %}</h3>
+        <h3>{% if vue_session %}📋 Mon journal — ma session{% else %}📋 Journal de caisse{% endif %}</h3>
         {% if session_active %}<button class="btn-a btn-or" style="font-size:11px;padding:6px 12px" onclick="ouvrirModal('modalMouvement')"><i class="fas fa-plus"></i> Nouveau</button>{% endif %}
       </div>
       <div style="overflow-x:auto;max-height:500px;overflow-y:auto">

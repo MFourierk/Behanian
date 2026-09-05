@@ -502,8 +502,10 @@ def index(request):
             session_filtre = CaisseSession.objects.filter(pk=sid, opened_at__date=today).select_related('user').first()
 
     if session_active:
-        # Stats limitées au shift de la caissière active (fenêtre horaire)
-        stats = get_stats_session(session_active)
+        # Stats de la journée complète — la caissière voit toutes les opérations du jour,
+        # pas uniquement celles depuis l'ouverture de sa propre session (sinon zéro si elle
+        # ouvre en cours de journée après un collègue ou après des ventes antérieures).
+        stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     elif is_manager:
         if session_filtre:
@@ -534,7 +536,9 @@ def index(request):
             date__lt=date_fin_session,
             valide=True,
         ).select_related('cree_par').order_by('-date')
-        reconciliation = get_reconciliation_session(session_active)
+        # Réconciliation journée complète — la caissière doit voir TOUS les modules
+        # pour savoir quels versements sont encore en attente (pas uniquement sa fenêtre horaire).
+        reconciliation = get_reconciliation_jour(today)
         vue_session = True
     elif is_manager:
         if session_filtre:
