@@ -294,6 +294,32 @@
 
   <!-- DASHBOARD -->
   <div class="tab-content active" id="content-dashboard">
+
+    {% if is_manager and not session_active and sessions_jour %}
+    <!-- Sélecteur de session pour le manager -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap">Vue par caissière :</span>
+      <a href="{% url 'caisse:index' %}"
+         style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid {% if not session_filtre %}#6366f1{% else %}var(--border){% endif %};background:{% if not session_filtre %}#6366f1{% else %}white{% endif %};color:{% if not session_filtre %}white{% else %}var(--dark){% endif %}">
+        Journée complète
+      </a>
+      {% for s in sessions_jour %}
+      <a href="?session_id={{ s.pk }}"
+         style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid {% if session_filtre.pk == s.pk %}#0ea5e9{% else %}var(--border){% endif %};background:{% if session_filtre.pk == s.pk %}#0ea5e9{% else %}white{% endif %};color:{% if session_filtre.pk == s.pk %}white{% else %}var(--dark){% endif %};display:flex;align-items:center;gap:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:{% if s.is_open %}#22c55e{% else %}#9ca3af{% endif %};display:inline-block"></span>
+        {{ s.user.get_full_name|default:s.user.username }}
+        <span style="opacity:.7;font-weight:400">({{ s.opened_at|date:"H:i" }}{% if s.closed_at %} → {{ s.closed_at|date:"H:i" }}{% endif %})</span>
+      </a>
+      {% endfor %}
+      {% if session_filtre %}
+      <span style="font-size:11px;color:var(--muted);margin-left:auto">
+        Affichage limité au shift de {{ session_filtre.user.get_full_name|default:session_filtre.user.username }}
+        ({{ session_filtre.opened_at|date:"H:i" }}{% if session_filtre.closed_at %} → {{ session_filtre.closed_at|date:"H:i" }}{% else %} — en cours{% endif %})
+      </span>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div class="cai-dashboard-grid" style="display:grid;grid-template-columns:1fr 320px;gap:16px">
       <div>
         <!-- CA par module -->

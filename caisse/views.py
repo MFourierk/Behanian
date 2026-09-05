@@ -486,13 +486,27 @@ def index(request):
     session_active      = CaisseSession.objects.filter(user=request.user, is_open=True).first()
     session_ouverte_par = None if session_active else CaisseSession.objects.filter(is_open=True, date_session=timezone.localdate()).select_related('user').first()
 
+    sessions_jour = CaisseSession.objects.filter(
+        opened_at__date=today
+    ).select_related('user').order_by('opened_at')
+
+    # Manager peut filtrer sur une session précise via ?session_id=X
+    session_filtre = None
+    if is_manager and not session_active:
+        sid = request.GET.get('session_id')
+        if sid:
+            session_filtre = CaisseSession.objects.filter(pk=sid, opened_at__date=today).select_related('user').first()
+
     if session_active:
         # Stats limitées au shift de la caissière active (fenêtre horaire)
         stats = get_stats_session(session_active)
         attente_session = False
     elif is_manager:
-        # Managers / directeurs : vue journée complète (tous shifts confondus)
-        stats = get_stats_jour(today, type_caisse=None)
+        if session_filtre:
+            stats = get_stats_session(session_filtre)
+        else:
+            # Vue journée complète (tous shifts confondus)
+            stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     else:
         # Caissière sans session ouverte : zéros — ne pas montrer les shifts des collègues
@@ -504,10 +518,6 @@ def index(request):
             'tickets': Ticket.objects.none(),
         }
         attente_session = True
-
-    sessions_jour = CaisseSession.objects.filter(
-        opened_at__date=today
-    ).select_related('user').order_by('-opened_at')
 
     # Mouvements, prélèvements, réconciliation — isolés par scope
     if session_active:
@@ -523,13 +533,25 @@ def index(request):
         reconciliation = get_reconciliation_session(session_active)
         vue_session = True
     elif is_manager:
-        mouvements = MouvementCaisse.objects.filter(
-            date__date=today, valide=True
-        ).select_related('cree_par').order_by('-date')
-        prelevements = PrelevementBanque.objects.filter(
-            date__date=today, valide=True
-        ).select_related('cree_par').order_by('-date')
-        reconciliation = get_reconciliation_jour(today)
+        if session_filtre:
+            mouvements = MouvementCaisse.objects.filter(
+                session=session_filtre, valide=True
+            ).select_related('cree_par').order_by('-date')
+            date_fin_sf = session_filtre.closed_at or timezone.now()
+            prelevements = PrelevementBanque.objects.filter(
+                date__gte=session_filtre.opened_at,
+                date__lt=date_fin_sf,
+                valide=True,
+            ).select_related('cree_par').order_by('-date')
+            reconciliation = get_reconciliation_session(session_filtre)
+        else:
+            mouvements = MouvementCaisse.objects.filter(
+                date__date=today, valide=True
+            ).select_related('cree_par').order_by('-date')
+            prelevements = PrelevementBanque.objects.filter(
+                date__date=today, valide=True
+            ).select_related('cree_par').order_by('-date')
+            reconciliation = get_reconciliation_jour(today)
         vue_session = False
     else:
         # Caissière sans session : aucune donnée visible
@@ -591,6 +613,7 @@ def index(request):
         'attente_session': attente_session,
         'net_caisse_central': net_caisse_central,
         'caisse_flux': caisse_flux,
+        'session_filtre': session_filtre,
     }
     return render(request, 'caisse/index.html', context)
 
