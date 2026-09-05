@@ -366,8 +366,8 @@
       {% endfor %}
       {% if session_filtre %}
       <span style="font-size:11px;color:var(--muted);margin-left:auto">
-        Affichage limité au shift de {{ session_filtre.user.get_full_name|default:session_filtre.user.username }}
-        ({{ session_filtre.opened_at|date:"H:i" }}{% if session_filtre.closed_at %} → {{ session_filtre.closed_at|date:"H:i" }}{% else %} — en cours{% endif %})
+        Journée complète · Journal filtré sur la session de {{ session_filtre.user.get_full_name|default:session_filtre.user.username }}
+        (ouverture {{ session_filtre.opened_at|date:"H:i" }}{% if session_filtre.closed_at %} → {{ session_filtre.closed_at|date:"H:i" }}{% else %} — en cours{% endif %})
       </span>
       {% endif %}
     </div>

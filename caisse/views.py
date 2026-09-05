@@ -508,11 +508,10 @@ def index(request):
         stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     elif is_manager:
-        if session_filtre:
-            stats = get_stats_session(session_filtre)
-        else:
-            # Vue journée complète (tous shifts confondus)
-            stats = get_stats_jour(today, type_caisse=None)
+        # Toujours la journée complète : la session_filtre sert uniquement à isoler
+        # les mouvements du journal, pas à tronquer les KPIs et la réconciliation.
+        # (filtrer par opened_at → now rendait invisible tout ce qui précède l'ouverture)
+        stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     else:
         # Caissière sans session ouverte : zéros — ne pas montrer les shifts des collègues
@@ -542,16 +541,13 @@ def index(request):
         vue_session = True
     elif is_manager:
         if session_filtre:
+            # Journal des mouvements : isolé sur la session de la caissière sélectionnée
             mouvements = MouvementCaisse.objects.filter(
                 session=session_filtre, valide=True
             ).select_related('cree_par').order_by('-date')
-            date_fin_sf = session_filtre.closed_at or timezone.now()
             prelevements = PrelevementBanque.objects.filter(
-                date__gte=session_filtre.opened_at,
-                date__lt=date_fin_sf,
-                valide=True,
+                date__date=today, valide=True
             ).select_related('cree_par').order_by('-date')
-            reconciliation = get_reconciliation_session(session_filtre)
         else:
             mouvements = MouvementCaisse.objects.filter(
                 date__date=today, valide=True
@@ -559,7 +555,8 @@ def index(request):
             prelevements = PrelevementBanque.objects.filter(
                 date__date=today, valide=True
             ).select_related('cree_par').order_by('-date')
-            reconciliation = get_reconciliation_jour(today)
+        # Réconciliation toujours journée complète (indépendant du filtre session)
+        reconciliation = get_reconciliation_jour(today)
         vue_session = False
     else:
         # Caissière sans session : aucune donnée visible
