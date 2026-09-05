@@ -338,12 +338,11 @@ def get_reconciliation_session(session):
 
 
 def get_solde_veille():
-    """Retourne le solde restant après la dernière clôture de la caisse centrale."""
+    """Retourne le fond_caisse_reel de la dernière clôture (cash physiquement compté = solde reporté)."""
     last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
     if not last:
         return 0, None
-    solde = last.fond_caisse_reel + last.total_especes - last.prelevement_banque
-    return int(solde), last
+    return int(last.fond_caisse_reel), last
 
 
 def _session_centrale_non_cloturee():

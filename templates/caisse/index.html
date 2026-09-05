@@ -272,9 +272,9 @@
       <div class="ksub">{% for lbl, mt, clr, badge in stats.par_mobile %}{{ lbl }}{% if not forloop.last %} · {% endif %}{% empty %}Électronique{% endfor %}</div>
     </div>
     <div class="kpi k-rouge">
-      <div class="klbl">Prélèvements banque</div>
-      <div class="kval">{{ stats.prelevements|montant }} F</div>
-      <div class="ksub">Net caisse : {{ stats.net|montant }} F</div>
+      <div class="klbl">Sorties (prél. + dépenses)</div>
+      <div class="kval">{{ stats.prelevements|add:stats.depenses|montant }} F</div>
+      <div class="ksub">Prél. banque : {{ stats.prelevements|montant }} F · Déc. : {{ stats.depenses|montant }} F<br>Net : {{ stats.net|montant }} F</div>
     </div>
   </div>
 
@@ -500,7 +500,13 @@
                 <span style="font-size:11px;color:var(--muted)">Prélèvement banque</span>
                 <span style="font-size:12px;color:#dc2626;font-weight:700">- {{ stats.prelevements|montant }} F</span>
               </div>
-              <div style="display:flex;justify-content:space-between;margin-top:6px">
+              {% if stats.depenses %}
+              <div style="display:flex;justify-content:space-between;margin-top:4px">
+                <span style="font-size:11px;color:var(--muted)">Dépenses / Décaissements</span>
+                <span style="font-size:12px;color:#dc2626;font-weight:700">- {{ stats.depenses|montant }} F</span>
+              </div>
+              {% endif %}
+              <div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid #f0f3f7">
                 <span style="font-size:12px;font-weight:700">Net en caisse</span>
                 <span style="font-size:14px;font-weight:800;color:var(--dark)">{{ stats.net|montant }} F</span>
               </div>
@@ -713,13 +719,13 @@
     </div>
     {% if last_session %}
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:6px">💰 Solde de la dernière clôture</div>
+      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:6px">🔒 Fond physique reporté de la veille</div>
       <div style="font-size:20px;font-weight:800;color:#1a2535">{{ solde_veille|montant }} FCFA</div>
-      <div style="font-size:10px;color:#7a8b9c;margin-top:3px">Clôture du {{ last_session.closed_at|date:"d/m/Y à H:i" }}</div>
+      <div style="font-size:10px;color:#7a8b9c;margin-top:3px">Compté à la clôture du {{ last_session.closed_at|date:"d/m/Y à H:i" }} · Pré-rempli automatiquement ci-dessous</div>
     </div>
     {% endif %}
     <div class="form-row">
-      <label>Fond de caisse (FCFA) — pré-rempli depuis la veille</label>
+      <label>Fond de caisse (FCFA){% if last_session %} — reporté automatiquement{% endif %}</label>
       <input type="number" id="ov_fond" class="fc" placeholder="Ex: 50000" min="0" value="{{ solde_veille }}">
     </div>
     <div class="form-row">
