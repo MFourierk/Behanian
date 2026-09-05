@@ -228,16 +228,20 @@ def _dec(val, default=0):
         return Decimal(str(default))
 
 
-def get_stats_jour(date=None, type_caisse=None):
+def get_stats_jour(date=None, type_caisse=None, user=None):
     """Stats complètes d'une journée.
     - type_caisse=None ou 'centrale' : toutes les transactions
     - type_caisse='hotel'            : tickets hotel uniquement
     - type_caisse='module'           : tickets hors hotel
+    - user                           : filtrer par cree_par (vue par opérateur/caissière)
     """
     if date is None:
         date = timezone.now().date()
 
     tickets = Ticket.objects.filter(date_creation__date=date)
+
+    if user is not None:
+        tickets = tickets.filter(cree_par=user)
 
     if type_caisse == 'hotel':
         tickets = tickets.filter(module__in=['hotel'])
@@ -508,10 +512,11 @@ def index(request):
         stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     elif is_manager:
-        # Toujours la journée complète : la session_filtre sert uniquement à isoler
-        # les mouvements du journal, pas à tronquer les KPIs et la réconciliation.
-        # (filtrer par opened_at → now rendait invisible tout ce qui précède l'ouverture)
-        stats = get_stats_jour(today, type_caisse=None)
+        # KPIs filtrés par compte (cree_par) quand une caissière est sélectionnée,
+        # journée complète sinon. Cela affiche ce que l'opératrice a enregistré
+        # depuis le début de la journée, indépendamment de l'heure d'ouverture de sa session.
+        stats = get_stats_jour(today, type_caisse=None,
+                               user=session_filtre.user if session_filtre else None)
         attente_session = False
     else:
         # Caissière sans session ouverte : zéros — ne pas montrer les shifts des collègues
