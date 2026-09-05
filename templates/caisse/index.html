@@ -1261,32 +1261,82 @@ async function rafraichirReconciliation(manuel=false){
     const d = await r.json();
     if(!d.success) return;
     const rec = d.reconciliation;
-    const tbody = document.querySelector('#tbl-reconciliation tbody');
-    if(!tbody) return;
-    tbody.innerHTML = rec.lignes.map(l => {
+    const table = document.getElementById('tbl-reconciliation');
+    if(!table) return;
+
+    // Colonnes mobiles à afficher (même logique que le template Django)
+    const showWave   = rec.grand_wave   > 0;
+    const showOrange = rec.grand_orange > 0;
+    const showMtn    = rec.grand_mtn    > 0;
+    const showMoov   = rec.grand_moov   > 0;
+    const showMobile = !showWave && !showOrange && !showMtn && !showMoov && rec.grand_mobile > 0;
+
+    const fmt  = v => v ? parseInt(v).toLocaleString('fr-FR') + ' F' : '—';
+    const fmtF = v => parseInt(v || 0).toLocaleString('fr-FR') + ' F';
+
+    // ── Thead ──────────────────────────────────────────────────────────────
+    table.querySelector('thead tr').innerHTML = `
+      <th>Module</th>
+      <th style="text-align:right">💵 Espèces</th>
+      ${showWave   ? '<th style="text-align:right;color:#1d4ed8">📱 Wave</th>'    : ''}
+      ${showOrange ? '<th style="text-align:right;color:#c2410c">📱 Orange</th>' : ''}
+      ${showMtn    ? '<th style="text-align:right;color:#854d0e">📱 MoMo</th>'   : ''}
+      ${showMoov   ? '<th style="text-align:right;color:#0f766e">📱 Moov</th>'   : ''}
+      ${showMobile ? '<th style="text-align:right;color:#7c3aed">📱 Mobile</th>' : ''}
+      <th style="text-align:right">💳 Carte</th>
+      <th style="text-align:right">🏦 Virement</th>
+      <th style="text-align:right">Mixte</th>
+      <th style="text-align:right;border-left:2px solid #e2e8f0">Total</th>
+      <th style="text-align:right">Versé</th>
+      <th style="text-align:right">Solde</th>
+      <th style="text-align:center">Statut</th>`;
+
+    // ── Tbody ──────────────────────────────────────────────────────────────
+    table.querySelector('tbody').innerHTML = rec.lignes.map(l => {
+      const clr = (v, c) => v ? c : '#94a3b8';
       const couleurSolde = l.solde <= 0 ? '#16a34a' : (l.total_verse === 0 ? '#dc2626' : '#d97706');
       const couleurVerse = l.total_verse > 0 ? '#16a34a' : '#94a3b8';
       let badge = '';
-      if(l.total_tx === 0) badge = '<span style="font-size:11px;color:#94a3b8">— Aucune activité</span>';
-      else if(l.complet) badge = '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>';
-      else if(l.total_verse === 0) badge = '<span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>';
-      else badge = '<span style="background:#fef3c7;color:#d97706;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">🔄 Partiel</span>';
+      if(l.total_tx === 0)      badge = '<span style="font-size:11px;color:#94a3b8">— Aucune activité</span>';
+      else if(l.complet)        badge = '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>';
+      else if(l.total_verse===0)badge = '<span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>';
+      else                      badge = '<span style="background:#fef3c7;color:#d97706;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">🔄 Partiel</span>';
       return `<tr>
         <td style="font-weight:600">${l.emoji} ${l.label}</td>
-        <td style="text-align:right;font-family:monospace">${l.total_tx.toLocaleString('fr-FR')} F</td>
-        <td style="text-align:right;font-family:monospace;color:${couleurVerse}">${l.total_verse.toLocaleString('fr-FR')} F</td>
-        <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurSolde}">${l.solde.toLocaleString('fr-FR')} F</td>
+        <td style="text-align:right;font-family:monospace;color:${clr(l.especes,'#1e40af')}">${fmt(l.especes)}</td>
+        ${showWave   ? `<td style="text-align:right;font-family:monospace;color:${clr(l.wave,'#1d4ed8')}">${fmt(l.wave)}</td>`     : ''}
+        ${showOrange ? `<td style="text-align:right;font-family:monospace;color:${clr(l.orange,'#c2410c')}">${fmt(l.orange)}</td>` : ''}
+        ${showMtn    ? `<td style="text-align:right;font-family:monospace;color:${clr(l.mtn,'#854d0e')}">${fmt(l.mtn)}</td>`       : ''}
+        ${showMoov   ? `<td style="text-align:right;font-family:monospace;color:${clr(l.moov,'#0f766e')}">${fmt(l.moov)}</td>`     : ''}
+        ${showMobile ? `<td style="text-align:right;font-family:monospace;color:${clr(l.mobile,'#7c3aed')}">${fmt(l.mobile)}</td>` : ''}
+        <td style="text-align:right;font-family:monospace;color:${clr(l.carte,'#0369a1')}">${fmt(l.carte)}</td>
+        <td style="text-align:right;font-family:monospace;color:${clr(l.virement,'#0f766e')}">${fmt(l.virement)}</td>
+        <td style="text-align:right;font-family:monospace;color:${clr(l.mixte,'#92400e')}">${fmt(l.mixte)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(l.total_tx)}</td>
+        <td style="text-align:right;font-family:monospace;color:${couleurVerse}">${fmtF(l.total_verse)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurSolde}">${fmtF(l.solde)}</td>
         <td style="text-align:center">${badge}</td>
       </tr>`;
     }).join('');
-    // Mise à jour du pied de tableau
-    const tfoot = document.querySelector('#tbl-reconciliation tfoot tr');
-    if(tfoot){
-      tfoot.children[1].textContent = rec.grand_total_tx.toLocaleString('fr-FR') + ' F';
-      tfoot.children[2].textContent = rec.grand_total_verse.toLocaleString('fr-FR') + ' F';
-      tfoot.children[3].textContent = rec.grand_solde.toLocaleString('fr-FR') + ' F';
-      tfoot.children[3].style.color = rec.grand_solde <= 0 ? '#16a34a' : '#dc2626';
-    }
+
+    // ── Tfoot ──────────────────────────────────────────────────────────────
+    const couleurGrandSolde = rec.grand_solde <= 0 ? '#16a34a' : '#dc2626';
+    table.querySelector('tfoot tr').innerHTML = `
+      <td style="font-weight:700">TOTAL</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_especes)}</td>
+      ${showWave   ? `<td style="text-align:right;font-family:monospace;color:#1d4ed8;font-weight:700">${fmtF(rec.grand_wave)}</td>`   : ''}
+      ${showOrange ? `<td style="text-align:right;font-family:monospace;color:#c2410c;font-weight:700">${fmtF(rec.grand_orange)}</td>` : ''}
+      ${showMtn    ? `<td style="text-align:right;font-family:monospace;color:#854d0e;font-weight:700">${fmtF(rec.grand_mtn)}</td>`    : ''}
+      ${showMoov   ? `<td style="text-align:right;font-family:monospace;color:#0f766e;font-weight:700">${fmtF(rec.grand_moov)}</td>`   : ''}
+      ${showMobile ? `<td style="text-align:right;font-family:monospace;color:#7c3aed;font-weight:700">${fmtF(rec.grand_mobile)}</td>` : ''}
+      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_carte)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_virement)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_mixte)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(rec.grand_total_tx)}</td>
+      <td style="text-align:right;font-family:monospace;color:#16a34a;font-weight:700">${fmtF(rec.grand_total_verse)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurGrandSolde}">${fmtF(rec.grand_solde)}</td>
+      <td></td>`;
+
     if(manuel) toast('✅ Réconciliation actualisée', 'success');
   } catch(e){ if(manuel) toast('❌ Erreur actualisation', 'error'); }
 }
