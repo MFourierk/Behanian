@@ -40,7 +40,7 @@ def get_caisse_flux(qs):
     """Résume les MouvementCaisse par type et mode de paiement.
     Retourne entrees, sorties, totaux pour le panneau Flux de caisse.
     """
-    # Une seule requête
+    # Agrégation par type + mode
     rows = list(qs.values('type', 'mode_paiement').annotate(s=Sum('montant')))
     raw = {}
     for r in rows:
@@ -50,6 +50,17 @@ def get_caisse_flux(qs):
         if t not in raw:
             raw[t] = {}
         raw[t][m] = raw[t].get(m, 0) + s
+
+    # Détail individuel des versements pour audit
+    detail_versements = list(
+        qs.filter(type='versement')
+          .values('id', 'date', 'montant', 'mode_paiement', 'module', 'description')
+          .order_by('date')
+    )
+    for dv in detail_versements:
+        dv['montant'] = int(dv['montant'])
+        m = dv['mode_paiement']
+        dv['mode_lbl'] = _MODE_LABELS[m][0] if m in _MODE_LABELS else m
 
     entrees, sorties = [], []
     total_entrees = total_sorties = 0
@@ -65,6 +76,8 @@ def get_caisse_flux(qs):
             if m in _MODE_LABELS and v > 0
         ]
         entry = {'label': label, 'total': total, 'par_mode': par_mode}
+        if type_key == 'versement':
+            entry['detail'] = detail_versements
         if is_entree:
             entrees.append(entry)
             total_entrees += total
