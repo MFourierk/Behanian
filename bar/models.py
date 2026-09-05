@@ -201,6 +201,28 @@ class BoissonBar(models.Model):
         return self.stock_disponible == 0
 
     @property
+    def theorique_inventaire(self):
+        """Quantité théorique pour l'inventaire : décimale pour les articles shots parentaux.
+        Ex : 2.6 = 2 bouteilles scellées + 420 ml ouverts (sur 700 ml).
+        """
+        try:
+            param = self.parametrage_shot
+            if param.volume_contenant_ml > 0 and param.ml_ouverts > 0:
+                fraction = param.ml_ouverts / Decimal(str(param.volume_contenant_ml))
+                return float(self.quantite_stock + fraction)
+        except Exception:
+            pass
+        return float(self.quantite_stock)
+
+    @property
+    def has_parametrage_shot(self):
+        try:
+            _ = self.parametrage_shot
+            return True
+        except Exception:
+            return False
+
+    @property
     def est_stock_bas(self):
         if self.est_shot:
             return False
@@ -704,22 +726,58 @@ class InventaireBar(models.Model):
         with _tx.atomic():
             for ligne in self.lignes.filter(statut__in=['compte', 'confirme_zero']).select_related('article').all():
                 art = ligne.article
-                qte_ph = int(ligne.quantite_comptee) if ligne.quantite_comptee is not None else 0
-                ecart  = qte_ph - (art.quantite_stock or 0)
-                if ecart > 0:
-                    type_mvt = 'inventaire_excedent'
-                elif ecart < 0:
-                    type_mvt = 'inventaire_manquant'
-                else:
-                    type_mvt = 'inventaire'
-                BoissonBar.objects.filter(pk=art.pk).update(quantite_stock=qte_ph)
-                MouvementStockBar.objects.create(
-                    boisson=art,
-                    type_mouvement=type_mvt,
-                    quantite=abs(ecart) if ecart != 0 else 0,
-                    commentaire=f"Inventaire {self.numero}",
-                    utilisateur=user,
-                )
+                qte_ph = ligne.quantite_comptee if ligne.quantite_comptee is not None else Decimal('0')
+
+                try:
+                    param = art.parametrage_shot
+                    # Article shot parent : qte_ph est décimale (ex: 2.6)
+                    # floor = bouteilles scellées, fraction × volume = ml ouverts
+                    qte_scellees = int(qte_ph)
+                    fraction = qte_ph - qte_scellees
+                    ml_ouverts_comptes = (fraction * param.volume_contenant_ml).quantize(Decimal('0.001'))
+
+                    ecart_stock = qte_scellees - (art.quantite_stock or 0)
+                    ecart_ml = ml_ouverts_comptes - param.ml_ouverts
+                    ecart_total_ml = (Decimal(ecart_stock) * param.volume_contenant_ml + ecart_ml)
+
+                    if ecart_total_ml > 0:
+                        type_mvt = 'inventaire_excedent'
+                    elif ecart_total_ml < 0:
+                        type_mvt = 'inventaire_manquant'
+                    else:
+                        type_mvt = 'inventaire'
+
+                    BoissonBar.objects.filter(pk=art.pk).update(quantite_stock=qte_scellees)
+                    ParametrageShot.objects.filter(pk=param.pk).update(ml_ouverts=ml_ouverts_comptes)
+                    MouvementStockBar.objects.create(
+                        boisson=art,
+                        type_mouvement=type_mvt,
+                        quantite=abs(ecart_total_ml / param.volume_contenant_ml) if ecart_total_ml != 0 else 0,
+                        commentaire=(
+                            f"Inventaire {self.numero} — "
+                            f"{qte_scellees} btl scellées + {int(ml_ouverts_comptes)} ml ouverts"
+                        ),
+                        utilisateur=user,
+                    )
+                except Exception:
+                    # Article normal (pas de ParametrageShot)
+                    qte_ph_int = int(qte_ph)
+                    ecart = qte_ph_int - (art.quantite_stock or 0)
+                    if ecart > 0:
+                        type_mvt = 'inventaire_excedent'
+                    elif ecart < 0:
+                        type_mvt = 'inventaire_manquant'
+                    else:
+                        type_mvt = 'inventaire'
+                    BoissonBar.objects.filter(pk=art.pk).update(quantite_stock=qte_ph_int)
+                    MouvementStockBar.objects.create(
+                        boisson=art,
+                        type_mouvement=type_mvt,
+                        quantite=abs(ecart) if ecart != 0 else 0,
+                        commentaire=f"Inventaire {self.numero}",
+                        utilisateur=user,
+                    )
+
             self.statut = 'valide'
             self.valide_par = user
             self.date_validation = timezone.now()

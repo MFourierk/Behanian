@@ -75,9 +75,7 @@ urlpatterns = [
     path('casses/<int:pk>/annuler/', views.casse_annuler, name='casse_annuler'),
 
     # Shots / Liqueurs au verre
-    path('shots/', views.shot_vente, name='shot_vente'),
     path('shots/parametrage/', views.shot_parametrage, name='shot_parametrage'),
-    path('shots/historique/', views.shot_historique, name='shot_historique'),
     path('shots/ouvrir-bouteille/', views.api_ouvrir_bouteille, name='api_ouvrir_bouteille'),
 ]
 

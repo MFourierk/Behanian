@@ -40,7 +40,7 @@ from .models import (
     BonReceptionBar, LigneBonReceptionBar,
     InventaireBar, LigneInventaireBar,
     CasseBar, LigneCasseBar,
-    ParametrageShot, VenteShot,
+    ParametrageShot,
     VenteCave, LigneVenteCave,
 )
 from .models import FournisseurBar
@@ -948,7 +948,7 @@ def inventaire_list(request):
 @require_bar_gestion
 def inventaire_create(request):
     """Créer un nouvel inventaire avec toutes les boissons actives"""
-    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False).select_related('categorie')
+    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False).select_related('categorie', 'parametrage_shot')
 
     if request.method == 'POST':
         type_inv = request.POST.get('type_inventaire', 'complet')
@@ -1023,7 +1023,7 @@ def inventaire_edit(request, pk):
         messages.error(request, "Un inventaire validé ne peut plus être modifié.")
         return redirect(reverse('bar:inventaire_detail', args=[pk]))
 
-    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False).select_related('categorie')
+    articles = BoissonBar.objects.exclude(statut='supprime').filter(est_shot=False).select_related('categorie', 'parametrage_shot')
 
     if request.method == 'POST':
         inv.notes = request.POST.get('notes', inv.notes)
@@ -2383,81 +2383,6 @@ def shot_parametrage(request):
     return render(request, 'bar/shot_parametrage.html', context)
 
 
-@require_module_access('bar')
-def shot_vente(request):
-    """Page de vente shot + historique du jour."""
-    parametrages = ParametrageShot.objects.filter(
-        actif=True, boisson__statut='actif', boisson__disponible=True
-    ).select_related('boisson').order_by('boisson__nom')
-
-    if request.method == 'POST':
-        param_id   = request.POST.get('parametrage_id')
-        type_vente = request.POST.get('type_vente', 'shot')
-
-        param = get_object_or_404(ParametrageShot, pk=param_id, actif=True)
-        boisson = param.boisson
-
-        nb_shots   = 2 if type_vente == 'tournee' else 1
-        ml_a_debiter = Decimal(nb_shots * param.volume_shot_ml)
-        prix_encaisse = param.prix_tournee if type_vente == 'tournee' else param.prix_shot
-
-        # Rupture totale si bouteilles scellées + ml ouverts = 0
-        ml_total_stock = Decimal(boisson.quantite_stock) * param.volume_contenant_ml + param.ml_ouverts
-        if ml_total_stock <= 0:
-            messages.error(request, f"Rupture de stock — {boisson.nom}.")
-            return redirect('bar:shot_vente')
-
-        with transaction.atomic():
-            from django.db.models import F
-            if param.ml_ouverts >= ml_a_debiter:
-                # Puiser dans les bouteilles ouvertes
-                ParametrageShot.objects.filter(pk=param.pk).update(
-                    ml_ouverts=param.ml_ouverts - ml_a_debiter
-                )
-            else:
-                # Ouvrir automatiquement une bouteille scellée
-                ml_deficit = ml_a_debiter - param.ml_ouverts
-                bouteilles_a_ouvrir = int(ml_deficit // param.volume_contenant_ml) + 1
-                ml_nouvelles = Decimal(bouteilles_a_ouvrir) * param.volume_contenant_ml
-                ParametrageShot.objects.filter(pk=param.pk).update(
-                    ml_ouverts=param.ml_ouverts + ml_nouvelles - ml_a_debiter
-                )
-                BoissonBar.objects.filter(pk=boisson.pk).update(
-                    quantite_stock=F('quantite_stock') - bouteilles_a_ouvrir
-                )
-                MouvementStockBar.objects.create(
-                    boisson=boisson,
-                    type_mouvement='sortie',
-                    quantite=bouteilles_a_ouvrir,
-                    commentaire=f"Vente shot — ouverture auto {bouteilles_a_ouvrir} btl",
-                    utilisateur=request.user,
-                )
-
-            VenteShot.objects.create(
-                boisson=boisson,
-                type_vente=type_vente,
-                nb_shots=nb_shots,
-                ml_debites=ml_a_debiter,
-                prix_encaisse=prix_encaisse,
-                operateur=request.user,
-            )
-
-        label = "Tournée (2 shots)" if type_vente == 'tournee' else "Shot"
-        messages.success(request, f"{label} de {boisson.nom} enregistré — {int(ml_a_debiter)} ml débités.")
-        return redirect('bar:shot_vente')
-
-    # Historique du jour
-    today = timezone.now().date()
-    historique = VenteShot.objects.filter(
-        date__date=today
-    ).select_related('boisson', 'operateur').order_by('-date')
-
-    context = {
-        'parametrages': parametrages,
-        'historique':   historique,
-        'page_title':   'Vente au Shot',
-    }
-    return render(request, 'bar/shot_vente.html', context)
 
 
 @require_module_access('bar')
@@ -2521,32 +2446,4 @@ def api_ouvrir_bouteille(request):
         return JsonResponse({'ok': False, 'error': str(e)})
 
 
-@require_module_access('bar')
-@require_bar_gestion
-def shot_historique(request):
-    """Historique complet des ventes shot avec filtres date."""
-    from django.db.models import Sum as DSum
-    date_debut = request.GET.get('date_debut')
-    date_fin   = request.GET.get('date_fin')
-
-    qs = VenteShot.objects.select_related('boisson', 'operateur').order_by('-date')
-    if date_debut:
-        qs = qs.filter(date__date__gte=date_debut)
-    if date_fin:
-        qs = qs.filter(date__date__lte=date_fin)
-
-    totaux = qs.aggregate(
-        total_shots=DSum('nb_shots'),
-        total_ml=DSum('ml_debites'),
-        total_ca=DSum('prix_encaisse'),
-    )
-
-    context = {
-        'ventes':      qs[:200],
-        'totaux':      totaux,
-        'date_debut':  date_debut or '',
-        'date_fin':    date_fin or '',
-        'page_title':  'Historique Ventes Shot',
-    }
-    return render(request, 'bar/shot_historique.html', context)
 
