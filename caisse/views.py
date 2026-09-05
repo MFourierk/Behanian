@@ -562,8 +562,14 @@ def index(request):
     caisse_flux = get_caisse_flux(mouvements.exclude(reference__startswith='CONSOLIDATION'))
 
     # Net disponible en caisse centrale = fond initial + versements reçus - prélèvements - dépenses
+    # verse_recu = tous les versements de la session (quel que soit le module enregistré),
+    # hors CONSOLIDATION — cohérent avec le Flux de caisse.
     fond_initial = int(session_active.fond_caisse) if session_active else 0
-    verse_recu   = reconciliation['grand_total_verse'] if reconciliation else 0
+    verse_recu   = int(
+        mouvements.filter(type='versement')
+                  .exclude(reference__startswith='CONSOLIDATION')
+                  .aggregate(s=Sum('montant'))['s'] or 0
+    )
     net_caisse_central = fond_initial + verse_recu - stats['prelevements'] - stats['depenses']
 
     context = {

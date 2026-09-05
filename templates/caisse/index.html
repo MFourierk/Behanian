@@ -1042,8 +1042,8 @@
       </div>
       <div class="form-row">
         <label>Module concerné</label>
-        <select id="mv_module" class="fc">
-          <option value="caisse">Caisse</option>
+        <select id="mv_module" class="fc" onchange="checkModuleVersement()">
+          <option value="caisse">Caisse (général)</option>
           <option value="hotel">Hôtel</option>
           <option value="restaurant">Restaurant</option>
           <option value="cave">Cave / Bar</option>
@@ -1051,6 +1051,9 @@
           <option value="espaces">Espaces</option>
           <option value="autre">Autre</option>
         </select>
+        <div id="mv_module_warn" style="display:none;margin-top:4px;font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:4px 8px">
+          ⚠️ Pour un <strong>Versement module</strong>, précisez le module source (Restaurant, Piscine…) — "Caisse général" exclut ce versement du suivi par module.
+        </div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -1316,6 +1319,23 @@ async function confirmerForceCloturer(){
   if(d.success){ fermerModal('modalForceCloturer'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
   else toast('❌ '+d.error,'error');
 }
+
+function checkModuleVersement(){
+  const type = document.getElementById('mv_type').value;
+  const mod  = document.getElementById('mv_module').value;
+  const warn = document.getElementById('mv_module_warn');
+  if(type === 'versement' && mod === 'caisse') warn.style.display='block';
+  else warn.style.display='none';
+}
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('mv_type').addEventListener('change', function(){
+    if(this.value === 'versement'){
+      const m = document.getElementById('mv_module');
+      if(m.value === 'caisse') m.value = 'restaurant';
+    }
+    checkModuleVersement();
+  });
+});
 
 async function enregistrerMouvement(){
   const montant = document.getElementById('mv_montant').value;
