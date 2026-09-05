@@ -2360,9 +2360,25 @@ def shot_parametrage(request):
         messages.success(request, f"Paramétrage shot pour « {boisson.nom} » {action}.")
         return redirect('bar:shot_parametrage')
 
+    # Calcul des tournées disponibles par article (pour affichage)
+    articles_info = []
+    for art in articles_avec_config:
+        if hasattr(art, 'parametrage_shot') and art.parametrage_shot:
+            p = art.parametrage_shot
+            ml_tournee = p.volume_shot_ml * 2
+            if ml_tournee > 0 and p.volume_contenant_ml > 0:
+                ml_total    = Decimal(art.quantite_stock) * p.volume_contenant_ml - p.ml_en_cours
+                tournees    = int(ml_total // ml_tournee) if ml_total > 0 else 0
+            else:
+                tournees = 0
+            articles_info.append({'art': art, 'tournees_dispo': tournees})
+        else:
+            articles_info.append({'art': art, 'tournees_dispo': None})
+
     context = {
-        'articles': articles_avec_config,
-        'page_title': 'Paramétrage — Vente au Shot',
+        'articles':      articles_avec_config,
+        'articles_info': articles_info,
+        'page_title':    'Paramétrage — Vente au Shot',
     }
     return render(request, 'bar/shot_parametrage.html', context)
 
@@ -2437,6 +2453,62 @@ def shot_vente(request):
         'page_title':   'Vente au Shot',
     }
     return render(request, 'bar/shot_vente.html', context)
+
+
+@require_module_access('bar')
+@require_bar_gestion
+@require_POST
+def api_ouvrir_bouteille(request):
+    """
+    Déclare une bouteille entamée (ERP pattern : Ouverture de contenant).
+    +1 bouteille en stock ET ml_consommés ajoutés à ml_en_cours, atomiquement.
+    """
+    from django.db import transaction as _tx
+    try:
+        data         = json.loads(request.body)
+        boisson_id   = int(data.get('boisson_id', 0))
+        ml_consommes = Decimal(str(data.get('ml_consommes', 0)))
+
+        boisson = get_object_or_404(BoissonBar, pk=boisson_id, statut='actif')
+        param   = get_object_or_404(ParametrageShot, boisson=boisson)
+
+        if ml_consommes < 0:
+            return JsonResponse({'ok': False, 'error': 'Volume consommé ne peut pas être négatif.'})
+        if ml_consommes >= param.volume_contenant_ml:
+            return JsonResponse({'ok': False, 'error': 'Volume consommé supérieur ou égal au contenant — entrez une bouteille entière.'})
+
+        with _tx.atomic():
+            # 1. Entrée bouteille (+1 en stock)
+            MouvementStockBar.objects.create(
+                boisson        = boisson,
+                type_mouvement = 'entree',
+                quantite       = 1,
+                commentaire    = f"Ouverture bouteille entamée — {int(ml_consommes)} ml déjà consommés",
+                utilisateur    = request.user,
+            )
+            # 2. Cumuler les ml consommés dans ml_en_cours
+            ParametrageShot.objects.filter(pk=param.pk).update(
+                ml_en_cours=param.ml_en_cours + ml_consommes
+            )
+
+        # Recalcul après mise à jour
+        param.refresh_from_db()
+        boisson.refresh_from_db()
+        ml_total      = Decimal(boisson.quantite_stock) * param.volume_contenant_ml - param.ml_en_cours
+        ml_tournee    = param.volume_shot_ml * 2
+        shots_dispo   = int(ml_total // param.volume_shot_ml)
+        tournees_dispo= int(ml_total // ml_tournee)
+
+        return JsonResponse({
+            'ok'             : True,
+            'message'        : f'{boisson.nom} — bouteille enregistrée. {tournees_dispo} tournée(s) disponible(s).',
+            'tournees_dispo' : tournees_dispo,
+            'shots_dispo'    : shots_dispo,
+            'quantite_stock' : boisson.quantite_stock,
+            'ml_en_cours'    : float(param.ml_en_cours),
+        })
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)})
 
 
 @require_module_access('bar')

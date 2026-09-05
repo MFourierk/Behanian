@@ -27,9 +27,34 @@
   td { padding:10px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
   .badge-actif   { background:#d4edda; color:#155724; padding:2px 9px; border-radius:12px; font-size:.78rem; font-weight:700; }
   .badge-inactif { background:#f8d7da; color:#721c24; padding:2px 9px; border-radius:12px; font-size:.78rem; font-weight:700; }
-  .edit-btn { background:none; border:1.5px solid var(--cave); color:var(--cave); border-radius:7px; padding:4px 12px; font-size:.8rem; cursor:pointer; transition:all .2s; }
+  .edit-btn { background:none; border:1.5px solid var(--cave); color:var(--cave); border-radius:7px; padding:4px 10px; font-size:.78rem; cursor:pointer; transition:all .2s; }
   .edit-btn:hover { background:var(--cave); color:white; }
+  .open-btn { background:#fff7ed; border:1.5px solid #f97316; color:#c2410c; border-radius:7px; padding:4px 10px; font-size:.78rem; cursor:pointer; transition:all .2s; margin-left:4px; }
+  .open-btn:hover { background:#f97316; color:white; }
   .ml-badge { font-size:.78rem; color:#7f8c8d; }
+  .dispo-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-weight:700; font-size:.82rem; }
+  .dispo-ok   { background:#d4edda; color:#155724; }
+  .dispo-warn { background:#fff3cd; color:#856404; }
+  .dispo-zero { background:#f8d7da; color:#721c24; }
+  /* Modal */
+  .modal-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+  .modal-ov.show { display:flex; }
+  .modal-box { background:white; border-radius:18px; padding:0; width:480px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,.25); overflow:hidden; }
+  .modal-head { background:linear-gradient(135deg,#f97316,#c2410c); color:white; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; }
+  .modal-head h3 { margin:0; font-size:1.1rem; }
+  .modal-close { background:none; border:none; color:white; font-size:1.4rem; cursor:pointer; line-height:1; }
+  .modal-body { padding:24px; }
+  .mode-tabs { display:flex; gap:8px; margin-bottom:20px; }
+  .mode-tab { flex:1; padding:10px; border:2px solid #e5e7eb; border-radius:10px; text-align:center; cursor:pointer; font-size:.85rem; font-weight:600; color:#6b7280; transition:all .2s; }
+  .mode-tab.active { border-color:#f97316; background:#fff7ed; color:#c2410c; }
+  .preview-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-top:16px; }
+  .preview-label { font-size:.78rem; color:#6b7280; margin-bottom:4px; }
+  .preview-val { font-size:1.4rem; font-weight:800; color:#1e293b; }
+  .preview-unit { font-size:.85rem; color:#6b7280; }
+  .btn-confirmer { width:100%; background:#f97316; color:white; border:none; border-radius:10px; padding:12px; font-weight:700; font-size:1rem; cursor:pointer; margin-top:16px; transition:background .2s; }
+  .btn-confirmer:hover { background:#c2410c; }
+  .btn-confirmer:disabled { background:#d1d5db; cursor:not-allowed; }
+  .info-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px; margin-bottom:16px; font-size:.82rem; color:#1e40af; }
 </style>
 
 <a href="{% url 'bar:shot_vente' %}" class="back-link"><i class="fas fa-arrow-left"></i> Vente Shot</a>
@@ -105,60 +130,155 @@
 <!-- Tableau des paramétrages existants -->
 <div class="card">
   <div class="section-title"><i class="fas fa-list"></i> Paramétrages configurés</div>
-  {% with configs=articles %}
-    {% if articles %}
-      <table>
-        <thead>
-          <tr>
-            <th>Article</th>
-            <th>Contenant</th>
-            <th>Shot</th>
-            <th>Tournée</th>
-            <th>Prix Shot</th>
-            <th>Prix Tournée</th>
-            <th>ml en cours</th>
-            <th>Statut</th>
-            <th></th>
+  {% if articles %}
+    <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th>Contenant</th>
+          <th>Shot / Tournée</th>
+          <th>Prix Shot</th>
+          <th>Prix Tournée</th>
+          <th>Stock bouteilles</th>
+          <th>Bouteille en cours</th>
+          <th>Tournées dispo</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for info in articles_info %}
+          {% if info.art.parametrage_shot %}
+          {% with art=info.art p=info.art.parametrage_shot t=info.tournees_dispo %}
+          <tr data-pk="{{ art.pk }}"
+              data-vol="{{ p.volume_contenant_ml }}"
+              data-shot-ml="{{ p.volume_shot_ml }}"
+              data-ml-en-cours="{{ p.ml_en_cours }}"
+              data-stock="{{ art.quantite_stock }}">
+            <td><strong>{{ art.nom }}</strong></td>
+            <td>{{ p.volume_contenant_ml }} ml</td>
+            <td>{{ p.volume_shot_ml }} ml / {{ p.volume_shot_ml|add:p.volume_shot_ml }} ml</td>
+            <td>{{ p.prix_shot|floatformat:0 }} F</td>
+            <td>{{ p.prix_tournee|floatformat:0 }} F</td>
+            <td style="font-weight:700;text-align:center">
+              <span style="font-size:1.1rem">🍾</span> {{ art.quantite_stock }}
+            </td>
+            <td>
+              <div style="font-size:.82rem;color:#374151">
+                {{ p.ml_en_cours|floatformat:0 }} / {{ p.volume_contenant_ml }} ml
+              </div>
+              <div style="background:#e5e7eb;border-radius:4px;height:6px;margin-top:4px;overflow:hidden;width:90px;">
+                <div style="background:#8e44ad;height:6px;width:{% widthratio p.ml_en_cours p.volume_contenant_ml 90 %}px;"></div>
+              </div>
+            </td>
+            <td style="text-align:center">
+              <span class="dispo-pill {% if t == 0 %}dispo-zero{% elif t <= 3 %}dispo-warn{% else %}dispo-ok{% endif %}"
+                    id="pill-{{ art.pk }}">
+                {{ t }} tournée{% if t != 1 %}s{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if p.actif %}
+                <span class="badge-actif">Actif</span>
+              {% else %}
+                <span class="badge-inactif">Inactif</span>
+              {% endif %}
+            </td>
+            <td style="white-space:nowrap">
+              <button class="edit-btn" onclick="chargerParametrage({{ art.pk }})">
+                <i class="fas fa-edit"></i> Modifier
+              </button>
+              <button class="open-btn"
+                onclick="ouvrirModalBouteille({{ art.pk }},'{{ art.nom|escapejs }}',{{ p.volume_contenant_ml }},{{ p.volume_shot_ml }},{{ art.quantite_stock }},{{ p.ml_en_cours }})">
+                🍾 Entamée
+              </button>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {% for art in articles %}
-            {% if art.parametrage_shot %}
-            <tr>
-              <td><strong>{{ art.nom }}</strong></td>
-              <td>{{ art.parametrage_shot.volume_contenant_ml }} ml</td>
-              <td>{{ art.parametrage_shot.volume_shot_ml }} ml</td>
-              <td>{{ art.parametrage_shot.volume_shot_ml|add:art.parametrage_shot.volume_shot_ml }} ml</td>
-              <td>{{ art.parametrage_shot.prix_shot|floatformat:0 }} F</td>
-              <td>{{ art.parametrage_shot.prix_tournee|floatformat:0 }} F</td>
-              <td>
-                {{ art.parametrage_shot.ml_en_cours|floatformat:0 }} /
-                {{ art.parametrage_shot.volume_contenant_ml }} ml
-                <div style="background:#f0f0f0;border-radius:4px;height:5px;margin-top:3px;overflow:hidden;width:80px;">
-                  <div style="background:var(--cave);height:5px;width:{% widthratio art.parametrage_shot.ml_en_cours art.parametrage_shot.volume_contenant_ml 80 %}px;"></div>
-                </div>
-              </td>
-              <td>
-                {% if art.parametrage_shot.actif %}
-                  <span class="badge-actif">Actif</span>
-                {% else %}
-                  <span class="badge-inactif">Inactif</span>
-                {% endif %}
-              </td>
-              <td>
-                <button class="edit-btn" onclick="chargerParametrage({{ art.pk }})">
-                  <i class="fas fa-edit"></i> Modifier
-                </button>
-              </td>
-            </tr>
-            {% endif %}
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      <p style="color:#7f8c8d;text-align:center;padding:20px;">Aucun paramétrage configuré.</p>
-    {% endif %}
-  {% endwith %}
+          {% endwith %}
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% else %}
+    <p style="color:#7f8c8d;text-align:center;padding:20px;">Aucun paramétrage configuré.</p>
+  {% endif %}
+</div>
+
+<!-- ── MODAL BOUTEILLE ENTAMÉE ──────────────────────────────── -->
+<div class="modal-ov" id="modalBouteilleEntamee">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>🍾 Déclarer une bouteille entamée</h3>
+      <button class="modal-close" onclick="fermerModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        <strong>Principe ERP :</strong> Cette opération ajoute <strong>+1 bouteille</strong> en stock
+        et enregistre simultanément les <strong>ml déjà consommés</strong>.
+        Le stock de tournées disponibles sera recalculé automatiquement.
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:.82rem;font-weight:700;color:#374151;margin-bottom:6px">Article</div>
+        <div style="font-size:1.05rem;font-weight:800;color:#1e293b" id="modal-nom-article">—</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px" id="modal-info-contenant">—</div>
+      </div>
+
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="tab-tournees" onclick="setMode('tournees')">
+          🥃 Par tournées servies
+        </div>
+        <div class="mode-tab" id="tab-ml" onclick="setMode('ml')">
+          💧 Par ml consommés
+        </div>
+      </div>
+
+      <div id="saisie-tournees">
+        <div class="form-group">
+          <label>Nombre de tournées déjà servies</label>
+          <input type="number" id="inp-tournees" min="0" step="1" value="0"
+            style="border:1.5px solid #ddd;border-radius:8px;padding:10px;font-size:1rem;outline:none"
+            oninput="recalculer()">
+          <span class="ml-badge" id="hint-tournees">1 tournée = 60 ml</span>
+        </div>
+      </div>
+
+      <div id="saisie-ml" style="display:none">
+        <div class="form-group">
+          <label>Volume déjà consommé (ml)</label>
+          <input type="number" id="inp-ml" min="0" step="1" value="0"
+            style="border:1.5px solid #ddd;border-radius:8px;padding:10px;font-size:1rem;outline:none"
+            oninput="recalculer()">
+        </div>
+      </div>
+
+      <div class="preview-box">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div class="preview-label">Ml consommés</div>
+            <div class="preview-val" id="prev-ml">0</div>
+            <div class="preview-unit">ml</div>
+          </div>
+          <div>
+            <div class="preview-label">Ml restants</div>
+            <div class="preview-val" id="prev-restant" style="color:#16a34a">700</div>
+            <div class="preview-unit">ml dans cette bouteille</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0">
+          <div class="preview-label">Tournées disponibles après enregistrement</div>
+          <div class="preview-val" id="prev-tournees" style="color:#7c3aed">—</div>
+          <div class="preview-unit" id="prev-detail">—</div>
+        </div>
+      </div>
+
+      <button class="btn-confirmer" id="btn-confirmer" onclick="confirmerOuverture()">
+        <i class="fas fa-check"></i> Enregistrer la bouteille
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -166,11 +286,11 @@ const sel = document.getElementById('sel-boisson');
 sel.addEventListener('change', function() {
   const opt = this.selectedOptions[0];
   if (!opt.value) return;
-  document.getElementById('inp-vol').value     = opt.dataset.vol || 700;
-  document.getElementById('inp-shot').value    = opt.dataset.shot || 30;
-  document.getElementById('inp-pshot').value   = opt.dataset.pshot || '';
+  document.getElementById('inp-vol').value      = opt.dataset.vol || 700;
+  document.getElementById('inp-shot').value     = opt.dataset.shot || 30;
+  document.getElementById('inp-pshot').value    = opt.dataset.pshot || '';
   document.getElementById('inp-ptournee').value = opt.dataset.ptournee || '';
-  document.getElementById('inp-actif').value   = opt.dataset.actif || '1';
+  document.getElementById('inp-actif').value    = opt.dataset.actif || '1';
 });
 
 function chargerParametrage(pk) {
@@ -178,5 +298,128 @@ function chargerParametrage(pk) {
   sel.dispatchEvent(new Event('change'));
   sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
+
+// ── Modal Bouteille Entamée ──────────────────────────────────────────────────
+
+let _modal = { pk:0, nom:'', volCont:700, shotMl:30, stock:0, mlEnCours:0, mode:'tournees' };
+
+function ouvrirModalBouteille(pk, nom, volCont, shotMl, stock, mlEnCours) {
+  _modal = { pk, nom, volCont, shotMl, stock, mlEnCours, mode:'tournees' };
+  document.getElementById('modal-nom-article').textContent    = nom;
+  document.getElementById('modal-info-contenant').textContent =
+    `Contenant : ${volCont} ml — 1 tournée = ${shotMl * 2} ml — Stock actuel : ${stock} bouteille(s)`;
+  document.getElementById('hint-tournees').textContent = `1 tournée = ${shotMl * 2} ml`;
+  document.getElementById('inp-tournees').value = 0;
+  document.getElementById('inp-ml').value       = 0;
+  document.getElementById('prev-restant').textContent = volCont;
+  setMode('tournees');
+  document.getElementById('modalBouteilleEntamee').classList.add('show');
+  recalculer();
+}
+
+function fermerModal() {
+  document.getElementById('modalBouteilleEntamee').classList.remove('show');
+}
+
+function setMode(mode) {
+  _modal.mode = mode;
+  document.getElementById('tab-tournees').classList.toggle('active', mode === 'tournees');
+  document.getElementById('tab-ml').classList.toggle('active',       mode === 'ml');
+  document.getElementById('saisie-tournees').style.display = mode === 'tournees' ? '' : 'none';
+  document.getElementById('saisie-ml').style.display       = mode === 'ml'       ? '' : 'none';
+  recalculer();
+}
+
+function recalculer() {
+  const { volCont, shotMl, stock, mlEnCours } = _modal;
+  const mlTournee = shotMl * 2;
+
+  let mlConsommes = 0;
+  if (_modal.mode === 'tournees') {
+    const t = parseFloat(document.getElementById('inp-tournees').value) || 0;
+    mlConsommes = t * mlTournee;
+  } else {
+    mlConsommes = parseFloat(document.getElementById('inp-ml').value) || 0;
+  }
+
+  mlConsommes = Math.max(0, Math.min(mlConsommes, volCont - 1));
+  const mlRestants = volCont - mlConsommes;
+
+  // Après enregistrement : stock+1 bouteille, ml_en_cours cumulé
+  const nouveauStock  = stock + 1;
+  const nouveauMlEnCours = mlEnCours + mlConsommes;
+  const mlTotal       = nouveauStock * volCont - nouveauMlEnCours;
+  const tourneesTotal = Math.floor(mlTotal / mlTournee);
+
+  document.getElementById('prev-ml').textContent      = Math.round(mlConsommes);
+  document.getElementById('prev-restant').textContent = Math.round(mlRestants);
+  document.getElementById('prev-tournees').textContent= tourneesTotal;
+  document.getElementById('prev-detail').textContent  =
+    `(${nouveauStock} btl × ${volCont} ml − ${Math.round(nouveauMlEnCours)} ml) ÷ ${mlTournee} ml`;
+
+  const btn = document.getElementById('btn-confirmer');
+  btn.disabled = mlConsommes >= volCont;
+}
+
+async function confirmerOuverture() {
+  const { pk, volCont, shotMl, mlEnCours, mode } = _modal;
+  const mlTournee = shotMl * 2;
+
+  let mlConsommes = 0;
+  if (mode === 'tournees') {
+    const t = parseFloat(document.getElementById('inp-tournees').value) || 0;
+    mlConsommes = t * mlTournee;
+  } else {
+    mlConsommes = parseFloat(document.getElementById('inp-ml').value) || 0;
+  }
+  mlConsommes = Math.round(mlConsommes);
+
+  const btn = document.getElementById('btn-confirmer');
+  btn.disabled = true;
+  btn.textContent = '⏳ Enregistrement…';
+
+  try {
+    const r = await fetch("{% url 'bar:api_ouvrir_bouteille' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+      body: JSON.stringify({ boisson_id: pk, ml_consommes: mlConsommes }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      fermerModal();
+      // Mettre à jour la pill sans recharger
+      const pill = document.getElementById('pill-' + pk);
+      if (pill) {
+        const t = d.tournees_dispo;
+        pill.textContent = t + ' tournée' + (t !== 1 ? 's' : '');
+        pill.className = 'dispo-pill ' + (t === 0 ? 'dispo-zero' : t <= 3 ? 'dispo-warn' : 'dispo-ok');
+      }
+      // Mettre à jour la ligne (stock + ml en cours)
+      const row = document.querySelector(`tr[data-pk="${pk}"]`);
+      if (row) {
+        row.dataset.stock      = d.quantite_stock;
+        row.dataset.mlEnCours  = d.ml_en_cours;
+      }
+      alert('✅ ' + d.message);
+    } else {
+      alert('❌ ' + d.error);
+    }
+  } catch(e) {
+    alert('❌ Erreur réseau');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check"></i> Enregistrer la bouteille';
+  }
+}
+
+function getCsrf() {
+  const m = document.cookie.match(/csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+// Fermer modal au clic extérieur
+document.getElementById('modalBouteilleEntamee').addEventListener('click', function(e) {
+  if (e.target === this) fermerModal();
+});
 </script>
 {% endblock %}
