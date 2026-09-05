@@ -475,6 +475,11 @@ def index(request):
         ])
     )
 
+    # Net disponible en caisse centrale = fond initial + versements reçus - prélèvements - dépenses
+    fond_initial = int(session_active.fond_caisse) if session_active else 0
+    verse_recu   = reconciliation['grand_total_verse'] if reconciliation else 0
+    net_caisse_central = fond_initial + verse_recu - stats['prelevements'] - stats['depenses']
+
     context = {
         'billetage_vals': [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5],
         'today': today,
@@ -492,6 +497,7 @@ def index(request):
         'session_ouverte_par': session_ouverte_par,
         'vue_session': vue_session,
         'attente_session': attente_session,
+        'net_caisse_central': net_caisse_central,
     }
     return render(request, 'caisse/index.html', context)
 

@@ -444,6 +444,53 @@
           <div style="padding:8px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
             <i class="fas fa-info-circle"></i> "Versé" = montants physiquement remis à la caisse centrale. Enregistrez un versement via le bouton <strong>Mouvement → Versement module</strong>.
           </div>
+
+          <!-- Bilan caisse centrale -->
+          <div style="padding:14px 18px;border-top:2px solid var(--border);background:#f8fafc">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px">⚖️ Bilan caisse centrale</div>
+            <div style="display:flex;gap:0;align-items:stretch;flex-wrap:wrap">
+
+              {% if session_active %}
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Fond initial</div>
+                <div style="font-size:15px;font-weight:700;color:var(--dark)">+ {{ session_active.fond_caisse|montant }} F</div>
+              </div>
+              {% endif %}
+
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Versements reçus</div>
+                <div style="font-size:15px;font-weight:700;color:#16a34a">+ {{ reconciliation.grand_total_verse|montant }} F</div>
+              </div>
+
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Prélèv. banque</div>
+                <div style="font-size:15px;font-weight:700;color:{% if stats.prelevements %}#dc2626{% else %}var(--muted){% endif %}">
+                  − {{ stats.prelevements|montant }} F
+                </div>
+              </div>
+
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Dépenses / Décaissements</div>
+                <div style="font-size:15px;font-weight:700;color:{% if stats.depenses %}#dc2626{% else %}var(--muted){% endif %}">
+                  − {{ stats.depenses|montant }} F
+                </div>
+              </div>
+
+              {% if reconciliation.grand_solde > 0 %}
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border);background:#fffbeb">
+                <div style="font-size:10px;color:#d97706;margin-bottom:3px">⏳ Reste à recevoir</div>
+                <div style="font-size:15px;font-weight:700;color:#d97706">+ {{ reconciliation.grand_solde|montant }} F</div>
+              </div>
+              {% endif %}
+
+              <div style="flex:1;min-width:160px;padding:10px 16px;background:var(--dark);border-radius:0 0 {% if not reconciliation.grand_solde %}10px{% else %}0{% endif %} 0">
+                <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">💰 Net disponible en caisse</div>
+                <div style="font-size:18px;font-weight:800;color:var(--gold)">{{ net_caisse_central|montant }} F</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">Fond + versements − sorties</div>
+              </div>
+
+            </div>
+          </div>
         </div>
         {% endif %}{# fin bloc if not attente_session #}
 
@@ -708,9 +755,17 @@
             </td>
             <td>
               {% if not s.is_open %}
-                {% if ed.0 == 'excedent' %}<span class="badge" style="background:#dcfce7;color:#15803d">{{ ed.1 }}</span>
-                {% elif ed.0 == 'manquant' %}<span class="badge" style="background:#fee2e2;color:#dc2626">{{ ed.1 }}</span>
-                {% else %}<span class="badge" style="background:#f1f5f9;color:#475569">{{ ed.1 }}</span>{% endif %}
+                {% if ed.0 == 'excedent' %}
+                  <span class="badge" style="background:#dcfce7;color:#15803d;display:inline-flex;flex-direction:column;align-items:flex-end;gap:1px">
+                    <span>{{ ed.1 }}</span><span style="font-size:9px;font-weight:600;letter-spacing:.4px">EXCÉDENT ▲</span>
+                  </span>
+                {% elif ed.0 == 'manquant' %}
+                  <span class="badge" style="background:#fee2e2;color:#dc2626;display:inline-flex;flex-direction:column;align-items:flex-end;gap:1px">
+                    <span>{{ ed.1 }}</span><span style="font-size:9px;font-weight:600;letter-spacing:.4px">MANQUANT ▼</span>
+                  </span>
+                {% else %}
+                  <span class="badge" style="background:#f1f5f9;color:#475569">{{ ed.1 }} — Équilibré ✓</span>
+                {% endif %}
               {% else %}<span style="color:var(--muted)">—</span>{% endif %}
             </td>
             <td>
