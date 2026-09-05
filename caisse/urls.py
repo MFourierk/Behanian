@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/stats/', views.api_stats_jour, name='api_stats'),
     path('api/reconciliation/', views.api_reconciliation, name='api_reconciliation'),
     path('api/autoriser-reouverture/', views.api_autoriser_reouverture, name='api_autoriser_reouverture'),
+    path('api/cloture-oubliee/', views.cloture_oubliee, name='cloture_oubliee'),
     path('api/modifier-ticket/', views.api_modifier_ticket, name='api_modifier_ticket'),
     path('api/modifier-mouvement/', views.api_modifier_mouvement, name='api_modifier_mouvement'),
     path('api/supprimer-mouvement/', views.api_supprimer_mouvement, name='api_supprimer_mouvement'),

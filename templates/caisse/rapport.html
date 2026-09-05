@@ -2,14 +2,86 @@
 {% block doc_title %}Rapport de Caisse — {{ session.opened_at|date:"d/m/Y" }}{% endblock %}
 
 {% block doc_actions %}
+{% if auto_print == "1" %}
+<button onclick="imprimerDeuxCopies()" class="btn-doc btn-doc-print" id="btn-imprimer-auto" style="background:#dc2626;color:#fff;animation:pulse-red 1s infinite">
+  🖨️ Imprimer 2 copies
+</button>
+{% else %}
 <a href="{% url 'caisse:rapport_session_excel' session.pk %}" class="btn-doc" style="background:#16a34a;color:#fff;">
   <i class="fas fa-file-excel"></i> Télécharger Excel
 </a>
 <button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
 <button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endif %}
+{% endblock %}
+
+{% block doc_extra_head %}
+{% if auto_print == "1" %}
+<style>
+#banniere-auto-print{
+  background:#1e3a5f;color:#fff;padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  font-size:13px;border-bottom:3px solid #dc2626;
+  position:sticky;top:0;z-index:999;
+}
+#banniere-auto-print .cnt{font-size:22px;font-weight:900;color:#fbbf24;min-width:32px;text-align:center}
+@keyframes pulse-red{0%,100%{opacity:1}50%{opacity:.6}}
+@media print{#banniere-auto-print{display:none!important}}
+</style>
+<script>
+var _copieImprimee = 0;
+var _countdownTimer;
+
+function demarrerCompteur(secs){
+  var el = document.getElementById('cpt-secs');
+  if(!el) return;
+  el.textContent = secs;
+  _countdownTimer = setInterval(function(){
+    secs--;
+    el.textContent = secs;
+    if(secs <= 0){ clearInterval(_countdownTimer); }
+  }, 1000);
+}
+
+function imprimerDeuxCopies(){
+  document.getElementById('btn-imprimer-auto').disabled = true;
+  document.getElementById('btn-imprimer-auto').textContent = '⏳ Impression en cours…';
+  _copieImprimee = 0;
+  window.addEventListener('afterprint', aprèsImpression);
+  window.print();
+}
+
+function aprèsImpression(){
+  _copieImprimee++;
+  if(_copieImprimee < 2){
+    setTimeout(function(){ window.print(); }, 400);
+  } else {
+    window.removeEventListener('afterprint', aprèsImpression);
+    var b = document.getElementById('banniere-msg');
+    if(b){ b.innerHTML = '✅ <strong>2 copies imprimées.</strong> Vous pouvez fermer cette fenêtre.'; }
+    var btn = document.getElementById('btn-imprimer-auto');
+    if(btn){ btn.style.display='none'; }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function(){
+  // Lancer auto-impression après 2s (temps de rendu de la page)
+  setTimeout(imprimerDeuxCopies, 2000);
+});
+</script>
+{% endif %}
 {% endblock %}
 
 {% block doc_content %}
+{% if auto_print == "1" %}
+<div id="banniere-auto-print">
+  <div style="display:flex;align-items:center;gap:12px;flex:1">
+    <span style="font-size:20px">🖨️</span>
+    <span id="banniere-msg">Impression automatique en cours — veuillez confirmer dans la boîte de dialogue d'impression (<strong>2 copies</strong>)</span>
+  </div>
+  <button onclick="window.close()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">✕ Fermer</button>
+</div>
+{% endif %}
 <div class="doc-title-band">
   <div>
     <div class="doc-title-text">RAPPORT DE CAISSE</div>

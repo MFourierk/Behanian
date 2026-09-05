@@ -189,6 +189,42 @@
   </div>
   {% endif %}
 
+  <!-- CLÔTURE OBLIGATOIRE SESSION OUBLIÉE (la caissière elle-même) -->
+  {% if session_oubliee and not is_manager %}
+  <div id="overlay-cloture-oubliee" style="position:fixed;inset:0;background:rgba(15,23,42,0.95);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:white;border-radius:20px;padding:32px;max-width:520px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.4)">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:48px;margin-bottom:10px">⚠️</div>
+        <div style="font-size:18px;font-weight:900;color:#b91c1c;margin-bottom:6px">Session non clôturée — Jour précédent</div>
+        <div style="font-size:13px;color:#6b7280;line-height:1.6">
+          Votre session du <strong style="color:#1a2535">{{ session_oubliee.date_session|date:"d/m/Y" }}</strong>
+          n'a pas été clôturée. Vous devez la clôturer maintenant avant d'ouvrir la session du jour.
+        </div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px">
+        <div style="font-weight:700;color:#991b1b;margin-bottom:8px">📋 Session concernée</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;color:#374151">
+          <div><span style="color:#6b7280">Session :</span> <strong>{{ session_oubliee.numero_session|default:session_oubliee.pk }}</strong></div>
+          <div><span style="color:#6b7280">Date :</span> <strong>{{ session_oubliee.date_session|date:"d/m/Y" }}</strong></div>
+          <div><span style="color:#6b7280">Ouverture :</span> {{ session_oubliee.opened_at|date:"H:i" }}</div>
+          <div><span style="color:#6b7280">Fond initial :</span> {{ session_oubliee.fond_caisse|montant }} F</div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Espèces comptées physiquement (FCFA) — laisser 0 si inconnu</label>
+        <input type="number" id="ob_fond_reel" min="0" value="0" style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:15px;font-weight:700">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Notes / Motif de la clôture différée</label>
+        <textarea id="ob_notes" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical" placeholder="Ex : Session oubliée — clôture le lendemain"></textarea>
+      </div>
+      <button id="ob_btn" onclick="cloturerSessionOubliee()" style="width:100%;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer">
+        <i class="fas fa-lock"></i> Clôturer la session du {{ session_oubliee.date_session|date:"d/m/Y" }}
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ALERTE SESSIONS BLOQUANTES (non clôturées des jours précédents) -->
   {% if sessions_bloquantes %}
   <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:14px;padding:16px 20px;margin-bottom:16px">
@@ -272,7 +308,7 @@
       <div style="font-size:13px;color:rgba(255,255,255,.6)">Les ventes des shifts précédents ne vous appartiennent pas. Ouvrez votre session pour commencer votre propre décompte.</div>
     </div>
     {% if can_open_caisse and not session_ouverte_par %}
-    <button onclick="ouvrirModal('modalOuverture')" style="margin-left:auto;background:#f59e0b;color:#1a2535;border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap">▶ Ouvrir ma session</button>
+    <button onclick="ouvrirModal('modalOuvrir')" style="margin-left:auto;background:#f59e0b;color:#1a2535;border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap">▶ Ouvrir ma session</button>
     {% endif %}
   </div>
   {% endif %}
@@ -1348,8 +1384,47 @@ async function cloturerCaisse(){
     banque:             document.getElementById('cl_banque').value,
     notes:              document.getElementById('cl_notes').value,
   });
-  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
-  else toast('❌ '+d.error,'error');
+  if(d.success){
+    if(d.logout && d.session_id){
+      // 1. Ouvrir le rapport pour impression (session encore valide)
+      window.open('/caisse/rapport/' + d.session_id + '/?auto_print=1', '_blank');
+      // 2. Afficher overlay de déconnexion avec compte à rebours
+      _afficherOverlayDeconnexion(d.message);
+    } else {
+      toast('✅ '+d.message,'success');
+      setTimeout(()=>location.reload(), 800);
+    }
+  } else {
+    toast('❌ '+d.error,'error');
+  }
+}
+
+function _afficherOverlayDeconnexion(msg){
+  var secs = 10;
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;color:#fff;text-align:center;padding:30px';
+  overlay.innerHTML = `
+    <div style="font-size:60px">✅</div>
+    <div style="font-size:22px;font-weight:800;color:#34d399">Caisse clôturée avec succès</div>
+    <div style="font-size:14px;color:#94a3b8;max-width:480px;line-height:1.6">${msg}</div>
+    <div style="background:#1e3a5f;border-radius:14px;padding:20px 32px;margin-top:8px">
+      <div style="font-size:13px;color:#93c5fd;margin-bottom:8px">🖨️ Le rapport s'est ouvert dans un nouvel onglet pour impression (2 copies)</div>
+      <div style="font-size:13px;color:#fca5a5">Déconnexion automatique dans <strong id="cloture-cpt">${secs}</strong> secondes…</div>
+    </div>
+    <button onclick="window.location.href='/users/logout/'" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer">
+      Se déconnecter maintenant
+    </button>
+  `;
+  document.body.appendChild(overlay);
+  var timer = setInterval(function(){
+    secs--;
+    var el = document.getElementById('cloture-cpt');
+    if(el) el.textContent = secs;
+    if(secs <= 0){
+      clearInterval(timer);
+      window.location.href = '/users/logout/';
+    }
+  }, 1000);
 }
 
 function forceCloturerSession(sessionId, label){
@@ -1632,6 +1707,62 @@ async function sauvegarderEditionMouvement() {
   finally { btn.disabled = false; btn.textContent = '💾 Enregistrer'; }
 }
 function fermerModalEditionMouvement() { document.getElementById('modalEditionMouvement').style.display = 'none'; }
+
+// ── CLÔTURE SESSION OUBLIÉE (caissière, lendemain) ──────────────────────────
+async function cloturerSessionOubliee(){
+  var btn = document.getElementById('ob_btn');
+  btn.disabled = true; btn.textContent = '⏳ Clôture en cours…';
+  var d = await post("{% url 'caisse:cloture_oubliee' %}", {
+    fond_reel: document.getElementById('ob_fond_reel').value || 0,
+    notes:     document.getElementById('ob_notes').value,
+  });
+  if(d.success){
+    document.getElementById('overlay-cloture-oubliee').innerHTML = `
+      <div style="background:white;border-radius:20px;padding:40px;max-width:480px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4)">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <div style="font-size:18px;font-weight:800;color:#16a34a;margin-bottom:10px">Session clôturée</div>
+        <div style="font-size:14px;color:#374151;margin-bottom:20px">${d.message}</div>
+        <div style="font-size:13px;color:#6b7280">Rechargement en cours…</div>
+      </div>`;
+    setTimeout(()=>location.reload(), 2000);
+  } else {
+    btn.disabled = false; btn.textContent = '🔒 Clôturer la session oubliée';
+    toast('❌ '+d.error, 'error');
+  }
+}
+
+// ── FORCE OUVERTURE SESSION APRÈS LOGIN ──────────────────────────────────────
+{% if attente_session and can_open_caisse and not is_manager and not session_ouverte_par %}
+(function(){
+  // Masquer le bouton "fermer" du modal d'ouverture
+  var closeBtn = document.querySelector('#modalOuvrir .close-btn');
+  if(closeBtn) closeBtn.style.display = 'none';
+
+  // Bloquer la fermeture par clic en dehors du modal
+  var modal = document.getElementById('modalOuvrir');
+  if(modal){
+    modal.addEventListener('click', function(e){
+      if(e.target === modal) e.stopPropagation();
+    });
+  }
+
+  // Afficher un overlay de blocage derrière le modal
+  var overlay = document.createElement('div');
+  overlay.id = 'overlay-force-session';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.82);z-index:8999;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:60px;gap:16px;pointer-events:none';
+  overlay.innerHTML = `
+    <div style="background:#1e3a5f;border-radius:16px;padding:20px 32px;text-align:center;pointer-events:none;max-width:480px">
+      <div style="font-size:32px;margin-bottom:8px">🔐</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Ouverture de caisse obligatoire</div>
+      <div style="font-size:13px;color:#93c5fd;line-height:1.6">Veuillez ouvrir votre session de caisse avant d'accéder à l'application. Toutes vos opérations seront enregistrées sous votre nom.</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Ouvrir automatiquement le modal
+  ouvrirModal('modalOuvrir');
+})();
+{% endif %}
 
 // ── SUPPRESSION MOUVEMENT ────────────────────────────────────────────────────
 let _delMvId = null;

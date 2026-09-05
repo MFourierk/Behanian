@@ -483,8 +483,12 @@ def index(request):
     today = timezone.localdate()
     from utils.permissions import _is_manager as _chk_manager
     is_manager = _chk_manager(request.user)
-    session_active      = CaisseSession.objects.filter(user=request.user, is_open=True).first()
-    session_ouverte_par = None if session_active else CaisseSession.objects.filter(is_open=True, date_session=timezone.localdate()).select_related('user').first()
+    # Session d'aujourd'hui (ou session oubliée d'une journée précédente)
+    session_oubliee = CaisseSession.objects.filter(
+        user=request.user, is_open=True, date_session__lt=today
+    ).order_by('-date_session').first()
+    session_active = CaisseSession.objects.filter(user=request.user, is_open=True, date_session=today).first()
+    session_ouverte_par = None if (session_active or session_oubliee) else CaisseSession.objects.filter(is_open=True, date_session=today).select_related('user').first()
 
     sessions_jour = CaisseSession.objects.filter(
         opened_at__date=today
@@ -609,6 +613,7 @@ def index(request):
         'sessions_bloquantes': sessions_bloquantes,
         'reconciliation': reconciliation,
         'session_ouverte_par': session_ouverte_par,
+        'session_oubliee': session_oubliee,
         'vue_session': vue_session,
         'attente_session': attente_session,
         'net_caisse_central': net_caisse_central,
@@ -812,13 +817,16 @@ def cloturer_caisse(request):
             )
 
         ecart_label = f"+{int(ecart):,} F (excédent)" if ecart > 0 else (f"{int(ecart):,} F (manquant)" if ecart < 0 else "0 F (équilibré)")
+
         return JsonResponse({
-            'success': True,
-            'message': f'Caisse clôturée — {session.numero_session}. Total: {stats["total"]:,} F | Écart: {ecart_label}',
-            'total': stats['total'],
-            'prelev': int(prelev),
+            'success':         True,
+            'logout':          True,
+            'session_id':      session.pk,
+            'message':         f'Caisse clôturée — {session.numero_session}. Total: {int(stats["total"]):,} F | Écart: {ecart_label}',
+            'total':           stats['total'],
+            'prelev':          int(prelev),
             'solde_theorique': int(solde_th),
-            'ecart': int(ecart),
+            'ecart':           int(ecart),
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -856,6 +864,48 @@ def force_cloturer_caisse(request, session_id):
         return JsonResponse({
             'success': True,
             'message': f'Session {session.numero_session} du {session.date_session.strftime("%d/%m/%Y")} clôturée de force.',
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
+@require_POST
+def cloture_oubliee(request):
+    """La caissière clôture elle-même sa session oubliée d'un jour précédent."""
+    today = timezone.localdate()
+    session = CaisseSession.objects.filter(
+        user=request.user, is_open=True, date_session__lt=today
+    ).order_by('-date_session').first()
+
+    if not session:
+        return JsonResponse({'success': False, 'error': 'Aucune session oubliée à clôturer.'})
+
+    try:
+        data      = json.loads(request.body) if request.body else {}
+        fond_reel = _dec(data.get('fond_reel', session.fond_caisse))
+        notes     = data.get('notes', '').strip() or f'Clôture différée le {today.strftime("%d/%m/%Y")}'
+
+        stats    = get_stats_session(session)
+        solde_th = session.fond_caisse + _dec(stats['especes']) - session.prelevement_banque
+        ecart    = solde_th - fond_reel
+
+        session.closed_at        = timezone.now()
+        session.is_open          = False
+        session.fond_caisse_reel = fond_reel
+        session.total_especes    = stats['especes']
+        session.total_mobile     = stats['mobile']
+        session.total_carte      = stats['carte']
+        session.total_virement   = stats['virement']
+        session.total_general    = stats['total']
+        session.solde_theorique  = solde_th
+        session.ecart            = ecart
+        session.notes            = notes
+        session.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Session du {session.date_session.strftime("%d/%m/%Y")} clôturée. Vous pouvez maintenant ouvrir la session du jour.',
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -1068,6 +1118,8 @@ def rapport_caisse(request, session_id=None):
     # Fond théorique = fond ouverture + versements reçus des modules – dépenses – prélèvements banque
     nouveau_fond = int(session.fond_caisse) + reconciliation['grand_total_verse'] - stats['prelevements'] - stats['depenses']
 
+    auto_print = request.GET.get('auto_print', '0')
+
     return render(request, 'caisse/rapport.html', {
         'session':        session,
         'stats':          stats,
@@ -1076,6 +1128,7 @@ def rapport_caisse(request, session_id=None):
         'reconciliation': reconciliation,
         'solde_veille':   solde_veille,
         'nouveau_fond':   nouveau_fond,
+        'auto_print':     auto_print,
     })
 
 
