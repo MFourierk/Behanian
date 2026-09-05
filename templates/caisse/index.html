@@ -530,57 +530,83 @@
 
       <!-- Colonne droite (disparaît sous la colonne principale sur mobile) -->
       <div style="min-width:0">
-        <!-- Répartition modes -->
+        <!-- Flux de caisse (mouvements enregistrés par la caissière) -->
         <div class="panel">
-          <div class="ph"><h3>💳 Modes de paiement</h3></div>
-          <div style="padding:16px">
-            {% for label, val in stats.items %}{% endfor %}
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a">
-                <span style="font-size:12px;font-weight:600">💵 Espèces</span>
-                <span style="font-size:13px;font-weight:700;color:#16a34a">{{ stats.especes|montant }} F</span>
-              </div>
-              {% if stats.par_mobile %}
-                {% for lbl, mt, clr, badge in stats.par_mobile %}
-                <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#eff6ff;border-radius:8px;border-left:3px solid {{ clr }}">
-                  <span style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:{{ clr }};color:white;font-size:9px;font-weight:700;flex-shrink:0">{{ badge }}</span>
-                    {{ lbl }}
-                  </span>
-                  <span style="font-size:13px;font-weight:700;color:{{ clr }}">{{ mt|montant }} F</span>
+          <div class="ph"><h3>💼 Flux de caisse</h3></div>
+          <div style="padding:14px 16px">
+
+            {% if caisse_flux.entrees %}
+            <!-- ENTRÉES -->
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#16a34a;margin-bottom:8px">▲ Entrées</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+              {% for e in caisse_flux.entrees %}
+              <div style="background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a;padding:8px 10px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:11px;font-weight:600;color:#15803d">{{ e.label }}</span>
+                  <span style="font-size:13px;font-weight:700;color:#15803d">{{ e.total|montant }} F</span>
                 </div>
-                {% endfor %}
-              {% else %}
-              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#eff6ff;border-radius:8px;border-left:3px solid #2563eb">
-                <span style="font-size:12px;font-weight:600">📱 Mobile Money</span>
-                <span style="font-size:13px;font-weight:700;color:#2563eb">0 F</span>
+                {% if e.par_mode|length > 1 %}
+                <div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">
+                  {% for mode in e.par_mode %}
+                  <div style="display:flex;justify-content:space-between;padding:1px 4px">
+                    <span style="font-size:10px;color:{{ mode.clr }}">{{ mode.lbl }}</span>
+                    <span style="font-size:10px;font-weight:600;color:{{ mode.clr }}">{{ mode.mt|montant }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% elif e.par_mode %}
+                <div style="font-size:10px;color:{{ e.par_mode.0.clr }};margin-top:3px">{{ e.par_mode.0.lbl }}</div>
+                {% endif %}
               </div>
-              {% endif %}
-              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#f5f3ff;border-radius:8px;border-left:3px solid #7c3aed">
-                <span style="font-size:12px;font-weight:600">💳 Carte bancaire</span>
-                <span style="font-size:13px;font-weight:700;color:#7c3aed">{{ stats.carte|montant }} F</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:#fef3c7;border-radius:8px;border-left:3px solid #d97706">
-                <span style="font-size:12px;font-weight:600">🏦 Virement</span>
-                <span style="font-size:13px;font-weight:700;color:#d97706">{{ stats.virement|montant }} F</span>
-              </div>
-            </div>
-            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-              <div style="display:flex;justify-content:space-between">
-                <span style="font-size:11px;color:var(--muted)">Prélèvement banque</span>
-                <span style="font-size:12px;color:#dc2626;font-weight:700">- {{ stats.prelevements|montant }} F</span>
-              </div>
-              {% if stats.depenses %}
-              <div style="display:flex;justify-content:space-between;margin-top:4px">
-                <span style="font-size:11px;color:var(--muted)">Dépenses / Décaissements</span>
-                <span style="font-size:12px;color:#dc2626;font-weight:700">- {{ stats.depenses|montant }} F</span>
-              </div>
-              {% endif %}
-              <div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid #f0f3f7">
-                <span style="font-size:12px;font-weight:700">Net en caisse</span>
-                <span style="font-size:14px;font-weight:800;color:var(--dark)">{{ stats.net|montant }} F</span>
+              {% endfor %}
+              <div style="display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid #bbf7d0;margin-top:2px">
+                <span style="font-size:11px;font-weight:700;color:#15803d">Total entrées</span>
+                <span style="font-size:13px;font-weight:800;color:#15803d">{{ caisse_flux.total_entrees|montant }} F</span>
               </div>
             </div>
+            {% endif %}
+
+            {% if caisse_flux.sorties %}
+            <!-- SORTIES -->
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#dc2626;margin-bottom:8px">▼ Sorties</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+              {% for s in caisse_flux.sorties %}
+              <div style="background:#fff1f2;border-radius:8px;border-left:3px solid #dc2626;padding:8px 10px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-size:11px;font-weight:600;color:#b91c1c">{{ s.label }}</span>
+                  <span style="font-size:13px;font-weight:700;color:#b91c1c">{{ s.total|montant }} F</span>
+                </div>
+                {% if s.par_mode|length > 1 %}
+                <div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">
+                  {% for mode in s.par_mode %}
+                  <div style="display:flex;justify-content:space-between;padding:1px 4px">
+                    <span style="font-size:10px;color:{{ mode.clr }}">{{ mode.lbl }}</span>
+                    <span style="font-size:10px;font-weight:600;color:{{ mode.clr }}">{{ mode.mt|montant }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% elif s.par_mode %}
+                <div style="font-size:10px;color:{{ s.par_mode.0.clr }};margin-top:3px">{{ s.par_mode.0.lbl }}</div>
+                {% endif %}
+              </div>
+              {% endfor %}
+              <div style="display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid #fecdd3;margin-top:2px">
+                <span style="font-size:11px;font-weight:700;color:#b91c1c">Total sorties</span>
+                <span style="font-size:13px;font-weight:800;color:#b91c1c">{{ caisse_flux.total_sorties|montant }} F</span>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if not caisse_flux.entrees and not caisse_flux.sorties %}
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Aucun mouvement enregistré</div>
+            {% else %}
+            <!-- NET -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--dark);border-radius:10px">
+              <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7)">Net mouvements caisse</span>
+              <span style="font-size:15px;font-weight:800;color:var(--gold)">{{ caisse_flux.net|montant }} F</span>
+            </div>
+            {% endif %}
+
           </div>
         </div>
 

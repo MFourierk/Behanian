@@ -12,6 +12,75 @@ from facturation.models import Ticket
 from .models import CaisseSession, MouvementCaisse, PrelevementBanque
 
 
+_MODE_LABELS = {
+    'especes':       ('💵 Espèces',      '#059669'),
+    'wave':          ('📱 Wave',          '#1d4ed8'),
+    'orange_money':  ('📱 Orange Money',  '#c2410c'),
+    'mtn_money':     ('📱 MTN MoMo',     '#854d0e'),
+    'moov_money':    ('📱 Moov Money',   '#0f766e'),
+    'mobile_money':  ('📱 Mobile Money', '#7c3aed'),
+    'carte_bancaire':('💳 Carte',         '#7c3aed'),
+    'virement':      ('🏦 Virement',      '#d97706'),
+    'cheque':        ('📃 Chèque',        '#475569'),
+}
+
+_TYPE_CONFIG = [
+    # (type_key, label, is_entree)
+    ('fond_caisse',  'Fond de caisse (ouverture)',  True),
+    ('versement',    'Versements reçus',             True),
+    ('encaissement', 'Encaissements divers',         True),
+    ('ajustement',   'Ajustements',                  True),
+    ('depense',      'Dépenses / Décaissements',     False),
+    ('prelevement',  'Prélèvements banque',          False),
+    ('remboursement','Remboursements clients',        False),
+]
+
+
+def get_caisse_flux(qs):
+    """Résume les MouvementCaisse par type et mode de paiement.
+    Retourne entrees, sorties, totaux pour le panneau Flux de caisse.
+    """
+    # Une seule requête
+    rows = list(qs.values('type', 'mode_paiement').annotate(s=Sum('montant')))
+    raw = {}
+    for r in rows:
+        t = r['type']
+        m = r['mode_paiement']
+        s = int(r['s'] or 0)
+        if t not in raw:
+            raw[t] = {}
+        raw[t][m] = raw[t].get(m, 0) + s
+
+    entrees, sorties = [], []
+    total_entrees = total_sorties = 0
+
+    for type_key, label, is_entree in _TYPE_CONFIG:
+        modes_data = raw.get(type_key, {})
+        total = sum(modes_data.values())
+        if total == 0:
+            continue
+        par_mode = [
+            {'lbl': _MODE_LABELS[m][0], 'clr': _MODE_LABELS[m][1], 'mt': v}
+            for m, v in sorted(modes_data.items(), key=lambda x: -x[1])
+            if m in _MODE_LABELS and v > 0
+        ]
+        entry = {'label': label, 'total': total, 'par_mode': par_mode}
+        if is_entree:
+            entrees.append(entry)
+            total_entrees += total
+        else:
+            sorties.append(entry)
+            total_sorties += total
+
+    return {
+        'entrees':       entrees,
+        'sorties':       sorties,
+        'total_entrees': total_entrees,
+        'total_sorties': total_sorties,
+        'net':           total_entrees - total_sorties,
+    }
+
+
 # ── Modules à réconcilier (ticket_module, caisse_module, label, emoji) ─────
 MODULES_RECONCILIATION = [
     ('hotel',      'hotel',    'Hôtel',        '🏨'),
@@ -475,6 +544,9 @@ def index(request):
         ])
     )
 
+    # Flux de caisse (mouvements enregistrés par la caissière, par type et mode)
+    caisse_flux = get_caisse_flux(mouvements)
+
     # Net disponible en caisse centrale = fond initial + versements reçus - prélèvements - dépenses
     fond_initial = int(session_active.fond_caisse) if session_active else 0
     verse_recu   = reconciliation['grand_total_verse'] if reconciliation else 0
@@ -498,6 +570,7 @@ def index(request):
         'vue_session': vue_session,
         'attente_session': attente_session,
         'net_caisse_central': net_caisse_central,
+        'caisse_flux': caisse_flux,
     }
     return render(request, 'caisse/index.html', context)
 
