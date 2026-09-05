@@ -350,7 +350,6 @@ function recalculer() {
   const mlRestants = volCont - mlConsommes;
 
   // Après enregistrement : stock scellé inchangé, ml_ouverts += mlRestants
-  const { stock, mlOuverts } = _modal;
   const nouveauMlOuverts = mlOuverts + mlRestants;
   const mlTotal          = stock * volCont + nouveauMlOuverts;
   const tourneesTotal    = Math.floor(mlTotal / mlTournee);
