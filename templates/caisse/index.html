@@ -857,8 +857,18 @@
               {% if s.is_open %}<span class="badge" style="background:#dcfce7;color:#15803d">🟢 Ouverte</span>
               {% else %}<span class="badge" style="background:#fee2e2;color:#dc2626">🔴 Clôturée</span>{% endif %}
             </td>
-            <td>
+            <td style="white-space:nowrap">
               <a href="{% url 'caisse:rapport_session' s.pk %}" class="btn-a btn-outline" style="font-size:10px;padding:4px 8px" target="_blank"><i class="fas fa-print"></i></a>
+              {% if is_manager and not s.is_open %}
+                {% if s.reouverture_autorisee %}
+                  <span style="font-size:10px;color:#16a34a;margin-left:4px" title="Réouverture autorisée par {{ s.reouverture_par.get_full_name|default:s.reouverture_par.username|default:'un responsable' }}">✓ Débloqué</span>
+                {% else %}
+                  <button onclick="autoriserReouverture({{ s.pk }}, '{{ s.user.get_full_name|default:s.user.username }}')"
+                          style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid #f59e0b;background:#fffbeb;color:#b45309;cursor:pointer;margin-left:4px">
+                    🔓 Débloquer
+                  </button>
+                {% endif %}
+              {% endif %}
             </td>
           </tr>
           {% endwith %}
@@ -1360,6 +1370,13 @@ async function confirmerForceCloturer(){
     notes,
   });
   if(d.success){ fermerModal('modalForceCloturer'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),800); }
+  else toast('❌ '+d.error,'error');
+}
+
+async function autoriserReouverture(sessionId, nom){
+  if(!confirm(`Autoriser ${nom} à rouvrir une session aujourd'hui ?\nCette action sera enregistrée.`)) return;
+  const d = await post("{% url 'caisse:api_autoriser_reouverture' %}", {session_id: sessionId});
+  if(d.success){ toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1200); }
   else toast('❌ '+d.error,'error');
 }
 

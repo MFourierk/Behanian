@@ -649,6 +649,23 @@ def ouvrir_caisse(request):
             'error': f'Votre caisse {session_existante.get_type_caisse_display()} est déjà ouverte (depuis {session_existante.opened_at.strftime("%H:%M")})',
         })
 
+    # 1b-bis. Bloquer si l'utilisateur a déjà clôturé une session aujourd'hui
+    # sans qu'un manager ait accordé une réouverture
+    session_cloturee_aujourd_hui = CaisseSession.objects.filter(
+        user=request.user, is_open=False, date_session=today
+    ).order_by('-closed_at').first()
+    if session_cloturee_aujourd_hui and not session_cloturee_aujourd_hui.reouverture_autorisee:
+        return JsonResponse({
+            'success': False,
+            'error': (
+                f'⛔ Vous avez déjà clôturé votre session de la journée '
+                f'({session_cloturee_aujourd_hui.numero_session}, clôturée à '
+                f'{session_cloturee_aujourd_hui.closed_at.strftime("%H:%M")}). '
+                f'Contactez un responsable pour autoriser une réouverture.'
+            ),
+            'bloquee_cloture': True,
+        })
+
     # 1b. Bloquer si une AUTRE caissière a déjà une session ouverte (shifts non-chevauchants)
     session_autre = CaisseSession.objects.filter(is_open=True).exclude(user=request.user).select_related('user').first()
     if session_autre:
@@ -1266,6 +1283,31 @@ def sync_centrale(request):
             'total': int(total_consolide),
             'nb_sessions': sessions_autres.count(),
         })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
+@require_POST
+def api_autoriser_reouverture(request):
+    """Manager : autoriser la réouverture d'une session clôturée pour un utilisateur."""
+    from utils.permissions import _is_manager as _chk_manager
+    if not (_chk_manager(request.user) or request.user.is_superuser):
+        return JsonResponse({'success': False, 'error': 'Accès réservé aux responsables.'}, status=403)
+    try:
+        data = json.loads(request.body)
+        session_id = data.get('session_id')
+        session = CaisseSession.objects.get(pk=session_id, is_open=False)
+        session.reouverture_autorisee = True
+        session.reouverture_par = request.user
+        session.save(update_fields=['reouverture_autorisee', 'reouverture_par'])
+        nom = session.user.get_full_name() or session.user.username
+        return JsonResponse({
+            'success': True,
+            'message': f'Réouverture autorisée pour {nom}. Elle peut maintenant ouvrir une nouvelle session.',
+        })
+    except CaisseSession.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Session introuvable.'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 

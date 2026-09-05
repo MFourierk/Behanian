@@ -58,6 +58,17 @@ class CaisseSession(models.Model):
 
     notes           = models.TextField(blank=True)
 
+    # Contrôle de réouverture (après clôture, un manager doit autoriser explicitement)
+    reouverture_autorisee = models.BooleanField(
+        default=False,
+        help_text="Un manager a autorisé la réouverture d'une session après clôture pour ce jour."
+    )
+    reouverture_par = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reouvertures_autorisees',
+        help_text="Manager ayant accordé l'autorisation de réouverture."
+    )
+
     class Meta:
         ordering = ['-opened_at']
         verbose_name = 'Session de caisse'
