@@ -329,7 +329,7 @@
                   <th style="text-align:right">🏦 Virement</th>
                   <th style="text-align:right">Mixte</th>
                   <th style="text-align:right;border-left:2px solid #e2e8f0">Total</th>
-                  <th style="text-align:right">Versé</th>
+                  <th style="text-align:right">Versé <span style="font-size:9px;font-weight:400;color:var(--muted)">(par mode)</span></th>
                   <th style="text-align:right">Solde</th>
                   <th style="text-align:center">Statut</th>
                 </tr>
@@ -376,8 +376,19 @@
                   {% if ligne.mixte %}{{ ligne.mixte|montant }} F{% else %}—{% endif %}
                 </td>
                 <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">{{ ligne.total_tx|montant }} F</td>
-                <td style="text-align:right;font-family:monospace;color:{% if ligne.total_verse > 0 %}#16a34a{% else %}var(--muted){% endif %}">
-                  {{ ligne.total_verse|montant }} F
+                <td style="text-align:right;font-family:monospace;vertical-align:top">
+                  {% if ligne.total_verse > 0 %}
+                  <div style="font-weight:700;color:#16a34a">{{ ligne.total_verse|montant }} F</div>
+                  {% if ligne.verse_especes %}<div style="font-size:10px;color:#059669;margin-top:2px">💵 {{ ligne.verse_especes|montant }}</div>{% endif %}
+                  {% if ligne.verse_wave %}<div style="font-size:10px;color:#1d4ed8;margin-top:2px">W {{ ligne.verse_wave|montant }}</div>{% endif %}
+                  {% if ligne.verse_orange %}<div style="font-size:10px;color:#c2410c;margin-top:2px">O {{ ligne.verse_orange|montant }}</div>{% endif %}
+                  {% if ligne.verse_mtn %}<div style="font-size:10px;color:#854d0e;margin-top:2px">M {{ ligne.verse_mtn|montant }}</div>{% endif %}
+                  {% if ligne.verse_moov %}<div style="font-size:10px;color:#0f766e;margin-top:2px">V {{ ligne.verse_moov|montant }}</div>{% endif %}
+                  {% if ligne.verse_carte %}<div style="font-size:10px;color:#7c3aed;margin-top:2px">💳 {{ ligne.verse_carte|montant }}</div>{% endif %}
+                  {% if ligne.verse_virement %}<div style="font-size:10px;color:#d97706;margin-top:2px">🏦 {{ ligne.verse_virement|montant }}</div>{% endif %}
+                  {% else %}
+                  <span style="color:var(--muted)">0 F</span>
+                  {% endif %}
                 </td>
                 <td style="text-align:right;font-family:monospace;font-weight:700;color:{% if ligne.solde <= 0 %}#16a34a{% elif ligne.solde == ligne.total_tx %}#dc2626{% else %}#d97706{% endif %}">
                   {{ ligne.solde|montant }} F
@@ -1294,7 +1305,7 @@ async function rafraichirReconciliation(manuel=false){
       <th style="text-align:right">🏦 Virement</th>
       <th style="text-align:right">Mixte</th>
       <th style="text-align:right;border-left:2px solid #e2e8f0">Total</th>
-      <th style="text-align:right">Versé</th>
+      <th style="text-align:right">Versé <span style="font-size:9px;font-weight:400;color:#94a3b8">(par mode)</span></th>
       <th style="text-align:right">Solde</th>
       <th style="text-align:center">Statut</th>`;
 
@@ -1302,12 +1313,22 @@ async function rafraichirReconciliation(manuel=false){
     table.querySelector('tbody').innerHTML = rec.lignes.map(l => {
       const clr = (v, c) => v ? c : '#94a3b8';
       const couleurSolde = l.solde <= 0 ? '#16a34a' : (l.total_verse === 0 ? '#dc2626' : '#d97706');
-      const couleurVerse = l.total_verse > 0 ? '#16a34a' : '#94a3b8';
       let badge = '';
       if(l.total_tx === 0)      badge = '<span style="font-size:11px;color:#94a3b8">— Aucune activité</span>';
       else if(l.complet)        badge = '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>';
       else if(l.total_verse===0)badge = '<span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>';
       else                      badge = '<span style="background:#fef3c7;color:#d97706;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">🔄 Partiel</span>';
+      // Décomposition versements par mode
+      let verseHtml = l.total_verse > 0
+        ? `<div style="font-weight:700;color:#16a34a">${fmtF(l.total_verse)}</div>`
+          + (l.verse_especes  ? `<div style="font-size:10px;color:#059669;margin-top:2px">💵 ${parseInt(l.verse_especes).toLocaleString('fr-FR')}</div>` : '')
+          + (l.verse_wave     ? `<div style="font-size:10px;color:#1d4ed8;margin-top:2px">W ${parseInt(l.verse_wave).toLocaleString('fr-FR')}</div>` : '')
+          + (l.verse_orange   ? `<div style="font-size:10px;color:#c2410c;margin-top:2px">O ${parseInt(l.verse_orange).toLocaleString('fr-FR')}</div>` : '')
+          + (l.verse_mtn      ? `<div style="font-size:10px;color:#854d0e;margin-top:2px">M ${parseInt(l.verse_mtn).toLocaleString('fr-FR')}</div>` : '')
+          + (l.verse_moov     ? `<div style="font-size:10px;color:#0f766e;margin-top:2px">V ${parseInt(l.verse_moov).toLocaleString('fr-FR')}</div>` : '')
+          + (l.verse_carte    ? `<div style="font-size:10px;color:#7c3aed;margin-top:2px">💳 ${parseInt(l.verse_carte).toLocaleString('fr-FR')}</div>` : '')
+          + (l.verse_virement ? `<div style="font-size:10px;color:#d97706;margin-top:2px">🏦 ${parseInt(l.verse_virement).toLocaleString('fr-FR')}</div>` : '')
+        : `<span style="color:#94a3b8">0 F</span>`;
       return `<tr>
         <td style="font-weight:600">${l.emoji} ${l.label}</td>
         <td style="text-align:right;font-family:monospace;color:${clr(l.especes,'#1e40af')}">${fmt(l.especes)}</td>
@@ -1320,7 +1341,7 @@ async function rafraichirReconciliation(manuel=false){
         <td style="text-align:right;font-family:monospace;color:${clr(l.virement,'#0f766e')}">${fmt(l.virement)}</td>
         <td style="text-align:right;font-family:monospace;color:${clr(l.mixte,'#92400e')}">${fmt(l.mixte)}</td>
         <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(l.total_tx)}</td>
-        <td style="text-align:right;font-family:monospace;color:${couleurVerse}">${fmtF(l.total_verse)}</td>
+        <td style="text-align:right;font-family:monospace;vertical-align:top">${verseHtml}</td>
         <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurSolde}">${fmtF(l.solde)}</td>
         <td style="text-align:center">${badge}</td>
       </tr>`;

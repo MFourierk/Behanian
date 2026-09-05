@@ -61,33 +61,52 @@ def get_reconciliation_jour(date=None):
         mixte    = _sum(['mixte'])
         autres   = total_tx - especes - mobile - carte - virement - mixte
 
-        total_verse = int(
-            MouvementCaisse.objects.filter(
-                date__date=date,
-                type='versement',
-                module=caisse_mod,
-                valide=True,
-            ).exclude(reference__startswith='CONSOLIDATION')
-            .aggregate(s=Sum('montant'))['s'] or 0
-        )
+        vs_qs = MouvementCaisse.objects.filter(
+            date__date=date,
+            type='versement',
+            module=caisse_mod,
+            valide=True,
+        ).exclude(reference__startswith='CONSOLIDATION')
+
+        def _vsum(modes):
+            return int(vs_qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+
+        verse_especes  = _vsum(['especes'])
+        verse_wave     = _vsum(['wave'])
+        verse_orange   = _vsum(['orange_money'])
+        verse_mtn      = _vsum(['mtn_money'])
+        verse_moov     = _vsum(['moov_money'])
+        verse_mobile   = verse_wave + verse_orange + verse_mtn + verse_moov + _vsum(['mobile_money', 'mobile'])
+        verse_carte    = _vsum(['carte_bancaire', 'carte'])
+        verse_virement = _vsum(['virement'])
+        total_verse    = int(vs_qs.aggregate(s=Sum('montant'))['s'] or 0)
+
         solde = total_tx - total_verse
         lignes.append({
-            'label':       label,
-            'emoji':       emoji,
-            'total_tx':    total_tx,
-            'especes':     especes,
-            'mobile':      mobile,
-            'wave':        wave,
-            'orange':      orange,
-            'mtn':         mtn,
-            'moov':        moov,
-            'carte':       carte,
-            'virement':    virement,
-            'mixte':       mixte,
-            'autres':      autres if autres > 0 else 0,
-            'total_verse': total_verse,
-            'solde':       solde,
-            'complet':     solde <= 0,
+            'label':          label,
+            'emoji':          emoji,
+            'total_tx':       total_tx,
+            'especes':        especes,
+            'mobile':         mobile,
+            'wave':           wave,
+            'orange':         orange,
+            'mtn':            mtn,
+            'moov':           moov,
+            'carte':          carte,
+            'virement':       virement,
+            'mixte':          mixte,
+            'autres':         autres if autres > 0 else 0,
+            'total_verse':    total_verse,
+            'verse_especes':  verse_especes,
+            'verse_wave':     verse_wave,
+            'verse_orange':   verse_orange,
+            'verse_mtn':      verse_mtn,
+            'verse_moov':     verse_moov,
+            'verse_mobile':   verse_mobile,
+            'verse_carte':    verse_carte,
+            'verse_virement': verse_virement,
+            'solde':          solde,
+            'complet':        solde <= 0,
         })
         grand_total_tx    += total_tx
         grand_total_verse += total_verse
@@ -291,22 +310,42 @@ def get_reconciliation_session(session):
         virement = _sum(['virement'])
         mixte    = _sum(['mixte'])
 
-        total_verse = int(
-            MouvementCaisse.objects.filter(
-                session=session,
-                type='versement',
-                module=caisse_mod,
-                valide=True,
-            ).exclude(reference__startswith='CONSOLIDATION')
-            .aggregate(s=Sum('montant'))['s'] or 0
-        )
+        vs_qs = MouvementCaisse.objects.filter(
+            session=session,
+            type='versement',
+            module=caisse_mod,
+            valide=True,
+        ).exclude(reference__startswith='CONSOLIDATION')
+
+        def _vsum(modes):
+            return int(vs_qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+
+        verse_especes  = _vsum(['especes'])
+        verse_wave     = _vsum(['wave'])
+        verse_orange   = _vsum(['orange_money'])
+        verse_mtn      = _vsum(['mtn_money'])
+        verse_moov     = _vsum(['moov_money'])
+        verse_mobile   = verse_wave + verse_orange + verse_mtn + verse_moov + _vsum(['mobile_money', 'mobile'])
+        verse_carte    = _vsum(['carte_bancaire', 'carte'])
+        verse_virement = _vsum(['virement'])
+        total_verse    = int(vs_qs.aggregate(s=Sum('montant'))['s'] or 0)
+
         solde = total_tx - total_verse
         lignes.append({
             'label': label, 'emoji': emoji,
             'total_tx': total_tx, 'especes': especes,
             'mobile': mobile, 'wave': wave, 'orange': orange, 'mtn': mtn, 'moov': moov,
             'carte': carte, 'virement': virement, 'mixte': mixte,
-            'total_verse': total_verse, 'solde': solde, 'complet': solde <= 0,
+            'total_verse':    total_verse,
+            'verse_especes':  verse_especes,
+            'verse_wave':     verse_wave,
+            'verse_orange':   verse_orange,
+            'verse_mtn':      verse_mtn,
+            'verse_moov':     verse_moov,
+            'verse_mobile':   verse_mobile,
+            'verse_carte':    verse_carte,
+            'verse_virement': verse_virement,
+            'solde': solde, 'complet': solde <= 0,
         })
         grand_total_tx    += total_tx
         grand_total_verse += total_verse
