@@ -1245,7 +1245,11 @@ def sync_centrale(request):
 def api_reconciliation(request):
     """API JSON — état des transactions vs versements par module pour le jour."""
     today = timezone.localdate()
-    data = get_reconciliation_jour(today)
+    session_active = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+    if session_active:
+        data = get_reconciliation_session(session_active)
+    else:
+        data = get_reconciliation_jour(today)
     return JsonResponse({'success': True, 'reconciliation': data})
 
 
