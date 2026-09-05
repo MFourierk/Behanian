@@ -545,7 +545,8 @@ def index(request):
     )
 
     # Flux de caisse (mouvements enregistrés par la caissière, par type et mode)
-    caisse_flux = get_caisse_flux(mouvements)
+    # Exclure les versements CONSOLIDATION (synthétiques, mode especes en dur, non représentatifs)
+    caisse_flux = get_caisse_flux(mouvements.exclude(reference__startswith='CONSOLIDATION'))
 
     # Net disponible en caisse centrale = fond initial + versements reçus - prélèvements - dépenses
     fond_initial = int(session_active.fond_caisse) if session_active else 0
