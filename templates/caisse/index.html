@@ -1460,13 +1460,23 @@ async function syncCentrale(){
 }
 
 // Auto-refresh réconciliation toutes les 30s
+let _nbSessionsConnus = {{ sessions_jour|length }};
 setInterval(rafraichirReconciliation, 30000);
 
 async function rafraichirReconciliation(manuel=false){
   try {
-    const r = await fetch("{% url 'caisse:api_reconciliation' %}");
+    // Conserver le filtre session_id de l'URL si présent
+    const params = new URLSearchParams(window.location.search);
+    const sid = params.get('session_id');
+    const url = "{% url 'caisse:api_reconciliation' %}" + (sid ? `?session_id=${sid}` : '');
+    const r = await fetch(url);
     const d = await r.json();
     if(!d.success) return;
+    // Nouvelle session détectée → recharger la page pour mettre à jour le sélecteur
+    if(d.nb_sessions !== undefined && d.nb_sessions !== _nbSessionsConnus){
+      location.reload();
+      return;
+    }
     const rec = d.reconciliation;
     const table = document.getElementById('tbl-reconciliation');
     if(!table) return;

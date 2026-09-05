@@ -1314,14 +1314,29 @@ def api_autoriser_reouverture(request):
 
 @require_module_access('caisse')
 def api_reconciliation(request):
-    """API JSON — état des transactions vs versements par module pour le jour."""
+    """API JSON — état des transactions vs versements par module pour le jour.
+    Accepte ?session_id=X pour les managers (cohérence avec le sélecteur de session).
+    """
+    from utils.permissions import _is_manager as _chk_manager
     today = timezone.localdate()
     session_active = CaisseSession.objects.filter(user=request.user, is_open=True).first()
     if session_active:
         data = get_reconciliation_session(session_active)
     else:
-        data = get_reconciliation_jour(today)
-    return JsonResponse({'success': True, 'reconciliation': data})
+        is_manager = _chk_manager(request.user) or request.user.is_superuser
+        session_id = request.GET.get('session_id')
+        if is_manager and session_id:
+            try:
+                session_filtre = CaisseSession.objects.get(pk=session_id, opened_at__date=today)
+                data = get_reconciliation_session(session_filtre)
+            except CaisseSession.DoesNotExist:
+                data = get_reconciliation_jour(today)
+        else:
+            data = get_reconciliation_jour(today)
+
+    # Inclure le nombre de sessions du jour pour détecter de nouvelles sessions côté JS
+    nb_sessions = CaisseSession.objects.filter(opened_at__date=today).count()
+    return JsonResponse({'success': True, 'reconciliation': data, 'nb_sessions': nb_sessions})
 
 
 @require_module_access('caisse')
