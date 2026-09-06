@@ -1495,11 +1495,12 @@ async function cloturerCaisse(){
   });
   if(d.success){
     if(d.logout && d.session_id){
-      // Naviguer la fenêtre déjà ouverte vers le rapport Z
+      // Naviguer la fenêtre déjà ouverte vers le rapport Z puis la mettre au premier plan
       if(rapportWin && !rapportWin.closed){
         rapportWin.location.href = '/caisse/rapport/' + d.session_id + '/?auto_print=1';
+        rapportWin.focus();
       }
-      _afficherOverlayDeconnexion(d.message);
+      _afficherOverlayDeconnexion(d.message, rapportWin);
     } else {
       if(rapportWin) rapportWin.close();
       toast('✅ '+d.message,'success');
@@ -1511,8 +1512,8 @@ async function cloturerCaisse(){
   }
 }
 
-function _afficherOverlayDeconnexion(msg){
-  var secs = 10;
+function _afficherOverlayDeconnexion(msg, rapportWin){
+  var secs = 30;
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;color:#fff;text-align:center;padding:30px';
   overlay.innerHTML = `
@@ -1520,13 +1521,17 @@ function _afficherOverlayDeconnexion(msg){
     <div style="font-size:22px;font-weight:800;color:#34d399">Caisse clôturée avec succès</div>
     <div style="font-size:14px;color:#94a3b8;max-width:480px;line-height:1.6">${msg}</div>
     <div style="background:#1e3a5f;border-radius:14px;padding:20px 32px;margin-top:8px">
-      <div style="font-size:13px;color:#93c5fd;margin-bottom:8px">🖨️ Le rapport s'est ouvert dans un nouvel onglet pour impression (2 copies)</div>
+      <div style="font-size:13px;color:#93c5fd;margin-bottom:12px">🖨️ Le rapport s'est ouvert dans un nouvel onglet — imprimez-le avant de vous déconnecter</div>
+      <button id="btn-voir-rapport" onclick="if(window._rapportClotureWin && !window._rapportClotureWin.closed){window._rapportClotureWin.focus();}else{alert('Le rapport est dans un autre onglet de votre navigateur.');}" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">
+        🖨️ Voir le rapport
+      </button>
       <div style="font-size:13px;color:#fca5a5">Déconnexion automatique dans <strong id="cloture-cpt">${secs}</strong> secondes…</div>
     </div>
     <button onclick="window.location.href='/users/logout/'" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer">
       Se déconnecter maintenant
     </button>
   `;
+  window._rapportClotureWin = rapportWin;
   document.body.appendChild(overlay);
   var timer = setInterval(function(){
     secs--;
