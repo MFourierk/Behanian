@@ -841,6 +841,11 @@ def cloturer_caisse(request):
         prelev    = _dec(data.get('prelevement_banque', 0))
         banque    = data.get('banque', '')
         notes     = data.get('notes', '')
+        try:
+            billetage_raw  = data.get('billetage', {})
+            billetage_data = {int(k): int(v) for k, v in billetage_raw.items() if int(v or 0) > 0}
+        except (ValueError, TypeError, AttributeError):
+            billetage_data = {}
 
         stats = get_stats_session(session)
 
@@ -868,6 +873,7 @@ def cloturer_caisse(request):
         session.solde_theorique    = solde_th
         session.ecart              = ecart
         session.notes              = notes
+        session.billetage_json     = billetage_data or None
         session.save()
 
         # Enregistrer le prélèvement banque si > 0
@@ -1332,6 +1338,14 @@ def rapport_caisse(request, session_id=None):
     recettes_nettes = stats['total'] - stats['depenses']
     nouveau_fond    = int(session.fond_caisse) + recettes_nettes - declared_total
 
+    # Billetage détaillé : toutes les coupures standards, avec quantité si disponible
+    COUPURES = [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5]
+    billet_raw = session.billetage_json or {}
+    billetage_lignes = []
+    for c in COUPURES:
+        nb = billet_raw.get(c) or billet_raw.get(str(c)) or 0
+        billetage_lignes.append({'coupure': c, 'quantite': nb, 'sous_total': c * nb})
+
     auto_print = request.GET.get('auto_print', '0')
 
     return render(request, 'caisse/rapport.html', {
@@ -1359,6 +1373,7 @@ def rapport_caisse(request, session_id=None):
         'ecart_mobile':          ecart_mobile,
         'ecart_total':           ecart_total,
         'auto_print':            auto_print,
+        'billetage_lignes':      billetage_lignes,
     })
 
 

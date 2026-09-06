@@ -53,6 +53,9 @@ class CaisseSession(models.Model):
     declared_mtn    = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
     declared_moov   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
 
+    # Détail du billetage espèces saisi à la clôture {coupure: quantité}
+    billetage_json  = models.JSONField(null=True, blank=True)
+
     # Prélèvement banque effectué lors de la clôture
     prelevement_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
 

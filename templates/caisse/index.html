@@ -1574,6 +1574,12 @@ async function cloturerCaisse(){
   if(rapportWin){
     rapportWin.document.write('<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4f8"><div style="text-align:center"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:16px;color:#1a2535;font-weight:600">Clôture en cours…</div><div style="font-size:13px;color:#64748b;margin-top:8px">Le rapport Z s\'ouvrira automatiquement.</div></div></body></html>');
   }
+  // Collecter le détail du billetage {coupure: quantité}
+  const billetage = {};
+  document.querySelectorAll('.billet-row').forEach(row => {
+    const nb = parseInt(row.querySelector('.billet-nb').value) || 0;
+    if(nb > 0) billetage[row.dataset.val] = nb;
+  });
   const d = await post("{% url 'caisse:cloturer' %}", {
     fond_reel:          document.getElementById('cl_fond_reel').value||0,
     mobile_wave:        document.getElementById('cl_wave').value||0,
@@ -1583,6 +1589,7 @@ async function cloturerCaisse(){
     prelevement_banque: document.getElementById('cl_prelev').value||0,
     banque:             document.getElementById('cl_banque').value,
     notes:              document.getElementById('cl_notes').value,
+    billetage:          billetage,
   });
   if(d.success){
     if(d.logout && d.session_id){
