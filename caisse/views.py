@@ -1323,22 +1323,24 @@ def rapport_caisse(request, session_id=None):
     declared_moov         = int(session.declared_moov)
     declared_mobile_total = declared_wave + declared_orange + declared_mtn + declared_moov
     declared_especes      = max(0, int(session.fond_caisse_reel) - declared_mobile_total)
-    declared_total        = int(session.fond_caisse_reel)
 
-    # Écarts par mode (théorique système vs déclaré)
-    ecart_especes = declared_especes - stats['especes']
-    ecart_wave    = declared_wave    - stats['wave']
-    ecart_orange  = declared_orange  - stats['orange']
-    ecart_mtn     = declared_mtn     - stats['mtn']
-    ecart_moov    = declared_moov    - stats['moov']
-    ecart_mobile  = declared_mobile_total - stats['mobile']
-    ecart_total   = declared_total        - stats['total']
-
-    # Récapitulatif final
-    recettes_nettes = stats['total'] - stats['depenses']
     # Mobile effectif : déclaré par opérateur si nouveau système, sinon stats app
     # (les versements module attestent que l'argent a bien été remis physiquement)
     effective_mobile = declared_mobile_total if declared_mobile_total > 0 else int(stats['mobile'])
+
+    # declared_total = ce que la caissière a réellement remis (espèces + mobile effectif)
+    declared_total = declared_especes + effective_mobile
+
+    # Écarts par mode (théorique système vs déclaré)
+    ecart_especes = declared_especes    - stats['especes']
+    ecart_wave    = declared_wave       - stats['wave']
+    ecart_orange  = declared_orange     - stats['orange']
+    ecart_mtn     = declared_mtn        - stats['mtn']
+    ecart_moov    = declared_moov       - stats['moov']
+    ecart_mobile  = effective_mobile    - stats['mobile']
+    ecart_total   = declared_total      - stats['total']
+
+    recettes_nettes = stats['total'] - stats['depenses']
     # Nouveau solde initial = Solde veille (fond_caisse remis à l'ouverture)
     #                        + Espèces déclarées + Mobile reçu − Prélèvement banque
     nouveau_fond = int(session.fond_caisse) + declared_especes + effective_mobile - int(session.prelevement_banque)

@@ -201,7 +201,9 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
       <thead><tr><th>Moyen de paiement</th><th>Montant</th></tr></thead>
       <tbody>
         <tr><td>💵 Espèces</td><td>{{ declared_especes|montant }}</td></tr>
-        {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>{% endif %}
+        {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>
+        {% elif effective_mobile and not declared_mobile_total %}<tr><td>📱 Mobile Money (versements)</td><td>{{ effective_mobile|montant }}</td></tr>
+        {% endif %}
         {% if declared_orange %}<tr><td>📱 Orange</td>      <td>{{ declared_orange|montant }}</td></tr>{% endif %}
         {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
         {% if declared_moov %}  <tr><td>📱 Flooz</td>       <td>{{ declared_moov|montant }}</td></tr>{% endif %}
@@ -326,7 +328,7 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
       </tbody>
       <tfoot>
         <tr>
-          <td>TOTAL MOBILE</td><td>{{ stats.mobile|montant }}</td><td>{{ declared_mobile_total|montant }}</td>
+          <td>TOTAL MOBILE</td><td>{{ stats.mobile|montant }}</td><td>{{ effective_mobile|montant }}</td>
           <td style="color:{% if ecart_mobile < 0 %}#fca5a5{% elif ecart_mobile > 0 %}#fde68a{% else %}#86efac{% endif %}">
             {% if ecart_mobile > 0 %}+{% endif %}{{ ecart_mobile|montant }}
           </td>
