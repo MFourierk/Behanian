@@ -315,10 +315,12 @@
 
   <!-- KPIs -->
   <div class="kpi-grid">
+    {% if is_manager %}
+    {# Vue manager : KPIs complets avec montants par mode depuis les tickets #}
     <div class="kpi k-or">
-      <div class="klbl">{% if vue_session or is_manager %}Total journée{% else %}Total encaissé{% endif %}</div>
+      <div class="klbl">Total journée</div>
       <div class="kval">{{ stats.total|montant }} F</div>
-      <div class="ksub">{{ stats.nb_tickets }} transaction(s){% if vue_session %} · Session ouverte depuis {{ session_active.opened_at|date:"H:i" }}{% endif %}</div>
+      <div class="ksub">{{ stats.nb_tickets }} transaction(s){% if session_filtre %} · {{ session_filtre.user.get_full_name|default:session_filtre.user.username }}{% endif %}</div>
     </div>
     <div class="kpi k-vert">
       <div class="klbl">Espèces</div>
@@ -335,6 +337,34 @@
       <div class="kval">{{ stats.prelevements|add:stats.depenses|montant }} F</div>
       <div class="ksub">Prél. banque : {{ stats.prelevements|montant }} F · Déc. : {{ stats.depenses|montant }} F<br>Net : {{ stats.net|montant }} F</div>
     </div>
+    {% else %}
+    {# Vue caissière : blind closeout — montants attendus du système masqués #}
+    <div class="kpi k-or">
+      <div class="klbl">Session en cours</div>
+      <div class="kval" style="font-size:18px">{{ session_active.opened_at|date:"H:i" }} → maintenant</div>
+      <div class="ksub">Durée : {{ session_active.duree }}{% if session_active %} · Fond initial : {{ session_active.fond_caisse|montant }} F{% endif %}</div>
+    </div>
+    <div class="kpi k-vert">
+      <div class="klbl">Versements espèces reçus</div>
+      <div class="kval">{{ verse_recu|montant }} F</div>
+      <div class="ksub">Enregistrés dans ma session</div>
+    </div>
+    <div class="kpi k-bleu">
+      <div class="klbl">Modules en attente</div>
+      {% with nb_attente=reconciliation.lignes|length %}
+      <div class="kval" style="font-size:20px">
+        {% for l in reconciliation.lignes %}{% if l.total_verse == 0 and l.total_tx > 0 %}⏳{% endif %}{% endfor %}
+        {% for l in reconciliation.lignes %}{% if l.total_verse > 0 %}✅{% endif %}{% endfor %}
+      </div>
+      {% endwith %}
+      <div class="ksub">Modules ayant versé / en attente</div>
+    </div>
+    <div class="kpi k-rouge">
+      <div class="klbl">Mouvements enregistrés</div>
+      <div class="kval">{{ mouvements|length }}</div>
+      <div class="ksub">Dans ma session · {{ session_active.date_session|date:"d/m/Y" }}</div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- ONGLETS -->
@@ -375,7 +405,8 @@
 
     <div class="cai-dashboard-grid" style="display:grid;grid-template-columns:1fr 320px;gap:16px">
       <div>
-        <!-- CA par module -->
+        <!-- CA par module — managers/admin/directeur uniquement (blind closeout) -->
+        {% if is_manager %}
         <div class="panel">
           <div class="ph"><h3>📊 Recettes par module</h3></div>
           <div class="module-grid">
@@ -389,6 +420,7 @@
             {% endfor %}
           </div>
         </div>
+        {% endif %}
 
         <!-- RÉCONCILIATION TRANSACTIONS vs VERSEMENTS -->
         {% if not attente_session %}
@@ -400,6 +432,45 @@
             </button>
           </div>
           <div style="overflow-x:auto">
+            {% if not is_manager %}
+            {# VUE CAISSIÈRE : blind closeout — montants attendus masqués #}
+            <table class="tbl" id="tbl-reconciliation">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th style="text-align:right">Versements reçus</th>
+                  <th style="text-align:center">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for ligne in reconciliation.lignes %}
+              <tr>
+                <td style="font-weight:600">{{ ligne.emoji }} {{ ligne.label }}</td>
+                <td style="text-align:right;font-family:monospace;font-weight:700;color:{% if ligne.total_verse > 0 %}#16a34a{% else %}var(--muted){% endif %}">
+                  {% if ligne.total_verse > 0 %}{{ ligne.total_verse|montant }} F{% else %}—{% endif %}
+                </td>
+                <td style="text-align:center">
+                  {% if ligne.total_tx == 0 %}
+                    <span style="font-size:11px;color:var(--muted)">— Aucune activité</span>
+                  {% elif ligne.total_verse == 0 %}
+                    <span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>
+                  {% else %}
+                    <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Versement reçu</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr style="background:#f1f5f9;font-weight:700">
+                  <td>TOTAL versements reçus</td>
+                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_total_verse|montant }} F</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+            {% else %}
+            {# VUE MANAGER/ADMIN : tableau complet avec détail modes et soldes #}
             <table class="tbl" id="tbl-reconciliation">
               <thead>
                 <tr>
@@ -519,6 +590,7 @@
                 </tr>
               </tfoot>
             </table>
+            {% endif %}{# fin if is_manager #}
           </div>
           <div style="padding:8px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
             <i class="fas fa-info-circle"></i> "Versé" = montants physiquement remis à la caisse centrale. Enregistrez un versement via le bouton <strong>Mouvement → Versement module</strong>.
@@ -737,6 +809,8 @@
         </span>
       </div>
       <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+      {% if is_manager %}
+        {# Vue manager : toutes les colonnes #}
         <table class="tbl">
           <thead><tr>
             <th style="position:sticky;top:0;background:#f8fafc">N° Ticket</th>
@@ -747,7 +821,6 @@
             <th style="position:sticky;top:0;background:#f8fafc;text-align:right">Montant</th>
             <th style="position:sticky;top:0;background:#f8fafc;text-align:right">Reçu</th>
             <th style="position:sticky;top:0;background:#f8fafc">Opérateur</th>
-            {% if vue_session %}<th style="position:sticky;top:0;background:#f8fafc"></th>{% endif %}
           </tr></thead>
           <tbody>
           {% for t in stats.tickets %}
@@ -760,16 +833,9 @@
             <td style="text-align:right;font-weight:600">{{ t.montant_total|montant }} F</td>
             <td style="text-align:right;color:#16a34a;font-weight:600">{{ t.montant_paye|montant }} F</td>
             <td style="font-size:11px;color:var(--muted)">{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
-            {% if vue_session %}
-            <td style="white-space:nowrap">
-              <button onclick="ouvrirEditionTicket({{ t.pk }},'{{ t.mode_paiement }}',{{ t.montant_paye }},'{{ t.numero }}')"
-                title="Corriger ce ticket"
-                style="background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✏️</button>
-            </td>
-            {% endif %}
           </tr>
           {% empty %}
-          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">{% if vue_session %}Aucune transaction pour ce shift{% else %}Aucune transaction aujourd'hui{% endif %}</td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Aucune transaction aujourd'hui</td></tr>
           {% endfor %}
           </tbody>
           <tfoot>
@@ -780,6 +846,42 @@
             </tr>
           </tfoot>
         </table>
+      {% else %}
+        {# Vue caissière : N° Ticket, Heure, Montant uniquement (blind closeout) #}
+        <table class="tbl">
+          <thead><tr>
+            <th style="position:sticky;top:0;background:#f8fafc">N° Ticket</th>
+            <th style="position:sticky;top:0;background:#f8fafc">Heure</th>
+            <th style="position:sticky;top:0;background:#f8fafc;text-align:right">Montant</th>
+            <th style="position:sticky;top:0;background:#f8fafc"></th>
+          </tr></thead>
+          <tbody>
+          {% for t in stats.tickets %}
+          <tr>
+            <td style="font-family:monospace;font-size:11px">{{ t.numero }}</td>
+            <td style="font-size:11px">{{ t.date_creation|date:"H:i" }}</td>
+            <td style="text-align:right;font-weight:600">{{ t.montant_total|montant }} F</td>
+            <td style="white-space:nowrap">
+              {% if vue_session %}
+              <button onclick="ouvrirEditionTicket({{ t.pk }},'{{ t.mode_paiement }}',{{ t.montant_paye }},'{{ t.numero }}')"
+                title="Corriger ce ticket"
+                style="background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer">✏️</button>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">Aucune transaction enregistrée</td></tr>
+          {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc;font-weight:700">
+              <td colspan="2" style="padding:10px 14px;text-align:right;font-size:12px;text-transform:uppercase">TOTAL ({{ stats.nb_tickets }} tickets)</td>
+              <td style="padding:10px 14px;text-align:right;color:var(--dark)">{{ stats.total|montant }} F</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      {% endif %}
       </div>
     </div>
   </div>
@@ -1247,6 +1349,7 @@
 {% localize off %}
 <script>
 const CSRF = '{{ csrf_token }}';
+const IS_MANAGER = {{ is_manager|lower }}; // contrôle la vue caissière vs manager
 
 function ouvrirModal(id){document.getElementById(id).classList.add('open');}
 function fermerModal(id){document.getElementById(id).classList.remove('open');}
@@ -1378,6 +1481,12 @@ function recalculerBilletage(){
 
 async function cloturerCaisse(){
   if(!confirm('Confirmer la clôture définitive de la caisse centrale ?')) return;
+  // Ouvrir la fenêtre rapport MAINTENANT — on est encore dans le contexte du clic
+  // utilisateur. Après un await, les navigateurs bloquent window.open() comme popup.
+  const rapportWin = window.open('about:blank', '_blank');
+  if(rapportWin){
+    rapportWin.document.write('<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4f8"><div style="text-align:center"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:16px;color:#1a2535;font-weight:600">Clôture en cours…</div><div style="font-size:13px;color:#64748b;margin-top:8px">Le rapport Z s\'ouvrira automatiquement.</div></div></body></html>');
+  }
   const d = await post("{% url 'caisse:cloturer' %}", {
     fond_reel:          document.getElementById('cl_fond_reel').value||0,
     prelevement_banque: document.getElementById('cl_prelev').value||0,
@@ -1386,15 +1495,18 @@ async function cloturerCaisse(){
   });
   if(d.success){
     if(d.logout && d.session_id){
-      // 1. Ouvrir le rapport pour impression (session encore valide)
-      window.open('/caisse/rapport/' + d.session_id + '/?auto_print=1', '_blank');
-      // 2. Afficher overlay de déconnexion avec compte à rebours
+      // Naviguer la fenêtre déjà ouverte vers le rapport Z
+      if(rapportWin && !rapportWin.closed){
+        rapportWin.location.href = '/caisse/rapport/' + d.session_id + '/?auto_print=1';
+      }
       _afficherOverlayDeconnexion(d.message);
     } else {
+      if(rapportWin) rapportWin.close();
       toast('✅ '+d.message,'success');
       setTimeout(()=>location.reload(), 800);
     }
   } else {
+    if(rapportWin) rapportWin.close();
     toast('❌ '+d.error,'error');
   }
 }
@@ -1586,13 +1698,25 @@ async function rafraichirReconciliation(manuel=false){
     // ── Tbody ──────────────────────────────────────────────────────────────
     table.querySelector('tbody').innerHTML = rec.lignes.map(l => {
       const clr = (v, c) => v ? c : '#94a3b8';
+      // ── Vue caissière (blind closeout) : MODULE | VERSÉ | STATUT uniquement ──
+      if(!IS_MANAGER){
+        let badgeC = '';
+        if(l.total_tx === 0)       badgeC = '<span style="font-size:11px;color:#94a3b8">— Aucune activité</span>';
+        else if(l.total_verse===0) badgeC = '<span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>';
+        else                       badgeC = '<span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Versement reçu</span>';
+        return `<tr>
+          <td style="font-weight:600">${l.emoji} ${l.label}</td>
+          <td style="text-align:right;font-family:monospace;font-weight:700;color:${l.total_verse>0?'#16a34a':'#94a3b8'}">${l.total_verse>0?fmtF(l.total_verse):'—'}</td>
+          <td style="text-align:center">${badgeC}</td>
+        </tr>`;
+      }
+      // ── Vue manager : tableau complet ────────────────────────────────────────
       const couleurSolde = l.solde <= 0 ? '#16a34a' : (l.total_verse === 0 ? '#dc2626' : '#d97706');
       let badge = '';
       if(l.total_tx === 0)      badge = '<span style="font-size:11px;color:#94a3b8">— Aucune activité</span>';
       else if(l.complet)        badge = '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>';
       else if(l.total_verse===0)badge = '<span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>';
       else                      badge = '<span style="background:#fef3c7;color:#d97706;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">🔄 Partiel</span>';
-      // Popover versements par mode
       const fv = v => parseInt(v||0).toLocaleString('fr-FR') + ' F';
       const vr = (v,lbl,clr) => v ? `<div class="verse-row"><span style="color:${clr}">${lbl}</span><strong style="color:${clr}">${fv(v)}</strong></div>` : '';
       let verseHtml = l.total_verse > 0
@@ -1630,22 +1754,29 @@ async function rafraichirReconciliation(manuel=false){
     }).join('');
 
     // ── Tfoot ──────────────────────────────────────────────────────────────
-    const couleurGrandSolde = rec.grand_solde <= 0 ? '#16a34a' : '#dc2626';
-    table.querySelector('tfoot tr').innerHTML = `
-      <td style="font-weight:700">TOTAL</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_especes)}</td>
-      ${showWave   ? `<td style="text-align:right;font-family:monospace;color:#1d4ed8;font-weight:700">${fmtF(rec.grand_wave)}</td>`   : ''}
-      ${showOrange ? `<td style="text-align:right;font-family:monospace;color:#c2410c;font-weight:700">${fmtF(rec.grand_orange)}</td>` : ''}
-      ${showMtn    ? `<td style="text-align:right;font-family:monospace;color:#854d0e;font-weight:700">${fmtF(rec.grand_mtn)}</td>`    : ''}
-      ${showMoov   ? `<td style="text-align:right;font-family:monospace;color:#0f766e;font-weight:700">${fmtF(rec.grand_moov)}</td>`   : ''}
-      ${showMobile ? `<td style="text-align:right;font-family:monospace;color:#7c3aed;font-weight:700">${fmtF(rec.grand_mobile)}</td>` : ''}
-      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_carte)}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_virement)}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_mixte)}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(rec.grand_total_tx)}</td>
-      <td style="text-align:right;font-family:monospace;color:#16a34a;font-weight:700">${fmtF(rec.grand_total_verse)}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurGrandSolde}">${fmtF(rec.grand_solde)}</td>
-      <td></td>`;
+    if(!IS_MANAGER){
+      table.querySelector('tfoot tr').innerHTML = `
+        <td style="font-weight:700">TOTAL versements reçus</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:#16a34a">${fmtF(rec.grand_total_verse)}</td>
+        <td></td>`;
+    } else {
+      const couleurGrandSolde = rec.grand_solde <= 0 ? '#16a34a' : '#dc2626';
+      table.querySelector('tfoot tr').innerHTML = `
+        <td style="font-weight:700">TOTAL</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_especes)}</td>
+        ${showWave   ? `<td style="text-align:right;font-family:monospace;color:#1d4ed8;font-weight:700">${fmtF(rec.grand_wave)}</td>`   : ''}
+        ${showOrange ? `<td style="text-align:right;font-family:monospace;color:#c2410c;font-weight:700">${fmtF(rec.grand_orange)}</td>` : ''}
+        ${showMtn    ? `<td style="text-align:right;font-family:monospace;color:#854d0e;font-weight:700">${fmtF(rec.grand_mtn)}</td>`    : ''}
+        ${showMoov   ? `<td style="text-align:right;font-family:monospace;color:#0f766e;font-weight:700">${fmtF(rec.grand_moov)}</td>`   : ''}
+        ${showMobile ? `<td style="text-align:right;font-family:monospace;color:#7c3aed;font-weight:700">${fmtF(rec.grand_mobile)}</td>` : ''}
+        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_carte)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_virement)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_mixte)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(rec.grand_total_tx)}</td>
+        <td style="text-align:right;font-family:monospace;color:#16a34a;font-weight:700">${fmtF(rec.grand_total_verse)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurGrandSolde}">${fmtF(rec.grand_solde)}</td>
+        <td></td>`;
+    }
 
     if(manuel) toast('✅ Réconciliation actualisée', 'success');
   } catch(e){ if(manuel) toast('❌ Erreur actualisation', 'error'); }

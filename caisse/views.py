@@ -625,6 +625,7 @@ def index(request):
         'net_caisse_central': net_caisse_central,
         'caisse_flux': caisse_flux,
         'session_filtre': session_filtre,
+        'verse_recu': verse_recu,
     }
     return render(request, 'caisse/index.html', context)
 
