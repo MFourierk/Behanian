@@ -40,12 +40,18 @@ class CaisseSession(models.Model):
     fond_caisse_reel= models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                                            help_text="Fond compté physiquement à la clôture")
 
-    # Totaux calculés à la clôture
+    # Totaux calculés à la clôture (encaissements système)
     total_especes   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
     total_mobile    = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
     total_carte     = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
     total_virement  = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
     total_general   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+
+    # Montants déclarés par la caissière à la clôture (par opérateur mobile)
+    declared_wave   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    declared_orange = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    declared_mtn    = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+    declared_moov   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
 
     # Prélèvement banque effectué lors de la clôture
     prelevement_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))

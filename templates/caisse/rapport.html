@@ -1,5 +1,5 @@
-﻿{% extends 'print_base.html' %}
-{% block doc_title %}Rapport de Caisse — {{ session.opened_at|date:"d/m/Y" }}{% endblock %}
+{% extends 'print_base.html' %}
+{% block doc_title %}Rapport de Clôture — {{ session.numero_session }}{% endblock %}
 
 {% block doc_actions %}
 {% if auto_print == "1" %}
@@ -8,7 +8,7 @@
 </button>
 {% else %}
 <a href="{% url 'caisse:rapport_session_excel' session.pk %}" class="btn-doc" style="background:#16a34a;color:#fff;">
-  <i class="fas fa-file-excel"></i> Télécharger Excel
+  <i class="fas fa-file-excel"></i> Excel
 </a>
 <button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
 <button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
@@ -16,6 +16,97 @@
 {% endblock %}
 
 {% block doc_extra_head %}
+<style>
+/* ── Rapport Clôture — styles spécifiques ── */
+.rpt-title-band{
+  background:#1a2535;color:#fff;
+  padding:14px 20px;border-radius:4px 4px 0 0;
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:0;
+}
+.rpt-title-band .t1{font-size:18px;font-weight:900;letter-spacing:.5px}
+.rpt-title-band .t2{font-size:11px;color:#94a3b8;margin-top:2px}
+.rpt-badge-open{background:#16a34a;color:#fff;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700}
+.rpt-badge-closed{background:#dc2626;color:#fff;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700}
+
+.rpt-meta-bar{
+  background:#f1f5f9;border:1px solid #e2e8f0;border-top:none;
+  display:flex;flex-wrap:wrap;gap:0;margin-bottom:16px;
+}
+.rpt-meta-cell{
+  flex:1;min-width:100px;padding:8px 14px;
+  border-right:1px solid #e2e8f0;
+}
+.rpt-meta-cell:last-child{border-right:none}
+.rpt-meta-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:2px}
+.rpt-meta-val{font-size:13px;font-weight:700;color:#1a2535}
+
+.rpt-section{margin-bottom:16px;page-break-inside:avoid}
+.rpt-section-title{
+  background:#1a2535;color:#fff;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  padding:6px 12px;margin-bottom:0;
+}
+.rpt-section-title .rpt-num{
+  display:inline-block;background:#dc2626;border-radius:2px;
+  padding:1px 6px;margin-right:8px;font-size:10px;
+}
+
+.rpt-table{width:100%;border-collapse:collapse;font-size:11px}
+.rpt-table th{
+  background:#2d3f55;color:#fff;
+  padding:6px 8px;text-align:right;font-weight:600;font-size:10px;
+  white-space:nowrap;
+}
+.rpt-table th:first-child{text-align:left}
+.rpt-table td{padding:5px 8px;border-bottom:1px solid #f1f5f9;text-align:right}
+.rpt-table td:first-child{text-align:left;font-weight:600}
+.rpt-table tr:nth-child(even) td{background:#f8fafc}
+.rpt-table tfoot td{
+  background:#1a2535!important;color:#fff;
+  padding:7px 8px;font-weight:700;font-size:11px;text-align:right;
+}
+.rpt-table tfoot td:first-child{text-align:left}
+.rpt-table .ecart-ok{color:#16a34a;font-weight:700}
+.rpt-table .ecart-bad{color:#dc2626;font-weight:700}
+.rpt-table .ecart-warn{color:#d97706;font-weight:700}
+
+.rpt-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.rpt-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+
+.rpt-recap-table{width:100%;border-collapse:collapse;font-size:12px}
+.rpt-recap-table td{padding:7px 12px;border-bottom:1px solid #f1f5f9}
+.rpt-recap-table td:last-child{text-align:right;font-weight:700}
+.rpt-recap-table .rr-total td{background:#fef9c3;font-weight:800;font-size:13px;color:#92400e}
+
+.rpt-nouveau-fond{
+  background:#1a2535;color:#fff;
+  padding:14px 18px;border-radius:4px;
+  text-align:center;
+}
+.rpt-nouveau-fond .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;margin-bottom:4px}
+.rpt-nouveau-fond .val{font-size:26px;font-weight:900;color:#fbbf24;letter-spacing:1px}
+.rpt-nouveau-fond .sub{font-size:10px;color:#64748b;margin-top:4px}
+
+.rpt-sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:20px}
+.rpt-sig-box{border:1px solid #e2e8f0;border-radius:4px;padding:10px 14px;text-align:center}
+.rpt-sig-box .sig-role{font-size:10px;font-weight:700;text-transform:uppercase;color:#1a2535;margin-bottom:20px}
+.rpt-sig-box .sig-line{border-bottom:1px solid #1a2535;margin:0 10px 6px}
+.rpt-sig-box .sig-name{font-size:10px;color:#64748b}
+.rpt-sig-box .sig-date{font-size:9px;color:#94a3b8;margin-top:2px}
+
+.rpt-obs-box{border:1px solid #e2e8f0;border-radius:4px;padding:12px;background:#fffbeb;min-height:60px;font-size:11px;color:#1a2535}
+.rpt-obs-title{font-size:10px;font-weight:700;text-transform:uppercase;color:#d97706;margin-bottom:6px}
+
+.badge-ok{background:#dcfce7;color:#15803d;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700}
+.badge-bad{background:#fee2e2;color:#b91c1c;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700}
+.badge-warn{background:#fef3c7;color:#d97706;border-radius:3px;padding:2px 6px;font-size:9px;font-weight:700}
+
+@media print{
+  .rpt-grid-2,.rpt-grid-3{grid-template-columns:1fr 1fr!important}
+  .rpt-section{page-break-inside:avoid}
+}
+</style>
 {% if auto_print == "1" %}
 <style>
 #banniere-auto-print{
@@ -24,33 +115,18 @@
   font-size:13px;border-bottom:3px solid #dc2626;
   position:sticky;top:0;z-index:999;
 }
-#banniere-auto-print .cnt{font-size:22px;font-weight:900;color:#fbbf24;min-width:32px;text-align:center}
 @keyframes pulse-red{0%,100%{opacity:1}50%{opacity:.6}}
 @media print{#banniere-auto-print{display:none!important}}
 </style>
 <script>
 var _copieImprimee = 0;
-var _countdownTimer;
-
-function demarrerCompteur(secs){
-  var el = document.getElementById('cpt-secs');
-  if(!el) return;
-  el.textContent = secs;
-  _countdownTimer = setInterval(function(){
-    secs--;
-    el.textContent = secs;
-    if(secs <= 0){ clearInterval(_countdownTimer); }
-  }, 1000);
-}
-
 function imprimerDeuxCopies(){
   document.getElementById('btn-imprimer-auto').disabled = true;
-  document.getElementById('btn-imprimer-auto').textContent = '⏳ Impression en cours…';
+  document.getElementById('btn-imprimer-auto').textContent = '⏳ Impression…';
   _copieImprimee = 0;
   window.addEventListener('afterprint', aprèsImpression);
   window.print();
 }
-
 function aprèsImpression(){
   _copieImprimee++;
   if(_copieImprimee < 2){
@@ -58,16 +134,12 @@ function aprèsImpression(){
   } else {
     window.removeEventListener('afterprint', aprèsImpression);
     var b = document.getElementById('banniere-msg');
-    if(b){ b.innerHTML = '✅ <strong>2 copies imprimées.</strong> Vous pouvez fermer cette fenêtre.'; }
+    if(b) b.innerHTML = '✅ <strong>2 copies imprimées.</strong>';
     var btn = document.getElementById('btn-imprimer-auto');
-    if(btn){ btn.style.display='none'; }
+    if(btn) btn.style.display='none';
   }
 }
-
-window.addEventListener('DOMContentLoaded', function(){
-  // Lancer auto-impression après 2s (temps de rendu de la page)
-  setTimeout(imprimerDeuxCopies, 2000);
-});
+window.addEventListener('DOMContentLoaded', function(){ setTimeout(imprimerDeuxCopies, 2000); });
 </script>
 {% endif %}
 {% endblock %}
@@ -75,107 +147,395 @@ window.addEventListener('DOMContentLoaded', function(){
 {% block doc_content %}
 {% if auto_print == "1" %}
 <div id="banniere-auto-print">
-  <div style="display:flex;align-items:center;gap:12px;flex:1">
-    <span style="font-size:20px">🖨️</span>
-    <span id="banniere-msg">Impression automatique en cours — veuillez confirmer dans la boîte de dialogue d'impression (<strong>2 copies</strong>)</span>
-  </div>
-  <button onclick="window.close()" style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">✕ Fermer</button>
+  <span id="banniere-msg">🖨️ Impression automatique en cours — confirmez dans la boîte de dialogue (<strong>2 copies</strong>)</span>
+  <button onclick="window.close()" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">✕ Fermer</button>
 </div>
 {% endif %}
-<div class="doc-title-band">
+
+<!-- ══ EN-TÊTE ══════════════════════════════════════════════════════════ -->
+<div class="rpt-title-band">
   <div>
-    <div class="doc-title-text">RAPPORT DE CAISSE</div>
-    <div class="doc-title-sub">Complexe Hôtelier Behanian · {{ session.opened_at|date:"d/m/Y" }}</div>
+    <div class="t1">RAPPORT DE CLÔTURE DE CAISSE</div>
+    <div class="t2">Session : {{ session.numero_session }} &nbsp;|&nbsp; Complexe Hôtelier Behanian</div>
   </div>
-  <div class="doc-title-right">
-    <span class="badge badge-{% if session.is_open %}en_attente{% else %}validee{% endif %}">{% if session.is_open %}En cours{% else %}Clôturée{% endif %}</span>
-    <span class="doc-ref">{{ session.opened_at|date:"d/m/Y" }}</span>
-  </div>
-</div>
-
-<!-- SESSION -->
-<div class="meta-grid cols-2">
-  <div class="meta-box">
-    <div class="meta-box-title">Session de caisse</div>
-    <div class="meta-row"><span class="meta-lbl">Caissier</span><span class="meta-val bold">{{ session.user.get_full_name|default:session.user.username }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Ouverture</span><span class="meta-val">{{ session.opened_at|date:"d/m/Y H:i" }}</span></div>
-    {% if session.closed_at %}<div class="meta-row"><span class="meta-lbl">Clôture</span><span class="meta-val">{{ session.closed_at|date:"d/m/Y H:i" }}</span></div>{% endif %}
-    <div class="meta-row"><span class="meta-lbl">Durée</span><span class="meta-val">{{ session.duree }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Fond de caisse</span><span class="meta-val">{{ session.fond_caisse|montant }} FCFA</span></div>
-  </div>
-  <div class="meta-box">
-    <div class="meta-box-title">Recettes modules (théorique)</div>
-    <div class="meta-row"><span class="meta-lbl">Total généré</span><span class="meta-val bold" style="color:#1d4ed8">{{ stats.total|montant }} FCFA</span></div>
-    <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Espèces</span><span class="meta-val">{{ stats.especes|montant }} FCFA</span></div>
-    {% if stats.par_mobile %}
-      {% for lbl, mt, clr, badge in stats.par_mobile %}
-      <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ {{ lbl }}</span><span class="meta-val">{{ mt|montant }} FCFA</span></div>
-      {% endfor %}
-      <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Mobile Money (total)</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
-    {% else %}
-    <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Mobile Money</span><span class="meta-val">{{ stats.mobile|montant }} FCFA</span></div>
-    {% endif %}
-    <div class="meta-row"><span class="meta-lbl" style="padding-left:8px">↳ Carte bancaire</span><span class="meta-val">{{ stats.carte|montant }} FCFA</span></div>
-    <div class="meta-row" style="margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px"><span class="meta-lbl bold">Versements reçus</span><span class="meta-val bold" style="color:{% if reconciliation.grand_total_verse > 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ reconciliation.grand_total_verse|montant }} FCFA</span></div>
+  <div style="text-align:right">
+    <span class="{% if session.is_open %}rpt-badge-open{% else %}rpt-badge-closed{% endif %}">
+      {% if session.is_open %}OUVERTE{% else %}CLÔTURÉE{% endif %}
+    </span>
   </div>
 </div>
 
-<!-- THÉORIQUE vs VERSEMENTS PAR MODULE -->
-<div class="content-section">
-  <div class="section-title">Détail par module — Théorique vs Versements</div>
-  <table class="doc-table">
+<!-- Barre de méta-informations -->
+<div class="rpt-meta-bar">
+  <div class="rpt-meta-cell">
+    <div class="rpt-meta-lbl">Caissière</div>
+    <div class="rpt-meta-val">{{ session.user.get_full_name|default:session.user.username }}</div>
+  </div>
+  <div class="rpt-meta-cell">
+    <div class="rpt-meta-lbl">Date</div>
+    <div class="rpt-meta-val">{{ session.opened_at|date:"d/m/Y" }}</div>
+  </div>
+  <div class="rpt-meta-cell">
+    <div class="rpt-meta-lbl">Ouverture</div>
+    <div class="rpt-meta-val">{{ session.opened_at|date:"H:i" }}</div>
+  </div>
+  <div class="rpt-meta-cell">
+    <div class="rpt-meta-lbl">Clôture</div>
+    <div class="rpt-meta-val">{{ session.closed_at|date:"H:i"|default:"—" }}</div>
+  </div>
+  <div class="rpt-meta-cell">
+    <div class="rpt-meta-lbl">Durée</div>
+    <div class="rpt-meta-val">{{ session.duree }}</div>
+  </div>
+  <div class="rpt-meta-cell" style="background:#fff8e1">
+    <div class="rpt-meta-lbl">Solde initial / Fond de caisse</div>
+    <div class="rpt-meta-val" style="color:#d97706">{{ session.fond_caisse|montant }} FCFA</div>
+  </div>
+</div>
+
+<!-- ══ 1. ENCAISSEMENTS THÉORIQUES ══════════════════════════════════════ -->
+<div class="rpt-section">
+  <div class="rpt-section-title"><span class="rpt-num">1</span>ENCAISSEMENTS THÉORIQUES — TRANSACTIONS DE L'APPLICATION</div>
+  <table class="rpt-table">
     <thead>
       <tr>
-        <th>Module</th>
-        <th class="r">Montant théorique</th>
-        <th class="r">Versé en caisse</th>
-        <th class="r">Écart</th>
+        <th style="min-width:90px">Module</th>
+        <th>💵 Espèces</th>
+        {% if reconciliation.grand_wave %}<th style="color:#93c5fd">📱 Wave</th>{% endif %}
+        {% if reconciliation.grand_orange %}<th style="color:#fdba74">📱 Orange</th>{% endif %}
+        {% if reconciliation.grand_mtn %}<th style="color:#fde68a">📱 MTN MoMo</th>{% endif %}
+        {% if reconciliation.grand_moov %}<th style="color:#6ee7b7">📱 Moov</th>{% endif %}
+        {% if reconciliation.grand_carte %}<th>💳 Carte</th>{% endif %}
+        {% if reconciliation.grand_virement %}<th>🏦 Virement</th>{% endif %}
+        <th style="background:#374151">TOTAL</th>
       </tr>
     </thead>
     <tbody>
-    {% for ligne in reconciliation.lignes %}
-    {% if ligne.total_tx or ligne.total_verse %}
+    {% for ligne in reconciliation.lignes %}{% if ligne.total_tx > 0 %}
     <tr>
-      <td class="bold">{{ ligne.emoji }} {{ ligne.label }}</td>
-      <td class="r">{{ ligne.total_tx|montant }} FCFA</td>
-      <td class="r" style="color:#16a34a">{{ ligne.total_verse|montant }} FCFA</td>
-      <td class="r" style="color:{% if ligne.solde > 0 %}#dc2626{% elif ligne.solde < 0 %}#d97706{% else %}#15803d{% endif %};font-weight:700">
-        {% if ligne.solde > 0 %}-{{ ligne.solde|montant }}{% elif ligne.solde < 0 %}+{{ ligne.solde|montant }}{% else %}0{% endif %} FCFA
-        {% if ligne.solde > 0 %}<span style="font-size:8px;font-weight:400"> (reste à verser)</span>{% elif ligne.complet %} ✓{% endif %}
-      </td>
+      <td>{{ ligne.emoji }} {{ ligne.label }}</td>
+      <td>{% if ligne.especes %}{{ ligne.especes|montant }}{% else %}—{% endif %}</td>
+      {% if reconciliation.grand_wave %}<td>{% if ligne.wave %}{{ ligne.wave|montant }}{% else %}—{% endif %}</td>{% endif %}
+      {% if reconciliation.grand_orange %}<td>{% if ligne.orange %}{{ ligne.orange|montant }}{% else %}—{% endif %}</td>{% endif %}
+      {% if reconciliation.grand_mtn %}<td>{% if ligne.mtn %}{{ ligne.mtn|montant }}{% else %}—{% endif %}</td>{% endif %}
+      {% if reconciliation.grand_moov %}<td>{% if ligne.moov %}{{ ligne.moov|montant }}{% else %}—{% endif %}</td>{% endif %}
+      {% if reconciliation.grand_carte %}<td>{% if ligne.carte %}{{ ligne.carte|montant }}{% else %}—{% endif %}</td>{% endif %}
+      {% if reconciliation.grand_virement %}<td>{% if ligne.virement %}{{ ligne.virement|montant }}{% else %}—{% endif %}</td>{% endif %}
+      <td style="font-weight:700">{{ ligne.total_tx|montant }}</td>
     </tr>
-    {% endif %}
-    {% empty %}
-    <tr><td colspan="4" style="text-align:center;color:#8a9ab0">Aucune donnée</td></tr>
-    {% endfor %}
+    {% endif %}{% endfor %}
     </tbody>
     <tfoot>
       <tr>
-        <td class="total-label">TOTAL</td>
-        <td class="total-val">{{ reconciliation.grand_total_tx|montant }} FCFA</td>
-        <td class="total-val" style="color:#16a34a">{{ reconciliation.grand_total_verse|montant }} FCFA</td>
-        <td class="total-val" style="color:{% if reconciliation.grand_solde > 0 %}#dc2626{% else %}#15803d{% endif %}">
-          {% if reconciliation.grand_solde > 0 %}-{{ reconciliation.grand_solde|montant }}{% else %}0{% endif %} FCFA
-        </td>
+        <td>TOTAL THÉORIQUE</td>
+        <td>{{ reconciliation.grand_especes|montant }}</td>
+        {% if reconciliation.grand_wave %}<td>{{ reconciliation.grand_wave|montant }}</td>{% endif %}
+        {% if reconciliation.grand_orange %}<td>{{ reconciliation.grand_orange|montant }}</td>{% endif %}
+        {% if reconciliation.grand_mtn %}<td>{{ reconciliation.grand_mtn|montant }}</td>{% endif %}
+        {% if reconciliation.grand_moov %}<td>{{ reconciliation.grand_moov|montant }}</td>{% endif %}
+        {% if reconciliation.grand_carte %}<td>{{ reconciliation.grand_carte|montant }}</td>{% endif %}
+        {% if reconciliation.grand_virement %}<td>{{ reconciliation.grand_virement|montant }}</td>{% endif %}
+        <td style="color:#fbbf24">{{ reconciliation.grand_total_tx|montant }}</td>
       </tr>
     </tfoot>
   </table>
 </div>
 
-<!-- JOURNAL MOUVEMENTS -->
+<!-- ══ 2 & 3 — VERSEMENTS + ÉCARTS (côte à côte) ═════════════════════ -->
+<div class="rpt-grid-2">
+
+  <!-- Section 2 : Versements déclarés par la caissière -->
+  <div class="rpt-section" style="margin-bottom:0">
+    <div class="rpt-section-title"><span class="rpt-num">2</span>VERSEMENTS / DÉCLARATIONS DE LA CAISSIÈRE</div>
+    <table class="rpt-table">
+      <thead>
+        <tr>
+          <th>Moyen de paiement</th>
+          <th>Montant</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>💵 Espèces (billetage)</td><td>{{ declared_especes|montant }}</td></tr>
+        {% if declared_wave %}<tr><td>📱 Wave</td><td>{{ declared_wave|montant }}</td></tr>{% endif %}
+        {% if declared_orange %}<tr><td>📱 Orange Money</td><td>{{ declared_orange|montant }}</td></tr>{% endif %}
+        {% if declared_mtn %}<tr><td>📱 MTN MoMo</td><td>{{ declared_mtn|montant }}</td></tr>{% endif %}
+        {% if declared_moov %}<tr><td>📱 Moov Money</td><td>{{ declared_moov|montant }}</td></tr>{% endif %}
+        {% if stats.carte %}<tr><td>💳 Carte</td><td>{{ stats.carte|montant }}</td></tr>{% endif %}
+        {% if stats.virement %}<tr><td>🏦 Virement</td><td>{{ stats.virement|montant }}</td></tr>{% endif %}
+      </tbody>
+      <tfoot>
+        <tr><td>TOTAL</td><td style="color:#fbbf24">{{ declared_total|montant }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Section 3 : Écart théorique vs réel -->
+  <div class="rpt-section" style="margin-bottom:0">
+    <div class="rpt-section-title"><span class="rpt-num">3</span>ÉCART — THÉORIQUE VS RÉEL</div>
+    <table class="rpt-table">
+      <thead>
+        <tr><th>Mode</th><th>Théorique</th><th>Déclaré</th><th>Écart</th><th>Statut</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>💵 Espèces</td>
+          <td>{{ stats.especes|montant }}</td>
+          <td>{{ declared_especes|montant }}</td>
+          <td class="{% if ecart_especes < 0 %}ecart-bad{% elif ecart_especes > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">
+            {% if ecart_especes > 0 %}+{% endif %}{{ ecart_especes|montant }}
+          </td>
+          <td>{% if ecart_especes == 0 %}<span class="badge-ok">✓ OK</span>{% elif ecart_especes < 0 %}<span class="badge-bad">⚠ MANQUANT</span>{% else %}<span class="badge-warn">⚠ EXCÉDENT</span>{% endif %}</td>
+        </tr>
+        {% if stats.wave or declared_wave %}
+        <tr>
+          <td>📱 Wave</td>
+          <td>{{ stats.wave|montant }}</td>
+          <td>{{ declared_wave|montant }}</td>
+          <td class="{% if ecart_wave < 0 %}ecart-bad{% elif ecart_wave > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">
+            {% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}
+          </td>
+          <td>{% if ecart_wave == 0 %}<span class="badge-ok">✓ OK</span>{% elif ecart_wave < 0 %}<span class="badge-bad">⚠ ÉCART</span>{% else %}<span class="badge-warn">⚠ ÉCART</span>{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% if stats.orange or declared_orange %}
+        <tr>
+          <td>📱 Orange Money</td>
+          <td>{{ stats.orange|montant }}</td>
+          <td>{{ declared_orange|montant }}</td>
+          <td class="{% if ecart_orange < 0 %}ecart-bad{% elif ecart_orange > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">
+            {% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}
+          </td>
+          <td>{% if ecart_orange == 0 %}<span class="badge-ok">✓ OK</span>{% elif ecart_orange < 0 %}<span class="badge-bad">⚠ ÉCART</span>{% else %}<span class="badge-warn">⚠ ÉCART</span>{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% if stats.mtn or declared_mtn %}
+        <tr>
+          <td>📱 MTN MoMo</td>
+          <td>{{ stats.mtn|montant }}</td>
+          <td>{{ declared_mtn|montant }}</td>
+          <td class="{% if ecart_mtn < 0 %}ecart-bad{% elif ecart_mtn > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">
+            {% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}
+          </td>
+          <td>{% if ecart_mtn == 0 %}<span class="badge-ok">✓ OK</span>{% elif ecart_mtn < 0 %}<span class="badge-bad">⚠ ÉCART</span>{% else %}<span class="badge-warn">⚠ ÉCART</span>{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% if stats.moov or declared_moov %}
+        <tr>
+          <td>📱 Moov Money</td>
+          <td>{{ stats.moov|montant }}</td>
+          <td>{{ declared_moov|montant }}</td>
+          <td class="{% if ecart_moov < 0 %}ecart-bad{% elif ecart_moov > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">
+            {% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}
+          </td>
+          <td>{% if ecart_moov == 0 %}<span class="badge-ok">✓ OK</span>{% elif ecart_moov < 0 %}<span class="badge-bad">⚠ ÉCART</span>{% else %}<span class="badge-warn">⚠ ÉCART</span>{% endif %}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>TOTAL</td>
+          <td>{{ stats.total|montant }}</td>
+          <td>{{ declared_total|montant }}</td>
+          <td style="color:{% if ecart_total < 0 %}#fca5a5{% elif ecart_total > 0 %}#fde68a{% else %}#86efac{% endif %}">
+            {% if ecart_total > 0 %}+{% endif %}{{ ecart_total|montant }}
+          </td>
+          <td>{% if ecart_total == 0 %}<span class="badge-ok">✓ ÉQUILIBRÉ</span>{% else %}<span class="badge-bad">ÉCART</span>{% endif %}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══ 4 & 5 — CONTRÔLE ESPÈCES + CONTRÔLE MOBILE ═══════════════════ -->
+<div class="rpt-grid-2">
+
+  <!-- Section 4 : Contrôle espèces -->
+  <div class="rpt-section" style="margin-bottom:0">
+    <div class="rpt-section-title"><span class="rpt-num">4</span>CONTRÔLE ESPÈCES</div>
+    <table class="rpt-table">
+      <tbody>
+        <tr style="background:#f8fafc"><td>Espèces théoriques (application)</td><td>{{ stats.especes|montant }} F</td></tr>
+        <tr><td>Espèces déclarées (billetage)</td><td>{{ declared_especes|montant }} F</td></tr>
+      </tbody>
+      <tfoot>
+        <tr style="background:{% if ecart_especes < 0 %}#7f1d1d{% elif ecart_especes > 0 %}#78350f{% else %}#14532d{% endif %}!important">
+          <td>Écart espèces</td>
+          <td style="color:{% if ecart_especes < 0 %}#fca5a5{% elif ecart_especes > 0 %}#fde68a{% else %}#86efac{% endif %}">
+            {% if ecart_especes > 0 %}+{% endif %}{{ ecart_especes|montant }} F
+            {% if ecart_especes < 0 %} — MANQUANT{% elif ecart_especes > 0 %} — EXCÉDENT{% else %} ✓{% endif %}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="font-size:9px;color:#94a3b8;padding:6px 8px;border:1px solid #e2e8f0;border-top:none">
+      Le billetage détaillé (par coupure) est disponible dans le livre de caisse physique.
+    </div>
+  </div>
+
+  <!-- Section 5 : Contrôle Mobile Money -->
+  {% if stats.mobile or declared_mobile_total %}
+  <div class="rpt-section" style="margin-bottom:0">
+    <div class="rpt-section-title"><span class="rpt-num">5</span>CONTRÔLE MOBILE MONEY</div>
+    <table class="rpt-table">
+      <thead>
+        <tr><th>Opérateur</th><th>Théorique</th><th>Déclaré</th><th>Écart</th></tr>
+      </thead>
+      <tbody>
+        {% if stats.wave or declared_wave %}
+        <tr>
+          <td>📱 Wave</td>
+          <td>{{ stats.wave|montant }}</td>
+          <td>{{ declared_wave|montant }}</td>
+          <td class="{% if ecart_wave < 0 %}ecart-bad{% elif ecart_wave > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
+        </tr>
+        {% endif %}
+        {% if stats.orange or declared_orange %}
+        <tr>
+          <td>📱 Orange Money</td>
+          <td>{{ stats.orange|montant }}</td>
+          <td>{{ declared_orange|montant }}</td>
+          <td class="{% if ecart_orange < 0 %}ecart-bad{% elif ecart_orange > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
+        </tr>
+        {% endif %}
+        {% if stats.mtn or declared_mtn %}
+        <tr>
+          <td>📱 MTN MoMo</td>
+          <td>{{ stats.mtn|montant }}</td>
+          <td>{{ declared_mtn|montant }}</td>
+          <td class="{% if ecart_mtn < 0 %}ecart-bad{% elif ecart_mtn > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
+        </tr>
+        {% endif %}
+        {% if stats.moov or declared_moov %}
+        <tr>
+          <td>📱 Moov Money</td>
+          <td>{{ stats.moov|montant }}</td>
+          <td>{{ declared_moov|montant }}</td>
+          <td class="{% if ecart_moov < 0 %}ecart-bad{% elif ecart_moov > 0 %}ecart-warn{% else %}ecart-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>TOTAL MOBILE</td>
+          <td>{{ stats.mobile|montant }}</td>
+          <td>{{ declared_mobile_total|montant }}</td>
+          <td style="color:{% if ecart_mobile < 0 %}#fca5a5{% elif ecart_mobile > 0 %}#fde68a{% else %}#86efac{% endif %}">
+            {% if ecart_mobile > 0 %}+{% endif %}{{ ecart_mobile|montant }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="font-size:9px;color:#94a3b8;padding:6px 8px;border:1px solid #e2e8f0;border-top:none">
+      Références / justificatifs mobile money — voir relevés et numéros de transaction dans le journal.
+    </div>
+  </div>
+  {% else %}
+  <div class="rpt-section" style="margin-bottom:0">
+    <div class="rpt-section-title"><span class="rpt-num">5</span>CONTRÔLE MOBILE MONEY</div>
+    <div style="padding:16px;text-align:center;color:#94a3b8;font-size:11px;border:1px solid #e2e8f0;border-top:none">Aucun paiement mobile money cette session</div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ══ 6. DÉCAISSEMENTS ══════════════════════════════════════════════════ -->
+<div class="rpt-section">
+  <div class="rpt-section-title"><span class="rpt-num">6</span>DÉCAISSEMENTS</div>
+  {% if decaissements %}
+  <table class="rpt-table">
+    <thead>
+      <tr><th>Heure</th><th>Motif</th><th>Module</th><th>Mode</th><th>Réf.</th><th>Montant</th></tr>
+    </thead>
+    <tbody>
+    {% for d in decaissements %}
+    <tr>
+      <td style="text-align:left">{{ d.date|date:"H:i" }}</td>
+      <td>{{ d.description|default:"—" }}</td>
+      <td>{{ d.module|default:"—" }}</td>
+      <td>{{ d.mode_paiement|default:"—" }}</td>
+      <td style="font-family:monospace;font-size:9px">{{ d.reference|default:"—" }}</td>
+      <td style="color:#dc2626;font-weight:700">{{ d.montant|montant }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="5">TOTAL DÉCAISSEMENTS</td><td style="color:#fca5a5">{{ stats.depenses|montant }}</td></tr>
+    </tfoot>
+  </table>
+  {% else %}
+  <div style="padding:12px;text-align:center;color:#94a3b8;font-size:11px;border:1px solid #e2e8f0;border-top:none">Aucun décaissement cette session</div>
+  {% endif %}
+</div>
+
+<!-- ══ 7. RÉCAPITULATIF DE CLÔTURE ══════════════════════════════════════ -->
+<div class="rpt-section">
+  <div class="rpt-section-title"><span class="rpt-num">7</span>RÉCAPITULATIF DE CLÔTURE</div>
+  <div style="display:flex;gap:16px;align-items:flex-start">
+    <div style="flex:1">
+      <table class="rpt-recap-table">
+        <tbody>
+          <tr>
+            <td>Solde initial / Report veille</td>
+            <td>{{ session.fond_caisse|montant }} F</td>
+          </tr>
+          <tr>
+            <td>+ Recettes nettes <small style="color:#64748b">(encaissements − décaissements)</small></td>
+            <td style="color:#16a34a">+ {{ recettes_nettes|montant }} F</td>
+          </tr>
+          {% if stats.depenses %}
+          <tr>
+            <td>− Décaissements</td>
+            <td style="color:#dc2626">− {{ stats.depenses|montant }} F</td>
+          </tr>
+          {% endif %}
+          <tr>
+            <td>− Dépôts / Versements déclarés</td>
+            <td style="color:#dc2626">− {{ declared_total|montant }} F</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="rr-total">
+            <td class="total-label" style="padding-left:12px">= NOUVEAU SOLDE INITIAL</td>
+            <td style="font-size:14px;padding-right:12px">{{ nouveau_fond|montant }} F</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="rpt-nouveau-fond" style="min-width:200px">
+      <div class="lbl">💰 Nouveau Solde Initial</div>
+      <div class="val">{{ nouveau_fond|montant }} FCFA</div>
+      <div class="sub">Pour la prochaine ouverture de caisse</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 8. JOURNAL DES MOUVEMENTS ════════════════════════════════════════ -->
 {% if mouvements %}
-<div class="content-section">
-  <div class="section-title">Journal des mouvements de caisse</div>
-  <table class="doc-table">
-    <thead><tr><th>Heure</th><th>Type</th><th>Description</th><th>Réf.</th><th class="r">Montant</th></tr></thead>
+<div class="rpt-section">
+  <div class="rpt-section-title"><span class="rpt-num">8</span>JOURNAL DES MOUVEMENTS DE CAISSE</div>
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th style="text-align:left">Heure</th>
+        <th style="text-align:left">Type</th>
+        <th style="text-align:left">Module</th>
+        <th style="text-align:left">Mode</th>
+        <th style="text-align:left">Description</th>
+        <th style="text-align:left">Réf.</th>
+        <th>Montant</th>
+      </tr>
+    </thead>
     <tbody>
     {% for mv in mouvements %}
     <tr>
-      <td>{{ mv.date|date:"H:i" }}</td>
-      <td>{{ mv.get_type_display }}</td>
-      <td>{{ mv.description|default:"—" }}</td>
-      <td style="font-family:monospace;font-size:9px">{{ mv.reference|default:"—" }}</td>
-      <td class="r {% if mv.est_entree %}bold{% endif %}" style="color:{% if mv.est_entree %}#16a34a{% else %}#dc2626{% endif %}">
+      <td style="text-align:left">{{ mv.date|date:"H:i" }}</td>
+      <td style="text-align:left">{{ mv.get_type_display }}</td>
+      <td style="text-align:left">{{ mv.module|default:"—" }}</td>
+      <td style="text-align:left">{{ mv.mode_paiement|default:"—" }}</td>
+      <td style="text-align:left">{{ mv.description|default:"—"|truncatechars:35 }}</td>
+      <td style="text-align:left;font-family:monospace;font-size:9px">{{ mv.reference|default:"—" }}</td>
+      <td class="{% if mv.est_entree %}ecart-ok{% else %}ecart-bad{% endif %}" style="font-weight:700">
         {% if mv.est_entree %}+{% else %}-{% endif %}{{ mv.montant|montant }}
       </td>
     </tr>
@@ -185,84 +545,56 @@ window.addEventListener('DOMContentLoaded', function(){
 </div>
 {% endif %}
 
-<!-- PRÉLÈVEMENTS -->
-{% if prelevements %}
-<div class="content-section">
-  <div class="section-title">Prélèvements banque</div>
-  <table class="doc-table">
-    <thead><tr><th>Heure</th><th>Banque</th><th>Référence</th><th class="r">Montant</th></tr></thead>
-    <tbody>
-    {% for p in prelevements %}
-    <tr>
-      <td>{{ p.date|date:"H:i" }}</td>
-      <td class="bold">{{ p.banque|default:"—" }}</td>
-      <td style="font-family:monospace;font-size:9px">{{ p.reference|default:"—" }}</td>
-      <td class="r bold" style="color:#dc2626">{{ p.montant|montant }} FCFA</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-{% if session.notes %}
-<div class="notes-box"><strong>Notes</strong> {{ session.notes }}</div>
-{% endif %}
-
-<!-- RÉCAPITULATIF FINAL -->
-<div class="content-section" style="page-break-inside:avoid">
-  <div class="section-title">Récapitulatif — Situation de caisse</div>
-  <table class="doc-table">
-    <tbody>
-      <tr style="background:#f8fafc">
-        <td>Fond d'ouverture</td>
-        <td class="r bold" style="color:#1d4ed8">{{ session.fond_caisse|montant }} FCFA</td>
-      </tr>
-      <tr>
-        <td>+ Versements reçus des modules</td>
-        <td class="r bold" style="color:{% if reconciliation.grand_total_verse > 0 %}#16a34a{% else %}#6b7280{% endif %}">+ {{ reconciliation.grand_total_verse|montant }} FCFA</td>
-      </tr>
-      {% if stats.depenses %}
-      <tr>
-        <td>- Dépenses / Décaissements</td>
-        <td class="r bold" style="color:#dc2626">- {{ stats.depenses|montant }} FCFA</td>
-      </tr>
+<!-- ══ 9. OBSERVATIONS ══════════════════════════════════════════════════ -->
+<div class="rpt-section">
+  <div class="rpt-section-title"><span class="rpt-num">9</span>OBSERVATIONS / JUSTIFICATION DES ÉCARTS</div>
+  <div class="rpt-obs-box">
+    {% if session.notes %}
+    {{ session.notes }}
+    {% else %}
+    <span style="color:#94a3b8;font-style:italic">Aucune observation.</span>
+    {% endif %}
+    {% if ecart_especes != 0 or ecart_mobile != 0 %}
+    <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #fde68a">
+      <strong style="color:#d97706">Écarts constatés :</strong><br>
+      {% if ecart_especes != 0 %}
+        — Espèces : {% if ecart_especes < 0 %}manquant{% else %}excédent{% endif %} de {{ ecart_especes|montant }} F<br>
       {% endif %}
-      {% if stats.prelevements %}
-      <tr>
-        <td>- Prélèvements banque</td>
-        <td class="r bold" style="color:#dc2626">- {{ stats.prelevements|montant }} FCFA</td>
-      </tr>
-      {% endif %}
-    </tbody>
-    <tfoot>
-      <tr style="background:#fef9c3">
-        <td class="total-label" style="color:#92400e">= Nouveau fond théorique</td>
-        <td class="total-val" style="color:#92400e">{{ nouveau_fond|montant }} FCFA</td>
-      </tr>
-      {% if not session.is_open %}
-      <tr style="background:#f0fdf4">
-        <td class="total-label" style="color:#15803d">Fond réel compté</td>
-        <td class="total-val" style="color:#15803d">{{ session.fond_caisse_reel|montant }} FCFA</td>
-      </tr>
-      <tr style="background:{% if session.ecart < 0 %}#fef2f2{% elif session.ecart > 0 %}#fffbeb{% else %}#f0fdf4{% endif %}">
-        <td class="total-label" style="color:{% if session.ecart < 0 %}#b91c1c{% elif session.ecart > 0 %}#d97706{% else %}#15803d{% endif %}">
-          Écart de caisse{% if session.ecart < 0 %} — MANQUANT{% elif session.ecart > 0 %} — EXCÉDENT{% else %} — ÉQUILIBRÉ ✓{% endif %}
-        </td>
-        <td class="total-val" style="color:{% if session.ecart < 0 %}#b91c1c{% elif session.ecart > 0 %}#d97706{% else %}#15803d{% endif %}">
-          {% if session.ecart > 0 %}+{% endif %}{{ session.ecart|montant }} FCFA
-        </td>
-      </tr>
-      {% endif %}
-    </tfoot>
-  </table>
+      {% if ecart_wave != 0 %} — Wave : {% if ecart_wave < 0 %}manquant{% else %}excédent{% endif %} de {{ ecart_wave|montant }} F<br>{% endif %}
+      {% if ecart_orange != 0 %} — Orange Money : {% if ecart_orange < 0 %}manquant{% else %}excédent{% endif %} de {{ ecart_orange|montant }} F<br>{% endif %}
+      {% if ecart_mtn != 0 %} — MTN MoMo : {% if ecart_mtn < 0 %}manquant{% else %}excédent{% endif %} de {{ ecart_mtn|montant }} F<br>{% endif %}
+      {% if ecart_moov != 0 %} — Moov Money : {% if ecart_moov < 0 %}manquant{% else %}excédent{% endif %} de {{ ecart_moov|montant }} F<br>{% endif %}
+    </div>
+    {% endif %}
+  </div>
 </div>
 
-<!-- SIGNATURES -->
-<div class="signatures cols-3">
-  <div class="sig-box"><div class="sig-line">Caissier</div><div class="sig-hint">{{ session.user.get_full_name|default:session.user.username }}</div></div>
-  <div class="sig-box"><div class="sig-line">Chef caissier(e)</div><div class="sig-hint">Nom &amp; Signature</div></div>
-  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+<!-- ══ 10. VALIDATION ═══════════════════════════════════════════════════ -->
+<div class="rpt-section">
+  <div class="rpt-section-title"><span class="rpt-num">10</span>VALIDATION</div>
+  <div style="border:1px solid #e2e8f0;border-top:none">
+    <div class="rpt-sig-grid" style="padding:16px">
+      <div class="rpt-sig-box">
+        <div class="sig-role">Caissière</div>
+        <div class="sig-line"></div>
+        <div class="sig-name">{{ session.user.get_full_name|default:session.user.username }}</div>
+        <div class="sig-date">Le {{ session.closed_at|date:"d/m/Y à H:i"|default:"___/___/____" }}</div>
+      </div>
+      <div class="rpt-sig-box">
+        <div class="sig-role">Chef Caissier</div>
+        <div class="sig-line"></div>
+        <div class="sig-name">Nom &amp; Signature</div>
+        <div class="sig-date">Le ___/___/____</div>
+      </div>
+      <div class="rpt-sig-box">
+        <div class="sig-role">Direction</div>
+        <div class="sig-line"></div>
+        <div class="sig-name">Visa &amp; Cachet</div>
+        <div class="sig-date">Le ___/___/____</div>
+      </div>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
-{% block doc_footer_right %}Caisse {{ session.opened_at|date:"d/m/Y" }} · {{ session.user.get_full_name|default:session.user.username }}{% endblock %}
+{% block doc_footer_right %}Session {{ session.numero_session }} · {{ session.user.get_full_name|default:session.user.username }} · {{ session.opened_at|date:"d/m/Y" }}{% endblock %}

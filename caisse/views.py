@@ -856,7 +856,11 @@ def cloturer_caisse(request):
         session.is_open            = False
         session.fond_caisse_reel   = fond_reel_total
         session.total_especes      = stats['especes']
-        session.total_mobile       = mobile_declare   # montant déclaré (pas système)
+        session.total_mobile       = mobile_declare
+        session.declared_wave      = int(mobile_wave)
+        session.declared_orange    = int(mobile_orange)
+        session.declared_mtn       = int(mobile_mtn)
+        session.declared_moov      = int(mobile_moov)
         session.total_carte        = stats['carte']
         session.total_virement     = stats['virement']
         session.total_general      = stats['total']
@@ -1301,22 +1305,58 @@ def rapport_caisse(request, session_id=None):
     reconciliation = get_reconciliation_session(session)
     mouvements     = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
     prelevements   = PrelevementBanque.objects.filter(session=session, valide=True).order_by('date')
+    decaissements  = mouvements.filter(type='depense')
     solde_veille, _ = get_solde_veille()
 
-    # Fond théorique = fond ouverture + versements reçus des modules – dépenses – prélèvements banque
-    nouveau_fond = int(session.fond_caisse) + reconciliation['grand_total_verse'] - stats['prelevements'] - stats['depenses']
+    # Montants déclarés par la caissière (billetage + mobile par opérateur)
+    declared_mobile_total = int(session.total_mobile)   # wave+orange+mtn+moov déclarés
+    declared_especes      = max(0, int(session.fond_caisse_reel) - declared_mobile_total)
+    declared_wave         = int(session.declared_wave)
+    declared_orange       = int(session.declared_orange)
+    declared_mtn          = int(session.declared_mtn)
+    declared_moov         = int(session.declared_moov)
+    declared_total        = int(session.fond_caisse_reel)
+
+    # Écarts par mode (théorique système vs déclaré)
+    ecart_especes = declared_especes - stats['especes']
+    ecart_wave    = declared_wave    - stats['wave']
+    ecart_orange  = declared_orange  - stats['orange']
+    ecart_mtn     = declared_mtn     - stats['mtn']
+    ecart_moov    = declared_moov    - stats['moov']
+    ecart_mobile  = declared_mobile_total - stats['mobile']
+    ecart_total   = declared_total        - stats['total']
+
+    # Récapitulatif final
+    recettes_nettes = stats['total'] - stats['depenses']
+    nouveau_fond    = int(session.fond_caisse) + recettes_nettes - declared_total
 
     auto_print = request.GET.get('auto_print', '0')
 
     return render(request, 'caisse/rapport.html', {
-        'session':        session,
-        'stats':          stats,
-        'mouvements':     mouvements,
-        'prelevements':   prelevements,
-        'reconciliation': reconciliation,
-        'solde_veille':   solde_veille,
-        'nouveau_fond':   nouveau_fond,
-        'auto_print':     auto_print,
+        'session':               session,
+        'stats':                 stats,
+        'mouvements':            mouvements,
+        'prelevements':          prelevements,
+        'decaissements':         decaissements,
+        'reconciliation':        reconciliation,
+        'solde_veille':          solde_veille,
+        'nouveau_fond':          nouveau_fond,
+        'recettes_nettes':       recettes_nettes,
+        'declared_especes':      declared_especes,
+        'declared_wave':         declared_wave,
+        'declared_orange':       declared_orange,
+        'declared_mtn':          declared_mtn,
+        'declared_moov':         declared_moov,
+        'declared_mobile_total': declared_mobile_total,
+        'declared_total':        declared_total,
+        'ecart_especes':         ecart_especes,
+        'ecart_wave':            ecart_wave,
+        'ecart_orange':          ecart_orange,
+        'ecart_mtn':             ecart_mtn,
+        'ecart_moov':            ecart_moov,
+        'ecart_mobile':          ecart_mobile,
+        'ecart_total':           ecart_total,
+        'auto_print':            auto_print,
     })
 
 
