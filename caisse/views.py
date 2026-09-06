@@ -422,12 +422,24 @@ def get_reconciliation_session(session):
         def _sum(modes):
             return int(qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant_total'))['s'] or 0)
 
-        especes  = _sum(['especes'])
-        wave     = _sum(['wave'])
-        orange   = _sum(['orange_money'])
-        mtn      = _sum(['mtn_money'])
-        moov     = _sum(['moov_money'])
-        mobile   = wave + orange + mtn + moov + _sum(['mobile_money', 'mobile'])
+        def _net_mobile(modes):
+            # Pour les tickets mixtes (mode=wave/mobile + montant_especes>0)
+            # la part mobile = montant_total - montant_especes
+            r = qs.filter(mode_paiement__in=modes).aggregate(
+                total=Sum('montant_total'), esp=Sum('montant_especes')
+            )
+            return int((r['total'] or 0) - (r['esp'] or 0))
+
+        # Espèces = tickets purs espèces + part espèces des tickets mixtes
+        especes  = (
+            int(qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
+            + int(qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0)
+        )
+        wave     = _net_mobile(['wave'])
+        orange   = _net_mobile(['orange_money'])
+        mtn      = _net_mobile(['mtn_money'])
+        moov     = _net_mobile(['moov_money'])
+        mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
         carte    = _sum(['carte_bancaire', 'carte'])
         virement = _sum(['virement'])
         mixte    = _sum(['mixte'])
