@@ -370,13 +370,17 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
   <div class="rz-sec-title"><span class="rz-sec-num">7</span>RÉCAPITULATIF DE CLÔTURE</div>
   <div style="display:flex;gap:14px;border:1px solid #e2e8f0;border-top:none">
     <div style="flex:1;padding:8px 0">
-      <div class="rz-recap-row"><span>Fonds déclarés / comptés (espèces + mobile)</span><strong>{{ declared_total|montant }} F</strong></div>
-      {% if session.prelevement_banque %}<div class="rz-recap-row sub"><span>− Prélèvement banque</span><span style="color:#dc2626">− {{ session.prelevement_banque|montant }} F</span></div>{% endif %}
-      <div class="rz-recap-row total"><span>= NOUVEAU SOLDE INITIAL</span><strong>{{ nouveau_fond|montant }} F</strong></div>
-      <div style="padding:6px 10px;font-size:9px;color:#64748b;border-top:1px dashed #e2e8f0;margin-top:4px">
-        Pour référence — encaissements théoriques session : {{ stats.total|montant }} F
-        (écart global : {% if ecart_total > 0 %}+{% endif %}{{ ecart_total|montant }} F)
+      <div class="rz-recap-row"><span>💵 Espèces comptées (billetage)</span><strong>{{ declared_especes|montant }} F</strong></div>
+      {% if effective_mobile %}
+      <div class="rz-recap-row">
+        <span>📱 Mobile money {% if declared_mobile_total %}déclaré{% else %}reçu via versements module{% endif %}</span>
+        <span style="color:#16a34a;font-weight:700">+ {{ effective_mobile|montant }} F</span>
       </div>
+      {% endif %}
+      {% if session.prelevement_banque %}
+      <div class="rz-recap-row sub"><span>− Prélèvement banque</span><span style="color:#dc2626">− {{ session.prelevement_banque|montant }} F</span></div>
+      {% endif %}
+      <div class="rz-recap-row total"><span>= NOUVEAU SOLDE INITIAL</span><strong>{{ nouveau_fond|montant }} F</strong></div>
     </div>
     <div style="width:190px;padding:10px;display:flex;align-items:center">
       <div class="rz-fond-box" style="width:100%">

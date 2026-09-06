@@ -1336,9 +1336,11 @@ def rapport_caisse(request, session_id=None):
 
     # Récapitulatif final
     recettes_nettes = stats['total'] - stats['depenses']
-    # Nouveau fond = ce que la caissière a déclaré/compté moins ce qu'elle a versé à la banque.
-    # C'est exactement ce que get_solde_veille() retournera pour la prochaine ouverture.
-    nouveau_fond    = declared_total - int(session.prelevement_banque)
+    # Mobile effectif : si la caissière a déclaré les opérateurs (nouveau système) on prend
+    # le déclaré ; sinon (ancien code sans champs mobile) on prend les stats application
+    # car les versements module attestent que l'argent a bien été remis physiquement.
+    effective_mobile = declared_mobile_total if declared_mobile_total > 0 else int(stats['mobile'])
+    nouveau_fond     = declared_especes + effective_mobile - int(session.prelevement_banque)
 
     # Billetage détaillé : toutes les coupures standards, avec quantité si disponible
     COUPURES = [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5]
@@ -1376,6 +1378,7 @@ def rapport_caisse(request, session_id=None):
         'ecart_total':           ecart_total,
         'auto_print':            auto_print,
         'billetage_lignes':      billetage_lignes,
+        'effective_mobile':      effective_mobile,
     })
 
 
