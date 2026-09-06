@@ -631,6 +631,7 @@ def encaisser_sortie(request, acces_id):
             objet_id=acces.id,
             montant_total=total, montant_paye=montant_recu,
             mode_paiement=mode_paiement, cree_par=request.user,
+            montant_especes=(montant_especes if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else Decimal('0')),
             contenu=contenu, imprime=True,
         )
         from django.template.loader import render_to_string

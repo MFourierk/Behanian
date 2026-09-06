@@ -405,6 +405,9 @@ class Ticket(models.Model):
     # Informations Paiement
     mode_paiement = models.CharField(max_length=50, choices=PAIEMENT_CHOICES, default='especes')
     montant_paye = models.DecimalField(max_digits=10, decimal_places=3, default=0)
+    # Portion espèces d'un paiement mixte (espèces + mobile money).
+    # 0 = paiement pur (espèces OU mobile). > 0 = paiement mixte.
+    montant_especes = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     # Informations du ticket

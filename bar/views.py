@@ -2245,6 +2245,7 @@ def api_vente_create(request):
             montant_total = total_final,
             mode_paiement = mode_fact,
             montant_paye  = montant_recu,
+            montant_especes = (montant_especes if montant_especes > 0 and mode_fact not in ('especes', 'chambre') else Decimal('0')),
             contenu       = contenu,
             cree_par      = request.user,
             imprime       = True,

@@ -250,6 +250,10 @@ def valider_commande(request):
                 montant_total_ticket = Decimal(str(commande.total_net)) + frais_salon
 
                 # Création du Ticket
+                _mode_pay = _map_mode_paiement(
+                    data.get('mode_paiement', 'especes'),
+                    data.get('operateur_mobile', ''),
+                )
                 ticket = Ticket.objects.create(
                     numero=numero_ticket,
                     module='restaurant',
@@ -258,10 +262,8 @@ def valider_commande(request):
                     contenu=services_html,
                     objet_id=commande.id,
                     montant_paye=montant_encaisse,
-                    mode_paiement=_map_mode_paiement(
-                        data.get('mode_paiement', 'especes'),
-                        data.get('operateur_mobile', ''),
-                    ),
+                    mode_paiement=_mode_pay,
+                    montant_especes=(montant_especes if montant_especes > 0 and _mode_pay not in ('especes', 'chambre') else Decimal('0')),
                     cree_par=request.user,
                     imprime=True
                 )
@@ -369,6 +371,7 @@ def facturer_salon_direct(request):
             objet_id=None,
             montant_paye=montant_encaisse,
             mode_paiement=mode_mapped,
+            montant_especes=(montant_especes if montant_especes > 0 and mode_mapped not in ('especes', 'chambre') else Decimal('0')),
             cree_par=request.user,
             imprime=True,
         )

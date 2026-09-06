@@ -270,6 +270,7 @@ def api_encaisser(request, reservation_id):
             objet_id=res.id,
             montant_total=restant, montant_paye=montant_recu,
             mode_paiement=mode_paiement, cree_par=request.user,
+            montant_especes=(montant_especes if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else Decimal('0')),
             contenu=contenu, imprime=True,
         )
         ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
