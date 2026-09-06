@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Q, Count
 from django.http import JsonResponse
@@ -874,6 +875,114 @@ def force_cloturer_caisse(request, session_id):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def ouvrir_session_globale(request):
+    """
+    Page d'ouverture de session pour les caissières TPE (sans accès /caisse/).
+    Gère aussi la clôture d'une session oubliée d'un jour précédent.
+    Accessible à toutes les caissières (TPE ou Principale).
+    """
+    from utils.permissions import _is_caissiere_any
+    if not (_is_caissiere_any(request.user) or request.user.is_superuser):
+        return redirect('dashboard:index')
+
+    today = timezone.localdate()
+    session_active = CaisseSession.objects.filter(
+        user=request.user, is_open=True, date_session=today
+    ).first()
+
+    # Déjà une session ouverte → aller sur la home
+    if session_active:
+        from utils.middleware import HOME_BY_GROUP
+        groups = list(request.user.groups.values_list('name', flat=True))
+        home = 'dashboard:index'
+        for g in groups:
+            if g in HOME_BY_GROUP:
+                home = HOME_BY_GROUP[g]
+                break
+        return redirect(home)
+
+    session_oubliee = CaisseSession.objects.filter(
+        user=request.user, is_open=True, date_session__lt=today
+    ).order_by('-date_session').first()
+
+    # POST : clôturer la session oubliée
+    if request.method == 'POST' and request.POST.get('action') == 'cloture_oubliee':
+        if not session_oubliee:
+            messages.error(request, 'Aucune session oubliée à clôturer.')
+        else:
+            try:
+                fond_reel = _dec(request.POST.get('fond_reel', session_oubliee.fond_caisse) or session_oubliee.fond_caisse)
+                notes = request.POST.get('notes', '').strip() or f'Clôture différée le {today.strftime("%d/%m/%Y")}'
+                stats = get_stats_session(session_oubliee)
+                solde_th = session_oubliee.fond_caisse + _dec(stats['especes']) - session_oubliee.prelevement_banque
+                ecart = solde_th - fond_reel
+                session_oubliee.closed_at       = timezone.now()
+                session_oubliee.is_open         = False
+                session_oubliee.fond_caisse_reel = fond_reel
+                session_oubliee.total_especes   = stats['especes']
+                session_oubliee.total_mobile    = stats['mobile']
+                session_oubliee.total_carte     = stats['carte']
+                session_oubliee.total_virement  = stats['virement']
+                session_oubliee.total_general   = stats['total']
+                session_oubliee.solde_theorique = solde_th
+                session_oubliee.ecart           = ecart
+                session_oubliee.notes           = notes
+                session_oubliee.save()
+                messages.success(request, f'Session du {session_oubliee.date_session.strftime("%d/%m/%Y")} clôturée. Vous pouvez maintenant ouvrir votre session du jour.')
+                session_oubliee = None
+            except Exception as e:
+                messages.error(request, f'Erreur lors de la clôture : {e}')
+        return redirect('caisse:ouvrir_session_globale')
+
+    # POST : ouvrir la session du jour
+    if request.method == 'POST' and request.POST.get('action') == 'ouvrir':
+        if session_oubliee:
+            messages.error(request, 'Veuillez d\'abord clôturer la session de la veille.')
+        else:
+            # Vérifier qu'une autre caissière n'a pas déjà une session ouverte
+            session_autre = CaisseSession.objects.filter(is_open=True).exclude(user=request.user).select_related('user').first()
+            if session_autre:
+                nom = session_autre.user.get_full_name() or session_autre.user.username
+                messages.error(request, f'Caisse déjà ouverte par {nom}. Elle doit clôturer avant vous.')
+            else:
+                try:
+                    fond = _dec(request.POST.get('fond_caisse', 0) or 0)
+                    session = CaisseSession.objects.create(
+                        user=request.user,
+                        type_caisse='centrale',
+                        date_session=today,
+                        fond_caisse=fond,
+                        notes=request.POST.get('notes', ''),
+                    )
+                    if fond > 0:
+                        MouvementCaisse.objects.create(
+                            session=session,
+                            type='fond_caisse',
+                            module='caisse',
+                            montant=fond,
+                            mode_paiement='especes',
+                            description=f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}',
+                            cree_par=request.user,
+                        )
+                    messages.success(request, f'Session ouverte — {session.numero_session}. Bonne journée !')
+                    from utils.middleware import HOME_BY_GROUP
+                    groups = list(request.user.groups.values_list('name', flat=True))
+                    home = 'dashboard:index'
+                    for g in groups:
+                        if g in HOME_BY_GROUP:
+                            home = HOME_BY_GROUP[g]
+                            break
+                    return redirect(home)
+                except Exception as e:
+                    messages.error(request, f'Erreur ouverture : {e}')
+
+    return render(request, 'caisse/ouvrir_session.html', {
+        'session_oubliee': session_oubliee,
+        'today': today,
+    })
 
 
 @require_module_access('caisse')

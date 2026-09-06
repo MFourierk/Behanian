@@ -162,6 +162,15 @@ def _is_manager(user):
     return any(g in _MANAGERS for g in get_user_groups(user))
 
 
+def _is_caissiere_any(user):
+    """Vraie pour toute caissière (TPE ou Principale) — faux pour managers et superusers."""
+    if user.is_superuser or _is_manager(user):
+        return False
+    groups = get_user_groups(user)
+    all_caissiere = set(_CAISSIERE) | set(_CAISSIERE_PRINCIPALE)
+    return any(g in all_caissiere for g in groups)
+
+
 def require_manager(view_func):
     """Décorateur — réservé au Manager Général, Directeur Général et superuser."""
     @wraps(view_func)

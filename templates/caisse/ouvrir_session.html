@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ouvrir ma session — Behanian</title>
+{% load static %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #0f172a;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+}
+.card-header {
+  background: linear-gradient(135deg, #1a2535 0%, #2d3f55 100%);
+  padding: 28px 30px 22px;
+  text-align: center;
+}
+.card-header img { height: 60px; margin-bottom: 12px; }
+.card-header h1 { font-size: 18px; font-weight: 800; color: #c9a84c; letter-spacing: .4px; }
+.card-header p  { font-size: 12px; color: rgba(255,255,255,.6); margin-top: 4px; }
+.card-body { padding: 28px 30px; }
+
+/* Messages Django */
+.msg { padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; font-weight: 500; }
+.msg-success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.msg-error   { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+/* Alerte session oubliée */
+.alert-oubliee {
+  background: #fff7ed;
+  border: 2px solid #f97316;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+}
+.alert-oubliee h3 { font-size: 13px; font-weight: 700; color: #c2410c; margin-bottom: 6px; }
+.alert-oubliee p  { font-size: 12px; color: #9a3412; line-height: 1.5; }
+
+/* Formulaire */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.field input, .field textarea {
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #1e293b;
+  outline: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field textarea:focus { border-color: #c9a84c; box-shadow: 0 0 0 3px rgba(201,168,76,.12); }
+.field textarea { resize: vertical; min-height: 60px; font-size: 12px; }
+
+/* Boutons */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  margin-top: 8px;
+  transition: opacity .15s;
+}
+.btn:hover { opacity: .9; }
+.btn-gold  { background: linear-gradient(135deg, #c9a84c, #e8c96d); color: #1a2535; }
+.btn-warn  { background: linear-gradient(135deg, #f97316, #fb923c); color: white; }
+.btn-muted { background: #f1f5f9; color: #64748b; font-size: 12px; padding: 10px; margin-top: 12px; }
+
+.divider { height: 1px; background: #f1f5f9; margin: 22px 0; }
+.user-info { text-align: center; margin-bottom: 20px; }
+.user-info .name { font-size: 16px; font-weight: 700; color: #1e293b; }
+.user-info .date { font-size: 12px; color: #64748b; margin-top: 2px; }
+.logout-link { display: block; text-align: center; font-size: 11px; color: #94a3b8; margin-top: 16px; text-decoration: none; }
+.logout-link:hover { color: #dc2626; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <img src="{% static 'images/Logo.png' %}" alt="Logo Behanian">
+    <h1>Ouverture de session</h1>
+    <p>Complexe Hôtelier Behanian</p>
+  </div>
+
+  <div class="card-body">
+    {% load humanize %}
+
+    <!-- Messages Django -->
+    {% for m in messages %}
+    <div class="msg msg-{% if m.tags == 'error' %}error{% else %}success{% endif %}">
+      {% if m.tags != 'error' %}✅{% else %}⚠️{% endif %} {{ m }}
+    </div>
+    {% endfor %}
+
+    <!-- Informations utilisateur -->
+    <div class="user-info">
+      <div class="name">👤 {{ request.user.get_full_name|default:request.user.username }}</div>
+      <div class="date">{{ today|date:"l d F Y" }}</div>
+    </div>
+
+    {% if session_oubliee %}
+    <!-- SESSION OUBLIÉE : fermer avant d'ouvrir -->
+    <div class="alert-oubliee">
+      <h3>⚠️ Session non clôturée — {{ session_oubliee.date_session|date:"d/m/Y" }}</h3>
+      <p>Vous avez une session ouverte depuis le <strong>{{ session_oubliee.date_session|date:"d/m/Y" }}</strong>
+         (ouverte à {{ session_oubliee.opened_at|date:"H:i" }}).
+         Veuillez la clôturer avant de commencer votre service du jour.</p>
+    </div>
+
+    <div class="section-title">Clôture de la session du {{ session_oubliee.date_session|date:"d/m/Y" }}</div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="cloture_oubliee">
+      <div class="field">
+        <label>Fond compté (montant réel en caisse)</label>
+        <input type="number" name="fond_reel" value="{{ session_oubliee.fond_caisse }}" min="0" step="1" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea name="notes" placeholder="Clôture différée…"></textarea>
+      </div>
+      <button type="submit" class="btn btn-warn">
+        <i class="fas fa-lock"></i> Clôturer la session du {{ session_oubliee.date_session|date:"d/m/Y" }}
+      </button>
+    </form>
+
+    {% else %}
+    <!-- OUVRIR NOUVELLE SESSION -->
+    <div class="section-title">Ouvrir ma session du jour</div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="ouvrir">
+      <div class="field">
+        <label>Fond de caisse (montant d'ouverture en espèces)</label>
+        <input type="number" name="fond_caisse" value="0" min="0" step="1" placeholder="0 FCFA" autofocus>
+      </div>
+      <div class="field">
+        <label>Notes (optionnel)</label>
+        <textarea name="notes" placeholder="Remarques pour cette session…"></textarea>
+      </div>
+      <button type="submit" class="btn btn-gold">
+        <i class="fas fa-play-circle"></i> Ouvrir ma session et commencer
+      </button>
+    </form>
+    {% endif %}
+
+    <a href="{% url 'logout' %}" class="logout-link">↩ Se déconnecter</a>
+  </div>
+</div>
+
+</body>
+</html>
