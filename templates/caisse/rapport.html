@@ -370,10 +370,11 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
   <div class="rz-sec-title"><span class="rz-sec-num">7</span>RÉCAPITULATIF DE CLÔTURE</div>
   <div style="display:flex;gap:14px;border:1px solid #e2e8f0;border-top:none">
     <div style="flex:1;padding:8px 0">
-      <div class="rz-recap-row"><span>💵 Espèces comptées (billetage)</span><strong>{{ declared_especes|montant }} F</strong></div>
+      <div class="rz-recap-row"><span>🏦 Solde veille (fond initial session)</span><strong>{{ session.fond_caisse|montant }} F</strong></div>
+      <div class="rz-recap-row sub"><span>+ 💵 Espèces comptées (billetage)</span><span style="color:#16a34a;font-weight:700">+ {{ declared_especes|montant }} F</span></div>
       {% if effective_mobile %}
-      <div class="rz-recap-row">
-        <span>📱 Mobile money {% if declared_mobile_total %}déclaré{% else %}reçu via versements module{% endif %}</span>
+      <div class="rz-recap-row sub">
+        <span>+ 📱 Mobile money {% if declared_mobile_total %}déclaré{% else %}reçu via versements module{% endif %}</span>
         <span style="color:#16a34a;font-weight:700">+ {{ effective_mobile|montant }} F</span>
       </div>
       {% endif %}
