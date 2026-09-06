@@ -1029,10 +1029,22 @@
       <button class="close-btn" onclick="fermerModal('modalOuvrir')">×</button>
     </div>
     {% if last_session %}
-    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:6px">🔒 Fond physique reporté de la veille</div>
-      <div style="font-size:20px;font-weight:800;color:#1a2535">{{ solde_veille|montant }} FCFA</div>
-      <div style="font-size:10px;color:#7a8b9c;margin-top:3px">Compté à la clôture du {{ last_session.closed_at|date:"d/m/Y à H:i" }} · Pré-rempli automatiquement ci-dessous</div>
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:8px">🔒 Fond reporté de la session précédente</div>
+      <div style="font-size:22px;font-weight:800;color:#1a2535;margin-bottom:8px">{{ solde_veille|montant }} FCFA</div>
+      {% if solde_veille_mobile > 0 %}
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1;background:white;border-radius:7px;padding:6px 10px;border:1px solid #fde68a">
+          <div style="font-size:10px;color:#64748b">💵 Espèces (billetage)</div>
+          <div style="font-size:13px;font-weight:700;color:#1a2535;margin-top:2px">{{ solde_veille_especes|montant }} F</div>
+        </div>
+        <div style="flex:1;background:white;border-radius:7px;padding:6px 10px;border:1px solid #fde68a">
+          <div style="font-size:10px;color:#64748b">📱 Mobile Money</div>
+          <div style="font-size:13px;font-weight:700;color:#7c3aed;margin-top:2px">{{ solde_veille_mobile|montant }} F</div>
+        </div>
+      </div>
+      {% endif %}
+      <div style="font-size:10px;color:#7a8b9c">Clôture du {{ last_session.closed_at|date:"d/m/Y à H:i" }} · Pré-rempli automatiquement</div>
     </div>
     {% endif %}
     <div class="form-row">

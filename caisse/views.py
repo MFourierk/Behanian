@@ -608,6 +608,8 @@ def index(request):
         vue_session = False
 
     solde_veille, last_session = get_solde_veille()
+    solde_veille_mobile  = int(last_session.total_mobile) if last_session else 0
+    solde_veille_especes = max(0, solde_veille - solde_veille_mobile)
 
     # Sessions centrales non clôturées des jours précédents (alerte manager)
     sessions_bloquantes = CaisseSession.objects.filter(
@@ -652,7 +654,9 @@ def index(request):
         'sessions_jour': sessions_jour,
         'mouvements': mouvements,
         'prelevements': prelevements,
-        'solde_veille': solde_veille,
+        'solde_veille':         solde_veille,
+        'solde_veille_especes': solde_veille_especes,
+        'solde_veille_mobile':  solde_veille_mobile,
         'last_session': last_session,
         'sessions_bloquantes': sessions_bloquantes,
         'reconciliation': reconciliation,
@@ -756,17 +760,24 @@ def ouvrir_caisse(request):
             notes=notes,
         )
 
-        # Fond de caisse comme premier mouvement
+        # Fond de caisse : deux mouvements distincts si le report inclut du mobile
         if fond > 0:
-            MouvementCaisse.objects.create(
-                session=session,
-                type='fond_caisse',
-                module='caisse',
-                montant=fond,
-                mode_paiement='especes',
-                description=f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}',
-                cree_par=request.user,
-            )
+            _, last_s = get_solde_veille()
+            fond_mobile_report = int(last_s.total_mobile) if last_s else 0
+            fond_especes_report = max(0, int(fond) - fond_mobile_report)
+            ouverture_label = f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}'
+            if fond_especes_report > 0:
+                MouvementCaisse.objects.create(
+                    session=session, type='fond_caisse', module='caisse',
+                    montant=fond_especes_report, mode_paiement='especes',
+                    description=ouverture_label, cree_par=request.user,
+                )
+            if fond_mobile_report > 0:
+                MouvementCaisse.objects.create(
+                    session=session, type='fond_caisse', module='caisse',
+                    montant=fond_mobile_report, mode_paiement='mobile_money',
+                    description=ouverture_label + ' (mobile)', cree_par=request.user,
+                )
 
         # ── Consolidation automatique pour la caisse centrale ──────────────
         msg_consolidation = ''
@@ -839,11 +850,13 @@ def cloturer_caisse(request):
         solde_th = session.fond_caisse + _dec(stats['total']) - prelev
         ecart    = solde_th - fond_reel_total
 
+        mobile_declare = int(mobile_wave + mobile_orange + mobile_mtn + mobile_moov)
+
         session.closed_at          = timezone.now()
         session.is_open            = False
         session.fond_caisse_reel   = fond_reel_total
         session.total_especes      = stats['especes']
-        session.total_mobile       = stats['mobile']
+        session.total_mobile       = mobile_declare   # montant déclaré (pas système)
         session.total_carte        = stats['carte']
         session.total_virement     = stats['virement']
         session.total_general      = stats['total']
