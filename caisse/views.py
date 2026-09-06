@@ -491,7 +491,7 @@ def get_reconciliation_session(session):
 
 
 def get_solde_veille():
-    """Retourne le fond_caisse_reel de la dernière clôture (cash physiquement compté = solde reporté)."""
+    """Retourne le fond de report de la dernière clôture = espèces comptées + mobile money encaissé."""
     last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
     if not last:
         return 0, None
@@ -819,13 +819,16 @@ def cloturer_caisse(request):
 
         stats = get_stats_session(session)
 
-        # Solde théorique = fond initial + espèces encaissées pendant le shift − prélèvements banque
-        solde_th = session.fond_caisse + _dec(stats['especes']) - prelev
-        ecart    = solde_th - fond_reel
+        # fond_reel = espèces comptées (billetage) ; on ajoute le mobile encaissé (tracé exactement)
+        fond_reel_especes = fond_reel
+        fond_reel_total   = fond_reel_especes + _dec(stats['mobile'])
+        # Solde théorique = fond initial + tous encaissements − prélèvements banque
+        solde_th = session.fond_caisse + _dec(stats['total']) - prelev
+        ecart    = solde_th - fond_reel_total
 
         session.closed_at          = timezone.now()
         session.is_open            = False
-        session.fond_caisse_reel   = fond_reel
+        session.fond_caisse_reel   = fond_reel_total
         session.total_especes      = stats['especes']
         session.total_mobile       = stats['mobile']
         session.total_carte        = stats['carte']
@@ -885,12 +888,13 @@ def force_cloturer_caisse(request, session_id):
         date = session.date_session
         stats = get_stats_jour(date, type_caisse=session.type_caisse)
 
-        solde_th = session.fond_caisse + _dec(stats['especes']) - session.prelevement_banque
-        ecart    = solde_th - fond_reel
+        fond_reel_total  = _dec(fond_reel) + _dec(stats['mobile'])
+        solde_th = session.fond_caisse + _dec(stats['total']) - session.prelevement_banque
+        ecart    = solde_th - fond_reel_total
 
         session.closed_at        = timezone.now()
         session.is_open          = False
-        session.fond_caisse_reel = fond_reel
+        session.fond_caisse_reel = fond_reel_total
         session.total_especes    = stats['especes']
         session.total_mobile     = stats['mobile']
         session.total_carte      = stats['carte']
@@ -949,11 +953,12 @@ def ouvrir_session_globale(request):
                 fond_reel = _dec(request.POST.get('fond_reel', session_oubliee.fond_caisse) or session_oubliee.fond_caisse)
                 notes = request.POST.get('notes', '').strip() or f'Clôture différée le {today.strftime("%d/%m/%Y")}'
                 stats = get_stats_session(session_oubliee)
-                solde_th = session_oubliee.fond_caisse + _dec(stats['especes']) - session_oubliee.prelevement_banque
-                ecart = solde_th - fond_reel
+                fond_reel_total = _dec(fond_reel) + _dec(stats['mobile'])
+                solde_th = session_oubliee.fond_caisse + _dec(stats['total']) - session_oubliee.prelevement_banque
+                ecart = solde_th - fond_reel_total
                 session_oubliee.closed_at       = timezone.now()
                 session_oubliee.is_open         = False
-                session_oubliee.fond_caisse_reel = fond_reel
+                session_oubliee.fond_caisse_reel = fond_reel_total
                 session_oubliee.total_especes   = stats['especes']
                 session_oubliee.total_mobile    = stats['mobile']
                 session_oubliee.total_carte     = stats['carte']
@@ -1043,12 +1048,13 @@ def cloture_oubliee(request):
         notes     = data.get('notes', '').strip() or f'Clôture différée le {today.strftime("%d/%m/%Y")}'
 
         stats    = get_stats_session(session)
-        solde_th = session.fond_caisse + _dec(stats['especes']) - session.prelevement_banque
-        ecart    = solde_th - fond_reel
+        fond_reel_total = _dec(fond_reel) + _dec(stats['mobile'])
+        solde_th = session.fond_caisse + _dec(stats['total']) - session.prelevement_banque
+        ecart    = solde_th - fond_reel_total
 
         session.closed_at        = timezone.now()
         session.is_open          = False
-        session.fond_caisse_reel = fond_reel
+        session.fond_caisse_reel = fond_reel_total
         session.total_especes    = stats['especes']
         session.total_mobile     = stats['mobile']
         session.total_carte      = stats['carte']

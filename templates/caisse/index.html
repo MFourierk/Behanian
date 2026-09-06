@@ -1159,11 +1159,15 @@
       <div id="ecart_box" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Contrôle de caisse</div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="color:var(--muted)">Fond initial + Espèces encaissées − Prélèv.</span>
+          <span style="color:var(--muted)">Fond initial + Total encaissements (espèces + mobile) − Prélèv.</span>
           <strong id="ecart_theorique">—</strong>
         </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--muted)">Mobile money (ajouté automatiquement au report)</span>
+          <strong style="color:#7c3aed">{{ stats.mobile|default:0|montant }} F</strong>
+        </div>
         <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--muted)">Écart (théorique − billetage)</span>
+          <span style="color:var(--muted)">Écart espèces (théorique − billetage)</span>
           <strong id="ecart_val" style="font-size:14px">—</strong>
         </div>
       </div>
@@ -1376,21 +1380,24 @@ function toast(msg, type='info'){
 async function post(url, data){ return _bPost(url, data); }
 
 // Données session active pour le calcul d'écart
-const SESSION_FOND = {{ session_active.fond_caisse|default:0 }};
+const SESSION_FOND    = {{ session_active.fond_caisse|default:0 }};
 const SESSION_ESPECES = {{ stats.especes|default:0 }};
+const SESSION_MOBILE  = {{ stats.mobile|default:0 }};
 
 function calculerEcart(){
   const fondReel = parseFloat(document.getElementById('cl_fond_reel').value)||0;
   const prelev   = parseFloat(document.getElementById('cl_prelev').value)||0;
-  const solde_th = SESSION_FOND + SESSION_ESPECES - prelev;
-  const ecart    = solde_th - fondReel;
+  // solde_th = fond + tous encaissements (espèces + mobile) − prélèvement
+  const solde_th = SESSION_FOND + SESSION_ESPECES + SESSION_MOBILE - prelev;
+  // ecart sur espèces seulement (mobile est tracé exactement par le système)
+  const ecart    = SESSION_FOND + SESSION_ESPECES - prelev - fondReel;
   document.getElementById('ecart_theorique').textContent = solde_th.toLocaleString('fr-FR') + ' F';
   const ecartEl = document.getElementById('ecart_val');
   if(ecart > 0){
-    ecartEl.textContent = '+' + ecart.toLocaleString('fr-FR') + ' F (excédent)';
+    ecartEl.textContent = '+' + ecart.toLocaleString('fr-FR') + ' F (excédent espèces)';
     ecartEl.style.color = '#16a34a';
   } else if(ecart < 0){
-    ecartEl.textContent = ecart.toLocaleString('fr-FR') + ' F (manquant)';
+    ecartEl.textContent = ecart.toLocaleString('fr-FR') + ' F (manquant espèces)';
     ecartEl.style.color = '#dc2626';
   } else {
     ecartEl.textContent = '0 F (équilibré ✓)';
