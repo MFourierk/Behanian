@@ -39,6 +39,7 @@ body {
 .msg { padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; font-weight: 500; }
 .msg-success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
 .msg-error   { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.msg-warn    { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
 
 /* Alerte session oubliée */
 .alert-oubliee {
@@ -116,8 +117,8 @@ body {
 
     <!-- Messages Django -->
     {% for m in messages %}
-    <div class="msg msg-{% if m.tags == 'error' %}error{% else %}success{% endif %}">
-      {% if m.tags != 'error' %}✅{% else %}⚠️{% endif %} {{ m }}
+    <div class="msg msg-{% if 'error' in m.tags %}error{% elif 'warning' in m.tags %}warn{% else %}success{% endif %}">
+      {% if 'error' in m.tags %}⚠️{% elif 'warning' in m.tags %}ℹ️{% else %}✅{% endif %} {{ m }}
     </div>
     {% endfor %}
 

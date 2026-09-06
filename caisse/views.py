@@ -679,28 +679,32 @@ def ouvrir_caisse(request):
             'bloquee_cloture': True,
         })
 
-    # 1b. Bloquer si une AUTRE caissière a déjà une session ouverte (shifts non-chevauchants)
-    session_autre = CaisseSession.objects.filter(is_open=True).exclude(user=request.user).select_related('user').first()
-    if session_autre:
-        nom = session_autre.user.get_full_name() or session_autre.user.username
+    # 1b. Bloquer si une AUTRE caissière a déjà une session ouverte AUJOURD'HUI
+    # (shifts non-chevauchants intra-journée).
+    # Les sessions oubliées d'un jour précédent ne bloquent pas les autres caissières —
+    # seule la caissière qui a oublié est bloquée au login (middleware).
+    session_autre_aujourd_hui = CaisseSession.objects.filter(
+        is_open=True, date_session=today
+    ).exclude(user=request.user).select_related('user').first()
+    if session_autre_aujourd_hui:
+        nom = session_autre_aujourd_hui.user.get_full_name() or session_autre_aujourd_hui.user.username
         return JsonResponse({
             'success': False,
-            'error': f'⛔ Caisse déjà ouverte par {nom} depuis {session_autre.opened_at.strftime("%H:%M")}. Elle doit clôturer sa session avant que vous puissiez ouvrir.',
+            'error': f'⛔ Caisse déjà ouverte par {nom} depuis {session_autre_aujourd_hui.opened_at.strftime("%H:%M")}. Elle doit clôturer sa session avant que vous puissiez ouvrir.',
         })
 
-    # 2. Bloquer si la caisse centrale du jour précédent n'a pas été clôturée
+    # 2. Avertir (sans bloquer) si une session centrale d'un jour précédent est encore ouverte.
+    # La responsable de cette session est personnellement bloquée par le middleware jusqu'à clôture.
+    # Les autres caissières peuvent travailler mais voient un avertissement sur le solde de veille.
     session_ancienne = _session_centrale_non_cloturee()
+    msg_avertissement = ''
     if session_ancienne:
-        return JsonResponse({
-            'success': False,
-            'error': (
-                f'⛔ Ouverture impossible : la caisse centrale du {session_ancienne.date_session.strftime("%d/%m/%Y")} '
-                f'n\'a pas été clôturée. La clôture de fin de journée est obligatoire pour '
-                f'positionner le solde de veille. Veuillez clôturer cette session avant d\'ouvrir une nouvelle journée.'
-            ),
-            'session_bloquante_id': session_ancienne.pk,
-            'bloquee': True,
-        })
+        msg_avertissement = (
+            f' ⚠️ ATTENTION : la session du {session_ancienne.date_session.strftime("%d/%m/%Y")} '
+            f'({session_ancienne.user.get_full_name() or session_ancienne.user.username}) '
+            f'n\'est pas clôturée — le solde de veille peut être inexact. '
+            f'Prévenez votre responsable.'
+        )
 
     try:
         data  = json.loads(request.body)
@@ -762,10 +766,11 @@ def ouvrir_caisse(request):
 
         return JsonResponse({
             'success': True,
-            'message': f'Caisse ouverte — {session.numero_session} — Fond: {int(fond):,} F{msg_consolidation}',
+            'message': f'Caisse ouverte — {session.numero_session} — Fond: {int(fond):,} F{msg_consolidation}{msg_avertissement}',
             'opened_at': session.opened_at.strftime("%d/%m/%Y à %H:%M"),
             'numero_session': session.numero_session,
             'type_caisse': type_attendu,
+            'avertissement': bool(msg_avertissement),
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
@@ -942,12 +947,20 @@ def ouvrir_session_globale(request):
         if session_oubliee:
             messages.error(request, 'Veuillez d\'abord clôturer la session de la veille.')
         else:
-            # Vérifier qu'une autre caissière n'a pas déjà une session ouverte
-            session_autre = CaisseSession.objects.filter(is_open=True).exclude(user=request.user).select_related('user').first()
+            # Bloquer uniquement si une autre caissière a une session ouverte AUJOURD'HUI
+            # (sessions oubliées d'hier ne bloquent pas les autres — seule la concernée est bloquée au login)
+            session_autre = CaisseSession.objects.filter(
+                is_open=True, date_session=today
+            ).exclude(user=request.user).select_related('user').first()
             if session_autre:
                 nom = session_autre.user.get_full_name() or session_autre.user.username
-                messages.error(request, f'Caisse déjà ouverte par {nom}. Elle doit clôturer avant vous.')
+                messages.error(request, f'Caisse déjà ouverte par {nom} depuis {session_autre.opened_at.strftime("%H:%M")}. Elle doit clôturer avant vous.')
             else:
+                # Avertissement si une session d'un jour précédent est encore ouverte (non-bloquant)
+                session_ancienne_avert = _session_centrale_non_cloturee()
+                if session_ancienne_avert:
+                    nom_anc = session_ancienne_avert.user.get_full_name() or session_ancienne_avert.user.username
+                    messages.warning(request, f'⚠️ Session du {session_ancienne_avert.date_session.strftime("%d/%m/%Y")} ({nom_anc}) non clôturée — le solde de veille peut être inexact. Prévenez votre responsable.')
                 try:
                     fond = _dec(request.POST.get('fond_caisse', 0) or 0)
                     session = CaisseSession.objects.create(
