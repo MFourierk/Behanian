@@ -201,12 +201,17 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
       <thead><tr><th>Moyen de paiement</th><th>Montant</th></tr></thead>
       <tbody>
         <tr><td>💵 Espèces</td><td>{{ declared_especes|montant }}</td></tr>
-        {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>
-        {% elif effective_mobile and not declared_mobile_total %}<tr><td>📱 Mobile Money (versements)</td><td>{{ effective_mobile|montant }}</td></tr>
+        {% if is_old_mobile_session %}
+          {% if stats.wave %}   <tr><td>📱 Wave</td>         <td>{{ stats.wave|montant }}</td></tr>{% endif %}
+          {% if stats.orange %} <tr><td>📱 Orange Money</td> <td>{{ stats.orange|montant }}</td></tr>{% endif %}
+          {% if stats.mtn %}    <tr><td>📱 MTN MoMo</td>    <td>{{ stats.mtn|montant }}</td></tr>{% endif %}
+          {% if stats.moov %}   <tr><td>📱 Flooz (Moov)</td><td>{{ stats.moov|montant }}</td></tr>{% endif %}
+        {% else %}
+          {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>{% endif %}
+          {% if declared_orange %}<tr><td>📱 Orange Money</td><td>{{ declared_orange|montant }}</td></tr>{% endif %}
+          {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
+          {% if declared_moov %}  <tr><td>📱 Flooz (Moov)</td><td>{{ declared_moov|montant }}</td></tr>{% endif %}
         {% endif %}
-        {% if declared_orange %}<tr><td>📱 Orange</td>      <td>{{ declared_orange|montant }}</td></tr>{% endif %}
-        {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
-        {% if declared_moov %}  <tr><td>📱 Flooz</td>       <td>{{ declared_moov|montant }}</td></tr>{% endif %}
         {% if stats.carte %}    <tr><td>💳 Carte</td>       <td>{{ stats.carte|montant }}</td></tr>{% endif %}
         {% if stats.virement %} <tr><td>🏦 Virement</td>   <td>{{ stats.virement|montant }}</td></tr>{% endif %}
       </tbody>
@@ -232,15 +237,22 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
         <td>{% if ecart_especes == 0 %}<span class="b-ok">✓ OK</span>{% elif ecart_especes < 0 %}<span class="b-bad">⚠ ÉCART À JUSTIFIER</span>{% else %}<span class="b-warn">+ EXCÉDENT</span>{% endif %}</td>
       </tr>
       {% if is_old_mobile_session %}
-        {% if effective_mobile %}
-        <tr>
-          <td>📱 Mobile Money (versements)</td>
-          <td>{{ stats.mobile|montant }}</td>
-          <td>{{ effective_mobile|montant }}</td>
-          <td class="c-ok">0</td>
-          <td><span class="b-ok">✓ OK</span></td>
-        </tr>
-        {% endif %}
+        {% if stats.wave %}<tr>
+          <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ stats.wave|montant }}</td>
+          <td class="c-ok">0</td><td><span class="b-ok">✓ OK</span></td>
+        </tr>{% endif %}
+        {% if stats.orange %}<tr>
+          <td>📱 Orange Money</td><td>{{ stats.orange|montant }}</td><td>{{ stats.orange|montant }}</td>
+          <td class="c-ok">0</td><td><span class="b-ok">✓ OK</span></td>
+        </tr>{% endif %}
+        {% if stats.mtn %}<tr>
+          <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ stats.mtn|montant }}</td>
+          <td class="c-ok">0</td><td><span class="b-ok">✓ OK</span></td>
+        </tr>{% endif %}
+        {% if stats.moov %}<tr>
+          <td>📱 Flooz (Moov)</td><td>{{ stats.moov|montant }}</td><td>{{ stats.moov|montant }}</td>
+          <td class="c-ok">0</td><td><span class="b-ok">✓ OK</span></td>
+        </tr>{% endif %}
       {% else %}
         {% if stats.wave or declared_wave %}<tr>
           <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
@@ -322,12 +334,22 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
       <thead><tr><th>Opérateur</th><th>Théorique</th><th>Déclaré</th><th>Écart</th></tr></thead>
       <tbody>
         {% if is_old_mobile_session %}
-        <tr>
-          <td>📱 Mobile Money</td>
-          <td>{{ stats.mobile|montant }}</td>
-          <td>{{ effective_mobile|montant }}</td>
-          <td class="c-ok">0</td>
-        </tr>
+          {% if stats.wave %}<tr>
+            <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ stats.wave|montant }}</td>
+            <td class="c-ok">0</td>
+          </tr>{% endif %}
+          {% if stats.orange %}<tr>
+            <td>📱 Orange Money</td><td>{{ stats.orange|montant }}</td><td>{{ stats.orange|montant }}</td>
+            <td class="c-ok">0</td>
+          </tr>{% endif %}
+          {% if stats.mtn %}<tr>
+            <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ stats.mtn|montant }}</td>
+            <td class="c-ok">0</td>
+          </tr>{% endif %}
+          {% if stats.moov %}<tr>
+            <td>📱 Flooz (Moov)</td><td>{{ stats.moov|montant }}</td><td>{{ stats.moov|montant }}</td>
+            <td class="c-ok">0</td>
+          </tr>{% endif %}
         {% else %}
           {% if stats.wave or declared_wave %}<tr>
             <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
