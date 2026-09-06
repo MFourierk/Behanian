@@ -511,11 +511,29 @@ def get_reconciliation_session(session):
 
 
 def get_solde_veille():
-    """Retourne le fond de report de la dernière clôture = espèces comptées + mobile money encaissé."""
+    """Retourne le nouveau_fond de la dernière clôture.
+    Formule = fond_caisse (ouverture) + espèces billetage + mobile effectif − prélèvement banque.
+    Même calcul que le récapitulatif du rapport Z.
+    """
     last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
     if not last:
         return 0, None
-    return int(last.fond_caisse_reel), last
+
+    declared_mobile_total = int(last.declared_wave + last.declared_orange + last.declared_mtn + last.declared_moov)
+    declared_especes      = max(0, int(last.fond_caisse_reel) - declared_mobile_total)
+
+    if declared_mobile_total > 0:
+        effective_mobile = declared_mobile_total
+    elif int(last.total_mobile) > 0:
+        # Nouveau système : total_mobile stocke le effective_mobile à la clôture
+        effective_mobile = int(last.total_mobile)
+    else:
+        # Ancienne session sans champs declared_* : recompute depuis les tickets
+        stats_last = get_stats_session(last)
+        effective_mobile = stats_last['mobile']
+
+    nouveau_fond = int(last.fond_caisse) + declared_especes + effective_mobile - int(last.prelevement_banque)
+    return nouveau_fond, last
 
 
 def _session_centrale_non_cloturee():
@@ -867,13 +885,15 @@ def cloturer_caisse(request):
         solde_th = session.fond_caisse + _dec(stats['total']) - prelev
         ecart    = solde_th - fond_reel_total
 
-        mobile_declare = int(mobile_wave + mobile_orange + mobile_mtn + mobile_moov)
+        mobile_declare   = int(mobile_wave + mobile_orange + mobile_mtn + mobile_moov)
+        # effective_mobile : déclaré si nouveau système, sinon mobile reçu via versements (prouvé par tickets)
+        effective_mobile_close = mobile_declare if mobile_declare > 0 else stats['mobile']
 
         session.closed_at          = timezone.now()
         session.is_open            = False
         session.fond_caisse_reel   = fond_reel_total
         session.total_especes      = stats['especes']
-        session.total_mobile       = mobile_declare
+        session.total_mobile       = effective_mobile_close
         session.declared_wave      = int(mobile_wave)
         session.declared_orange    = int(mobile_orange)
         session.declared_mtn       = int(mobile_mtn)
