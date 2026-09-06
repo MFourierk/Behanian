@@ -1309,12 +1309,14 @@ def rapport_caisse(request, session_id=None):
     solde_veille, _ = get_solde_veille()
 
     # Montants déclarés par la caissière (billetage + mobile par opérateur)
-    declared_mobile_total = int(session.total_mobile)   # wave+orange+mtn+moov déclarés
-    declared_especes      = max(0, int(session.fond_caisse_reel) - declared_mobile_total)
+    # On utilise la somme des declared_* (pas total_mobile qui pouvait être auto-rempli
+    # par l'ancien code de clôture avant la migration vers la saisie manuelle par opérateur)
     declared_wave         = int(session.declared_wave)
     declared_orange       = int(session.declared_orange)
     declared_mtn          = int(session.declared_mtn)
     declared_moov         = int(session.declared_moov)
+    declared_mobile_total = declared_wave + declared_orange + declared_mtn + declared_moov
+    declared_especes      = max(0, int(session.fond_caisse_reel) - declared_mobile_total)
     declared_total        = int(session.fond_caisse_reel)
 
     # Écarts par mode (théorique système vs déclaré)
