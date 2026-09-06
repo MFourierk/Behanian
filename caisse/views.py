@@ -1340,6 +1340,10 @@ def rapport_caisse(request, session_id=None):
     ecart_mobile  = effective_mobile    - stats['mobile']
     ecart_total   = declared_total      - stats['total']
 
+    # Session antérieure aux champs declared_* : mobile prouvé par versements module mais
+    # pas saisie par opérateur → on affiche le total effectif sur une seule ligne "Mobile Money"
+    is_old_mobile_session = (declared_mobile_total == 0 and effective_mobile > 0)
+
     recettes_nettes = stats['total'] - stats['depenses']
     # Nouveau solde initial = Solde veille (fond_caisse remis à l'ouverture)
     #                        + Espèces déclarées + Mobile reçu − Prélèvement banque
@@ -1381,7 +1385,8 @@ def rapport_caisse(request, session_id=None):
         'ecart_total':           ecart_total,
         'auto_print':            auto_print,
         'billetage_lignes':      billetage_lignes,
-        'effective_mobile':      effective_mobile,
+        'effective_mobile':       effective_mobile,
+        'is_old_mobile_session':  is_old_mobile_session,
     })
 
 

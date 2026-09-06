@@ -231,26 +231,38 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
         </td>
         <td>{% if ecart_especes == 0 %}<span class="b-ok">✓ OK</span>{% elif ecart_especes < 0 %}<span class="b-bad">⚠ ÉCART À JUSTIFIER</span>{% else %}<span class="b-warn">+ EXCÉDENT</span>{% endif %}</td>
       </tr>
-      {% if stats.wave or declared_wave %}<tr>
-        <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
-        <td class="{% if ecart_wave < 0 %}c-bad{% elif ecart_wave > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
-        <td>{% if ecart_wave == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-      </tr>{% endif %}
-      {% if stats.orange or declared_orange %}<tr>
-        <td>📱 Orange Money</td><td>{{ stats.orange|montant }}</td><td>{{ declared_orange|montant }}</td>
-        <td class="{% if ecart_orange < 0 %}c-bad{% elif ecart_orange > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
-        <td>{% if ecart_orange == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-      </tr>{% endif %}
-      {% if stats.mtn or declared_mtn %}<tr>
-        <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ declared_mtn|montant }}</td>
-        <td class="{% if ecart_mtn < 0 %}c-bad{% elif ecart_mtn > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
-        <td>{% if ecart_mtn == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-      </tr>{% endif %}
-      {% if stats.moov or declared_moov %}<tr>
-        <td>📱 Flooz</td><td>{{ stats.moov|montant }}</td><td>{{ declared_moov|montant }}</td>
-        <td class="{% if ecart_moov < 0 %}c-bad{% elif ecart_moov > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
-        <td>{% if ecart_moov == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-      </tr>{% endif %}
+      {% if is_old_mobile_session %}
+        {% if effective_mobile %}
+        <tr>
+          <td>📱 Mobile Money (versements)</td>
+          <td>{{ stats.mobile|montant }}</td>
+          <td>{{ effective_mobile|montant }}</td>
+          <td class="c-ok">0</td>
+          <td><span class="b-ok">✓ OK</span></td>
+        </tr>
+        {% endif %}
+      {% else %}
+        {% if stats.wave or declared_wave %}<tr>
+          <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
+          <td class="{% if ecart_wave < 0 %}c-bad{% elif ecart_wave > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
+          <td>{% if ecart_wave == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+        </tr>{% endif %}
+        {% if stats.orange or declared_orange %}<tr>
+          <td>📱 Orange Money</td><td>{{ stats.orange|montant }}</td><td>{{ declared_orange|montant }}</td>
+          <td class="{% if ecart_orange < 0 %}c-bad{% elif ecart_orange > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
+          <td>{% if ecart_orange == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+        </tr>{% endif %}
+        {% if stats.mtn or declared_mtn %}<tr>
+          <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ declared_mtn|montant }}</td>
+          <td class="{% if ecart_mtn < 0 %}c-bad{% elif ecart_mtn > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
+          <td>{% if ecart_mtn == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+        </tr>{% endif %}
+        {% if stats.moov or declared_moov %}<tr>
+          <td>📱 Flooz</td><td>{{ stats.moov|montant }}</td><td>{{ declared_moov|montant }}</td>
+          <td class="{% if ecart_moov < 0 %}c-bad{% elif ecart_moov > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
+          <td>{% if ecart_moov == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+        </tr>{% endif %}
+      {% endif %}
     </tbody>
     <tfoot>
       <tr>
@@ -309,22 +321,31 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
     <table class="rz-table">
       <thead><tr><th>Opérateur</th><th>Théorique</th><th>Déclaré</th><th>Écart</th></tr></thead>
       <tbody>
-        {% if stats.wave or declared_wave %}<tr>
-          <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
-          <td class="{% if ecart_wave < 0 %}c-bad{% elif ecart_wave > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
-        </tr>{% endif %}
-        {% if stats.orange or declared_orange %}<tr>
-          <td>📱 Orange</td><td>{{ stats.orange|montant }}</td><td>{{ declared_orange|montant }}</td>
-          <td class="{% if ecart_orange < 0 %}c-bad{% elif ecart_orange > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
-        </tr>{% endif %}
-        {% if stats.mtn or declared_mtn %}<tr>
-          <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ declared_mtn|montant }}</td>
-          <td class="{% if ecart_mtn < 0 %}c-bad{% elif ecart_mtn > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
-        </tr>{% endif %}
-        {% if stats.moov or declared_moov %}<tr>
-          <td>📱 Flooz</td><td>{{ stats.moov|montant }}</td><td>{{ declared_moov|montant }}</td>
-          <td class="{% if ecart_moov < 0 %}c-bad{% elif ecart_moov > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
-        </tr>{% endif %}
+        {% if is_old_mobile_session %}
+        <tr>
+          <td>📱 Mobile Money</td>
+          <td>{{ stats.mobile|montant }}</td>
+          <td>{{ effective_mobile|montant }}</td>
+          <td class="c-ok">0</td>
+        </tr>
+        {% else %}
+          {% if stats.wave or declared_wave %}<tr>
+            <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
+            <td class="{% if ecart_wave < 0 %}c-bad{% elif ecart_wave > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
+          </tr>{% endif %}
+          {% if stats.orange or declared_orange %}<tr>
+            <td>📱 Orange</td><td>{{ stats.orange|montant }}</td><td>{{ declared_orange|montant }}</td>
+            <td class="{% if ecart_orange < 0 %}c-bad{% elif ecart_orange > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
+          </tr>{% endif %}
+          {% if stats.mtn or declared_mtn %}<tr>
+            <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ declared_mtn|montant }}</td>
+            <td class="{% if ecart_mtn < 0 %}c-bad{% elif ecart_mtn > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
+          </tr>{% endif %}
+          {% if stats.moov or declared_moov %}<tr>
+            <td>📱 Flooz</td><td>{{ stats.moov|montant }}</td><td>{{ declared_moov|montant }}</td>
+            <td class="{% if ecart_moov < 0 %}c-bad{% elif ecart_moov > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
+          </tr>{% endif %}
+        {% endif %}
       </tbody>
       <tfoot>
         <tr>
