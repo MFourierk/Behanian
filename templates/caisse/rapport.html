@@ -143,125 +143,125 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
 
 <div class="rz-body">
 
-<!-- ═══ 1. ENCAISSEMENTS THÉORIQUES ════════════════════════════════ -->
-<div class="rz-sec" style="margin-top:16px">
-  <div class="rz-sec-title"><span class="rz-sec-num">1</span>ENCAISSEMENTS THÉORIQUES — TRANSACTIONS DE L'APPLICATION</div>
-  <table class="rz-table">
-    <thead>
-      <tr>
-        <th style="min-width:75px">Module</th>
-        <th>💵 Espèces</th>
-        {% if reconciliation.grand_wave %}   <th>📱 Wave</th>{% endif %}
-        {% if reconciliation.grand_orange %}  <th>📱 Orange</th>{% endif %}
-        {% if reconciliation.grand_mtn %}     <th>📱 MTN MoMo</th>{% endif %}
-        {% if reconciliation.grand_moov %}    <th>📱 Flooz</th>{% endif %}
-        {% if reconciliation.grand_carte %}   <th>💳 Carte</th>{% endif %}
-        {% if reconciliation.grand_virement %}<th>🏦 Virement</th>{% endif %}
-        <th style="background:#0f172a">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for l in reconciliation.lignes %}{% if l.total_tx %}
-    <tr>
-      <td>{{ l.emoji }} {{ l.label }}</td>
-      <td>{% if l.especes %}{{ l.especes|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
-      {% if reconciliation.grand_wave %}   <td>{% if l.wave %}{{ l.wave|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-      {% if reconciliation.grand_orange %}  <td>{% if l.orange %}{{ l.orange|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-      {% if reconciliation.grand_mtn %}     <td>{% if l.mtn %}{{ l.mtn|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-      {% if reconciliation.grand_moov %}    <td>{% if l.moov %}{{ l.moov|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-      {% if reconciliation.grand_carte %}   <td>{% if l.carte %}{{ l.carte|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-      {% if reconciliation.grand_virement %}<td>{% if l.virement %}{{ l.virement|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-      <td style="font-weight:700">{{ l.total_tx|montant }}</td>
-    </tr>
-    {% endif %}{% endfor %}
-    </tbody>
-    <tfoot>
-      <tr>
-        <td>TOTAL</td>
-        <td>{{ reconciliation.grand_especes|montant }}</td>
-        {% if reconciliation.grand_wave %}   <td>{{ reconciliation.grand_wave|montant }}</td>{% endif %}
-        {% if reconciliation.grand_orange %}  <td>{{ reconciliation.grand_orange|montant }}</td>{% endif %}
-        {% if reconciliation.grand_mtn %}     <td>{{ reconciliation.grand_mtn|montant }}</td>{% endif %}
-        {% if reconciliation.grand_moov %}    <td>{{ reconciliation.grand_moov|montant }}</td>{% endif %}
-        {% if reconciliation.grand_carte %}   <td>{{ reconciliation.grand_carte|montant }}</td>{% endif %}
-        {% if reconciliation.grand_virement %}<td>{{ reconciliation.grand_virement|montant }}</td>{% endif %}
-        <td class="gold">{{ reconciliation.grand_total_tx|montant }}</td>
-      </tr>
-    </tfoot>
-  </table>
-</div>
+<!-- ═══ 1 + 2 côte à côte ═══════════════════════════════════════════ -->
+<div style="display:grid;grid-template-columns:3fr 1.4fr;gap:14px;margin-top:16px;margin-bottom:14px">
 
-<!-- ═══ 2 + 3 ══════════════════════════════════════════════════════ -->
-<div class="rz-grid-2">
-
-  <!-- 2. Versements déclarés -->
+  <!-- 1. Encaissements théoriques -->
   <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">2</span>VERSEMENTS / DÉCLARATIONS DE LA CAISSIÈRE</div>
+    <div class="rz-sec-title"><span class="rz-sec-num">1</span>ENCAISSEMENTS THÉORIQUES — TRANSACTIONS DE L'APPLICATION</div>
     <table class="rz-table">
-      <thead><tr><th>Moyen de paiement</th><th>Montant</th></tr></thead>
-      <tbody>
-        <tr><td>💵 Espèces (billetage)</td><td>{{ declared_especes|montant }}</td></tr>
-        {% if declared_wave %}  <tr><td>📱 Wave</td>         <td>{{ declared_wave|montant }}</td></tr>{% endif %}
-        {% if declared_orange %}<tr><td>📱 Orange Money</td> <td>{{ declared_orange|montant }}</td></tr>{% endif %}
-        {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>    <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
-        {% if declared_moov %}  <tr><td>📱 Flooz (Moov)</td><td>{{ declared_moov|montant }}</td></tr>{% endif %}
-        {% if stats.carte %}    <tr><td>💳 Carte</td>        <td>{{ stats.carte|montant }}</td></tr>{% endif %}
-        {% if stats.virement %} <tr><td>🏦 Virement</td>    <td>{{ stats.virement|montant }}</td></tr>{% endif %}
-      </tbody>
-      <tfoot><tr><td>TOTAL</td><td class="gold">{{ declared_total|montant }}</td></tr></tfoot>
-    </table>
-  </div>
-
-  <!-- 3. Écarts -->
-  <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">3</span>ÉCART — THÉORIQUE VS RÉEL</div>
-    <table class="rz-table">
-      <thead><tr><th>Moyen de paiement</th><th>Théorique</th><th>Déclaré / Versé</th><th>Écart</th><th>Statut</th></tr></thead>
-      <tbody>
+      <thead>
         <tr>
-          <td>💵 Espèces</td>
-          <td>{{ stats.especes|montant }}</td>
-          <td>{{ declared_especes|montant }}</td>
-          <td class="{% if ecart_especes < 0 %}c-bad{% elif ecart_especes > 0 %}c-warn{% else %}c-ok{% endif %}">
-            {% if ecart_especes > 0 %}+{% endif %}{{ ecart_especes|montant }}
-          </td>
-          <td>{% if ecart_especes == 0 %}<span class="b-ok">✓ OK</span>{% elif ecart_especes < 0 %}<span class="b-bad">⚠ ÉCART À JUSTIFIER</span>{% else %}<span class="b-warn">+ EXCÉDENT</span>{% endif %}</td>
+          <th style="min-width:68px">Module</th>
+          <th>💵 Espèces</th>
+          {% if reconciliation.grand_wave %}   <th>📱 Wave</th>{% endif %}
+          {% if reconciliation.grand_orange %}  <th>📱 Orange</th>{% endif %}
+          {% if reconciliation.grand_mtn %}     <th>📱 MTN</th>{% endif %}
+          {% if reconciliation.grand_moov %}    <th>📱 Flooz</th>{% endif %}
+          {% if reconciliation.grand_carte %}   <th>💳 Carte</th>{% endif %}
+          {% if reconciliation.grand_virement %}<th>🏦 Virt.</th>{% endif %}
+          <th style="background:#0f172a">Total</th>
         </tr>
-        {% if stats.wave or declared_wave %}<tr>
-          <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
-          <td class="{% if ecart_wave < 0 %}c-bad{% elif ecart_wave > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
-          <td>{% if ecart_wave == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-        </tr>{% endif %}
-        {% if stats.orange or declared_orange %}<tr>
-          <td>📱 Orange Money</td><td>{{ stats.orange|montant }}</td><td>{{ declared_orange|montant }}</td>
-          <td class="{% if ecart_orange < 0 %}c-bad{% elif ecart_orange > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
-          <td>{% if ecart_orange == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-        </tr>{% endif %}
-        {% if stats.mtn or declared_mtn %}<tr>
-          <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ declared_mtn|montant }}</td>
-          <td class="{% if ecart_mtn < 0 %}c-bad{% elif ecart_mtn > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
-          <td>{% if ecart_mtn == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-        </tr>{% endif %}
-        {% if stats.moov or declared_moov %}<tr>
-          <td>📱 Flooz</td><td>{{ stats.moov|montant }}</td><td>{{ declared_moov|montant }}</td>
-          <td class="{% if ecart_moov < 0 %}c-bad{% elif ecart_moov > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
-          <td>{% if ecart_moov == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
-        </tr>{% endif %}
+      </thead>
+      <tbody>
+      {% for l in reconciliation.lignes %}{% if l.total_tx %}
+      <tr>
+        <td>{{ l.emoji }} {{ l.label }}</td>
+        <td>{% if l.especes %}{{ l.especes|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
+        {% if reconciliation.grand_wave %}   <td>{% if l.wave %}{{ l.wave|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
+        {% if reconciliation.grand_orange %}  <td>{% if l.orange %}{{ l.orange|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
+        {% if reconciliation.grand_mtn %}     <td>{% if l.mtn %}{{ l.mtn|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
+        {% if reconciliation.grand_moov %}    <td>{% if l.moov %}{{ l.moov|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
+        {% if reconciliation.grand_carte %}   <td>{% if l.carte %}{{ l.carte|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
+        {% if reconciliation.grand_virement %}<td>{% if l.virement %}{{ l.virement|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
+        <td style="font-weight:700">{{ l.total_tx|montant }}</td>
+      </tr>
+      {% endif %}{% endfor %}
       </tbody>
       <tfoot>
         <tr>
           <td>TOTAL</td>
-          <td>{{ stats.total|montant }}</td>
-          <td>{{ declared_total|montant }}</td>
-          <td style="color:{% if ecart_total < 0 %}#fca5a5{% elif ecart_total > 0 %}#fde68a{% else %}#86efac{% endif %}">
-            {% if ecart_total > 0 %}+{% endif %}{{ ecart_total|montant }}
-          </td>
-          <td>{% if ecart_total == 0 %}<span class="b-ok">✓ ÉQUILIBRÉ</span>{% else %}<span class="b-bad">ÉCART</span>{% endif %}</td>
+          <td>{{ reconciliation.grand_especes|montant }}</td>
+          {% if reconciliation.grand_wave %}   <td>{{ reconciliation.grand_wave|montant }}</td>{% endif %}
+          {% if reconciliation.grand_orange %}  <td>{{ reconciliation.grand_orange|montant }}</td>{% endif %}
+          {% if reconciliation.grand_mtn %}     <td>{{ reconciliation.grand_mtn|montant }}</td>{% endif %}
+          {% if reconciliation.grand_moov %}    <td>{{ reconciliation.grand_moov|montant }}</td>{% endif %}
+          {% if reconciliation.grand_carte %}   <td>{{ reconciliation.grand_carte|montant }}</td>{% endif %}
+          {% if reconciliation.grand_virement %}<td>{{ reconciliation.grand_virement|montant }}</td>{% endif %}
+          <td class="gold">{{ reconciliation.grand_total_tx|montant }}</td>
         </tr>
       </tfoot>
     </table>
   </div>
 
+  <!-- 2. Versements déclarés -->
+  <div class="rz-sec" style="margin-bottom:0">
+    <div class="rz-sec-title"><span class="rz-sec-num">2</span>VERSEMENTS / DÉCLARATIONS</div>
+    <table class="rz-table">
+      <thead><tr><th>Moyen de paiement</th><th>Montant</th></tr></thead>
+      <tbody>
+        <tr><td>💵 Espèces</td><td>{{ declared_especes|montant }}</td></tr>
+        {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>{% endif %}
+        {% if declared_orange %}<tr><td>📱 Orange</td>      <td>{{ declared_orange|montant }}</td></tr>{% endif %}
+        {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
+        {% if declared_moov %}  <tr><td>📱 Flooz</td>       <td>{{ declared_moov|montant }}</td></tr>{% endif %}
+        {% if stats.carte %}    <tr><td>💳 Carte</td>       <td>{{ stats.carte|montant }}</td></tr>{% endif %}
+        {% if stats.virement %} <tr><td>🏦 Virement</td>   <td>{{ stats.virement|montant }}</td></tr>{% endif %}
+      </tbody>
+      <tfoot><tr><td>TOTAL</td><td class="gold">{{ declared_total|montant }}</td></tr></tfoot>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══ 3. ÉCART pleine largeur ═════════════════════════════════════ -->
+<div class="rz-sec">
+  <div class="rz-sec-title"><span class="rz-sec-num">3</span>ÉCART — THÉORIQUE VS RÉEL</div>
+  <table class="rz-table">
+    <thead><tr><th>Moyen de paiement</th><th>Théorique</th><th>Déclaré / Versé</th><th>Écart</th><th>Statut</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>💵 Espèces</td>
+        <td>{{ stats.especes|montant }}</td>
+        <td>{{ declared_especes|montant }}</td>
+        <td class="{% if ecart_especes < 0 %}c-bad{% elif ecart_especes > 0 %}c-warn{% else %}c-ok{% endif %}">
+          {% if ecart_especes > 0 %}+{% endif %}{{ ecart_especes|montant }}
+        </td>
+        <td>{% if ecart_especes == 0 %}<span class="b-ok">✓ OK</span>{% elif ecart_especes < 0 %}<span class="b-bad">⚠ ÉCART À JUSTIFIER</span>{% else %}<span class="b-warn">+ EXCÉDENT</span>{% endif %}</td>
+      </tr>
+      {% if stats.wave or declared_wave %}<tr>
+        <td>📱 Wave</td><td>{{ stats.wave|montant }}</td><td>{{ declared_wave|montant }}</td>
+        <td class="{% if ecart_wave < 0 %}c-bad{% elif ecart_wave > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_wave > 0 %}+{% endif %}{{ ecart_wave|montant }}</td>
+        <td>{% if ecart_wave == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+      </tr>{% endif %}
+      {% if stats.orange or declared_orange %}<tr>
+        <td>📱 Orange Money</td><td>{{ stats.orange|montant }}</td><td>{{ declared_orange|montant }}</td>
+        <td class="{% if ecart_orange < 0 %}c-bad{% elif ecart_orange > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_orange > 0 %}+{% endif %}{{ ecart_orange|montant }}</td>
+        <td>{% if ecart_orange == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+      </tr>{% endif %}
+      {% if stats.mtn or declared_mtn %}<tr>
+        <td>📱 MTN MoMo</td><td>{{ stats.mtn|montant }}</td><td>{{ declared_mtn|montant }}</td>
+        <td class="{% if ecart_mtn < 0 %}c-bad{% elif ecart_mtn > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_mtn > 0 %}+{% endif %}{{ ecart_mtn|montant }}</td>
+        <td>{% if ecart_mtn == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+      </tr>{% endif %}
+      {% if stats.moov or declared_moov %}<tr>
+        <td>📱 Flooz</td><td>{{ stats.moov|montant }}</td><td>{{ declared_moov|montant }}</td>
+        <td class="{% if ecart_moov < 0 %}c-bad{% elif ecart_moov > 0 %}c-warn{% else %}c-ok{% endif %}">{% if ecart_moov > 0 %}+{% endif %}{{ ecart_moov|montant }}</td>
+        <td>{% if ecart_moov == 0 %}<span class="b-ok">✓ OK</span>{% else %}<span class="b-bad">⚠ ÉCART</span>{% endif %}</td>
+      </tr>{% endif %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>TOTAL</td>
+        <td>{{ stats.total|montant }}</td>
+        <td>{{ declared_total|montant }}</td>
+        <td style="color:{% if ecart_total < 0 %}#fca5a5{% elif ecart_total > 0 %}#fde68a{% else %}#86efac{% endif %}">
+          {% if ecart_total > 0 %}+{% endif %}{{ ecart_total|montant }}
+        </td>
+        <td>{% if ecart_total == 0 %}<span class="b-ok">✓ ÉQUILIBRÉ</span>{% else %}<span class="b-bad">ÉCART</span>{% endif %}</td>
+      </tr>
+    </tfoot>
+  </table>
 </div>
 
 <!-- ═══ 4 + 5 + 6 ══════════════════════════════════════════════════ -->
@@ -273,17 +273,16 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
     <table class="rz-table">
       <thead><tr><th>Coupure</th><th style="text-align:center">Qté</th><th>Montant</th></tr></thead>
       <tbody>
-      {% for bl in billetage_lignes %}{% if bl.coupure >= 100 %}
+      {% for bl in billetage_lignes %}{% if bl.quantite %}
       <tr>
         <td>{{ bl.coupure|montant }} F</td>
-        <td style="text-align:center{% if not bl.quantite %};color:#94a3b8{% else %};font-weight:700{% endif %}">
-          {% if bl.quantite %}{{ bl.quantite }}{% else %}_____{% endif %}
-        </td>
-        <td{% if not bl.quantite %} class="rz-blank"{% endif %}>
-          {% if bl.quantite %}{{ bl.sous_total|montant }}{% else %}_____{% endif %}
-        </td>
+        <td style="text-align:center;font-weight:700">{{ bl.quantite }}</td>
+        <td style="font-weight:600">{{ bl.sous_total|montant }}</td>
       </tr>
       {% endif %}{% endfor %}
+      {% if not billetage_lignes %}
+      <tr><td colspan="3" style="color:#94a3b8;text-align:center;font-style:italic;padding:10px">— à compléter manuellement —</td></tr>
+      {% endif %}
       <tr style="background:#f0fdf4">
         <td colspan="2" style="font-weight:700">Total espèces comptées</td>
         <td class="c-ok" style="font-weight:700">{{ declared_especes|montant }}</td>
@@ -371,11 +370,13 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
   <div class="rz-sec-title"><span class="rz-sec-num">7</span>RÉCAPITULATIF DE CLÔTURE</div>
   <div style="display:flex;gap:14px;border:1px solid #e2e8f0;border-top:none">
     <div style="flex:1;padding:8px 0">
-      <div class="rz-recap-row"><span>Solde initial / Report veille</span><strong>{{ session.fond_caisse|montant }} F</strong></div>
-      <div class="rz-recap-row"><span>+ Recettes brutes encaissées</span><span style="color:#16a34a;font-weight:700">+ {{ stats.total|montant }} F</span></div>
-      {% if stats.depenses %}<div class="rz-recap-row sub"><span>dont Décaissements à déduire</span><span style="color:#dc2626">− {{ stats.depenses|montant }} F</span></div>{% endif %}
-      <div class="rz-recap-row"><span>− Dépôts / Versements déclarés</span><span style="color:#dc2626;font-weight:700">− {{ declared_total|montant }} F</span></div>
+      <div class="rz-recap-row"><span>Fonds déclarés / comptés (espèces + mobile)</span><strong>{{ declared_total|montant }} F</strong></div>
+      {% if session.prelevement_banque %}<div class="rz-recap-row sub"><span>− Prélèvement banque</span><span style="color:#dc2626">− {{ session.prelevement_banque|montant }} F</span></div>{% endif %}
       <div class="rz-recap-row total"><span>= NOUVEAU SOLDE INITIAL</span><strong>{{ nouveau_fond|montant }} F</strong></div>
+      <div style="padding:6px 10px;font-size:9px;color:#64748b;border-top:1px dashed #e2e8f0;margin-top:4px">
+        Pour référence — encaissements théoriques session : {{ stats.total|montant }} F
+        (écart global : {% if ecart_total > 0 %}+{% endif %}{{ ecart_total|montant }} F)
+      </div>
     </div>
     <div style="width:190px;padding:10px;display:flex;align-items:center">
       <div class="rz-fond-box" style="width:100%">

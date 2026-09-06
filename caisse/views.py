@@ -1336,7 +1336,9 @@ def rapport_caisse(request, session_id=None):
 
     # Récapitulatif final
     recettes_nettes = stats['total'] - stats['depenses']
-    nouveau_fond    = int(session.fond_caisse) + recettes_nettes - declared_total
+    # Nouveau fond = ce que la caissière a déclaré/compté moins ce qu'elle a versé à la banque.
+    # C'est exactement ce que get_solde_veille() retournera pour la prochaine ouverture.
+    nouveau_fond    = declared_total - int(session.prelevement_banque)
 
     # Billetage détaillé : toutes les coupures standards, avec quantité si disponible
     COUPURES = [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5]
