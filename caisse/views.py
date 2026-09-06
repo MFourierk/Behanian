@@ -540,11 +540,12 @@ def index(request):
         stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     elif is_manager:
-        # KPIs filtrés par compte (cree_par) quand une caissière est sélectionnée,
-        # journée complète sinon. Cela affiche ce que l'opératrice a enregistré
-        # depuis le début de la journée, indépendamment de l'heure d'ouverture de sa session.
-        stats = get_stats_jour(today, type_caisse=None,
-                               user=session_filtre.user if session_filtre else None)
+        if session_filtre:
+            # Session précise sélectionnée : stats isolées sur la fenêtre horaire de cette session
+            stats = get_stats_session(session_filtre)
+        else:
+            # Journée complète (onglet "Journée complète")
+            stats = get_stats_jour(today, type_caisse=None)
         attente_session = False
     else:
         # Caissière sans session ouverte : zéros — ne pas montrer les shifts des collègues
@@ -588,8 +589,8 @@ def index(request):
             prelevements = PrelevementBanque.objects.filter(
                 date__date=today, valide=True
             ).select_related('cree_par').order_by('-date')
-        # Réconciliation toujours journée complète (indépendant du filtre session)
-        reconciliation = get_reconciliation_jour(today)
+        # Réconciliation : filtrée sur la session sélectionnée, ou journée complète
+        reconciliation = get_reconciliation_session(session_filtre) if session_filtre else get_reconciliation_jour(today)
         vue_session = False
     else:
         # Caissière sans session : aucune donnée visible
@@ -624,7 +625,8 @@ def index(request):
     # Net disponible en caisse centrale = fond initial + versements reçus - prélèvements - dépenses
     # verse_recu = tous les versements de la session (quel que soit le module enregistré),
     # hors CONSOLIDATION — cohérent avec le Flux de caisse.
-    fond_initial = int(session_active.fond_caisse) if session_active else 0
+    session_ref = session_active or session_filtre
+    fond_initial = int(session_ref.fond_caisse) if session_ref else 0
     verse_recu   = int(
         mouvements.filter(type='versement')
                   .exclude(reference__startswith='CONSOLIDATION')
