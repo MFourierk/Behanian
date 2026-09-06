@@ -1143,34 +1143,89 @@
 
     <!-- ÉTAPE 3 : FINALISATION -->
     <div id="clot-step-3" style="display:none">
-      <div style="background:#eff6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#1e40af;margin-bottom:12px">
-        <i class="fas fa-info-circle"></i> <strong>Étape 3/3 :</strong> Renseignez si un prélèvement banque a été effectué, ajoutez vos notes et confirmez la clôture.
+      <div style="background:#eff6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#1e40af;margin-bottom:14px">
+        <i class="fas fa-info-circle"></i> <strong>Étape 3/3 — Déclaration des fonds :</strong> Saisissez les montants physiquement en votre possession.
       </div>
-      <div class="form-row">
-        <label>Espèces comptées (issues du billetage)</label>
-        <input type="number" id="cl_fond_reel" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-weight:700;font-size:15px">
-        <span style="font-size:11px;color:#2563eb;margin-top:4px;display:block"><i class="fas fa-link"></i> Automatiquement rempli depuis le billetage — modifiable si besoin</span>
-      </div>
-      <div class="form-row">
-        <label>Prélèvement banque à cette clôture (FCFA)</label>
-        <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0" oninput="calculerEcart()">
-      </div>
-      <!-- Calcul écart en temps réel -->
-      <div id="ecart_box" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Contrôle de caisse</div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="color:var(--muted)">Fond initial + Total encaissements (espèces + mobile) − Prélèv.</span>
-          <strong id="ecart_theorique">—</strong>
+
+      <!-- Espèces -->
+      <div style="background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:16px">💵</span>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#374151">Espèces — billetage</span>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="color:var(--muted)">Mobile money (ajouté automatiquement au report)</span>
-          <strong style="color:#7c3aed">{{ stats.mobile|default:0|montant }} F</strong>
+        <input type="number" id="cl_fond_reel" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-weight:700;font-size:16px;color:#1a2535">
+        <div style="font-size:10px;color:#2563eb;margin-top:5px"><i class="fas fa-link"></i> Rempli automatiquement depuis le billetage — modifiable</div>
+      </div>
+
+      <!-- Mobile money -->
+      <div style="background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:16px">📱</span>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#374151">Mobile Money — solde déclaré</span>
         </div>
-        <div style="display:flex;justify-content:space-between">
-          <span style="color:var(--muted)">Écart espèces (théorique − billetage)</span>
-          <strong id="ecart_val" style="font-size:14px">—</strong>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+              <label style="font-size:11px;font-weight:600;color:#1d4ed8;margin:0">Wave</label>
+              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.wave|default:0|montant }} F</span>
+            </div>
+            <input type="number" id="cl_wave" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+              <label style="font-size:11px;font-weight:600;color:#c2410c;margin:0">Orange Money</label>
+              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.orange|default:0|montant }} F</span>
+            </div>
+            <input type="number" id="cl_orange" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+              <label style="font-size:11px;font-weight:600;color:#854d0e;margin:0">MTN MoMo</label>
+              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.mtn|default:0|montant }} F</span>
+            </div>
+            <input type="number" id="cl_mtn" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+              <label style="font-size:11px;font-weight:600;color:#0f766e;margin:0">Moov Money</label>
+              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.moov|default:0|montant }} F</span>
+            </div>
+            <input type="number" id="cl_moov" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px dashed #e2e8f0">
+          <span style="font-size:11px;color:var(--muted)">Total mobile déclaré</span>
+          <strong id="mobile_declare_total" style="font-size:13px;color:#7c3aed">0 F</strong>
         </div>
       </div>
+
+      <!-- Prélèvement banque -->
+      <div style="background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:16px">🏦</span>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#374151">Prélèvement banque</span>
+        </div>
+        <input type="number" id="cl_prelev" class="fc" placeholder="0 si aucun" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+      </div>
+
+      <!-- Contrôle de caisse -->
+      <div id="ecart_box" style="background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1.5px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#0369a1;margin-bottom:10px">⚖️ Contrôle de caisse</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--muted)">Solde théorique (fond + encaissements − prélèv.)</span>
+          <strong id="ecart_theorique" style="font-size:13px">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--muted)">Total déclaré (espèces + mobile)</span>
+          <strong id="total_declare_affich" style="font-size:13px;color:#374151">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px dashed #bae6fd">
+          <span style="font-size:12px;font-weight:700;color:#0369a1">Écart</span>
+          <strong id="ecart_val" style="font-size:16px">—</strong>
+        </div>
+      </div>
+
+      <!-- Banque + Notes -->
       <div class="form-row">
         <label>Banque / Référence bordereau</label>
         <input type="text" id="cl_banque" class="fc" placeholder="Ex: SGBCI — Bordereau N°123">
@@ -1381,23 +1436,32 @@ async function post(url, data){ return _bPost(url, data); }
 
 // Données session active pour le calcul d'écart
 const SESSION_FOND    = {{ session_active.fond_caisse|default:0 }};
-const SESSION_ESPECES = {{ stats.especes|default:0 }};
-const SESSION_MOBILE  = {{ stats.mobile|default:0 }};
+const SESSION_TOTAL   = {{ stats.total|default:0 }};
 
 function calculerEcart(){
-  const fondReel = parseFloat(document.getElementById('cl_fond_reel').value)||0;
-  const prelev   = parseFloat(document.getElementById('cl_prelev').value)||0;
-  // solde_th = fond + tous encaissements (espèces + mobile) − prélèvement
-  const solde_th = SESSION_FOND + SESSION_ESPECES + SESSION_MOBILE - prelev;
-  // ecart sur espèces seulement (mobile est tracé exactement par le système)
-  const ecart    = SESSION_FOND + SESSION_ESPECES - prelev - fondReel;
+  const especes = parseFloat(document.getElementById('cl_fond_reel').value)||0;
+  const wave    = parseFloat(document.getElementById('cl_wave').value)||0;
+  const orange  = parseFloat(document.getElementById('cl_orange').value)||0;
+  const mtn     = parseFloat(document.getElementById('cl_mtn').value)||0;
+  const moov    = parseFloat(document.getElementById('cl_moov').value)||0;
+  const prelev  = parseFloat(document.getElementById('cl_prelev').value)||0;
+
+  const total_mobile  = wave + orange + mtn + moov;
+  const total_declare = especes + total_mobile;
+  // Solde théorique = fond initial + tous encaissements − prélèvement
+  const solde_th = SESSION_FOND + SESSION_TOTAL - prelev;
+  const ecart    = solde_th - total_declare;
+
+  // Affichage total mobile
+  document.getElementById('mobile_declare_total').textContent = total_mobile.toLocaleString('fr-FR') + ' F';
   document.getElementById('ecart_theorique').textContent = solde_th.toLocaleString('fr-FR') + ' F';
+  document.getElementById('total_declare_affich').textContent = total_declare.toLocaleString('fr-FR') + ' F';
   const ecartEl = document.getElementById('ecart_val');
   if(ecart > 0){
-    ecartEl.textContent = '+' + ecart.toLocaleString('fr-FR') + ' F (excédent espèces)';
+    ecartEl.textContent = '+' + ecart.toLocaleString('fr-FR') + ' F (excédent)';
     ecartEl.style.color = '#16a34a';
   } else if(ecart < 0){
-    ecartEl.textContent = ecart.toLocaleString('fr-FR') + ' F (manquant espèces)';
+    ecartEl.textContent = ecart.toLocaleString('fr-FR') + ' F (manquant)';
     ecartEl.style.color = '#dc2626';
   } else {
     ecartEl.textContent = '0 F (équilibré ✓)';
@@ -1438,9 +1502,13 @@ function ouvrirModalCloturer(){
   // Reset wizard
   allerEtape(1);
   document.getElementById('cl_fond_reel').value = 0;
-  document.getElementById('cl_prelev').value    = 0;
-  document.getElementById('cl_banque').value    = '';
-  document.getElementById('cl_notes').value     = '';
+  document.getElementById('cl_wave').value   = 0;
+  document.getElementById('cl_orange').value = 0;
+  document.getElementById('cl_mtn').value    = 0;
+  document.getElementById('cl_moov').value   = 0;
+  document.getElementById('cl_prelev').value = 0;
+  document.getElementById('cl_banque').value = '';
+  document.getElementById('cl_notes').value  = '';
   // Reset billetage
   document.querySelectorAll('.billet-nb').forEach(i => i.value = 0);
   recalculerBilletage();
@@ -1496,6 +1564,10 @@ async function cloturerCaisse(){
   }
   const d = await post("{% url 'caisse:cloturer' %}", {
     fond_reel:          document.getElementById('cl_fond_reel').value||0,
+    mobile_wave:        document.getElementById('cl_wave').value||0,
+    mobile_orange:      document.getElementById('cl_orange').value||0,
+    mobile_mtn:         document.getElementById('cl_mtn').value||0,
+    mobile_moov:        document.getElementById('cl_moov').value||0,
     prelevement_banque: document.getElementById('cl_prelev').value||0,
     banque:             document.getElementById('cl_banque').value,
     notes:              document.getElementById('cl_notes').value,

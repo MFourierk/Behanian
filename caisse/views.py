@@ -306,8 +306,12 @@ def get_stats_jour(date=None, type_caisse=None, user=None):
         'total':        int(total),
         'nb_tickets':   tickets.count(),
         'especes':      int(especes),
-        'mobile':       mobile,       # total agrégé (backward compat)
-        'par_mobile':   par_mobile,   # [(label, montant, couleur, badge), ...]
+        'mobile':       mobile,
+        'wave':         _wave,
+        'orange':       _orange,
+        'mtn':          _mtn,
+        'moov':         _moov,
+        'par_mobile':   par_mobile,
         'carte':        int(carte),
         'virement':     int(virement),
         'par_module':   par_module,
@@ -372,6 +376,10 @@ def get_stats_session(session):
         'nb_tickets':   tickets.count(),
         'especes':      int(especes),
         'mobile':       mobile,
+        'wave':         _wave,
+        'orange':       _orange,
+        'mtn':          _mtn,
+        'moov':         _moov,
         'par_mobile':   par_mobile,
         'carte':        int(carte),
         'virement':     int(virement),
@@ -815,15 +823,18 @@ def cloturer_caisse(request):
         data      = json.loads(request.body)
         today     = timezone.localdate()
         fond_reel = _dec(data.get('fond_reel', 0))
+        mobile_wave   = _dec(data.get('mobile_wave',   0))
+        mobile_orange = _dec(data.get('mobile_orange', 0))
+        mobile_mtn    = _dec(data.get('mobile_mtn',    0))
+        mobile_moov   = _dec(data.get('mobile_moov',   0))
         prelev    = _dec(data.get('prelevement_banque', 0))
         banque    = data.get('banque', '')
         notes     = data.get('notes', '')
 
         stats = get_stats_session(session)
 
-        # fond_reel = espèces comptées (billetage) ; on ajoute le mobile encaissé (tracé exactement)
-        fond_reel_especes = fond_reel
-        fond_reel_total   = fond_reel_especes + _dec(stats['mobile'])
+        # fond_reel_total = espèces comptées (billetage) + mobile money déclaré par la caissière
+        fond_reel_total = fond_reel + mobile_wave + mobile_orange + mobile_mtn + mobile_moov
         # Solde théorique = fond initial + tous encaissements − prélèvements banque
         solde_th = session.fond_caisse + _dec(stats['total']) - prelev
         ecart    = solde_th - fond_reel_total
