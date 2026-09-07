@@ -1375,40 +1375,39 @@ def rapport_caisse(request, session_id=None):
     decaissements  = mouvements.filter(type='depense')
     solde_veille, _ = get_solde_veille()
 
-    # Montants déclarés par la caissière (billetage + mobile par opérateur)
-    # On utilise la somme des declared_* (pas total_mobile qui pouvait être auto-rempli
-    # par l'ancien code de clôture avant la migration vers la saisie manuelle par opérateur)
-    declared_wave         = int(session.declared_wave)
-    declared_orange       = int(session.declared_orange)
-    declared_mtn          = int(session.declared_mtn)
-    declared_moov         = int(session.declared_moov)
-    declared_mobile_total = declared_wave + declared_orange + declared_mtn + declared_moov
-    declared_especes      = max(0, int(session.fond_caisse_reel) - declared_mobile_total)
+    # ── Versements réels par mode (MouvementCaisse) — source de vérité ─────────
+    # On utilise les versements enregistrés (pas les declared_* saisis à la clôture)
+    # pour comparer ce que la caissière a physiquement remis vs les tickets de l'app.
+    vs_session = MouvementCaisse.objects.filter(
+        session=session, type='versement', valide=True,
+    ).exclude(reference__startswith='CONSOLIDATION')
 
-    # Mobile effectif : déclaré par opérateur si nouveau système, sinon stats app
-    # (les versements module attestent que l'argent a bien été remis physiquement)
-    effective_mobile = declared_mobile_total if declared_mobile_total > 0 else int(stats['mobile'])
+    def _vs(modes):
+        return int(vs_session.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
 
-    # declared_total = ce que la caissière a réellement remis (espèces + mobile effectif)
-    declared_total = declared_especes + effective_mobile
+    declared_especes      = _vs(['especes'])
+    declared_wave         = _vs(['wave'])
+    declared_orange       = _vs(['orange_money'])
+    declared_mtn          = _vs(['mtn_money'])
+    declared_moov         = _vs(['moov_money'])
+    declared_mobile_total = declared_wave + declared_orange + declared_mtn + declared_moov + _vs(['mobile_money', 'mobile'])
+    effective_mobile      = declared_mobile_total
+    declared_total        = declared_especes + declared_mobile_total
 
-    # Écarts par mode (théorique système vs déclaré)
+    # Écarts par mode (tickets théoriques vs versements réels)
     ecart_especes = declared_especes    - stats['especes']
     ecart_wave    = declared_wave       - stats['wave']
     ecart_orange  = declared_orange     - stats['orange']
     ecart_mtn     = declared_mtn        - stats['mtn']
     ecart_moov    = declared_moov       - stats['moov']
-    ecart_mobile  = effective_mobile    - stats['mobile']
+    ecart_mobile  = declared_mobile_total - stats['mobile']
     ecart_total   = declared_total      - stats['total']
 
-    # Session antérieure aux champs declared_* : mobile prouvé par versements module mais
-    # pas saisie par opérateur → on affiche le total effectif sur une seule ligne "Mobile Money"
-    is_old_mobile_session = (declared_mobile_total == 0 and effective_mobile > 0)
+    is_old_mobile_session = False  # plus pertinent avec les versements comme source
 
     recettes_nettes = stats['total'] - stats['depenses']
-    # Nouveau solde initial = Solde veille (fond_caisse remis à l'ouverture)
-    #                        + Espèces déclarées + Mobile reçu − Prélèvement banque
-    nouveau_fond = int(session.fond_caisse) + declared_especes + effective_mobile - int(session.prelevement_banque)
+    # Nouveau solde initial = Fond d'ouverture + espèces versées + mobile versé − prélèvement banque
+    nouveau_fond = int(session.fond_caisse) + declared_especes + declared_mobile_total - int(session.prelevement_banque)
 
     # Billetage détaillé : toutes les coupures standards, avec quantité si disponible
     COUPURES = [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5]

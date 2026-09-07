@@ -194,26 +194,17 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
     </table>
   </div>
 
-  <!-- 2. Versements déclarés -->
+  <!-- 2. Versements reçus (MouvementCaisse) -->
   <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">2</span>VERSEMENTS / DÉCLARATIONS</div>
+    <div class="rz-sec-title"><span class="rz-sec-num">2</span>VERSEMENTS REÇUS PAR LA CAISSE</div>
     <table class="rz-table">
       <thead><tr><th>Moyen de paiement</th><th>Montant</th></tr></thead>
       <tbody>
         <tr><td>💵 Espèces</td><td>{{ declared_especes|montant }}</td></tr>
-        {% if is_old_mobile_session %}
-          {% if stats.wave %}   <tr><td>📱 Wave</td>         <td>{{ stats.wave|montant }}</td></tr>{% endif %}
-          {% if stats.orange %} <tr><td>📱 Orange Money</td> <td>{{ stats.orange|montant }}</td></tr>{% endif %}
-          {% if stats.mtn %}    <tr><td>📱 MTN MoMo</td>    <td>{{ stats.mtn|montant }}</td></tr>{% endif %}
-          {% if stats.moov %}   <tr><td>📱 Flooz (Moov)</td><td>{{ stats.moov|montant }}</td></tr>{% endif %}
-        {% else %}
-          {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>{% endif %}
-          {% if declared_orange %}<tr><td>📱 Orange Money</td><td>{{ declared_orange|montant }}</td></tr>{% endif %}
-          {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
-          {% if declared_moov %}  <tr><td>📱 Flooz (Moov)</td><td>{{ declared_moov|montant }}</td></tr>{% endif %}
-        {% endif %}
-        {% if stats.carte %}    <tr><td>💳 Carte</td>       <td>{{ stats.carte|montant }}</td></tr>{% endif %}
-        {% if stats.virement %} <tr><td>🏦 Virement</td>   <td>{{ stats.virement|montant }}</td></tr>{% endif %}
+        {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>{% endif %}
+        {% if declared_orange %}<tr><td>📱 Orange Money</td><td>{{ declared_orange|montant }}</td></tr>{% endif %}
+        {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
+        {% if declared_moov %}  <tr><td>📱 Flooz (Moov)</td><td>{{ declared_moov|montant }}</td></tr>{% endif %}
       </tbody>
       <tfoot><tr><td>TOTAL</td><td class="gold">{{ declared_total|montant }}</td></tr></tfoot>
     </table>
@@ -416,10 +407,10 @@ window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCop
   <div style="display:flex;gap:14px;border:1px solid #e2e8f0;border-top:none">
     <div style="flex:1;padding:8px 0">
       <div class="rz-recap-row"><span>🏦 Solde veille (fond initial session)</span><strong>{{ session.fond_caisse|montant }} F</strong></div>
-      <div class="rz-recap-row sub"><span>+ 💵 Espèces comptées (billetage)</span><span style="color:#16a34a;font-weight:700">+ {{ declared_especes|montant }} F</span></div>
+      <div class="rz-recap-row sub"><span>+ 💵 Espèces versées (modules)</span><span style="color:#16a34a;font-weight:700">+ {{ declared_especes|montant }} F</span></div>
       {% if effective_mobile %}
       <div class="rz-recap-row sub">
-        <span>+ 📱 Mobile money {% if declared_mobile_total %}déclaré{% else %}reçu via versements module{% endif %}</span>
+        <span>+ 📱 Mobile money reçu (versements modules)</span>
         <span style="color:#16a34a;font-weight:700">+ {{ effective_mobile|montant }} F</span>
       </div>
       {% endif %}
