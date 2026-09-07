@@ -2069,6 +2069,11 @@ def api_vente_create(request):
             except Exception:
                 pass
 
+        # Frais additionnels — saisis librement par la caissière selon le gérant
+        droit_bouchon = Decimal(str(data.get('droit_bouchon', 0) or 0))
+        droit_place   = Decimal(str(data.get('droit_place', 0) or 0))
+        frais_add     = droit_bouchon + droit_place
+
         if not lignes:
             return JsonResponse({'ok': False, 'error': 'Ticket vide'}, status=400)
 
@@ -2125,7 +2130,7 @@ def api_vente_create(request):
             'visite'      : 'Visiteur',
         }
         espace_label = ESPACE_LABELS.get(espace, espace or 'Cave')
-        total_final  = total + frais_salon
+        total_final  = total + frais_salon + frais_add
         rendu        = max(Decimal('0'), montant_recu - total_final)
 
         # Construire le contenu texte lisible du ticket
@@ -2137,6 +2142,10 @@ def api_vente_create(request):
         )
         if frais_salon > 0:
             lignes_txt += f"\n  Salon VIP {salon_nom_cave} {heures_salon}h × {int(tarif_salon_cave):,} F  {int(frais_salon):,} F"
+        if droit_bouchon > 0:
+            lignes_txt += f"\n  Droit de bouchon  {int(droit_bouchon):,} F"
+        if droit_place > 0:
+            lignes_txt += f"\n  Droit de place  {int(droit_place):,} F"
         # Label règlement lisible pour le ticket texte
         _REGLEMENT_LABELS = {'especes': 'Espèces', 'carte': 'Carte / TPE', 'chambre': 'Report Chambre'}
         if paiement == 'mobile' and operateur_mobile:

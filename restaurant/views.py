@@ -173,13 +173,18 @@ def valider_commande(request):
                     except (Table.DoesNotExist, ValueError):
                         pass
 
+            # Frais additionnels — saisis librement par la caissière selon le gérant
+            droit_bouchon = Decimal(str(data.get('droit_bouchon', 0) or 0))
+            droit_place   = Decimal(str(data.get('droit_place', 0) or 0))
+            frais_add     = droit_bouchon + droit_place
+
             with transaction.atomic():
                 commande.statut = 'payee'
                 # Caissier = utilisateur connecté
                 commande.caissier = request.user
                 # Montant rendu
                 total_net = commande.total_net
-                commande.montant_rendu = max(Decimal('0'), montant_encaisse - Decimal(str(total_net)) - frais_salon)
+                commande.montant_rendu = max(Decimal('0'), montant_encaisse - Decimal(str(total_net)) - frais_salon - frais_add)
                 # Sauvegarder le serveur sélectionné dans la commande
                 if serveur_id:
                     from django.contrib.auth.models import User as AuthUser
@@ -246,8 +251,12 @@ def valider_commande(request):
                         <span class="item-price">{int(frais_salon):,} F</span>
                     </div>
                     """
+                if droit_bouchon > 0:
+                    services_html += f'<div class="row"><span class="item-name">🍾 Droit de bouchon</span><span class="item-price">{int(droit_bouchon):,} F</span></div>'
+                if droit_place > 0:
+                    services_html += f'<div class="row"><span class="item-name">📦 Droit de place</span><span class="item-price">{int(droit_place):,} F</span></div>'
 
-                montant_total_ticket = Decimal(str(commande.total_net)) + frais_salon
+                montant_total_ticket = Decimal(str(commande.total_net)) + frais_salon + frais_add
 
                 # Création du Ticket
                 _mode_pay = _map_mode_paiement(

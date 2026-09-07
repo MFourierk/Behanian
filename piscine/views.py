@@ -546,11 +546,16 @@ def encaisser_sortie(request, acces_id):
             except Exception:
                 pass
 
+        # Frais additionnels — saisis librement par la caissière selon le gérant
+        droit_bouchon = Decimal(str(data.get('droit_bouchon', 0) or 0))
+        droit_place   = Decimal(str(data.get('droit_place', 0) or 0))
+        frais_add     = droit_bouchon + droit_place
+
         # Total brut = entrée + consommations ; remise fixe enregistrée à l'entrée
         total_conso    = sum(c.get_total() for c in acces.consommations.all())
         total_brut     = acces.prix_total + total_conso
         montant_remise = acces.remise_montant if acces.remise_montant else Decimal('0')
-        total          = max(total_brut - montant_remise, Decimal('0')) + frais_salon
+        total          = max(total_brut - montant_remise, Decimal('0')) + frais_salon + frais_add
 
         # Validation montant pour tout paiement direct
         if not sur_chambre and montant_recu < total:
@@ -623,6 +628,10 @@ def encaisser_sortie(request, acces_id):
             contenu += f'<div class="row" style="color:#dc2626"><span class="item-name">Remise</span><span class="item-price">-{int(montant_remise):,} F</span></div>'
         if frais_salon > 0:
             contenu += f'<div class="row salon-prive"><span class="item-name">Salon VIP {salon_nom_pisc} {heures_salon}h × {int(tarif_salon_pisc):,} F</span><span class="item-price">{int(frais_salon):,} F</span></div>'
+        if droit_bouchon > 0:
+            contenu += f'<div class="row"><span class="item-name">🍾 Droit de bouchon</span><span class="item-price">{int(droit_bouchon):,} F</span></div>'
+        if droit_place > 0:
+            contenu += f'<div class="row"><span class="item-name">📦 Droit de place</span><span class="item-price">{int(droit_place):,} F</span></div>'
         if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
             contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
 

@@ -1067,6 +1067,42 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
     </div>
     {% endif %}
 
+    <!-- Frais additionnels — Droit de bouchon / Droit de place -->
+    <div id="barFraisSection" style="margin-bottom:14px">
+      <button id="btnBarFraisToggle" type="button" onclick="toggleBarFraisAddit()"
+        style="width:100%;background:rgba(251,146,60,0.07);border:1px solid rgba(251,146,60,0.25);border-radius:12px;padding:9px 14px;color:#fb923c;font-weight:700;font-size:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">
+        🍾 Frais additionnels
+        <span style="font-size:10px;font-weight:400;color:rgba(251,146,60,.55)">(Bouchon · Droit de place)</span>
+        <span id="barFraisArrow" style="margin-left:auto;font-size:15px">▸</span>
+      </button>
+      <div id="barFraisInner" style="display:none;background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.2);border-top:none;border-radius:0 0 12px 12px;padding:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+          <div>
+            <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:#fb923c;display:block;margin-bottom:6px">🍾 Droit de bouchon</label>
+            <div style="position:relative">
+              <input type="number" id="barMontantBouchon" min="0" step="100" placeholder="0" oninput="majBarFraisAddit()"
+                style="width:100%;padding:9px 30px 9px 10px;background:#0f172a;border:1.5px solid rgba(251,146,60,0.35);border-radius:10px;color:white;font-size:14px;font-weight:700;box-sizing:border-box">
+              <span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:#6b7280;pointer-events:none">F</span>
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:4px">Boisson apportée par le client</div>
+          </div>
+          <div>
+            <label style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:#fb923c;display:block;margin-bottom:6px">📦 Droit de place</label>
+            <div style="position:relative">
+              <input type="number" id="barMontantDroitPlace" min="0" step="100" placeholder="0" oninput="majBarFraisAddit()"
+                style="width:100%;padding:9px 30px 9px 10px;background:#0f172a;border:1.5px solid rgba(251,146,60,0.35);border-radius:10px;color:white;font-size:14px;font-weight:700;box-sizing:border-box">
+              <span style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:#6b7280;pointer-events:none">F</span>
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:4px">Apport extérieur (repas/boissons)</div>
+          </div>
+        </div>
+        <div id="barFraisResume" hidden style="padding:7px 10px;background:rgba(251,146,60,0.12);border-radius:8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:#fb923c;font-weight:600">Total frais additionnels</span>
+          <span id="barMontantFraisTotal" style="font-size:14px;font-weight:800;color:#fb923c">0 F</span>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-actions" style="margin-top:18px">
       <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
       <button class="modal-btn-confirm" id="btnConfirmerPaiement" onclick="confirmerPaiement()">
@@ -1508,8 +1544,36 @@ function fermerModal() {
   if (btnC) { btnC.disabled = false; btnC.innerHTML = '<i class="fas fa-eye mr-2"></i> Aperçu & Imprimer'; }
 }
 
+function barGetFraisAdditionnels() {
+  return (parseFloat(document.getElementById('barMontantBouchon')?.value) || 0)
+       + (parseFloat(document.getElementById('barMontantDroitPlace')?.value) || 0);
+}
+
+function toggleBarFraisAddit(force) {
+  const inner = document.getElementById('barFraisInner');
+  const arrow = document.getElementById('barFraisArrow');
+  if (!inner) return;
+  const open = force !== undefined ? force : (inner.style.display === 'none' || !inner.style.display);
+  inner.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.textContent = open ? '▾' : '▸';
+}
+
+function majBarFraisAddit() {
+  const total = barGetFraisAdditionnels();
+  const resume = document.getElementById('barFraisResume');
+  if (resume) {
+    resume.hidden = total <= 0;
+    const el = document.getElementById('barMontantFraisTotal');
+    if (el) el.textContent = formatF(total) + ' F';
+  }
+  const grandTotal = getTotal() + _barSalonFrais + total;
+  document.getElementById('modalTotal').innerHTML = `${formatF(grandTotal)} <span>FCFA</span>`;
+  if (modePaiement === 'especes') calcRendu();
+  else calcMontantMobile();
+}
+
 function calcRendu() {
-  const total = getTotal() + _barSalonFrais;
+  const total = getTotal() + _barSalonFrais + barGetFraisAdditionnels();
   const recu  = parseFloat(document.getElementById('montantRecu').value) || 0;
   const rendu = recu - total;
   const div   = document.getElementById('renduDisplay');
@@ -1529,7 +1593,7 @@ function calcRendu() {
 }
 
 function setBillet(val, exact = false) {
-  if (exact) { document.getElementById('montantRecu').value = getTotal() + _barSalonFrais; }
+  if (exact) { document.getElementById('montantRecu').value = getTotal() + _barSalonFrais + barGetFraisAdditionnels(); }
   else       { document.getElementById('montantRecu').value = val; }
   calcRendu();
 }
@@ -1566,7 +1630,7 @@ function setModalMode(mode) {
 }
 
 function calcMontantMobile() {
-  const total   = getTotal();
+  const total   = getTotal() + _barSalonFrais + barGetFraisAdditionnels();
   const especes = parseFloat(document.getElementById('montantEspeces').value) || 0;
   const mobile  = Math.max(0, total - especes);
   document.getElementById('montantMobileVal').textContent = formatF(mobile);
@@ -1583,11 +1647,17 @@ function choisirModeMobile(mode) {
 function _ouvrirModalPaiementNormal() {
   try {
     const t = tickets[ticketActifId];
-    // Réinitialiser le salon VIP à chaque ouverture
+    // Réinitialiser le salon VIP et les frais additionnels à chaque ouverture
     const barSelSalon = document.getElementById('barSelectSalonVIP');
     if (barSelSalon) { barSelSalon.value = ''; onBarSalonChange(); }
     _barSalonFrais = 0;
-    const total = getTotal() + _barSalonFrais;
+    const _bEl = document.getElementById('barMontantBouchon'), _pEl = document.getElementById('barMontantDroitPlace');
+    if (_bEl) _bEl.value = '';
+    if (_pEl) _pEl.value = '';
+    const _br = document.getElementById('barFraisResume');
+    if (_br) _br.hidden = true;
+    toggleBarFraisAddit(false);
+    const total = getTotal();
     document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
     const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
     const ref = t.ref ? ` (${t.ref})` : '';
@@ -1715,9 +1785,11 @@ async function confirmerPaiement() {
   if (_paiementEnCours) return;
   _paiementEnCours = true;
   const t     = tickets[ticketActifId];
-  const total = getTotal() + _barSalonFrais;
-  const barSalonId = document.getElementById('barSelectSalonVIP')?.value || '';
-  const barHeures  = barSalonId ? (parseInt(document.getElementById('barHeuresSalon')?.value) || 1) : 0;
+  const barSalonId      = document.getElementById('barSelectSalonVIP')?.value || '';
+  const barHeures       = barSalonId ? (parseInt(document.getElementById('barHeuresSalon')?.value) || 1) : 0;
+  const barDroitBouchon = parseFloat(document.getElementById('barMontantBouchon')?.value) || 0;
+  const barDroitPlace   = parseFloat(document.getElementById('barMontantDroitPlace')?.value) || 0;
+  const total = getTotal() + _barSalonFrais + barDroitBouchon + barDroitPlace;
 
   // Vérifier serveur obligatoire
   const serveurVal = t.serveur || document.getElementById('selectServeur').value || '';
@@ -1769,6 +1841,8 @@ async function confirmerPaiement() {
     session_token   : SESSION_TOKEN,
     salon_vip_id    : barSalonId || null,
     heures_salon    : barHeures,
+    droit_bouchon   : barDroitBouchon,
+    droit_place     : barDroitPlace,
   };
 
   // Capturer tout avant fermeture de la modal
