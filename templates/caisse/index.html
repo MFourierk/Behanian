@@ -686,8 +686,19 @@
           <div class="ph"><h3>💼 Flux de caisse</h3></div>
           <div style="padding:14px 16px">
 
+            {% if caisse_flux.fond_ouverture %}
+            <!-- FOND D'OUVERTURE — ligne neutre, pas de détail par mode -->
+            <div style="margin-bottom:14px">
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#64748b;margin-bottom:6px">⚖ Solde initial</div>
+              <div style="background:#f8fafc;border-radius:8px;border-left:3px solid #94a3b8;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:11px;font-weight:600;color:#475569">{{ caisse_flux.fond_ouverture.label }}</span>
+                <span style="font-size:14px;font-weight:800;color:#334155">{{ caisse_flux.fond_ouverture.total|montant }} F</span>
+              </div>
+            </div>
+            {% endif %}
+
             {% if caisse_flux.entrees %}
-            <!-- ENTRÉES -->
+            <!-- ENTRÉES (mouvements session : versements, encaissements) -->
             <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#16a34a;margin-bottom:8px">▲ Entrées</div>
             <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
               {% for e in caisse_flux.entrees %}
@@ -764,13 +775,23 @@
             </div>
             {% endif %}
 
-            {% if not caisse_flux.entrees and not caisse_flux.sorties %}
+            {% if not caisse_flux.fond_ouverture and not caisse_flux.entrees and not caisse_flux.sorties %}
             <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Aucun mouvement enregistré</div>
             {% else %}
-            <!-- NET -->
+            <!-- NET mouvements (hors fond d'ouverture) -->
+            {% if caisse_flux.entrees or caisse_flux.sorties %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);margin-bottom:8px">
+              <span style="font-size:11px;color:var(--muted)">Net mouvements session</span>
+              <span style="font-size:13px;font-weight:700;color:{% if caisse_flux.net >= 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ caisse_flux.net|montant }} F</span>
+            </div>
+            {% endif %}
+            <!-- DISPONIBLE TOTAL = Fond + Net mouvements -->
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--dark);border-radius:10px">
-              <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7)">Net mouvements caisse</span>
-              <span style="font-size:15px;font-weight:800;color:var(--gold)">{{ caisse_flux.net|montant }} F</span>
+              <div>
+                <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7)">💰 Net disponible en caisse</span>
+                <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:2px">Fond + versements − sorties</div>
+              </div>
+              <span style="font-size:15px;font-weight:800;color:var(--gold)">{{ net_caisse_central|montant }} F</span>
             </div>
             {% endif %}
 

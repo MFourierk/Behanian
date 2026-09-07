@@ -39,7 +39,7 @@ _TYPE_CONFIG = [
 
 def get_caisse_flux(qs):
     """Résume les MouvementCaisse par type et mode de paiement.
-    Retourne entrees, sorties, totaux pour le panneau Flux de caisse.
+    Retourne fond_ouverture (séparé, sans détail mode), entrees, sorties, totaux.
     """
     # Agrégation par type + mode
     rows = list(qs.values('type', 'mode_paiement').annotate(s=Sum('montant')))
@@ -51,6 +51,10 @@ def get_caisse_flux(qs):
         if t not in raw:
             raw[t] = {}
         raw[t][m] = raw[t].get(m, 0) + s
+
+    # Fond d'ouverture — affiché séparément comme ligne neutre, sans détail par mode
+    fond_total = sum(raw.get('fond_caisse', {}).values())
+    fond_ouverture = {'label': 'Fond de caisse (ouverture)', 'total': fond_total} if fond_total else None
 
     # Détail individuel des versements pour audit
     detail_versements = list(
@@ -67,6 +71,8 @@ def get_caisse_flux(qs):
     total_entrees = total_sorties = 0
 
     for type_key, label, is_entree in _TYPE_CONFIG:
+        if type_key == 'fond_caisse':
+            continue  # géré séparément dans fond_ouverture
         modes_data = raw.get(type_key, {})
         total = sum(modes_data.values())
         if total == 0:
@@ -87,11 +93,12 @@ def get_caisse_flux(qs):
             total_sorties += total
 
     return {
-        'entrees':       entrees,
-        'sorties':       sorties,
-        'total_entrees': total_entrees,
-        'total_sorties': total_sorties,
-        'net':           total_entrees - total_sorties,
+        'fond_ouverture': fond_ouverture,
+        'entrees':        entrees,
+        'sorties':        sorties,
+        'total_entrees':  total_entrees,
+        'total_sorties':  total_sorties,
+        'net':            total_entrees - total_sorties,
     }
 
 
@@ -662,17 +669,15 @@ def index(request):
     # Exclure les versements CONSOLIDATION (synthétiques, mode especes en dur, non représentatifs)
     caisse_flux = get_caisse_flux(mouvements.exclude(reference__startswith='CONSOLIDATION'))
 
-    # Net disponible en caisse centrale = fond initial + versements reçus - prélèvements - dépenses
-    # verse_recu = tous les versements de la session (quel que soit le module enregistré),
-    # hors CONSOLIDATION — cohérent avec le Flux de caisse.
-    session_ref = session_active or session_filtre
-    fond_initial = int(session_ref.fond_caisse) if session_ref else 0
-    verse_recu   = int(
+    # verse_recu = versements de la session (hors CONSOLIDATION) — utilisé dans les KPI
+    verse_recu = int(
         mouvements.filter(type='versement')
                   .exclude(reference__startswith='CONSOLIDATION')
                   .aggregate(s=Sum('montant'))['s'] or 0
     )
-    net_caisse_central = fond_initial + verse_recu - stats['prelevements'] - stats['depenses']
+    # Net disponible = fond d'ouverture (MouvementCaisse réel) + mouvements nets de la session
+    fond_flux = caisse_flux['fond_ouverture']['total'] if caisse_flux['fond_ouverture'] else 0
+    net_caisse_central = fond_flux + caisse_flux['net']
 
     context = {
         'billetage_vals': [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5],
