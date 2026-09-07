@@ -450,7 +450,7 @@
                   {% if ligne.total_verse > 0 %}{{ ligne.total_verse|montant }} F{% else %}—{% endif %}
                 </td>
                 <td style="text-align:center">
-                  {% if ligne.total_tx == 0 %}
+                  {% if ligne.total_tx == 0 and ligne.total_verse == 0 %}
                     <span style="font-size:11px;color:var(--muted)">— Aucune activité</span>
                   {% elif ligne.total_verse == 0 %}
                     <span style="background:#fee2e2;color:#dc2626;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">⏳ En attente</span>
@@ -535,7 +535,7 @@
                 <td style="text-align:right;font-family:monospace">
                   {% if ligne.total_verse > 0 %}
                   <div class="verse-wrap">
-                    <span style="font-weight:700;color:#16a34a;cursor:default">{{ ligne.total_verse|montant }} F</span>
+                    <span style="font-weight:700;color:#16a34a;cursor:pointer" {% if ligne.detail_versements %}onclick="toggleDvRow({{ forloop.counter }})"{% endif %}>{{ ligne.total_verse|montant }} F</span>
                     <span style="font-size:9px;color:#94a3b8;margin-left:2px">▾</span>
                     <div class="verse-pop">
                       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;margin-bottom:6px">Versé par mode</div>
@@ -552,12 +552,20 @@
                   <span style="color:#94a3b8">—</span>
                   {% endif %}
                 </td>
-                <td style="text-align:right;font-family:monospace;font-weight:700;color:{% if ligne.solde <= 0 %}#16a34a{% elif ligne.solde == ligne.total_tx %}#dc2626{% else %}#d97706{% endif %}">
-                  {{ ligne.solde|montant }} F
+                <td style="text-align:right;font-family:monospace;font-weight:700;color:{% if ligne.excedent %}#16a34a{% elif ligne.solde == 0 %}#16a34a{% elif ligne.solde == ligne.total_tx %}#dc2626{% else %}#d97706{% endif %}">
+                  {% if ligne.excedent %}
+                    +{{ ligne.abs_solde|montant }} F <span style="font-size:9px;font-weight:400;color:#16a34a">excédent</span>
+                  {% elif ligne.solde == 0 %}
+                    ✓
+                  {% else %}
+                    {{ ligne.solde|montant }} F
+                  {% endif %}
                 </td>
                 <td style="text-align:center">
-                  {% if ligne.total_tx == 0 %}
+                  {% if ligne.total_tx == 0 and ligne.total_verse == 0 %}
                     <span style="font-size:11px;color:var(--muted)">— Aucune activité</span>
+                  {% elif ligne.excedent %}
+                    <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Excédent</span>
                   {% elif ligne.complet %}
                     <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600">✅ Soldé</span>
                   {% elif ligne.total_verse == 0 %}
@@ -567,6 +575,24 @@
                   {% endif %}
                 </td>
               </tr>
+              {% if ligne.detail_versements %}
+              <tr class="detail-vs-row" id="dvrow-{{ forloop.counter }}" style="display:none;background:#f8fafc">
+                <td colspan="20" style="padding:0 12px 10px 30px">
+                  <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 4px">Détail des versements reçus</div>
+                  <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    {% for dv in ligne.detail_versements %}
+                    <tr style="border-bottom:1px solid #e2e8f0">
+                      <td style="padding:4px 8px;color:#64748b;white-space:nowrap">{{ dv.date|date:"H:i" }}</td>
+                      <td style="padding:4px 8px;color:#334155">{{ dv.description|default:"—" }}</td>
+                      <td style="padding:4px 8px;color:#64748b;font-size:10px">{{ dv.module }}</td>
+                      <td style="padding:4px 8px;color:#64748b">{{ dv.mode_lbl }}</td>
+                      <td style="padding:4px 8px;text-align:right;font-family:monospace;font-weight:700;color:#16a34a">{{ dv.montant|montant }} F</td>
+                    </tr>
+                    {% endfor %}
+                  </table>
+                </td>
+              </tr>
+              {% endif %}
               {% endfor %}
               </tbody>
               <tfoot>
@@ -583,8 +609,11 @@
                   <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_mixte|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;border-left:2px solid #e2e8f0">{{ reconciliation.grand_total_tx|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:#16a34a">{{ reconciliation.grand_total_verse|montant }} F</td>
-                  <td style="text-align:right;font-family:monospace;color:{% if reconciliation.grand_solde <= 0 %}#16a34a{% else %}#dc2626{% endif %}">
-                    {{ reconciliation.grand_solde|montant }} F
+                  <td style="text-align:right;font-family:monospace;color:{% if reconciliation.grand_excedent %}#16a34a{% elif reconciliation.grand_solde == 0 %}#16a34a{% elif reconciliation.grand_solde > 0 %}#dc2626{% else %}#16a34a{% endif %}">
+                    {% if reconciliation.grand_excedent %}+{{ reconciliation.grand_abs_solde|montant }} F <span style="font-size:9px">excédent</span>
+                    {% elif reconciliation.grand_solde == 0 %}✓ Soldé
+                    {% else %}{{ reconciliation.grand_solde|montant }} F
+                    {% endif %}
                   </td>
                   <td></td>
                 </tr>
@@ -2128,5 +2157,11 @@ async function supprimerMouvement() {
 </div>
 {% endif %}
 
+<script>
+function toggleDvRow(n) {
+  var r = document.getElementById('dvrow-' + n);
+  if (r) r.style.display = r.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
 {% endlocalize %}
 {% endblock %}

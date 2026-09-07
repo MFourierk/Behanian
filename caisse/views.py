@@ -104,47 +104,90 @@ def get_caisse_flux(qs):
 
 # ── Modules à réconcilier (ticket_module, caisse_module, label, emoji) ─────
 MODULES_RECONCILIATION = [
-    ('hotel',      'hotel',    'Hôtel',        '🏨'),
-    ('restaurant', 'restaurant','Restaurant',  '🍽️'),
-    ('cave',       'cave',     'Cave / Bar',   '🍷'),
-    ('piscine',    'piscine',  'Piscine',      '🏊'),
-    ('espace',     'espaces',  'Espaces',      '🎪'),
+    ('hotel',      'hotel',      'Hôtel',       '🏨'),
+    ('restaurant', 'restaurant', 'Restaurant',  '🍽️'),
+    ('cave',       'cave',       'Cave / Bar',  '🍷'),
+    ('piscine',    'piscine',    'Piscine',     '🏊'),
+    ('espace',     'espaces',    'Espaces',     '🎪'),
 ]
+# Modules caisse "connus" — tout versement hors cette liste → ligne "Autres"
+_KNOWN_CAISSE_MODULES = {caisse_mod for _, caisse_mod, _, _ in MODULES_RECONCILIATION}
+
+
+def _build_ligne(label, emoji, total_tx, especes, mobile, wave, orange, mtn, moov,
+                 carte, virement, mixte, total_verse,
+                 verse_especes, verse_wave, verse_orange, verse_mtn, verse_moov,
+                 verse_mobile, verse_carte, verse_virement, detail_versements):
+    """Construit un dict de ligne de réconciliation avec tous les champs calculés."""
+    solde = total_tx - total_verse
+    return {
+        'label':           label,
+        'emoji':           emoji,
+        'total_tx':        total_tx,
+        'especes':         especes,
+        'mobile':          mobile,
+        'wave':            wave,
+        'orange':          orange,
+        'mtn':             mtn,
+        'moov':            moov,
+        'carte':           carte,
+        'virement':        virement,
+        'mixte':           mixte,
+        'autres':          max(0, total_tx - especes - mobile - carte - virement),
+        'total_verse':     total_verse,
+        'verse_especes':   verse_especes,
+        'verse_wave':      verse_wave,
+        'verse_orange':    verse_orange,
+        'verse_mtn':       verse_mtn,
+        'verse_moov':      verse_moov,
+        'verse_mobile':    verse_mobile,
+        'verse_carte':     verse_carte,
+        'verse_virement':  verse_virement,
+        'solde':           solde,
+        'abs_solde':       abs(solde),
+        'excedent':        solde < 0,   # versé > tickets → excédent (afficher en positif)
+        'complet':         solde <= 0,
+        'detail_versements': detail_versements,
+    }
+
+
+def _enrich_detail(qs_values):
+    """Ajoute mode_lbl aux lignes de détail versement."""
+    rows = list(qs_values)
+    for dv in rows:
+        dv['montant'] = int(dv['montant'])
+        m = dv['mode_paiement']
+        dv['mode_lbl'] = _MODE_LABELS[m][0] if m in _MODE_LABELS else m
+    return rows
+
+
+def _grand_totals_init():
+    return dict(tx=0, verse=0, esp=0, mob=0, wave=0, orange=0, mtn=0, moov=0, carte=0, vir=0, mixte=0)
 
 
 def get_reconciliation_jour(date=None):
     """
     Retourne par module : total transactions du jour, total versé manuellement,
     solde restant à verser.
+    Inclut une ligne "Autres" pour tout versement hors modules standard.
     """
     if date is None:
         date = timezone.localdate()
 
     lignes = []
-    grand_total_tx    = 0
-    grand_total_verse = 0
-    grand_especes     = 0
-    grand_mobile      = 0
-    grand_wave        = 0
-    grand_orange      = 0
-    grand_mtn         = 0
-    grand_moov        = 0
-    grand_carte       = 0
-    grand_virement    = 0
-    grand_mixte       = 0
+    g = _grand_totals_init()
 
     for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
         qs = Ticket.objects.filter(date_creation__date=date, module=ticket_mod)
         total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
 
-        # Espèces = tickets purs espèces + portion espèces des tickets mixtes
-        especes_purs_r  = qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
-        especes_mixte_r = qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0
-        especes = int(especes_purs_r) + int(especes_mixte_r)
+        especes = (
+            int(qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
+            + int(qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0)
+        )
 
-        def _net_mobile(modes):
-            """Portion mobile = montant_total - montant_especes (0 si pas mixte)."""
-            r = qs.filter(mode_paiement__in=modes).aggregate(
+        def _net_mobile(modes, _qs=qs):
+            r = _qs.filter(mode_paiement__in=modes).aggregate(
                 total=Sum('montant_total'), esp=Sum('montant_especes')
             )
             return int((r['total'] or 0) - (r['esp'] or 0))
@@ -156,18 +199,14 @@ def get_reconciliation_jour(date=None):
         mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
         carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
         virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = 0  # Les paiements mixtes sont désormais ventilés dans especes + mobile
-        autres   = total_tx - especes - mobile - carte - virement
+        mixte    = 0
 
         vs_qs = MouvementCaisse.objects.filter(
-            date__date=date,
-            type='versement',
-            module=caisse_mod,
-            valide=True,
+            date__date=date, type='versement', module=caisse_mod, valide=True,
         ).exclude(reference__startswith='CONSOLIDATION')
 
-        def _vsum(modes):
-            return int(vs_qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+        def _vsum(modes, _vs=vs_qs):
+            return int(_vs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
 
         verse_especes  = _vsum(['especes'])
         verse_wave     = _vsum(['wave'])
@@ -179,59 +218,55 @@ def get_reconciliation_jour(date=None):
         verse_virement = _vsum(['virement'])
         total_verse    = int(vs_qs.aggregate(s=Sum('montant'))['s'] or 0)
 
-        solde = total_tx - total_verse
-        lignes.append({
-            'label':          label,
-            'emoji':          emoji,
-            'total_tx':       total_tx,
-            'especes':        especes,
-            'mobile':         mobile,
-            'wave':           wave,
-            'orange':         orange,
-            'mtn':            mtn,
-            'moov':           moov,
-            'carte':          carte,
-            'virement':       virement,
-            'mixte':          mixte,
-            'autres':         autres if autres > 0 else 0,
-            'total_verse':    total_verse,
-            'verse_especes':  verse_especes,
-            'verse_wave':     verse_wave,
-            'verse_orange':   verse_orange,
-            'verse_mtn':      verse_mtn,
-            'verse_moov':     verse_moov,
-            'verse_mobile':   verse_mobile,
-            'verse_carte':    verse_carte,
-            'verse_virement': verse_virement,
-            'solde':          solde,
-            'complet':        solde <= 0,
-        })
-        grand_total_tx    += total_tx
-        grand_total_verse += total_verse
-        grand_especes     += especes
-        grand_mobile      += mobile
-        grand_wave        += wave
-        grand_orange      += orange
-        grand_mtn         += mtn
-        grand_moov        += moov
-        grand_carte       += carte
-        grand_virement    += virement
-        grand_mixte       += mixte
+        detail_vs = _enrich_detail(vs_qs.values('id', 'date', 'montant', 'mode_paiement', 'module', 'description').order_by('date'))
+
+        lignes.append(_build_ligne(
+            label, emoji, total_tx, especes, mobile, wave, orange, mtn, moov,
+            carte, virement, mixte, total_verse,
+            verse_especes, verse_wave, verse_orange, verse_mtn, verse_moov,
+            verse_mobile, verse_carte, verse_virement, detail_vs,
+        ))
+        g['tx'] += total_tx; g['verse'] += total_verse
+        g['esp'] += especes; g['mob'] += mobile
+        g['wave'] += wave; g['orange'] += orange; g['mtn'] += mtn; g['moov'] += moov
+        g['carte'] += carte; g['vir'] += virement; g['mixte'] += mixte
+
+    # ── Catch-all "Autres" : TOUS les versements hors modules standard ───────
+    vs_autres = MouvementCaisse.objects.filter(
+        date__date=date, type='versement', valide=True,
+    ).exclude(reference__startswith='CONSOLIDATION').exclude(module__in=_KNOWN_CAISSE_MODULES)
+
+    total_verse_autres = int(vs_autres.aggregate(s=Sum('montant'))['s'] or 0)
+    if total_verse_autres > 0:
+        def _va(modes):
+            return int(vs_autres.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+        va_esp = _va(['especes']); va_wave = _va(['wave']); va_orange = _va(['orange_money'])
+        va_mtn = _va(['mtn_money']); va_moov = _va(['moov_money'])
+        va_mob = va_wave + va_orange + va_mtn + va_moov + _va(['mobile_money', 'mobile'])
+        va_carte = _va(['carte_bancaire', 'carte']); va_vir = _va(['virement'])
+        detail_autres = _enrich_detail(vs_autres.values('id', 'date', 'montant', 'mode_paiement', 'module', 'description').order_by('date'))
+        lignes.append(_build_ligne(
+            'Autres', '📦', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, total_verse_autres,
+            va_esp, va_wave, va_orange, va_mtn, va_moov, va_mob, va_carte, va_vir, detail_autres,
+        ))
+        g['verse'] += total_verse_autres
 
     return {
         'lignes':             lignes,
-        'grand_total_tx':     grand_total_tx,
-        'grand_total_verse':  grand_total_verse,
-        'grand_solde':        grand_total_tx - grand_total_verse,
-        'grand_especes':      grand_especes,
-        'grand_mobile':       grand_mobile,
-        'grand_wave':         grand_wave,
-        'grand_orange':       grand_orange,
-        'grand_mtn':          grand_mtn,
-        'grand_moov':         grand_moov,
-        'grand_carte':        grand_carte,
-        'grand_virement':     grand_virement,
-        'grand_mixte':        grand_mixte,
+        'grand_total_tx':     g['tx'],
+        'grand_total_verse':  g['verse'],
+        'grand_solde':        g['tx'] - g['verse'],
+        'grand_abs_solde':    abs(g['tx'] - g['verse']),
+        'grand_excedent':     g['tx'] < g['verse'],
+        'grand_especes':      g['esp'],
+        'grand_mobile':       g['mob'],
+        'grand_wave':         g['wave'],
+        'grand_orange':       g['orange'],
+        'grand_mtn':          g['mtn'],
+        'grand_moov':         g['moov'],
+        'grand_carte':        g['carte'],
+        'grand_virement':     g['vir'],
+        'grand_mixte':        g['mixte'],
     }
 
 
@@ -402,21 +437,12 @@ def get_reconciliation_session(session):
     """Réconciliation tickets vs versements pour la fenêtre horaire d'une session.
     - Tickets : filtrés par opened_at → closed_at (ou now())
     - Versements : filtrés par session FK (MouvementCaisse.session)
+    Inclut une ligne "Autres" pour tout versement hors modules standard.
     """
     date_fin = session.closed_at or timezone.now()
 
-    lignes            = []
-    grand_total_tx    = 0
-    grand_total_verse = 0
-    grand_especes     = 0
-    grand_mobile      = 0
-    grand_wave        = 0
-    grand_orange      = 0
-    grand_mtn         = 0
-    grand_moov        = 0
-    grand_carte       = 0
-    grand_virement    = 0
-    grand_mixte       = 0
+    lignes = []
+    g = _grand_totals_init()
 
     for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
         qs = Ticket.objects.filter(
@@ -426,40 +452,32 @@ def get_reconciliation_session(session):
         )
         total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
 
-        def _sum(modes):
-            return int(qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant_total'))['s'] or 0)
+        especes = (
+            int(qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
+            + int(qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0)
+        )
 
-        def _net_mobile(modes):
-            # Pour les tickets mixtes (mode=wave/mobile + montant_especes>0)
-            # la part mobile = montant_total - montant_especes
-            r = qs.filter(mode_paiement__in=modes).aggregate(
+        def _net_mobile(modes, _qs=qs):
+            r = _qs.filter(mode_paiement__in=modes).aggregate(
                 total=Sum('montant_total'), esp=Sum('montant_especes')
             )
             return int((r['total'] or 0) - (r['esp'] or 0))
 
-        # Espèces = tickets purs espèces + part espèces des tickets mixtes
-        especes  = (
-            int(qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
-            + int(qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0)
-        )
         wave     = _net_mobile(['wave'])
         orange   = _net_mobile(['orange_money'])
         mtn      = _net_mobile(['mtn_money'])
         moov     = _net_mobile(['moov_money'])
         mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
-        carte    = _sum(['carte_bancaire', 'carte'])
-        virement = _sum(['virement'])
-        mixte    = _sum(['mixte'])
+        carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
+        virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
+        mixte    = 0
 
         vs_qs = MouvementCaisse.objects.filter(
-            session=session,
-            type='versement',
-            module=caisse_mod,
-            valide=True,
+            session=session, type='versement', module=caisse_mod, valide=True,
         ).exclude(reference__startswith='CONSOLIDATION')
 
-        def _vsum(modes):
-            return int(vs_qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+        def _vsum(modes, _vs=vs_qs):
+            return int(_vs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
 
         verse_especes  = _vsum(['especes'])
         verse_wave     = _vsum(['wave'])
@@ -471,49 +489,55 @@ def get_reconciliation_session(session):
         verse_virement = _vsum(['virement'])
         total_verse    = int(vs_qs.aggregate(s=Sum('montant'))['s'] or 0)
 
-        solde = total_tx - total_verse
-        lignes.append({
-            'label': label, 'emoji': emoji,
-            'total_tx': total_tx, 'especes': especes,
-            'mobile': mobile, 'wave': wave, 'orange': orange, 'mtn': mtn, 'moov': moov,
-            'carte': carte, 'virement': virement, 'mixte': mixte,
-            'total_verse':    total_verse,
-            'verse_especes':  verse_especes,
-            'verse_wave':     verse_wave,
-            'verse_orange':   verse_orange,
-            'verse_mtn':      verse_mtn,
-            'verse_moov':     verse_moov,
-            'verse_mobile':   verse_mobile,
-            'verse_carte':    verse_carte,
-            'verse_virement': verse_virement,
-            'solde': solde, 'complet': solde <= 0,
-        })
-        grand_total_tx    += total_tx
-        grand_total_verse += total_verse
-        grand_especes     += especes
-        grand_mobile      += mobile
-        grand_wave        += wave
-        grand_orange      += orange
-        grand_mtn         += mtn
-        grand_moov        += moov
-        grand_carte       += carte
-        grand_virement    += virement
-        grand_mixte       += mixte
+        detail_vs = _enrich_detail(vs_qs.values('id', 'date', 'montant', 'mode_paiement', 'module', 'description').order_by('date'))
+
+        lignes.append(_build_ligne(
+            label, emoji, total_tx, especes, mobile, wave, orange, mtn, moov,
+            carte, virement, mixte, total_verse,
+            verse_especes, verse_wave, verse_orange, verse_mtn, verse_moov,
+            verse_mobile, verse_carte, verse_virement, detail_vs,
+        ))
+        g['tx'] += total_tx; g['verse'] += total_verse
+        g['esp'] += especes; g['mob'] += mobile
+        g['wave'] += wave; g['orange'] += orange; g['mtn'] += mtn; g['moov'] += moov
+        g['carte'] += carte; g['vir'] += virement; g['mixte'] += mixte
+
+    # ── Catch-all "Autres" : versements de session hors modules standard ─────
+    vs_autres = MouvementCaisse.objects.filter(
+        session=session, type='versement', valide=True,
+    ).exclude(reference__startswith='CONSOLIDATION').exclude(module__in=_KNOWN_CAISSE_MODULES)
+
+    total_verse_autres = int(vs_autres.aggregate(s=Sum('montant'))['s'] or 0)
+    if total_verse_autres > 0:
+        def _va(modes):
+            return int(vs_autres.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+        va_esp = _va(['especes']); va_wave = _va(['wave']); va_orange = _va(['orange_money'])
+        va_mtn = _va(['mtn_money']); va_moov = _va(['moov_money'])
+        va_mob = va_wave + va_orange + va_mtn + va_moov + _va(['mobile_money', 'mobile'])
+        va_carte = _va(['carte_bancaire', 'carte']); va_vir = _va(['virement'])
+        detail_autres = _enrich_detail(vs_autres.values('id', 'date', 'montant', 'mode_paiement', 'module', 'description').order_by('date'))
+        lignes.append(_build_ligne(
+            'Autres', '📦', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, total_verse_autres,
+            va_esp, va_wave, va_orange, va_mtn, va_moov, va_mob, va_carte, va_vir, detail_autres,
+        ))
+        g['verse'] += total_verse_autres
 
     return {
         'lignes':            lignes,
-        'grand_total_tx':    grand_total_tx,
-        'grand_total_verse': grand_total_verse,
-        'grand_solde':       grand_total_tx - grand_total_verse,
-        'grand_especes':     grand_especes,
-        'grand_mobile':      grand_mobile,
-        'grand_wave':        grand_wave,
-        'grand_orange':      grand_orange,
-        'grand_mtn':         grand_mtn,
-        'grand_moov':        grand_moov,
-        'grand_carte':       grand_carte,
-        'grand_virement':    grand_virement,
-        'grand_mixte':       grand_mixte,
+        'grand_total_tx':    g['tx'],
+        'grand_total_verse': g['verse'],
+        'grand_solde':       g['tx'] - g['verse'],
+        'grand_abs_solde':   abs(g['tx'] - g['verse']),
+        'grand_excedent':    g['tx'] < g['verse'],
+        'grand_especes':     g['esp'],
+        'grand_mobile':      g['mob'],
+        'grand_wave':        g['wave'],
+        'grand_orange':      g['orange'],
+        'grand_mtn':         g['mtn'],
+        'grand_moov':        g['moov'],
+        'grand_carte':       g['carte'],
+        'grand_virement':    g['vir'],
+        'grand_mixte':       g['mixte'],
     }
 
 
