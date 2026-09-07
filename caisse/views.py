@@ -1711,6 +1711,36 @@ def api_reconciliation(request):
 
 
 @require_module_access('caisse')
+def api_versements_session(request):
+    """API JSON — totaux des versements de la session en cours par mode de paiement.
+    Utilisé pour pré-remplir les champs mobile dans le formulaire de clôture.
+    """
+    session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+    if not session:
+        return JsonResponse({'success': False, 'error': 'Aucune session ouverte'})
+
+    vs = MouvementCaisse.objects.filter(
+        session=session, type='versement', valide=True,
+    ).exclude(reference__startswith='CONSOLIDATION')
+
+    def _s(modes):
+        return int(vs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+
+    wave   = _s(['wave'])
+    orange = _s(['orange_money'])
+    mtn    = _s(['mtn_money'])
+    moov   = _s(['moov_money'])
+    return JsonResponse({
+        'success': True,
+        'wave':   wave,
+        'orange': orange,
+        'mtn':    mtn,
+        'moov':   moov,
+        'total':  wave + orange + mtn + moov,
+    })
+
+
+@require_module_access('caisse')
 def rapport_transactions(request):
     """Rapport des transactions par module, mode de paiement et opérateur sur une période."""
     from datetime import datetime

@@ -1222,38 +1222,39 @@
           <span style="font-size:16px">📱</span>
           <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#374151">Mobile Money — solde déclaré</span>
         </div>
+        <div style="font-size:10px;color:#2563eb;margin-bottom:8px"><i class="fas fa-magic"></i> Pré-rempli depuis les versements enregistrés — modifiable si besoin</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
-              <label style="font-size:11px;font-weight:600;color:#1d4ed8;margin:0">Wave</label>
-              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.wave|default:0|montant }} F</span>
+              <label id="lbl_wave" style="font-size:11px;font-weight:600;color:#1d4ed8;margin:0">Wave</label>
+              <span style="font-size:10px;color:var(--muted)">tickets : {{ stats.wave|default:0|montant }} F</span>
             </div>
-            <input type="number" id="cl_wave" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+            <input type="number" id="cl_wave" class="fc" placeholder="0" min="0" value="0" oninput="this._modifie=true;calculerEcart()" style="font-size:13px">
           </div>
           <div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
-              <label style="font-size:11px;font-weight:600;color:#c2410c;margin:0">Orange Money</label>
-              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.orange|default:0|montant }} F</span>
+              <label id="lbl_orange" style="font-size:11px;font-weight:600;color:#c2410c;margin:0">Orange Money</label>
+              <span style="font-size:10px;color:var(--muted)">tickets : {{ stats.orange|default:0|montant }} F</span>
             </div>
-            <input type="number" id="cl_orange" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+            <input type="number" id="cl_orange" class="fc" placeholder="0" min="0" value="0" oninput="this._modifie=true;calculerEcart()" style="font-size:13px">
           </div>
           <div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
-              <label style="font-size:11px;font-weight:600;color:#854d0e;margin:0">MTN MoMo</label>
-              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.mtn|default:0|montant }} F</span>
+              <label id="lbl_mtn" style="font-size:11px;font-weight:600;color:#854d0e;margin:0">MTN MoMo</label>
+              <span style="font-size:10px;color:var(--muted)">tickets : {{ stats.mtn|default:0|montant }} F</span>
             </div>
-            <input type="number" id="cl_mtn" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+            <input type="number" id="cl_mtn" class="fc" placeholder="0" min="0" value="0" oninput="this._modifie=true;calculerEcart()" style="font-size:13px">
           </div>
           <div>
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
-              <label style="font-size:11px;font-weight:600;color:#0f766e;margin:0">Moov Money</label>
-              <span style="font-size:10px;color:var(--muted)">sys : {{ stats.moov|default:0|montant }} F</span>
+              <label id="lbl_moov" style="font-size:11px;font-weight:600;color:#0f766e;margin:0">Moov Money</label>
+              <span style="font-size:10px;color:var(--muted)">tickets : {{ stats.moov|default:0|montant }} F</span>
             </div>
-            <input type="number" id="cl_moov" class="fc" placeholder="0" min="0" value="0" oninput="calculerEcart()" style="font-size:13px">
+            <input type="number" id="cl_moov" class="fc" placeholder="0" min="0" value="0" oninput="this._modifie=true;calculerEcart()" style="font-size:13px">
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px dashed #e2e8f0">
-          <span style="font-size:11px;color:var(--muted)">Total mobile déclaré</span>
+          <span style="font-size:11px;color:var(--muted)">Total mobile versé</span>
           <strong id="mobile_declare_total" style="font-size:13px;color:#7c3aed">0 F</strong>
         </div>
       </div>
@@ -1554,17 +1555,42 @@ function allerEtape(n){
       ind.style.background = '#f1f5f9'; ind.style.color = '#94a3b8';
     }
   });
-  if(n === 3) calculerEcart();
+  if(n === 3){ preremplirMobile(); calculerEcart(); }
+}
+
+async function preremplirMobile(){
+  try {
+    const r = await fetch("{% url 'caisse:api_versements_session' %}");
+    const d = await r.json();
+    if(!d.success) return;
+    const hint = ' <span style="font-size:10px;color:#16a34a;font-style:italic">↑ depuis versements</span>';
+    const set = (id, val, lblId) => {
+      const el = document.getElementById(id);
+      if(el && !el._modifie) {   // ne pas écraser si déjà modifié manuellement
+        el.value = val || 0;
+        const lbl = document.getElementById(lblId);
+        if(lbl && val > 0 && !lbl.innerHTML.includes('↑')) lbl.innerHTML += hint;
+      }
+    };
+    set('cl_wave',   d.wave,   'lbl_wave');
+    set('cl_orange', d.orange, 'lbl_orange');
+    set('cl_mtn',    d.mtn,    'lbl_mtn');
+    set('cl_moov',   d.moov,   'lbl_moov');
+    calculerEcart();
+  } catch(e){}
 }
 
 function ouvrirModalCloturer(){
   // Reset wizard
   allerEtape(1);
   document.getElementById('cl_fond_reel').value = 0;
-  document.getElementById('cl_wave').value   = 0;
-  document.getElementById('cl_orange').value = 0;
-  document.getElementById('cl_mtn').value    = 0;
-  document.getElementById('cl_moov').value   = 0;
+  ['cl_wave','cl_orange','cl_mtn','cl_moov'].forEach(id => {
+    const el = document.getElementById(id); el.value = 0; el._modifie = false;
+  });
+  ['lbl_wave','lbl_orange','lbl_mtn','lbl_moov'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = el.innerHTML.replace(/<span[^>]*>↑.*?<\/span>/g,'').split('<span')[0];
+  });
   document.getElementById('cl_prelev').value = 0;
   document.getElementById('cl_banque').value = '';
   document.getElementById('cl_notes').value  = '';
