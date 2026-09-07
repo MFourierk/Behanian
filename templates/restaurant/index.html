@@ -859,7 +859,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           </span>
           {% for cmd in commandes_en_cours_list %}
             {% if cmd.table.id == table.id %}
-            <div class="table-total">{{ cmd.total|montant }} F</div>
+            <div class="table-total">{{ cmd.total_net|montant }} F</div>
             {% if cmd.nom_client %}<div class="table-client">{{ cmd.nom_client }}</div>{% endif %}
             {% endif %}
           {% endfor %}
@@ -1594,7 +1594,7 @@ function _majLabelTicket(tid) {
   const btn = document.querySelector(`.ticket-attente-btn[data-tid="${tid}"]`);
   if (!btn || !t) return;
   const label = btn.querySelector('.ticket-label');
-  const total = t.lignes ? t.lignes.reduce((s,l) => s + l.prix * l.quantite, 0) : 0;
+  const total = t.totalNet ?? (t.lignes ? t.lignes.reduce((s,l) => s + l.prix * l.quantite, 0) : 0);
   const txt = `${t.nom}${total > 0 ? ' · ' + formatF(total) : ''}`;
   if (label) label.innerHTML = `<i class="fas fa-circle" style="font-size:0.5rem;"></i>&thinsp;${txt}`;
 }
@@ -1862,8 +1862,8 @@ async function _envoyerPlat(platId, nom, prix, accId) {
     const card = document.querySelector(`.article-card[data-id="${platId}"]`);
     if (card) { card.classList.add('added'); setTimeout(() => card.classList.remove('added'), 400); }
     renderTicket();
+    if (t.tableId) majTableCard(t.tableId, 'occupee', t.totalNet || t.total, t.client);
     toast('✅ ' + nom + ' ajouté', 'info');
-    if (t.tableId) majTableCard(t.tableId, 'occupee', t.total, t.client);
     // Afficher le bouton transfert si commande enregistrée avec table
     if (t.commandeDbId && t.tableId) {
       document.getElementById('btnTransfertTable').style.display = '';
@@ -1903,8 +1903,8 @@ async function ajouterBoisson(boissonId, nom, prix, unite, enStock) {
     if (data.nb_couverts !== undefined) t.nb_couverts = data.nb_couverts;
     if (data.statut !== undefined) t.statut = data.statut;
     renderTicket();
+    if (t.tableId) majTableCard(t.tableId, 'occupee', t.totalNet || t.total, t.client);
     toast('🍷 ' + nom + ' ajouté au ticket', 'success');
-    if (t.tableId) majTableCard(t.tableId, 'occupee', t.total, t.client);
   } catch(e) {
     console.error('Erreur ajouterBoisson:', e);
     toast('❌ Erreur réseau — réessayez', 'error');
@@ -1940,8 +1940,8 @@ async function ajouterForfait(forfaitId, nom, prix, enStock) {
     if (data.nb_couverts !== undefined) t.nb_couverts = data.nb_couverts;
     if (data.statut !== undefined) t.statut = data.statut;
     renderTicket();
+    if (t.tableId) majTableCard(t.tableId, 'occupee', t.totalNet || t.total, t.client);
     toast('⭐ ' + nom + ' ajouté au ticket', 'success');
-    if (t.tableId) majTableCard(t.tableId, 'occupee', t.total, t.client);
   } catch(e) {
     console.error('Erreur ajouterForfait:', e);
     toast('❌ Erreur réseau — réessayez', 'error');
@@ -1972,6 +1972,7 @@ async function modifierQty(ligneId, delta) {
       if (data.statut !== undefined) t.statut = data.statut;
     }
     renderTicket();
+    if (t?.tableId) majTableCard(t.tableId, 'occupee', t.totalNet || t.total || 0, t.client);
   } catch(e) { toast('❌ Erreur réseau', 'error'); }
 }
 
@@ -2119,6 +2120,7 @@ async function appliquerRemise() {
     } catch(e) { toast('❌ Erreur réseau', 'error'); return; }
   }
   renderTicket();
+  if (t.tableId) majTableCard(t.tableId, 'occupee', t.totalNet || t.total || 0, t.client);
   if (pct > 0) toast(`✅ Remise de ${pct}% appliquée`, 'success');
 }
 
