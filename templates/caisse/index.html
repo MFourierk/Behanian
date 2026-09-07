@@ -553,12 +553,9 @@
                   {% endif %}
                 </td>
                 <td style="text-align:right;font-family:monospace;font-weight:700;color:{% if ligne.excedent %}#16a34a{% elif ligne.solde == 0 %}#16a34a{% elif ligne.solde == ligne.total_tx %}#dc2626{% else %}#d97706{% endif %}">
-                  {% if ligne.excedent %}
-                    +{{ ligne.abs_solde|montant }} F <span style="font-size:9px;font-weight:400;color:#16a34a">excédent</span>
-                  {% elif ligne.solde == 0 %}
-                    ✓
-                  {% else %}
-                    {{ ligne.solde|montant }} F
+                  {% if ligne.excedent %}+{{ ligne.abs_solde|montant }} F
+                  {% elif ligne.solde == 0 %}✓
+                  {% else %}{{ ligne.solde|montant }} F
                   {% endif %}
                 </td>
                 <td style="text-align:center">
@@ -610,8 +607,8 @@
                   <td style="text-align:right;font-family:monospace;border-left:2px solid #e2e8f0">{{ reconciliation.grand_total_tx|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:#16a34a">{{ reconciliation.grand_total_verse|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:{% if reconciliation.grand_excedent %}#16a34a{% elif reconciliation.grand_solde == 0 %}#16a34a{% elif reconciliation.grand_solde > 0 %}#dc2626{% else %}#16a34a{% endif %}">
-                    {% if reconciliation.grand_excedent %}+{{ reconciliation.grand_abs_solde|montant }} F <span style="font-size:9px">excédent</span>
-                    {% elif reconciliation.grand_solde == 0 %}✓ Soldé
+                    {% if reconciliation.grand_excedent %}+{{ reconciliation.grand_abs_solde|montant }} F
+                    {% elif reconciliation.grand_solde == 0 %}✓
                     {% else %}{{ reconciliation.grand_solde|montant }} F
                     {% endif %}
                   </td>
