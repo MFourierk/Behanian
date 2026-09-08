@@ -1643,12 +1643,6 @@ function recalculerBilletage(){
 
 async function cloturerCaisse(){
   if(!confirm('Confirmer la clôture définitive de la caisse centrale ?')) return;
-  // Ouvrir la fenêtre rapport MAINTENANT — on est encore dans le contexte du clic
-  // utilisateur. Après un await, les navigateurs bloquent window.open() comme popup.
-  const rapportWin = window.open('about:blank', '_blank');
-  if(rapportWin){
-    rapportWin.document.write('<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#f0f4f8"><div style="text-align:center"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:16px;color:#1a2535;font-weight:600">Clôture en cours…</div><div style="font-size:13px;color:#64748b;margin-top:8px">Le rapport Z s\'ouvrira automatiquement.</div></div></body></html>');
-  }
   // Collecter le détail du billetage {coupure: quantité}
   const billetage = {};
   document.querySelectorAll('.billet-row').forEach(row => {
@@ -1668,53 +1662,32 @@ async function cloturerCaisse(){
   });
   if(d.success){
     if(d.logout && d.session_id){
-      // Naviguer la fenêtre déjà ouverte vers le rapport Z puis la mettre au premier plan
-      if(rapportWin && !rapportWin.closed){
-        rapportWin.location.href = '/caisse/rapport/' + d.session_id + '/?auto_print=1';
-        rapportWin.focus();
-      }
-      _afficherOverlayDeconnexion(d.message, rapportWin);
+      window._rapportClotureUrl = '/caisse/rapport/' + d.session_id + '/';
+      _afficherOverlayDeconnexion(d.message);
     } else {
-      if(rapportWin) rapportWin.close();
       toast('✅ '+d.message,'success');
       setTimeout(()=>location.reload(), 800);
     }
   } else {
-    if(rapportWin) rapportWin.close();
     toast('❌ '+d.error,'error');
   }
 }
 
-function _afficherOverlayDeconnexion(msg, rapportWin){
-  var secs = 30;
+function _afficherOverlayDeconnexion(msg){
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.96);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;color:#fff;text-align:center;padding:30px';
   overlay.innerHTML = `
     <div style="font-size:60px">✅</div>
     <div style="font-size:22px;font-weight:800;color:#34d399">Caisse clôturée avec succès</div>
     <div style="font-size:14px;color:#94a3b8;max-width:480px;line-height:1.6">${msg}</div>
-    <div style="background:#1e3a5f;border-radius:14px;padding:20px 32px;margin-top:8px">
-      <div style="font-size:13px;color:#93c5fd;margin-bottom:12px">🖨️ Le rapport s'est ouvert dans un nouvel onglet — imprimez-le avant de vous déconnecter</div>
-      <button id="btn-voir-rapport" onclick="if(window._rapportClotureWin && !window._rapportClotureWin.closed){window._rapportClotureWin.focus();}else{alert('Le rapport est dans un autre onglet de votre navigateur.');}" style="background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px">
-        🖨️ Voir le rapport
+    <div style="background:#1e3a5f;border-radius:14px;padding:24px 36px;margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="font-size:15px;color:#fbbf24;font-weight:600">🖨️ Imprimez le rapport pour terminer la clôture</div>
+      <button id="btn-voir-rapport" onclick="window.location.href=window._rapportClotureUrl+'?auto_print=1&auto_logout=1'" style="background:#1d4ed8;color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.3px">
+        🖨️ Voir &amp; Imprimer le rapport
       </button>
-      <div style="font-size:13px;color:#fca5a5">Déconnexion automatique dans <strong id="cloture-cpt">${secs}</strong> secondes…</div>
     </div>
-    <button onclick="window.location.href='/users/logout/'" style="margin-top:8px;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer">
-      Se déconnecter maintenant
-    </button>
   `;
-  window._rapportClotureWin = rapportWin;
   document.body.appendChild(overlay);
-  var timer = setInterval(function(){
-    secs--;
-    var el = document.getElementById('cloture-cpt');
-    if(el) el.textContent = secs;
-    if(secs <= 0){
-      clearInterval(timer);
-      window.location.href = '/users/logout/';
-    }
-  }, 1000);
 }
 
 function forceCloturerSession(sessionId, label){

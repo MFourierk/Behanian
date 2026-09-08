@@ -1418,7 +1418,8 @@ def rapport_caisse(request, session_id=None):
         nb = billet_raw.get(c) or billet_raw.get(str(c)) or 0
         billetage_lignes.append({'coupure': c, 'quantite': nb, 'sous_total': c * nb})
 
-    auto_print = request.GET.get('auto_print', '0')
+    auto_print  = request.GET.get('auto_print', '0')
+    auto_logout = request.GET.get('auto_logout', '0')
 
     return render(request, 'caisse/rapport.html', {
         'session':               session,
@@ -1445,6 +1446,7 @@ def rapport_caisse(request, session_id=None):
         'ecart_mobile':          ecart_mobile,
         'ecart_total':           ecart_total,
         'auto_print':            auto_print,
+        'auto_logout':           auto_logout,
         'billetage_lignes':      billetage_lignes,
         'effective_mobile':       effective_mobile,
         'is_old_mobile_session':  is_old_mobile_session,

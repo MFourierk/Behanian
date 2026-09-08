@@ -9,7 +9,9 @@
 </button>
 {% else %}
 <button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+{% if auto_logout != "1" %}
 <button onclick="try{window.close()}catch(e){window.history.back()}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endif %}
 {% endif %}
 {% endblock %}
 
@@ -86,6 +88,7 @@
 {% if auto_print == "1" %}
 <script>
 var _n=0;
+var _autoLogout = {% if auto_logout == "1" %}true{% else %}false{% endif %};
 function imprimerDeuxCopies(){
   document.getElementById('btn-auto').disabled=true;
   _n=0; window.addEventListener('afterprint',_ap); window.print();
@@ -93,10 +96,27 @@ function imprimerDeuxCopies(){
 function _ap(){
   _n++;
   if(_n<2){ setTimeout(function(){window.print();},300); }
-  else{ window.removeEventListener('afterprint',_ap); document.getElementById('btn-auto').style.display='none'; }
+  else{
+    window.removeEventListener('afterprint',_ap);
+    document.getElementById('btn-auto').style.display='none';
+    if(_autoLogout){ setTimeout(function(){ window.location.href='/users/logout/'; }, 800); }
+  }
 }
 window.addEventListener('DOMContentLoaded',function(){setTimeout(imprimerDeuxCopies,1800);});
 </script>
+{% elif auto_logout == "1" %}
+<script>
+window.addEventListener('afterprint', function(){
+  setTimeout(function(){ window.location.href='/users/logout/'; }, 800);
+});
+</script>
+{% endif %}
+
+{% if auto_logout == "1" %}
+<div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#dc2626;color:#fff;text-align:center;padding:10px 16px;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+  🖨️ Imprimez le rapport pour terminer la clôture — la session sera fermée automatiquement après l'impression
+</div>
+<div style="height:44px"></div>
 {% endif %}
 {% endblock %}
 
