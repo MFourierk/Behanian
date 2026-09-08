@@ -263,6 +263,9 @@ def valider_commande(request):
                     data.get('mode_paiement', 'especes'),
                     data.get('operateur_mobile', ''),
                 )
+                _is_mixte = montant_especes > 0 and _mode_pay not in ('especes', 'chambre', 'autre')
+                if _is_mixte:
+                    _mode_pay = 'mixte'
                 ticket = Ticket.objects.create(
                     numero=numero_ticket,
                     module='restaurant',
@@ -272,7 +275,7 @@ def valider_commande(request):
                     objet_id=commande.id,
                     montant_paye=montant_encaisse,
                     mode_paiement=_mode_pay,
-                    montant_especes=(montant_especes if montant_especes > 0 and _mode_pay not in ('especes', 'chambre') else Decimal('0')),
+                    montant_especes=(montant_especes if _is_mixte else Decimal('0')),
                     cree_par=request.user,
                     imprime=True
                 )
@@ -370,6 +373,9 @@ def facturer_salon_direct(request):
         )
 
         mode_mapped = _map_mode_paiement(mode_paiement, operateur_mobile)
+        _is_mixte_salon = montant_especes > 0 and mode_mapped not in ('especes', 'chambre', 'autre')
+        if _is_mixte_salon:
+            mode_mapped = 'mixte'
         numero_ticket = generate_ticket_numero()
 
         ticket = Ticket.objects.create(
@@ -380,7 +386,7 @@ def facturer_salon_direct(request):
             objet_id=None,
             montant_paye=montant_encaisse,
             mode_paiement=mode_mapped,
-            montant_especes=(montant_especes if montant_especes > 0 and mode_mapped not in ('especes', 'chambre') else Decimal('0')),
+            montant_especes=(montant_especes if _is_mixte_salon else Decimal('0')),
             cree_par=request.user,
             imprime=True,
         )

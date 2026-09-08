@@ -832,8 +832,10 @@ def checkout_reservation(request, reservation_id):
                 mode_paiement = operateur
 
         montant_especes = Decimal(request.POST.get('montant_especes', 0) or 0)
-        if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
+        _is_mixte_hotel = montant_especes > 0 and mode_paiement not in ('especes', 'chambre')
+        if _is_mixte_hotel:
             contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
+            mode_paiement = 'mixte'
 
         receptionniste_nom = request.POST.get('serveur', '').strip() or request.user.get_full_name() or request.user.username
         serveur_nom = request.POST.get('serveur_resto', '').strip()
@@ -847,7 +849,7 @@ def checkout_reservation(request, reservation_id):
             'mode_paiement': mode_paiement,
             'montant_paye': str(montant_paye),
             'montant_total': str(montant_total),
-            'montant_especes': str(montant_especes) if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else '0',
+            'montant_especes': str(montant_especes) if _is_mixte_hotel else '0',
             'f_client_id': f_client.id if f_client else None,
             'serveur_nom': serveur_nom,
             'receptionniste_nom': receptionniste_nom,

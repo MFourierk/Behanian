@@ -200,7 +200,8 @@ def get_reconciliation_jour(date=None):
         mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
         carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
         virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = 0
+        _mx = qs.filter(mode_paiement='mixte').aggregate(t=Sum('montant_total'), e=Sum('montant_especes'))
+        mixte    = int((_mx['t'] or 0) - (_mx['e'] or 0))
 
         vs_qs = MouvementCaisse.objects.filter(
             date__date=date, type='versement', module=caisse_mod, valide=True,
@@ -471,7 +472,8 @@ def get_reconciliation_session(session):
         mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
         carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
         virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = 0
+        _mx = qs.filter(mode_paiement='mixte').aggregate(t=Sum('montant_total'), e=Sum('montant_especes'))
+        mixte    = int((_mx['t'] or 0) - (_mx['e'] or 0))
 
         vs_qs = MouvementCaisse.objects.filter(
             session=session, type='versement', module=caisse_mod, valide=True,

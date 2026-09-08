@@ -262,15 +262,17 @@ def api_encaisser(request, reservation_id):
         contenu = f'<div class="row"><span class="item-name">{res.espace.nom} — {res.type_evenement} ({duree_label})</span><span class="item-price">{int(montant_net):,} F</span></div>'
         if res.avance > 0:
             contenu += f'<div class="row"><span class="item-name">Avance déjà perçue</span><span class="item-price">-{int(res.avance):,} F</span></div>'
-        if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
+        _is_mixte_esp = montant_especes > 0 and mode_paiement not in ('especes', 'chambre')
+        if _is_mixte_esp:
             contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
+            mode_paiement = 'mixte'
 
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='espace',
             objet_id=res.id,
             montant_total=restant, montant_paye=montant_recu,
             mode_paiement=mode_paiement, cree_par=request.user,
-            montant_especes=(montant_especes if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else Decimal('0')),
+            montant_especes=(montant_especes if _is_mixte_esp else Decimal('0')),
             contenu=contenu, imprime=True,
         )
         ticket_html = render_to_string('facturation/ticket_print_thermal.html', {

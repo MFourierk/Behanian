@@ -762,9 +762,13 @@ def ticket_print_thermal(request, pk):
     if not serveur and ticket.cree_par:
         serveur = ticket.cree_par.get_full_name() or ticket.cree_par.username
 
+    esp = ticket.montant_especes if ticket.montant_especes and ticket.montant_especes > 0 else None
     return render(request, 'facturation/ticket_print_thermal.html', {
-        'ticket': ticket,
-        'serveur': serveur,
+        'ticket':          ticket,
+        'serveur':         serveur,
+        'montant_especes': esp,
+        'montant_mobile':  (ticket.montant_total - ticket.montant_especes) if esp else None,
+        'mode_short':      'MOBILE',
     })
 
 @require_module_access('facturation')
