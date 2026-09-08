@@ -164,9 +164,9 @@ class MouvementStockCuisine(models.Model):
         ('inventaire',           'Inventaire — Conforme'),
     ]
 
-    TYPES_ENTREE  = {'entree', 'inventaire_excedent'}
-    TYPES_SORTIE  = {'sortie', 'casse', 'production', 'inventaire_manquant'}
-    TYPES_NEUTRES = {'inventaire'}
+    TYPES_ENTREE  = {'entree'}
+    TYPES_SORTIE  = {'sortie', 'casse', 'production'}
+    TYPES_NEUTRES = {'inventaire', 'inventaire_excedent', 'inventaire_manquant'}
 
     ingredient      = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='mouvements')
     type_mouvement  = models.CharField(max_length=30, choices=TYPE_MOUVEMENT)

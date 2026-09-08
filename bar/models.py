@@ -368,11 +368,11 @@ class MouvementStockBar(models.Model):
     ]
 
     # Types qui augmentent le stock
-    TYPES_ENTREE = {'entree', 'inventaire_excedent'}
+    TYPES_ENTREE = {'entree'}
     # Types qui diminuent le stock
-    TYPES_SORTIE = {'sortie', 'casse', 'inventaire_manquant'}
-    # Types sans impact sur quantite_stock (traçabilité uniquement)
-    TYPES_NEUTRES = {'inventaire', 'ouverture_contenant'}
+    TYPES_SORTIE = {'sortie', 'casse'}
+    # Types sans impact sur quantite_stock — valider() gère le stock directement
+    TYPES_NEUTRES = {'inventaire', 'inventaire_excedent', 'inventaire_manquant', 'ouverture_contenant'}
 
     boisson = models.ForeignKey(BoissonBar, on_delete=models.CASCADE, related_name='mouvements')
     type_mouvement = models.CharField(max_length=30, choices=TYPE_MOUVEMENT)
