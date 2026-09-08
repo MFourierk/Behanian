@@ -1263,7 +1263,6 @@ def inventaire_create(request):
     return render(request, 'cuisine/inventaire_form.html', context)
 
 
-@require_module_access('cuisine')
 def _inventaire_cuisine_stats(lignes):
     """Calcule excédents, manquants et résultat net d'un inventaire cuisine."""
     lignes = list(lignes)

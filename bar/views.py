@@ -1097,8 +1097,6 @@ def inventaire_edit(request, pk):
     return render(request, 'bar/inventaire_form.html', context)
 
 
-@require_module_access('bar')
-@require_bar_gestion
 def _inventaire_bar_stats(lignes):
     """Calcule excédents, manquants et résultat net d'un inventaire bar."""
     val_exc = sum(l.valeur_ecart for l in lignes if (l.valeur_ecart or 0) > 0)
