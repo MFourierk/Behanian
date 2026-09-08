@@ -295,7 +295,7 @@ window.addEventListener('afterprint', function(){
         <td style="color:{% if ecart_total < 0 %}#fca5a5{% elif ecart_total > 0 %}#fde68a{% else %}#86efac{% endif %}">
           {% if ecart_total > 0 %}+{% endif %}{{ ecart_total|montant }}
         </td>
-        <td>{% if ecart_total == 0 %}<span class="b-ok">✓ Neutre</span>{% elif ecart_total > 0 %}<span class="b-warn">+ Excédent</span>{% else %}<span class="b-bad">⚠ Manquant</span>{% endif %}</td>
+        <td>{% if ecart_total == 0 %}<span class="b-ok">✓ Conforme</span>{% elif ecart_total > 0 %}<span class="b-warn">+ Excédent</span>{% else %}<span class="b-bad">⚠ Manquant</span>{% endif %}</td>
       </tr>
     </tfoot>
   </table>
