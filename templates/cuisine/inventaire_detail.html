@@ -26,6 +26,8 @@
     .ecart-pos { color: #27ae60; font-weight: 700; }
     .ecart-neg { color: #e74c3c; font-weight: 700; }
     .ecart-ok  { color: #95a5a6; }
+    .badge-exc { background:#dcfce7; color:#15803d; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
+    .badge-man { background:#fee2e2; color:#b91c1c; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
     .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; text-transform:uppercase; }
     .badge-brouillon { background:#fef3c7; color:#92400e; }
     .badge-valide    { background:#dcfce7; color:#15803d; }
@@ -128,8 +130,10 @@
                 <td class="r">
                     {% if l.ecart > 0 %}
                         <span class="ecart-pos">+{{ l.ecart|floatformat:3 }}</span>
+                        <span class="badge-exc">Excédent</span>
                     {% elif l.ecart < 0 %}
                         <span class="ecart-neg">{{ l.ecart|floatformat:3 }}</span>
+                        <span class="badge-man">Manquant</span>
                     {% else %}
                         <span class="ecart-ok">—</span>
                     {% endif %}
