@@ -719,7 +719,11 @@ class InventaireBar(models.Model):
 
     @property
     def valeur_ecart_total(self):
-        return sum(abs(l.valeur_ecart or 0) for l in self.lignes.all())
+        total = 0
+        for l in self.lignes.select_related('article').all():
+            ve = l.valeur_ecart if l.valeur_ecart is not None else l.ecart_quantite * (l.article.prix or 0)
+            total += abs(ve)
+        return total
 
     def valider(self, user):
         from django.db import transaction as _tx
