@@ -15,6 +15,34 @@ from django.db.models import Q, Sum
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from caisse.models import MouvementCaisse, CaisseSession
+
+
+def _map_mode_avance(mode):
+    """Mappe le mode hôtel vers MouvementCaisse.MODE_CHOICES."""
+    return {
+        'mtn_money':  'mobile_money',
+        'moov_money': 'mobile_money',
+        'carte':      'carte_bancaire',
+    }.get(mode, mode)
+
+
+def _creer_mouvement_avance(avance, mode, client_nom, chambre_num, reservation_id, user):
+    """Enregistre une avance hôtel en caisse (type versement)."""
+    if avance <= 0:
+        return
+    session = CaisseSession.objects.filter(closed_at__isnull=True).order_by('-opened_at').first()
+    MouvementCaisse.objects.create(
+        type='versement',
+        module='hotel',
+        montant=avance,
+        mode_paiement=_map_mode_avance(mode),
+        description=f"Avance hôtel — {client_nom} · Ch. {chambre_num}",
+        reference=f"RES-{reservation_id}",
+        cree_par=user,
+        session=session,
+        valide=True,
+    )
 
 @require_module_access('hotel')
 def api_revenus(request):
@@ -400,6 +428,7 @@ def checkin_direct(request):
             messages.error(request, msg)
             return redirect(reverse('hotel:index') + '?tab=checkinout')
 
+        mode_paiement_avance = request.POST.get('mode_paiement', 'especes')
         type_sejour = request.POST.get('type_sejour', 'nuitee')
         # Repos/journée peuvent finir le même jour — seule la nuitée exige le lendemain
         if type_sejour == 'nuitee' and date_depart_obj <= today:
@@ -467,8 +496,12 @@ def checkin_direct(request):
             provenance=provenance,
             destination=destination,
             statut='en_cours',
+            mode_paiement=mode_paiement_avance,
         )
-        
+
+        if avance > 0:
+            _creer_mouvement_avance(avance, mode_paiement_avance, client.nom_complet, chambre.numero, reservation.id, request.user)
+
         # Mise à jour Chambre
         chambre.statut = 'occupee'
         chambre.save()
@@ -602,8 +635,9 @@ def reservation_create(request):
         heure_depart_str  = request.POST.get('heure_depart', '').strip() or None
 
         remise = Decimal(request.POST.get('remise', 0) or 0)
+        mode_paiement_avance = request.POST.get('mode_paiement', 'especes')
 
-        Reservation.objects.create(
+        res = Reservation.objects.create(
             client=client,
             chambre=chambre,
             date_arrivee=d_arrivee,
@@ -615,8 +649,12 @@ def reservation_create(request):
             avance=avance,
             remise=remise,
             statut=statut,
+            mode_paiement=mode_paiement_avance,
         )
-        
+
+        if avance > 0:
+            _creer_mouvement_avance(avance, mode_paiement_avance, client.nom_complet, chambre.numero, res.id, request.user)
+
         # Note: On ne change PAS le statut de la chambre ici.
         # La chambre reste 'disponible' jusqu'au check-in, sauf si c'est pour aujourd'hui
         # (géré par l'auto-correction dans hotel_index)
@@ -800,11 +838,14 @@ def checkout_reservation(request, reservation_id):
         receptionniste_nom = request.POST.get('serveur', '').strip() or request.user.get_full_name() or request.user.username
         serveur_nom = request.POST.get('serveur_resto', '').strip()
 
-        montant_total = reservation.get_total_general()
+        # montant_total = ce qui est dû au checkout (= total général - avance déjà versée).
+        # L'avance est déjà enregistrée en caisse au moment de la réservation ;
+        # le ticket ne doit représenter que le règlement au départ.
+        montant_total = max(Decimal('0'), reservation.get_montant_restant())
         request.session[f'hotel_checkout_{reservation.id}'] = {
             'contenu': contenu,
             'mode_paiement': mode_paiement,
-            'montant_paye': str(montant_paye + reservation.avance),
+            'montant_paye': str(montant_paye),
             'montant_total': str(montant_total),
             'montant_especes': str(montant_especes) if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else '0',
             'f_client_id': f_client.id if f_client else None,
@@ -1175,6 +1216,7 @@ def reservation_modifier(request, reservation_id):
         date_depart   = request.POST.get('date_depart')
         heure_depart  = request.POST.get('heure_depart', '').strip() or None
         type_sejour   = request.POST.get('type_sejour', 'nuitee')
+        avance_precedente = reservation.avance
         avance        = Decimal(request.POST.get('avance', 0))
 
         try:
@@ -1226,6 +1268,17 @@ def reservation_modifier(request, reservation_id):
         if avance > 0 and reservation.statut == 'en_attente':
             reservation.statut = 'confirmee'
         reservation.save()
+
+        delta_avance = avance - avance_precedente
+        if delta_avance > 0:
+            _creer_mouvement_avance(
+                delta_avance,
+                reservation.mode_paiement or 'especes',
+                reservation.client.nom_complet,
+                reservation.chambre.numero,
+                reservation.id,
+                request.user,
+            )
 
         messages.success(request, f"Réservation #{reservation_id} modifiée avec succès.")
         return redirect(reverse('hotel:index') + '?tab=reservations')
