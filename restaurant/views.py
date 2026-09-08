@@ -1252,6 +1252,7 @@ def resume_ventes_jour(request):
             'orange_money': 'Orange Money', 'wave': 'Wave',
             'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
             'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
+            'mixte': 'Mixte',
         }
         commande_table_map = {c.id: (c.table.numero if c.table else ('À emporter' if c.emporter else '')) for c in commandes}
 
@@ -1265,7 +1266,7 @@ def resume_ventes_jour(request):
 
         for tk in tickets_jour:
             m_raw = tk.mode_paiement or 'especes'
-            m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
+            m = 'Mixte' if (tk.montant_especes and tk.montant_especes > 0 and m_raw != 'especes') else mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
             montant_reel = float(tk.montant_total or 0)
             par_mode[m] = par_mode.get(m, 0) + montant_reel
             caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username if tk.cree_par else 'Inconnu'
