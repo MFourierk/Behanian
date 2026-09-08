@@ -15,6 +15,7 @@ from .models import CaisseSession, MouvementCaisse, PrelevementBanque
 
 _MODE_LABELS = {
     'especes':       ('💵 Espèces',      '#059669'),
+    'mixte':         ('🔀 Mixte',         '#92400e'),
     'wave':          ('📱 Wave',          '#1d4ed8'),
     'orange_money':  ('📱 Orange Money',  '#c2410c'),
     'mtn_money':     ('📱 MTN MoMo',     '#854d0e'),

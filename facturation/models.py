@@ -389,6 +389,7 @@ class Ticket(models.Model):
     
     PAIEMENT_CHOICES = [
         ('especes', 'Espèces'),
+        ('mixte', 'Mixte'),
         ('mobile_money', 'Mobile Money'),
         ('orange_money', 'Orange Money'),
         ('wave', 'Wave'),

@@ -487,7 +487,8 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
         'espace': 'Espaces', 'autre': 'Autre',
     }
     MODE_LABELS = {
-        'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
+        'especes': 'Espèces', 'mixte': 'Mixte',
+        'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
         'mobile': 'Mobile Money', 'mobile_money': 'Mobile Money',
         'orange_money': 'Orange Money', 'wave': 'Wave',
         'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',

@@ -275,6 +275,7 @@
             <td style="font-size:11px">{{ t.date_creation|date:"H:i" }}</td>
             <td style="font-size:11px">
               {% if t.mode_paiement == 'especes' %}💵 Espèces
+              {% elif t.mode_paiement == 'mixte' %}🔀 Mixte
               {% elif t.mode_paiement == 'carte_bancaire' %}💳 Carte
               {% elif t.mode_paiement in 'mobile_money,orange_money,wave' %}📱 Mobile
               {% else %}{{ t.mode_paiement }}{% endif %}

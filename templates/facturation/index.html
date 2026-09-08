@@ -217,6 +217,7 @@
                 <td><strong>{{ t.montant_total|montant }} F</strong></td>
                 <td style="font-size:11px">
                   {% if t.mode_paiement == 'especes' %}💵 Espèces
+                  {% elif t.mode_paiement == 'mixte' %}🔀 Mixte
                   {% elif t.mode_paiement == 'mobile_money' %}📱 Mobile
                   {% elif t.mode_paiement == 'carte_bancaire' %}💳 Carte
                   {% elif t.mode_paiement == 'orange_money' %}🟠 Orange
@@ -325,7 +326,7 @@
             <td style="font-size:12px">{{ t.client.nom|default:"—" }}</td>
             <td><strong>{{ t.montant_total|montant }} F</strong></td>
             <td style="font-size:11px">
-              {% if t.mode_paiement == 'especes' %}💵{% elif t.mode_paiement == 'mobile_money' %}📱{% elif t.mode_paiement == 'carte_bancaire' %}💳{% elif t.mode_paiement == 'orange_money' %}🟠{% elif t.mode_paiement == 'wave' %}🔵{% endif %}
+              {% if t.mode_paiement == 'especes' %}💵{% elif t.mode_paiement == 'mixte' %}🔀{% elif t.mode_paiement == 'mobile_money' %}📱{% elif t.mode_paiement == 'carte_bancaire' %}💳{% elif t.mode_paiement == 'orange_money' %}🟠{% elif t.mode_paiement == 'wave' %}🔵{% endif %}
               {{ t.get_mode_paiement_display }}
             </td>
             <td style="font-size:11px;color:var(--muted)">{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
