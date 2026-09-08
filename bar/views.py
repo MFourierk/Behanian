@@ -1108,7 +1108,7 @@ def inventaire_detail(request, pk):
         'inv': inv,
         'lignes': lignes,
         'ecarts': ecarts,
-        'valeur_ecart_total': sum(abs(l.valeur_ecart) for l in ecarts),
+        'valeur_ecart_total': sum(abs(l.valeur_ecart or 0) for l in ecarts),
     }
     return render(request, 'bar/inventaire_detail.html', context)
 
