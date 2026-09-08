@@ -2351,6 +2351,7 @@ function exportCavePrint() {
 
 function _modeIcon(mode) {
   const m = mode.toLowerCase();
+  if (m.includes('mixte'))  return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fff7ed;color:#92400e;font-size:11px;flex-shrink:0">🔀</span>';
   if (m.includes('wave'))   return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;flex-shrink:0">W</span>';
   if (m.includes('orange')) return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fed7aa;color:#c2410c;font-size:10px;font-weight:700;flex-shrink:0">O</span>';
   if (m.includes('mtn'))    return '<span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fef9c3;color:#854d0e;font-size:10px;font-weight:700;flex-shrink:0">M</span>';

@@ -2063,7 +2063,7 @@ def resume_ventes_cave(request):
         mode_noms = {
             'especes': 'Espèces', 'carte': 'Carte/TPE', 'carte_bancaire': 'Carte/TPE',
             'mobile': 'Mobile Money', 'mobile_money': 'Mobile Money',
-            'orange_money': 'Orange Money', 'wave': 'Wave',
+            'orange_money': 'Orange Money', 'wave': 'Wave', 'mixte': 'Mixte',
             'moov_money': 'Moov Money', 'mtn_money': 'MTN Money',
             'cheque': 'Chèque', 'virement': 'Virement', 'chambre': 'Chambre',
         }
@@ -2079,7 +2079,7 @@ def resume_ventes_cave(request):
             total_net += montant
 
             m_raw = tk.mode_paiement or 'especes'
-            m = mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
+            m = 'Mixte' if (tk.montant_especes and tk.montant_especes > 0 and m_raw != 'especes') else mode_noms.get(m_raw, m_raw.replace('_', ' ').capitalize())
             par_mode[m] = par_mode.get(m, 0) + montant
 
             caissier_nom = tk.cree_par.get_full_name() or tk.cree_par.username if tk.cree_par else ''
