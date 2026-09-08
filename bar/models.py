@@ -778,6 +778,11 @@ class InventaireBar(models.Model):
                         utilisateur=user,
                     )
 
+            for ligne in self.lignes.select_related('article').all():
+                ve = ligne.ecart_quantite * (ligne.article.prix or 0)
+                ligne.valeur_ecart = ve
+                ligne.save(update_fields=['valeur_ecart'])
+
             self.statut = 'valide'
             self.valide_par = user
             self.date_validation = timezone.now()

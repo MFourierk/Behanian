@@ -1101,7 +1101,10 @@ def inventaire_edit(request, pk):
 @require_bar_gestion
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
-    lignes = inv.lignes.select_related('article').order_by('article__categorie__nom', 'article__nom')
+    lignes = list(inv.lignes.select_related('article').order_by('article__categorie__nom', 'article__nom'))
+    for l in lignes:
+        if l.valeur_ecart is None:
+            l.valeur_ecart = l.ecart_quantite * (l.article.prix or 0)
     ecarts = [l for l in lignes if l.ecart_quantite != 0]
     context = {
         'page_title': f'Inventaire {inv.numero}',
@@ -1117,7 +1120,10 @@ def inventaire_detail(request, pk):
 @require_bar_gestion
 def inventaire_print(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
-    lignes = inv.lignes.select_related('article', 'article__categorie').order_by('article__categorie__nom', 'article__nom')
+    lignes = list(inv.lignes.select_related('article', 'article__categorie').order_by('article__categorie__nom', 'article__nom'))
+    for l in lignes:
+        if l.valeur_ecart is None:
+            l.valeur_ecart = l.ecart_quantite * (l.article.prix or 0)
     ecarts = [l for l in lignes if l.ecart_quantite != 0]
     return render(request, 'bar/inventaire_print.html', {
         'inv':               inv,
