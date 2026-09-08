@@ -3,103 +3,306 @@
 {% block doc_title %}Inventaire {{ inv.numero }} — Cuisine{% endblock %}
 
 {% block doc_content %}
+<style>
+  :root {
+    --accent: #dc2626;
+    --accent-l: #fef2f2;
+    --accent-d: #991b1b;
+    --rouge: #c0392b;
+    --vert:  #16a34a;
+    --text:  #1e293b;
+    --muted: #64748b;
+    --border:#e2e8f0;
+    --surf:  #f8fafc;
+  }
+  .soc-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0 14px; border-bottom: 3px solid var(--accent); margin-bottom: 18px;
+  }
+  .soc-logo-area { display:flex; align-items:center; gap:12px; }
+  .soc-monogram {
+    width: 44px; height: 44px; border-radius: 10px; background: var(--accent);
+    color: #fff; font-size: 18px; font-weight: 900; display: flex;
+    align-items: center; justify-content: center; letter-spacing: -1px; font-family: Georgia, serif;
+  }
+  .soc-name { font-size: 13px; font-weight: 800; color: var(--text); line-height: 1.2; }
+  .soc-sub  { font-size: 9px; color: var(--muted); margin-top: 1px; }
+  .soc-right { text-align: right; font-size: 9px; color: var(--muted); line-height: 1.6; }
+  .soc-right strong { color: var(--text); font-size: 10px; }
 
-<div class="doc-title-band">
+  .inv-title-band {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-d) 100%);
+    color: #fff; border-radius: 10px; padding: 14px 18px; margin-bottom: 16px;
+  }
+  .inv-title-band h1 { font-size: 16px; font-weight: 800; margin: 0 0 3px; letter-spacing: .3px; }
+  .inv-title-band .sub { font-size: 10px; opacity: .85; }
+  .inv-badge {
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+    border-radius: 6px; padding: 4px 12px; font-size: 10px; font-weight: 700;
+    letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; margin-top: 2px;
+  }
+  .inv-badge.valide   { background: rgba(22,163,74,.25);  border-color: rgba(22,163,74,.5);  }
+  .inv-badge.brouillon{ background: rgba(217,119,6,.25);  border-color: rgba(217,119,6,.5);  }
+
+  .meta-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .meta-card { background: var(--surf); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .meta-card .mc-label { font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--muted); margin-bottom: 3px; }
+  .meta-card .mc-val { font-size: 12px; font-weight: 700; color: var(--text); }
+  .meta-card .mc-val.accent { color: var(--accent); }
+  .meta-motif { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; background: var(--accent-l); color: var(--accent-d); }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .kpi { border-radius: 8px; padding: 10px 12px; text-align: center; border: 1px solid var(--border); }
+  .kpi .kv { font-size: 20px; font-weight: 900; line-height: 1; }
+  .kpi .kl { font-size: 8px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .6px; color: var(--muted); margin-top: 3px; }
+  .kpi.total { background: var(--surf); }
+  .kpi.ok    { background: #f0fdf4; border-color: #86efac; }
+  .kpi.ok .kv{ color: var(--vert); }
+  .kpi.nok   { background: #fef2f2; border-color: #fca5a5; }
+  .kpi.nok .kv{ color: var(--rouge); }
+  .kpi.val   { background: var(--accent-l); border-color: #fca5a5; }
+  .kpi.val .kv{ color: var(--accent-d); }
+
+  .inv-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+  .inv-table thead th {
+    background: var(--accent); color: #fff; padding: 7px 8px; font-size: 8px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .inv-table thead th:first-child { border-radius: 6px 0 0 0; }
+  .inv-table thead th:last-child  { border-radius: 0 6px 0 0; }
+  .inv-table tbody tr { border-bottom: 1px solid var(--border); }
+  .inv-table tbody tr.ecart-row { background: #fff8f8; }
+  .inv-table td { padding: 6px 8px; }
+  .inv-table td.r { text-align: right; }
+  .inv-table td.c { text-align: center; }
+  .num-cell { color: var(--muted); font-size: 8px; }
+  .art-name { font-weight: 700; color: var(--text); }
+  .art-cat  { font-size: 8px; color: var(--muted); }
+  .badge-exc { background: #dcfce7; color: #15803d; font-size: 7px; font-weight: 700;
+    padding: 1px 5px; border-radius: 20px; white-space: nowrap; }
+  .badge-man { background: #fee2e2; color: #b91c1c; font-size: 7px; font-weight: 700;
+    padding: 1px 5px; border-radius: 20px; white-space: nowrap; }
+  .ecart-pos { color: var(--vert);  font-weight: 700; }
+  .ecart-neg { color: var(--rouge); font-weight: 700; }
+  .ecart-ok  { color: #b0bec5; }
+  .inv-table tfoot td {
+    background: var(--accent-l); font-weight: 700;
+    border-top: 2px solid var(--accent); padding: 7px 8px;
+  }
+  .inv-table tfoot td.total-lbl { font-size: 9px; text-align: right; color: var(--accent-d); }
+  .inv-table tfoot td.total-val { font-size: 11px; text-align: right; color: var(--accent-d); }
+
+  .brouillon-warn { margin: 12px 0; padding: 9px 14px; background: #fff8e1;
+    border: 1px solid #f9a825; border-radius: 7px; font-size: 9px; color: #7c5200; }
+
+  .valo-note { font-size: 8px; color: var(--muted); background: var(--surf);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 10px;
+    margin-top: 8px; display: inline-block; }
+
+  .sig-section { margin-top: 20px; }
+  .sig-title { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px;
+    color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 10px; }
+  .sig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .sig-box { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+    min-height: 70px; display: flex; flex-direction: column; justify-content: space-between; }
+  .sig-role { font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--accent-d); }
+  .sig-name-line { font-size: 8px; color: var(--muted); border-bottom: 1px dashed var(--border);
+    padding-bottom: 2px; margin-top: 20px; }
+  .sig-date-line { font-size: 7px; color: var(--muted); margin-top: 3px; }
+</style>
+
+{# ══ En-tête société ══ #}
+<div class="soc-header">
+  <div class="soc-logo-area">
+    <div class="soc-monogram">B</div>
+    <div>
+      <div class="soc-name">Complexe Hôtelier Behanian</div>
+      <div class="soc-sub">Hôtel · Restaurant · Cave · Piscine · Espaces</div>
+    </div>
+  </div>
+  <div class="soc-right">
+    <strong>Procès-Verbal d'Inventaire</strong><br>
+    Édité le {% now "d/m/Y à H:i" %}<br>
+    Valorisation au CMUP
+  </div>
+</div>
+
+{# ══ Bandeau titre ══ #}
+<div class="inv-title-band">
   <div>
-    <div class="doc-title-text">Inventaire Physique — Cuisine</div>
-    <div class="doc-title-sub">{{ inv.numero }} · {% if inv.statut == 'valide' %}Validé{% else %}En cours (brouillon){% endif %}</div>
+    <h1>Inventaire Physique — Cuisine</h1>
+    <div class="sub">{{ inv.numero }} · {{ inv.get_type_inventaire_display }} · {{ inv.get_motif_inventaire_display }}</div>
   </div>
-  <div class="doc-title-right">
-    <span class="doc-ref">{{ lignes|length }} ingrédient(s)</span>
-  </div>
-</div>
-
-<div class="meta-grid cols-2">
-  <div class="meta-box">
-    <div class="meta-box-title">Informations de l'inventaire</div>
-    <div class="meta-row"><span class="meta-lbl">Numéro</span><span class="meta-val bold">{{ inv.numero }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Date inventaire</span><span class="meta-val">{{ inv.date_inventaire|date:"d/m/Y" }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Créé par</span><span class="meta-val">{{ inv.cree_par.get_full_name|default:inv.cree_par.username }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y à H:i" %}</span></div>
-  </div>
-  <div class="meta-box">
-    <div class="meta-box-title">Résumé des écarts</div>
-    <div class="meta-row"><span class="meta-lbl">Ingrédients inventoriés</span><span class="meta-val bold">{{ lignes|length }}</span></div>
-    <div class="meta-row"><span class="meta-lbl">Articles avec écart</span><span class="meta-val" style="color:#c0392b;font-weight:700;">{{ ecarts|length }}</span></div>
+  <div>
     {% if inv.statut == 'valide' %}
-    <div class="meta-row"><span class="meta-lbl">Valeur totale écarts</span><span class="meta-val bold" style="color:#c0392b;">{{ valeur_ecart_total|montant }} FCFA</span></div>
+      <div class="inv-badge valide">✓ Validé</div>
     {% else %}
-    <div class="meta-row"><span class="meta-lbl">Statut</span><span class="meta-val" style="color:#e67e22;font-weight:700;">Brouillon — non validé</span></div>
+      <div class="inv-badge brouillon">⏳ En cours</div>
     {% endif %}
-    {% if inv.notes %}<div class="meta-row"><span class="meta-lbl">Observations</span><span class="meta-val">{{ inv.notes }}</span></div>{% endif %}
   </div>
 </div>
 
-<div class="content-section">
-  <div class="section-title">Détail des ingrédients inventoriés</div>
-  <table class="doc-table">
-    <thead>
-      <tr>
-        <th style="width:28px">#</th>
-        <th>Ingrédient</th>
-        <th style="width:90px">Catégorie</th>
-        <th style="width:40px;text-align:center">Unité</th>
-        <th class="r" style="width:80px">Qté théorique</th>
-        <th class="r" style="width:80px">Qté comptée</th>
-        <th class="r" style="width:70px">Écart</th>
-        {% if inv.statut == 'valide' %}<th class="r" style="width:95px">Valeur écart</th>{% endif %}
-        <th style="width:110px">Note</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for l in lignes %}
-      <tr {% if l.ecart != 0 %}style="background:#fff8f8"{% endif %}>
-        <td class="muted">{{ forloop.counter }}</td>
-        <td class="bold">{{ l.ingredient.nom }}</td>
-        <td style="font-size:9px;color:#6b7a8d">{{ l.ingredient.categorie.nom|default:"—" }}</td>
-        <td style="text-align:center;font-size:9px">{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
-        <td class="r">{{ l.quantite_theorique|floatformat:3 }}</td>
-        <td class="r bold">{{ l.quantite_physique|floatformat:3 }}</td>
-        <td class="r">
-          {% if l.ecart > 0 %}<span style="color:#27ae60;font-weight:700">+{{ l.ecart|floatformat:3 }}</span>
-          {% elif l.ecart < 0 %}<span style="color:#c0392b;font-weight:700">{{ l.ecart|floatformat:3 }}</span>
-          {% else %}<span style="color:#b0bec5">—</span>{% endif %}
-        </td>
-        {% if inv.statut == 'valide' %}
-        <td class="r">
-          {% if l.valeur_ecart and l.ecart != 0 %}<span style="color:#c0392b">{{ l.valeur_ecart|montant }}</span>{% else %}—{% endif %}
-        </td>
-        {% endif %}
-        <td style="font-size:9px;color:#6b7a8d">{{ l.notes_ligne|default:"" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="8" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient</td></tr>
-      {% endfor %}
-    </tbody>
-    {% if inv.statut == 'valide' %}
-    <tfoot>
-      <tr>
-        <td colspan="6"></td>
-        <td class="total-label" style="text-align:right">Valeur totale écarts</td>
-        <td class="total-val">{{ valeur_ecart_total|montant }} FCFA</td>
-        <td></td>
-      </tr>
-    </tfoot>
-    {% endif %}
-  </table>
+{# ══ Méta ══ #}
+<div class="meta-strip">
+  <div class="meta-card">
+    <div class="mc-label">N° Inventaire</div>
+    <div class="mc-val accent">{{ inv.numero }}</div>
+  </div>
+  <div class="meta-card">
+    <div class="mc-label">Date d'inventaire</div>
+    <div class="mc-val">{{ inv.date_inventaire|date:"d/m/Y" }}</div>
+  </div>
+  <div class="meta-card">
+    <div class="mc-label">Motif</div>
+    <div class="mc-val"><span class="meta-motif">{{ inv.get_motif_inventaire_display }}</span></div>
+  </div>
+  <div class="meta-card">
+    <div class="mc-label">Créé par</div>
+    <div class="mc-val">{{ inv.cree_par.get_full_name|default:inv.cree_par.username }}</div>
+  </div>
+  <div class="meta-card">
+    <div class="mc-label">Validé par</div>
+    <div class="mc-val">{% if inv.valide_par %}{{ inv.valide_par.get_full_name|default:inv.valide_par.username }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="meta-card">
+    <div class="mc-label">Date validation</div>
+    <div class="mc-val">{% if inv.date_validation %}{{ inv.date_validation|date:"d/m/Y H:i" }}{% else %}—{% endif %}</div>
+  </div>
+</div>
+
+{# ══ KPI ══ #}
+<div class="kpi-row">
+  <div class="kpi total">
+    <div class="kv">{{ lignes|length }}</div>
+    <div class="kl">Ingrédients inventoriés</div>
+  </div>
+  <div class="kpi ok">
+    <div class="kv">{{ lignes|length|add:"-"|add:ecarts|length }}</div>
+    <div class="kl">Conformes</div>
+  </div>
+  <div class="kpi nok">
+    <div class="kv">{{ ecarts|length }}</div>
+    <div class="kl">Avec écart</div>
+  </div>
+  <div class="kpi val">
+    <div class="kv" style="font-size:13px;">{{ valeur_ecart_total|montant }}</div>
+    <div class="kl">Valeur écarts (FCFA)</div>
+  </div>
 </div>
 
 {% if inv.statut != 'valide' %}
-<div style="margin:8px 30px;padding:8px 12px;background:#fff8e1;border:1px solid #f9a825;border-radius:6px;font-size:9px;color:#795548;">
-  <strong>⚠ Brouillon non validé</strong> — Cet inventaire n'a pas encore été validé. Le stock n'a pas été ajusté. Imprimé le {% now "d/m/Y à H:i" %}.
+<div class="brouillon-warn">
+  <strong>⚠ Document de travail — Brouillon non validé.</strong>
+  Le stock n'a pas encore été ajusté. Ce document ne constitue pas un PV définitif.
 </div>
 {% endif %}
 
-<div class="signatures cols-3">
-  <div class="sig-box"><div class="sig-line">Responsable Stock</div><div class="sig-hint">Nom &amp; Signature</div></div>
-  <div class="sig-box"><div class="sig-line">Responsable Cuisine</div><div class="sig-hint">Nom &amp; Signature</div></div>
-  <div class="sig-box"><div class="sig-line">Direction</div><div class="sig-hint">Visa &amp; Cachet</div></div>
+{# ══ Table détail ══ #}
+<div style="overflow-x:auto;">
+<table class="inv-table">
+  <thead>
+    <tr>
+      <th style="width:22px">#</th>
+      <th style="text-align:left">Ingrédient</th>
+      <th style="text-align:left;width:80px">Catégorie</th>
+      <th style="width:36px;text-align:center">Unité</th>
+      <th class="r" style="width:68px">Qté théorique</th>
+      <th class="r" style="width:68px">Qté comptée</th>
+      <th class="r" style="width:72px">Écart</th>
+      <th class="r" style="width:55px">CMUP</th>
+      <th class="r" style="width:85px">Valeur écart</th>
+      <th style="width:90px">Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for l in lignes %}
+    <tr {% if l.ecart != 0 %}class="ecart-row"{% endif %}>
+      <td class="num-cell c">{{ forloop.counter }}</td>
+      <td><div class="art-name">{{ l.ingredient.nom }}</div></td>
+      <td class="art-cat">{{ l.ingredient.categorie.nom|default:"—" }}</td>
+      <td class="c" style="font-size:8px;color:#64748b">{{ l.ingredient.unite_stock.abreviation|default:"—" }}</td>
+      <td class="r">{{ l.quantite_theorique|floatformat:3 }}</td>
+      <td class="r" style="font-weight:700">{{ l.quantite_physique|floatformat:3|default:"—" }}</td>
+      <td class="r">
+        {% if l.ecart > 0 %}
+          <span class="ecart-pos">+{{ l.ecart|floatformat:3 }}</span>
+          <span class="badge-exc">Excédent</span>
+        {% elif l.ecart < 0 %}
+          <span class="ecart-neg">{{ l.ecart|floatformat:3 }}</span>
+          <span class="badge-man">Manquant</span>
+        {% else %}
+          <span class="ecart-ok">—</span>
+        {% endif %}
+      </td>
+      <td class="r" style="color:#64748b;font-size:8px">
+        {% if l.cmup_snapshot %}{{ l.cmup_snapshot|montant }}{% elif l.ingredient.cmup %}{{ l.ingredient.cmup|montant }}{% else %}—{% endif %}
+      </td>
+      <td class="r">
+        {% if l.ecart != 0 %}
+          {% if l.valeur_ecart %}
+            <span class="{% if l.ecart > 0 %}ecart-pos{% else %}ecart-neg{% endif %}">{{ l.valeur_ecart|montant }}</span>
+          {% else %}—{% endif %}
+        {% else %}—{% endif %}
+      </td>
+      <td style="font-size:8px;color:#64748b">{{ l.notes_ligne|default:"" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="10" style="text-align:center;padding:20px;color:#8a9ab0;font-style:italic">Aucun ingrédient inventorié</td></tr>
+    {% endfor %}
+  </tbody>
+  {% if inv.statut == 'valide' %}
+  <tfoot>
+    <tr>
+      <td colspan="7"></td>
+      <td class="total-lbl">Valeur totale des écarts</td>
+      <td class="total-val">{{ valeur_ecart_total|montant }} F</td>
+      <td></td>
+    </tr>
+  </tfoot>
+  {% endif %}
+</table>
+</div>
+
+<div class="valo-note">ℹ Valorisation des écarts au CMUP (coût moyen unitaire pondéré) au moment de la validation — méthode comptable standard.</div>
+
+{% if inv.notes %}
+<div style="margin-top:14px;padding:10px 12px;background:var(--surf);border:1px solid var(--border);border-radius:8px;font-size:9px;">
+  <strong style="color:var(--accent-d)">Observations :</strong> {{ inv.notes }}
+</div>
+{% endif %}
+
+{# ══ Signatures ══ #}
+<div class="sig-section">
+  <div class="sig-title">Signatures et approbations</div>
+  <div class="sig-grid">
+    <div class="sig-box">
+      <div class="sig-role">Responsable Stock</div>
+      <div>
+        <div class="sig-name-line">Nom &amp; Prénom : ___________________</div>
+        <div class="sig-date-line">Date &amp; Signature</div>
+      </div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-role">Chef Cuisine</div>
+      <div>
+        <div class="sig-name-line">Nom &amp; Prénom : ___________________</div>
+        <div class="sig-date-line">Date &amp; Signature</div>
+      </div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-role">Direction — Visa &amp; Cachet</div>
+      <div>
+        <div class="sig-name-line">Nom &amp; Prénom : ___________________</div>
+        <div class="sig-date-line">Date &amp; Cachet officiel</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
-{% block doc_footer_right %}Inventaire {{ inv.numero }} · Cuisine Behanian · {% now "d/m/Y H:i" %}{% endblock %}
+{% block doc_footer_right %}{{ inv.numero }} · Cuisine Behanian · {% now "d/m/Y H:i" %}{% endblock %}

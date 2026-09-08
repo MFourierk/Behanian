@@ -569,10 +569,19 @@ class InventaireCuisine(models.Model):
         ('partiel',    'Inventaire partiel'),
         ('correction', 'Correction'),
     ]
+    MOTIF_CHOICES = [
+        ('periodique', 'Inventaire périodique'),
+        ('annuel',     'Inventaire annuel'),
+        ('surprise',   'Contrôle surprise'),
+        ('arrete',     'Arrêté comptable'),
+        ('reception',  'Suite réception'),
+        ('autre',      'Autre'),
+    ]
 
     numero              = models.CharField(max_length=30, unique=True, editable=False)
     statut              = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
     type_inventaire     = models.CharField(max_length=20, choices=TYPE_CHOICES, default='complet', verbose_name="Type")
+    motif_inventaire    = models.CharField(max_length=20, choices=MOTIF_CHOICES, default='periodique', verbose_name="Motif")
     inventaire_source   = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
                                             related_name='corrections', verbose_name="Correction de")
     date_inventaire     = models.DateField(default=timezone.now, verbose_name="Date de l'inventaire")
@@ -630,8 +639,9 @@ class InventaireCuisine(models.Model):
                     utilisateur    = user,
                 )
                 Ingredient.objects.filter(pk=ing.pk).update(quantite_stock=qte_ph)
+                ligne.cmup_snapshot = cmup_moment
                 ligne.valeur_ecart = ecart * cmup_moment
-                ligne.save()
+                ligne.save(update_fields=['cmup_snapshot', 'valeur_ecart'])
             self.statut          = 'valide'
             self.valide_par      = user
             self.date_validation = timezone.now()
@@ -659,6 +669,7 @@ class LigneInventaireCuisine(models.Model):
     quantite_theorique  = models.DecimalField(max_digits=12, decimal_places=3, verbose_name="Qté théorique (stock)")
     quantite_physique   = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Qté physique (comptée)")
     statut              = models.CharField(max_length=20, choices=STATUT_CHOICES, default='a_compter', verbose_name="Statut")
+    cmup_snapshot       = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="CMUP au moment de la validation")
     valeur_ecart        = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne         = models.CharField(max_length=200, blank=True, verbose_name="Note")
 

@@ -1101,10 +1101,11 @@ def inventaire_edit(request, pk):
 @require_bar_gestion
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
-    lignes = list(inv.lignes.select_related('article').order_by('article__categorie__nom', 'article__nom'))
+    lignes = list(inv.lignes.select_related('article', 'article__categorie').order_by('article__categorie__nom', 'article__nom'))
     for l in lignes:
         if l.valeur_ecart is None:
-            l.valeur_ecart = l.ecart_quantite * (l.article.prix or 0)
+            cout = l.cmup_snapshot or l.article.cmup or l.article.prix_achat or l.article.prix or 0
+            l.valeur_ecart = l.ecart_quantite * cout
     ecarts = [l for l in lignes if l.ecart_quantite != 0]
     context = {
         'page_title': f'Inventaire {inv.numero}',
@@ -1123,7 +1124,8 @@ def inventaire_print(request, pk):
     lignes = list(inv.lignes.select_related('article', 'article__categorie').order_by('article__categorie__nom', 'article__nom'))
     for l in lignes:
         if l.valeur_ecart is None:
-            l.valeur_ecart = l.ecart_quantite * (l.article.prix or 0)
+            cout = l.cmup_snapshot or l.article.cmup or l.article.prix_achat or l.article.prix or 0
+            l.valeur_ecart = l.ecart_quantite * cout
     ecarts = [l for l in lignes if l.ecart_quantite != 0]
     return render(request, 'bar/inventaire_print.html', {
         'inv':               inv,
@@ -1190,6 +1192,140 @@ def inventaire_annuler(request, pk):
         inv.save()
         messages.warning(request, f"Inventaire {inv.numero} annulé.")
     return redirect(reverse('bar:stock_management') + '?tab=inventaire')
+
+
+@require_module_access('bar')
+@require_bar_gestion
+def inventaire_excel(request, pk):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    inv = get_object_or_404(InventaireBar, pk=pk)
+    lignes = list(inv.lignes.select_related('article', 'article__categorie').order_by(
+        'article__categorie__nom', 'article__nom'))
+    for l in lignes:
+        if l.valeur_ecart is None:
+            cout = l.cmup_snapshot or l.article.cmup or l.article.prix_achat or l.article.prix or 0
+            l.valeur_ecart = l.ecart_quantite * cout
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Inventaire"
+
+    # Styles
+    purple     = "7C3AED"
+    purple_l   = "EDE9FE"
+    rouge      = "DC2626"
+    vert       = "16A34A"
+    gris_fond  = "F8FAFC"
+    gris_bord  = "E2E8F0"
+    thin = Side(style='thin', color=gris_bord)
+    brd  = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def hdr_fill(hex_color): return PatternFill("solid", fgColor=hex_color)
+    def cell_fill(hex_color): return PatternFill("solid", fgColor=hex_color)
+
+    # Ligne 1 : titre
+    ws.merge_cells('A1:J1')
+    c = ws['A1']
+    c.value = f"Complexe Hôtelier Behanian — Inventaire Cave {inv.numero}"
+    c.font = Font(name='Calibri', bold=True, size=14, color="FFFFFF")
+    c.fill = hdr_fill(purple)
+    c.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 28
+
+    # Ligne 2 : infos
+    ws.merge_cells('A2:J2')
+    c = ws['A2']
+    date_inv = inv.date_inventaire.strftime('%d/%m/%Y') if inv.date_inventaire else '—'
+    c.value = (f"Date : {date_inv}  |  Type : {inv.get_type_inventaire_display()}"
+               f"  |  Motif : {inv.get_motif_inventaire_display()}"
+               f"  |  Statut : {inv.get_statut_display()}"
+               f"  |  Créé par : {inv.cree_par.get_full_name() if inv.cree_par else '—'}")
+    c.font = Font(name='Calibri', size=9, color="5B21B6")
+    c.fill = hdr_fill(purple_l)
+    c.alignment = Alignment(horizontal='left', vertical='center', indent=1)
+    ws.row_dimensions[2].height = 16
+
+    # Ligne 3 vide
+    ws.row_dimensions[3].height = 6
+
+    # En-têtes colonnes
+    headers = ['#', 'Article', 'Catégorie', 'Unité', 'Qté théorique', 'Qté comptée',
+               'Écart', 'Type écart', 'CMUP (FCFA)', 'Valeur écart (FCFA)']
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=4, column=col, value=h)
+        c.font = Font(name='Calibri', bold=True, size=9, color="FFFFFF")
+        c.fill = hdr_fill(purple)
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.border = brd
+    ws.row_dimensions[4].height = 18
+
+    # Données
+    for i, l in enumerate(lignes, 1):
+        row = 4 + i
+        ecart = l.ecart_quantite
+        type_ecart = 'Excédent' if ecart > 0 else ('Manquant' if ecart < 0 else 'Conforme')
+        cmup = float(l.cmup_snapshot or l.article.cmup or l.article.prix_achat or l.article.prix or 0)
+        valeur = float(l.valeur_ecart or 0)
+
+        row_fill = cell_fill("FFF8F8") if ecart != 0 else cell_fill("FFFFFF")
+
+        vals = [i, l.article.nom, l.article.categorie.nom if l.article.categorie else '—',
+                l.article.unite_affichee, float(l.quantite_theorique),
+                float(l.quantite_comptee) if l.quantite_comptee is not None else None,
+                float(ecart), type_ecart, cmup if cmup else None, valeur if ecart != 0 else None]
+        aligns = ['c','l','l','c','r','r','r','c','r','r']
+
+        for col, (val, aln) in enumerate(zip(vals, aligns), 1):
+            c = ws.cell(row=row, column=col, value=val)
+            c.font = Font(name='Calibri', size=9)
+            c.fill = row_fill
+            c.border = brd
+            c.alignment = Alignment(horizontal={'c':'center','l':'left','r':'right'}[aln], vertical='center')
+
+        # Couleur col Écart
+        ec = ws.cell(row=row, column=7)
+        if ecart > 0:   ec.font = Font(name='Calibri', size=9, color=vert,  bold=True)
+        elif ecart < 0: ec.font = Font(name='Calibri', size=9, color=rouge, bold=True)
+
+        # Couleur col Valeur écart
+        vc = ws.cell(row=row, column=10)
+        if ecart > 0:   vc.font = Font(name='Calibri', size=9, color=vert,  bold=True)
+        elif ecart < 0: vc.font = Font(name='Calibri', size=9, color=rouge, bold=True)
+
+        ws.row_dimensions[row].height = 15
+
+    # Ligne total
+    total_row = 4 + len(lignes) + 1
+    ws.merge_cells(f'A{total_row}:I{total_row}')
+    c = ws.cell(row=total_row, column=1, value="TOTAL VALEUR DES ÉCARTS (FCFA)")
+    c.font = Font(name='Calibri', bold=True, size=10, color="5B21B6")
+    c.fill = hdr_fill(purple_l)
+    c.alignment = Alignment(horizontal='right', vertical='center')
+    c.border = brd
+    total_val = ws.cell(row=total_row, column=10)
+    total_val.value = float(inv.valeur_ecart_total)
+    total_val.font = Font(name='Calibri', bold=True, size=11, color=rouge)
+    total_val.fill = hdr_fill(purple_l)
+    total_val.alignment = Alignment(horizontal='right', vertical='center')
+    total_val.border = brd
+    ws.row_dimensions[total_row].height = 20
+
+    # Largeurs colonnes
+    col_widths = [4, 28, 16, 8, 13, 12, 10, 12, 13, 18]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    ws.freeze_panes = 'A5'
+
+    fname = f"Inventaire_Cave_{inv.numero}.xlsx"
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    wb.save(response)
+    return response
 
 
 # ===== GESTION DES CASSES =====

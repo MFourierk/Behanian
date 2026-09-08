@@ -681,13 +681,23 @@ class InventaireBar(models.Model):
         ('partiel',    'Inventaire partiel'),
         ('correction', 'Correction'),
     ]
+    MOTIF_CHOICES = [
+        ('periodique', 'Inventaire périodique'),
+        ('annuel',     'Inventaire annuel'),
+        ('surprise',   'Contrôle surprise'),
+        ('arrete',     'Arrêté comptable'),
+        ('reception',  'Suite réception'),
+        ('autre',      'Autre'),
+    ]
     numero = models.CharField(max_length=30, unique=True, editable=False)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='brouillon')
     type_inventaire = models.CharField(max_length=20, choices=TYPE_CHOICES, default='complet', verbose_name='Type')
+    motif_inventaire = models.CharField(max_length=20, choices=MOTIF_CHOICES, default='periodique', verbose_name='Motif')
     inventaire_source = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='corrections', verbose_name='Inventaire source (correction)'
     )
+    date_inventaire = models.DateField(default=timezone.now, verbose_name="Date de l'inventaire")
     notes = models.TextField(blank=True)
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='inventaires_bar')
     valide_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='validations_inventaire_bar')
@@ -721,7 +731,11 @@ class InventaireBar(models.Model):
     def valeur_ecart_total(self):
         total = 0
         for l in self.lignes.select_related('article').all():
-            ve = l.valeur_ecart if l.valeur_ecart is not None else l.ecart_quantite * (l.article.prix or 0)
+            if l.valeur_ecart is not None:
+                ve = l.valeur_ecart
+            else:
+                cout = l.cmup_snapshot or l.article.cmup or l.article.prix_achat or l.article.prix or 0
+                ve = l.ecart_quantite * cout
             total += abs(ve)
         return total
 
@@ -783,9 +797,11 @@ class InventaireBar(models.Model):
                     )
 
             for ligne in self.lignes.select_related('article').all():
-                ve = ligne.ecart_quantite * (ligne.article.prix or 0)
-                ligne.valeur_ecart = ve
-                ligne.save(update_fields=['valeur_ecart'])
+                art = ligne.article
+                cout = art.cmup or art.prix_achat or art.prix or 0
+                ligne.cmup_snapshot = cout
+                ligne.valeur_ecart = ligne.ecart_quantite * cout
+                ligne.save(update_fields=['cmup_snapshot', 'valeur_ecart'])
 
             self.statut = 'valide'
             self.valide_par = user
@@ -812,6 +828,7 @@ class LigneInventaireBar(models.Model):
     quantite_theorique = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Qté théorique (système)")
     quantite_comptee = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name="Qté comptée (physique)")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='a_compter', verbose_name='Statut')
+    cmup_snapshot = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="CMUP au moment de la validation")
     valeur_ecart = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True, verbose_name="Valeur écart (FCFA)")
     notes_ligne = models.CharField(max_length=200, blank=True)
 

@@ -1435,6 +1435,122 @@ def inventaire_annuler(request, pk):
     return redirect('/cuisine/stock/?tab=inventaire')
 
 
+@require_module_access('cuisine')
+def inventaire_excel(request, pk):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from django.http import HttpResponse
+
+    inv = get_object_or_404(InventaireCuisine, pk=pk)
+    lignes = list(inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by(
+        'ingredient__categorie__nom', 'ingredient__nom'))
+    for l in lignes:
+        if l.valeur_ecart is None:
+            cout = l.cmup_snapshot or l.ingredient.cmup or 0
+            l.valeur_ecart = l.ecart * cout
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Inventaire"
+
+    rouge     = "DC2626"
+    vert      = "16A34A"
+    rouge_hdr = "991B1B"
+    rouge_l   = "FEF2F2"
+    gris_bord = "E2E8F0"
+    thin = Side(style='thin', color=gris_bord)
+    brd  = Border(left=thin, right=thin, top=thin, bottom=thin)
+    def hdr_fill(hex_color): return PatternFill("solid", fgColor=hex_color)
+    def cell_fill(hex_color): return PatternFill("solid", fgColor=hex_color)
+
+    ws.merge_cells('A1:J1')
+    c = ws['A1']
+    c.value = f"Complexe Hôtelier Behanian — Inventaire Cuisine {inv.numero}"
+    c.font = Font(name='Calibri', bold=True, size=14, color="FFFFFF")
+    c.fill = hdr_fill(rouge_hdr)
+    c.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 28
+
+    ws.merge_cells('A2:J2')
+    c = ws['A2']
+    date_inv = inv.date_inventaire.strftime('%d/%m/%Y') if inv.date_inventaire else '—'
+    c.value = (f"Date : {date_inv}  |  Type : {inv.get_type_inventaire_display()}"
+               f"  |  Motif : {inv.get_motif_inventaire_display()}"
+               f"  |  Statut : {inv.get_statut_display()}"
+               f"  |  Créé par : {inv.cree_par.get_full_name() if inv.cree_par else '—'}")
+    c.font = Font(name='Calibri', size=9, color=rouge_hdr)
+    c.fill = hdr_fill(rouge_l)
+    c.alignment = Alignment(horizontal='left', vertical='center', indent=1)
+    ws.row_dimensions[2].height = 16
+    ws.row_dimensions[3].height = 6
+
+    headers = ['#', 'Ingrédient', 'Catégorie', 'Unité', 'Qté théorique', 'Qté comptée',
+               'Écart', 'Type écart', 'CMUP (FCFA)', 'Valeur écart (FCFA)']
+    for col, h in enumerate(headers, 1):
+        c = ws.cell(row=4, column=col, value=h)
+        c.font = Font(name='Calibri', bold=True, size=9, color="FFFFFF")
+        c.fill = hdr_fill(rouge_hdr)
+        c.alignment = Alignment(horizontal='center', vertical='center')
+        c.border = brd
+    ws.row_dimensions[4].height = 18
+
+    for i, l in enumerate(lignes, 1):
+        row = 4 + i
+        ecart = l.ecart
+        type_ecart = 'Excédent' if ecart > 0 else ('Manquant' if ecart < 0 else 'Conforme')
+        cmup = float(l.cmup_snapshot or l.ingredient.cmup or 0)
+        valeur = float(l.valeur_ecart or 0)
+        unite = l.ingredient.unite_stock.abreviation if l.ingredient.unite_stock else '—'
+        cat   = l.ingredient.categorie.nom if l.ingredient.categorie else '—'
+        row_fill = cell_fill("FFF8F8") if ecart != 0 else cell_fill("FFFFFF")
+
+        vals = [i, l.ingredient.nom, cat, unite, float(l.quantite_theorique),
+                float(l.quantite_physique) if l.quantite_physique is not None else None,
+                float(ecart), type_ecart, cmup if cmup else None, valeur if ecart != 0 else None]
+        aligns = ['c','l','l','c','r','r','r','c','r','r']
+        for col, (val, aln) in enumerate(zip(vals, aligns), 1):
+            c = ws.cell(row=row, column=col, value=val)
+            c.font = Font(name='Calibri', size=9)
+            c.fill = row_fill
+            c.border = brd
+            c.alignment = Alignment(horizontal={'c':'center','l':'left','r':'right'}[aln], vertical='center')
+
+        ec = ws.cell(row=row, column=7)
+        if ecart > 0:   ec.font = Font(name='Calibri', size=9, color=vert,  bold=True)
+        elif ecart < 0: ec.font = Font(name='Calibri', size=9, color=rouge, bold=True)
+        vc = ws.cell(row=row, column=10)
+        if ecart > 0:   vc.font = Font(name='Calibri', size=9, color=vert,  bold=True)
+        elif ecart < 0: vc.font = Font(name='Calibri', size=9, color=rouge, bold=True)
+        ws.row_dimensions[row].height = 15
+
+    total_row = 4 + len(lignes) + 1
+    ws.merge_cells(f'A{total_row}:I{total_row}')
+    c = ws.cell(row=total_row, column=1, value="TOTAL VALEUR DES ÉCARTS (FCFA)")
+    c.font = Font(name='Calibri', bold=True, size=10, color=rouge_hdr)
+    c.fill = hdr_fill(rouge_l)
+    c.alignment = Alignment(horizontal='right', vertical='center')
+    c.border = brd
+    total_val = ws.cell(row=total_row, column=10)
+    total_val.value = float(sum(abs(l.valeur_ecart or 0) for l in lignes))
+    total_val.font = Font(name='Calibri', bold=True, size=11, color=rouge)
+    total_val.fill = hdr_fill(rouge_l)
+    total_val.alignment = Alignment(horizontal='right', vertical='center')
+    total_val.border = brd
+    ws.row_dimensions[total_row].height = 20
+
+    col_widths = [4, 28, 16, 8, 13, 12, 10, 12, 13, 18]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A5'
+
+    fname = f"Inventaire_Cuisine_{inv.numero}.xlsx"
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    wb.save(response)
+    return response
+
+
 # ==============================================================================
 # CASSES
 # ==============================================================================
