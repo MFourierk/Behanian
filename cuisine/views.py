@@ -1264,18 +1264,32 @@ def inventaire_create(request):
 
 
 @require_module_access('cuisine')
+def _inventaire_cuisine_stats(lignes):
+    """Calcule excédents, manquants et résultat net d'un inventaire cuisine."""
+    lignes = list(lignes)
+    for l in lignes:
+        if l.valeur_ecart is None:
+            cout = l.cmup_snapshot or l.ingredient.cmup or 0
+            l.valeur_ecart = l.ecart * cout
+    val_exc = sum(l.valeur_ecart for l in lignes if (l.valeur_ecart or 0) > 0)
+    val_man = sum(abs(l.valeur_ecart) for l in lignes if (l.valeur_ecart or 0) < 0)
+    resultat_net = val_exc - val_man
+    return lignes, {
+        'valeur_ecart_total': val_exc + val_man,
+        'valeur_excedents':   val_exc,
+        'valeur_manquants':   val_man,
+        'resultat_net':       resultat_net,
+        'resultat_net_abs':   abs(resultat_net),
+        'resultat_type':      'excedent' if resultat_net > 0 else ('manquant' if resultat_net < 0 else 'conforme'),
+    }
+
+
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
-    lignes = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
+    qs = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
+    lignes, stats = _inventaire_cuisine_stats(qs)
     ecarts = [l for l in lignes if l.ecart != 0]
-    valeur_ecart_total = sum(abs(l.valeur_ecart or 0) for l in ecarts)
-    context = {
-        'page_title': f'Inventaire {inv.numero}',
-        'inv': inv,
-        'lignes': lignes,
-        'ecarts': ecarts,
-        'valeur_ecart_total': valeur_ecart_total,
-    }
+    context = {'page_title': f'Inventaire {inv.numero}', 'inv': inv, 'lignes': lignes, 'ecarts': ecarts, **stats}
     return render(request, 'cuisine/inventaire_detail.html', context)
 
 
@@ -1369,14 +1383,10 @@ def inventaire_edit(request, pk):
 @require_module_access('cuisine')
 def inventaire_print(request, pk):
     inv = get_object_or_404(InventaireCuisine, pk=pk)
-    lignes = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
+    qs = inv.lignes.select_related('ingredient', 'ingredient__categorie', 'ingredient__unite_stock').order_by('ingredient__categorie__nom', 'ingredient__nom')
+    lignes, stats = _inventaire_cuisine_stats(qs)
     ecarts = [l for l in lignes if l.ecart != 0]
-    return render(request, 'cuisine/inventaire_print.html', {
-        'inv':               inv,
-        'lignes':            lignes,
-        'ecarts':            ecarts,
-        'valeur_ecart_total': sum(abs(l.valeur_ecart or 0) for l in ecarts),
-    })
+    return render(request, 'cuisine/inventaire_print.html', {'inv': inv, 'lignes': lignes, 'ecarts': ecarts, **stats})
 
 
 @require_module_access('cuisine')

@@ -26,8 +26,8 @@
     .ecart-pos { color: #27ae60; font-weight: 700; }
     .ecart-neg { color: #e74c3c; font-weight: 700; }
     .ecart-ok { color: #95a5a6; }
-    .badge-exc { background:#dcfce7; color:#15803d; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
-    .badge-man { background:#fee2e2; color:#b91c1c; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
+    .badge-exc { background:#dcfce7; color:#15803d; font-size:0.75rem; font-weight:800; padding:1px 7px; border-radius:20px; }
+    .badge-man { background:#fee2e2; color:#b91c1c; font-size:0.75rem; font-weight:800; padding:1px 7px; border-radius:20px; }
     .badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; text-transform:uppercase; }
     .badge-brouillon { background:#fef3c7; color:#92400e; }
     .badge-en_cours  { background:#fef3c7; color:#92400e; }
@@ -35,6 +35,24 @@
     .badge-annule    { background:#fee2e2; color:#b91c1c; }
     .ecart-summary { background: #fff9f0; border: 1px solid #f6d860; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
     .ecart-summary h4 { color: #e67e22; font-size: 0.9rem; margin-bottom: 10px; }
+    .resultat-band { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .resultat-card { flex:1; min-width:140px; border-radius:12px; padding:14px 16px; border:1.5px solid; }
+    .resultat-card .rc-lbl { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .resultat-card .rc-val { font-size:1.15rem; font-weight:800; }
+    .rc-exc  { background:#f0fdf4; border-color:#86efac; }
+    .rc-exc .rc-lbl { color:#15803d; } .rc-exc .rc-val { color:#15803d; }
+    .rc-man  { background:#fef2f2; border-color:#fca5a5; }
+    .rc-man .rc-lbl { color:#b91c1c; } .rc-man .rc-val { color:#b91c1c; }
+    .rc-net-exc { background:#ede9fe; border-color:#a78bfa; }
+    .rc-net-exc .rc-lbl { color:#5b21b6; } .rc-net-exc .rc-val { color:#5b21b6; }
+    .rc-net-man { background:#fff1f2; border-color:#fb7185; }
+    .rc-net-man .rc-lbl { color:#9f1239; } .rc-net-man .rc-val { color:#9f1239; }
+    .rc-net-ok  { background:#f0fdf4; border-color:#86efac; }
+    .rc-net-ok .rc-lbl { color:#15803d; } .rc-net-ok .rc-val { color:#15803d; }
+    .verdict-banner { border-radius:10px; padding:10px 18px; font-weight:700; font-size:0.9rem; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+    .verdict-exc { background:#ede9fe; color:#5b21b6; border:1.5px solid #a78bfa; }
+    .verdict-man { background:#fff1f2; color:#9f1239; border:1.5px solid #fb7185; }
+    .verdict-ok  { background:#f0fdf4; color:#15803d; border:1.5px solid #86efac; }
     .btn-action { display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:10px; font-size:0.88rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; }
     .btn-continuer { background:#8e44ad; color:white; }
     .btn-continuer:hover { background:#6c3483; }
@@ -87,8 +105,40 @@
 </div>
 
 {% if ecarts %}
+{# ── Bande résultat net ── #}
+<div class="resultat-band">
+    <div class="resultat-card rc-exc">
+        <div class="rc-lbl">📈 Valeur excédents</div>
+        <div class="rc-val">+{{ valeur_excedents|montant }} F</div>
+    </div>
+    <div class="resultat-card rc-man">
+        <div class="rc-lbl">📉 Valeur manquants</div>
+        <div class="rc-val">−{{ valeur_manquants|montant }} F</div>
+    </div>
+    <div class="resultat-card {% if resultat_type == 'excedent' %}rc-net-exc{% elif resultat_type == 'manquant' %}rc-net-man{% else %}rc-net-ok{% endif %}">
+        <div class="rc-lbl">⚖️ Résultat net inventaire</div>
+        <div class="rc-val">
+            {% if resultat_type == 'excedent' %}+{{ resultat_net_abs|montant }} F
+            {% elif resultat_type == 'manquant' %}−{{ resultat_net_abs|montant }} F
+            {% else %}0 F — Équilibré{% endif %}
+        </div>
+    </div>
+</div>
+
+{# ── Verdict global ── #}
+<div class="verdict-banner {% if resultat_type == 'excedent' %}verdict-exc{% elif resultat_type == 'manquant' %}verdict-man{% else %}verdict-ok{% endif %}">
+    {% if resultat_type == 'excedent' %}
+        📈 Inventaire en <strong>EXCÉDENT GLOBAL</strong> de {{ resultat_net_abs|montant }} FCFA — vous avez plus en stock que prévu.
+    {% elif resultat_type == 'manquant' %}
+        📉 Inventaire en <strong>MANQUANT GLOBAL</strong> de {{ resultat_net_abs|montant }} FCFA — vous avez moins en stock que prévu.
+    {% else %}
+        ✅ Inventaire <strong>ÉQUILIBRÉ</strong> — excédents et manquants se compensent.
+    {% endif %}
+</div>
+
+{# ── Détail articles en écart ── #}
 <div class="ecart-summary">
-    <h4>⚠️ {{ ecarts|length }} écart(s) détecté(s) — Valeur totale : {{ valeur_ecart_total|montant }} FCFA</h4>
+    <h4>⚠️ {{ ecarts|length }} article(s) avec écart</h4>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
         {% for l in ecarts %}
         <span style="background:white;border:1px solid #f6d860;border-radius:8px;padding:4px 10px;font-size:0.82rem;font-weight:600;">
@@ -127,10 +177,10 @@
                 <td class="r">
                     {% if l.ecart_quantite > 0 %}
                         <span class="ecart-pos">+{{ l.ecart_quantite }}</span>
-                        <span class="badge-exc">Excédent</span>
+                        <span class="badge-exc">↑</span>
                     {% elif l.ecart_quantite < 0 %}
                         <span class="ecart-neg">{{ l.ecart_quantite }}</span>
-                        <span class="badge-man">Manquant</span>
+                        <span class="badge-man">↓</span>
                     {% else %}
                         <span class="ecart-ok">—</span>
                     {% endif %}

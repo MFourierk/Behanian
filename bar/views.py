@@ -1099,6 +1099,21 @@ def inventaire_edit(request, pk):
 
 @require_module_access('bar')
 @require_bar_gestion
+def _inventaire_bar_stats(lignes):
+    """Calcule excédents, manquants et résultat net d'un inventaire bar."""
+    val_exc = sum(l.valeur_ecart for l in lignes if (l.valeur_ecart or 0) > 0)
+    val_man = sum(abs(l.valeur_ecart) for l in lignes if (l.valeur_ecart or 0) < 0)
+    resultat_net = val_exc - val_man
+    return {
+        'valeur_ecart_total': val_exc + val_man,
+        'valeur_excedents':   val_exc,
+        'valeur_manquants':   val_man,
+        'resultat_net':       resultat_net,
+        'resultat_net_abs':   abs(resultat_net),
+        'resultat_type':      'excedent' if resultat_net > 0 else ('manquant' if resultat_net < 0 else 'conforme'),
+    }
+
+
 def inventaire_detail(request, pk):
     inv = get_object_or_404(InventaireBar, pk=pk)
     lignes = list(inv.lignes.select_related('article', 'article__categorie').order_by('article__categorie__nom', 'article__nom'))
@@ -1112,7 +1127,7 @@ def inventaire_detail(request, pk):
         'inv': inv,
         'lignes': lignes,
         'ecarts': ecarts,
-        'valeur_ecart_total': sum(abs(l.valeur_ecart or 0) for l in ecarts),
+        **_inventaire_bar_stats(lignes),
     }
     return render(request, 'bar/inventaire_detail.html', context)
 
@@ -1128,10 +1143,10 @@ def inventaire_print(request, pk):
             l.valeur_ecart = l.ecart_quantite * cout
     ecarts = [l for l in lignes if l.ecart_quantite != 0]
     return render(request, 'bar/inventaire_print.html', {
-        'inv':               inv,
-        'lignes':            lignes,
-        'ecarts':            ecarts,
-        'valeur_ecart_total': sum(abs(l.valeur_ecart or 0) for l in ecarts),
+        'inv':    inv,
+        'lignes': lignes,
+        'ecarts': ecarts,
+        **_inventaire_bar_stats(lignes),
     })
 
 

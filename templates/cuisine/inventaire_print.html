@@ -176,22 +176,28 @@
 </div>
 
 {# ══ KPI ══ #}
-<div class="kpi-row">
+<div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">
   <div class="kpi total">
     <div class="kv">{{ lignes|length }}</div>
-    <div class="kl">Ingrédients inventoriés</div>
+    <div class="kl">Inventoriés</div>
   </div>
   <div class="kpi ok">
     <div class="kv">{{ lignes|length|add:"-"|add:ecarts|length }}</div>
     <div class="kl">Conformes</div>
   </div>
-  <div class="kpi nok">
-    <div class="kv">{{ ecarts|length }}</div>
-    <div class="kl">Avec écart</div>
+  <div class="kpi ok" style="background:#f0fdf4;border-color:#86efac;">
+    <div class="kv" style="color:#16a34a;">↑ {{ valeur_excedents|montant }}</div>
+    <div class="kl">Excédents (FCFA)</div>
   </div>
-  <div class="kpi val">
-    <div class="kv" style="font-size:13px;">{{ valeur_ecart_total|montant }}</div>
-    <div class="kl">Valeur écarts (FCFA)</div>
+  <div class="kpi nok">
+    <div class="kv" style="color:#c0392b;">↓ {{ valeur_manquants|montant }}</div>
+    <div class="kl">Manquants (FCFA)</div>
+  </div>
+  <div class="kpi {% if resultat_type == 'excedent' %}val{% elif resultat_type == 'manquant' %}nok{% else %}ok{% endif %}">
+    <div class="kv" style="font-size:12px;">
+      {% if resultat_type == 'excedent' %}↑ +{{ resultat_net_abs|montant }}{% elif resultat_type == 'manquant' %}↓ −{{ resultat_net_abs|montant }}{% else %}= 0{% endif %}
+    </div>
+    <div class="kl">Résultat net (FCFA)</div>
   </div>
 </div>
 
@@ -231,10 +237,10 @@
       <td class="r">
         {% if l.ecart > 0 %}
           <span class="ecart-pos">+{{ l.ecart|floatformat:3 }}</span>
-          <span class="badge-exc">Excédent</span>
+          <span class="badge-exc">↑</span>
         {% elif l.ecart < 0 %}
           <span class="ecart-neg">{{ l.ecart|floatformat:3 }}</span>
-          <span class="badge-man">Manquant</span>
+          <span class="badge-man">↓</span>
         {% else %}
           <span class="ecart-ok">—</span>
         {% endif %}
