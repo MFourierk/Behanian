@@ -684,7 +684,8 @@
                 <td><span class="badge b-{{ t.module }}">{{ t.get_module_display }}</span></td>
                 <td style="font-size:11px;white-space:nowrap">{{ t.date_creation|date:"H:i" }}</td>
                 <td style="font-size:11px">
-                  {% if t.mode_paiement == 'especes' %}💵 Espèces
+                  {% if t.montant_especes and t.mode_paiement != 'especes' %}<span style="color:#92400e">🔀 Mixte</span>
+                  {% elif t.mode_paiement == 'especes' %}💵 Espèces
                   {% elif t.mode_paiement == 'mixte' %}<span style="color:#92400e">🔀 Mixte</span>
                   {% elif t.mode_paiement == 'carte_bancaire' or t.mode_paiement == 'carte' %}💳 Carte
                   {% elif t.mode_paiement == 'wave' %}<span style="color:#1d4ed8">📱 Wave</span>
