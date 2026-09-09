@@ -143,6 +143,9 @@
       <button class="btn-a btn-vert" onclick="ouvrirModal('modalOuvrir')"><i class="fas fa-unlock"></i> Ouvrir la caisse</button>
       {% endif %}
       {% if is_manager %}
+      {% if session_ouverte_par %}
+      <button class="btn-a" style="background:rgba(255,193,7,.25);color:#ffd700;border:1px solid rgba(255,193,7,.4)" onclick="ouvrirModal('modalCorrigerFond')"><i class="fas fa-edit"></i> Corriger fond</button>
+      {% endif %}
       <a href="{% url 'caisse:historique' %}" class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.35);text-decoration:none">
         <i class="fas fa-history"></i> Historique sessions
       </a>
@@ -1074,7 +1077,8 @@
 </div></div>
 
 <!-- MODAL CORRIGER FOND (manager) -->
-{% if is_manager and session_active %}
+{% with sess_cible=session_active|default:session_ouverte_par %}
+{% if is_manager and sess_cible %}
 <div class="modal-ov" id="modalCorrigerFond">
   <div class="modal-box">
     <div class="modal-head">
@@ -1082,13 +1086,13 @@
       <button class="close-btn" onclick="fermerModal('modalCorrigerFond')">×</button>
     </div>
     <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#92400e">
-      <strong>Session :</strong> {{ session_active.numero_session }} — {{ session_active.user.get_full_name|default:session_active.user.username }}<br>
-      <strong>Fond actuel :</strong> {{ session_active.fond_caisse|montant }} F<br>
+      <strong>Session :</strong> {{ sess_cible.numero_session }} — {{ sess_cible.user.get_full_name|default:sess_cible.user.username }}<br>
+      <strong>Fond actuel :</strong> {{ sess_cible.fond_caisse|montant }} F<br>
       {% if solde_veille %}<strong>Solde veille calculé :</strong> {{ solde_veille|montant }} F{% endif %}
     </div>
     <div class="form-row">
       <label>Nouveau fond initial (FCFA)</label>
-      <input type="number" id="cf_fond" class="fc" min="0" value="{{ solde_veille|default:session_active.fond_caisse }}">
+      <input type="number" id="cf_fond" class="fc" min="0" value="{{ solde_veille|default:sess_cible.fond_caisse }}">
     </div>
     <div class="form-row">
       <label>Motif de la correction <span style="color:#dc2626;font-weight:700">*</span></label>
@@ -1101,6 +1105,7 @@
   </div>
 </div>
 {% endif %}
+{% endwith %}
 
 <!-- MODAL OUVRIR CAISSE -->
 <div class="modal-ov" id="modalOuvrir">
@@ -1616,7 +1621,7 @@ async function corrigerFondSession(){
     return;
   }
   const d = await post("{% url 'caisse:api_corriger_fond' %}", {
-    session_id: {{ session_active.pk|default:'null' }},
+    session_id: {{ session_active.pk|default:session_ouverte_par.pk|default:'null' }},
     fond: fond,
     motif: motif,
   });
