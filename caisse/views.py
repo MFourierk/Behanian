@@ -1903,6 +1903,62 @@ def rapport_transactions(request):
 
 
 @require_module_access('caisse')
+@require_POST
+def api_corriger_fond_session(request):
+    """Manager : corriger le fond initial d'une session active (ex: solde veille non positionné)."""
+    from utils.permissions import _is_manager as _chk_manager
+    if not (_chk_manager(request.user) or request.user.is_superuser):
+        return JsonResponse({'success': False, 'error': 'Accès réservé aux responsables.'}, status=403)
+    try:
+        data       = json.loads(request.body)
+        session_id = data.get('session_id')
+        nouveau_fond = _dec(data.get('fond', 0))
+        motif        = (data.get('motif', '') or '').strip()
+        if nouveau_fond < 0:
+            return JsonResponse({'success': False, 'error': 'Montant invalide.'})
+        if not motif:
+            return JsonResponse({'success': False, 'error': 'Le motif est obligatoire.'})
+
+        session = CaisseSession.objects.get(pk=session_id, is_open=True)
+        ancien_fond = session.fond_caisse
+
+        # Supprimer les anciens mouvements fond_caisse de cette session
+        MouvementCaisse.objects.filter(session=session, type='fond_caisse').delete()
+
+        session.fond_caisse = nouveau_fond
+        session.save(update_fields=['fond_caisse'])
+
+        # Recréer les mouvements fond avec répartition espèces / mobile
+        _, last_s = get_solde_veille()
+        fond_mobile  = _dec(last_s.total_mobile) if last_s else _dec(0)
+        fond_mobile  = min(fond_mobile, nouveau_fond)
+        fond_especes = nouveau_fond - fond_mobile
+        label = (f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}'
+                 f' — corrigé par {request.user.get_full_name() or request.user.username} ({motif})')
+        if fond_especes > 0:
+            MouvementCaisse.objects.create(
+                session=session, type='fond_caisse', module='caisse',
+                montant=fond_especes, mode_paiement='especes',
+                description=label, cree_par=request.user, valide=True,
+            )
+        if fond_mobile > 0:
+            MouvementCaisse.objects.create(
+                session=session, type='fond_caisse', module='caisse',
+                montant=fond_mobile, mode_paiement='mobile_money',
+                description=label + ' (mobile)', cree_par=request.user, valide=True,
+            )
+
+        return JsonResponse({
+            'success': True,
+            'message': (f'Fond corrigé : {int(ancien_fond):,} F → {int(nouveau_fond):,} F'.replace(',', ' '))
+        })
+    except CaisseSession.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Session introuvable ou déjà clôturée.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
 def etat_journee(request):
     """État de fin de journée — point général des transactions par module et par mode de paiement."""
     from datetime import date as date_type

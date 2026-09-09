@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/modifier-mouvement/', views.api_modifier_mouvement, name='api_modifier_mouvement'),
     path('api/supprimer-mouvement/', views.api_supprimer_mouvement, name='api_supprimer_mouvement'),
     path('api/versements-session/', views.api_versements_session, name='api_versements_session'),
+    path('api/corriger-fond/', views.api_corriger_fond_session, name='api_corriger_fond'),
 ]
