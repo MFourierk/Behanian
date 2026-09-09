@@ -1098,10 +1098,16 @@
     {% endif %}
     <div class="form-row">
       <label>Fond de caisse (FCFA){% if last_session %} — reporté automatiquement{% endif %}</label>
-      <input type="number" id="ov_fond" class="fc" placeholder="Ex: 50000" min="0" value="{{ solde_veille }}">
+      <input type="number" id="ov_fond" class="fc" placeholder="Ex: 50000" min="0" value="{{ solde_veille }}" oninput="verifierModifFond()">
     </div>
+    {% if last_session %}
+    <div id="ov_alerte_modif" style="display:none;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:6px">⚠️ Vous modifiez le fond reporté automatiquement ({{ solde_veille|montant }} F)</div>
+      <div style="font-size:11px;color:#7f1d1d">L'observation est obligatoire pour justifier cette modification.</div>
+    </div>
+    {% endif %}
     <div class="form-row">
-      <label>Notes d'ouverture</label>
+      <label id="ov_notes_label">Notes d'ouverture</label>
       <textarea id="ov_notes" class="fc" rows="2" style="resize:vertical" placeholder="Observations…"></textarea>
     </div>
     <div style="background:#f0fdf4;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#15803d">
@@ -1531,9 +1537,32 @@ function calculerEcart(){
   }
 }
 
+function verifierModifFond(){
+  {% if last_session %}
+  const soldeVeille = {{ solde_veille }};
+  const fondSaisi   = parseFloat(document.getElementById('ov_fond').value) || 0;
+  const alerte      = document.getElementById('ov_alerte_modif');
+  const lbl         = document.getElementById('ov_notes_label');
+  const modifie     = fondSaisi !== soldeVeille;
+  alerte.style.display = modifie ? '' : 'none';
+  lbl.innerHTML = modifie
+    ? 'Observation <span style="color:#dc2626;font-weight:700">* (obligatoire — justifiez la modification du fond)</span>'
+    : 'Notes d\'ouverture';
+  {% endif %}
+}
+
 async function ouvrirCaisse(){
   const fond  = document.getElementById('ov_fond').value || 0;
-  const notes = document.getElementById('ov_notes').value;
+  const notes = document.getElementById('ov_notes').value.trim();
+  {% if last_session %}
+  const soldeVeille = {{ solde_veille }};
+  const fondSaisi   = parseFloat(fond) || 0;
+  if(fondSaisi !== soldeVeille && !notes){
+    toast('⚠️ Vous avez modifié le fond reporté. Veuillez saisir une observation pour justifier.', 'error');
+    document.getElementById('ov_notes').focus();
+    return;
+  }
+  {% endif %}
   const d = await post("{% url 'caisse:ouvrir' %}", {fond_caisse: fond, notes});
   if(d.success){
     toast('✅ '+d.message,'success');
