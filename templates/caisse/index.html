@@ -1620,8 +1620,11 @@ async function corrigerFondSession(){
     document.getElementById('cf_motif').focus();
     return;
   }
+  {% if session_active %}const _cfSessionId = {{ session_active.pk }};
+  {% elif session_ouverte_par %}const _cfSessionId = {{ session_ouverte_par.pk }};
+  {% else %}const _cfSessionId = null;{% endif %}
   const d = await post("{% url 'caisse:api_corriger_fond' %}", {
-    session_id: {{ session_active.pk|default:session_ouverte_par.pk|default:'null' }},
+    session_id: _cfSessionId,
     fond: fond,
     motif: motif,
   });
