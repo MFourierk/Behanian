@@ -544,27 +544,28 @@ def get_reconciliation_session(session):
 
 def get_solde_veille():
     """Retourne le nouveau_fond de la dernière clôture.
-    Formule = fond_caisse (ouverture) + espèces billetage + mobile effectif − prélèvement banque.
-    Même calcul que le récapitulatif du rapport Z.
+    Formule identique au NOUVEAU SOLDE INITIAL affiché en section 7 du rapport :
+      fond_caisse (ouverture) + versements espèces (MouvementCaisse) + versements mobile (MouvementCaisse) − prélèvement banque.
+    Source : MouvementCaisse versements (pas fond_caisse_reel qui peut être saisi incorrectement).
     """
     last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
     if not last:
         return 0, None
 
-    declared_mobile_total = int(last.declared_wave + last.declared_orange + last.declared_mtn + last.declared_moov)
-    declared_especes      = max(0, int(last.fond_caisse_reel) - declared_mobile_total)
+    vs = MouvementCaisse.objects.filter(
+        session=last, type='versement', valide=True,
+    ).exclude(reference__startswith='CONSOLIDATION')
 
-    if declared_mobile_total > 0:
-        effective_mobile = declared_mobile_total
-    elif int(last.total_mobile) > 0:
-        # Nouveau système : total_mobile stocke le effective_mobile à la clôture
-        effective_mobile = int(last.total_mobile)
-    else:
-        # Ancienne session sans champs declared_* : recompute depuis les tickets
-        stats_last = get_stats_session(last)
-        effective_mobile = stats_last['mobile']
+    def _vs(modes):
+        return int(vs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
 
-    nouveau_fond = int(last.fond_caisse) + declared_especes + effective_mobile - int(last.prelevement_banque)
+    declared_especes = _vs(['especes'])
+    declared_mobile  = (
+        _vs(['wave']) + _vs(['orange_money']) + _vs(['mtn_money']) + _vs(['moov_money'])
+        + _vs(['mobile_money', 'mobile'])
+    )
+
+    nouveau_fond = int(last.fond_caisse) + declared_especes + declared_mobile - int(last.prelevement_banque)
     return nouveau_fond, last
 
 
@@ -1925,8 +1926,14 @@ def api_corriger_fond_session(request):
         # Supprimer les anciens mouvements fond_caisse de cette session
         MouvementCaisse.objects.filter(session=session, type='fond_caisse').delete()
 
+        # Ajouter le motif dans les notes de session (visible en section 9 du rapport)
+        note_correction = (
+            f'[Correction fond par {request.user.get_full_name() or request.user.username}] '
+            f'{int(ancien_fond):,} F → {int(nouveau_fond):,} F. Motif : {motif}'
+        ).replace(',', ' ')
+        session.notes = (session.notes + '\n' + note_correction).strip() if session.notes else note_correction
         session.fond_caisse = nouveau_fond
-        session.save(update_fields=['fond_caisse'])
+        session.save(update_fields=['fond_caisse', 'notes'])
 
         # Recréer les mouvements fond avec répartition espèces / mobile
         _, last_s = get_solde_veille()
