@@ -1497,15 +1497,17 @@ function setPaymentChoice(choice){
   }
 }
 
-function _calcRendu(recuEl, totalV, renduEl){
-  const recu=parseFloat(recuEl.value)||0;
-  if(recu>=totalV){
+function _calcRenduVal(combinedRecu, totalV, renduEl){
+  if(combinedRecu >= totalV){
     renduEl.style.display='block';renduEl.style.background='#f0fdf4';renduEl.style.color='#15803d';renduEl.style.border='1px solid #bbf7d0';
-    renduEl.textContent='Monnaie à rendre : '+(recu-totalV).toLocaleString('fr-FR')+' F';
-  } else if(recu>0){
+    renduEl.textContent='Monnaie à rendre : '+(combinedRecu-totalV).toLocaleString('fr-FR')+' F';
+  } else if(combinedRecu > 0){
     renduEl.style.display='block';renduEl.style.background='#fef2f2';renduEl.style.color='#dc2626';renduEl.style.border='1px solid #fecaca';
-    renduEl.textContent='Manque : '+(totalV-recu).toLocaleString('fr-FR')+' F';
+    renduEl.textContent='Manque : '+(totalV-combinedRecu).toLocaleString('fr-FR')+' F';
   } else renduEl.style.display='none';
+}
+function _calcRendu(recuEl, totalV, renduEl){
+  _calcRenduVal(parseFloat(recuEl.value)||0, totalV, renduEl);
 }
 
 function piscSortieIsMobile(mode){return['wave','orange_money','mtn_money','moov_money'].includes(mode);}
@@ -1518,22 +1520,28 @@ function piscSortieSetMode(sel, which){
   piscSortieCalcMobile(which);
 }
 function piscSortieCalcMobile(which){
-  const total = _sortieTotal + _sortieSalonFrais;
-  const espId = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
-  const infoId = which==='direct' ? 'sortieMobileInfoDirect' : 'sortieMobileInfoNR';
-  const esp = parseFloat(document.getElementById(espId)?.value||0)||0;
+  const total   = _sortieTotal + _sortieSalonFrais;
+  const espId   = which==='direct' ? 'sortieEspecesDirect'   : 'sortieEspecesNR';
+  const infoId  = which==='direct' ? 'sortieMobileInfoDirect' : 'sortieMobileInfoNR';
+  const recuId  = which==='direct' ? 'sortieRecu'             : 'sortieRecuNR';
+  const renduId = which==='direct' ? 'sortieRendu'            : 'sortieRenduNR';
+  const esp    = parseFloat(document.getElementById(espId)?.value||0)||0;
   const mobile = Math.max(0, total - esp);
   document.getElementById(infoId).textContent = esp > 0
     ? 'Montant mobile : '+mobile.toLocaleString('fr-FR')+' F'
     : '';
+  const recu = parseFloat(document.getElementById(recuId)?.value||0)||0;
+  _calcRenduVal(recu + esp, total, document.getElementById(renduId));
 }
 
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('sortieRecu').addEventListener('input',function(){
-    _calcRendu(this, _sortieTotal + _sortieSalonFrais, document.getElementById('sortieRendu'));
+    const esp = parseFloat(document.getElementById('sortieEspecesDirect')?.value||0)||0;
+    _calcRenduVal((parseFloat(this.value)||0)+esp, _sortieTotal+_sortieSalonFrais, document.getElementById('sortieRendu'));
   });
   document.getElementById('sortieRecuNR').addEventListener('input',function(){
-    _calcRendu(this, _sortieTotal + _sortieSalonFrais, document.getElementById('sortieRenduNR'));
+    const esp = parseFloat(document.getElementById('sortieEspecesNR')?.value||0)||0;
+    _calcRenduVal((parseFloat(this.value)||0)+esp, _sortieTotal+_sortieSalonFrais, document.getElementById('sortieRenduNR'));
   });
 });
 

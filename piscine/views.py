@@ -558,7 +558,7 @@ def encaisser_sortie(request, acces_id):
         total          = max(total_brut - montant_remise, Decimal('0')) + frais_salon + frais_add
 
         # Validation montant pour tout paiement direct
-        if not sur_chambre and montant_recu < total:
+        if not sur_chambre and (montant_recu + montant_especes) < total:
             return JsonResponse({'success': False, 'error': f'Montant insuffisant. Total net : {int(total)} F'})
 
         # Marquer sortie
@@ -644,16 +644,20 @@ def encaisser_sortie(request, acces_id):
             contenu=contenu, imprime=True,
         )
         from django.template.loader import render_to_string
+        montant_mobile_ticket = max(Decimal('0'), total - montant_especes) if montant_especes > 0 else Decimal('0')
         ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
-            'ticket': ticket,
-            'serveur': request.user.get_full_name() or request.user.username,
+            'ticket':          ticket,
+            'serveur':         request.user.get_full_name() or request.user.username,
+            'montant_especes': montant_especes if montant_especes > 0 else None,
+            'montant_mobile':  montant_mobile_ticket if montant_especes > 0 else None,
+            'mode_short':      'MOBILE',
         })
         return JsonResponse({
             'success': True,
             'sur_chambre': False,
             'ticket_html': ticket_html,
             'total': float(total),
-            'rendu': float(max(Decimal('0'), montant_recu - total)),
+            'rendu': float(max(Decimal('0'), montant_recu + montant_especes - total)),
             'message': f'Sortie enregistrée — {acces.nom_client}'
         })
     except Exception as e:

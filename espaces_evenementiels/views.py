@@ -255,7 +255,7 @@ def api_encaisser(request, reservation_id):
             })
 
         # Mode PAIEMENT DIRECT
-        if montant_recu < restant:
+        if (montant_recu + montant_especes) < restant:
             return JsonResponse({'success': False, 'error': f'Montant insuffisant. Restant : {int(restant):,} F'})
 
         duree_label = dict(ReservationEspace.TYPE_DUREE).get(res.type_duree, '')
@@ -273,9 +273,13 @@ def api_encaisser(request, reservation_id):
             montant_especes=(montant_especes if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else Decimal('0')),
             contenu=contenu, imprime=True,
         )
+        montant_mobile_ticket = max(Decimal('0'), restant - montant_especes) if montant_especes > 0 else Decimal('0')
         ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
-            'ticket': ticket,
-            'serveur': request.user.get_full_name() or request.user.username,
+            'ticket':          ticket,
+            'serveur':         request.user.get_full_name() or request.user.username,
+            'montant_especes': montant_especes if montant_especes > 0 else None,
+            'montant_mobile':  montant_mobile_ticket if montant_especes > 0 else None,
+            'mode_short':      'MOBILE',
         })
         res.statut = 'terminee'
         res.mode_paiement = mode_paiement
@@ -284,7 +288,7 @@ def api_encaisser(request, reservation_id):
             'success': True, 'sur_chambre': False,
             'ticket_html': ticket_html,
             'total': float(restant),
-            'rendu': float(max(Decimal('0'), montant_recu - restant)),
+            'rendu': float(max(Decimal('0'), montant_recu + montant_especes - restant)),
         })
     except Exception as e:
         import traceback; traceback.print_exc()
