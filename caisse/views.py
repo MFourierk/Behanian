@@ -200,7 +200,7 @@ def get_reconciliation_jour(date=None):
         mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
         carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
         virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = 0
+        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
 
         vs_qs = MouvementCaisse.objects.filter(
             date__date=date, type='versement', module=caisse_mod, valide=True,
@@ -471,7 +471,7 @@ def get_reconciliation_session(session):
         mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
         carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
         virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = 0
+        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
 
         vs_qs = MouvementCaisse.objects.filter(
             session=session, type='versement', module=caisse_mod, valide=True,
@@ -1180,19 +1180,44 @@ def enregistrer_mouvement(request):
         data    = json.loads(request.body)
         session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
 
-        type_mv = data.get('type', 'depense')
+        type_mv       = data.get('type', 'depense')
+        mode_paiement = data.get('mode_paiement', 'especes')
+        module        = data.get('module', 'caisse')
+        description   = data.get('description', '')
+        reference     = data.get('reference', '')
+
+        if mode_paiement == 'mixte':
+            # Paiement mixte : créer 2 entrées séparées (espèces + mobile)
+            montant_especes = _dec(data.get('montant_especes', 0))
+            montant_mobile  = _dec(data.get('montant_mobile', 0))
+            mode_mobile     = data.get('mode_mobile', 'wave')
+            if montant_especes <= 0 and montant_mobile <= 0:
+                return JsonResponse({'success': False, 'error': 'Montants invalides pour le paiement mixte.'})
+            total = montant_especes + montant_mobile
+            if montant_especes > 0:
+                MouvementCaisse.objects.create(
+                    session=session, type=type_mv, module=module,
+                    montant=montant_especes, mode_paiement='especes',
+                    description=description + ' (espèces)', reference=reference,
+                    cree_par=request.user,
+                )
+            if montant_mobile > 0:
+                MouvementCaisse.objects.create(
+                    session=session, type=type_mv, module=module,
+                    montant=montant_mobile, mode_paiement=mode_mobile,
+                    description=description + f' ({mode_mobile})', reference=reference,
+                    cree_par=request.user,
+                )
+            return JsonResponse({'success': True, 'message': f'Versement mixte enregistré : {int(total):,} F (esp. {int(montant_especes):,} + mobile {int(montant_mobile):,})'})
+
         montant = _dec(data.get('montant', 0))
         if montant <= 0:
             return JsonResponse({'success': False, 'error': 'Montant invalide'})
 
         MouvementCaisse.objects.create(
-            session=session,
-            type=type_mv,
-            module=data.get('module', 'caisse'),
-            montant=montant,
-            mode_paiement=data.get('mode_paiement', 'especes'),
-            description=data.get('description', ''),
-            reference=data.get('reference', ''),
+            session=session, type=type_mv, module=module,
+            montant=montant, mode_paiement=mode_paiement,
+            description=description, reference=reference,
             cree_par=request.user,
         )
         return JsonResponse({'success': True, 'message': f'Mouvement enregistré : {int(montant):,} F'})

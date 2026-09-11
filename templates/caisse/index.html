@@ -1412,21 +1412,45 @@
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="form-row">
+      <div class="form-row" id="mv_row_montant">
         <label>Montant (FCFA) *</label>
         <input type="number" id="mv_montant" class="fc" placeholder="Ex: 25000" min="0">
       </div>
       <div class="form-row">
         <label>Mode de paiement</label>
-        <select id="mv_mode" class="fc">
+        <select id="mv_mode" class="fc" onchange="mvModeChange(this.value)">
           <option value="especes">Espèces</option>
           <option value="wave">Wave</option>
           <option value="orange_money">Orange Money</option>
           <option value="mtn_money">MTN Mobile Money</option>
           <option value="carte_bancaire">Carte bancaire</option>
           <option value="virement">Virement</option>
+          <option value="mixte">🔀 Paiement mixte (espèces + mobile)</option>
         </select>
       </div>
+    </div>
+    <!-- Champs mixte modalMouvement (masqués par défaut) -->
+    <div id="mv_row_mixte" style="display:none;background:#f5f0ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px;margin-bottom:4px">
+      <div style="font-size:12px;color:#6d28d9;margin-bottom:10px"><i class="fas fa-info-circle"></i> Décomposez : espèces + mobile</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div class="form-row" style="margin:0">
+          <label>Part espèces (FCFA)</label>
+          <input type="number" id="mv_montant_especes" class="fc" placeholder="Ex: 10000" min="0" oninput="_mvMixteTotal()">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Part mobile (FCFA)</label>
+          <input type="number" id="mv_montant_mobile" class="fc" placeholder="Ex: 15000" min="0" oninput="_mvMixteTotal()">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Mode mobile</label>
+          <select id="mv_mode_mobile" class="fc">
+            <option value="wave">Wave</option>
+            <option value="orange_money">Orange Money</option>
+            <option value="mtn_money">MTN Mobile Money</option>
+          </select>
+        </div>
+      </div>
+      <div id="mv_mixte_total" style="margin-top:8px;font-weight:600;color:#5b21b6;font-size:13px;text-align:right"></div>
     </div>
     <div class="form-row">
       <label>Description *</label>
@@ -1486,18 +1510,43 @@
       <i class="fas fa-info-circle"></i> Ce versement physique sera contrôlé par le responsable de la caisse centrale.
     </div>
     <div class="form-row">
-      <label>Montant versé physiquement (FCFA) *</label>
-      <input type="number" id="vs_montant" class="fc" placeholder="Ex: 150000" min="0">
-    </div>
-    <div class="form-row">
       <label>Mode de remise</label>
-      <select id="vs_mode" class="fc">
+      <select id="vs_mode" class="fc" onchange="vsModeChange(this.value)">
         <option value="especes">Espèces</option>
         <option value="wave">Wave</option>
         <option value="orange_money">Orange Money</option>
         <option value="mtn_money">MTN Mobile Money</option>
         <option value="virement">Virement interne</option>
+        <option value="mixte">🔀 Paiement mixte (espèces + mobile)</option>
       </select>
+    </div>
+    <!-- Champ montant simple (mode non-mixte) -->
+    <div class="form-row" id="vs_row_montant">
+      <label>Montant versé physiquement (FCFA) *</label>
+      <input type="number" id="vs_montant" class="fc" placeholder="Ex: 150000" min="0">
+    </div>
+    <!-- Champs mixte (masqués par défaut) -->
+    <div id="vs_row_mixte" style="display:none;background:#f5f0ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px;margin-bottom:4px">
+      <div style="font-size:12px;color:#6d28d9;margin-bottom:10px"><i class="fas fa-info-circle"></i> Décomposez le versement : espèces + mobile</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-row" style="margin:0">
+          <label>Part espèces (FCFA)</label>
+          <input type="number" id="vs_montant_especes" class="fc" placeholder="Ex: 40000" min="0">
+        </div>
+        <div class="form-row" style="margin:0">
+          <label>Part mobile (FCFA)</label>
+          <input type="number" id="vs_montant_mobile" class="fc" placeholder="Ex: 80000" min="0">
+        </div>
+      </div>
+      <div class="form-row" style="margin:0">
+        <label>Mode mobile</label>
+        <select id="vs_mode_mobile" class="fc">
+          <option value="wave">Wave</option>
+          <option value="orange_money">Orange Money</option>
+          <option value="mtn_money">MTN Mobile Money</option>
+        </select>
+      </div>
+      <div id="vs_mixte_total" style="margin-top:10px;font-weight:600;color:#5b21b6;font-size:14px;text-align:right"></div>
     </div>
     <div class="form-row">
       <label>Description / Référence</label>
@@ -1826,17 +1875,48 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 });
 
+function mvModeChange(val){
+  const isMixte = val === 'mixte';
+  document.getElementById('mv_row_montant').style.display = isMixte ? 'none' : '';
+  document.getElementById('mv_row_mixte').style.display   = isMixte ? '' : 'none';
+  if(isMixte) _mvMixteTotal();
+}
+function _mvMixteTotal(){
+  const esp = parseFloat(document.getElementById('mv_montant_especes').value)||0;
+  const mob = parseFloat(document.getElementById('mv_montant_mobile').value)||0;
+  const el  = document.getElementById('mv_mixte_total');
+  el.textContent = (esp+mob)>0 ? 'Total : '+(esp+mob).toLocaleString('fr-FR')+' F' : '';
+}
+
 async function enregistrerMouvement(){
-  const montant = document.getElementById('mv_montant').value;
   const description = document.getElementById('mv_description').value.trim();
-  if(!montant||montant<=0){toast('Montant requis','error');return;}
   if(!description){toast('Description requise','error');return;}
+  const mode = document.getElementById('mv_mode').value;
+  const type = document.getElementById('mv_type').value;
+  const module = document.getElementById('mv_module').value;
+  const reference = document.getElementById('mv_reference').value;
+
+  if(mode === 'mixte'){
+    const esp = parseFloat(document.getElementById('mv_montant_especes').value)||0;
+    const mob = parseFloat(document.getElementById('mv_montant_mobile').value)||0;
+    if(esp<=0 && mob<=0){toast('Saisissez au moins un montant (espèces ou mobile)','error');return;}
+    const d = await post("{% url 'caisse:mouvement' %}", {
+      type, module, mode_paiement: 'mixte',
+      montant_especes: esp, montant_mobile: mob,
+      mode_mobile: document.getElementById('mv_mode_mobile').value,
+      description, reference,
+    });
+    if(d.success){ fermerModal('modalMouvement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
+    else toast('❌ '+d.error,'error');
+    return;
+  }
+
+  const montant = document.getElementById('mv_montant').value;
+  if(!montant||montant<=0){toast('Montant requis','error');return;}
   const d = await post("{% url 'caisse:mouvement' %}", {
-    type: document.getElementById('mv_type').value,
-    module: document.getElementById('mv_module').value,
-    montant, description,
-    mode_paiement: document.getElementById('mv_mode').value,
-    reference: document.getElementById('mv_reference').value,
+    type, module, montant, description,
+    mode_paiement: mode,
+    reference,
   });
   if(d.success){ fermerModal('modalMouvement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
   else toast('❌ '+d.error,'error');
@@ -1855,15 +1935,51 @@ async function enregistrerPrelevement(){
   else toast('❌ '+d.error,'error');
 }
 
+function vsModeChange(val){
+  const isMixte = val === 'mixte';
+  document.getElementById('vs_row_montant').style.display = isMixte ? 'none' : '';
+  document.getElementById('vs_row_mixte').style.display   = isMixte ? '' : 'none';
+  if(isMixte){
+    ['vs_montant_especes','vs_montant_mobile'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', _vsMixteTotal);
+    });
+    _vsMixteTotal();
+  }
+}
+function _vsMixteTotal(){
+  const esp = parseFloat(document.getElementById('vs_montant_especes').value)||0;
+  const mob = parseFloat(document.getElementById('vs_montant_mobile').value)||0;
+  const el  = document.getElementById('vs_mixte_total');
+  el.textContent = (esp+mob)>0 ? 'Total : '+(esp+mob).toLocaleString('fr-FR')+' F' : '';
+}
+
 async function enregistrerVersement(){
+  const mode = document.getElementById('vs_mode').value;
+  const description = document.getElementById('vs_description').value || 'Versement à la caisse centrale';
+
+  if(mode === 'mixte'){
+    const esp = parseFloat(document.getElementById('vs_montant_especes').value)||0;
+    const mob = parseFloat(document.getElementById('vs_montant_mobile').value)||0;
+    if(esp<=0 && mob<=0){toast('Saisissez au moins un montant (espèces ou mobile)','error');return;}
+    const d = await post("{% url 'caisse:mouvement' %}", {
+      type: 'versement', module: 'caisse', mode_paiement: 'mixte',
+      montant_especes: esp, montant_mobile: mob,
+      mode_mobile: document.getElementById('vs_mode_mobile').value,
+      description,
+    });
+    if(d.success){ fermerModal('modalVersement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
+    else toast('❌ '+d.error,'error');
+    return;
+  }
+
   const montant = document.getElementById('vs_montant').value;
   if(!montant||montant<=0){toast('Montant requis','error');return;}
   const d = await post("{% url 'caisse:mouvement' %}", {
     type: 'versement',
     module: 'caisse',
     montant,
-    mode_paiement: document.getElementById('vs_mode').value,
-    description: document.getElementById('vs_description').value || 'Versement à la caisse centrale',
+    mode_paiement: mode,
+    description,
   });
   if(d.success){ fermerModal('modalVersement'); toast('✅ '+d.message,'success'); setTimeout(()=>location.reload(),1000); }
   else toast('❌ '+d.error,'error');
