@@ -639,9 +639,8 @@ def index(request):
             date__lt=date_fin_session,
             valide=True,
         ).select_related('cree_par').order_by('-date')
-        # Réconciliation journée complète — la caissière doit voir TOUS les modules
-        # pour savoir quels versements sont encore en attente (pas uniquement sa fenêtre horaire).
-        reconciliation = get_reconciliation_jour(today)
+        # Réconciliation isolée sur la fenêtre de la session : chaque shift voit ses propres versements.
+        reconciliation = get_reconciliation_session(session_active)
         vue_session = True
     elif is_manager:
         if session_filtre:
