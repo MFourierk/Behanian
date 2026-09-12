@@ -605,10 +605,9 @@ def index(request):
             session_filtre = CaisseSession.objects.filter(pk=sid, opened_at__date=today).select_related('user').first()
 
     if session_active:
-        # Stats de la journée complète — la caissière voit toutes les opérations du jour,
-        # pas uniquement celles depuis l'ouverture de sa propre session (sinon zéro si elle
-        # ouvre en cours de journée après un collègue ou après des ventes antérieures).
-        stats = get_stats_jour(today, type_caisse=None)
+        # Stats isolées sur la fenêtre de la session courante (opened_at → now()).
+        # Chaque shift ne voit que ses propres transactions.
+        stats = get_stats_session(session_active)
         attente_session = False
     elif is_manager:
         if session_filtre:
