@@ -1316,12 +1316,13 @@
       <!-- Contrôle de caisse -->
       <div id="ecart_box" style="background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1.5px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:10px">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#0369a1;margin-bottom:10px">⚖️ Contrôle de caisse</div>
+        <div style="font-size:10px;color:#6b7280;margin-bottom:8px;font-style:italic">Comparaison des flux du jour uniquement (fond de veille exclu des deux côtés)</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:11px;color:var(--muted)">Solde théorique (fond + encaissements − prélèv.)</span>
+          <span style="font-size:11px;color:var(--muted)">Encaissements théoriques du jour (tickets − prélèv.)</span>
           <strong id="ecart_theorique" style="font-size:13px">—</strong>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:11px;color:var(--muted)">Total déclaré (espèces + mobile)</span>
+          <span style="font-size:11px;color:var(--muted)">Encaissements déclarés du jour (billetage − fond + mobile)</span>
           <strong id="total_declare_affich" style="font-size:13px;color:#374151">—</strong>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px dashed #bae6fd">
@@ -1589,8 +1590,9 @@ function toast(msg, type='info'){
 async function post(url, data){ return _bPost(url, data); }
 
 // Données session active pour le calcul d'écart
-const SESSION_FOND    = {{ session_active.fond_caisse|default:0 }};
-const SESSION_TOTAL   = {{ stats.total|default:0 }};
+const SESSION_TOTAL        = {{ stats.total|default:0 }};
+// Fond de veille : composante espèces (exclue du côté billetage pour ne comparer que le flux du jour)
+const SESSION_FOND_ESPECES = {{ solde_veille_especes|default:0 }};
 
 function calculerEcart(){
   const especes = parseFloat(document.getElementById('cl_fond_reel').value)||0;
@@ -1600,16 +1602,20 @@ function calculerEcart(){
   const moov    = parseFloat(document.getElementById('cl_moov').value)||0;
   const prelev  = parseFloat(document.getElementById('cl_prelev').value)||0;
 
-  const total_mobile  = wave + orange + mtn + moov;
-  const total_declare = especes + total_mobile;
-  // Solde théorique = fond initial + tous encaissements − prélèvement
-  const solde_th = SESSION_FOND + SESSION_TOTAL - prelev;
-  const ecart    = solde_th - total_declare;
+  const total_mobile = wave + orange + mtn + moov;
 
-  // Affichage total mobile
+  // Écart = flux du jour uniquement (fond exclu des deux côtés)
+  // Théorique du jour = tickets encaissés − prélèvements banque
+  const solde_th_jour = SESSION_TOTAL - prelev;
+  // Déclaré du jour   = billetage − fond_espèces_initial + mobile versé aujourd'hui
+  const enc_esp_jour  = Math.max(0, especes - SESSION_FOND_ESPECES);
+  const declare_jour  = enc_esp_jour + total_mobile;
+  const ecart         = solde_th_jour - declare_jour;
+
+  // Affichage total mobile (le billetage total reste affiché tel quel côté espèces)
   document.getElementById('mobile_declare_total').textContent = total_mobile.toLocaleString('fr-FR') + ' F';
-  document.getElementById('ecart_theorique').textContent = solde_th.toLocaleString('fr-FR') + ' F';
-  document.getElementById('total_declare_affich').textContent = total_declare.toLocaleString('fr-FR') + ' F';
+  document.getElementById('ecart_theorique').textContent = solde_th_jour.toLocaleString('fr-FR') + ' F';
+  document.getElementById('total_declare_affich').textContent = declare_jour.toLocaleString('fr-FR') + ' F';
   const ecartEl = document.getElementById('ecart_val');
   if(ecart > 0){
     ecartEl.textContent = '+' + ecart.toLocaleString('fr-FR') + ' F (excédent)';

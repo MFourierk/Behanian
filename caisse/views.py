@@ -914,11 +914,21 @@ def cloturer_caisse(request):
 
         stats = get_stats_session(session)
 
-        # fond_reel_total = espèces comptées (billetage) + mobile money déclaré par la caissière
-        fond_reel_total = fond_reel + mobile_wave + mobile_orange + mobile_mtn + mobile_moov
-        # Solde théorique = fond initial + tous encaissements − prélèvements banque
+        # fond_reel_total = billetage espèces + mobile déclaré (utilisé pour fond_caisse_reel)
+        fond_reel_total  = fond_reel + mobile_wave + mobile_orange + mobile_mtn + mobile_moov
+        mobile_total_dec = mobile_wave + mobile_orange + mobile_mtn + mobile_moov
+
+        # solde_th : conservé avec l'ancienne formule pour les rapports historiques
         solde_th = session.fond_caisse + _dec(stats['total']) - prelev
-        ecart    = solde_th - fond_reel_total
+
+        # Écart = flux du jour uniquement (fond exclu des deux côtés)
+        # Retire la composante espèces du fond initial du billetage pour ne comparer que le jour
+        _, last_s = get_solde_veille()
+        fond_mobile_init  = int(last_s.total_mobile) if last_s else 0
+        fond_especes_init = max(0, int(session.fond_caisse) - fond_mobile_init)
+        enc_esp_jour      = max(0, int(fond_reel) - fond_especes_init)
+        theorique_jour    = _dec(stats['total']) - prelev
+        ecart             = theorique_jour - (enc_esp_jour + mobile_total_dec)
 
         mobile_declare   = int(mobile_wave + mobile_orange + mobile_mtn + mobile_moov)
         # effective_mobile : déclaré si nouveau système, sinon mobile reçu via versements (prouvé par tickets)
