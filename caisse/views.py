@@ -1907,6 +1907,52 @@ def rapport_transactions(request):
             'caissier': (tk.cree_par.get_full_name() or tk.cree_par.username) if tk.cree_par else '—',
         })
 
+    # ── Position de Trésorerie ──────────────────────────────────────────────
+    # Source : versements réels (MouvementCaisse type='versement') − prélèvements banque
+    # Norme ERP : trésorerie ≠ chiffre d'affaires (tickets).
+    # Les versements = flux réels déclarés par les caissières → base de la position de caisse.
+    # Indépendant des filtres module/mode (position globale sur la période).
+    vs_qs = MouvementCaisse.objects.filter(
+        type='versement',
+        valide=True,
+        date__date__gte=date_debut,
+        date__date__lte=date_fin,
+    ).exclude(reference__startswith='CONSOLIDATION')
+
+    def _vs(modes):
+        return int(vs_qs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+
+    treso_esp    = _vs(['especes'])
+    treso_wave   = _vs(['wave'])
+    treso_orange = _vs(['orange_money'])
+    treso_mtn    = _vs(['mtn_money'])
+    treso_moov   = _vs(['moov_money'])
+    treso_mobile = treso_wave + treso_orange + treso_mtn + treso_moov + _vs(['mobile_money', 'mobile'])
+
+    # Prélèvements banque sur la période (déduits des espèces)
+    treso_prelev = int(
+        PrelevementBanque.objects.filter(
+            date__date__gte=date_debut,
+            date__date__lte=date_fin,
+            valide=True,
+        ).aggregate(s=Sum('montant'))['s'] or 0
+    )
+
+    treso_esp_nette = treso_esp - treso_prelev
+    treso_total     = treso_esp_nette + treso_mobile
+
+    treso = {
+        'esp':       treso_esp,
+        'wave':      treso_wave,
+        'orange':    treso_orange,
+        'mtn':       treso_mtn,
+        'moov':      treso_moov,
+        'mobile':    treso_mobile,
+        'prelev':    treso_prelev,
+        'esp_nette': treso_esp_nette,
+        'total':     treso_total,
+    }
+
     # Options de filtres pour le formulaire
     all_modules = [(k, v[0]) for k, v in MODULE_LABELS.items()]
     all_modes   = [(k, v[0]) for k, v in MODE_LABELS.items() if k not in ('mobile', 'carte')]
@@ -1929,6 +1975,7 @@ def rapport_transactions(request):
         'all_modules':   all_modules,
         'all_modes':     all_modes,
         'periode':       periode,
+        'treso':         treso,
     })
 
 

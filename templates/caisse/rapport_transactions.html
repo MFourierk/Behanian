@@ -244,6 +244,84 @@
 </div>
 {% endif %}
 
+<!-- POSITION DE TRÉSORERIE -->
+<div class="content-section">
+  <div class="section-title">🏦 Position de Trésorerie — {{ periode }}</div>
+  <p style="font-size:10px;color:#64748b;margin:0 0 10px;font-style:italic">
+    Source : versements réels déclarés par les caissières (MouvementCaisse) — indépendant du chiffre d'affaires tickets.
+    Norme ERP : Trésorerie = Σ versements encaissés − Prélèvements banque.
+  </p>
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th>Composante</th>
+        <th class="r">Montant (FCFA)</th>
+        <th style="width:200px;font-size:9px">Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Espèces -->
+      <tr>
+        <td>💵 Espèces encaissées (versements)</td>
+        <td class="r bold">{{ treso.esp|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Versements espèces remis à la caisse centrale</td>
+      </tr>
+      <tr style="background:#fef2f2">
+        <td style="padding-left:24px;color:#dc2626">− Prélèvements banque</td>
+        <td class="r bold" style="color:#dc2626">− {{ treso.prelev|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Remises en banque sur la période</td>
+      </tr>
+      <tr style="background:#f0fdf4;font-weight:800">
+        <td style="padding-left:24px;color:#16a34a">= Espèces nettes en coffre</td>
+        <td class="r bold" style="color:{% if treso.esp_nette >= 0 %}#16a34a{% else %}#dc2626{% endif %}">
+          {{ treso.esp_nette|intcomma }}
+        </td>
+        <td style="font-size:9px;color:#64748b">Disponible physiquement au coffre</td>
+      </tr>
+      <!-- Séparateur -->
+      <tr><td colspan="3" style="background:#f8fafc;height:4px;padding:0"></td></tr>
+      <!-- Mobile par opérateur -->
+      {% if treso.wave %}<tr>
+        <td>🔵 Wave</td>
+        <td class="r bold">{{ treso.wave|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Disponible sur compte Wave</td>
+      </tr>{% endif %}
+      {% if treso.orange %}<tr>
+        <td>🟠 Orange Money</td>
+        <td class="r bold">{{ treso.orange|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Disponible sur compte Orange</td>
+      </tr>{% endif %}
+      {% if treso.mtn %}<tr>
+        <td>🟡 MTN Mobile Money</td>
+        <td class="r bold">{{ treso.mtn|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Disponible sur compte MTN</td>
+      </tr>{% endif %}
+      {% if treso.moov %}<tr>
+        <td>🟢 Moov Money</td>
+        <td class="r bold">{{ treso.moov|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Disponible sur compte Moov</td>
+      </tr>{% endif %}
+      {% if treso.mobile %}<tr style="background:#eff6ff">
+        <td style="padding-left:24px;color:#1d4ed8">= Total Mobile (tous opérateurs)</td>
+        <td class="r bold" style="color:#1d4ed8">{{ treso.mobile|intcomma }}</td>
+        <td style="font-size:9px;color:#64748b">Agrégé — à vérifier par relevé opérateur</td>
+      </tr>{% endif %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="total-label">POSITION TOTALE (coffre + mobile)</td>
+        <td class="total-val" style="color:{% if treso.total >= 0 %}#16a34a{% else %}#dc2626{% endif %}">
+          {{ treso.total|intcomma }} FCFA
+        </td>
+        <td style="font-size:9px;color:#64748b;font-style:italic">Espèces nettes + Σ mobile opérateurs</td>
+      </tr>
+    </tfoot>
+  </table>
+  <p style="font-size:9px;color:#94a3b8;margin:6px 0 0;font-style:italic">
+    ⚠️ Les soldes mobile sont calculés sur les versements déclarés. Rapprocher avec les relevés officiels de chaque opérateur pour validation définitive.
+  </p>
+</div>
+
 <!-- SIGNATURES -->
 <div class="signatures cols-3">
   <div class="sig-box">
