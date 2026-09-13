@@ -1091,12 +1091,14 @@ def ouvrir_session_globale(request):
                 messages.error(request, f'⛔ Ouverture impossible : la session du {session_ancienne.date_session.strftime("%d/%m/%Y")} ({nom_anc}) n\'est pas clôturée. Un responsable doit la clôturer avant toute ouverture.')
             else:
                 try:
+                    from caisse.models import CaisseConfig
                     fond = _dec(request.POST.get('fond_caisse', 0) or 0)
                     session = CaisseSession.objects.create(
                         user=request.user,
                         type_caisse='centrale',
                         date_session=today,
                         fond_caisse=fond,
+                        fond_fixe_applique=CaisseConfig.get_fond_fixe('centrale'),
                         notes=request.POST.get('notes', ''),
                     )
                     if fond > 0:
@@ -1437,8 +1439,9 @@ def rapport_caisse(request, session_id=None):
     is_old_mobile_session = False  # plus pertinent avec les versements comme source
 
     recettes_nettes = stats['total'] - stats['depenses']
-    # Nouveau solde initial = Fond d'ouverture + espèces versées + mobile versé − prélèvement banque
-    nouveau_fond = int(session.fond_caisse) + declared_especes + declared_mobile_total - int(session.prelevement_banque)
+    # Fond de départ session suivante = fond_fixe configuré (norme ERP : pas de rolling balance)
+    from caisse.models import CaisseConfig
+    nouveau_fond = int(CaisseConfig.get_fond_fixe(session.type_caisse))
 
     # Billetage détaillé : toutes les coupures standards, avec quantité si disponible
     COUPURES = [10000, 5000, 2000, 1000, 500, 250, 200, 100, 50, 25, 10, 5]

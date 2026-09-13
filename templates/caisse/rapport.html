@@ -437,14 +437,14 @@ window.addEventListener('afterprint', function(){
       {% if session.prelevement_banque %}
       <div class="rz-recap-row sub"><span>− Prélèvement banque</span><span style="color:#dc2626">− {{ session.prelevement_banque|montant }} F</span></div>
       {% endif %}
-      <div class="rz-recap-row total"><span>= NOUVEAU SOLDE INITIAL</span><strong>{{ nouveau_fond|montant }} F</strong></div>
+      <div class="rz-recap-row total"><span>= FOND FIXE SESSION SUIVANTE</span><strong>{{ nouveau_fond|montant }} F</strong></div>
     </div>
     <div style="width:190px;padding:10px;display:flex;align-items:center">
       <div class="rz-fond-box" style="width:100%">
-        <div class="lbl">💰 Nouveau Solde Initial</div>
+        <div class="lbl">💰 Fond Session Suivante</div>
         <div class="val">{{ nouveau_fond|montant }}</div>
         <div style="font-size:9px;color:#c9a84c;margin-top:1px">FCFA</div>
-        <div class="sub">Pour la prochaine ouverture</div>
+        <div class="sub">Fond fixe configuré</div>
       </div>
     </div>
   </div>
