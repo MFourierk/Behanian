@@ -28,4 +28,7 @@ urlpatterns = [
     path('api/supprimer-mouvement/', views.api_supprimer_mouvement, name='api_supprimer_mouvement'),
     path('api/versements-session/', views.api_versements_session, name='api_versements_session'),
     path('api/corriger-fond/', views.api_corriger_fond_session, name='api_corriger_fond'),
+    path('api/preparer-cloture/', views.api_preparer_cloture, name='api_preparer_cloture'),
+    path('api/annuler-verrouillage/', views.api_annuler_verrouillage, name='api_annuler_verrouillage'),
+    path('rapport-passation/<int:session_id>/', views.rapport_passation, name='rapport_passation'),
 ]

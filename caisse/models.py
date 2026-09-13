@@ -67,6 +67,18 @@ class CaisseSession(models.Model):
 
     notes           = models.TextField(blank=True)
 
+    # Verrouillage avant clôture (caissière en cours de comptage physique)
+    is_locked   = models.BooleanField(default=False,
+                                      help_text="Verrouillée : plus aucune transaction enregistrable sur cette session.")
+    locked_at   = models.DateTimeField(null=True, blank=True,
+                                       help_text="Horodatage du verrouillage (début du comptage physique).")
+
+    # Fond fixe appliqué à cette session (copié depuis CaisseConfig à l'ouverture)
+    fond_fixe_applique = models.DecimalField(
+        max_digits=12, decimal_places=3, default=Decimal('0'),
+        help_text="Fond fixe configuré au moment de l'ouverture — remis au shift suivant."
+    )
+
     # Contrôle de réouverture (après clôture, un manager doit autoriser explicitement)
     reouverture_autorisee = models.BooleanField(
         default=False,
@@ -108,6 +120,35 @@ class CaisseSession(models.Model):
         elif self.ecart < 0:
             return ('manquant', f"{int(self.ecart):,} F")
         return ('equilibre', "0 F")
+
+
+class CaisseConfig(models.Model):
+    """Configuration par type de caisse — fond fixe et paramètres de shift."""
+    TYPE_CHOICES = [
+        ('centrale', 'Caisse Centrale'),
+        ('hotel',    'Caisse Hôtel'),
+        ('module',   'Caisse Module'),
+    ]
+    type_caisse = models.CharField(max_length=20, choices=TYPE_CHOICES, unique=True)
+    fond_fixe   = models.DecimalField(
+        max_digits=12, decimal_places=3, default=Decimal('0'),
+        help_text="Fond fixe remis au shift suivant (0 = aucun fond fixe, caissière démarre à zéro)"
+    )
+
+    class Meta:
+        verbose_name = 'Configuration de caisse'
+        verbose_name_plural = 'Configurations de caisse'
+
+    def __str__(self):
+        return f"Config {self.get_type_caisse_display()} — Fond fixe : {int(self.fond_fixe):,} F"
+
+    @classmethod
+    def get_fond_fixe(cls, type_caisse):
+        """Retourne le fond fixe configuré pour ce type, ou 0."""
+        try:
+            return cls.objects.get(type_caisse=type_caisse).fond_fixe
+        except cls.DoesNotExist:
+            return Decimal('0')
 
 
 class MouvementCaisse(models.Model):

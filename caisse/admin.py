@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import CaisseSession, MouvementCaisse, PrelevementBanque
+from .models import CaisseSession, MouvementCaisse, PrelevementBanque, CaisseConfig
+
+
+@admin.register(CaisseConfig)
+class CaisseConfigAdmin(admin.ModelAdmin):
+    list_display = ['type_caisse', 'fond_fixe']
+    help_text = "Définissez le fond fixe par type de caisse (0 = caissière démarre à zéro)."
 
 @admin.register(CaisseSession)
 class CaisseSessionAdmin(admin.ModelAdmin):

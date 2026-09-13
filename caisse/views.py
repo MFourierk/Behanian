@@ -543,30 +543,20 @@ def get_reconciliation_session(session):
 
 
 def get_solde_veille():
-    """Retourne le nouveau_fond de la dernière clôture.
-    Formule identique au NOUVEAU SOLDE INITIAL affiché en section 7 du rapport :
-      fond_caisse (ouverture) + versements espèces (MouvementCaisse) + versements mobile (MouvementCaisse) − prélèvement banque.
-    Source : MouvementCaisse versements (pas fond_caisse_reel qui peut être saisi incorrectement).
+    """Retourne (fond_initial_session_suivante, dernière_session_clôturée).
+
+    Modèle fond fixe (professionnel) :
+      - Si CaisseConfig.fond_fixe > 0 pour 'centrale' : retourne ce fond fixe.
+        La session suivante démarre toujours avec le même montant prédéfini.
+      - Si fond_fixe = 0 (Behanian par défaut) : retourne 0.
+        La caissière démarre à zéro, déclare tout ce qu'elle a encaissé.
+
+    La session précédente (last) est retournée pour affichage sur le rapport.
     """
+    from caisse.models import CaisseConfig
     last = CaisseSession.objects.filter(is_open=False, type_caisse='centrale').order_by('-closed_at').first()
-    if not last:
-        return 0, None
-
-    vs = MouvementCaisse.objects.filter(
-        session=last, type='versement', valide=True,
-    ).exclude(reference__startswith='CONSOLIDATION')
-
-    def _vs(modes):
-        return int(vs.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
-
-    declared_especes = _vs(['especes'])
-    declared_mobile  = (
-        _vs(['wave']) + _vs(['orange_money']) + _vs(['mtn_money']) + _vs(['moov_money'])
-        + _vs(['mobile_money', 'mobile'])
-    )
-
-    nouveau_fond = int(last.fond_caisse) + declared_especes + declared_mobile - int(last.prelevement_banque)
-    return nouveau_fond, last
+    fond_fixe = int(CaisseConfig.get_fond_fixe('centrale'))
+    return fond_fixe, last
 
 
 def _session_centrale_non_cloturee():
@@ -669,8 +659,9 @@ def index(request):
         vue_session = False
 
     solde_veille, last_session = get_solde_veille()
-    solde_veille_mobile  = int(last_session.total_mobile) if last_session else 0
-    solde_veille_especes = max(0, solde_veille - solde_veille_mobile)
+    # Fond fixe = entièrement en espèces (modèle professionnel, pas de mobile dans le fond)
+    solde_veille_especes = solde_veille
+    solde_veille_mobile  = 0
 
     # Sessions centrales non clôturées des jours précédents (alerte manager)
     sessions_bloquantes = CaisseSession.objects.filter(
@@ -817,32 +808,26 @@ def ouvrir_caisse(request):
         fond  = _dec(data.get('fond_caisse', 0))
         notes = data.get('notes', '')
 
+        from caisse.models import CaisseConfig
+        fond_fixe_conf = CaisseConfig.get_fond_fixe(type_attendu)
+
         session = CaisseSession.objects.create(
             user=request.user,
             type_caisse=type_attendu,
             date_session=today,
             fond_caisse=fond,
+            fond_fixe_applique=fond_fixe_conf,
             notes=notes,
         )
 
-        # Fond de caisse : deux mouvements distincts si le report inclut du mobile
+        # Fond de caisse : modèle fond fixe — toujours en espèces (pas de mobile)
         if fond > 0:
-            _, last_s = get_solde_veille()
-            fond_mobile_report = int(last_s.total_mobile) if last_s else 0
-            fond_especes_report = max(0, int(fond) - fond_mobile_report)
             ouverture_label = f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}'
-            if fond_especes_report > 0:
-                MouvementCaisse.objects.create(
-                    session=session, type='fond_caisse', module='caisse',
-                    montant=fond_especes_report, mode_paiement='especes',
-                    description=ouverture_label, cree_par=request.user,
-                )
-            if fond_mobile_report > 0:
-                MouvementCaisse.objects.create(
-                    session=session, type='fond_caisse', module='caisse',
-                    montant=fond_mobile_report, mode_paiement='mobile_money',
-                    description=ouverture_label + ' (mobile)', cree_par=request.user,
-                )
+            MouvementCaisse.objects.create(
+                session=session, type='fond_caisse', module='caisse',
+                montant=fond, mode_paiement='especes',
+                description=ouverture_label, cree_par=request.user,
+            )
 
         # ── Consolidation automatique pour la caisse centrale ──────────────
         msg_consolidation = ''
@@ -922,10 +907,8 @@ def cloturer_caisse(request):
         solde_th = session.fond_caisse + _dec(stats['total']) - prelev
 
         # Écart = flux du jour uniquement (fond exclu des deux côtés)
-        # Retire la composante espèces du fond initial du billetage pour ne comparer que le jour
-        _, last_s = get_solde_veille()
-        fond_mobile_init  = int(last_s.total_mobile) if last_s else 0
-        fond_especes_init = max(0, int(session.fond_caisse) - fond_mobile_init)
+        # Fond fixe = tout espèces, pas de composante mobile → enc_esp_jour = billetage − fond_initial
+        fond_especes_init = int(session.fond_caisse)
         enc_esp_jour      = max(0, int(fond_reel) - fond_especes_init)
         theorique_jour    = _dec(stats['total']) - prelev
         ecart             = theorique_jour - (enc_esp_jour + mobile_total_dec)
@@ -1195,6 +1178,9 @@ def enregistrer_mouvement(request):
         data    = json.loads(request.body)
         session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
 
+        if session and session.is_locked:
+            return JsonResponse({'success': False, 'error': '⛔ Session verrouillée — comptage physique en cours. Aucune transaction ne peut être enregistrée.'})
+
         type_mv       = data.get('type', 'depense')
         mode_paiement = data.get('mode_paiement', 'especes')
         module        = data.get('module', 'caisse')
@@ -1250,6 +1236,9 @@ def prelevement_banque(request):
         if montant <= 0:
             return JsonResponse({'success': False, 'error': 'Montant invalide'})
         session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+
+        if session and session.is_locked:
+            return JsonResponse({'success': False, 'error': '⛔ Session verrouillée — aucun prélèvement possible pendant le comptage physique.'})
 
         PrelevementBanque.objects.create(
             session=session,
@@ -1975,24 +1964,14 @@ def api_corriger_fond_session(request):
         session.fond_caisse = nouveau_fond
         session.save(update_fields=['fond_caisse', 'notes'])
 
-        # Recréer les mouvements fond avec répartition espèces / mobile
-        _, last_s = get_solde_veille()
-        fond_mobile  = _dec(last_s.total_mobile) if last_s else _dec(0)
-        fond_mobile  = min(fond_mobile, nouveau_fond)
-        fond_especes = nouveau_fond - fond_mobile
+        # Recréer le mouvement fond (toujours espèces — modèle fond fixe)
         label = (f'Fond de caisse — ouverture {session.opened_at.strftime("%d/%m/%Y %H:%M")}'
                  f' — corrigé par {request.user.get_full_name() or request.user.username} ({motif})')
-        if fond_especes > 0:
+        if nouveau_fond > 0:
             MouvementCaisse.objects.create(
                 session=session, type='fond_caisse', module='caisse',
-                montant=fond_especes, mode_paiement='especes',
+                montant=nouveau_fond, mode_paiement='especes',
                 description=label, cree_par=request.user, valide=True,
-            )
-        if fond_mobile > 0:
-            MouvementCaisse.objects.create(
-                session=session, type='fond_caisse', module='caisse',
-                montant=fond_mobile, mode_paiement='mobile_money',
-                description=label + ' (mobile)', cree_par=request.user, valide=True,
             )
 
         return JsonResponse({
@@ -2156,4 +2135,104 @@ def historique(request):
         'today':       today,
         'date_debut':  date_debut,
         'date_fin':    date_fin,
+    })
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Gestion professionnelle des shifts — verrouillage & passation
+# ═══════════════════════════════════════════════════════════════════════════
+
+@require_module_access('caisse')
+@require_POST
+def api_preparer_cloture(request):
+    """Caissière : préparer la clôture de sa session (verrouillage pour comptage physique).
+    Une session verrouillée ne peut plus recevoir de nouvelles transactions.
+    """
+    session = CaisseSession.objects.filter(user=request.user, is_open=True).first()
+    if not session:
+        return JsonResponse({'success': False, 'error': 'Aucune session ouverte.'})
+    if session.is_locked:
+        return JsonResponse({'success': False, 'error': 'Session déjà verrouillée.'})
+
+    session.is_locked = True
+    session.locked_at = timezone.now()
+    session.save(update_fields=['is_locked', 'locked_at'])
+
+    return JsonResponse({
+        'success': True,
+        'message': (
+            f'Session verrouillée à {session.locked_at.strftime("%H:%M")}. '
+            f'Vous pouvez maintenant procéder au comptage physique, puis clôturer.'
+        ),
+        'locked_at': session.locked_at.strftime('%H:%M'),
+    })
+
+
+@require_module_access('caisse')
+@require_POST
+def api_annuler_verrouillage(request):
+    """Manager : annuler le verrouillage d'une session (si la caissière a fait une erreur)."""
+    from utils.permissions import _is_manager as _chk_manager
+    if not (_chk_manager(request.user) or request.user.is_superuser):
+        return JsonResponse({'success': False, 'error': 'Accès réservé aux responsables.'}, status=403)
+
+    try:
+        data       = json.loads(request.body)
+        session_id = data.get('session_id')
+        session    = CaisseSession.objects.get(pk=session_id, is_open=True, is_locked=True)
+        session.is_locked = False
+        session.locked_at = None
+        session.save(update_fields=['is_locked', 'locked_at'])
+        nom = session.user.get_full_name() or session.user.username
+        return JsonResponse({
+            'success': True,
+            'message': f'Verrouillage annulé pour {nom}. La session peut à nouveau recevoir des transactions.',
+        })
+    except CaisseSession.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Session introuvable, déjà clôturée ou non verrouillée.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@require_module_access('caisse')
+def rapport_passation(request, session_id):
+    """Rapport de passation imprimable — remis à la caissière suivante lors du changement de shift."""
+    from utils.permissions import _is_manager
+    is_manager = _is_manager(request.user)
+
+    session = get_object_or_404(CaisseSession, pk=session_id)
+    if not is_manager and session.user != request.user:
+        return redirect('caisse:index')
+
+    stats          = get_stats_session(session)
+    reconciliation = get_reconciliation_session(session)
+    mouvements     = MouvementCaisse.objects.filter(session=session, valide=True).order_by('date')
+
+    vs_session = mouvements.filter(type='versement').exclude(reference__startswith='CONSOLIDATION')
+
+    def _vs(modes):
+        return int(vs_session.filter(mode_paiement__in=modes).aggregate(s=Sum('montant'))['s'] or 0)
+
+    declared_wave   = _vs(['wave'])
+    declared_orange = _vs(['orange_money'])
+    declared_mtn    = _vs(['mtn_money'])
+    declared_moov   = _vs(['moov_money'])
+    declared_esp    = _vs(['especes'])
+    declared_mobile = declared_wave + declared_orange + declared_mtn + declared_moov + _vs(['mobile_money', 'mobile'])
+    declared_total  = declared_esp + declared_mobile
+
+    fond_fixe_suivant = int(session.fond_fixe_applique)
+
+    return render(request, 'caisse/rapport_passation.html', {
+        'session':          session,
+        'stats':            stats,
+        'reconciliation':   reconciliation,
+        'declared_esp':     declared_esp,
+        'declared_wave':    declared_wave,
+        'declared_orange':  declared_orange,
+        'declared_mtn':     declared_mtn,
+        'declared_moov':    declared_moov,
+        'declared_mobile':  declared_mobile,
+        'declared_total':   declared_total,
+        'fond_fixe_suivant': fond_fixe_suivant,
     })

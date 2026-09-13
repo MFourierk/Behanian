@@ -109,6 +109,28 @@
 
   <!-- STATUT CAISSE -->
   {% if session_active %}
+  {% if session_active.is_locked %}
+  <!-- ══ SESSION VERROUILLÉE — comptage physique en cours ══ -->
+  <div class="caisse-status" style="background:linear-gradient(135deg,#92400e,#b45309);color:#fff">
+    <div>
+      <div style="font-size:13px;font-weight:700;opacity:.9;margin-bottom:4px">🔐 SESSION VERROUILLÉE — {{ session_active.get_type_caisse_display }}</div>
+      <div style="font-size:20px;font-weight:800">{{ session_active.user.get_full_name|default:session_active.user.username }}</div>
+      <div style="font-size:12px;opacity:.75;margin-top:2px">
+        Verrouillée à {{ session_active.locked_at|date:"H:i" }} · Aucune nouvelle transaction possible · Procédez au comptage physique puis clôturez
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-a" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3)" onclick="ouvrirRapport()"><i class="fas fa-print"></i> Rapport shift</button>
+      <button class="btn-a" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)" onclick="window.open('{% url 'caisse:rapport_passation' session_active.pk %}','_blank','width=820,height=950')"><i class="fas fa-file-signature"></i> Fiche passation</button>
+      <button class="btn-a" style="background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3)" onclick="window.open('{% url 'caisse:etat_journee' %}','_blank','width=900,height=950')"><i class="fas fa-calendar-check"></i> État journée</button>
+      {% if is_manager %}
+      <button class="btn-a" style="background:rgba(220,38,38,.4);color:#fca5a5;border:1px solid rgba(220,38,38,.5)" onclick="annulerVerrouillage({{ session_active.pk }})"><i class="fas fa-lock-open"></i> Annuler verrouillage</button>
+      {% endif %}
+      <button class="btn-a btn-rouge" onclick="ouvrirModalCloturer()"><i class="fas fa-lock"></i> Clôturer</button>
+    </div>
+  </div>
+  {% else %}
+  <!-- ══ SESSION OUVERTE — fonctionnement normal ══ -->
   <div class="caisse-status open">
     <div>
       <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:4px">🟢 CAISSE OUVERTE — {{ session_active.get_type_caisse_display }}</div>
@@ -125,9 +147,11 @@
       {% if is_manager %}
       <button class="btn-a" style="background:rgba(255,193,7,.25);color:#ffd700;border:1px solid rgba(255,193,7,.4)" onclick="ouvrirModal('modalCorrigerFond')"><i class="fas fa-edit"></i> Corriger fond</button>
       {% endif %}
-      <button class="btn-a btn-rouge" onclick="ouvrirModalCloturer()"><i class="fas fa-lock"></i> Clôturer</button>
+      <button class="btn-a" style="background:rgba(217,119,6,.8);color:#fff;border:1px solid rgba(217,119,6,.9)" onclick="preparerCloture()"><i class="fas fa-clipboard-check"></i> Préparer clôture</button>
+      <button class="btn-a btn-rouge" onclick="ouvrirModalCloturer()"><i class="fas fa-lock"></i> Clôturer directement</button>
     </div>
   </div>
+  {% endif %}
   {% else %}
   <div class="caisse-status {% if session_ouverte_par %}open{% elif sessions_jour %}closed{% else %}no-session{% endif %}">
     <div>
@@ -1834,6 +1858,28 @@ function _afficherOverlayDeconnexion(msg){
     </div>
   `;
   document.body.appendChild(overlay);
+}
+
+async function preparerCloture(){
+  if(!confirm('Préparer la clôture ?\n\nCela verrouillera la session : plus aucune transaction ne pourra être enregistrée.\nVous pourrez ensuite procéder au comptage physique, puis clôturer.')) return;
+  const d = await post("{% url 'caisse:api_preparer_cloture' %}", {});
+  if(d.success){
+    toast('Session verrouillée — procédez au comptage physique', 'success');
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    toast(d.error || 'Erreur', 'error');
+  }
+}
+
+async function annulerVerrouillage(sessionId){
+  if(!confirm('Annuler le verrouillage ?\n\nCela permettra à nouveau d\'enregistrer des transactions sur cette session.')) return;
+  const d = await post("{% url 'caisse:api_annuler_verrouillage' %}", { session_id: sessionId });
+  if(d.success){
+    toast(d.message, 'success');
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    toast(d.error || 'Erreur', 'error');
+  }
 }
 
 function forceCloturerSession(sessionId, label){
