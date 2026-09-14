@@ -601,8 +601,11 @@ def index(request):
         attente_session = False
     elif is_manager:
         if session_filtre:
-            # Session précise sélectionnée : stats isolées sur la fenêtre horaire de cette session
-            stats = get_stats_session(session_filtre)
+            # Stats de la caissière sélectionnée : tous ses tickets du jour (filtre par cree_par).
+            # On n'utilise pas get_stats_session (fenêtre horaire) car les tickets peuvent avoir
+            # été créés avant l'ouverture de session — notamment avant la mise en place du verrou.
+            # Résultat identique à "Journée complète" quand elle est la seule caissière du jour.
+            stats = get_stats_jour(today, user=session_filtre.user)
         else:
             # Journée complète (onglet "Journée complète")
             stats = get_stats_jour(today, type_caisse=None)

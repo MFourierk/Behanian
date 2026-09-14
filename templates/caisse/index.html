@@ -298,8 +298,8 @@
   </div>
   {% endif %}
 
-  <!-- ALERTE CAISSE FERMÉE -->
-  {% if not session_active and not sessions_bloquantes %}
+  <!-- ALERTE CAISSE FERMÉE : n'afficher que si personne n'a de session ouverte aujourd'hui -->
+  {% if not session_active and not sessions_bloquantes and not session_ouverte_par %}
   <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
     <i class="fas fa-exclamation-triangle" style="color:#f97316;font-size:20px"></i>
     <div>
