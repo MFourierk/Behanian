@@ -375,9 +375,9 @@
       <div class="ksub">Durée : {{ session_active.duree }}{% if session_active %} · Fond initial : {{ session_active.fond_caisse|montant }} F{% endif %}</div>
     </div>
     <div class="kpi k-vert">
-      <div class="klbl">Versements espèces reçus</div>
+      <div class="klbl">Versements reçus</div>
       <div class="kval">{{ verse_recu|montant }} F</div>
-      <div class="ksub">Enregistrés dans ma session</div>
+      <div class="ksub">Tous modes · ma session</div>
     </div>
     <div class="kpi k-bleu">
       <div class="klbl">Modules en attente</div>
@@ -511,9 +511,8 @@
                   {% if reconciliation.grand_mtn %}<th style="text-align:right;color:#854d0e">📱 MoMo</th>{% endif %}
                   {% if reconciliation.grand_moov %}<th style="text-align:right;color:#0f766e">📱 Moov</th>{% endif %}
                   {% if not reconciliation.grand_wave and not reconciliation.grand_orange and not reconciliation.grand_mtn and not reconciliation.grand_moov and reconciliation.grand_mobile %}<th style="text-align:right;color:#7c3aed">📱 Mobile</th>{% endif %}
-                  <th style="text-align:right">💳 Carte</th>
-                  <th style="text-align:right">🏦 Virement</th>
-                  <th style="text-align:right">Mixte</th>
+                  {% if reconciliation.grand_carte %}<th style="text-align:right">💳 Carte</th>{% endif %}
+                  {% if reconciliation.grand_virement %}<th style="text-align:right">🏦 Virement</th>{% endif %}
                   <th style="text-align:right;border-left:2px solid #e2e8f0">Total</th>
                   <th style="text-align:right">Versé <span style="font-size:9px;font-weight:400;color:var(--muted)">▾</span></th>
                   <th style="text-align:right">Solde</th>
@@ -552,15 +551,12 @@
                   {% if ligne.mobile %}{{ ligne.mobile|montant }} F{% else %}—{% endif %}
                 </td>
                 {% endif %}
-                <td style="text-align:right;font-family:monospace;color:{% if ligne.carte %}#0369a1{% else %}var(--muted){% endif %}">
+                {% if reconciliation.grand_carte %}<td style="text-align:right;font-family:monospace;color:{% if ligne.carte %}#0369a1{% else %}var(--muted){% endif %}">
                   {% if ligne.carte %}{{ ligne.carte|montant }} F{% else %}—{% endif %}
-                </td>
-                <td style="text-align:right;font-family:monospace;color:{% if ligne.virement %}#0f766e{% else %}var(--muted){% endif %}">
+                </td>{% endif %}
+                {% if reconciliation.grand_virement %}<td style="text-align:right;font-family:monospace;color:{% if ligne.virement %}#0f766e{% else %}var(--muted){% endif %}">
                   {% if ligne.virement %}{{ ligne.virement|montant }} F{% else %}—{% endif %}
-                </td>
-                <td style="text-align:right;font-family:monospace;color:{% if ligne.mixte %}#92400e{% else %}var(--muted){% endif %}">
-                  {% if ligne.mixte %}{{ ligne.mixte|montant }} F{% else %}—{% endif %}
-                </td>
+                </td>{% endif %}
                 <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">{{ ligne.total_tx|montant }} F</td>
                 <td style="text-align:right;font-family:monospace">
                   {% if ligne.total_verse > 0 %}
@@ -631,9 +627,8 @@
                   {% if reconciliation.grand_mtn %}<td style="text-align:right;font-family:monospace;color:#854d0e">{{ reconciliation.grand_mtn|montant }} F</td>{% endif %}
                   {% if reconciliation.grand_moov %}<td style="text-align:right;font-family:monospace;color:#0f766e">{{ reconciliation.grand_moov|montant }} F</td>{% endif %}
                   {% if not reconciliation.grand_wave and not reconciliation.grand_orange and not reconciliation.grand_mtn and not reconciliation.grand_moov and reconciliation.grand_mobile %}<td style="text-align:right;font-family:monospace;color:#7c3aed">{{ reconciliation.grand_mobile|montant }} F</td>{% endif %}
-                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_carte|montant }} F</td>
-                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_virement|montant }} F</td>
-                  <td style="text-align:right;font-family:monospace">{{ reconciliation.grand_mixte|montant }} F</td>
+                  {% if reconciliation.grand_carte %}<td style="text-align:right;font-family:monospace">{{ reconciliation.grand_carte|montant }} F</td>{% endif %}
+                  {% if reconciliation.grand_virement %}<td style="text-align:right;font-family:monospace">{{ reconciliation.grand_virement|montant }} F</td>{% endif %}
                   <td style="text-align:right;font-family:monospace;border-left:2px solid #e2e8f0">{{ reconciliation.grand_total_tx|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:#16a34a">{{ reconciliation.grand_total_verse|montant }} F</td>
                   <td style="text-align:right;font-family:monospace;color:{% if reconciliation.grand_excedent %}#16a34a{% elif reconciliation.grand_solde == 0 %}#16a34a{% elif reconciliation.grand_solde > 0 %}#dc2626{% else %}#16a34a{% endif %}">
@@ -1535,6 +1530,16 @@
       <i class="fas fa-info-circle"></i> Ce versement physique sera contrôlé par le responsable de la caisse centrale.
     </div>
     <div class="form-row">
+      <label>Module source <span style="color:#dc2626;font-weight:700">*</span></label>
+      <select id="vs_module" class="fc">
+        <option value="restaurant">🍽️ Restaurant</option>
+        <option value="hotel">🏨 Hôtel</option>
+        <option value="cave">🍷 Cave / Bar</option>
+        <option value="piscine">🏊 Piscine</option>
+        <option value="espaces">🎪 Espaces événementiels</option>
+      </select>
+    </div>
+    <div class="form-row">
       <label>Mode de remise</label>
       <select id="vs_mode" class="fc" onchange="vsModeChange(this.value)">
         <option value="especes">Espèces</option>
@@ -2007,6 +2012,7 @@ function _vsMixteTotal(){
 
 async function enregistrerVersement(){
   const mode = document.getElementById('vs_mode').value;
+  const module = document.getElementById('vs_module').value;
   const description = document.getElementById('vs_description').value || 'Versement à la caisse centrale';
 
   if(mode === 'mixte'){
@@ -2014,7 +2020,7 @@ async function enregistrerVersement(){
     const mob = parseFloat(document.getElementById('vs_montant_mobile').value)||0;
     if(esp<=0 && mob<=0){toast('Saisissez au moins un montant (espèces ou mobile)','error');return;}
     const d = await post("{% url 'caisse:mouvement' %}", {
-      type: 'versement', module: 'caisse', mode_paiement: 'mixte',
+      type: 'versement', module: module, mode_paiement: 'mixte',
       montant_especes: esp, montant_mobile: mob,
       mode_mobile: document.getElementById('vs_mode_mobile').value,
       description,
@@ -2028,7 +2034,7 @@ async function enregistrerVersement(){
   if(!montant||montant<=0){toast('Montant requis','error');return;}
   const d = await post("{% url 'caisse:mouvement' %}", {
     type: 'versement',
-    module: 'caisse',
+    module: module,
     montant,
     mode_paiement: mode,
     description,
@@ -2083,7 +2089,9 @@ async function rafraichirReconciliation(manuel=false){
     const showOrange = rec.grand_orange > 0;
     const showMtn    = rec.grand_mtn    > 0;
     const showMoov   = rec.grand_moov   > 0;
-    const showMobile = !showWave && !showOrange && !showMtn && !showMoov && rec.grand_mobile > 0;
+    const showMobile    = !showWave && !showOrange && !showMtn && !showMoov && rec.grand_mobile > 0;
+    const showCarte     = rec.grand_carte    > 0;
+    const showVirement  = rec.grand_virement > 0;
 
     const fmt  = v => v ? parseInt(v).toLocaleString('fr-FR') + ' F' : '—';
     const fmtF = v => parseInt(v || 0).toLocaleString('fr-FR') + ' F';
@@ -2097,9 +2105,8 @@ async function rafraichirReconciliation(manuel=false){
       ${showMtn    ? '<th style="text-align:right;color:#854d0e">📱 MoMo</th>'   : ''}
       ${showMoov   ? '<th style="text-align:right;color:#0f766e">📱 Moov</th>'   : ''}
       ${showMobile ? '<th style="text-align:right;color:#7c3aed">📱 Mobile</th>' : ''}
-      <th style="text-align:right">💳 Carte</th>
-      <th style="text-align:right">🏦 Virement</th>
-      <th style="text-align:right">Mixte</th>
+      ${showCarte    ? '<th style="text-align:right">💳 Carte</th>'    : ''}
+      ${showVirement ? '<th style="text-align:right">🏦 Virement</th>' : ''}
       <th style="text-align:right;border-left:2px solid #e2e8f0">Total</th>
       <th style="text-align:right">Versé <span style="font-size:9px;font-weight:400;color:#94a3b8">(par mode)</span></th>
       <th style="text-align:right">Solde</th>
@@ -2153,9 +2160,8 @@ async function rafraichirReconciliation(manuel=false){
         ${showMtn    ? `<td style="text-align:right;font-family:monospace;color:${clr(l.mtn,'#854d0e')}">${fmt(l.mtn)}</td>`       : ''}
         ${showMoov   ? `<td style="text-align:right;font-family:monospace;color:${clr(l.moov,'#0f766e')}">${fmt(l.moov)}</td>`     : ''}
         ${showMobile ? `<td style="text-align:right;font-family:monospace;color:${clr(l.mobile,'#7c3aed')}">${fmt(l.mobile)}</td>` : ''}
-        <td style="text-align:right;font-family:monospace;color:${clr(l.carte,'#0369a1')}">${fmt(l.carte)}</td>
-        <td style="text-align:right;font-family:monospace;color:${clr(l.virement,'#0f766e')}">${fmt(l.virement)}</td>
-        <td style="text-align:right;font-family:monospace;color:${clr(l.mixte,'#92400e')}">${fmt(l.mixte)}</td>
+        ${showCarte    ? `<td style="text-align:right;font-family:monospace;color:${clr(l.carte,'#0369a1')}">${fmt(l.carte)}</td>`      : ''}
+        ${showVirement ? `<td style="text-align:right;font-family:monospace;color:${clr(l.virement,'#0f766e')}">${fmt(l.virement)}</td>` : ''}
         <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(l.total_tx)}</td>
         <td style="text-align:right;font-family:monospace;vertical-align:top">${verseHtml}</td>
         <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurSolde}">${fmtF(l.solde)}</td>
@@ -2179,9 +2185,8 @@ async function rafraichirReconciliation(manuel=false){
         ${showMtn    ? `<td style="text-align:right;font-family:monospace;color:#854d0e;font-weight:700">${fmtF(rec.grand_mtn)}</td>`    : ''}
         ${showMoov   ? `<td style="text-align:right;font-family:monospace;color:#0f766e;font-weight:700">${fmtF(rec.grand_moov)}</td>`   : ''}
         ${showMobile ? `<td style="text-align:right;font-family:monospace;color:#7c3aed;font-weight:700">${fmtF(rec.grand_mobile)}</td>` : ''}
-        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_carte)}</td>
-        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_virement)}</td>
-        <td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_mixte)}</td>
+        ${showCarte    ? `<td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_carte)}</td>`    : ''}
+        ${showVirement ? `<td style="text-align:right;font-family:monospace;font-weight:700">${fmtF(rec.grand_virement)}</td>` : ''}
         <td style="text-align:right;font-family:monospace;font-weight:700;border-left:2px solid #e2e8f0">${fmtF(rec.grand_total_tx)}</td>
         <td style="text-align:right;font-family:monospace;color:#16a34a;font-weight:700">${fmtF(rec.grand_total_verse)}</td>
         <td style="text-align:right;font-family:monospace;font-weight:700;color:${couleurGrandSolde}">${fmtF(rec.grand_solde)}</td>
