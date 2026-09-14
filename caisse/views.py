@@ -601,11 +601,13 @@ def index(request):
         attente_session = False
     elif is_manager:
         if session_filtre:
-            # Stats de la caissière sélectionnée : tous ses tickets du jour (filtre par cree_par).
-            # On n'utilise pas get_stats_session (fenêtre horaire) car les tickets peuvent avoir
-            # été créés avant l'ouverture de session — notamment avant la mise en place du verrou.
-            # Résultat identique à "Journée complète" quand elle est la seule caissière du jour.
-            stats = get_stats_jour(today, user=session_filtre.user)
+            # Vue caissière = tous les tickets du jour de la session, sans filtre par cree_par.
+            # Raison : plusieurs agents (serveurs, réceptionniste, agent piscine) créent des
+            # tickets dans leurs modules respectifs — la caissière ne les crée pas elle-même.
+            # Le TOTAL doit donc correspondre à "Journée complète" quand elle est seule.
+            # La spécificité session n'apparaît que dans le FLUX DE CAISSE (mouvements/versements
+            # filtrés par FK session), pas dans les totaux de tickets.
+            stats = get_stats_jour(session_filtre.date_session)
         else:
             # Journée complète (onglet "Journée complète")
             stats = get_stats_jour(today, type_caisse=None)
@@ -651,8 +653,10 @@ def index(request):
             prelevements = PrelevementBanque.objects.filter(
                 date__date=today, valide=True
             ).select_related('cree_par').order_by('-date')
-        # Réconciliation : filtrée sur la session sélectionnée, ou journée complète
-        reconciliation = get_reconciliation_session(session_filtre) if session_filtre else get_reconciliation_jour(today)
+        # Réconciliation : journée complète dans les deux cas (session ou non).
+        # Le total tickets = tous les tickets du jour, les versements = ceux de la session.
+        date_recon = session_filtre.date_session if session_filtre else today
+        reconciliation = get_reconciliation_jour(date_recon)
         vue_session = False
     else:
         # Caissière sans session : aucune donnée visible
