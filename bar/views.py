@@ -2420,30 +2420,6 @@ def api_vente_create(request):
             date_impression = tz.now(),
         )
 
-        # Si mode chambre : lier les articles à la réservation hôtel
-        reservation_id = data.get('reservation_id')
-        if paiement == 'chambre' and reservation_id:
-            try:
-                from hotel.models import Reservation as HotelRes, Consommation as HotelConso
-                reservation = HotelRes.objects.get(id=reservation_id, statut='en_cours')
-                for l in lignes:
-                    boisson_obj = None
-                    try:
-                        boisson_obj = BoissonBar.objects.get(pk=int(l['id']))
-                    except Exception:
-                        pass
-                    HotelConso.objects.create(
-                        reservation=reservation,
-                        type_service='bar',
-                        boisson=boisson_obj,
-                        nom=f"[Cave] {l['nom']}",
-                        quantite=int(l['qty']),
-                        prix_unitaire=Decimal(str(l['prix'])),
-                        serveur=serveur_obj,
-                    )
-            except Exception as e:
-                pass  # Ne pas bloquer la vente si erreur liaison
-
         # Lier mouvements provisoires TPE au ticket
         if session_token and stock_live:
             _cmt = f'Vente Cave — {ticket.numero}'

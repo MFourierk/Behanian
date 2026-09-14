@@ -262,29 +262,12 @@ def valider_commande(request):
 
                 montant_total_ticket = Decimal(str(commande.total_net)) + frais_salon + frais_add
 
-                # Création du Ticket
-                _mode_pay = _map_mode_paiement(
-                    data.get('mode_paiement', 'especes'),
-                    data.get('operateur_mobile', ''),
-                )
-                ticket = Ticket.objects.create(
-                    numero=numero_ticket,
-                    module='restaurant',
-                    montant_total=montant_total_ticket,
-                    client=None,
-                    contenu=services_html,
-                    objet_id=commande.id,
-                    montant_paye=montant_encaisse,
-                    mode_paiement=_mode_pay,
-                    montant_especes=(montant_especes if montant_especes > 0 and _mode_pay not in ('especes', 'chambre') else Decimal('0')),
-                    cree_par=request.user,
-                    imprime=True
-                )
-
-                # Si mode chambre : lier les articles à la réservation hôtel
+                # Norme ERP : les consommations reportées sur chambre ne génèrent pas
+                # de ticket de caisse séparé — elles sont consolidées dans le ticket
+                # checkout hôtel (get_montant_services). Un ticket séparé causerait un
+                # double-comptage : une fois ici (restaurant), une fois au checkout (hôtel).
                 reservation_hotel_id = data.get('reservation_hotel_id')
                 mode_paiement_val = data.get('mode_paiement', 'especes')
-                sur_chambre = data.get('sur_chambre', False)
                 if mode_paiement_val == 'chambre' and reservation_hotel_id:
                     try:
                         from hotel.models import Reservation as HotelRes, Consommation as HotelConso
@@ -304,6 +287,27 @@ def valider_commande(request):
                             "Impossible de lier la commande %s à la réservation hôtel %s : %s",
                             commande.id, reservation_hotel_id, e_chambre
                         )
+                    rendu = max(Decimal('0'), montant_encaisse - montant_total_ticket)
+                    return JsonResponse({'success': True, 'ticket_numero': 'CHAMBRE', 'ticket_html': '', 'rendu': float(rendu)})
+
+                # Création du Ticket (paiement immédiat — non reporté sur chambre)
+                _mode_pay = _map_mode_paiement(
+                    data.get('mode_paiement', 'especes'),
+                    data.get('operateur_mobile', ''),
+                )
+                ticket = Ticket.objects.create(
+                    numero=numero_ticket,
+                    module='restaurant',
+                    montant_total=montant_total_ticket,
+                    client=None,
+                    contenu=services_html,
+                    objet_id=commande.id,
+                    montant_paye=montant_encaisse,
+                    mode_paiement=_mode_pay,
+                    montant_especes=(montant_especes if montant_especes > 0 and _mode_pay not in ('especes', 'chambre') else Decimal('0')),
+                    cree_par=request.user,
+                    imprime=True
+                )
 
                 # Rendu ticket thermique avec serveur
                 mode_short_map = {'wave':'WAVE','orange_money':'ORANGE','mtn_money':'MTN','especes':'ESP','carte_bancaire':'CARTE'}
