@@ -365,15 +365,41 @@ def get_stats_jour(date=None, type_caisse=None, user=None):
     }
 
 
+def _debut_fenetre_session(session):
+    """Retourne le début de la fenêtre ticket pour cette session.
+
+    Norme ERP multi-shift : une session commence là où la précédente s'est
+    arrêtée, sans trou ni chevauchement.
+    - Session unique du jour → depuis minuit (tous les tickets de la journée).
+    - Multi-shift → depuis closed_at de la session précédente du même jour.
+    """
+    from datetime import datetime, time as dtime
+    prev = CaisseSession.objects.filter(
+        date_session=session.date_session,
+        closed_at__isnull=False,
+        closed_at__lt=session.opened_at,
+    ).order_by('-closed_at').first()
+    if prev:
+        return prev.closed_at
+    # Première (ou seule) session du jour : minuit du jour de la session
+    return timezone.make_aware(
+        datetime.combine(session.date_session, dtime.min),
+        timezone.get_current_timezone(),
+    )
+
+
 def get_stats_session(session):
-    """Stats des tickets encaissés pendant la fenêtre horaire d'une session.
-    Filtre par opened_at → closed_at (ou now() si session encore ouverte).
-    Gère les shifts à cheval sur minuit naturellement.
+    """Stats des tickets de la fenêtre de cette session.
+
+    Début = fin de la session précédente du même jour, ou minuit si aucune.
+    Fin   = closed_at ou now() si session encore ouverte.
+    → Session unique : toute la journée. Multi-shift : créneau exact du shift.
     Retourne la même structure que get_stats_jour pour compatibilité.
     """
+    debut    = _debut_fenetre_session(session)
     date_fin = session.closed_at or timezone.now()
     tickets  = Ticket.objects.filter(
-        date_creation__gte=session.opened_at,
+        date_creation__gte=debut,
         date_creation__lt=date_fin,
     )
 
@@ -435,11 +461,13 @@ def get_stats_session(session):
 
 
 def get_reconciliation_session(session):
-    """Réconciliation tickets vs versements pour la fenêtre horaire d'une session.
-    - Tickets : filtrés par opened_at → closed_at (ou now())
+    """Réconciliation tickets vs versements pour la fenêtre de cette session.
+    - Tickets    : de _debut_fenetre_session() → closed_at (ou now())
     - Versements : filtrés par session FK (MouvementCaisse.session)
+    → Session unique : toute la journée. Multi-shift : créneau exact du shift.
     Inclut une ligne "Autres" pour tout versement hors modules standard.
     """
+    debut    = _debut_fenetre_session(session)
     date_fin = session.closed_at or timezone.now()
 
     lignes = []
@@ -447,7 +475,7 @@ def get_reconciliation_session(session):
 
     for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
         qs = Ticket.objects.filter(
-            date_creation__gte=session.opened_at,
+            date_creation__gte=debut,
             date_creation__lt=date_fin,
             module=ticket_mod,
         )
@@ -601,13 +629,10 @@ def index(request):
         attente_session = False
     elif is_manager:
         if session_filtre:
-            # Vue caissière = tous les tickets du jour de la session, sans filtre par cree_par.
-            # Raison : plusieurs agents (serveurs, réceptionniste, agent piscine) créent des
-            # tickets dans leurs modules respectifs — la caissière ne les crée pas elle-même.
-            # Le TOTAL doit donc correspondre à "Journée complète" quand elle est seule.
-            # La spécificité session n'apparaît que dans le FLUX DE CAISSE (mouvements/versements
-            # filtrés par FK session), pas dans les totaux de tickets.
-            stats = get_stats_jour(session_filtre.date_session)
+            # Fenêtre session correcte : depuis fin de la session précédente (ou minuit)
+            # jusqu'à closed_at/now. Session unique du jour → toute la journée.
+            # Multi-shift → créneau exact. Voir _debut_fenetre_session().
+            stats = get_stats_session(session_filtre)
         else:
             # Journée complète (onglet "Journée complète")
             stats = get_stats_jour(today, type_caisse=None)
@@ -653,10 +678,8 @@ def index(request):
             prelevements = PrelevementBanque.objects.filter(
                 date__date=today, valide=True
             ).select_related('cree_par').order_by('-date')
-        # Réconciliation : journée complète dans les deux cas (session ou non).
-        # Le total tickets = tous les tickets du jour, les versements = ceux de la session.
-        date_recon = session_filtre.date_session if session_filtre else today
-        reconciliation = get_reconciliation_jour(date_recon)
+        # Réconciliation : même fenêtre que get_stats_session (debut_fenetre → fin).
+        reconciliation = get_reconciliation_session(session_filtre) if session_filtre else get_reconciliation_jour(today)
         vue_session = False
     else:
         # Caissière sans session : aucune donnée visible
