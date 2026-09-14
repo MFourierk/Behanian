@@ -2187,6 +2187,10 @@ def api_vente_create(request):
     POST JSON -> crée Ticket facturation + décrémente stock BoissonBar.
     """
     try:
+        from caisse.models import get_session_caisse_ouverte
+        if not get_session_caisse_ouverte():
+            return JsonResponse({'ok': False, 'erreur': 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'encaisser.'}, status=403)
+
         data         = json.loads(request.body)
         lignes       = data.get('lignes', [])
         total        = Decimal(str(data.get('total', 0)))

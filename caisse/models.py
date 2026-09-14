@@ -122,6 +122,21 @@ class CaisseSession(models.Model):
         return ('equilibre', "0 F")
 
 
+def get_session_caisse_ouverte():
+    """
+    Retourne la session caisse ouverte et non verrouillée du jour, ou None.
+
+    Norme ERP : aucune transaction ne peut être enregistrée sans une session
+    active. Une session verrouillée (caissière en cours de comptage) est
+    traitée comme fermée pour les nouvelles transactions.
+    """
+    return CaisseSession.objects.filter(
+        is_open=True,
+        is_locked=False,
+        date_session=timezone.localdate(),
+    ).first()
+
+
 class CaisseConfig(models.Model):
     """Configuration par type de caisse — fond fixe et paramètres de shift."""
     TYPE_CHOICES = [

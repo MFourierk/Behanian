@@ -679,11 +679,11 @@ def checkout_reservation(request, reservation_id):
     reservation = get_object_or_404(Reservation, id=reservation_id)
     
     if request.method == 'POST':
-        # Recalculer le prix total basé sur la durée réelle
-        # ... logique existante de recalcul ...
-        # (Cette partie reste inchangée si je ne la modifie pas ici, mais je dois m'assurer de ne pas casser le code existant)
-        # Comme je remplace tout le bloc, je dois inclure la logique de recalcul.
-        
+        from caisse.models import get_session_caisse_ouverte
+        if not get_session_caisse_ouverte():
+            messages.error(request, 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'effectuer un check-out.')
+            return redirect(reverse('hotel:index') + '?tab=checkinout')
+
         # 1. Mise à jour de la date de départ et du prix si nécessaire
         reservation.date_depart = timezone.now().date()
         

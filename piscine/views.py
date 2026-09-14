@@ -520,6 +520,10 @@ def modifier_acces_personnes(request, acces_id):
 def encaisser_sortie(request, acces_id):
     """Encaisser et enregistrer la sortie d'un client."""
     try:
+        from caisse.models import get_session_caisse_ouverte
+        if not get_session_caisse_ouverte():
+            return JsonResponse({'success': False, 'error': 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'encaisser.'}, status=403)
+
         from facturation.models import Ticket, generate_ticket_numero
         acces = get_object_or_404(AccesPiscine, id=acces_id)
         data  = json.loads(request.body)

@@ -120,6 +120,10 @@ def _map_mode_paiement(mode, operateur=''):
 def valider_commande(request):
     """Valide une commande (Paiement uniquement maintenant, l'ajout se fait en temps réel)"""
     try:
+        from caisse.models import get_session_caisse_ouverte
+        if not get_session_caisse_ouverte():
+            return JsonResponse({'success': False, 'message': 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'encaisser.'}, status=403)
+
         data = json.loads(request.body)
         commande_id = data.get('commande_id')
         action = data.get('action', 'paiement')
@@ -335,6 +339,10 @@ def valider_commande(request):
 def facturer_salon_direct(request):
     """Facturation salon privé sans commande restaurant (séjour salon seul)."""
     try:
+        from caisse.models import get_session_caisse_ouverte
+        if not get_session_caisse_ouverte():
+            return JsonResponse({'success': False, 'message': 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'encaisser.'}, status=403)
+
         data = json.loads(request.body)
         salon_id = data.get('salon_id')
         heures = int(data.get('heures', 0) or 0)

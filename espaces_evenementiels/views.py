@@ -215,6 +215,10 @@ def api_reserver(request):
 def api_encaisser(request, reservation_id):
     """Encaisser une réservation d'espace."""
     try:
+        from caisse.models import get_session_caisse_ouverte
+        if not get_session_caisse_ouverte():
+            return JsonResponse({'success': False, 'error': 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'encaisser.'}, status=403)
+
         from facturation.models import Ticket, generate_ticket_numero
         from django.template.loader import render_to_string
 
