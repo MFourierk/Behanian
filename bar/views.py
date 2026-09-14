@@ -34,6 +34,22 @@ from django.http import JsonResponse
 from django.urls import reverse
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_client_timestamp(ts_str):
+    """Retourne un datetime aware depuis une chaîne ISO 8601 du navigateur, ou None."""
+    if not ts_str:
+        return None
+    try:
+        from django.utils.dateparse import parse_datetime
+        dt = parse_datetime(str(ts_str))
+        if dt and timezone.is_aware(dt):
+            return dt
+    except Exception:
+        pass
+    return None
+
+
 from .models import (
     BonCommandeBar, LigneBonCommandeBar, BoissonBar,
     MouvementStockBar, CategorieBar, UniteVente, Client,
@@ -2402,6 +2418,7 @@ def api_vente_create(request):
 
         # Creer le Ticket dans facturation
         from facturation.models import Ticket, generate_ticket_numero
+        _date_creation = _parse_client_timestamp(data.get('client_timestamp', ''))
         ticket = Ticket.objects.create(
             numero        = generate_ticket_numero(),
             module        = 'cave',
@@ -2414,6 +2431,7 @@ def api_vente_create(request):
             cree_par      = request.user,
             imprime       = True,
             date_impression = tz.now(),
+            **({"date_creation": _date_creation} if _date_creation else {}),
         )
 
         # Si mode chambre : lier les articles à la réservation hôtel

@@ -1684,6 +1684,7 @@ async function mettreOnChambre() {
       total, paiement: 'chambre', espace: t.espace, ref: t.ref,
       serveur: serveurVal, serveur_id: t.serveur_id || null, montant_recu: 0, reservation_id: chambreLieeId,
       sur_chambre: true, stock_live: true,
+      client_timestamp: new Date().toISOString(),
     };
     const resp = await fetch("{% url 'bar:api_vente' %}", {
       method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
@@ -1843,6 +1844,7 @@ async function confirmerPaiement() {
     heures_salon    : barHeures,
     droit_bouchon   : barDroitBouchon,
     droit_place     : barDroitPlace,
+    client_timestamp: new Date().toISOString(),
   };
 
   // Capturer tout avant fermeture de la modal

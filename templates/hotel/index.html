@@ -1301,6 +1301,8 @@
         </div>
       </div>
 
+      <input type="hidden" name="client_timestamp" id="checkoutClientTimestamp">
+
       <!-- Actions -->
       <div style="display:flex;gap:10px;padding:12px 20px;border-top:1px solid #e5e7eb;background:white;flex-shrink:0">
         <button type="button" class="btn-action" style="flex:1" onclick="closeModal('modalCheckout')">Annuler</button>
@@ -2493,6 +2495,15 @@
             if (tabBtn) {
                 tabBtn.click();
             }
+        }
+
+        // Horodatage machine au moment exact du clic "Payer & Sortir"
+        const formCheckout = document.getElementById('formCheckout');
+        if (formCheckout) {
+            formCheckout.addEventListener('submit', function() {
+                const tsField = document.getElementById('checkoutClientTimestamp');
+                if (tsField) tsField.value = new Date().toISOString();
+            });
         }
     });
 </script>

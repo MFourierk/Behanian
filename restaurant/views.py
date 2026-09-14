@@ -23,6 +23,20 @@ from cuisine.utils import check_stock_availability, process_stock_movement
 from cuisine.models import Ingredient
 from .views_extension import create_reservation, update_reservation_status
 
+
+def _parse_client_timestamp(ts_str):
+    """Retourne un datetime aware depuis une chaîne ISO 8601 du navigateur, ou None."""
+    if not ts_str:
+        return None
+    try:
+        from django.utils.dateparse import parse_datetime
+        dt = parse_datetime(str(ts_str))
+        if dt and timezone.is_aware(dt):
+            return dt
+    except Exception:
+        pass
+    return None
+
 @require_module_access('restaurant')
 def restaurant_index(request):
     """Vue principale du restaurant"""
@@ -263,6 +277,7 @@ def valider_commande(request):
                     data.get('mode_paiement', 'especes'),
                     data.get('operateur_mobile', ''),
                 )
+                _date_creation = _parse_client_timestamp(data.get('client_timestamp', ''))
                 ticket = Ticket.objects.create(
                     numero=numero_ticket,
                     module='restaurant',
@@ -274,7 +289,8 @@ def valider_commande(request):
                     mode_paiement=_mode_pay,
                     montant_especes=(montant_especes if montant_especes > 0 and _mode_pay not in ('especes', 'chambre') else Decimal('0')),
                     cree_par=request.user,
-                    imprime=True
+                    imprime=True,
+                    **({"date_creation": _date_creation} if _date_creation else {}),
                 )
 
                 # Si mode chambre : lier les articles à la réservation hôtel
@@ -371,6 +387,7 @@ def facturer_salon_direct(request):
 
         mode_mapped = _map_mode_paiement(mode_paiement, operateur_mobile)
         numero_ticket = generate_ticket_numero()
+        _date_creation = _parse_client_timestamp(data.get('client_timestamp', ''))
 
         ticket = Ticket.objects.create(
             numero=numero_ticket,
@@ -383,6 +400,7 @@ def facturer_salon_direct(request):
             montant_especes=(montant_especes if montant_especes > 0 and mode_mapped not in ('especes', 'chambre') else Decimal('0')),
             cree_par=request.user,
             imprime=True,
+            **({"date_creation": _date_creation} if _date_creation else {}),
         )
 
         mode_short_map = {'wave': 'WAVE', 'orange_money': 'ORANGE', 'mtn_money': 'MTN',

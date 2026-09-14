@@ -12,6 +12,20 @@ from decimal import Decimal
 import json
 
 
+def _parse_client_timestamp(ts_str):
+    """Retourne un datetime aware depuis une chaîne ISO 8601 du navigateur, ou None."""
+    if not ts_str:
+        return None
+    try:
+        from django.utils.dateparse import parse_datetime
+        dt = parse_datetime(str(ts_str))
+        if dt and timezone.is_aware(dt):
+            return dt
+    except Exception:
+        pass
+    return None
+
+
 def _json_piscine_access_required(view_func):
     """Décorateur pour endpoints AJAX piscine — retourne JSON 403 au lieu d'un redirect."""
     from functools import wraps
@@ -635,6 +649,7 @@ def encaisser_sortie(request, acces_id):
         if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
             contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
 
+        _date_creation = _parse_client_timestamp(data.get('client_timestamp', ''))
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',
             objet_id=acces.id,
@@ -642,6 +657,7 @@ def encaisser_sortie(request, acces_id):
             mode_paiement=mode_paiement, cree_par=request.user,
             montant_especes=(montant_especes if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else Decimal('0')),
             contenu=contenu, imprime=True,
+            **({"date_creation": _date_creation} if _date_creation else {}),
         )
         from django.template.loader import render_to_string
         montant_mobile_ticket = max(Decimal('0'), total - montant_especes) if montant_especes > 0 else Decimal('0')
