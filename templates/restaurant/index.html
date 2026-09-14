@@ -2902,7 +2902,6 @@ async function confirmerSalonDirect() {
     operateur_mobile: '',
     montant_encaisse: montantEncaisse,
     montant_especes:  montantEspeces,
-    client_timestamp: new Date().toISOString(),
   };
 
   try {
@@ -3115,7 +3114,6 @@ async function confirmerPaiement() {
           salon_vip_id: salonVIPId || null,
           droit_bouchon: parseFloat(document.getElementById('montantBouchon')?.value) || 0,
           droit_place:   parseFloat(document.getElementById('montantDroitPlace')?.value) || 0,
-          client_timestamp: new Date().toISOString(),
         })
       });
     } finally { clearTimeout(_abortTimer); }

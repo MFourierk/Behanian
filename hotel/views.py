@@ -18,20 +18,6 @@ from django.views.decorators.http import require_POST
 from caisse.models import MouvementCaisse, CaisseSession
 
 
-def _parse_client_timestamp(ts_str):
-    """Retourne un datetime aware depuis une chaîne ISO 8601 du navigateur, ou None."""
-    if not ts_str:
-        return None
-    try:
-        from django.utils.dateparse import parse_datetime
-        dt = parse_datetime(str(ts_str))
-        if dt and timezone.is_aware(dt):
-            return dt
-    except Exception:
-        pass
-    return None
-
-
 def _map_mode_avance(mode):
     """Mappe le mode hôtel vers MouvementCaisse.MODE_CHOICES."""
     return {
@@ -866,7 +852,6 @@ def checkout_reservation(request, reservation_id):
             'f_client_id': f_client.id if f_client else None,
             'serveur_nom': serveur_nom,
             'receptionniste_nom': receptionniste_nom,
-            'client_timestamp': request.POST.get('client_timestamp', ''),
         }
         return redirect('hotel:ticket_preview', reservation_id=reservation.id)
 
@@ -962,7 +947,6 @@ def finalize_checkout(request, reservation_id):
                 pass
 
         # Créer le Ticket uniquement maintenant, après confirmation impression
-        _date_creation = _parse_client_timestamp(data.get('client_timestamp', ''))
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(),
             module='hotel',
@@ -976,7 +960,6 @@ def finalize_checkout(request, reservation_id):
             contenu=data['contenu'],
             imprime=True,
             date_impression=timezone.now(),
-            **({"date_creation": _date_creation} if _date_creation else {}),
         )
 
         reservation.statut = 'terminee'

@@ -1655,7 +1655,6 @@ async function validerSortie(){
         sur_chambre: surChambre, salon_vip_id: sortieSalonId || null, heures_salon: sortieSalonH,
         droit_bouchon: parseFloat(document.getElementById('piscMontantBouchon')?.value) || 0,
         droit_place:   parseFloat(document.getElementById('piscMontantPlace')?.value) || 0,
-        client_timestamp: new Date().toISOString(),
       })
     });
     if(!r.ok){
