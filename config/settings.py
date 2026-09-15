@@ -183,22 +183,23 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 # Sécurité HTTPS — activé automatiquement si DJANGO_DEBUG=False en production
 # ---------------------------------------------------------------------------
 
+# Toujours actif : nginx transmet le proto réel via X-Forwarded-Proto
+# et les domaines autorisés pour CSRF doivent être connus quelle que soit la valeur de DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS    = [
+    'https://app.behanian.com',
+    'https://behanian.com',
+    'https://www.behanian.com',
+]
+
 if not DEBUG:
     # Nginx termine le SSL — Django ne doit pas rediriger lui-même
-    SECURE_SSL_REDIRECT          = False
-    # Indique à Django que le proxy (nginx) transmet du HTTPS
-    SECURE_PROXY_SSL_HEADER      = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_HSTS_SECONDS          = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD          = True
-    SESSION_COOKIE_SECURE        = True
-    CSRF_COOKIE_SECURE           = True
-    # Domaines autorisés pour les requêtes POST (login, formulaires)
-    CSRF_TRUSTED_ORIGINS         = [
-        'https://app.behanian.com',
-        'https://behanian.com',
-        'https://www.behanian.com',
-    ]
+    SECURE_SSL_REDIRECT             = False
+    SECURE_HSTS_SECONDS             = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS  = True
+    SECURE_HSTS_PRELOAD             = True
+    SESSION_COOKIE_SECURE           = True
+    CSRF_COOKIE_SECURE              = True
 
 
 # ---------------------------------------------------------------------------
