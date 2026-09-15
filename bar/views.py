@@ -803,6 +803,14 @@ def _valider_reception(br, user):
         qte = Decimal(str(ligne.quantite_recue))
         prix = Decimal(str(ligne.prix_unitaire))
 
+        # Norme ERP cave : le stock est en bouteilles entières scellées.
+        # Une bouteille entamée se saisit via Paramétrage Shot → "Déclarer une bouteille entamée".
+        if qte != qte.to_integral_value():
+            raise ValueError(
+                f"« {article.nom} » : la quantité reçue ({qte}) doit être un nombre entier de bouteilles. "
+                f"Pour une bouteille entamée, utilisez Paramétrage Shot → Déclarer une bouteille entamée."
+            )
+
         if qte > 0 and prix > 0:
             # CMUP = (valeur stock actuel + valeur nouvelle entrée) / nouveau stock total
             cmup_actuel = article.cmup if article.cmup else article.prix_achat
