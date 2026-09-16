@@ -341,47 +341,67 @@ def valider_commande(request):
 @require_module_access('restaurant')
 @require_POST
 def facturer_salon_direct(request):
-    """Facturation salon privé sans commande restaurant (séjour salon seul)."""
+    """Paiement direct sans consommation : salon privé, droit de bouchon, droit de place."""
     try:
         from caisse.models import get_session_caisse_ouverte
         if not get_session_caisse_ouverte():
             return JsonResponse({'success': False, 'message': 'Aucune session caisse ouverte — demandez à la caissière d\'ouvrir la caisse avant d\'encaisser.'}, status=403)
 
-        data = json.loads(request.body)
-        salon_id = data.get('salon_id')
-        heures = int(data.get('heures', 0) or 0)
-        nom_client = data.get('nom_client', '').strip()
-        mode_paiement = data.get('mode_paiement', 'especes')
-        operateur_mobile = data.get('operateur_mobile', '')
+        data             = json.loads(request.body)
+        salon_id         = data.get('salon_id')
+        heures           = int(data.get('heures', 0) or 0)
+        droit_bouchon    = Decimal(str(data.get('droit_bouchon', 0) or 0))
+        droit_place      = Decimal(str(data.get('droit_place', 0) or 0))
+        nom_client       = data.get('nom_client', '').strip()
+        mode_paiement    = data.get('mode_paiement', 'especes')
         montant_encaisse = Decimal(str(data.get('montant_encaisse', 0) or 0))
         montant_especes  = Decimal(str(data.get('montant_especes', 0) or 0))
 
-        if not salon_id:
-            return JsonResponse({'success': False, 'message': 'Aucun salon sélectionné.'})
-        if heures < 1:
-            return JsonResponse({'success': False, 'message': 'Indiquez au moins 1 heure.'})
+        # Frais salon (optionnel)
+        frais_salon = Decimal('0')
+        salon = None
+        tarif = Decimal('0')
+        if salon_id:
+            if heures < 1:
+                return JsonResponse({'success': False, 'message': 'Indiquez au moins 1 heure pour le salon.'})
+            salon = get_object_or_404(Table, pk=salon_id)
+            tarif = salon.tarif_horaire
+            frais_salon = Decimal(str(heures)) * tarif
 
-        salon = get_object_or_404(Table, pk=salon_id)
-        tarif = salon.tarif_horaire
-        montant_total = Decimal(str(heures)) * tarif
+        montant_total = frais_salon + droit_bouchon + droit_place
+        if montant_total <= 0:
+            return JsonResponse({'success': False, 'message': 'Saisissez au moins un montant à encaisser.'})
         if montant_encaisse < montant_total:
             return JsonResponse({'success': False, 'message': f'Montant insuffisant. Total : {int(montant_total):,} F'})
 
+        # Construction du contenu ticket
         services_html = ''
         if nom_client:
             services_html += (
                 '<div class="border-bottom" style="margin-bottom:10px;">'
-                '<div class="row"><span class="bold">Client:</span>'
+                '<div class="row"><span class="bold">Client :</span>'
                 f'<span>{nom_client}</span></div></div>'
             )
-        services_html += (
-            '<div class="row salon-prive">'
-            f'<span class="item-name">Salon {salon.numero} — {heures}h × {int(tarif):,} F</span>'
-            f'<span class="item-price">{int(montant_total):,} F</span>'
-            '</div>'
-        )
+        if frais_salon > 0:
+            services_html += (
+                '<div class="row salon-prive">'
+                f'<span class="item-name">🛋️ Salon {salon.numero} — {heures}h × {int(tarif):,} F</span>'
+                f'<span class="item-price">{int(frais_salon):,} F</span></div>'
+            )
+        if droit_bouchon > 0:
+            services_html += (
+                '<div class="row">'
+                f'<span class="item-name">🍾 Droit de bouchon</span>'
+                f'<span class="item-price">{int(droit_bouchon):,} F</span></div>'
+            )
+        if droit_place > 0:
+            services_html += (
+                '<div class="row">'
+                f'<span class="item-name">📦 Droit de place</span>'
+                f'<span class="item-price">{int(droit_place):,} F</span></div>'
+            )
 
-        mode_mapped = _map_mode_paiement(mode_paiement, operateur_mobile)
+        mode_mapped   = _map_mode_paiement(mode_paiement, '')
         numero_ticket = generate_ticket_numero()
 
         ticket = Ticket.objects.create(
@@ -399,18 +419,18 @@ def facturer_salon_direct(request):
 
         mode_short_map = {'wave': 'WAVE', 'orange_money': 'ORANGE', 'mtn_money': 'MTN',
                           'especes': 'ESP', 'carte_bancaire': 'CARTE'}
-        tp = ticket.mode_paiement or 'especes'
+        tp             = ticket.mode_paiement or 'especes'
         montant_mobile = max(Decimal('0'), montant_total - montant_especes) if montant_especes > 0 else Decimal('0')
-        ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
+        ticket_html    = render_to_string('facturation/ticket_print_thermal.html', {
             'ticket':          ticket,
             'serveur':         '',
             'is_original':     True,
             'montant_especes': montant_especes if montant_especes > 0 else None,
             'montant_mobile':  montant_mobile  if montant_especes > 0 else None,
             'mode_short':      mode_short_map.get(tp, tp.upper()),
-            'frais_salon':     montant_total,
-            'heures_salon':    heures,
-            'tarif_salon':     tarif,
+            'frais_salon':     frais_salon     if frais_salon > 0 else None,
+            'heures_salon':    heures          if frais_salon > 0 else None,
+            'tarif_salon':     tarif           if frais_salon > 0 else None,
         })
 
         return JsonResponse({'success': True, 'ticket_html': ticket_html})

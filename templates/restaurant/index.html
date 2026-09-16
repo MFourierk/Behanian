@@ -833,7 +833,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <i class="fas fa-shopping-bag"></i> Commande À Emporter (sans table)
         </button>
         <button class="btn-emporter" style="background:rgba(201,168,76,0.15);color:#c9a84c;border:1px solid rgba(201,168,76,0.4);" onclick="ouvrirModalSalonDirect()">
-          🛋️ Facturer Salon Privé seul
+          💳 Paiement direct sans conso
         </button>
       </div>
       <div class="salle-header">
@@ -1404,42 +1404,63 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   </div>
 </div>
 
-<!-- MODAL SALON DIRECT (facturation salon seul, sans commande) -->
+<!-- MODAL PAIEMENT DIRECT SANS CONSO -->
 <div class="modal-overlay" id="modalSalonDirect" style="z-index:3001;">
-  <div class="modal-box" style="max-width:420px;">
+  <div class="modal-box" style="max-width:440px;">
     <div class="modal-header">
-      <div class="modal-title">🛋️ Salon Privé — Facturation directe</div>
+      <div class="modal-title">💳 Paiement direct sans conso</div>
       <button class="modal-close" onclick="fermerModalSalonDirect()">✕</button>
     </div>
 
-    <!-- Sélection salon -->
-    <div style="margin-bottom:14px;">
-      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;">Salon</label>
-      <select id="sdSalon" onchange="sdMajTotal()" style="width:100%;padding:10px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px;">
-        <option value="">— Choisir un salon —</option>
-        {% for s in salons_vip %}
-        <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }} ({{ s.tarif_horaire|floatformat:0 }} F/h)</option>
-        {% endfor %}
-      </select>
-      {% if not salons_vip %}
-      <div style="margin-top:10px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:12px;color:#991b1b;">
-        ⚠️ Aucun salon privé configuré. Allez dans <strong>Paramètres → Tables</strong>, modifiez chaque table SAPR et cochez <strong>"Salon Privé"</strong>.
+    <!-- Section Salon Privé (optionnelle) -->
+    <div style="border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;margin-bottom:0;">
+        <input type="checkbox" id="sdSalonActif" onchange="sdToggleSalon()" style="width:16px;height:16px;accent-color:#c9a84c;">
+        🛋️ Salon Privé
+      </label>
+      <div id="sdSalonSection" style="display:none;margin-top:10px;">
+        <select id="sdSalon" onchange="sdMajTotal()" style="width:100%;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:13px;margin-bottom:10px;">
+          <option value="">— Choisir un salon —</option>
+          {% for s in salons_vip %}
+          <option value="{{ s.id }}" data-tarif="{{ s.tarif_horaire|floatformat:0 }}">{{ s.numero }} ({{ s.tarif_horaire|floatformat:0 }} F/h)</option>
+          {% endfor %}
+        </select>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="number" id="sdHeures" min="1" max="24" value="1" oninput="sdMajTotal()"
+                 style="width:72px;padding:8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.3rem;font-weight:800;text-align:center;">
+          <span style="color:rgba(255,255,255,0.55);font-size:13px;">h × <span id="sdTarif">0</span> F/h = <strong id="sdMontantSalon" style="color:#c9a84c;">0 F</strong></span>
+        </div>
       </div>
-      {% endif %}
     </div>
 
-    <!-- Heures -->
-    <div style="margin-bottom:14px;">
-      <label style="font-size:11px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;">Nombre d'heures</label>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <input type="number" id="sdHeures" min="1" max="24" value="1" oninput="sdMajTotal()"
-               style="width:80px;padding:10px 8px;background:#0f172a;border:1.5px solid #c9a84c;border-radius:10px;color:white;font-size:1.4rem;font-weight:800;text-align:center;">
-        <span style="color:rgba(255,255,255,0.55);font-size:13px;">h × <span id="sdTarif">0</span> F/h<br>= <strong id="sdMontantTotal" style="color:#c9a84c;font-size:16px;">0 F</strong></span>
+    <!-- Droit de bouchon -->
+    <div style="border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:8px;">🍾 Droit de bouchon</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" id="sdBouchon" min="0" value="0" oninput="sdMajTotal()"
+               style="flex:1;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px;">
+        <span style="color:#6b7280;font-size:13px;">FCFA</span>
       </div>
+    </div>
+
+    <!-- Droit de place -->
+    <div style="border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:8px;">📦 Droit de place</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" id="sdPlace" min="0" value="0" oninput="sdMajTotal()"
+               style="flex:1;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:14px;">
+        <span style="color:#6b7280;font-size:13px;">FCFA</span>
+      </div>
+    </div>
+
+    <!-- Total -->
+    <div style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;font-weight:700;color:#c9a84c;text-transform:uppercase;letter-spacing:.8px;">Total à encaisser</span>
+      <strong id="sdMontantTotal" style="font-size:1.4rem;color:#c9a84c;">0 F</strong>
     </div>
 
     <!-- Client (optionnel) -->
-    <div style="margin-bottom:14px;">
+    <div style="margin-bottom:12px;">
       <label style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:6px;">Client (optionnel)</label>
       <input type="text" id="sdNomClient" placeholder="Nom du client…"
              style="width:100%;padding:9px 12px;background:#1a2535;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:13px;box-sizing:border-box;">
@@ -1455,7 +1476,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="mmt sd-pay"        data-mode="mtn_money"    onclick="sdSetMode('mtn_money')">🟡 MTN</button>
         <button class="mmt sd-pay"        data-mode="carte"        onclick="sdSetMode('carte')">💳 Carte</button>
       </div>
-      <!-- Espèces -->
       <div id="sdSectionEspeces">
         <div class="rendu-section" style="margin:0;">
           <label>MONTANT REÇU (FCFA)</label>
@@ -1464,7 +1484,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <div class="rendu-display" id="sdRenduDisplay">Rendu : <span id="sdRenduVal">0</span> F</div>
         </div>
       </div>
-      <!-- Mobile — avec champ espèces partiel -->
       <div id="sdSectionMobile" style="display:none;">
         <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">
           Paiement partiel espèces <span style="font-weight:400;color:#6b7280;text-transform:none;">(laisser vide si 100% mobile)</span>
@@ -2792,15 +2811,35 @@ function fermerModal() {
   toggleSalonSection(false);
 }
 
-// ── SALON DIRECT (facturation salon seul, sans commande) ──
+// ── PAIEMENT DIRECT SANS CONSO ──
 let sdModePaiement = 'especes';
+
+function sdGetTotal() {
+  let t = 0;
+  if (document.getElementById('sdSalonActif').checked) {
+    t += (parseInt(document.getElementById('sdHeures')?.value) || 0) * sdGetTarif();
+  }
+  t += parseFloat(document.getElementById('sdBouchon')?.value) || 0;
+  t += parseFloat(document.getElementById('sdPlace')?.value) || 0;
+  return t;
+}
+
+function sdToggleSalon() {
+  document.getElementById('sdSalonSection').style.display =
+    document.getElementById('sdSalonActif').checked ? '' : 'none';
+  sdMajTotal();
+}
 
 function ouvrirModalSalonDirect() {
   sdModePaiement = 'especes';
-  document.getElementById('sdSalon').value       = '';
-  document.getElementById('sdHeures').value      = 1;
-  document.getElementById('sdNomClient').value   = '';
-  document.getElementById('sdMontantRecu').value = '';
+  document.getElementById('sdSalonActif').checked = false;
+  document.getElementById('sdSalonSection').style.display = 'none';
+  document.getElementById('sdSalon').value          = '';
+  document.getElementById('sdHeures').value         = 1;
+  document.getElementById('sdBouchon').value        = 0;
+  document.getElementById('sdPlace').value          = 0;
+  document.getElementById('sdNomClient').value      = '';
+  document.getElementById('sdMontantRecu').value    = '';
   document.getElementById('sdMontantEspeces').value = '';
   document.getElementById('sdRenduDisplay').classList.remove('show');
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === 'especes'));
@@ -2823,46 +2862,33 @@ function sdGetTarif() {
 }
 
 function sdMajTotal() {
-  const tarif  = sdGetTarif();
-  const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
-  const total  = heures * tarif;
+  const tarif      = sdGetTarif();
+  const heures     = parseInt(document.getElementById('sdHeures')?.value) || 0;
+  const fraisSalon = document.getElementById('sdSalonActif').checked ? heures * tarif : 0;
   document.getElementById('sdTarif').textContent        = formatF(tarif).replace(' F', '');
-  document.getElementById('sdMontantTotal').textContent = formatF(total);
+  document.getElementById('sdMontantSalon').textContent = formatF(fraisSalon);
+  document.getElementById('sdMontantTotal').textContent = formatF(sdGetTotal());
   if (sdModePaiement === 'especes') sdCalcRendu();
   else sdCalcMobile();
 }
 
 function sdCalcMobile() {
-  const tarif  = sdGetTarif();
-  const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
-  const total  = heures * tarif;
-  const esp    = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
-  document.getElementById('sdMontantMobileVal').textContent = formatF(Math.max(0, total - esp));
+  const esp = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
+  document.getElementById('sdMontantMobileVal').textContent = formatF(Math.max(0, sdGetTotal() - esp));
 }
 
 function sdSetMode(mode) {
-  const prevMode = sdModePaiement;
   sdModePaiement = mode;
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('sdSectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
   document.getElementById('sdSectionMobile').style.display  = MOBILE_MODES.includes(mode) ? '' : 'none';
-  if (MOBILE_MODES.includes(mode)) {
-    if (!MOBILE_MODES.includes(prevMode)) {
-      // Transition espèces → mobile : reporter le partiel saisi
-      const recuVal = parseFloat(document.getElementById('sdMontantRecu')?.value) || 0;
-      const total   = (parseInt(document.getElementById('sdHeures')?.value) || 0) * sdGetTarif();
-      document.getElementById('sdMontantEspeces').value = (recuVal > 0 && recuVal < total) ? recuVal : '';
-    }
-    sdCalcMobile();
-  }
+  if (MOBILE_MODES.includes(mode)) sdCalcMobile();
 }
 
 function sdCalcRendu() {
-  const tarif  = sdGetTarif();
-  const heures = parseInt(document.getElementById('sdHeures')?.value) || 0;
-  const total  = heures * tarif;
-  const recu   = parseFloat(document.getElementById('sdMontantRecu').value) || 0;
-  const div    = document.getElementById('sdRenduDisplay');
+  const total = sdGetTotal();
+  const recu  = parseFloat(document.getElementById('sdMontantRecu').value) || 0;
+  const div   = document.getElementById('sdRenduDisplay');
   if (recu >= total && total > 0) {
     div.classList.add('show'); div.style.background='rgba(22,163,74,0.15)'; div.style.color='#4ade80';
     document.getElementById('sdRenduVal').textContent = formatF(recu - total);
@@ -2873,33 +2899,35 @@ function sdCalcRendu() {
 }
 
 async function confirmerSalonDirect() {
-  const salonId = document.getElementById('sdSalon').value;
-  const heures  = parseInt(document.getElementById('sdHeures').value) || 0;
-  if (!salonId) { toast('❌ Sélectionnez un salon', 'error'); return; }
-  if (heures < 1) { toast('❌ Indiquez au moins 1 heure', 'error'); return; }
+  const total         = sdGetTotal();
+  const salonActif    = document.getElementById('sdSalonActif').checked;
+  const salonId       = document.getElementById('sdSalon').value;
+  const heures        = parseInt(document.getElementById('sdHeures').value) || 0;
+  const droitBouchon  = parseFloat(document.getElementById('sdBouchon').value) || 0;
+  const droitPlace    = parseFloat(document.getElementById('sdPlace').value) || 0;
 
-  const tarif  = sdGetTarif();
-  const total  = heures * tarif;
+  if (total <= 0)                         { toast('❌ Saisissez au moins un montant à encaisser', 'error'); return; }
+  if (salonActif && !salonId)             { toast('❌ Sélectionnez un salon', 'error'); return; }
+  if (salonActif && heures < 1)           { toast('❌ Indiquez au moins 1 heure', 'error'); return; }
+
   let montantEncaisse = total;
   let montantEspeces  = 0;
-
   if (sdModePaiement === 'especes') {
     montantEncaisse = parseFloat(document.getElementById('sdMontantRecu').value) || total;
   } else if (MOBILE_MODES.includes(sdModePaiement)) {
-    // Espèces partielles saisies dans sdMontantEspeces (champ de la section mobile)
     montantEspeces  = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
-    montantEncaisse = total;
   }
 
   const btn = document.getElementById('btnSdConfirmer');
   btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours…';
 
   const payload = {
-    salon_id:        salonId,
-    heures:          heures,
-    nom_client:      document.getElementById('sdNomClient').value.trim(),
-    mode_paiement:   sdModePaiement,
-    operateur_mobile: '',
+    salon_id:         salonActif ? salonId : null,
+    heures:           salonActif ? heures : 0,
+    droit_bouchon:    droitBouchon,
+    droit_place:      droitPlace,
+    nom_client:       document.getElementById('sdNomClient').value.trim(),
+    mode_paiement:    sdModePaiement,
     montant_encaisse: montantEncaisse,
     montant_especes:  montantEspeces,
   };
@@ -2921,7 +2949,7 @@ async function confirmerSalonDirect() {
       const w = window.open('', '_blank', 'width=420,height=720');
       if (w) { w.document.write(data.ticket_html); w.document.close(); w.focus(); }
     }
-    toast('✅ Salon facturé et ticket imprimé', 'success');
+    toast('✅ Paiement enregistré et ticket imprimé', 'success');
   } catch (e) {
     toast('❌ Erreur réseau', 'error');
     btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Encaisser & Imprimer';
