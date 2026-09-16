@@ -504,19 +504,23 @@
         <button onclick="encSetExact()" style="padding:5px 11px;border-radius:7px;border:1px solid #c9a84c;background:rgba(201,168,76,.1);font-size:11px;font-weight:600;cursor:pointer;color:#b45309">Exact</button>
       </div>
       <div id="encRendu" style="display:none;margin-bottom:12px;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600"></div>
-      <div id="encEspecesRow" style="display:none">
-        <div class="form-row"><label>Part en espèces (FCFA)</label><input type="number" id="encMontantEspeces" placeholder="0" oninput="encCalcMobile()"></div>
-        <div id="encMobileInfo" style="font-size:12px;color:#2563eb;font-weight:600;margin-bottom:8px"></div>
-        <button type="button" id="encBtn2eMode" onclick="encToggle2eMobile()" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;margin-bottom:6px">+ Partager avec un 2ème mobile</button>
-        <div id="encZone2eMobile" style="display:none;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:600;margin-bottom:4px;color:#475569">2ème mode de paiement mobile :</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-            <button type="button" class="enc-m2-btn" data-m2="wave" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Wave</button>
-            <button type="button" class="enc-m2-btn" data-m2="orange_money" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Orange Money</button>
-            <button type="button" class="enc-m2-btn" data-m2="mtn_money" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">MTN Money</button>
-            <button type="button" class="enc-m2-btn" data-m2="moov_money" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Moov Money</button>
-          </div>
-          <input type="number" id="encMontant2eMobile" placeholder="Montant 2ème mobile" oninput="encCalcMobile()" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+    </div>
+    <!-- Widget multi-paiement mobile (hors encRecuRow) -->
+    <div id="encEspecesRow" style="display:none;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">Montant <span id="encLabelMode1">mobile</span> (FCFA)</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input type="number" id="encMontantM1" placeholder="0" oninput="encCalcPay()" style="flex:1;padding:8px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box">
+        <button type="button" onclick="encSetToutM1()" style="padding:8px 12px;border-radius:8px;border:1.5px solid #c9a84c;background:rgba(201,168,76,0.08);color:#92400e;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Tout →</button>
+      </div>
+      <div id="encResteBar" style="display:none;margin-bottom:6px"></div>
+      <div id="encP2Section" style="display:none;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">2ème mode</div>
+        <div id="encP2Btns" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
+        <input type="number" id="encMontantM2" placeholder="Montant" oninput="encCalcPay()" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;box-sizing:border-box">
+        <div id="encP3Section" style="display:none;margin-top:8px">
+          <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px">3ème mode (solde automatique)</div>
+          <div id="encP3Btns" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px"></div>
+          <strong id="encM3Auto" style="font-size:13px;color:#1e40af">0 F</strong>
         </div>
       </div>
     </div>
@@ -943,51 +947,115 @@ function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotel
   ouvrirModal('modalEncaissement');
 }
 const _encMobileOps = ['wave','orange_money','mtn_money','moov_money'];
-let _encMode2 = '';
-let _encMode2Actif = false;
+const _ENC_ALL_MODES = [
+  {mode:'wave',label:'🌊 Wave'},{mode:'orange_money',label:'🟠 Orange'},
+  {mode:'mtn_money',label:'📶 MTN'},{mode:'moov_money',label:'🔵 Moov'},
+  {mode:'especes',label:'💵 Espèces'},{mode:'carte_bancaire',label:'💳 Carte'}
+];
+let _encP2Mode = '';
+let _encP3Mode = '';
 
-function encToggle2eMobile() {
-  _encMode2Actif = !_encMode2Actif;
-  const zone = document.getElementById('encZone2eMobile');
-  const btn  = document.getElementById('encBtn2eMode');
-  if (zone) zone.style.display = _encMode2Actif ? '' : 'none';
-  if (btn)  btn.textContent = _encMode2Actif ? '− Annuler 2ème paiement' : '+ Partager avec un 2ème mobile';
-  if (!_encMode2Actif) { _encMode2 = ''; const i=document.getElementById('encMontant2eMobile'); if(i) i.value=''; }
-  encCalcMobile();
+function encBuildBtns(containerId, excludeModes, onclickFn) {
+  const c = document.getElementById(containerId); if (!c) return;
+  c.innerHTML = '';
+  _ENC_ALL_MODES.filter(m => !excludeModes.includes(m.mode)).forEach(m => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.mode = m.mode; b.className = 'enc-px-btn';
+    b.textContent = m.label;
+    b.style.cssText = 'padding:4px 10px;border-radius:6px;border:1.5px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer;margin:2px';
+    b.onclick = () => onclickFn(b);
+    c.appendChild(b);
+  });
 }
-function encSetMode2(btn) {
-  _encMode2 = btn.dataset.m2;
-  document.querySelectorAll('.enc-m2-btn').forEach(b => b.style.background = b.dataset.m2===_encMode2 ? '#dbeafe' : '#f8fafc');
-  encCalcMobile();
+function encCalcPay() {
+  const mode = document.getElementById('encMode')?.value || '';
+  const m1 = parseFloat(document.getElementById('encMontantM1')?.value||0)||0;
+  const m2 = parseFloat(document.getElementById('encMontantM2')?.value||0)||0;
+  const total = _encTotal;
+  const resteBar = document.getElementById('encResteBar');
+  const p2Sec = document.getElementById('encP2Section');
+  const p3Sec = document.getElementById('encP3Section');
+  const m3Auto = document.getElementById('encM3Auto');
+  if (m1 > 0 && m1 < total) {
+    const reste = total - m1;
+    if (resteBar) {
+      resteBar.style.display = '';
+      const pct = Math.min(100, Math.round(m1/total*100));
+      resteBar.innerHTML = `<div style="font-size:11px;color:#64748b;margin-bottom:3px">M1 : <b>${m1.toLocaleString('fr-FR')} F</b> — Reste : <b style="color:#dc2626">${reste.toLocaleString('fr-FR')} F</b></div><div style="height:6px;background:#e2e8f0;border-radius:3px"><div style="height:100%;width:${pct}%;background:#2563eb;border-radius:3px"></div></div>`;
+    }
+    if (p2Sec) {
+      p2Sec.style.display = '';
+      const p2b = document.getElementById('encP2Btns');
+      if (p2b && !p2b.children.length) encBuildBtns('encP2Btns', [mode], encSetPay2);
+    }
+  } else {
+    if (resteBar) resteBar.style.display = 'none';
+    if (p2Sec) p2Sec.style.display = 'none';
+    if (p3Sec) p3Sec.style.display = 'none';
+    _encP2Mode = ''; _encP3Mode = '';
+    const p2b = document.getElementById('encP2Btns'); if (p2b) p2b.innerHTML = '';
+    const p3b = document.getElementById('encP3Btns'); if (p3b) p3b.innerHTML = '';
+  }
+  if (p3Sec && _encP2Mode && m2 > 0 && m2 < (total - m1)) {
+    p3Sec.style.display = '';
+    const p3b = document.getElementById('encP3Btns');
+    if (p3b && !p3b.children.length) encBuildBtns('encP3Btns', [mode, _encP2Mode], encSetPay3);
+    if (m3Auto) m3Auto.textContent = Math.max(0,total-m1-m2).toLocaleString('fr-FR')+' F';
+  } else if (p3Sec) {
+    p3Sec.style.display = 'none'; _encP3Mode = '';
+    const p3b = document.getElementById('encP3Btns'); if (p3b) p3b.innerHTML = '';
+  }
+}
+function encSetPay2(btn) {
+  _encP2Mode = btn.dataset.mode;
+  document.querySelectorAll('#encP2Btns .enc-px-btn').forEach(b => {
+    b.style.background = b.dataset.mode===_encP2Mode?'#dbeafe':'#f8fafc';
+    b.style.borderColor = b.dataset.mode===_encP2Mode?'#3b82f6':'#cbd5e1';
+  });
+  _encP3Mode = '';
+  const p3b = document.getElementById('encP3Btns'); if (p3b) p3b.innerHTML = '';
+  const p3s = document.getElementById('encP3Section'); if (p3s) p3s.style.display = 'none';
+  encCalcPay();
+}
+function encSetPay3(btn) {
+  _encP3Mode = btn.dataset.mode;
+  document.querySelectorAll('#encP3Btns .enc-px-btn').forEach(b => {
+    b.style.background = b.dataset.mode===_encP3Mode?'#dbeafe':'#f8fafc';
+    b.style.borderColor = b.dataset.mode===_encP3Mode?'#3b82f6':'#cbd5e1';
+  });
+}
+function encSetToutM1() {
+  const inp = document.getElementById('encMontantM1');
+  if (inp) { inp.value = _encTotal; encCalcPay(); }
+}
+function encGetLignesPay() {
+  const mode = document.getElementById('encMode')?.value || '';
+  const m1 = parseFloat(document.getElementById('encMontantM1')?.value||0)||0;
+  const m2 = parseFloat(document.getElementById('encMontantM2')?.value||0)||0;
+  const m3 = Math.max(0, _encTotal - m1 - m2);
+  const lignes = [];
+  if (m1 > 0) lignes.push({mode: mode, montant: m1});
+  if (_encP2Mode && m2 > 0) lignes.push({mode: _encP2Mode, montant: m2});
+  if (_encP3Mode && m3 > 0) lignes.push({mode: _encP3Mode, montant: m3});
+  return lignes.length > 1 ? lignes : null;
+}
+function _encResetWidget() {
+  _encP2Mode = ''; _encP3Mode = '';
+  ['encMontantM1','encMontantM2'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['encP2Btns','encP3Btns'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=''; });
+  ['encP2Section','encP3Section','encResteBar'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
 }
 
 function encModeChange(sel){
   const isChambre = sel.value==='chambre';
   const isMobile  = _encMobileOps.includes(sel.value);
-  document.getElementById('encRecuRow').style.display = isChambre ? 'none' : '';
+  document.getElementById('encRecuRow').style.display = (isChambre||isMobile) ? 'none' : '';
   document.getElementById('encEspecesRow').style.display = isMobile ? '' : 'none';
-  if(!isMobile) {
-    const e=document.getElementById('encMontantEspeces'); if(e) e.value='';
-    _encMode2Actif=false; _encMode2='';
-    const z=document.getElementById('encZone2eMobile'); if(z) z.style.display='none';
-    const b=document.getElementById('encBtn2eMode'); if(b) b.textContent='+ Partager avec un 2ème mobile';
-  }
-  encCalcMobile();
-}
-function encCalcMobile(){
-  const esp=parseFloat(document.getElementById('encMontantEspeces')?.value||0)||0;
-  const m2amt = (_encMode2Actif && _encMode2) ? (parseFloat(document.getElementById('encMontant2eMobile')?.value||0)||0) : 0;
-  const mobile = Math.max(0, _encTotal - esp - m2amt);
-  const info=document.getElementById('encMobileInfo');
-  if (!info) return;
-  const sel = document.getElementById('encMode');
-  const mode1Name = sel?.options[sel?.selectedIndex]?.text || '';
-  if (_encMode2Actif && _encMode2) {
-    const m2Names = {'wave':'Wave','orange_money':'Orange Money','mtn_money':'MTN Money','moov_money':'Moov Money'};
-    const m2n = m2Names[_encMode2] || _encMode2;
-    info.innerHTML = (esp>0?'Espèces : '+fmt(esp)+' &nbsp;|&nbsp; ':'')+mode1Name+' : '+fmt(mobile)+' &nbsp;|&nbsp; '+m2n+' : '+fmt(m2amt);
-  } else {
-    info.textContent = esp > 0 ? mode1Name+' : '+fmt(mobile) : '';
+  _encResetWidget();
+  if (isMobile) {
+    const lbl = document.getElementById('encLabelMode1');
+    const nm = {wave:'Wave',orange_money:'Orange Money',mtn_money:'MTN Money',moov_money:'Moov Money'};
+    if (lbl) lbl.textContent = nm[sel.value]||'mobile';
   }
 }
 function encSetMontant(v){document.getElementById('encMontantRecu').value=v;calcRendu();}
@@ -1003,20 +1071,15 @@ async function validerEncaissement(){
   const resId=document.getElementById('encResId').value;
   const mode=document.getElementById('encMode').value;
   const surChambre=mode==='chambre';
-  const montantRecu=surChambre?_encTotal:(parseFloat(document.getElementById('encMontantRecu').value)||0);
-  const montantEspeces=_encMobileOps.includes(mode)?(parseFloat(document.getElementById('encMontantEspeces')?.value||0)||0):0;
-  if(!surChambre&&montantRecu<_encTotal){toast('❌ Montant insuffisant','error');return;}
+  const isMobile = _encMobileOps.includes(mode);
+  const montantRecu=surChambre?_encTotal:(isMobile?_encTotal:(parseFloat(document.getElementById('encMontantRecu')?.value)||0));
+  if(!surChambre&&!isMobile&&montantRecu<_encTotal){toast('❌ Montant insuffisant','error');return;}
+  if(!surChambre&&isMobile){const m1=parseFloat(document.getElementById('encMontantM1')?.value||0)||0;if(m1<=0){toast('❌ Saisissez le montant','error');return;}}
   const btn=document.getElementById('btnEncaisser');
   btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Traitement…';
-  let lignesPayEsp = null;
-  if (!surChambre && _encMobileOps.includes(mode) && _encMode2Actif && _encMode2) {
-    const m2amt = parseFloat(document.getElementById('encMontant2eMobile')?.value||0)||0;
-    const mobile1 = Math.max(0, _encTotal - montantEspeces - m2amt);
-    lignesPayEsp = [];
-    if (montantEspeces > 0) lignesPayEsp.push({mode:'especes', montant: montantEspeces});
-    if (mobile1 > 0) lignesPayEsp.push({mode: mode, montant: mobile1});
-    if (m2amt > 0) lignesPayEsp.push({mode: _encMode2, montant: m2amt});
-  }
+  const lignesPayEsp = surChambre ? null : encGetLignesPay();
+  const espLigne = lignesPayEsp?.find(l=>l.mode==='especes');
+  const montantEspeces = espLigne ? espLigne.montant : 0;
   try{
     const payload = {mode_paiement:mode,montant_recu:montantRecu,montant_especes:montantEspeces,sur_chambre:surChambre};
     if (lignesPayEsp) payload.lignes_paiement = lignesPayEsp;
