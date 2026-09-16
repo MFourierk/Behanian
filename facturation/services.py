@@ -4,9 +4,126 @@ par la vue `ticket_delete` (bouton Facturation) et par `TicketAdmin` (Django
 Admin), afin que TOUTE suppression d'un ticket restaure le stock et supprime
 les transactions liées, quelle que soit l'interface utilisée.
 """
+from decimal import Decimal
+
 from django.contrib.contenttypes.models import ContentType
 
-from .models import Ticket, Article
+from .models import Ticket, Article, LignePaiement
+
+_MODES_MOBILES = {'wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money', 'mobile'}
+
+
+def creer_lignes_paiement(ticket, lignes):
+    """
+    Crée les LignePaiement pour un ticket et met à jour les champs de
+    rétrocompatibilité (mode_paiement, montant_especes) sur le ticket.
+
+    lignes : list[dict] — ex. [{'mode':'wave','montant':2000},
+                                {'mode':'especes','montant':2500}]
+    Les lignes à montant ≤ 0 sont ignorées.
+    Met à jour le ticket en base (update_fields limités pour ne pas écraser
+    d'autres champs en cours de création).
+    """
+    lignes = [l for l in lignes if Decimal(str(l['montant'])) > 0]
+    if not lignes:
+        return
+
+    LignePaiement.objects.filter(ticket=ticket).delete()
+    for l in lignes:
+        LignePaiement.objects.create(
+            ticket=ticket,
+            mode_paiement=l['mode'],
+            montant=Decimal(str(l['montant'])),
+        )
+
+    # --- rétrocompatibilité sur Ticket ---
+    modes_mobiles = [l['mode'] for l in lignes if l['mode'] in _MODES_MOBILES]
+    montant_esp   = sum(Decimal(str(l['montant'])) for l in lignes if l['mode'] == 'especes')
+
+    if len(lignes) == 1:
+        mode_ticket = lignes[0]['mode']
+        esp_ticket  = Decimal('0')
+    elif len(modes_mobiles) == 1 and montant_esp > 0:
+        # espèces + un mobile
+        mode_ticket = modes_mobiles[0]
+        esp_ticket  = montant_esp
+    else:
+        # multi-mobile OU autre combinaison complexe
+        mode_ticket = 'mixte'
+        esp_ticket  = montant_esp
+
+    ticket.mode_paiement  = mode_ticket
+    ticket.montant_especes = esp_ticket
+    ticket.save(update_fields=['mode_paiement', 'montant_especes'])
+
+
+def lignes_from_mode(mode, montant_total, montant_especes=0):
+    """Construit une liste de lignes depuis l'ancien format (mode + espèces partiel).
+    Utilisé pour les appels qui n'envoient pas encore lignes_paiement.
+    """
+    mt = Decimal(str(montant_total))
+    me = Decimal(str(montant_especes or 0))
+    if mode in _MODES_MOBILES and me > 0:
+        return [
+            {'mode': 'especes', 'montant': me},
+            {'mode': mode,      'montant': max(Decimal('0'), mt - me)},
+        ]
+    return [{'mode': mode or 'especes', 'montant': mt}]
+
+
+def aggregate_par_mode(ticket_qs):
+    """
+    Agrège les montants par mode de paiement pour un queryset de Tickets.
+    Priorité aux LignePaiement quand elles existent (nouveaux tickets),
+    fallback sur les champs Ticket.mode_paiement + montant_especes (anciens tickets).
+
+    Retourne un dict {mode_paiement: montant_int}.
+    Ex: {'especes': 15000, 'wave': 8000, 'orange_money': 5000}
+    """
+    from django.db.models import Sum as _Sum
+
+    result = {}
+
+    # ─── Tickets avec LignePaiement (nouveaux) ───
+    ticket_ids_avec_lignes = set(
+        LignePaiement.objects.filter(ticket__in=ticket_qs).values_list('ticket_id', flat=True)
+    )
+    if ticket_ids_avec_lignes:
+        for row in (
+            LignePaiement.objects
+            .filter(ticket_id__in=ticket_ids_avec_lignes)
+            .values('mode_paiement')
+            .annotate(total=_Sum('montant'))
+        ):
+            mode = row['mode_paiement']
+            result[mode] = result.get(mode, 0) + int(row['total'] or 0)
+
+    # ─── Anciens tickets sans LignePaiement ───
+    old_qs = ticket_qs.exclude(id__in=ticket_ids_avec_lignes)
+
+    # Espèces pures
+    s = int(old_qs.filter(mode_paiement='especes').aggregate(s=_Sum('montant_total'))['s'] or 0)
+    if s:
+        result['especes'] = result.get('especes', 0) + s
+
+    # Mobile (± espèces)
+    for mode in _MODES_MOBILES:
+        r = old_qs.filter(mode_paiement=mode).aggregate(
+            total=_Sum('montant_total'), esp=_Sum('montant_especes')
+        )
+        if r['total']:
+            esp_part    = int(r['esp'] or 0)
+            mobile_part = int(r['total']) - esp_part
+            result['especes'] = result.get('especes', 0) + esp_part
+            result[mode]      = result.get(mode, 0) + mobile_part
+
+    # Autres modes
+    for mode in ('carte_bancaire', 'carte', 'virement', 'cheque', 'autre'):
+        s = int(old_qs.filter(mode_paiement=mode).aggregate(s=_Sum('montant_total'))['s'] or 0)
+        if s:
+            result[mode] = result.get(mode, 0) + s
+
+    return result
 
 
 def supprimer_ticket(ticket, user):

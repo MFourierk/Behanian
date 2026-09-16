@@ -1298,7 +1298,19 @@
           <label style="font-size:12px">Part en espèces (FCFA)</label>
           <input type="number" name="montant_especes" id="hotelMontantEspeces" class="form-control" placeholder="0" oninput="hotelCalcMobile()">
           <div id="hotelMobileInfo" style="font-size:12px;color:#2563eb;margin-top:4px;font-weight:600"></div>
+          <button type="button" id="hotelBtn2eMode" onclick="hotelToggle2eMobile()" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;margin-top:4px">+ Partager avec un 2ème mobile</button>
+          <div id="hotelZone2eMobile" style="display:none;margin-top:6px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px;color:#475569">2ème mode de paiement mobile :</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+              <button type="button" class="hotel-m2-btn" data-m2="wave" onclick="hotelSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Wave</button>
+              <button type="button" class="hotel-m2-btn" data-m2="orange_money" onclick="hotelSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Orange Money</button>
+              <button type="button" class="hotel-m2-btn" data-m2="mtn_money" onclick="hotelSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">MTN Money</button>
+              <button type="button" class="hotel-m2-btn" data-m2="moov_money" onclick="hotelSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Moov Money</button>
+            </div>
+            <input type="number" id="hotelMontant2eMobile" placeholder="Montant 2ème mobile" oninput="hotelCalcMobile()" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+          </div>
         </div>
+        <input type="hidden" name="lignes_paiement" id="hotelLignesPaiementHidden">
       </div>
 
       <!-- Actions -->
@@ -1881,17 +1893,62 @@
     }
 
     const _hotelMobileOps = ['wave','orange_money','mtn_money','moov_money'];
+    let _hotelMode2 = '';
+    let _hotelMode2Actif = false;
+
+    function hotelToggle2eMobile() {
+      _hotelMode2Actif = !_hotelMode2Actif;
+      const zone = document.getElementById('hotelZone2eMobile');
+      const btn  = document.getElementById('hotelBtn2eMode');
+      if (zone) zone.style.display = _hotelMode2Actif ? '' : 'none';
+      if (btn)  btn.textContent = _hotelMode2Actif ? '− Annuler 2ème paiement' : '+ Partager avec un 2ème mobile';
+      if (!_hotelMode2Actif) { _hotelMode2=''; const i=document.getElementById('hotelMontant2eMobile'); if(i) i.value=''; }
+      hotelCalcMobile();
+    }
+    function hotelSetMode2(btn) {
+      _hotelMode2 = btn.dataset.m2;
+      document.querySelectorAll('.hotel-m2-btn').forEach(b => b.style.background = b.dataset.m2===_hotelMode2 ? '#dbeafe' : '#f8fafc');
+      hotelCalcMobile();
+    }
+
     function hotelCheckoutModeChange(sel){
       const isMobile = _hotelMobileOps.includes(sel.value);
       document.getElementById('hotelEspecesGroup').style.display = isMobile ? 'block' : 'none';
-      if(!isMobile){ const e=document.getElementById('hotelMontantEspeces'); if(e) e.value=''; }
+      if(!isMobile){
+        const e=document.getElementById('hotelMontantEspeces'); if(e) e.value='';
+        _hotelMode2Actif=false; _hotelMode2='';
+        const z=document.getElementById('hotelZone2eMobile'); if(z) z.style.display='none';
+        const b=document.getElementById('hotelBtn2eMode'); if(b) b.textContent='+ Partager avec un 2ème mobile';
+      }
       hotelCalcMobile();
     }
     function hotelCalcMobile(){
       const total = parseFloat(document.getElementById('montantEncaisse').value)||0;
       const esp   = parseFloat(document.getElementById('hotelMontantEspeces').value)||0;
+      const m2amt = (_hotelMode2Actif && _hotelMode2) ? (parseFloat(document.getElementById('hotelMontant2eMobile')?.value||0)||0) : 0;
+      const mobile = Math.max(0, total - esp - m2amt);
       const info  = document.getElementById('hotelMobileInfo');
-      info.textContent = esp>0 ? 'Montant mobile : '+(Math.max(0,total-esp)).toLocaleString('fr-FR')+' F' : '';
+      const sel = document.getElementById('hotelModePaiement');
+      const mode1Name = sel?.options[sel?.selectedIndex]?.text || '';
+      if (_hotelMode2Actif && _hotelMode2) {
+        const m2Names = {'wave':'Wave','orange_money':'Orange Money','mtn_money':'MTN Money','moov_money':'Moov Money'};
+        const m2n = m2Names[_hotelMode2] || _hotelMode2;
+        info.innerHTML = (esp>0?'Espèces : '+esp.toLocaleString('fr-FR')+' F &nbsp;|&nbsp; ':'')+mode1Name+' : '+mobile.toLocaleString('fr-FR')+' F &nbsp;|&nbsp; '+m2n+' : '+m2amt.toLocaleString('fr-FR')+' F';
+      } else {
+        info.textContent = esp>0 ? mode1Name+' : '+mobile.toLocaleString('fr-FR')+' F' : '';
+      }
+      // Mise à jour champ hidden lignes_paiement
+      const mode = sel?.value || '';
+      const hiddenLignes = document.getElementById('hotelLignesPaiementHidden');
+      if (hiddenLignes && _hotelMobileOps.includes(mode) && _hotelMode2Actif && _hotelMode2 && m2amt > 0) {
+        const lignes = [];
+        if (esp > 0) lignes.push({mode:'especes', montant: esp});
+        if (mobile > 0) lignes.push({mode: mode, montant: mobile});
+        lignes.push({mode: _hotelMode2, montant: m2amt});
+        hiddenLignes.value = JSON.stringify(lignes);
+      } else if (hiddenLignes) {
+        hiddenLignes.value = '';
+      }
     }
 
     function openCheckoutModal(resId, clientName, roomVal, serviceVal, avance, piscineVal) {

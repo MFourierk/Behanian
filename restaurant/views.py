@@ -291,6 +291,7 @@ def valider_commande(request):
                     return JsonResponse({'success': True, 'ticket_numero': 'CHAMBRE', 'ticket_html': '', 'rendu': float(rendu)})
 
                 # Création du Ticket (paiement immédiat — non reporté sur chambre)
+                _lignes_pay = data.get('lignes_paiement') or None
                 _mode_pay = _map_mode_paiement(
                     data.get('mode_paiement', 'especes'),
                     data.get('operateur_mobile', ''),
@@ -308,6 +309,9 @@ def valider_commande(request):
                     cree_par=request.user,
                     imprime=True
                 )
+                from facturation.services import creer_lignes_paiement, lignes_from_mode
+                _lignes_pay = _lignes_pay or lignes_from_mode(_mode_pay, montant_total_ticket, montant_especes)
+                creer_lignes_paiement(ticket, _lignes_pay)
 
                 # Rendu ticket thermique avec serveur
                 mode_short_map = {'wave':'WAVE','orange_money':'ORANGE','mtn_money':'MTN','especes':'ESP','carte_bancaire':'CARTE'}
@@ -317,6 +321,7 @@ def valider_commande(request):
                     'ticket':           ticket,
                     'serveur':          serveur_nom,
                     'is_original':      True,
+                    'lignes_paiement':  _lignes_pay,
                     'montant_especes':  montant_especes if montant_especes > 0 else None,
                     'montant_mobile':   montant_mobile  if montant_especes > 0 else None,
                     'mode_short':       mode_short_map.get(tp, tp.upper()),
@@ -401,6 +406,7 @@ def facturer_salon_direct(request):
                 f'<span class="item-price">{int(droit_place):,} F</span></div>'
             )
 
+        _lignes_pay_sd = data.get('lignes_paiement') or None
         mode_mapped   = _map_mode_paiement(mode_paiement, '')
         numero_ticket = generate_ticket_numero()
 
@@ -416,6 +422,9 @@ def facturer_salon_direct(request):
             cree_par=request.user,
             imprime=True,
         )
+        from facturation.services import creer_lignes_paiement, lignes_from_mode
+        _lignes_pay_sd = _lignes_pay_sd or lignes_from_mode(mode_mapped, montant_total, montant_especes)
+        creer_lignes_paiement(ticket, _lignes_pay_sd)
 
         mode_short_map = {'wave': 'WAVE', 'orange_money': 'ORANGE', 'mtn_money': 'MTN',
                           'especes': 'ESP', 'carte_bancaire': 'CARTE'}
@@ -425,6 +434,7 @@ def facturer_salon_direct(request):
             'ticket':          ticket,
             'serveur':         '',
             'is_original':     True,
+            'lignes_paiement': _lignes_pay_sd,
             'montant_especes': montant_especes if montant_especes > 0 else None,
             'montant_mobile':  montant_mobile  if montant_especes > 0 else None,
             'mode_short':      mode_short_map.get(tp, tp.upper()),

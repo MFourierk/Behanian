@@ -827,6 +827,12 @@ def checkout_reservation(request, reservation_id):
                 mode_paiement = operateur
 
         montant_especes = Decimal(request.POST.get('montant_especes', 0) or 0)
+        import json as _json
+        _lignes_pay_raw = request.POST.get('lignes_paiement', '')
+        try:
+            _lignes_pay_session = _json.loads(_lignes_pay_raw) if _lignes_pay_raw else None
+        except Exception:
+            _lignes_pay_session = None
         _is_mixte_hotel = montant_especes > 0 and mode_paiement not in ('especes', 'chambre')
         if _is_mixte_hotel:
             contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
@@ -844,6 +850,7 @@ def checkout_reservation(request, reservation_id):
             'montant_paye': str(montant_paye),
             'montant_total': str(montant_total),
             'montant_especes': str(montant_especes) if _is_mixte_hotel else '0',
+            'lignes_paiement': _lignes_pay_session,
             'f_client_id': f_client.id if f_client else None,
             'serveur_nom': serveur_nom,
             'receptionniste_nom': receptionniste_nom,
@@ -942,20 +949,26 @@ def finalize_checkout(request, reservation_id):
                 pass
 
         # Créer le Ticket uniquement maintenant, après confirmation impression
+        from facturation.services import creer_lignes_paiement, lignes_from_mode
+        _mode_hotel  = data['mode_paiement']
+        _esp_hotel   = Decimal(data.get('montant_especes', '0') or '0')
+        _total_hotel = Decimal(data['montant_total'])
+        _lignes_pay_hotel = data.get('lignes_paiement') or lignes_from_mode(_mode_hotel, _total_hotel, _esp_hotel)
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(),
             module='hotel',
             objet_id=reservation.id,
             client=f_client,
-            montant_total=Decimal(data['montant_total']),
+            montant_total=_total_hotel,
             montant_paye=Decimal(data['montant_paye']),
-            mode_paiement=data['mode_paiement'],
-            montant_especes=Decimal(data.get('montant_especes', '0') or '0'),
+            mode_paiement=_mode_hotel,
+            montant_especes=_esp_hotel,
             cree_par=request.user,
             contenu=data['contenu'],
             imprime=True,
             date_impression=timezone.now(),
         )
+        creer_lignes_paiement(ticket, _lignes_pay_hotel)
 
         reservation.statut = 'terminee'
         reservation.save()

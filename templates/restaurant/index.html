@@ -1389,8 +1389,28 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <input type="number" id="montantEspeces" class="mixte-input" placeholder="0" oninput="calcMontantMobile()" min="0">
         <span style="color:#6b7280;font-size:12px;white-space:nowrap">FCFA espèces</span>
       </div>
+      <!-- 2ème opérateur mobile -->
+      <div style="margin-bottom:10px">
+        <button type="button" id="btn2eMobileResto" onclick="toggle2eMobileResto()"
+          style="font-size:11px;color:#60a5fa;background:none;border:1px solid #374151;border-radius:6px;padding:4px 10px;cursor:pointer">
+          + Partager avec un 2ème mobile
+        </button>
+        <div id="zone2eMobileResto" style="display:none;margin-top:8px">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">2ème opérateur :</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <button type="button" class="m2-btn-r" data-m2="wave"         onclick="setMode2Resto(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer">Wave</button>
+            <button type="button" class="m2-btn-r" data-m2="orange_money" onclick="setMode2Resto(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer">Orange</button>
+            <button type="button" class="m2-btn-r" data-m2="mtn_money"    onclick="setMode2Resto(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer">MTN</button>
+            <button type="button" class="m2-btn-r" data-m2="moov_money"   onclick="setMode2Resto(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer">Moov</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="number" id="montantMode2Resto" class="mixte-input" placeholder="Montant 2ème" min="0" oninput="calcMontantMobile()">
+            <span style="color:#6b7280;font-size:12px;white-space:nowrap">FCFA</span>
+          </div>
+        </div>
+      </div>
       <div class="mixte-reste">
-        <span style="color:#93c5fd;font-size:13px">Montant mobile :</span>
+        <span style="color:#93c5fd;font-size:13px">Montant <span id="labelMode1Resto">mobile</span> :</span>
         <span id="montantMobileVal" style="font-weight:700;color:white;font-size:15px">0 F</span>
       </div>
     </div>
@@ -1493,8 +1513,29 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
                  style="flex:1;padding:10px 14px;background:#0f172a;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:1rem;">
           <span style="color:#6b7280;font-size:12px;white-space:nowrap;">F espèces</span>
         </div>
+        <!-- 2ème opérateur mobile SD -->
+        <div style="margin-bottom:10px;">
+          <button type="button" id="sdBtn2eMobile" onclick="sdToggle2eMobile()"
+            style="font-size:11px;color:#60a5fa;background:none;border:1px solid #374151;border-radius:6px;padding:4px 10px;cursor:pointer;">
+            + Partager avec un 2ème mobile
+          </button>
+          <div id="sdZone2eMobile" style="display:none;margin-top:8px;">
+            <div style="font-size:11px;color:#9ca3af;margin-bottom:6px;">2ème opérateur :</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <button type="button" class="sd-m2-btn" data-m2="wave"         onclick="sdSetMode2(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer;">Wave</button>
+              <button type="button" class="sd-m2-btn" data-m2="orange_money" onclick="sdSetMode2(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer;">Orange</button>
+              <button type="button" class="sd-m2-btn" data-m2="mtn_money"    onclick="sdSetMode2(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer;">MTN</button>
+              <button type="button" class="sd-m2-btn" data-m2="moov_money"   onclick="sdSetMode2(this)" style="padding:4px 10px;border-radius:6px;font-size:12px;border:1px solid #374151;background:#1f2937;color:white;cursor:pointer;">Moov</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="number" id="sdMontant2eMobile" class="mixte-input" placeholder="Montant 2ème" min="0" oninput="sdCalcMobile()"
+                     style="flex:1;padding:10px 14px;background:#0f172a;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:1rem;">
+              <span style="color:#6b7280;font-size:12px;white-space:nowrap;">FCFA</span>
+            </div>
+          </div>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(147,197,253,0.08);border-radius:8px;padding:8px 12px;">
-          <span style="color:#93c5fd;font-size:13px;">Montant mobile :</span>
+          <span style="color:#93c5fd;font-size:13px;">Montant <span id="sdLabelMode1">mobile</span> :</span>
           <strong id="sdMontantMobileVal" style="color:white;font-size:15px;">0 F</strong>
         </div>
       </div>
@@ -1533,6 +1574,28 @@ let tickets = { 1: { id:1, nom:'T-001', tableId:null, tableNum:null, client:'', 
 let ticketActifId = 1;
 let ticketCounter = 1;
 let modePaiement  = 'especes';
+let _mode2Resto   = '';
+let _mode2RestoActif = false;
+
+function toggle2eMobileResto() {
+  _mode2RestoActif = !_mode2RestoActif;
+  document.getElementById('zone2eMobileResto').style.display = _mode2RestoActif ? '' : 'none';
+  document.getElementById('btn2eMobileResto').textContent = _mode2RestoActif ? '− Annuler 2ème paiement' : '+ Partager avec un 2ème mobile';
+  if (!_mode2RestoActif) { _mode2Resto = ''; const i = document.getElementById('montantMode2Resto'); if(i) i.value=''; }
+  calcMontantMobile();
+}
+function setMode2Resto(btn) {
+  _mode2Resto = btn.dataset.m2;
+  document.querySelectorAll('.m2-btn-r').forEach(b => b.style.background = b.dataset.m2 === _mode2Resto ? '#3b82f6' : '#1f2937');
+  calcMontantMobile();
+}
+function _resetMode2Resto() {
+  _mode2Resto = ''; _mode2RestoActif = false;
+  const z = document.getElementById('zone2eMobileResto'); if(z) z.style.display = 'none';
+  const b = document.getElementById('btn2eMobileResto'); if(b) b.textContent = '+ Partager avec un 2ème mobile';
+  const i = document.getElementById('montantMode2Resto'); if(i) i.value = '';
+  document.querySelectorAll('.m2-btn-r').forEach(b => b.style.background = '#1f2937');
+}
 let chambreLieeId  = null;
 let chambreLieeNom = null;
 let tableSelActif = null;
@@ -2813,6 +2876,28 @@ function fermerModal() {
 
 // ── PAIEMENT DIRECT SANS CONSO ──
 let sdModePaiement = 'especes';
+let _sdMode2 = '';
+let _sdMode2Actif = false;
+
+function sdToggle2eMobile() {
+  _sdMode2Actif = !_sdMode2Actif;
+  document.getElementById('sdZone2eMobile').style.display = _sdMode2Actif ? '' : 'none';
+  document.getElementById('sdBtn2eMobile').textContent = _sdMode2Actif ? '− Annuler 2ème paiement' : '+ Partager avec un 2ème mobile';
+  if (!_sdMode2Actif) { _sdMode2 = ''; const i = document.getElementById('sdMontant2eMobile'); if(i) i.value=''; }
+  sdCalcMobile();
+}
+function sdSetMode2(btn) {
+  _sdMode2 = btn.dataset.m2;
+  document.querySelectorAll('.sd-m2-btn').forEach(b => b.style.background = b.dataset.m2 === _sdMode2 ? '#3b82f6' : '#1f2937');
+  sdCalcMobile();
+}
+function _sdResetMode2() {
+  _sdMode2 = ''; _sdMode2Actif = false;
+  const z = document.getElementById('sdZone2eMobile'); if(z) z.style.display = 'none';
+  const b = document.getElementById('sdBtn2eMobile'); if(b) b.textContent = '+ Partager avec un 2ème mobile';
+  const i = document.getElementById('sdMontant2eMobile'); if(i) i.value = '';
+  document.querySelectorAll('.sd-m2-btn').forEach(b => b.style.background = '#1f2937');
+}
 
 function sdGetTotal() {
   let t = 0;
@@ -2873,8 +2958,11 @@ function sdMajTotal() {
 }
 
 function sdCalcMobile() {
-  const esp = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
-  document.getElementById('sdMontantMobileVal').textContent = formatF(Math.max(0, sdGetTotal() - esp));
+  const esp  = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
+  const m2   = (_sdMode2Actif && _sdMode2) ? (parseFloat(document.getElementById('sdMontant2eMobile')?.value) || 0) : 0;
+  document.getElementById('sdMontantMobileVal').textContent = formatF(Math.max(0, sdGetTotal() - esp - m2));
+  const lbl = document.getElementById('sdLabelMode1');
+  if (lbl) { const nm = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov'}; lbl.textContent = nm[sdModePaiement] || 'mobile'; }
 }
 
 function sdSetMode(mode) {
@@ -2897,6 +2985,7 @@ function sdSetMode(mode) {
       const recu = parseFloat(document.getElementById('sdMontantRecu')?.value) || 0;
       document.getElementById('sdMontantEspeces').value = (recu > 0 && recu < total) ? recu : '';
     }
+    _sdResetMode2();
     document.getElementById('sdSectionEspeces').style.display = 'none';
     document.getElementById('sdSectionMobile').style.display  = '';
     sdCalcMobile();
@@ -2934,10 +3023,19 @@ async function confirmerSalonDirect() {
 
   let montantEncaisse = total;
   let montantEspeces  = 0;
+  let _sdLignesPay    = null;
   if (sdModePaiement === 'especes') {
     montantEncaisse = parseFloat(document.getElementById('sdMontantRecu').value) || total;
   } else if (MOBILE_MODES.includes(sdModePaiement)) {
     montantEspeces  = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
+    const sdM2amt   = (_sdMode2Actif && _sdMode2) ? (parseFloat(document.getElementById('sdMontant2eMobile')?.value) || 0) : 0;
+    if (sdM2amt > 0 && _sdMode2 && _sdMode2 !== sdModePaiement) {
+      const sdM1amt = Math.max(0, total - montantEspeces - sdM2amt);
+      _sdLignesPay  = [];
+      if (sdM2amt > 0) _sdLignesPay.push({mode: _sdMode2,       montant: sdM2amt});
+      if (sdM1amt > 0) _sdLignesPay.push({mode: sdModePaiement, montant: sdM1amt});
+      if (montantEspeces > 0) _sdLignesPay.push({mode: 'especes', montant: montantEspeces});
+    }
   }
 
   const btn = document.getElementById('btnSdConfirmer');
@@ -2952,6 +3050,7 @@ async function confirmerSalonDirect() {
     mode_paiement:    sdModePaiement,
     montant_encaisse: montantEncaisse,
     montant_especes:  montantEspeces,
+    lignes_paiement:  _sdLignesPay,
   };
 
   try {
@@ -3007,15 +3106,14 @@ function setModalMode(mode) {
   document.getElementById('sectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
   document.getElementById('sectionMobile').style.display  = MOBILE_MODES.includes(mode) ? '' : 'none';
   document.getElementById('chambreSection').style.display = (mode === 'chambre') ? 'block' : 'none';
+  _resetMode2Resto();
   if (mode === 'especes') {
     document.getElementById('montantRecu').value = '';
     document.getElementById('renduDisplay').classList.remove('show');
   }
   if (MOBILE_MODES.includes(mode)) {
     if (!MOBILE_MODES.includes(prevMode)) {
-      // Transition non-mobile → mobile
       if (prevMode === 'especes') {
-        // Reporter le montant espèces saisi (si partiel)
         const recuVal = parseFloat(document.getElementById('montantRecu')?.value) || 0;
         const tot = getTotalAvecSalon();
         document.getElementById('montantEspeces').value = (recuVal > 0 && recuVal < tot) ? recuVal : '';
@@ -3030,7 +3128,10 @@ function setModalMode(mode) {
 function calcMontantMobile() {
   const total   = getTotalAvecSalon();
   const especes = parseFloat(document.getElementById('montantEspeces').value) || 0;
-  document.getElementById('montantMobileVal').textContent = formatF(Math.max(0, total - especes));
+  const m2      = (_mode2RestoActif && _mode2Resto) ? (parseFloat(document.getElementById('montantMode2Resto')?.value) || 0) : 0;
+  document.getElementById('montantMobileVal').textContent = formatF(Math.max(0, total - especes - m2));
+  const lbl = document.getElementById('labelMode1Resto');
+  if (lbl) { const nm = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov',mobile_money:'Mobile'}; lbl.textContent = nm[modePaiement] || 'mobile'; }
 }
 
 function choisirModeMobile(mode) {
@@ -3126,6 +3227,7 @@ async function confirmerPaiement() {
   let montantRecu = total;
   let montantEspeces = 0;
   const isMobile = MOBILE_MODES.includes(modePaiement);
+  let _lignesPay = null;
 
   if (modePaiement === 'especes') {
     montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
@@ -3134,6 +3236,15 @@ async function confirmerPaiement() {
     montantEspeces = parseFloat(document.getElementById('montantEspeces').value) || 0;
     if (montantEspeces < 0 || montantEspeces > total) { toast('❌ Montant espèces invalide', 'error'); return; }
     montantRecu = total;
+    // Multi-mode : construire les lignes si 2ème opérateur actif
+    const m2amt = (_mode2RestoActif && _mode2Resto) ? (parseFloat(document.getElementById('montantMode2Resto')?.value) || 0) : 0;
+    if (m2amt > 0 && _mode2Resto && _mode2Resto !== modePaiement) {
+      const m1amt = Math.max(0, total - montantEspeces - m2amt);
+      _lignesPay = [];
+      if (m2amt > 0) _lignesPay.push({mode: _mode2Resto, montant: m2amt});
+      if (m1amt > 0) _lignesPay.push({mode: modePaiement, montant: m1amt});
+      if (montantEspeces > 0) _lignesPay.push({mode: 'especes', montant: montantEspeces});
+    }
   }
 
   const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
@@ -3156,6 +3267,7 @@ async function confirmerPaiement() {
           commande_id: t.commandeDbId, action: 'paiement',
           mode_paiement: modePaiement, montant_encaisse: montantRecu,
           montant_especes: montantEspeces,
+          lignes_paiement: _lignesPay,
           client: t.client || '',
           serveur_id: t.serveur || document.getElementById('selectServeur').value || '',
           reservation_hotel_id: chambreLieeId || reservation_hotel_id,

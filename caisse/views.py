@@ -10,6 +10,7 @@ from decimal import Decimal, InvalidOperation
 
 from utils.permissions import require_module_access, require_manager, GROUPE_MANAGER_GENERAL
 from facturation.models import Ticket
+from facturation.services import aggregate_par_mode as _aggregate_par_mode
 from .models import CaisseSession, MouvementCaisse, PrelevementBanque
 
 
@@ -182,25 +183,17 @@ def get_reconciliation_jour(date=None):
         qs = Ticket.objects.filter(date_creation__date=date, module=ticket_mod)
         total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
 
-        especes = (
-            int(qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
-            + int(qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0)
-        )
-
-        def _net_mobile(modes, _qs=qs):
-            r = _qs.filter(mode_paiement__in=modes).aggregate(
-                total=Sum('montant_total'), esp=Sum('montant_especes')
-            )
-            return int((r['total'] or 0) - (r['esp'] or 0))
-
-        wave     = _net_mobile(['wave'])
-        orange   = _net_mobile(['orange_money'])
-        mtn      = _net_mobile(['mtn_money'])
-        moov     = _net_mobile(['moov_money'])
-        mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
-        carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
-        virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
+        _m = _aggregate_par_mode(qs)
+        especes  = _m.get('especes', 0)
+        wave     = _m.get('wave', 0)
+        orange   = _m.get('orange_money', 0)
+        mtn      = _m.get('mtn_money', 0)
+        moov     = _m.get('moov_money', 0)
+        mobile   = wave + orange + mtn + moov + _m.get('mobile_money', 0) + _m.get('mobile', 0)
+        carte    = _m.get('carte_bancaire', 0) + _m.get('carte', 0)
+        virement = _m.get('virement', 0)
+        # Tickets esp+mobile (affichage info — total ticket pour ces lignes)
+        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement__in=['especes', 'mixte']).aggregate(s=Sum('montant_total'))['s'] or 0)
 
         vs_qs = MouvementCaisse.objects.filter(
             date__date=date, type='versement', module=caisse_mod, valide=True,
@@ -301,29 +294,17 @@ def get_stats_jour(date=None, type_caisse=None, user=None):
         tickets = tickets.exclude(module__in=['hotel'])
 
     total        = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
-    carte        = tickets.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0
-    virement     = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
 
-    # Espèces = tickets purs espèces + portion espèces des tickets mixtes
-    especes_purs  = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
-    especes_mixte = tickets.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0
-    especes       = int(especes_purs) + int(especes_mixte)
-
-    # Mobile money — portion mobile uniquement (montant_total - montant_especes pour les mixtes)
-    def _mobile_net(qs_filtered):
-        """Somme montant_total - montant_especes pour les tickets du mode donné."""
-        r = qs_filtered.aggregate(
-            total=Sum('montant_total'),
-            esp=Sum('montant_especes'),
-        )
-        return int((r['total'] or 0) - (r['esp'] or 0))
-
-    _wave       = _mobile_net(tickets.filter(mode_paiement='wave'))
-    _orange     = _mobile_net(tickets.filter(mode_paiement='orange_money'))
-    _mtn        = _mobile_net(tickets.filter(mode_paiement='mtn_money'))
-    _moov       = _mobile_net(tickets.filter(mode_paiement='moov_money'))
-    _mobile_gen = _mobile_net(tickets.filter(mode_paiement__in=['mobile', 'mobile_money']))
-    mobile      = _wave + _orange + _mtn + _moov + _mobile_gen
+    _m      = _aggregate_par_mode(tickets)
+    especes = _m.get('especes', 0)
+    _wave   = _m.get('wave', 0)
+    _orange = _m.get('orange_money', 0)
+    _mtn    = _m.get('mtn_money', 0)
+    _moov   = _m.get('moov_money', 0)
+    _mobile_gen = _m.get('mobile_money', 0) + _m.get('mobile', 0)
+    mobile  = _wave + _orange + _mtn + _moov + _mobile_gen
+    carte   = _m.get('carte_bancaire', 0) + _m.get('carte', 0)
+    virement = _m.get('virement', 0)
 
     par_mobile = []
     if _wave:       par_mobile.append(('Wave',             _wave,   '#1d4ed8', 'W'))
@@ -403,24 +384,18 @@ def get_stats_session(session):
         date_creation__lt=date_fin,
     )
 
-    total    = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
-    carte    = tickets.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0
-    virement = tickets.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0
+    total   = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
 
-    especes_purs  = tickets.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0
-    especes_mixte = tickets.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0
-    especes       = int(especes_purs) + int(especes_mixte)
-
-    def _net(qs_f):
-        r = qs_f.aggregate(total=Sum('montant_total'), esp=Sum('montant_especes'))
-        return int((r['total'] or 0) - (r['esp'] or 0))
-
-    _wave       = _net(tickets.filter(mode_paiement='wave'))
-    _orange     = _net(tickets.filter(mode_paiement='orange_money'))
-    _mtn        = _net(tickets.filter(mode_paiement='mtn_money'))
-    _moov       = _net(tickets.filter(mode_paiement='moov_money'))
-    _mobile_gen = _net(tickets.filter(mode_paiement__in=['mobile', 'mobile_money']))
-    mobile      = _wave + _orange + _mtn + _moov + _mobile_gen
+    _m      = _aggregate_par_mode(tickets)
+    especes = _m.get('especes', 0)
+    _wave   = _m.get('wave', 0)
+    _orange = _m.get('orange_money', 0)
+    _mtn    = _m.get('mtn_money', 0)
+    _moov   = _m.get('moov_money', 0)
+    _mobile_gen = _m.get('mobile_money', 0) + _m.get('mobile', 0)
+    mobile  = _wave + _orange + _mtn + _moov + _mobile_gen
+    carte   = _m.get('carte_bancaire', 0) + _m.get('carte', 0)
+    virement = _m.get('virement', 0)
 
     par_mobile = []
     if _wave:       par_mobile.append(('Wave',             _wave,       '#1d4ed8', 'W'))
@@ -481,25 +456,16 @@ def get_reconciliation_session(session):
         )
         total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
 
-        especes = (
-            int(qs.filter(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
-            + int(qs.exclude(mode_paiement='especes').aggregate(s=Sum('montant_especes'))['s'] or 0)
-        )
-
-        def _net_mobile(modes, _qs=qs):
-            r = _qs.filter(mode_paiement__in=modes).aggregate(
-                total=Sum('montant_total'), esp=Sum('montant_especes')
-            )
-            return int((r['total'] or 0) - (r['esp'] or 0))
-
-        wave     = _net_mobile(['wave'])
-        orange   = _net_mobile(['orange_money'])
-        mtn      = _net_mobile(['mtn_money'])
-        moov     = _net_mobile(['moov_money'])
-        mobile   = wave + orange + mtn + moov + _net_mobile(['mobile_money', 'mobile'])
-        carte    = int(qs.filter(mode_paiement__in=['carte_bancaire', 'carte']).aggregate(s=Sum('montant_total'))['s'] or 0)
-        virement = int(qs.filter(mode_paiement='virement').aggregate(s=Sum('montant_total'))['s'] or 0)
-        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement='especes').aggregate(s=Sum('montant_total'))['s'] or 0)
+        _m       = _aggregate_par_mode(qs)
+        especes  = _m.get('especes', 0)
+        wave     = _m.get('wave', 0)
+        orange   = _m.get('orange_money', 0)
+        mtn      = _m.get('mtn_money', 0)
+        moov     = _m.get('moov_money', 0)
+        mobile   = wave + orange + mtn + moov + _m.get('mobile_money', 0) + _m.get('mobile', 0)
+        carte    = _m.get('carte_bancaire', 0) + _m.get('carte', 0)
+        virement = _m.get('virement', 0)
+        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement__in=['especes', 'mixte']).aggregate(s=Sum('montant_total'))['s'] or 0)
 
         vs_qs = MouvementCaisse.objects.filter(
             session=session, type='versement', module=caisse_mod, valide=True,

@@ -507,6 +507,17 @@
       <div id="encEspecesRow" style="display:none">
         <div class="form-row"><label>Part en espèces (FCFA)</label><input type="number" id="encMontantEspeces" placeholder="0" oninput="encCalcMobile()"></div>
         <div id="encMobileInfo" style="font-size:12px;color:#2563eb;font-weight:600;margin-bottom:8px"></div>
+        <button type="button" id="encBtn2eMode" onclick="encToggle2eMobile()" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;margin-bottom:6px">+ Partager avec un 2ème mobile</button>
+        <div id="encZone2eMobile" style="display:none;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px;color:#475569">2ème mode de paiement mobile :</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+            <button type="button" class="enc-m2-btn" data-m2="wave" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Wave</button>
+            <button type="button" class="enc-m2-btn" data-m2="orange_money" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Orange Money</button>
+            <button type="button" class="enc-m2-btn" data-m2="mtn_money" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">MTN Money</button>
+            <button type="button" class="enc-m2-btn" data-m2="moov_money" onclick="encSetMode2(this)" style="padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:#f8fafc;font-size:12px;cursor:pointer">Moov Money</button>
+          </div>
+          <input type="number" id="encMontant2eMobile" placeholder="Montant 2ème mobile" oninput="encCalcMobile()" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+        </div>
       </div>
     </div>
     <div style="display:flex;gap:8px">
@@ -932,19 +943,52 @@ function ouvrirEncaissement(resId,nomClient,espaceNom,montantNet,avance,resHotel
   ouvrirModal('modalEncaissement');
 }
 const _encMobileOps = ['wave','orange_money','mtn_money','moov_money'];
+let _encMode2 = '';
+let _encMode2Actif = false;
+
+function encToggle2eMobile() {
+  _encMode2Actif = !_encMode2Actif;
+  const zone = document.getElementById('encZone2eMobile');
+  const btn  = document.getElementById('encBtn2eMode');
+  if (zone) zone.style.display = _encMode2Actif ? '' : 'none';
+  if (btn)  btn.textContent = _encMode2Actif ? '− Annuler 2ème paiement' : '+ Partager avec un 2ème mobile';
+  if (!_encMode2Actif) { _encMode2 = ''; const i=document.getElementById('encMontant2eMobile'); if(i) i.value=''; }
+  encCalcMobile();
+}
+function encSetMode2(btn) {
+  _encMode2 = btn.dataset.m2;
+  document.querySelectorAll('.enc-m2-btn').forEach(b => b.style.background = b.dataset.m2===_encMode2 ? '#dbeafe' : '#f8fafc');
+  encCalcMobile();
+}
+
 function encModeChange(sel){
   const isChambre = sel.value==='chambre';
   const isMobile  = _encMobileOps.includes(sel.value);
   document.getElementById('encRecuRow').style.display = isChambre ? 'none' : '';
   document.getElementById('encEspecesRow').style.display = isMobile ? '' : 'none';
-  if(!isMobile) { const e=document.getElementById('encMontantEspeces'); if(e) e.value=''; }
+  if(!isMobile) {
+    const e=document.getElementById('encMontantEspeces'); if(e) e.value='';
+    _encMode2Actif=false; _encMode2='';
+    const z=document.getElementById('encZone2eMobile'); if(z) z.style.display='none';
+    const b=document.getElementById('encBtn2eMode'); if(b) b.textContent='+ Partager avec un 2ème mobile';
+  }
   encCalcMobile();
 }
 function encCalcMobile(){
   const esp=parseFloat(document.getElementById('encMontantEspeces')?.value||0)||0;
+  const m2amt = (_encMode2Actif && _encMode2) ? (parseFloat(document.getElementById('encMontant2eMobile')?.value||0)||0) : 0;
+  const mobile = Math.max(0, _encTotal - esp - m2amt);
   const info=document.getElementById('encMobileInfo');
-  if(esp>0) info.textContent='Montant mobile : '+fmt(Math.max(0,_encTotal-esp));
-  else info.textContent='';
+  if (!info) return;
+  const sel = document.getElementById('encMode');
+  const mode1Name = sel?.options[sel?.selectedIndex]?.text || '';
+  if (_encMode2Actif && _encMode2) {
+    const m2Names = {'wave':'Wave','orange_money':'Orange Money','mtn_money':'MTN Money','moov_money':'Moov Money'};
+    const m2n = m2Names[_encMode2] || _encMode2;
+    info.innerHTML = (esp>0?'Espèces : '+fmt(esp)+' &nbsp;|&nbsp; ':'')+mode1Name+' : '+fmt(mobile)+' &nbsp;|&nbsp; '+m2n+' : '+fmt(m2amt);
+  } else {
+    info.textContent = esp > 0 ? mode1Name+' : '+fmt(mobile) : '';
+  }
 }
 function encSetMontant(v){document.getElementById('encMontantRecu').value=v;calcRendu();}
 function encSetExact(){document.getElementById('encMontantRecu').value=_encTotal;calcRendu();}
@@ -964,10 +1008,21 @@ async function validerEncaissement(){
   if(!surChambre&&montantRecu<_encTotal){toast('❌ Montant insuffisant','error');return;}
   const btn=document.getElementById('btnEncaisser');
   btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Traitement…';
+  let lignesPayEsp = null;
+  if (!surChambre && _encMobileOps.includes(mode) && _encMode2Actif && _encMode2) {
+    const m2amt = parseFloat(document.getElementById('encMontant2eMobile')?.value||0)||0;
+    const mobile1 = Math.max(0, _encTotal - montantEspeces - m2amt);
+    lignesPayEsp = [];
+    if (montantEspeces > 0) lignesPayEsp.push({mode:'especes', montant: montantEspeces});
+    if (mobile1 > 0) lignesPayEsp.push({mode: mode, montant: mobile1});
+    if (m2amt > 0) lignesPayEsp.push({mode: _encMode2, montant: m2amt});
+  }
   try{
+    const payload = {mode_paiement:mode,montant_recu:montantRecu,montant_especes:montantEspeces,sur_chambre:surChambre};
+    if (lignesPayEsp) payload.lignes_paiement = lignesPayEsp;
     const r=await fetch("{% url 'espaces_evenementiels:api_encaisser' 0 %}".replace('/0/','/'+resId+'/'),{
       method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
-      body:JSON.stringify({mode_paiement:mode,montant_recu:montantRecu,montant_especes:montantEspeces,sur_chambre:surChambre})
+      body:JSON.stringify(payload)
     });
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json();

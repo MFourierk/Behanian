@@ -639,6 +639,8 @@ def encaisser_sortie(request, acces_id):
         if montant_especes > 0 and mode_paiement not in ('especes', 'chambre'):
             contenu += f'<div class="row"><span class="item-name">Part espèces</span><span class="item-price">{int(montant_especes):,} F</span></div>'
 
+        from facturation.services import creer_lignes_paiement, lignes_from_mode
+        _lignes_pay_pisc = data.get('lignes_paiement') or lignes_from_mode(mode_paiement, total, montant_especes)
         ticket = Ticket.objects.create(
             numero=generate_ticket_numero(), module='piscine',
             objet_id=acces.id,
@@ -647,11 +649,13 @@ def encaisser_sortie(request, acces_id):
             montant_especes=(montant_especes if montant_especes > 0 and mode_paiement not in ('especes', 'chambre') else Decimal('0')),
             contenu=contenu, imprime=True,
         )
+        creer_lignes_paiement(ticket, _lignes_pay_pisc)
         from django.template.loader import render_to_string
         montant_mobile_ticket = max(Decimal('0'), total - montant_especes) if montant_especes > 0 else Decimal('0')
         ticket_html = render_to_string('facturation/ticket_print_thermal.html', {
             'ticket':          ticket,
             'serveur':         request.user.get_full_name() or request.user.username,
+            'lignes_paiement': _lignes_pay_pisc,
             'montant_especes': montant_especes if montant_especes > 0 else None,
             'montant_mobile':  montant_mobile_ticket if montant_especes > 0 else None,
             'mode_short':      'MOBILE',

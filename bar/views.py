@@ -2414,6 +2414,8 @@ def api_vente_create(request):
 
         # Creer le Ticket dans facturation
         from facturation.models import Ticket, generate_ticket_numero
+        from facturation.services import creer_lignes_paiement, lignes_from_mode
+        _lignes_pay_bar = data.get('lignes_paiement') or None
         ticket = Ticket.objects.create(
             numero        = generate_ticket_numero(),
             module        = 'cave',
@@ -2427,6 +2429,8 @@ def api_vente_create(request):
             imprime       = True,
             date_impression = tz.now(),
         )
+        _lignes_pay_bar = _lignes_pay_bar or lignes_from_mode(mode_fact, total_final, montant_especes)
+        creer_lignes_paiement(ticket, _lignes_pay_bar)
 
         # Lier mouvements provisoires TPE au ticket
         if session_token and stock_live:

@@ -446,6 +446,35 @@ class Ticket(models.Model):
             return 0
 
 
+class LignePaiement(models.Model):
+    """Détail des modes de paiement d'un ticket (multi-mode : Wave + Orange + Espèces…).
+    Créée pour chaque ticket à partir du commit 3aaca67+.
+    Anciens tickets sans lignes : se référer à Ticket.mode_paiement / montant_especes.
+    """
+    MODES = [
+        ('especes',      'Espèces'),
+        ('wave',         'Wave'),
+        ('orange_money', 'Orange Money'),
+        ('mtn_money',    'MTN Mobile Money'),
+        ('moov_money',   'Moov Money'),
+        ('mobile_money', 'Mobile Money'),
+        ('carte_bancaire','Carte Bancaire'),
+        ('cheque',       'Chèque'),
+        ('virement',     'Virement'),
+        ('autre',        'Autre'),
+    ]
+    ticket        = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='lignes_paiement')
+    mode_paiement = models.CharField(max_length=30, choices=MODES)
+    montant       = models.DecimalField(max_digits=10, decimal_places=3)
+
+    class Meta:
+        app_label = 'facturation'
+        ordering  = ['id']
+
+    def __str__(self):
+        return f"{self.get_mode_paiement_display()} {self.montant} F — Ticket {self.ticket_id}"
+
+
 # Méthodes utilitaires pour la génération de numéros
 def generate_facture_numero():
     """Générer un numéro de facture unique — format FAC-YYYY-XXXX"""
