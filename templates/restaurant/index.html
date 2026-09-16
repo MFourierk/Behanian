@@ -2878,11 +2878,33 @@ function sdCalcMobile() {
 }
 
 function sdSetMode(mode) {
+  const prevMode = sdModePaiement;
   sdModePaiement = mode;
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  document.getElementById('sdSectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
-  document.getElementById('sdSectionMobile').style.display  = MOBILE_MODES.includes(mode) ? '' : 'none';
-  if (MOBILE_MODES.includes(mode)) sdCalcMobile();
+
+  const total = sdGetTotal();
+
+  if (mode === 'especes') {
+    // Mobile → Espèces : pré-remplir le montant reçu avec le partiel espèces si saisi
+    const esp = parseFloat(document.getElementById('sdMontantEspeces')?.value) || 0;
+    if (esp > 0) document.getElementById('sdMontantRecu').value = esp;
+    document.getElementById('sdSectionEspeces').style.display = '';
+    document.getElementById('sdSectionMobile').style.display  = 'none';
+    sdCalcRendu();
+  } else if (MOBILE_MODES.includes(mode)) {
+    // Espèces → Mobile : reporter le montant reçu comme partiel espèces si < total
+    if (prevMode === 'especes') {
+      const recu = parseFloat(document.getElementById('sdMontantRecu')?.value) || 0;
+      document.getElementById('sdMontantEspeces').value = (recu > 0 && recu < total) ? recu : '';
+    }
+    document.getElementById('sdSectionEspeces').style.display = 'none';
+    document.getElementById('sdSectionMobile').style.display  = '';
+    sdCalcMobile();
+  } else {
+    // Carte : pas d'espèces partielles
+    document.getElementById('sdSectionEspeces').style.display = 'none';
+    document.getElementById('sdSectionMobile').style.display  = 'none';
+  }
 }
 
 function sdCalcRendu() {
