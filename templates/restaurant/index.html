@@ -3511,46 +3511,83 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
 
   const html = `<!DOCTYPE html><html lang="fr"><head>
   <meta charset="UTF-8"><title>Aperçu ticket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     @page { size: 80mm auto; margin: 3mm; }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Courier New',monospace; font-size:11px; background:linear-gradient(160deg,#0f1e0a 0%,#192e0f 50%,#0f1e0a 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; }
-    .apercu-header { width:100%; background:rgba(80,140,30,0.10); border-bottom:1px solid rgba(80,140,30,0.22); padding:13px 20px; display:flex; flex-direction:column; align-items:center; gap:3px; }
-    .apercu-title { font-family:Georgia,serif; font-size:14px; font-weight:bold; color:#7cb832; letter-spacing:2px; text-transform:uppercase; }
-    .apercu-sub { font-size:10px; color:rgba(124,184,50,0.55); letter-spacing:0.5px; }
-    .ticket-wrapper { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:22px 16px; overflow-y:auto; }
-    .ticket-inner { width:300px; background:white; padding:14px; box-shadow:0 10px 50px rgba(0,0,0,0.7); border-radius:3px; color:#000; }
+    body { font-family:'Courier New',monospace; font-size:11px; background:#0e0c09; min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+    /* ── en-tête popup ── */
+    .apercu-header {
+      width:100%; padding:18px 24px 14px;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      border-bottom:1px solid rgba(212,144,90,0.15);
+    }
+    .apercu-eyebrow { font-family:'Inter',sans-serif; font-size:9px; font-weight:600; letter-spacing:2.5px; text-transform:uppercase; color:rgba(212,144,90,0.5); }
+    .apercu-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:22px; font-weight:600; color:#d4906a; letter-spacing:.5px; line-height:1; }
+    .apercu-sub { font-family:'Inter',sans-serif; font-size:10px; color:rgba(255,255,255,0.28); margin-top:2px; }
+    /* ── zone ticket ── */
+    .ticket-wrapper { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:20px 16px; overflow-y:auto; }
+    .ticket-inner {
+      width:300px; background:#fffcf7; padding:16px;
+      box-shadow:0 12px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(212,144,90,0.12);
+      border-radius:2px; color:#1a1409;
+    }
     .center { text-align:center; }
     .bold   { font-weight:bold; }
-    .sep-dash  { border:none; border-top:1px dashed #000; margin:5px 0; }
-    .sep-solid { border:none; border-top:1px solid  #000; margin:5px 0; }
+    .sep-dash  { border:none; border-top:1px dashed #b0a090; margin:5px 0; }
+    .sep-solid { border:none; border-top:1px solid  #1a1409; margin:5px 0; }
     .meta-row  { display:flex; justify-content:space-between; padding:1px 0; }
     .meta-label { font-weight:bold; }
     table { width:100%; border-collapse:collapse; }
-    thead tr th { font-size:9px; padding:3px 2px; border-bottom:1px solid #000; text-align:left; }
+    thead tr th { font-size:9px; padding:3px 2px; border-bottom:1px solid #1a1409; text-align:left; }
     thead tr th:nth-child(2) { text-align:center; }
     thead tr th:nth-child(3) { text-align:right; }
-    .total-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 2px 2px; }
+    .total-row { display:flex; justify-content:space-between; align-items:baseline; padding:5px 2px 2px; }
     .total-label { font-size:12px; font-weight:bold; }
-    .total-val   { font-size:15px; font-weight:bold; }
+    .total-val   { font-size:16px; font-weight:bold; }
     .paiement-row { display:flex; justify-content:space-between; padding:2px; font-size:11px; }
-    .footer { margin-top:8px; font-size:9px; text-align:center; line-height:1.5; }
-    .actions-bar { width:100%; background:rgba(0,0,0,0.4); border-top:1px solid rgba(80,140,30,0.18); padding:16px 20px; display:flex; flex-direction:column; gap:10px; align-items:center; position:sticky; bottom:0; }
-    .msg-err { color:#f08080; font-size:11px; text-align:center; display:none; font-family:sans-serif; }
-    .btn-row { display:flex; gap:12px; justify-content:center; }
-    .btn-annuler  { padding:12px 24px; font-size:13px; font-weight:bold; background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.65); border:1.5px solid rgba(255,255,255,0.18); border-radius:10px; cursor:pointer; font-family:Georgia,serif; letter-spacing:.3px; transition:all .2s; }
-    .btn-annuler:hover  { background:rgba(220,38,38,0.15); border-color:rgba(220,38,38,0.4); color:#f08080; }
-    .btn-imprimer { padding:12px 28px; font-size:13px; font-weight:bold; background:linear-gradient(135deg,#5a9420 0%,#7cb832 100%); color:#fff; border:none; border-radius:10px; cursor:pointer; font-family:Georgia,serif; letter-spacing:.3px; box-shadow:0 4px 16px rgba(92,148,32,0.4); transition:all .2s; }
-    .btn-imprimer:hover { box-shadow:0 6px 22px rgba(92,148,32,0.6); transform:translateY(-1px); }
-    .btn-imprimer:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
-    .copy-label { text-align:center; font-weight:bold; font-size:10px; border:1px dashed #000; padding:3px; margin-bottom:6px; letter-spacing:1px; }
+    .footer { margin-top:8px; font-size:9px; text-align:center; line-height:1.6; color:#5a4a38; }
+    /* ── barre boutons ── */
+    .actions-bar {
+      width:100%; background:rgba(0,0,0,0.55); backdrop-filter:blur(6px);
+      border-top:1px solid rgba(212,144,90,0.12);
+      padding:14px 20px 16px; display:flex; flex-direction:column; gap:10px;
+      align-items:center; position:sticky; bottom:0;
+    }
+    .msg-err { font-family:'Inter',sans-serif; color:#f08080; font-size:11px; text-align:center; display:none; }
+    .btn-row { display:flex; gap:10px; justify-content:center; }
+    .btn-annuler {
+      padding:11px 22px; font-family:'Inter',sans-serif; font-size:12px; font-weight:500;
+      background:transparent; color:rgba(255,255,255,0.45);
+      border:1px solid rgba(255,255,255,0.14); border-radius:8px;
+      cursor:pointer; letter-spacing:.2px; transition:all .18s;
+    }
+    .btn-annuler:hover { background:rgba(220,38,38,0.12); border-color:rgba(220,38,38,0.35); color:#f08080; }
+    .btn-imprimer {
+      padding:11px 26px; font-family:'Inter',sans-serif; font-size:12px; font-weight:600;
+      background:linear-gradient(135deg,#b8723a 0%,#d4906a 100%);
+      color:#fff; border:none; border-radius:8px; cursor:pointer;
+      letter-spacing:.3px; box-shadow:0 4px 18px rgba(180,100,50,0.38);
+      transition:all .18s;
+    }
+    .btn-imprimer:hover { box-shadow:0 6px 24px rgba(180,100,50,0.55); transform:translateY(-1px); }
+    .btn-imprimer:disabled { opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+    .copy-label { text-align:center; font-weight:bold; font-size:10px; border:1px dashed #b0a090; padding:3px; margin-bottom:6px; letter-spacing:1px; }
     .page-cut { height:0; margin:0; padding:0; }
-    @media print { body { background:white!important; display:block!important; } .apercu-header,.actions-bar { display:none !important; } .ticket-wrapper { display:block; padding:0; } .ticket-inner { box-shadow:none; width:100%; padding:0; border-radius:0; } .page-cut { display:block !important; page-break-after:always; break-after:page; } }
+    @media print {
+      body { background:white!important; display:block!important; }
+      .apercu-header,.actions-bar { display:none !important; }
+      .ticket-wrapper { display:block; padding:0; }
+      .ticket-inner { box-shadow:none; width:100%; padding:0; border-radius:0; background:white; }
+      .page-cut { display:block !important; page-break-after:always; break-after:page; }
+    }
   </style>
   </head><body>
 
   <div class="apercu-header">
-    <div class="apercu-title">👁 Aperçu avant impression</div>
+    <div class="apercu-eyebrow">Restaurant</div>
+    <div class="apercu-title">Aperçu avant impression</div>
     <div class="apercu-sub">Vérifiez le ticket · Confirmez pour clôturer et imprimer</div>
   </div>
 
@@ -3559,7 +3596,7 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
   <div class="center">
     <img src="${logoUrl}" alt="Logo" style="width:60px;height:60px;object-fit:contain;margin-bottom:4px;" onerror="this.style.display='none'">
     <div style="font-size:14px;font-weight:bold;letter-spacing:1px;">${nomComplexe}</div>
-    <div style="font-size:9px;font-style:italic;margin-top:2px;">Votre confort, notre priorité</div>
+    <div style="font-size:9px;font-style:italic;margin-top:2px;color:#5a4a38;">Votre confort, notre priorité</div>
     <div style="font-size:9px;margin-top:3px;">${adresse}</div>
     <div style="font-size:9px;">Tél: ${telephone}</div>
   </div>
@@ -3603,8 +3640,8 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
   <div class="actions-bar">
     <div id="msgErr" class="msg-err"></div>
     <div class="btn-row">
-      <button class="btn-annuler"  id="btnAnnuler"  onclick="_annuler()">✕ Annuler</button>
-      <button class="btn-imprimer" id="btnImprimer" onclick="_imprimer()">🖨️ Confirmer &amp; Imprimer</button>
+      <button class="btn-annuler"  id="btnAnnuler"  onclick="_annuler()">Annuler</button>
+      <button class="btn-imprimer" id="btnImprimer" onclick="_imprimer()">Confirmer &amp; Imprimer</button>
     </div>
   </div>
 
