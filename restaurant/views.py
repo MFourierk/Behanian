@@ -288,7 +288,7 @@ def valider_commande(request):
                             commande.id, reservation_hotel_id, e_chambre
                         )
                     rendu = max(Decimal('0'), montant_encaisse - montant_total_ticket)
-                    return JsonResponse({'success': True, 'ticket_numero': 'CHAMBRE', 'ticket_html': '', 'rendu': float(rendu)})
+                    return JsonResponse({'success': True, 'ticket_numero': 'CHAMBRE', 'ticket_html': '', 'rendu': float(rendu), 'total': float(montant_total_ticket)})
 
                 # Création du Ticket (paiement immédiat — non reporté sur chambre)
                 _lignes_pay = data.get('lignes_paiement') or None
@@ -330,7 +330,7 @@ def valider_commande(request):
                     'tarif_salon':      tarif_salon if frais_salon > 0 else None,
                 })
                 
-                return JsonResponse({'success': True, 'ticket_html': ticket_html, 'action': 'paiement'})
+                return JsonResponse({'success': True, 'ticket_html': ticket_html, 'action': 'paiement', 'ticket_numero': ticket.numero, 'total': float(ticket.montant_total)})
         
         else:
             # Juste mise en attente (déjà fait par l'ajout temps réel, mais on peut mettre à jour le statut si besoin)
