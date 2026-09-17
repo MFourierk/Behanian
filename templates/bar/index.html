@@ -996,12 +996,16 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   <div class="modal-box">
     <div class="modal-header">
       <div style="display:flex;gap:12px;align-items:stretch;padding-bottom:16px;">
-        <!-- Colonne gauche : flex-column, Encaissement→Restaurant→montant→FCFA bas-droite -->
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-          <div class="modal-title" style="font-size:0.95rem;margin-bottom:2px;">Encaissement</div>
-          <div class="modal-subtitle" id="modalSubtitle" style="margin-bottom:6px;">Cave Behanian</div>
-          <div class="modal-total" id="modalTotal" style="text-align:left;margin:0;font-size:3rem;">0</div>
-          <div style="margin-top:auto;align-self:flex-end;font-size:1rem;color:var(--cave-gold);font-weight:600;letter-spacing:0.5px;">FCFA</div>
+        <!-- Colonne gauche : labels en haut, montant+FCFA en bas -->
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <div class="modal-title" style="font-size:0.95rem;margin-bottom:2px;">Encaissement</div>
+            <div class="modal-subtitle" id="modalSubtitle">Cave Behanian</div>
+          </div>
+          <div>
+            <div class="modal-total" id="modalTotal" style="text-align:left;margin:0;font-size:3rem;">0</div>
+            <div style="text-align:right;font-size:1rem;color:var(--cave-gold);font-weight:600;letter-spacing:0.5px;">FCFA</div>
+          </div>
         </div>
         <!-- Colonne droite : grille fixe 2×3 boutons -->
         <div class="modal-mode-tabs" style="flex-shrink:0;display:grid;grid-template-columns:repeat(2,58px);align-content:start;margin-bottom:0;">
