@@ -1,0 +1,241 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block title %}Espace de travail — BEHANIAN{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Reset zone contenu ── */
+.main-content { background: #0f1117; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── En-tête portail ── */
+.ptl-header {
+  padding: 36px 40px 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.ptl-greeting-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(201,168,76,0.6);
+  margin-bottom: 6px;
+}
+.ptl-greeting-name {
+  font-size: 28px; font-weight: 700; color: #f1f5f9; line-height: 1.1;
+}
+.ptl-greeting-role {
+  font-size: 13px; color: rgba(255,255,255,0.35); margin-top: 6px;
+}
+.ptl-date {
+  text-align: right;
+  font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.7;
+}
+.ptl-date strong { display: block; font-size: 22px; font-weight: 700; color: rgba(255,255,255,0.6); }
+
+/* ── Grille modules ── */
+.ptl-body { flex: 1; padding: 36px 40px 60px; }
+.ptl-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.2);
+  margin-bottom: 20px;
+}
+.ptl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  max-width: 960px;
+}
+
+/* ── Tuile ── */
+.ptl-tile {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 26px 22px 22px;
+  text-decoration: none;
+  display: flex; flex-direction: column; gap: 14px;
+  transition: background .18s, border-color .18s, transform .18s;
+  cursor: pointer;
+}
+.ptl-tile:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.16);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+.ptl-tile-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.ptl-tile-body {}
+.ptl-tile-name {
+  font-size: 14px; font-weight: 700; color: #f1f5f9;
+  margin-bottom: 4px;
+}
+.ptl-tile-desc {
+  font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.4;
+}
+.ptl-tile-arrow {
+  align-self: flex-end;
+  font-size: 11px; color: rgba(255,255,255,0.2);
+  transition: color .18s, transform .18s;
+}
+.ptl-tile:hover .ptl-tile-arrow {
+  color: rgba(255,255,255,0.5);
+  transform: translateX(3px);
+}
+
+/* Couleurs icônes */
+.ic-restaurant { background: rgba(217,119,6,0.15);  color: #fbbf24; }
+.ic-bar        { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.ic-piscine    { background: rgba(5,150,105,0.15);  color: #34d399; }
+.ic-espaces    { background: rgba(190,24,93,0.15);  color: #f472b6; }
+.ic-caisse     { background: rgba(22,163,74,0.15);  color: #4ade80; }
+.ic-hotel      { background: rgba(37,99,235,0.15);  color: #60a5fa; }
+.ic-cuisine    { background: rgba(234,88,12,0.15);  color: #fb923c; }
+.ic-facturation{ background: rgba(3,105,161,0.15);  color: #38bdf8; }
+
+/* ── Highlight caisse (fin de journée) ── */
+.ptl-tile.tile-caisse {
+  border-color: rgba(74,222,128,0.18);
+}
+.ptl-tile.tile-caisse:hover {
+  border-color: rgba(74,222,128,0.35);
+}
+
+@media (max-width: 640px) {
+  .ptl-header { padding: 24px 20px 20px; }
+  .ptl-body   { padding: 24px 20px 48px; }
+  .ptl-grid   { grid-template-columns: 1fr 1fr; }
+  .ptl-greeting-name { font-size: 22px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="ptl-header">
+  <div>
+    <div class="ptl-greeting-eyebrow">Complexe Hôtelier Behanian</div>
+    <div class="ptl-greeting-name">{{ user.get_full_name|default:user.username }}</div>
+    <div class="ptl-greeting-role">{{ user_role }}</div>
+  </div>
+  <div class="ptl-date">
+    <strong id="ptlHeure">--:--</strong>
+    <span id="ptlDate"></span>
+  </div>
+</div>
+
+<div class="ptl-body">
+  <div class="ptl-label">Modules disponibles</div>
+
+  <div class="ptl-grid">
+
+    {% if 'restaurant' in accessible_modules %}
+    <a href="{% url 'restaurant:index' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-restaurant"><i class="fas fa-utensils"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Restaurant</div>
+        <div class="ptl-tile-desc">Commandes &amp; encaissements</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'bar' in accessible_modules %}
+    <a href="{% url 'bar:tpe' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-bar"><i class="fas fa-wine-glass"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Cave / Bar</div>
+        <div class="ptl-tile-desc">Ventes &amp; encaissements</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'piscine' in accessible_modules %}
+    <a href="{% url 'piscine:index' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-piscine"><i class="fas fa-person-swimming"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Piscine</div>
+        <div class="ptl-tile-desc">Accès &amp; encaissements</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'espaces' in accessible_modules %}
+    <a href="{% url 'espaces_evenementiels:index' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-espaces"><i class="fas fa-calendar-days"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Espaces</div>
+        <div class="ptl-tile-desc">Réservations &amp; locations</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'caisse' in accessible_modules %}
+    <a href="{% url 'caisse:index' %}" class="ptl-tile tile-caisse">
+      <div class="ptl-tile-icon ic-caisse"><i class="fas fa-cash-register"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Caisse</div>
+        <div class="ptl-tile-desc">Session &amp; clôture journée</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'hotel' in accessible_modules %}
+    <a href="{% url 'hotel:index' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-hotel"><i class="fas fa-hotel"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Hôtel</div>
+        <div class="ptl-tile-desc">Réservations &amp; chambres</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'cuisine' in accessible_modules %}
+    <a href="{% url 'cuisine:index' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-cuisine"><i class="fas fa-kitchen-set"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Cuisine</div>
+        <div class="ptl-tile-desc">Suivi de production</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+    {% if 'facturation' in accessible_modules %}
+    <a href="{% url 'facturation:index' %}" class="ptl-tile">
+      <div class="ptl-tile-icon ic-facturation"><i class="fas fa-file-invoice"></i></div>
+      <div class="ptl-tile-body">
+        <div class="ptl-tile-name">Facturation</div>
+        <div class="ptl-tile-desc">Tickets &amp; avoirs</div>
+      </div>
+      <div class="ptl-tile-arrow"><i class="fas fa-arrow-right"></i></div>
+    </a>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+(function() {
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  function tick() {
+    const n = new Date();
+    const h = String(n.getHours()).padStart(2,'0');
+    const m = String(n.getMinutes()).padStart(2,'0');
+    document.getElementById('ptlHeure').textContent = h + ':' + m;
+    document.getElementById('ptlDate').textContent  = jours[n.getDay()] + ' ' + n.getDate() + ' ' + mois[n.getMonth()];
+  }
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
+
+{% endblock %}

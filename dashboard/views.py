@@ -140,8 +140,15 @@ def _get_dashboard_stats(user, modules):
 def dashboard_view(request):
     today = timezone.now().date()
     modules = get_accessible_modules(request.user)
-    stats = _get_dashboard_stats(request.user, modules)
 
+    # Rôles opérationnels (caissières, réceptionniste, cuisine…) → portail simple sans KPIs
+    if 'dashboard' not in modules:
+        return render(request, 'dashboard/portail.html', {
+            'accessible_modules': modules,
+            'user': request.user,
+        })
+
+    stats = _get_dashboard_stats(request.user, modules)
     context = {
         **stats,
         'date_ref': stats.get('date_ref', today),

@@ -18,18 +18,17 @@ HOME_BY_GROUP = {
     'Receptionniste':              'hotel:index',
     'Réceptionniste':              'hotel:index',
     'Responsable Hôtel':           'hotel:index',
-    # Caisse Principale
-    'Caissiere Principale':        'caisse:index',
-    'Caissier(ère) Principal(e)':  'caisse:index',
-    'Caissier(ere) Principal(e)':  'caisse:index',
-    # Chef caissier(e) → module caisse centrale
-    'Chef caissier(e)':            'caisse:index',
-    # Caissière TPE
-    'Caissiere':                   'bar:tpe',
-    'Caissier(e)':                 'bar:tpe',
-    'Caissier(E)':                 'bar:tpe',
-    'Caissière / Caissier':        'bar:tpe',
-    'Caissiere / Caissier':        'bar:tpe',
+    # Caisse Principale + Chef caissier(e) → portail (navigation entre modules)
+    'Caissiere Principale':        'dashboard:index',
+    'Caissier(ère) Principal(e)':  'dashboard:index',
+    'Caissier(ere) Principal(e)':  'dashboard:index',
+    'Chef caissier(e)':            'dashboard:index',
+    # Caissière TPE → portail (navigation entre modules)
+    'Caissiere':                   'dashboard:index',
+    'Caissier(e)':                 'dashboard:index',
+    'Caissier(E)':                 'dashboard:index',
+    'Caissière / Caissier':        'dashboard:index',
+    'Caissiere / Caissier':        'dashboard:index',
     # Sans accès interface
     'Utilisateur Simple':          'dashboard:index',
     'Serveuse/Serveur':            'dashboard:index',
@@ -38,7 +37,7 @@ HOME_BY_GROUP = {
 }
 
 # Chemins URL autorisés par groupe (None = tout autorisé)
-_TPE = ['/bar/', '/restaurant/', '/piscine/', '/espaces-evenementiels/', '/facturation/']
+_TPE = ['/bar/', '/restaurant/', '/piscine/', '/espaces-evenementiels/', '/facturation/', '/dashboard/']
 _CAISSE_PLUS_TPE = ['/caisse/'] + _TPE
 
 ALLOWED_PATHS = {
