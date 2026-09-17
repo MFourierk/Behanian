@@ -268,8 +268,13 @@ def direction_view(request):
             _fond = _flux['fond_ouverture']['total'] if _flux['fond_ouverture'] else 0
             net_caisse_coffre = _fond + _flux['net']
         else:
-            # Pas de session ouverte : le fond de veille est physiquement dans le coffre
-            net_caisse_coffre = solde_veille_dir
+            # Pas de session ouverte : utiliser le fond_caisse_reel de la dernière
+            # session clôturée — c'est ce qui était physiquement dans le coffre à la fermeture,
+            # accumulation de tous les versements depuis le début moins les décaissements/banque.
+            _last = _CS.objects.filter(
+                is_open=False, type_caisse='centrale'
+            ).order_by('-closed_at').first()
+            net_caisse_coffre = int(_last.fond_caisse_reel or 0) if _last else 0
         _recon = _grj(today_local)
         if _recon:
             coffre_lignes_solde = [
