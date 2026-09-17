@@ -1280,21 +1280,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="modal-overlay" id="modalPaiement">
   <div class="modal-box">
     <div class="modal-header">
-      <div style="display:flex;gap:16px;align-items:flex-start;">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:16px;">
         <!-- Colonne gauche : label + montant -->
         <div style="flex:1;min-width:0;">
           <div class="modal-title" style="font-size:0.95rem;margin-bottom:2px;">Encaissement</div>
           <div class="modal-subtitle" id="modalSubtitle" style="margin-bottom:16px;">Restaurant</div>
           <div class="modal-total" id="modalTotal" style="text-align:left;margin:0;">0<br><span>FCFA</span></div>
         </div>
-        <!-- Colonne droite : onglets mode de paiement -->
-        <div class="modal-mode-tabs" style="flex-shrink:0;width:136px;">
-          <button class="mmt active" data-mode="especes"      onclick="setModalMode('especes')">💵 Espèces</button>
-          <button class="mmt"        data-mode="wave"         onclick="setModalMode('wave')">🌊 Wave</button>
-          <button class="mmt"        data-mode="orange_money" onclick="setModalMode('orange_money')">🟠 Orange</button>
-          <button class="mmt"        data-mode="mtn_money"    onclick="setModalMode('mtn_money')">🟡 MTN</button>
-          <button class="mmt"        data-mode="carte"        onclick="setModalMode('carte')">💳 Carte</button>
-          <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')">🏨 Chambre</button>
+        <!-- Colonne droite : grille fixe 2×3 boutons -->
+        <div class="modal-mode-tabs" style="flex-shrink:0;display:grid;grid-template-columns:repeat(2,58px);align-content:start;margin-bottom:0;">
+          <button class="mmt active" data-mode="especes"      onclick="setModalMode('especes')" style="min-width:0;">💵 Espèces</button>
+          <button class="mmt"        data-mode="wave"         onclick="setModalMode('wave')" style="min-width:0;">🌊 Wave</button>
+          <button class="mmt"        data-mode="orange_money" onclick="setModalMode('orange_money')" style="min-width:0;">🟠 Orange</button>
+          <button class="mmt"        data-mode="mtn_money"    onclick="setModalMode('mtn_money')" style="min-width:0;">🟡 MTN</button>
+          <button class="mmt"        data-mode="carte"        onclick="setModalMode('carte')" style="min-width:0;">💳 Carte</button>
+          <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')" style="min-width:0;">🏨 Chambre</button>
         </div>
       </div>
     </div><!-- end modal-header -->
