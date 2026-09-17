@@ -1000,7 +1000,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <div style="flex:1;min-width:0;">
           <div class="modal-title" style="font-size:0.95rem;margin-bottom:2px;">Encaissement</div>
           <div class="modal-subtitle" id="modalSubtitle" style="margin-bottom:16px;">Cave Behanian</div>
-          <div class="modal-total" id="modalTotal" style="text-align:left;margin:0;">0 <span>FCFA</span></div>
+          <div class="modal-total" id="modalTotal" style="text-align:left;margin:0;">0<br><span>FCFA</span></div>
         </div>
         <!-- Colonne droite : onglets mode de paiement -->
         <div class="modal-mode-tabs" style="flex-shrink:0;width:136px;">
@@ -1712,7 +1712,7 @@ function majBarFraisAddit() {
     if (el) el.textContent = formatF(total) + ' F';
   }
   const grandTotal = getTotal() + _barSalonFrais + total;
-  document.getElementById('modalTotal').innerHTML = `${parseInt(grandTotal).toLocaleString('fr-FR')} <span>FCFA</span>`;
+  document.getElementById('modalTotal').innerHTML = `${parseInt(grandTotal).toLocaleString('fr-FR')}<br><span>FCFA</span>`;
   if (modePaiement === 'especes') calcRendu();
   else barCalcPay();
 }
@@ -1788,7 +1788,7 @@ function _ouvrirModalPaiementNormal() {
     if (_br) _br.hidden = true;
     toggleBarFraisAddit(false);
     const total = getTotal();
-    document.getElementById('modalTotal').innerHTML = `${parseInt(total).toLocaleString('fr-FR')} <span>FCFA</span>`;
+    document.getElementById('modalTotal').innerHTML = `${parseInt(total).toLocaleString('fr-FR')}<br><span>FCFA</span>`;
     const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
     const ref = t.ref ? ` (${t.ref})` : '';
     document.getElementById('modalSubtitle').textContent = `Cave Behanian${espace}${ref}`;
@@ -1871,7 +1871,7 @@ function onBarSalonChange() {
   _barSalonFrais = getBarSalonFrais();
   document.getElementById('barMontantSalon').textContent = formatF(_barSalonFrais);
   const total = getTotal() + _barSalonFrais;
-  document.getElementById('modalTotal').innerHTML = `${parseInt(total).toLocaleString('fr-FR')} <span>FCFA</span>`;
+  document.getElementById('modalTotal').innerHTML = `${parseInt(total).toLocaleString('fr-FR')}<br><span>FCFA</span>`;
   if (modePaiement === 'especes') calcRendu();
 }
 
