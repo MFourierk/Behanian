@@ -3409,67 +3409,68 @@ window._annulerApercuResto = function() {
   _restoPaiementEnCours = false;
 };
 
-async function confirmerPaiement() {
+function confirmerPaiement() {
   if (_restoPaiementEnCours) return;
   _restoPaiementEnCours = true;
-  const t = tickets[ticketActifId];
-  if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); _restoPaiementEnCours = false; return; }
-
-  const salonVIPId  = document.getElementById('selectSalonVIP')?.value || '';
-  const heuresSalon = isSalonPrive() ? (parseInt(document.getElementById('heuresSalon')?.value) || 1) : 0;
-  if (isSalonPrive() && heuresSalon < 1) { toast('❌ Indiquez le nombre d\'heures de salon', 'error'); _restoPaiementEnCours = false; return; }
-  const total = getTotalAvecSalon();
-
-  let montantRecu = total;
-  let montantEspeces = 0;
-  const isMobile = MOBILE_MODES.includes(modePaiement) || ['moov_money','mobile_money','mobile'].includes(modePaiement);
-  let _lignesPay = null;
-
-  if (modePaiement === 'especes') {
-    montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
-    if (montantRecu < total) { toast('❌ Montant insuffisant', 'error'); _restoPaiementEnCours = false; return; }
-  } else if (isMobile) {
-    montantRecu = total;
-    _lignesPay = restoGetLignesPay();
-    if (_lignesPay) {
-      const espLigne = _lignesPay.find(l => l.mode === 'especes');
-      montantEspeces = espLigne ? espLigne.montant : 0;
-    }
-  }
-
-  const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
-  if (modePaiement === 'chambre' && !reservation_hotel_id && !chambreLieeId) {
-    toast('❌ Veuillez sélectionner la chambre du client', 'error'); _restoPaiementEnCours = false; return;
-  }
-
-  const payload = {
-    commande_id: t.commandeDbId, action: 'paiement',
-    mode_paiement: modePaiement, montant_encaisse: montantRecu,
-    montant_especes: montantEspeces,
-    lignes_paiement: _lignesPay,
-    client: t.client || '',
-    serveur_id: t.serveur || document.getElementById('selectServeur').value || '',
-    reservation_hotel_id: chambreLieeId || reservation_hotel_id,
-    operateur_mobile: '',
-    heures_salon: heuresSalon,
-    salon_vip_id: salonVIPId || null,
-    droit_bouchon: parseFloat(document.getElementById('montantBouchon')?.value) || 0,
-    droit_place:   parseFloat(document.getElementById('montantDroitPlace')?.value) || 0,
-  };
-
-  const _modeCapture   = modePaiement;
-  const salonSel       = document.getElementById('selectSalonVIP');
-  const salonNomCapt   = salonSel?.options[salonSel?.selectedIndex]?.text || '';
-  const salonFraisCapt = isSalonPrive() ? (heuresSalon * getSalonVIPTarif()) : 0;
-  const ticketSnapshot = JSON.parse(JSON.stringify(t));
-  _restoApercuOldTicketId = ticketActifId;
-
-  fermerModal();
   try {
+    const t = tickets[ticketActifId];
+    if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); _restoPaiementEnCours = false; return; }
+
+    const salonVIPId  = document.getElementById('selectSalonVIP')?.value || '';
+    const heuresSalon = isSalonPrive() ? (parseInt(document.getElementById('heuresSalon')?.value) || 1) : 0;
+    if (isSalonPrive() && heuresSalon < 1) { toast('❌ Indiquez le nombre d\'heures de salon', 'error'); _restoPaiementEnCours = false; return; }
+    const total = getTotalAvecSalon();
+
+    let montantRecu = total;
+    let montantEspeces = 0;
+    const isMobile = MOBILE_MODES.includes(modePaiement) || ['moov_money','mobile_money','mobile'].includes(modePaiement);
+    let _lignesPay = null;
+
+    if (modePaiement === 'especes') {
+      montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
+      if (montantRecu < total) { toast('❌ Montant insuffisant', 'error'); _restoPaiementEnCours = false; return; }
+    } else if (isMobile) {
+      montantRecu = total;
+      _lignesPay = restoGetLignesPay();
+      if (_lignesPay) {
+        const espLigne = _lignesPay.find(l => l.mode === 'especes');
+        montantEspeces = espLigne ? espLigne.montant : 0;
+      }
+    }
+
+    const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
+    if (modePaiement === 'chambre' && !reservation_hotel_id && !chambreLieeId) {
+      toast('❌ Veuillez sélectionner la chambre du client', 'error'); _restoPaiementEnCours = false; return;
+    }
+
+    const payload = {
+      commande_id: t.commandeDbId, action: 'paiement',
+      mode_paiement: modePaiement, montant_encaisse: montantRecu,
+      montant_especes: montantEspeces,
+      lignes_paiement: _lignesPay,
+      client: t.client || '',
+      serveur_id: t.serveur || document.getElementById('selectServeur')?.value || '',
+      reservation_hotel_id: chambreLieeId || reservation_hotel_id,
+      operateur_mobile: '',
+      heures_salon: heuresSalon,
+      salon_vip_id: salonVIPId || null,
+      droit_bouchon: parseFloat(document.getElementById('montantBouchon')?.value) || 0,
+      droit_place:   parseFloat(document.getElementById('montantDroitPlace')?.value) || 0,
+    };
+
+    const _modeCapture   = modePaiement;
+    const salonSel       = document.getElementById('selectSalonVIP');
+    const salonNomCapt   = salonSel?.options[salonSel?.selectedIndex]?.text || '';
+    const salonFraisCapt = isSalonPrive() ? (heuresSalon * getSalonVIPTarif()) : 0;
+    const ticketSnapshot = JSON.parse(JSON.stringify(t));
+    _restoApercuOldTicketId = ticketActifId;
+
+    fermerModal();
     _ouvrirApercuResto(ticketSnapshot, total, montantRecu, montantEspeces, payload,
                        _modeCapture, salonNomCapt, heuresSalon, salonFraisCapt);
   } catch(err) {
-    toast('❌ Popup bloqué — autorisez les popups pour imprimer', 'error');
+    console.error('[confirmerPaiement] erreur :', err);
+    toast('❌ Erreur : ' + (err.message || err), 'error');
     _restoPaiementEnCours = false;
   }
 }
@@ -3658,6 +3659,11 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
   }
 
   window.onafterprint = () => window.close();
+  window.onunload = function() {
+    if (!_ok && window.opener && !window.opener.closed && window.opener._annulerApercuResto) {
+      window.opener._annulerApercuResto();
+    }
+  };
   <\/script>
   </body></html>`;
 
