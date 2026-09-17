@@ -248,6 +248,38 @@ def direction_view(request):
     except Exception:
         pass
 
+    # ── État du coffre en temps réel ───────────────────────────
+    net_caisse_coffre   = 0
+    total_non_verse     = 0
+    coffre_session      = None
+    coffre_lignes_solde = []
+    try:
+        from caisse.models import CaisseSession as _CS, MouvementCaisse as _MC
+        from caisse.views import get_caisse_flux as _gcf, get_reconciliation_jour as _grj
+        from django.db.models import Sum as _Sum
+        today_local = timezone.localdate()
+        _sess = _CS.objects.filter(is_open=True, type_caisse='centrale').first()
+        coffre_session = _sess
+        if _sess:
+            _mvts = _MC.objects.filter(session=_sess, valide=True).exclude(
+                reference__startswith='CONSOLIDATION'
+            )
+            _flux = _gcf(_mvts)
+            _fond = _flux['fond_ouverture']['total'] if _flux['fond_ouverture'] else 0
+            net_caisse_coffre = _fond + _flux['net']
+        _recon = _grj(today_local)
+        if _recon:
+            coffre_lignes_solde = [
+                {'label': l['label'], 'emoji': l['emoji'],
+                 'total_tx': l['total_tx'], 'total_verse': l['total_verse'],
+                 'solde': max(0, l['solde'])}
+                for l in _recon['lignes'] if l['total_tx'] > 0 and l['solde'] > 0
+            ]
+            total_non_verse = sum(l['solde'] for l in coffre_lignes_solde)
+    except Exception:
+        pass
+    total_coffre_theorique = net_caisse_coffre + total_non_verse
+
     context = {
         **stats,
         'today': today,
@@ -260,6 +292,11 @@ def direction_view(request):
         'sessions_jour': sessions_jour,
         'stats_caisse_jour': stats_caisse_jour,
         'solde_veille_dir': solde_veille_dir,
+        'net_caisse_coffre':      net_caisse_coffre,
+        'total_non_verse':        total_non_verse,
+        'total_coffre_theorique': total_coffre_theorique,
+        'coffre_session':         coffre_session,
+        'coffre_lignes_solde':    coffre_lignes_solde,
         'active_tab': active_tab,
         'date_debut': date_debut.isoformat(),
         'date_fin':   date_fin.isoformat(),
