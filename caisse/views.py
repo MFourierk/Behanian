@@ -1447,6 +1447,8 @@ def rapport_caisse(request, session_id=None):
         nb = billet_raw.get(c) or billet_raw.get(str(c)) or 0
         billetage_lignes.append({'coupure': c, 'quantite': nb, 'sous_total': c * nb})
 
+    billetage_total = sum(b['sous_total'] for b in billetage_lignes)
+
     auto_print  = request.GET.get('auto_print', '0')
     auto_logout = request.GET.get('auto_logout', '0')
 
@@ -1477,6 +1479,7 @@ def rapport_caisse(request, session_id=None):
         'auto_print':            auto_print,
         'auto_logout':           auto_logout,
         'billetage_lignes':      billetage_lignes,
+        'billetage_total':        billetage_total,
         'effective_mobile':       effective_mobile,
         'is_old_mobile_session':  is_old_mobile_session,
     })

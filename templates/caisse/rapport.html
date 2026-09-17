@@ -163,78 +163,55 @@ window.addEventListener('afterprint', function(){
 
 <div class="rz-body">
 
-<!-- ═══ 1 + 2 côte à côte ═══════════════════════════════════════════ -->
-<div style="display:grid;grid-template-columns:3fr 1.4fr;gap:14px;margin-top:16px;margin-bottom:14px">
-
-  <!-- 1. Encaissements théoriques -->
-  <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">1</span>ENCAISSEMENTS THÉORIQUES — TRANSACTIONS DE L'APPLICATION</div>
-    <table class="rz-table">
-      <thead>
-        <tr>
-          <th style="min-width:68px">Module</th>
-          <th>💵 Espèces</th>
-          {% if reconciliation.grand_wave %}   <th>📱 Wave</th>{% endif %}
-          {% if reconciliation.grand_orange %}  <th>📱 Orange</th>{% endif %}
-          {% if reconciliation.grand_mtn %}     <th>📱 MTN</th>{% endif %}
-          {% if reconciliation.grand_moov %}    <th>📱 Flooz</th>{% endif %}
-          {% if reconciliation.grand_carte %}   <th>💳 Carte</th>{% endif %}
-          {% if reconciliation.grand_virement %}<th>🏦 Virt.</th>{% endif %}
-          <th style="background:#0f172a">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for l in reconciliation.lignes %}{% if l.total_tx %}
+<!-- ═══ 1. ENCAISSEMENTS THÉORIQUES & VERSEMENTS REÇUS (tableau fusionné) ════ -->
+<div class="rz-sec" style="margin-top:16px">
+  <div class="rz-sec-title"><span class="rz-sec-num">1</span>ENCAISSEMENTS THÉORIQUES &amp; VERSEMENTS REÇUS PAR LA CAISSE</div>
+  <table class="rz-table">
+    <thead>
       <tr>
-        <td>{{ l.emoji }} {{ l.label }}</td>
-        <td>{% if l.especes %}{{ l.especes|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
-        {% if reconciliation.grand_wave %}   <td>{% if l.wave %}{{ l.wave|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-        {% if reconciliation.grand_orange %}  <td>{% if l.orange %}{{ l.orange|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-        {% if reconciliation.grand_mtn %}     <td>{% if l.mtn %}{{ l.mtn|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-        {% if reconciliation.grand_moov %}    <td>{% if l.moov %}{{ l.moov|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-        {% if reconciliation.grand_carte %}   <td>{% if l.carte %}{{ l.carte|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-        {% if reconciliation.grand_virement %}<td>{% if l.virement %}{{ l.virement|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>{% endif %}
-        <td style="font-weight:700">{{ l.total_tx|montant }}</td>
+        <th rowspan="2" style="min-width:80px;text-align:left;vertical-align:bottom;border-right:2px solid #0f172a">Module</th>
+        <th colspan="3" style="text-align:center;background:#1d3557;border-bottom:1px solid #2d4f72;border-right:2px solid #0f172a">💼 Encaissements théoriques</th>
+        <th colspan="3" style="text-align:center;background:#14532d;border-bottom:1px solid #166534">💰 Versements reçus par la caisse</th>
       </tr>
-      {% endif %}{% endfor %}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td>TOTAL</td>
-          <td>{{ reconciliation.grand_especes|montant }}</td>
-          {% if reconciliation.grand_wave %}   <td>{{ reconciliation.grand_wave|montant }}</td>{% endif %}
-          {% if reconciliation.grand_orange %}  <td>{{ reconciliation.grand_orange|montant }}</td>{% endif %}
-          {% if reconciliation.grand_mtn %}     <td>{{ reconciliation.grand_mtn|montant }}</td>{% endif %}
-          {% if reconciliation.grand_moov %}    <td>{{ reconciliation.grand_moov|montant }}</td>{% endif %}
-          {% if reconciliation.grand_carte %}   <td>{{ reconciliation.grand_carte|montant }}</td>{% endif %}
-          {% if reconciliation.grand_virement %}<td>{{ reconciliation.grand_virement|montant }}</td>{% endif %}
-          <td class="gold">{{ reconciliation.grand_total_tx|montant }}</td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-
-  <!-- 2. Versements reçus (MouvementCaisse) -->
-  <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">2</span>VERSEMENTS REÇUS PAR LA CAISSE</div>
-    <table class="rz-table">
-      <thead><tr><th>Moyen de paiement</th><th>Montant</th></tr></thead>
-      <tbody>
-        <tr><td>💵 Espèces</td><td>{{ declared_especes|montant }}</td></tr>
-        {% if declared_wave %}  <tr><td>📱 Wave</td>        <td>{{ declared_wave|montant }}</td></tr>{% endif %}
-        {% if declared_orange %}<tr><td>📱 Orange Money</td><td>{{ declared_orange|montant }}</td></tr>{% endif %}
-        {% if declared_mtn %}   <tr><td>📱 MTN MoMo</td>   <td>{{ declared_mtn|montant }}</td></tr>{% endif %}
-        {% if declared_moov %}  <tr><td>📱 Flooz (Moov)</td><td>{{ declared_moov|montant }}</td></tr>{% endif %}
-      </tbody>
-      <tfoot><tr><td>TOTAL</td><td class="gold">{{ declared_total|montant }}</td></tr></tfoot>
-    </table>
-  </div>
-
+      <tr>
+        <th>💵 Espèces</th>
+        <th>📱 Mobile</th>
+        <th style="background:#0f172a;border-right:2px solid #0f172a">Total</th>
+        <th>💵 Espèces</th>
+        <th>📱 Mobile</th>
+        <th style="background:#052e16">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for l in reconciliation.lignes %}{% if l.total_tx or l.total_verse %}
+    <tr>
+      <td style="border-right:2px solid #e2e8f0">{{ l.emoji }} {{ l.label }}</td>
+      <td>{% if l.especes %}{{ l.especes|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
+      <td>{% if l.mobile %}{{ l.mobile|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
+      <td style="font-weight:700;border-right:2px solid #e2e8f0">{{ l.total_tx|montant }}</td>
+      <td>{% if l.verse_especes %}{{ l.verse_especes|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
+      <td>{% if l.verse_mobile %}{{ l.verse_mobile|montant }}{% else %}<span class="rz-blank">—</span>{% endif %}</td>
+      <td style="font-weight:700">{{ l.total_verse|montant }}</td>
+    </tr>
+    {% endif %}{% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td style="border-right:2px solid #374151">TOTAL</td>
+        <td>{{ reconciliation.grand_especes|montant }}</td>
+        <td>{{ reconciliation.grand_mobile|montant }}</td>
+        <td class="gold" style="border-right:2px solid #374151">{{ reconciliation.grand_total_tx|montant }}</td>
+        <td>{{ declared_especes|montant }}</td>
+        <td>{{ declared_mobile_total|montant }}</td>
+        <td class="gold">{{ declared_total|montant }}</td>
+      </tr>
+    </tfoot>
+  </table>
 </div>
 
-<!-- ═══ 3. ÉCART pleine largeur ═════════════════════════════════════ -->
+<!-- ═══ 2. ÉCART pleine largeur ═════════════════════════════════════ -->
 <div class="rz-sec">
-  <div class="rz-sec-title"><span class="rz-sec-num">3</span>ÉCART — THÉORIQUE VS RÉEL</div>
+  <div class="rz-sec-title"><span class="rz-sec-num">2</span>ÉCART — THÉORIQUE VS RÉEL</div>
   <table class="rz-table">
     <thead><tr><th>Moyen de paiement</th><th>Théorique</th><th>Déclaré / Versé</th><th>Écart</th><th>Statut</th></tr></thead>
     <tbody>
@@ -301,12 +278,12 @@ window.addEventListener('afterprint', function(){
   </table>
 </div>
 
-<!-- ═══ 4 + 5 + 6 ══════════════════════════════════════════════════ -->
+<!-- ═══ 3 + 4 + 5 ══════════════════════════════════════════════════ -->
 <div class="rz-grid-3">
 
-  <!-- 4. Billetage espèces -->
+  <!-- 3. Billetage espèces -->
   <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">4</span>BILLETAGE — ESPÈCES</div>
+    <div class="rz-sec-title"><span class="rz-sec-num">3</span>BILLETAGE — ESPÈCES</div>
     <table class="rz-table">
       <thead><tr><th>Coupure</th><th style="text-align:center">Qté</th><th>Montant</th></tr></thead>
       <tbody>
@@ -321,9 +298,10 @@ window.addEventListener('afterprint', function(){
       <tr><td colspan="3" style="color:#94a3b8;text-align:center;font-style:italic;padding:10px">— à compléter manuellement —</td></tr>
       {% endif %}
       <tr style="background:#f0fdf4">
-        <td colspan="2" style="font-weight:700">Total espèces comptées</td>
-        <td class="c-ok" style="font-weight:700">{{ declared_especes|montant }}</td>
+        <td colspan="2" style="font-weight:700">Total espèces billetées</td>
+        <td class="c-ok" style="font-weight:700">{{ billetage_total|montant }}</td>
       </tr>
+      <tr><td colspan="2" style="color:#64748b;font-size:10px">Espèces versées (déclaré)</td><td style="color:#64748b">{{ declared_especes|montant }}</td></tr>
       <tr><td colspan="2" style="color:#64748b;font-size:10px">Espèces théoriques (appli)</td><td style="color:#64748b">{{ stats.especes|montant }}</td></tr>
       </tbody>
       <tfoot>
@@ -337,9 +315,9 @@ window.addEventListener('afterprint', function(){
     </table>
   </div>
 
-  <!-- 5. Contrôle Mobile Money -->
+  <!-- 4. Contrôle Mobile Money -->
   <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">5</span>CONTRÔLE MOBILE MONEY</div>
+    <div class="rz-sec-title"><span class="rz-sec-num">4</span>CONTRÔLE MOBILE MONEY</div>
     {% if stats.mobile or declared_mobile_total %}
     <table class="rz-table">
       <thead><tr><th>Opérateur</th><th>Théorique</th><th>Déclaré</th><th>Écart</th></tr></thead>
@@ -395,9 +373,9 @@ window.addEventListener('afterprint', function(){
     {% endif %}
   </div>
 
-  <!-- 6. Décaissements -->
+  <!-- 5. Décaissements -->
   <div class="rz-sec" style="margin-bottom:0">
-    <div class="rz-sec-title"><span class="rz-sec-num">6</span>DÉCAISSEMENTS</div>
+    <div class="rz-sec-title"><span class="rz-sec-num">5</span>DÉCAISSEMENTS</div>
     {% if decaissements %}
     <table class="rz-table">
       <thead><tr><th>Heure</th><th>Motif</th><th>Mode</th><th>Montant</th><th>Réf.</th></tr></thead>
@@ -421,9 +399,9 @@ window.addEventListener('afterprint', function(){
 
 </div>
 
-<!-- ═══ 7. RÉCAPITULATIF ════════════════════════════════════════════ -->
+<!-- ═══ 6. RÉCAPITULATIF ════════════════════════════════════════════ -->
 <div class="rz-sec">
-  <div class="rz-sec-title"><span class="rz-sec-num">7</span>RÉCAPITULATIF DE CLÔTURE</div>
+  <div class="rz-sec-title"><span class="rz-sec-num">6</span>RÉCAPITULATIF DE CLÔTURE</div>
   <div style="display:flex;gap:14px;border:1px solid #e2e8f0;border-top:none">
     <div style="flex:1;padding:8px 0">
       <div class="rz-recap-row"><span>🏦 Solde veille (fond initial session)</span><strong>{{ session.fond_caisse|montant }} F</strong></div>
@@ -450,10 +428,10 @@ window.addEventListener('afterprint', function(){
   </div>
 </div>
 
-<!-- ═══ 8. JOURNAL ══════════════════════════════════════════════════ -->
+<!-- ═══ 7. JOURNAL ══════════════════════════════════════════════════ -->
 {% if mouvements %}
 <div class="rz-sec">
-  <div class="rz-sec-title"><span class="rz-sec-num">8</span>JOURNAL DES MOUVEMENTS DE CAISSE</div>
+  <div class="rz-sec-title"><span class="rz-sec-num">7</span>JOURNAL DES MOUVEMENTS DE CAISSE</div>
   <table class="rz-table rz-journal">
     <thead>
       <tr>
@@ -485,9 +463,9 @@ window.addEventListener('afterprint', function(){
 </div>
 {% endif %}
 
-<!-- ═══ 9. OBSERVATIONS ════════════════════════════════════════════ -->
+<!-- ═══ 8. OBSERVATIONS ════════════════════════════════════════════ -->
 <div class="rz-sec">
-  <div class="rz-sec-title"><span class="rz-sec-num">9</span>OBSERVATIONS / JUSTIFICATION DES ÉCARTS</div>
+  <div class="rz-sec-title"><span class="rz-sec-num">8</span>OBSERVATIONS / JUSTIFICATION DES ÉCARTS</div>
   <div class="rz-obs">
     {% if session.notes %}{{ session.notes }}{% else %}<span style="color:#94a3b8;font-style:italic">Aucune observation saisie.</span>{% endif %}
     {% if ecart_especes != 0 or ecart_mobile != 0 %}
@@ -505,9 +483,9 @@ window.addEventListener('afterprint', function(){
   </div>
 </div>
 
-<!-- ═══ 10. VALIDATION ════════════════════════════════════════════ -->
+<!-- ═══ 9. VALIDATION ════════════════════════════════════════════ -->
 <div class="rz-sec">
-  <div class="rz-sec-title"><span class="rz-sec-num">10</span>VALIDATION</div>
+  <div class="rz-sec-title"><span class="rz-sec-num">9</span>VALIDATION</div>
   <div class="rz-sig-grid">
     <div class="rz-sig-box">
       <div class="rz-sig-role">Caissière</div>
