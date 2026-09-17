@@ -1292,14 +1292,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
             <div style="text-align:right;font-size:1rem;color:var(--cave-gold);font-weight:600;letter-spacing:0.5px;">FCFA</div>
           </div>
         </div>
-        <!-- Colonne droite : grille fixe 2×3 boutons -->
-        <div class="modal-mode-tabs" style="flex-shrink:0;display:grid;grid-template-columns:repeat(2,58px);align-content:start;margin-bottom:0;">
-          <button class="mmt active" data-mode="especes"      onclick="setModalMode('especes')" style="min-width:0;">💵 Espèces</button>
-          <button class="mmt"        data-mode="wave"         onclick="setModalMode('wave')" style="min-width:0;">🌊 Wave</button>
-          <button class="mmt"        data-mode="orange_money" onclick="setModalMode('orange_money')" style="min-width:0;">🟠 Orange</button>
-          <button class="mmt"        data-mode="mtn_money"    onclick="setModalMode('mtn_money')" style="min-width:0;">🟡 MTN</button>
-          <button class="mmt"        data-mode="carte"        onclick="setModalMode('carte')" style="min-width:0;">💳 Carte</button>
-          <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')" style="min-width:0;">🏨 Chambre</button>
+        <!-- Colonne droite : grille 2×3 pleine largeur -->
+        <div class="modal-mode-tabs" style="flex-shrink:0;width:160px;display:grid;grid-template-columns:1fr 1fr;align-content:start;margin-bottom:0;">
+          <button class="mmt active" data-mode="especes"      onclick="setModalMode('especes')">💵 Espèces</button>
+          <button class="mmt"        data-mode="wave"         onclick="setModalMode('wave')">🌊 Wave</button>
+          <button class="mmt"        data-mode="orange_money" onclick="setModalMode('orange_money')">🟠 Orange</button>
+          <button class="mmt"        data-mode="mtn_money"    onclick="setModalMode('mtn_money')">🟡 MTN</button>
+          <button class="mmt"        data-mode="carte"        onclick="setModalMode('carte')">💳 Carte</button>
+          <button class="mmt"        data-mode="chambre"      onclick="setModalMode('chambre')">🏨 Chambre</button>
         </div>
       </div>
     </div><!-- end modal-header -->
