@@ -660,9 +660,16 @@
               {% endif %}
 
               <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
-                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Versements reçus</div>
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Versements modules</div>
                 <div style="font-size:15px;font-weight:700;color:#16a34a">+ {{ reconciliation.grand_total_verse|montant }} F</div>
               </div>
+
+              {% for entree in caisse_flux.entrees %}{% if entree.label == 'Encaissements divers' and entree.total %}
+              <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
+                <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Encaissements divers</div>
+                <div style="font-size:15px;font-weight:700;color:#16a34a">+ {{ entree.total|montant }} F</div>
+              </div>
+              {% endif %}{% endfor %}
 
               <div style="flex:1;min-width:130px;padding:10px 14px;border-right:1px solid var(--border)">
                 <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Prélèv. banque</div>
@@ -688,7 +695,7 @@
               <div style="flex:1;min-width:160px;padding:10px 16px;background:var(--dark);border-radius:0 0 {% if not reconciliation.grand_solde %}10px{% else %}0{% endif %} 0">
                 <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:3px">💰 Net disponible en caisse</div>
                 <div style="font-size:18px;font-weight:800;color:var(--gold)">{{ net_caisse_central|montant }} F</div>
-                <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">Fond + versements − sorties</div>
+                <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">Fond + entrées − sorties</div>
               </div>
 
             </div>
@@ -842,7 +849,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--dark);border-radius:10px">
               <div>
                 <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7)">💰 Net disponible en caisse</span>
-                <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:2px">Fond + versements − sorties</div>
+                <div style="font-size:9px;color:rgba(255,255,255,.4);margin-top:2px">Fond + entrées − sorties</div>
               </div>
               <span style="font-size:15px;font-weight:800;color:var(--gold)">{{ net_caisse_central|montant }} F</span>
             </div>
