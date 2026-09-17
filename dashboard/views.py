@@ -267,6 +267,9 @@ def direction_view(request):
             _flux = _gcf(_mvts)
             _fond = _flux['fond_ouverture']['total'] if _flux['fond_ouverture'] else 0
             net_caisse_coffre = _fond + _flux['net']
+        else:
+            # Pas de session ouverte : le fond de veille est physiquement dans le coffre
+            net_caisse_coffre = solde_veille_dir
         _recon = _grj(today_local)
         if _recon:
             coffre_lignes_solde = [
