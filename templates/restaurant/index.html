@@ -1438,7 +1438,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       <div class="modal-actions">
         <button class="modal-btn-cancel" onclick="fermerModal()">Annuler</button>
         <button class="modal-btn-confirm" id="btnConfirmerPaiement" onclick="confirmerPaiement()">
-          <i class="fas fa-check"></i> Confirmer & Imprimer
+          <i class="fas fa-eye"></i> Aperçu & Imprimer
         </button>
       </div>
     </div>
@@ -2975,7 +2975,7 @@ function fermerModal() {
   document.getElementById('modalPaiement').classList.remove('open');
   // Restaurer le bouton confirmer pour la prochaine ouverture
   const btn = document.getElementById('btnConfirmerPaiement');
-  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Confirmer & Imprimer'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-eye"></i> Aperçu & Imprimer'; }
   // Replier la section salon et réinitialiser
   toggleSalonSection(false);
 }
@@ -3376,12 +3376,48 @@ function payerMaintenant() {
   _ouvrirModalPaiementNormal();
 }
 
+// ============================================================
+// APERÇU + CONFIRMATION TICKET (2 étapes : aperçu → paiement)
+// ============================================================
+let _restoPaiementEnCours = false;
+let _restoApercuOldTicketId = null;
+
+window._finaliserApresApercuResto = function(data) {
+  _restoPaiementEnCours = false;
+  delierChambre();
+  toast(`✅ Commande encaissée — ${formatF(data.total)}`, 'success');
+  const oldId = _restoApercuOldTicketId;
+  _restoApercuOldTicketId = null;
+  if (oldId !== null && tickets[oldId]) {
+    majTableCard(tickets[oldId].tableId, 'disponible', 0, '');
+    delete tickets[oldId];
+    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
+  }
+  document.getElementById('tableSelbadge').style.display = 'none';
+  tableSelActif = null;
+  ticketCounter++;
+  const newTid = ticketCounter;
+  const newNom = `T-${String(newTid).padStart(3, '0')}`;
+  tickets[newTid] = { id:newTid, nom:newNom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
+  ajouterBoutonTicket(newTid, newNom);
+  _chargerTicketInterne(newTid);
+  const badge = document.getElementById('badge-encours');
+  if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent||'0') - 1);
+};
+
+window._annulerApercuResto = function() {
+  _restoPaiementEnCours = false;
+};
+
 async function confirmerPaiement() {
+  if (_restoPaiementEnCours) return;
+  _restoPaiementEnCours = true;
   const t = tickets[ticketActifId];
-  if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); return; }
+  if (!t || !t.commandeDbId) { toast('❌ Aucune commande', 'error'); _restoPaiementEnCours = false; return; }
+
   const salonVIPId  = document.getElementById('selectSalonVIP')?.value || '';
   const heuresSalon = isSalonPrive() ? (parseInt(document.getElementById('heuresSalon')?.value) || 1) : 0;
-  if (isSalonPrive() && heuresSalon < 1) { toast('❌ Indiquez le nombre d\'heures de salon', 'error'); return; }
+  if (isSalonPrive() && heuresSalon < 1) { toast('❌ Indiquez le nombre d\'heures de salon', 'error'); _restoPaiementEnCours = false; return; }
   const total = getTotalAvecSalon();
 
   let montantRecu = total;
@@ -3391,7 +3427,7 @@ async function confirmerPaiement() {
 
   if (modePaiement === 'especes') {
     montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
-    if (montantRecu < total) { toast('❌ Montant insuffisant', 'error'); return; }
+    if (montantRecu < total) { toast('❌ Montant insuffisant', 'error'); _restoPaiementEnCours = false; return; }
   } else if (isMobile) {
     montantRecu = total;
     _lignesPay = restoGetLignesPay();
@@ -3402,84 +3438,238 @@ async function confirmerPaiement() {
   }
 
   const reservation_hotel_id = document.getElementById('selectChambreResto')?.value || '';
-  if (modePaiement === 'chambre' && !reservation_hotel_id) {
-    toast('❌ Veuillez sélectionner la chambre du client', 'error'); return;
+  if (modePaiement === 'chambre' && !reservation_hotel_id && !chambreLieeId) {
+    toast('❌ Veuillez sélectionner la chambre du client', 'error'); _restoPaiementEnCours = false; return;
   }
 
-  const btn = document.getElementById('btnConfirmerPaiement');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement…'; }
+  const payload = {
+    commande_id: t.commandeDbId, action: 'paiement',
+    mode_paiement: modePaiement, montant_encaisse: montantRecu,
+    montant_especes: montantEspeces,
+    lignes_paiement: _lignesPay,
+    client: t.client || '',
+    serveur_id: t.serveur || document.getElementById('selectServeur').value || '',
+    reservation_hotel_id: chambreLieeId || reservation_hotel_id,
+    operateur_mobile: '',
+    heures_salon: heuresSalon,
+    salon_vip_id: salonVIPId || null,
+    droit_bouchon: parseFloat(document.getElementById('montantBouchon')?.value) || 0,
+    droit_place:   parseFloat(document.getElementById('montantDroitPlace')?.value) || 0,
+  };
 
+  const _modeCapture   = modePaiement;
+  const salonSel       = document.getElementById('selectSalonVIP');
+  const salonNomCapt   = salonSel?.options[salonSel?.selectedIndex]?.text || '';
+  const salonFraisCapt = isSalonPrive() ? (heuresSalon * getSalonVIPTarif()) : 0;
+  const ticketSnapshot = JSON.parse(JSON.stringify(t));
+  _restoApercuOldTicketId = ticketActifId;
+
+  fermerModal();
   try {
-    const _abortCtrl = new AbortController();
-    const _abortTimer = setTimeout(() => _abortCtrl.abort(), 30000);
-    let r;
-    try {
-      r = await fetch("{% url 'restaurant:valider_commande' %}", {
-        signal: _abortCtrl.signal,
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({
-          commande_id: t.commandeDbId, action: 'paiement',
-          mode_paiement: modePaiement, montant_encaisse: montantRecu,
-          montant_especes: montantEspeces,
-          lignes_paiement: _lignesPay,
-          client: t.client || '',
-          serveur_id: t.serveur || document.getElementById('selectServeur').value || '',
-          reservation_hotel_id: chambreLieeId || reservation_hotel_id,
-          operateur_mobile: '',
-          heures_salon: heuresSalon,
-          salon_vip_id: salonVIPId || null,
-          droit_bouchon: parseFloat(document.getElementById('montantBouchon')?.value) || 0,
-          droit_place:   parseFloat(document.getElementById('montantDroitPlace')?.value) || 0,
-        })
-      });
-    } finally { clearTimeout(_abortTimer); }
-    if (!r.ok) {
-      const txt = await r.text();
-      if (r.status === 403 || txt.includes('login')) {
-        toast('Session expirée — reconnectez-vous', 'error'); setTimeout(()=>location.reload(),1500);
-      } else { toast(`Erreur serveur (${r.status})`, 'error'); }
-      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer'; }
-      return;
-    }
-    const data = await r.json();
-    if (!data.success) {
-      toast('❌ ' + data.message.replace(/\n/g, '<br>'), 'error');
-      if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer'; }
-      return;
-    }
-
-    fermerModal();
-    delierChambre();
-    toast(`✅ Commande encaissée — ${formatF(total)}`, 'success');
-
-    // Impression ticket thermique
-    if (data.ticket_html) {
-      const w = window.open('', '_blank', 'width=420,height=720');
-      if (w) { w.document.write(data.ticket_html); w.document.close(); w.focus(); }
-    }
-
-    majTableCard(t.tableId, 'disponible', 0, '');
-
-    // Supprimer ticket et créer nouveau
-    const oldId = ticketActifId;
-    delete tickets[oldId];
-    document.querySelector(`.ticket-attente-btn[data-tid="${oldId}"]`)?.remove();
-    ticketCounter++;
-    const newTid = ticketCounter;
-    const newNom = `T-${String(newTid).padStart(3,'0')}`;
-    tickets[newTid] = { id:newTid, nom:newNom, tableId:null, tableNum:null, client:'', serveur:'', lignes:[], paiement:'especes', commandeDbId:null };
-    ajouterBoutonTicket(newTid, newNom);
-    _chargerTicketInterne(newTid);
-    document.getElementById('tableSelbadge').style.display='none';
-    tableSelActif = null;
-
-    const badge = document.getElementById('badge-encours');
-    if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent||'0') - 1);
-
-  } catch(e) {
-    toast('❌ Erreur réseau', 'error');
-    if (btn) { btn.disabled=false; btn.innerHTML='<i class="fas fa-check"></i> Confirmer & Imprimer'; }
+    _ouvrirApercuResto(ticketSnapshot, total, montantRecu, montantEspeces, payload,
+                       _modeCapture, salonNomCapt, heuresSalon, salonFraisCapt);
+  } catch(err) {
+    toast('❌ Popup bloqué — autorisez les popups pour imprimer', 'error');
+    _restoPaiementEnCours = false;
   }
+}
+
+// ============================================================
+// POPUP APERÇU RESTAURANT — Annuler | Confirmer & Imprimer
+// L'appel API ne se fait qu'à "Confirmer & Imprimer"
+// ============================================================
+function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, modePayCapture, salonNom, salonHeures, salonFrais) {
+  const modePrint   = modePayCapture;
+  const serveur     = t.serveur || '—';
+  const operateur   = "{{ request.user.get_full_name|default:request.user.username }}";
+  const nomComplexe = "{{ config.nom_complexe|default:'COMPLEXE HOTELIER BEHANIAN' }}";
+  const adresse     = "{{ config.adresse|default:'Yopougon Beago à 200m du Palais de justice' }}";
+  const telephone   = "{{ config.telephone|default:'07 58 29 11 10 / 01 43 09 76 16' }}";
+  const logoUrl     = "{% static 'images/Logo.png' %}";
+  const date        = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const renduVal    = (modePrint === 'especes' && montantRecu > total) ? Math.round(montantRecu - total) : 0;
+  const showRendu   = renduVal > 0;
+  const apiUrl      = "{% url 'restaurant:valider_commande' %}";
+  const payloadJson = JSON.stringify(payload).replace(/<\//g, '<\\/');
+
+  const lignesHTML = t.lignes.map(l => {
+    const ml = parseInt(l.prix * l.quantite).toLocaleString('fr-FR');
+    const pu = parseInt(l.prix).toLocaleString('fr-FR');
+    return `<tr>
+      <td style="padding:3px 2px;max-width:110px;word-wrap:break-word;">${l.nom}</td>
+      <td style="padding:3px 4px;text-align:center;white-space:nowrap;">${l.quantite} × ${pu}</td>
+      <td style="padding:3px 2px;text-align:right;white-space:nowrap;font-weight:600;">${ml} F</td>
+    </tr>`;
+  }).join('');
+
+  const MBMODES = ['wave','orange_money','mtn_money'];
+  const modeLabelsLocal = {especes:'Espèces',carte:'Carte / TPE',mobile:'Mobile Money',wave:'Wave',orange_money:'Orange Money',mtn_money:'MTN Mobile Money',chambre:'Report Chambre'};
+  const reglementLabel = (MBMODES.includes(modePrint) && montantEspeces > 0)
+    ? `Mixte — Espèces + ${modeLabelsLocal[modePrint] || modePrint}`
+    : (modeLabelsLocal[modePrint] || modePrint);
+
+  const html = `<!DOCTYPE html><html lang="fr"><head>
+  <meta charset="UTF-8"><title>Aperçu ticket</title>
+  <style>
+    @page { size: 80mm auto; margin: 3mm; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Courier New',monospace; font-size:11px; background:linear-gradient(160deg,#0f1e0a 0%,#192e0f 50%,#0f1e0a 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+    .apercu-header { width:100%; background:rgba(80,140,30,0.10); border-bottom:1px solid rgba(80,140,30,0.22); padding:13px 20px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .apercu-title { font-family:Georgia,serif; font-size:14px; font-weight:bold; color:#7cb832; letter-spacing:2px; text-transform:uppercase; }
+    .apercu-sub { font-size:10px; color:rgba(124,184,50,0.55); letter-spacing:0.5px; }
+    .ticket-wrapper { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:22px 16px; overflow-y:auto; }
+    .ticket-inner { width:300px; background:white; padding:14px; box-shadow:0 10px 50px rgba(0,0,0,0.7); border-radius:3px; color:#000; }
+    .center { text-align:center; }
+    .bold   { font-weight:bold; }
+    .sep-dash  { border:none; border-top:1px dashed #000; margin:5px 0; }
+    .sep-solid { border:none; border-top:1px solid  #000; margin:5px 0; }
+    .meta-row  { display:flex; justify-content:space-between; padding:1px 0; }
+    .meta-label { font-weight:bold; }
+    table { width:100%; border-collapse:collapse; }
+    thead tr th { font-size:9px; padding:3px 2px; border-bottom:1px solid #000; text-align:left; }
+    thead tr th:nth-child(2) { text-align:center; }
+    thead tr th:nth-child(3) { text-align:right; }
+    .total-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 2px 2px; }
+    .total-label { font-size:12px; font-weight:bold; }
+    .total-val   { font-size:15px; font-weight:bold; }
+    .paiement-row { display:flex; justify-content:space-between; padding:2px; font-size:11px; }
+    .footer { margin-top:8px; font-size:9px; text-align:center; line-height:1.5; }
+    .actions-bar { width:100%; background:rgba(0,0,0,0.4); border-top:1px solid rgba(80,140,30,0.18); padding:16px 20px; display:flex; flex-direction:column; gap:10px; align-items:center; position:sticky; bottom:0; }
+    .msg-err { color:#f08080; font-size:11px; text-align:center; display:none; font-family:sans-serif; }
+    .btn-row { display:flex; gap:12px; justify-content:center; }
+    .btn-annuler  { padding:12px 24px; font-size:13px; font-weight:bold; background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.65); border:1.5px solid rgba(255,255,255,0.18); border-radius:10px; cursor:pointer; font-family:Georgia,serif; letter-spacing:.3px; transition:all .2s; }
+    .btn-annuler:hover  { background:rgba(220,38,38,0.15); border-color:rgba(220,38,38,0.4); color:#f08080; }
+    .btn-imprimer { padding:12px 28px; font-size:13px; font-weight:bold; background:linear-gradient(135deg,#5a9420 0%,#7cb832 100%); color:#fff; border:none; border-radius:10px; cursor:pointer; font-family:Georgia,serif; letter-spacing:.3px; box-shadow:0 4px 16px rgba(92,148,32,0.4); transition:all .2s; }
+    .btn-imprimer:hover { box-shadow:0 6px 22px rgba(92,148,32,0.6); transform:translateY(-1px); }
+    .btn-imprimer:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .copy-label { text-align:center; font-weight:bold; font-size:10px; border:1px dashed #000; padding:3px; margin-bottom:6px; letter-spacing:1px; }
+    .page-cut { height:0; margin:0; padding:0; }
+    @media print { body { background:white!important; display:block!important; } .apercu-header,.actions-bar { display:none !important; } .ticket-wrapper { display:block; padding:0; } .ticket-inner { box-shadow:none; width:100%; padding:0; border-radius:0; } .page-cut { display:block !important; page-break-after:always; break-after:page; } }
+  </style>
+  </head><body>
+
+  <div class="apercu-header">
+    <div class="apercu-title">👁 Aperçu avant impression</div>
+    <div class="apercu-sub">Vérifiez le ticket · Confirmez pour clôturer et imprimer</div>
+  </div>
+
+  <div class="ticket-wrapper">
+  <div class="ticket-inner" id="tzOne">
+  <div class="center">
+    <img src="${logoUrl}" alt="Logo" style="width:60px;height:60px;object-fit:contain;margin-bottom:4px;" onerror="this.style.display='none'">
+    <div style="font-size:14px;font-weight:bold;letter-spacing:1px;">${nomComplexe}</div>
+    <div style="font-size:9px;font-style:italic;margin-top:2px;">Votre confort, notre priorité</div>
+    <div style="font-size:9px;margin-top:3px;">${adresse}</div>
+    <div style="font-size:9px;">Tél: ${telephone}</div>
+  </div>
+  <hr class="sep-solid">
+  <div class="meta-row"><span class="meta-label">Date :</span><span>${date}</span></div>
+  <div class="meta-row"><span class="meta-label">Ticket N° :</span><span class="_tNum">—</span></div>
+  <div class="meta-row"><span class="meta-label">Service :</span><span>Restaurant</span></div>
+  <div class="meta-row"><span class="meta-label">Serveur :</span><span>${serveur}</span></div>
+  <div class="meta-row"><span class="meta-label">Caissier :</span><span>${operateur}</span></div>
+  <div class="meta-row"><span class="meta-label">Règlement :</span><span>${reglementLabel}</span></div>
+  <hr class="sep-dash">
+  <table>
+    <thead><tr>
+      <th>Article</th>
+      <th style="text-align:center;">Qté × P.U</th>
+      <th style="text-align:right;">Montant</th>
+    </tr></thead>
+    <tbody>${lignesHTML}</tbody>
+  </table>
+  <hr class="sep-dash">
+  <div class="total-row">
+    <span class="total-label">TOTAL</span>
+    <span class="total-val">${parseInt(total).toLocaleString('fr-FR')} FCFA</span>
+  </div>
+  ${salonNom && salonFrais > 0 ? `
+  <hr class="sep-dash">
+  <div class="paiement-row" style="font-size:10px;"><span>Salon VIP — ${salonNom} (${salonHeures}h) :</span><span>${parseInt(salonFrais).toLocaleString('fr-FR')} F</span></div>` : ''}
+  ${(MBMODES.includes(modePrint) && montantEspeces > 0) ? `
+  <hr class="sep-dash">
+  <div class="paiement-row"><span>ESP :</span><span>${parseInt(montantEspeces).toLocaleString('fr-FR')} F</span></div>
+  <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePrint]||modePrint} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
+  ${showRendu ? `
+  <hr class="sep-dash">
+  <div class="paiement-row"><span>Reçu :</span><span>${parseInt(montantRecu).toLocaleString('fr-FR')} F</span></div>
+  <div class="paiement-row bold"><span>Monnaie rendue :</span><span>${parseInt(renduVal).toLocaleString('fr-FR')} F</span></div>` : ''}
+  <hr class="sep-solid">
+  <div class="footer">Merci de votre visite<br>Conservez ce ticket pour tout litige</div>
+  </div>
+  </div>
+
+  <div class="actions-bar">
+    <div id="msgErr" class="msg-err"></div>
+    <div class="btn-row">
+      <button class="btn-annuler"  id="btnAnnuler"  onclick="_annuler()">✕ Annuler</button>
+      <button class="btn-imprimer" id="btnImprimer" onclick="_imprimer()">🖨️ Confirmer &amp; Imprimer</button>
+    </div>
+  </div>
+
+  <script>
+  const _P = ${payloadJson};
+  const _U = "${apiUrl}";
+  const _C = "${CSRF}";
+  let _ok = false;
+
+  async function _imprimer() {
+    if (_ok) return;
+    const btn = document.getElementById('btnImprimer');
+    const msg = document.getElementById('msgErr');
+    btn.disabled = true; btn.textContent = '⏳ Enregistrement...';
+    msg.style.display = 'none';
+    try {
+      const r = await fetch(_U, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':_C}, body:JSON.stringify(_P)});
+      const d = await r.json();
+      if (!d.success) {
+        msg.textContent = d.message || 'Erreur — vérifiez la commande';
+        msg.style.display = 'block';
+        btn.disabled = false; btn.textContent = '🖨️ Confirmer & Imprimer';
+        return;
+      }
+      _ok = true;
+      document.querySelectorAll('._tNum').forEach(el => { if (d.ticket_numero) el.textContent = d.ticket_numero; });
+      if (window.opener && !window.opener.closed) window.opener._finaliserApresApercuResto(d);
+      window.print();
+    } catch(e) {
+      msg.textContent = 'Erreur réseau : ' + e.message;
+      msg.style.display = 'block';
+      btn.disabled = false; btn.textContent = '🖨️ Confirmer & Imprimer';
+    }
+  }
+
+  (function() {
+    const orig = document.getElementById('tzOne');
+    if (!orig) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'copy-label'; lbl.textContent = '— COPIE CLIENT —';
+    orig.insertBefore(lbl, orig.firstChild);
+    const cut = document.createElement('div'); cut.className = 'page-cut';
+    const clone = orig.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.querySelector('.copy-label').textContent = '— COPIE CAISSE —';
+    orig.after(cut, clone);
+  })();
+
+  function _annuler() {
+    if (window.opener && !window.opener.closed && window.opener._annulerApercuResto) window.opener._annulerApercuResto();
+    window.close();
+  }
+
+  window.onafterprint = () => window.close();
+  <\/script>
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=460,height=780');
+  if (!w) {
+    toast('⚠️ Popup bloqué — autorisez les popups pour imprimer', 'error');
+    _restoPaiementEnCours = false;
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
 }
 
 // ── HORLOGE ──
