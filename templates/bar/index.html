@@ -431,7 +431,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
   font-family: 'Playfair Display', serif; font-size: 1.4rem;
   color: var(--cave-gold); margin-bottom: 4px;
 }
-.modal-subtitle { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+.modal-subtitle { font-size: 0.82rem; color: rgba(255,255,255,0.4); margin-bottom: 0; }
 .modal-total {
   font-size: 2.5rem; font-weight: 800; color: white;
   text-align: center; margin-bottom: 20px; letter-spacing: -1px;
@@ -995,9 +995,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
 <div class="modal-overlay" id="modalPaiement">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title">Encaissement</div>
-      <div class="modal-subtitle" id="modalSubtitle">Cave Behanian</div>
-      <div class="modal-total" id="modalTotal">0 F <span>FCFA</span></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <div style="text-align:right;line-height:1.4">
+          <div class="modal-title" style="font-size:1rem;margin-bottom:1px">Encaissement</div>
+          <div class="modal-subtitle" id="modalSubtitle">Cave Behanian</div>
+        </div>
+      </div>
+      <div class="modal-total" id="modalTotal">0 <span>FCFA</span></div>
       <!-- Onglets mode de paiement -->
       <div class="modal-mode-tabs">
         <button class="mmt active" data-mode="especes"      onclick="setModalMode('especes')">💵 Espèces</button>
@@ -1707,7 +1711,7 @@ function majBarFraisAddit() {
     if (el) el.textContent = formatF(total) + ' F';
   }
   const grandTotal = getTotal() + _barSalonFrais + total;
-  document.getElementById('modalTotal').innerHTML = `${formatF(grandTotal)} <span>FCFA</span>`;
+  document.getElementById('modalTotal').innerHTML = `${parseInt(grandTotal).toLocaleString('fr-FR')} <span>FCFA</span>`;
   if (modePaiement === 'especes') calcRendu();
   else barCalcPay();
 }
@@ -1783,7 +1787,7 @@ function _ouvrirModalPaiementNormal() {
     if (_br) _br.hidden = true;
     toggleBarFraisAddit(false);
     const total = getTotal();
-    document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+    document.getElementById('modalTotal').innerHTML = `${parseInt(total).toLocaleString('fr-FR')} <span>FCFA</span>`;
     const espace = t.espace ? ` — ${document.getElementById('selectEspace').options[document.getElementById('selectEspace').selectedIndex]?.text || ''}` : '';
     const ref = t.ref ? ` (${t.ref})` : '';
     document.getElementById('modalSubtitle').textContent = `Cave Behanian${espace}${ref}`;
@@ -1866,7 +1870,7 @@ function onBarSalonChange() {
   _barSalonFrais = getBarSalonFrais();
   document.getElementById('barMontantSalon').textContent = formatF(_barSalonFrais);
   const total = getTotal() + _barSalonFrais;
-  document.getElementById('modalTotal').innerHTML = `${formatF(total)} <span>FCFA</span>`;
+  document.getElementById('modalTotal').innerHTML = `${parseInt(total).toLocaleString('fr-FR')} <span>FCFA</span>`;
   if (modePaiement === 'especes') calcRendu();
 }
 
