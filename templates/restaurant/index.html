@@ -2936,7 +2936,7 @@ function majFraisAddit() {
   }
   document.getElementById('modalTotal').innerHTML = parseInt(getTotalAvecSalon()).toLocaleString('fr-FR');
   if (modePaiement === 'especes') calcRendu();
-  else calcMontantMobile();
+  else restoCalcPay();
 }
 
 function majTotalSalon() {
@@ -2945,7 +2945,7 @@ function majTotalSalon() {
   document.getElementById('montantSalon').textContent = formatF(h * tarif);
   document.getElementById('modalTotal').innerHTML = parseInt(getTotalAvecSalon()).toLocaleString('fr-FR');
   if (modePaiement === 'especes') calcRendu();
-  else calcMontantMobile();
+  else restoCalcPay();
 }
 
 function ouvrirModalPaiement() {
