@@ -204,14 +204,16 @@ def get_accessible_modules(user):
                 'piscine', 'boite_nuit', 'espaces', 'caisse', 'facturation',
                 'parametres', 'users']
     groups = get_user_groups(user)
-    modules = {'dashboard'}
+    modules = set()
     for g in groups:
         allowed = ACCESS_MAP.get(g) or _ACCESS_MAP_NORM.get(_norm(g), [])
         if '*' in allowed:
-            modules.update(['hotel', 'restaurant', 'bar', 'cuisine',
+            # Managers uniquement : accès dashboard + tous les modules
+            modules.update(['dashboard', 'hotel', 'restaurant', 'bar', 'cuisine',
                            'piscine', 'boite_nuit', 'espaces', 'caisse',
                            'facturation', 'parametres'])
         else:
+            # Rôles opérationnels (caissières, réceptionniste, cuisine…) : pas de dashboard
             modules.update(allowed)
     return list(modules)
 

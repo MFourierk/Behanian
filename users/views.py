@@ -11,6 +11,11 @@ def _redirection_post_login(user):
     """Retourne l'URL de redirection adaptée au rôle de l'utilisateur."""
     if is_kds_only(user):
         return 'restaurant:kds'
+    from utils.middleware import HOME_BY_GROUP
+    groups = list(user.groups.values_list('name', flat=True))
+    for g in groups:
+        if g in HOME_BY_GROUP:
+            return HOME_BY_GROUP[g]
     return 'dashboard:index'
 
 
