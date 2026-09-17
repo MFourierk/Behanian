@@ -260,21 +260,26 @@ def direction_view(request):
         today_local = timezone.localdate()
         _sess = _CS.objects.filter(is_open=True, type_caisse='centrale').first()
         coffre_session = _sess
+        # Solde cumulatif du coffre = capital initial + tout ce qui est entré − tout ce qui est sorti
+        # fond_caisse de session 2, 3, … = même argent recirculé → on prend seulement le 1er
+        _fond_initial_qs = _MC.objects.filter(
+            type='fond_caisse', valide=True
+        ).exclude(reference__startswith='CONSOLIDATION').order_by('date')
+        _fond_initial = int(_fond_initial_qs.values_list('montant', flat=True).first() or 0)
+
+        _cash_in = int(_MC.objects.filter(
+            valide=True, type__in=['versement', 'encaissement', 'ajustement']
+        ).exclude(reference__startswith='CONSOLIDATION').aggregate(s=_Sum('montant'))['s'] or 0)
+
+        _cash_out = int(_MC.objects.filter(
+            valide=True, type__in=['depense', 'prelevement', 'remboursement']
+        ).exclude(reference__startswith='CONSOLIDATION').aggregate(s=_Sum('montant'))['s'] or 0)
+
+        net_caisse_coffre = _fond_initial + _cash_in - _cash_out
+
         if _sess:
-            _mvts = _MC.objects.filter(session=_sess, valide=True).exclude(
-                reference__startswith='CONSOLIDATION'
-            )
-            _flux = _gcf(_mvts)
-            _fond = _flux['fond_ouverture']['total'] if _flux['fond_ouverture'] else 0
-            net_caisse_coffre = _fond + _flux['net']
-        else:
-            # Pas de session ouverte : utiliser le fond_caisse_reel de la dernière
-            # session clôturée — c'est ce qui était physiquement dans le coffre à la fermeture,
-            # accumulation de tous les versements depuis le début moins les décaissements/banque.
-            _last = _CS.objects.filter(
-                is_open=False, type_caisse='centrale'
-            ).order_by('-closed_at').first()
-            net_caisse_coffre = int(_last.fond_caisse_reel or 0) if _last else 0
+            # Session ouverte : idem mais on identifie la session pour l'affichage
+            pass  # net_caisse_coffre déjà calculé ci-dessus, inclut session en cours
         _recon = _grj(today_local)
         if _recon:
             coffre_lignes_solde = [
