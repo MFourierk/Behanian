@@ -951,27 +951,37 @@ def cloturer_caisse(request):
                 cree_par=request.user,
             )
 
-        # Auto-créer un dépôt en coffre en attente de validation manager
+        # Auto-créer/mettre à jour le dépôt en coffre en attente de validation manager
         # Montant = (espèces + mobile déclaré) − fond fixe remis au shift suivant
         montant_reddition = max(0, int(fond_reel_total) - int(session.fond_fixe_applique))
         if montant_reddition > 0:
-            caissiere = session.user.get_full_name() or session.user.username
-            MouvementCoffre.objects.get_or_create(
-                session_source=session,
-                type='remise_caisse',
-                defaults=dict(
+            caissiere  = session.user.get_full_name() or session.user.username
+            notes_auto = (f'Auto-généré. '
+                          f'Esp : {int(fond_reel):,} F | '
+                          f'Mobile : {int(mobile_total_dec):,} F | '
+                          f'Fond fixe : {int(session.fond_fixe_applique):,} F')
+            _existing = MouvementCoffre.objects.filter(
+                session_source=session, type='remise_caisse'
+            ).first()
+            if _existing is None:
+                MouvementCoffre.objects.create(
+                    session_source=session,
+                    type='remise_caisse',
                     date=session.date_session,
                     montant_recu=montant_reddition,
                     montant=montant_reddition,
                     description=f'{caissiere} — {session.numero_session}',
-                    notes=(f'Auto-généré. '
-                           f'Esp : {int(fond_reel):,} F | '
-                           f'Mobile : {int(mobile_total_dec):,} F | '
-                           f'Fond fixe : {int(session.fond_fixe_applique):,} F'),
+                    notes=notes_auto,
                     valide=False,
                     enregistre_par=request.user,
-                ),
-            )
+                )
+            elif not _existing.valide:
+                # Encore en attente : recalcul avec la formule correcte
+                _existing.montant_recu = montant_reddition
+                _existing.montant      = montant_reddition
+                _existing.notes        = notes_auto
+                _existing.save()
+            # Si déjà validé par le manager : ne pas toucher
 
         ecart_label = f"+{int(ecart):,} F (excédent)" if ecart > 0 else (f"{int(ecart):,} F (manquant)" if ecart < 0 else "0 F (équilibré)")
 
