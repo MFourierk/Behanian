@@ -951,6 +951,27 @@ def cloturer_caisse(request):
                 cree_par=request.user,
             )
 
+        # Auto-créer une reddition de caisse en attente de validation manager
+        # Montant = espèces comptées − fond fixe remis au shift suivant
+        montant_reddition = max(0, int(fond_reel) - int(session.fond_fixe_applique))
+        if montant_reddition > 0:
+            caissiere = session.user.get_full_name() or session.user.username
+            MouvementCoffre.objects.get_or_create(
+                session_source=session,
+                type='remise_caisse',
+                defaults=dict(
+                    date=session.date_session,
+                    montant_recu=montant_reddition,
+                    montant=montant_reddition,
+                    description=f'{caissiere} — {session.numero_session}',
+                    notes=(f'Auto-généré à la clôture. '
+                           f'Fond compté : {int(fond_reel):,} F | '
+                           f'Fond fixe : {int(session.fond_fixe_applique):,} F'),
+                    valide=False,
+                    enregistre_par=request.user,
+                ),
+            )
+
         ecart_label = f"+{int(ecart):,} F (excédent)" if ecart > 0 else (f"{int(ecart):,} F (manquant)" if ecart < 0 else "0 F (équilibré)")
 
         return JsonResponse({
@@ -2298,7 +2319,12 @@ def flux_coffre(request):
     from django.contrib.auth.models import User as _User
     from parametres.models import SalaireConfig as _SC
 
-    mouvements = MouvementCoffre.objects.filter(valide=True).select_related('employe', 'enregistre_par')
+    mouvements = MouvementCoffre.objects.filter(valide=True).select_related('employe', 'enregistre_par', 'session_source')
+
+    # Redditions en attente de validation (auto-générées à la clôture, pas encore validées)
+    en_attente = MouvementCoffre.objects.filter(
+        valide=False, type='remise_caisse'
+    ).select_related('session_source', 'session_source__user', 'enregistre_par').order_by('-date', '-created_at')
 
     # Liste de tout le personnel avec leur salaire configuré (si renseigné)
     salaires = {sc.user_id: sc.salaire_base for sc in _SC.objects.filter(actif_paie=True)}
@@ -2323,6 +2349,7 @@ def flux_coffre(request):
 
     return render(request, 'caisse/flux_coffre.html', {
         'mouvements':  mouvements,
+        'en_attente':  en_attente,
         'employes':    employes,
         'net_entrees': net_entrees,
         'net_sorties': net_sorties,
@@ -2416,5 +2443,55 @@ def api_mouvement_coffre(request):
         'id':      mv.pk,
         'montant': int(mv.montant),
         'sens':    'entree' if mv.est_entree else 'sortie',
+        'label':   mv.get_type_display(),
+    })
+
+
+@login_required
+@require_POST
+def api_valider_reddition(request):
+    """Valider (ou rejeter) une reddition en attente. Optionnel : corriger le montant."""
+    from utils.permissions import _is_manager
+    if not _is_manager(request.user):
+        return JsonResponse({'ok': False, 'error': 'Accès refusé'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON invalide'}, status=400)
+
+    action = data.get('action', 'valider')  # 'valider' ou 'rejeter'
+    mv_id  = data.get('id')
+
+    try:
+        mv = MouvementCoffre.objects.get(pk=mv_id, valide=False, type='remise_caisse')
+    except MouvementCoffre.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Reddition introuvable ou déjà traitée'})
+
+    if action == 'rejeter':
+        mv.delete()
+        return JsonResponse({'ok': True, 'action': 'rejeter'})
+
+    # Valider : éventuellement corriger le montant
+    montant_corrige = data.get('montant_recu')
+    if montant_corrige is not None:
+        try:
+            montant_corrige = int(Decimal(str(montant_corrige)))
+        except (InvalidOperation, ValueError):
+            return JsonResponse({'ok': False, 'error': 'Montant invalide'})
+        if montant_corrige <= 0:
+            return JsonResponse({'ok': False, 'error': 'Le montant doit être positif'})
+        mv.montant_recu = montant_corrige
+        mv.montant      = montant_corrige
+
+    mv.valide          = True
+    mv.enregistre_par  = request.user
+    mv.save()
+
+    return JsonResponse({
+        'ok':      True,
+        'action':  'valider',
+        'id':      mv.pk,
+        'montant': int(mv.montant),
         'label':   mv.get_type_display(),
     })

@@ -34,4 +34,5 @@ urlpatterns = [
     path('flux-coffre/', views.flux_coffre, name='flux_coffre'),
     path('api/mouvement-coffre/', views.api_mouvement_coffre, name='api_mouvement_coffre'),
     path('api/employes-coffre/', views.api_employes_coffre, name='api_employes_coffre'),
+    path('api/valider-reddition/', views.api_valider_reddition, name='api_valider_reddition'),
 ]

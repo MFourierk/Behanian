@@ -255,7 +255,7 @@ class MouvementCoffre(models.Model):
 
     TYPE_CHOICES = [
         # ── Entrées ──────────────────────────────────────────
-        ('remise_caisse',         '💵 Remise caissière → Coffre'),
+        ('remise_caisse',         '💰 Reddition de caisse → Coffre'),
         # ── Sorties ──────────────────────────────────────────
         ('versement_banque',      '🏛️ Versement en Banque'),
         ('prelevement_direction', '👤 Prélèvement Direction'),
@@ -274,11 +274,18 @@ class MouvementCoffre(models.Model):
     # Montant net impactant le coffre (toujours positif ; le sens dépend de TYPES_ENTREE)
     montant     = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
 
-    # Champs spécifiques aux remises caisse
+    # Champs spécifiques aux redditions de caisse
     montant_recu   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                         help_text="Espèces totales reçues de la caissière")
     montant_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
-                        help_text="Part immédiatement déposée en banque")
+                        help_text="Réservé (non utilisé)")
+
+    # Lien vers la session de caisse source (redditions auto-générées à la clôture)
+    session_source = models.ForeignKey(
+        'CaisseSession', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='redditions_coffre',
+        help_text="Session clôturée ayant généré cette reddition automatiquement"
+    )
 
     # Champ spécifique aux salaires — pointe vers l'utilisateur (liste Personnel)
     employe     = models.ForeignKey(
@@ -299,7 +306,8 @@ class MouvementCoffre(models.Model):
         related_name='mouvements_coffre'
     )
     created_at  = models.DateTimeField(auto_now_add=True)
-    valide      = models.BooleanField(default=True)
+    valide      = models.BooleanField(default=True,
+                    help_text="False = en attente de validation manager (reddition auto)")
 
     class Meta:
         ordering = ['-date', '-created_at']

@@ -186,8 +186,8 @@
         <div class="fc-type-grid">
           <div class="fc-type-btn entree selected" data-type="remise_caisse" onclick="selectType(this)">
             <span class="tb-badge in">ENTRÉE</span>
-            <span class="tb-icon">💵</span>
-            <span class="tb-label">Remise caissière</span>
+            <span class="tb-icon">💰</span>
+            <span class="tb-label">Reddition de caisse</span>
           </div>
           <div class="fc-type-btn" data-type="versement_banque" onclick="selectType(this)">
             <span class="tb-badge out">SORTIE</span>
@@ -232,17 +232,17 @@
         </div>
       </div>
 
-      <!-- Formulaire dynamique : Remise caissière -->
+      <!-- Formulaire dynamique : Reddition de caisse -->
       <div id="form-remise_caisse">
         <div class="fc-field-row">
           <div class="fc-field">
-            <label>💵 Montant reçu de la caissière (FCFA)</label>
+            <label>💰 Montant reçu (FCFA)</label>
             <input type="number" id="rc-recu" min="0" placeholder="0">
-            <p class="fc-hint">Tout le montant reçu est enregistré en coffre. Pour déposer en banque, utilisez le bouton 🏛️ Versement Banque.</p>
+            <p class="fc-hint">Tout le montant physiquement remis par la caissière. Pour un dépôt bancaire ultérieur, utilisez 🏛️ Versement Banque.</p>
           </div>
           <div class="fc-field">
             <label>📝 Notes</label>
-            <input type="text" id="rc-notes" placeholder="Ex : Remise shift soir du 18/09…">
+            <input type="text" id="rc-notes" placeholder="Ex : Reddition shift soir du 18/09…">
           </div>
         </div>
       </div>
@@ -386,6 +386,68 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════
+       Redditions en attente de validation manager
+  ════════════════════════════════════════════════════ -->
+  {% if en_attente %}
+  <div class="fc-hist-card" style="border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.2);margin-bottom:24px">
+    <div class="fc-hist-head" style="background:linear-gradient(135deg,#78350f,#92400e);border-bottom-color:#b45309">
+      <h3 style="color:#fde68a">⏳ Redditions en attente de validation — {{ en_attente|length }}</h3>
+      <span style="font-size:.78rem;color:#fcd34d">Générées automatiquement à la clôture · Vérifiez et validez</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="fc-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Caissière</th>
+          <th>Session</th>
+          <th class="r">Montant pré-calculé</th>
+          <th style="text-align:center">Correction</th>
+          <th style="text-align:center">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in en_attente %}
+      <tr id="row-att-{{ r.pk }}">
+        <td>
+          <strong>{{ r.date|date:"d/m/Y" }}</strong>
+          {% if r.date == today %}<span style="background:#fef3c7;color:#92400e;font-size:.68rem;font-weight:700;padding:2px 6px;border-radius:8px;margin-left:5px">Auj.</span>{% endif %}
+        </td>
+        <td>
+          {% if r.session_source %}
+            <strong>{{ r.session_source.user.get_full_name|default:r.session_source.user.username }}</strong>
+          {% else %}{{ r.description }}{% endif %}
+        </td>
+        <td style="font-size:.8rem;color:var(--muted)">
+          {% if r.session_source %}{{ r.session_source.numero_session }}{% endif %}
+          {% if r.notes %}<br><span style="font-size:.72rem">{{ r.notes|truncatechars:60 }}</span>{% endif %}
+        </td>
+        <td class="r">
+          <span style="font-size:1.1rem;font-weight:800;color:#92400e">{{ r.montant_recu|floatformat:0|intcomma }} F</span>
+        </td>
+        <td style="text-align:center">
+          <input type="number" id="att-montant-{{ r.pk }}" value="{{ r.montant_recu|floatformat:0 }}"
+            min="1" style="width:130px;padding:7px 10px;border:1.5px solid #d97706;border-radius:8px;font-weight:700;text-align:right;font-size:.9rem">
+        </td>
+        <td style="text-align:center;white-space:nowrap">
+          <button onclick="validerReddition({{ r.pk }}, 'valider')"
+            style="background:linear-gradient(135deg,#15803d,#059669);color:white;border:none;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer;margin-right:6px">
+            ✅ Valider
+          </button>
+          <button onclick="validerReddition({{ r.pk }}, 'rejeter')"
+            style="background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:8px;padding:7px 14px;font-weight:700;cursor:pointer">
+            ✖ Rejeter
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Historique -->
   <div class="fc-hist-card">
     <div class="fc-hist-head">
@@ -483,7 +545,7 @@
     'divers':               'form-divers',
   };
   const BTN_CONFIG = {
-    'remise_caisse':        {icon:'✅', label:'Enregistrer la remise', cls:''},
+    'remise_caisse':        {icon:'💰', label:'Enregistrer la reddition', cls:''},
     'versement_banque':     {icon:'🏛️', label:'Enregistrer le versement banque', cls:' sortie'},
     'prelevement_direction':{icon:'👤', label:'Enregistrer le prélèvement', cls:' sortie'},
     'salaire':              {icon:'👷', label:'Enregistrer le salaire', cls:' sortie'},
@@ -608,6 +670,37 @@
     return null;
   }
 
+  async function validerReddition(id, action) {
+    const montantEl = document.getElementById('att-montant-' + id);
+    const payload = { id, action };
+    if(action === 'valider' && montantEl) {
+      const m = parseInt(montantEl.value) || 0;
+      if(m <= 0) { showToast('Montant invalide', false); return; }
+      payload.montant_recu = m;
+    }
+    if(action === 'rejeter' && !confirm('Rejeter cette reddition ? Elle sera supprimée définitivement.')) return;
+
+    try {
+      const r = await fetch("{% url 'caisse:api_valider_reddition' %}", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if(d.ok) {
+        const row = document.getElementById('row-att-' + id);
+        if(row) row.remove();
+        const msg = action === 'valider'
+          ? `Reddition validée — +${(d.montant||0).toLocaleString('fr-FR')} FCFA en coffre`
+          : 'Reddition rejetée';
+        showToast(msg, action === 'valider');
+        setTimeout(() => location.reload(), 1600);
+      } else {
+        showToast(d.error || 'Erreur', false);
+      }
+    } catch(e) { showToast('Erreur réseau', false); }
+  }
+
   async function submitMouvement() {
     const payload = buildPayload();
     if(!payload) return;
@@ -626,7 +719,7 @@
       const d = await r.json();
       if(d.ok) {
         const sens = d.sens === 'entree' ? '+' : '−';
-        showToast(`${d.label} enregistré — ${sens}${d.montant.toLocaleString('fr-FR')} FCFA`);
+        showToast(`${d.label} enregistrée — ${sens}${(d.montant||0).toLocaleString('fr-FR')} FCFA`);
         resetAllForms();
         setTimeout(() => location.reload(), 1600);
       } else {
