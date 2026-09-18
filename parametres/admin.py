@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Coordonnees, Employe
+from .models import Coordonnees, SalaireConfig
 
 @admin.register(Coordonnees)
 class CoordonneesAdmin(admin.ModelAdmin):
@@ -14,9 +14,10 @@ class CoordonneesAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(Employe)
-class EmployeAdmin(admin.ModelAdmin):
-    list_display  = ('nom_complet', 'poste', 'salaire_base', 'actif')
-    list_filter   = ('actif',)
-    search_fields = ('nom_complet', 'poste')
-    list_editable = ('salaire_base', 'actif')
+@admin.register(SalaireConfig)
+class SalaireConfigAdmin(admin.ModelAdmin):
+    list_display  = ('user', 'salaire_base', 'actif_paie')
+    list_filter   = ('actif_paie',)
+    search_fields = ('user__first_name', 'user__last_name', 'user__username')
+    list_editable = ('salaire_base', 'actif_paie')
+    autocomplete_fields = ('user',)

@@ -12,7 +12,6 @@ from utils.permissions import require_module_access, require_manager, GROUPE_MAN
 from facturation.models import Ticket
 from facturation.services import aggregate_par_mode as _aggregate_par_mode
 from .models import CaisseSession, MouvementCaisse, PrelevementBanque, MouvementCoffre
-from parametres.models import Employe
 
 
 _MODE_LABELS = {
@@ -2296,8 +2295,19 @@ def flux_coffre(request):
     if not _is_manager(request.user):
         return redirect('caisse:index')
 
+    from django.contrib.auth.models import User as _User
+    from parametres.models import SalaireConfig as _SC
+
     mouvements = MouvementCoffre.objects.filter(valide=True).select_related('employe', 'enregistre_par')
-    employes   = Employe.objects.filter(actif=True)
+
+    # Liste de tout le personnel avec leur salaire configuré (si renseigné)
+    salaires = {sc.user_id: sc.salaire_base for sc in _SC.objects.filter(actif_paie=True)}
+    employes = [
+        {'id': u.pk, 'nom': u.get_full_name() or u.username,
+         'poste': u.groups.first().name if u.groups.exists() else '',
+         'salaire_base': salaires.get(u.pk, 0)}
+        for u in _User.objects.all().prefetch_related('groups').order_by('last_name', 'first_name')
+    ]
 
     agg = MouvementCoffre.objects.filter(valide=True).aggregate(
         s_entrees=Sum('montant', filter=Q(type='remise_caisse')),
@@ -2329,7 +2339,15 @@ def api_employes_coffre(request):
     from utils.permissions import _is_manager
     if not _is_manager(request.user):
         return JsonResponse({'ok': False}, status=403)
-    data = list(Employe.objects.filter(actif=True).values('id', 'nom_complet', 'poste', 'salaire_base'))
+    from django.contrib.auth.models import User as _User
+    from parametres.models import SalaireConfig as _SC
+    salaires = {sc.user_id: sc.salaire_base for sc in _SC.objects.filter(actif_paie=True)}
+    data = [
+        {'id': u.pk, 'nom_complet': u.get_full_name() or u.username,
+         'poste': u.groups.first().name if u.groups.exists() else '',
+         'salaire_base': salaires.get(u.pk, 0)}
+        for u in _User.objects.all().prefetch_related('groups').order_by('last_name', 'first_name')
+    ]
     return JsonResponse({'ok': True, 'employes': data})
 
 
@@ -2388,7 +2406,8 @@ def api_mouvement_coffre(request):
     if type_ == 'salaire':
         emp_id = data.get('employe_id')
         if emp_id:
-            kwargs['employe'] = Employe.objects.filter(pk=emp_id, actif=True).first()
+            from django.contrib.auth.models import User as _User
+            kwargs['employe'] = _User.objects.filter(pk=emp_id).first()
 
     mv = MouvementCoffre.objects.create(**kwargs)
 

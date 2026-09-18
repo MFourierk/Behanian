@@ -279,10 +279,10 @@ class MouvementCoffre(models.Model):
     montant_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                         help_text="Part immédiatement déposée en banque")
 
-    # Champ spécifique aux salaires (référence vers le référentiel RH dans parametres)
+    # Champ spécifique aux salaires — pointe vers l'utilisateur (liste Personnel)
     employe     = models.ForeignKey(
-        'parametres.Employe', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='paiements_salaire'
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='paiements_salaire_coffre'
     )
 
     # Champs communs sorties

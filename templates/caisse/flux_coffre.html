@@ -280,12 +280,11 @@
             <select id="sal-emp" onchange="fillSalaire()">
               <option value="">— Sélectionner un employé —</option>
               {% for e in employes %}
-              <option value="{{ e.pk }}" data-salaire="{{ e.salaire_base }}">
-                {{ e.nom_complet }}{% if e.poste %} — {{ e.poste }}{% endif %}
+              <option value="{{ e.id }}" data-salaire="{{ e.salaire_base }}">
+                {{ e.nom }}{% if e.poste %} — {{ e.poste }}{% endif %}
               </option>
               {% endfor %}
             </select>
-            {% if not employes %}<p class="fc-hint" style="color:#b91c1c">Aucun employé configuré — ajoutez-les dans l'administration.</p>{% endif %}
           </div>
           <div class="fc-field">
             <label>💰 Salaire payé (FCFA) <span style="font-weight:400;color:#94a3b8">modifiable</span></label>
@@ -398,7 +397,7 @@
         </td>
         <td><span class="badge badge-type">{{ m.get_type_display }}</span></td>
         <td style="color:var(--muted);font-size:.82rem;max-width:220px">
-          {% if m.employe %}{{ m.employe.nom_complet }}{% endif %}
+          {% if m.employe %}{{ m.employe.get_full_name|default:m.employe.username }}{% endif %}
           {% if m.description %}{{ m.description }}{% endif %}
           {% if m.fournisseur %}<span style="color:#475569">{{ m.fournisseur }}</span>{% endif %}
           {% if m.reference %}<span style="color:#94a3b8"> · {{ m.reference }}</span>{% endif %}

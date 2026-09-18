@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class OperateurMobileMoney(models.Model):
@@ -39,22 +40,18 @@ class Coordonnees(models.Model):
         super(Coordonnees, self).save(*args, **kwargs)
 
 
-class Employe(models.Model):
-    """Référentiel RH — tous les employés du complexe, avec ou sans compte utilisateur."""
-    nom_complet  = models.CharField(max_length=200, verbose_name='Nom complet')
-    poste        = models.CharField(max_length=100, blank=True, verbose_name='Poste / Fonction')
+class SalaireConfig(models.Model):
+    """Salaire mensuel configuré par utilisateur — section RH du paramétrage."""
+    user         = models.OneToOneField(User, on_delete=models.CASCADE,
+                     related_name='salaire_config', verbose_name='Employé')
     salaire_base = models.PositiveIntegerField(default=0, verbose_name='Salaire mensuel (FCFA)')
-    actif        = models.BooleanField(default=True, verbose_name='Actif',
-                     help_text="Décocher pour retirer de la liste de paiement")
-    notes        = models.TextField(blank=True, verbose_name='Notes')
+    actif_paie   = models.BooleanField(default=True, verbose_name='Actif en paie',
+                     help_text="Décocher pour exclure de la liste de paiement coffre")
 
     class Meta:
-        ordering = ['nom_complet']
-        verbose_name = 'Employé'
-        verbose_name_plural = 'Employés (RH)'
+        ordering = ['user__last_name', 'user__first_name']
+        verbose_name = 'Salaire employé'
+        verbose_name_plural = 'Salaires employés (RH)'
 
     def __str__(self):
-        s = self.nom_complet
-        if self.poste:
-            s += f' — {self.poste}'
-        return s
+        return f"{self.user.get_full_name() or self.user.username} — {self.salaire_base:,} FCFA"
