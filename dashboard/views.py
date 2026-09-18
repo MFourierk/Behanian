@@ -255,21 +255,23 @@ def direction_view(request):
     coffre_lignes_solde  = []
     derniere_remise_date = None
     try:
-        from caisse.models import CaisseSession as _CS, RemiseSoir as _RS
+        from caisse.models import CaisseSession as _CS, MouvementCoffre as _MCoffre
         from caisse.views import get_reconciliation_jour as _grj
-        from django.db.models import Sum as _Sum
+        from django.db.models import Sum as _Sum, Q as _Q
         today_local = timezone.localdate()
         _sess = _CS.objects.filter(is_open=True, type_caisse='centrale').first()
         coffre_session = _sess
 
-        # En coffre = ce que le manager a déclaré garder en coffre (saisie libre, indépendante)
-        net_caisse_coffre = int(
-            _RS.objects.filter(valide=True).aggregate(s=_Sum('montant_coffre'))['s'] or 0
+        # En coffre = entrées (remises caissière nettes) − toutes les sorties
+        _agg = _MCoffre.objects.filter(valide=True).aggregate(
+            s_entrees=_Sum('montant', filter=_Q(type='remise_caisse')),
+            s_sorties=_Sum('montant', filter=~_Q(type='remise_caisse')),
         )
+        net_caisse_coffre = int(_agg['s_entrees'] or 0) - int(_agg['s_sorties'] or 0)
 
         # Date de la dernière saisie du manager (information, pas alerte)
-        _last_remise = _RS.objects.filter(valide=True).first()
-        derniere_remise_date = _last_remise.date if _last_remise else None
+        _last = _MCoffre.objects.filter(valide=True).first()
+        derniere_remise_date = _last.date if _last else None
 
         # Montants non versés du jour (modules → caisse)
         _recon = _grj(today_local)

@@ -17,240 +17,120 @@
     --muted: #64748b;
   }
 
-  /* ── Header ── */
   .fc-hero {
     background: linear-gradient(135deg, var(--navy) 0%, #0a1628 50%, #1a2d45 100%);
-    border-radius: 16px;
-    padding: 28px 32px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    box-shadow: 0 8px 32px rgba(15,28,46,.35);
-    position: relative;
-    overflow: hidden;
+    border-radius: 16px; padding: 28px 32px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    box-shadow: 0 8px 32px rgba(15,28,46,.35); position: relative; overflow: hidden;
   }
   .fc-hero::before {
-    content: '🏦';
-    position: absolute;
-    right: 32px; top: 50%;
-    transform: translateY(-50%);
-    font-size: 96px;
-    opacity: .07;
-    pointer-events: none;
+    content: '🏦'; position: absolute; right: 32px; top: 50%; transform: translateY(-50%);
+    font-size: 96px; opacity: .07; pointer-events: none;
   }
-  .fc-hero h1 {
-    font-size: 1.6rem; font-weight: 800;
-    color: var(--gold); margin: 0; letter-spacing: -.3px;
-    text-shadow: 0 2px 8px rgba(201,168,76,.3);
-  }
-  .fc-hero p { color: #94a3b8; margin: 4px 0 0; font-size: .9rem; }
-  .fc-hero-right { text-align: right; }
-  .fc-hero-right .live-date {
-    font-size: .8rem; color: #94a3b8; display: block; margin-bottom: 4px;
-  }
-  .fc-btn-primary {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: linear-gradient(135deg, var(--gold), var(--gold2));
-    color: var(--navy); font-weight: 800; font-size: .9rem;
-    border: none; border-radius: 10px; padding: 11px 22px;
-    cursor: pointer; text-decoration: none;
-    box-shadow: 0 4px 14px rgba(201,168,76,.4);
-    transition: transform .15s, box-shadow .15s;
-  }
-  .fc-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,.5); color: var(--navy); }
+  .fc-hero h1 { font-size: 1.6rem; font-weight: 800; color: var(--gold); margin: 0; }
+  .fc-hero p  { color: #94a3b8; margin: 4px 0 0; font-size: .9rem; }
 
-  /* ── Alerte ── */
-  .fc-alert {
-    background: linear-gradient(135deg, #fef3c7, #fffbeb);
-    border: 2px solid #f59e0b;
-    border-radius: 12px; padding: 14px 20px;
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 18px;
-    box-shadow: 0 2px 8px rgba(245,158,11,.15);
-  }
-  .fc-alert-icon { font-size: 1.6rem; }
-  .fc-alert-text strong { color: #92400e; font-size: .95rem; display: block; }
-  .fc-alert-text span { color: #78350f; font-size: .82rem; }
+  /* KPI */
+  .fc-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 14px; margin-bottom: 20px; }
+  .fc-kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .fc-kpi::after { content:''; position:absolute; top:0; left:0; right:0; height:4px; border-radius:14px 14px 0 0; }
+  .fc-kpi.k-entree::after { background:var(--green); }
+  .fc-kpi.k-sortie::after { background:var(--red); }
+  .fc-kpi.k-banque::after { background:var(--blue); }
+  .fc-kpi.k-solde::after  { background:var(--gold); }
+  .fc-kpi-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:8px; }
+  .fc-kpi-val   { font-size:1.75rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+  .fc-kpi-val.green { color:#15803d; }
+  .fc-kpi-val.red   { color:var(--red); }
+  .fc-kpi-val.blue  { color:var(--blue); }
+  .fc-kpi-val.gold  { color:#92400e; }
+  .fc-unit { font-size:.78rem; font-weight:400; color:var(--muted); margin-left:3px; }
 
-  /* ── KPI cards ── */
-  .fc-kpi-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 14px;
-    margin-bottom: 20px;
+  /* Type selector */
+  .fc-type-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 10px; margin-bottom: 20px;
   }
-  .fc-kpi {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,.05);
-    transition: transform .15s;
+  .fc-type-btn {
+    border: 2px solid var(--border); border-radius: 12px; padding: 12px 10px;
+    cursor: pointer; background: var(--card); text-align: center;
+    transition: all .15s; position: relative;
   }
-  .fc-kpi:hover { transform: translateY(-2px); }
-  .fc-kpi::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    border-radius: 14px 14px 0 0;
+  .fc-type-btn:hover { border-color: var(--gold); background: #fffbf0; }
+  .fc-type-btn.selected { border-color: var(--gold); background: #fffbf0; box-shadow: 0 0 0 3px rgba(201,168,76,.2); }
+  .fc-type-btn.entree.selected { border-color: #15803d; background: #f0fdf4; box-shadow: 0 0 0 3px rgba(21,128,61,.15); }
+  .fc-type-btn .tb-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+  .fc-type-btn .tb-label { font-size: .78rem; font-weight: 700; color: #1a2535; }
+  .fc-type-btn .tb-badge {
+    position: absolute; top: 6px; right: 8px; font-size: .62rem; font-weight: 700;
+    padding: 2px 6px; border-radius: 8px;
   }
-  .fc-kpi.kpi-recu::after  { background: var(--blue); }
-  .fc-kpi.kpi-banque::after{ background: var(--muted); }
-  .fc-kpi.kpi-coffre::after{ background: var(--gold); }
-  .fc-kpi-label {
-    font-size: .72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .8px; color: var(--muted); margin-bottom: 8px;
-  }
-  .fc-kpi-val {
-    font-size: 1.8rem; font-weight: 800;
-    font-variant-numeric: tabular-nums; line-height: 1;
-  }
-  .fc-kpi-val.blue  { color: var(--blue); }
-  .fc-kpi-val.grey  { color: var(--muted); }
-  .fc-kpi-val.gold  { color: #92400e; }
-  .fc-kpi-unit { font-size: .8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
+  .tb-badge.in  { background: #dcfce7; color: #15803d; }
+  .tb-badge.out { background: #fee2e2; color: #dc2626; }
 
-  /* ── Formulaire ── */
-  .fc-form-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 16px rgba(0,0,0,.07);
-  }
-  .fc-form-head {
-    background: linear-gradient(135deg, var(--navy), var(--navy2));
-    padding: 18px 24px;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .fc-form-head h3 {
-    color: var(--gold); font-size: 1rem; font-weight: 700; margin: 0;
-  }
+  /* Form card */
+  .fc-form-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+  .fc-form-head { background: linear-gradient(135deg, var(--navy), var(--navy2)); padding: 16px 24px; display: flex; align-items: center; gap: 10px; }
+  .fc-form-head h3 { color: var(--gold); font-size: 1rem; font-weight: 700; margin: 0; }
   .fc-form-body { padding: 24px; }
-  .fc-field-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+
+  .fc-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .fc-field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media(max-width:640px){ .fc-field-row, .fc-field-row-3 { grid-template-columns: 1fr; } }
+  .fc-field { margin-bottom: 16px; }
+  .fc-field label { display:block; font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:6px; }
+  .fc-field input, .fc-field select, .fc-field textarea {
+    width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px;
+    font-size:.95rem; color:#1a2535; transition:border-color .15s,box-shadow .15s;
+    font-variant-numeric:tabular-nums; box-sizing:border-box; background:white;
   }
-  @media(max-width:640px){ .fc-field-row { grid-template-columns: 1fr; } }
-  .fc-field label {
-    display: block; font-size: .75rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .6px;
-    color: var(--muted); margin-bottom: 6px;
+  .fc-field input:focus, .fc-field select:focus, .fc-field textarea:focus {
+    outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,76,.18);
   }
-  .fc-field input, .fc-field textarea {
-    width: 100%; padding: 11px 14px;
-    border: 1.5px solid var(--border); border-radius: 10px;
-    font-size: .95rem; color: #1a2535;
-    transition: border-color .15s, box-shadow .15s;
-    font-variant-numeric: tabular-nums;
-    box-sizing: border-box;
-  }
-  .fc-field input:focus, .fc-field textarea:focus {
-    outline: none;
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(201,168,76,.18);
-  }
-  .fc-field input[readonly] {
-    background: #f8fafc; color: var(--muted); cursor: not-allowed;
-  }
-  .fc-hint { font-size: .75rem; color: var(--muted); margin-top: 5px; }
+  .fc-field input[readonly] { background:#f8fafc; color:var(--muted); }
+  .fc-hint { font-size:.73rem; color:var(--muted); margin-top:4px; }
+
   .fc-coffre-preview {
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-    border: 2px solid #86efac;
-    border-radius: 12px; padding: 16px 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 20px;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #86efac; border-radius: 12px;
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
   }
-  .fc-coffre-preview-label { font-size: .8rem; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: .5px; }
-  .fc-coffre-preview-val { font-size: 2rem; font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
-  .fc-coffre-preview-unit { font-size: .85rem; color: #16a34a; font-weight: 600; margin-left: 4px; }
-  .fc-submit-row { display: flex; justify-content: flex-end; gap: 12px; }
+  .fc-preview-label { font-size:.78rem; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:.5px; }
+  .fc-preview-val { font-size:2rem; font-weight:800; color:#15803d; font-variant-numeric:tabular-nums; }
+
+  .fc-submit-row { display:flex; justify-content:flex-end; gap:12px; }
   .fc-btn-submit {
-    background: linear-gradient(135deg, #15803d, #059669);
-    color: white; border: none; border-radius: 10px;
-    padding: 12px 28px; font-size: .95rem; font-weight: 700;
-    cursor: pointer; display: flex; align-items: center; gap: 8px;
-    box-shadow: 0 4px 12px rgba(21,128,61,.3);
-    transition: transform .15s, box-shadow .15s;
+    background: linear-gradient(135deg, #15803d, #059669); color:white; border:none; border-radius:10px;
+    padding:12px 28px; font-size:.95rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px;
+    box-shadow:0 4px 12px rgba(21,128,61,.3); transition:transform .15s,box-shadow .15s;
   }
-  .fc-btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(21,128,61,.4); }
-  .fc-btn-cancel {
-    background: #f1f5f9; color: #475569; border: 1.5px solid var(--border);
-    border-radius: 10px; padding: 12px 20px; font-size: .9rem; font-weight: 600;
-    cursor: pointer; transition: background .15s;
-  }
-  .fc-btn-cancel:hover { background: #e2e8f0; }
+  .fc-btn-submit.sortie { background: linear-gradient(135deg, #b91c1c, #dc2626); box-shadow:0 4px 12px rgba(185,28,28,.3); }
+  .fc-btn-submit:hover { transform:translateY(-2px); }
+  .fc-btn-cancel { background:#f1f5f9; color:#475569; border:1.5px solid var(--border); border-radius:10px; padding:12px 20px; font-size:.9rem; font-weight:600; cursor:pointer; }
 
-  /* ── Historique table ── */
-  .fc-hist-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  }
-  .fc-hist-head {
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .fc-hist-head h3 { font-size: .95rem; font-weight: 700; margin: 0; color: var(--navy); }
-  .fc-hist-head span { font-size: .8rem; color: var(--muted); }
-  .fc-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-  .fc-table thead th {
-    background: #f8fafc;
-    padding: 10px 16px;
-    text-align: left;
-    font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
-    color: var(--muted); border-bottom: 1px solid var(--border);
-  }
-  .fc-table thead th.r { text-align: right; }
-  .fc-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
-  .fc-table tbody tr:hover { background: #f8fafc; }
-  .fc-table tbody td { padding: 12px 16px; vertical-align: middle; }
-  .fc-table tbody td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-  .fc-table tfoot td {
-    padding: 12px 16px; border-top: 2px solid var(--border);
-    font-weight: 800; font-size: .9rem;
-    font-variant-numeric: tabular-nums;
-  }
-  .fc-table tfoot td.r { text-align: right; }
-  .badge-coffre {
-    background: #fef9c3; color: #92400e;
-    border: 1px solid #fde68a;
-    border-radius: 20px; padding: 3px 10px;
-    font-size: .75rem; font-weight: 700;
-  }
-  .badge-banque {
-    background: #eff6ff; color: #1e40af;
-    border: 1px solid #bfdbfe;
-    border-radius: 20px; padding: 3px 10px;
-    font-size: .75rem; font-weight: 700;
-  }
-  .fc-empty {
-    text-align: center; padding: 48px 20px; color: var(--muted);
-  }
-  .fc-empty-icon { font-size: 3rem; margin-bottom: 12px; display: block; opacity: .5; }
+  /* Historique */
+  .fc-hist-card { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .fc-hist-head { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .fc-hist-head h3 { font-size:.95rem; font-weight:700; margin:0; color:var(--navy); }
 
-  #fc-toast {
-    position: fixed; bottom: 30px; right: 30px; z-index: 9999;
-    background: #15803d; color: white;
-    border-radius: 12px; padding: 14px 24px;
-    font-weight: 700; font-size: .9rem;
-    box-shadow: 0 8px 24px rgba(0,0,0,.2);
-    display: none; align-items: center; gap: 10px;
-    animation: fc-slide .3s ease;
-  }
-  @keyframes fc-slide { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .fc-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  .fc-table thead th { background:#f8fafc; padding:10px 14px; text-align:left; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); border-bottom:1px solid var(--border); }
+  .fc-table thead th.r { text-align:right; }
+  .fc-table tbody tr { border-bottom:1px solid #f1f5f9; transition:background .1s; }
+  .fc-table tbody tr:hover { background:#f8fafc; }
+  .fc-table tbody td { padding:11px 14px; vertical-align:middle; }
+  .fc-table tbody td.r { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .fc-table tfoot td { padding:12px 14px; border-top:2px solid var(--border); font-weight:800; font-size:.9rem; }
+  .fc-table tfoot td.r { text-align:right; font-variant-numeric:tabular-nums; }
+
+  .badge { border-radius:20px; padding:3px 10px; font-size:.73rem; font-weight:700; white-space:nowrap; }
+  .badge-in   { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+  .badge-out  { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+  .badge-type { background:#f1f5f9; color:#475569; border:1px solid var(--border); }
+
+  .fc-empty { text-align:center; padding:48px 20px; color:var(--muted); }
+  .fc-empty-icon { font-size:3rem; display:block; opacity:.4; margin-bottom:12px; }
+
+  #fc-toast { position:fixed; bottom:28px; right:28px; z-index:9999; color:white; border-radius:12px; padding:14px 22px; font-weight:700; font-size:.9rem; box-shadow:0 8px 24px rgba(0,0,0,.2); display:none; align-items:center; gap:10px; }
+  @keyframes fc-slide { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
 </style>
 
 <div style="background:var(--bg);padding:20px 0 50px">
@@ -260,89 +140,231 @@
   <div class="fc-hero">
     <div>
       <h1>💰 Flux Coffre — Direction</h1>
-      <p>Enregistrement journalier des remises de caisse et mouvements du coffre</p>
+      <p>General Cashier · Entrées, sorties, salaires, fournisseurs</p>
     </div>
-    <div class="fc-hero-right">
-      <span class="live-date" id="fc-live-date">Chargement…</span>
-      <button class="fc-btn-primary" onclick="scrollToForm()">
-        ➕ Nouvelle remise soir
-      </button>
+    <div style="text-align:right">
+      <div style="font-size:.8rem;color:#94a3b8" id="fc-date">—</div>
+      <a href="{% url 'dashboard:direction' %}" style="display:inline-block;margin-top:8px;font-size:.82rem;color:#c9a84c;text-decoration:none;">← Vue Direction</a>
     </div>
   </div>
 
-  <!-- KPI totaux cumulatifs -->
+  <!-- KPI -->
   <div class="fc-kpi-row">
-    <div class="fc-kpi kpi-recu">
-      <div class="fc-kpi-label">💼 Total reçu (cumulatif)</div>
-      <div class="fc-kpi-val blue">
-        {{ totaux.total_recu|default:0|floatformat:0|intcomma }}
-        <span class="fc-kpi-unit">FCFA</span>
-      </div>
+    <div class="fc-kpi k-entree">
+      <div class="fc-kpi-label">📥 Total entrées coffre</div>
+      <div class="fc-kpi-val green">{{ net_entrees|intcomma }}<span class="fc-unit">FCFA</span></div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Reçu : {{ total_recu|intcomma }} · Banque : {{ total_banque|intcomma }}</div>
     </div>
-    <div class="fc-kpi kpi-banque">
-      <div class="fc-kpi-label">🏛️ Total versé banque</div>
-      <div class="fc-kpi-val grey">
-        {{ totaux.total_banque|default:0|floatformat:0|intcomma }}
-        <span class="fc-kpi-unit">FCFA</span>
-      </div>
+    <div class="fc-kpi k-sortie">
+      <div class="fc-kpi-label">📤 Total sorties coffre</div>
+      <div class="fc-kpi-val red">{{ net_sorties|intcomma }}<span class="fc-unit">FCFA</span></div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Salaires, factures, prélèvements…</div>
     </div>
-    <div class="fc-kpi kpi-coffre">
-      <div class="fc-kpi-label">🔐 En coffre direction</div>
-      <div class="fc-kpi-val gold">
-        {{ totaux.total_coffre|default:0|floatformat:0|intcomma }}
-        <span class="fc-kpi-unit">FCFA</span>
-      </div>
+    <div class="fc-kpi k-banque">
+      <div class="fc-kpi-label">🏛️ Versé en banque</div>
+      <div class="fc-kpi-val blue">{{ total_banque|intcomma }}<span class="fc-unit">FCFA</span></div>
+    </div>
+    <div class="fc-kpi k-solde">
+      <div class="fc-kpi-label">🔐 Solde coffre net</div>
+      <div class="fc-kpi-val gold">{{ solde_coffre|intcomma }}<span class="fc-unit">FCFA</span></div>
     </div>
   </div>
 
-  <!-- Formulaire remise soir -->
-  <div class="fc-form-card" id="form-remise">
+  <!-- Formulaire -->
+  <div class="fc-form-card" id="form-section">
     <div class="fc-form-head">
-      <span style="font-size:1.3rem">🌙</span>
-      <h3>Enregistrer une remise soir</h3>
+      <span style="font-size:1.3rem">➕</span>
+      <h3>Nouvelle opération</h3>
     </div>
     <div class="fc-form-body">
-      <div class="fc-field-row">
-        <div class="fc-field">
-          <label>💵 Montant reçu de la caissière (FCFA)</label>
-          <input type="number" id="fc-recu" min="0" placeholder="0"
-            oninput="updateCoffre()">
-        </div>
-        <div class="fc-field">
-          <label>🏛️ Versé en banque (FCFA) <span style="font-weight:400;color:#94a3b8">— optionnel</span></label>
-          <input type="number" id="fc-banque" min="0" placeholder="0" value="0"
-            oninput="updateCoffre()">
-          <p class="fc-hint">Laisser 0 si rien n'est déposé à la banque ce soir</p>
-        </div>
-        <div class="fc-field">
-          <label>🔐 Gardé en coffre (calculé)</label>
-          <input type="number" id="fc-coffre-calc" readonly value="0"
-            style="font-size:1.1rem;font-weight:800;color:#15803d;">
-          <p class="fc-hint">= Reçu − Banque</p>
+
+      <!-- Sélecteur de type -->
+      <div style="margin-bottom:18px">
+        <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px">Type d'opération</div>
+        <div class="fc-type-grid">
+          <div class="fc-type-btn entree selected" data-type="remise_caisse" onclick="selectType(this)">
+            <span class="tb-badge in">ENTRÉE</span>
+            <span class="tb-icon">💵</span>
+            <span class="tb-label">Remise caissière</span>
+          </div>
+          <div class="fc-type-btn" data-type="prelevement_direction" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">👤</span>
+            <span class="tb-label">Prélèvement Direction</span>
+          </div>
+          <div class="fc-type-btn" data-type="salaire" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">👷</span>
+            <span class="tb-label">Salaire employé</span>
+          </div>
+          <div class="fc-type-btn" data-type="facture_cie" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">💡</span>
+            <span class="tb-label">Facture CIE</span>
+          </div>
+          <div class="fc-type-btn" data-type="facture_sodeci" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">🚰</span>
+            <span class="tb-label">Facture SODECI</span>
+          </div>
+          <div class="fc-type-btn" data-type="facture_internet" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">🌐</span>
+            <span class="tb-label">Facture Internet</span>
+          </div>
+          <div class="fc-type-btn" data-type="travaux" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">🔧</span>
+            <span class="tb-label">Travaux / Entretien</span>
+          </div>
+          <div class="fc-type-btn" data-type="divers" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">📦</span>
+            <span class="tb-label">Dépense Diverse</span>
+          </div>
         </div>
       </div>
 
-      <!-- Aperçu coffre -->
-      <div class="fc-coffre-preview">
-        <div>
-          <div class="fc-coffre-preview-label">🔐 Montant entrant dans le coffre ce soir</div>
-          <div style="font-size:.8rem;color:#166534;margin-top:2px">Ce montant s'ajoutera au solde cumulatif du coffre</div>
+      <!-- Formulaire dynamique : Remise caissière -->
+      <div id="form-remise_caisse">
+        <div class="fc-field-row fc-field-row-3">
+          <div class="fc-field">
+            <label>💵 Montant reçu de la caissière (FCFA)</label>
+            <input type="number" id="rc-recu" min="0" placeholder="0" oninput="calcCoffre()">
+          </div>
+          <div class="fc-field">
+            <label>🏛️ Versé en banque (FCFA) <span style="font-weight:400;color:#94a3b8">optionnel</span></label>
+            <input type="number" id="rc-banque" min="0" placeholder="0" value="0" oninput="calcCoffre()">
+          </div>
+          <div class="fc-field">
+            <label>🔐 Net coffre (calculé)</label>
+            <input type="number" id="rc-coffre" readonly value="0" style="font-weight:800;color:#15803d">
+          </div>
         </div>
-        <div>
-          <span class="fc-coffre-preview-val" id="fc-coffre-big">0</span>
-          <span class="fc-coffre-preview-unit">FCFA</span>
+        <div class="fc-coffre-preview">
+          <div>
+            <div class="fc-preview-label">🔐 Entre dans le coffre</div>
+            <div style="font-size:.78rem;color:#166534;margin-top:2px">= Reçu − Banque</div>
+          </div>
+          <div><span class="fc-preview-val" id="rc-big">0</span> <span style="color:#16a34a;font-weight:600">FCFA</span></div>
+        </div>
+        <div class="fc-field">
+          <label>📝 Notes</label>
+          <input type="text" id="rc-notes" placeholder="Ex : Remise shift soir, dépôt banque BNI lundi…">
         </div>
       </div>
 
-      <div class="fc-field" style="margin-bottom:20px">
-        <label>📝 Notes <span style="font-weight:400;color:#94a3b8">— optionnel</span></label>
-        <textarea id="fc-notes" rows="2" placeholder="Ex : Remise du shift soir, dépôt banque BNI demain matin…" style="resize:vertical"></textarea>
+      <!-- Formulaire dynamique : Prélèvement Direction -->
+      <div id="form-prelevement_direction" style="display:none">
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>💰 Montant prélevé (FCFA)</label>
+            <input type="number" id="pd-montant" min="0" placeholder="0">
+          </div>
+          <div class="fc-field">
+            <label>👤 Bénéficiaire / Motif</label>
+            <input type="text" id="pd-desc" placeholder="Ex : M. Behanian — besoins personnels">
+          </div>
+        </div>
+        <div class="fc-field">
+          <label>📝 Notes</label>
+          <input type="text" id="pd-notes" placeholder="Précisions éventuelles…">
+        </div>
+      </div>
+
+      <!-- Formulaire dynamique : Salaire -->
+      <div id="form-salaire" style="display:none">
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>👷 Employé</label>
+            <select id="sal-emp" onchange="fillSalaire()">
+              <option value="">— Sélectionner un employé —</option>
+              {% for e in employes %}
+              <option value="{{ e.pk }}" data-salaire="{{ e.salaire_base }}">
+                {{ e.nom_complet }}{% if e.poste %} — {{ e.poste }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            {% if not employes %}<p class="fc-hint" style="color:#b91c1c">Aucun employé configuré — ajoutez-les dans l'administration.</p>{% endif %}
+          </div>
+          <div class="fc-field">
+            <label>💰 Salaire payé (FCFA) <span style="font-weight:400;color:#94a3b8">modifiable</span></label>
+            <input type="number" id="sal-montant" min="0" placeholder="0">
+            <p class="fc-hint" id="sal-hint">Sélectionnez un employé pour pré-remplir le salaire configuré</p>
+          </div>
+        </div>
+        <div class="fc-field">
+          <label>📝 Notes</label>
+          <input type="text" id="sal-notes" placeholder="Ex : Salaire septembre 2026…">
+        </div>
+      </div>
+
+      <!-- Formulaire dynamique : Factures (CIE / SODECI / Internet) -->
+      <div id="form-facture" style="display:none">
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>💰 Montant réglé (FCFA)</label>
+            <input type="number" id="fac-montant" min="0" placeholder="0">
+          </div>
+          <div class="fc-field">
+            <label>🔢 N° Facture / Référence <span style="font-weight:400;color:#94a3b8">optionnel</span></label>
+            <input type="text" id="fac-ref" placeholder="Ex : FAC-20260901-CIE">
+          </div>
+        </div>
+        <div class="fc-field">
+          <label>📝 Notes / Période couverte</label>
+          <input type="text" id="fac-notes" placeholder="Ex : Facture août 2026 — compteur principal">
+        </div>
+      </div>
+
+      <!-- Formulaire dynamique : Travaux -->
+      <div id="form-travaux" style="display:none">
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>💰 Montant payé (FCFA)</label>
+            <input type="number" id="trx-montant" min="0" placeholder="0">
+          </div>
+          <div class="fc-field">
+            <label>🔧 Prestataire / Artisan</label>
+            <input type="text" id="trx-fourn" placeholder="Ex : Électricien Koné Mohamed">
+          </div>
+        </div>
+        <div class="fc-field">
+          <label>📋 Description des travaux</label>
+          <input type="text" id="trx-desc" placeholder="Ex : Remplacement climatiseur chambre 12">
+        </div>
+        <div class="fc-field">
+          <label>🔢 Référence / Bon de travail <span style="font-weight:400;color:#94a3b8">optionnel</span></label>
+          <input type="text" id="trx-ref" placeholder="N° bon…">
+        </div>
+      </div>
+
+      <!-- Formulaire dynamique : Divers -->
+      <div id="form-divers" style="display:none">
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>💰 Montant (FCFA)</label>
+            <input type="number" id="div-montant" min="0" placeholder="0">
+          </div>
+          <div class="fc-field">
+            <label>📋 Description</label>
+            <input type="text" id="div-desc" placeholder="Ex : Achat fournitures bureau">
+          </div>
+        </div>
+        <div class="fc-field">
+          <label>🏪 Fournisseur / Bénéficiaire <span style="font-weight:400;color:#94a3b8">optionnel</span></label>
+          <input type="text" id="div-fourn" placeholder="Ex : Papeterie Centrale">
+        </div>
+        <div class="fc-field">
+          <label>📝 Notes</label>
+          <input type="text" id="div-notes" placeholder="Précisions…">
+        </div>
       </div>
 
       <div class="fc-submit-row">
-        <button class="fc-btn-cancel" type="button" onclick="resetForm()">Annuler</button>
-        <button class="fc-btn-submit" type="button" onclick="submitRemise()">
-          <span>✅</span> Enregistrer la remise
+        <button class="fc-btn-cancel" type="button" onclick="resetAllForms()">Annuler</button>
+        <button class="fc-btn-submit" id="btn-submit" type="button" onclick="submitMouvement()">
+          <span id="btn-icon">✅</span> <span id="btn-label">Enregistrer la remise</span>
         </button>
       </div>
     </div>
@@ -351,55 +373,61 @@
   <!-- Historique -->
   <div class="fc-hist-card">
     <div class="fc-hist-head">
-      <h3>📋 Historique des remises soir</h3>
-      <span>{{ remises|length }} enregistrement{% if remises|length != 1 %}s{% endif %}</span>
+      <h3>📋 Historique des opérations coffre</h3>
+      <span style="font-size:.8rem;color:var(--muted)">{{ mouvements|length }} opération{% if mouvements|length != 1 %}s{% endif %}</span>
     </div>
-    {% if remises %}
+    {% if mouvements %}
     <div style="overflow-x:auto">
     <table class="fc-table">
       <thead>
         <tr>
           <th>Date</th>
-          <th class="r">Reçu caissière</th>
-          <th class="r">Versé banque</th>
-          <th class="r">Coffre direction</th>
-          <th>Notes</th>
+          <th>Type</th>
+          <th>Détail</th>
+          <th class="r">Entrée coffre</th>
+          <th class="r">Sortie coffre</th>
           <th>Enregistré par</th>
         </tr>
       </thead>
-      <tbody id="fc-tbody">
-      {% for r in remises %}
+      <tbody>
+      {% for m in mouvements %}
       <tr>
         <td>
-          <strong>{{ r.date|date:"d/m/Y" }}</strong>
-          {% if r.date == today %}<span style="background:#dcfce7;color:#15803d;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px">Aujourd'hui</span>{% endif %}
+          <strong>{{ m.date|date:"d/m/Y" }}</strong>
+          {% if m.date == today %}<span style="background:#dcfce7;color:#15803d;font-size:.68rem;font-weight:700;padding:2px 6px;border-radius:8px;margin-left:5px">Auj.</span>{% endif %}
         </td>
-        <td class="r" style="color:var(--blue)">{{ r.montant_recu|floatformat:0|intcomma }} F</td>
+        <td><span class="badge badge-type">{{ m.get_type_display }}</span></td>
+        <td style="color:var(--muted);font-size:.82rem;max-width:220px">
+          {% if m.employe %}{{ m.employe.nom_complet }}{% endif %}
+          {% if m.description %}{{ m.description }}{% endif %}
+          {% if m.fournisseur %}<span style="color:#475569">{{ m.fournisseur }}</span>{% endif %}
+          {% if m.reference %}<span style="color:#94a3b8"> · {{ m.reference }}</span>{% endif %}
+          {% if m.type == 'remise_caisse' %}<span style="color:#94a3b8">Reçu {{ m.montant_recu|floatformat:0|intcomma }} · Banque {{ m.montant_banque|floatformat:0|intcomma }}</span>{% endif %}
+        </td>
         <td class="r">
-          {% if r.montant_banque %}
-          <span class="badge-banque">{{ r.montant_banque|floatformat:0|intcomma }} F</span>
-          {% else %}<span style="color:var(--muted)">—</span>{% endif %}
+          {% if m.est_entree %}<span class="badge badge-in">+{{ m.montant|floatformat:0|intcomma }} F</span>{% else %}<span style="color:#d1d5db">—</span>{% endif %}
         </td>
         <td class="r">
-          <span class="badge-coffre">{{ r.montant_coffre|floatformat:0|intcomma }} F</span>
+          {% if m.est_sortie %}<span class="badge badge-out">−{{ m.montant|floatformat:0|intcomma }} F</span>{% else %}<span style="color:#d1d5db">—</span>{% endif %}
         </td>
-        <td style="color:var(--muted);font-size:.82rem;max-width:200px">
-          {{ r.notes|default:"—"|truncatechars:60 }}
-        </td>
-        <td style="font-size:.82rem">
-          {{ r.enregistre_par.get_full_name|default:r.enregistre_par.username|default:"—" }}
-          <div style="color:var(--muted);font-size:.72rem">{{ r.created_at|date:"H:i" }}</div>
+        <td style="font-size:.8rem">
+          {{ m.enregistre_par.get_full_name|default:m.enregistre_par.username|default:"—" }}
+          <div style="color:var(--muted);font-size:.7rem">{{ m.created_at|date:"H:i" }}</div>
         </td>
       </tr>
       {% endfor %}
       </tbody>
       <tfoot>
         <tr>
-          <td>TOTAL</td>
-          <td class="r" style="color:var(--blue)">{{ totaux.total_recu|default:0|floatformat:0|intcomma }} F</td>
-          <td class="r" style="color:var(--muted)">{{ totaux.total_banque|default:0|floatformat:0|intcomma }} F</td>
-          <td class="r" style="color:#92400e">{{ totaux.total_coffre|default:0|floatformat:0|intcomma }} F</td>
-          <td colspan="2"></td>
+          <td colspan="3" style="font-weight:800">TOTAL</td>
+          <td class="r" style="color:#15803d">{{ net_entrees|intcomma }} F</td>
+          <td class="r" style="color:#b91c1c">{{ net_sorties|intcomma }} F</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="3" style="font-weight:800;color:#92400e">SOLDE NET COFFRE</td>
+          <td colspan="2" class="r" style="color:#92400e;font-size:1rem">{{ solde_coffre|intcomma }} FCFA</td>
+          <td></td>
         </tr>
       </tfoot>
     </table>
@@ -407,88 +435,193 @@
     {% else %}
     <div class="fc-empty">
       <span class="fc-empty-icon">📭</span>
-      <p style="font-weight:600;color:#475569">Aucune remise soir enregistrée</p>
-      <p style="font-size:.85rem">Utilisez le formulaire ci-dessus pour commencer à tracer les flux du coffre.</p>
+      <p style="font-weight:600;color:#475569">Aucune opération enregistrée</p>
+      <p style="font-size:.85rem">Commencez par enregistrer une remise caissière ou une sortie.</p>
     </div>
     {% endif %}
   </div>
 
-</div><!-- /container -->
-</div><!-- /bg -->
+</div>
+</div>
 
-<!-- Toast -->
-<div id="fc-toast">✅ <span id="fc-toast-msg">Remise enregistrée</span></div>
+<div id="fc-toast" style="display:none">✅ <span id="fc-toast-msg"></span></div>
 
 <script>
-  // Date/heure live
-  function updateClock(){
-    const now = new Date();
-    const opts = { weekday:'long', day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' };
-    document.getElementById('fc-live-date').textContent = now.toLocaleDateString('fr-FR', opts);
-  }
-  updateClock(); setInterval(updateClock, 30000);
+  // Horloge
+  (function tick(){
+    const d = new Date();
+    document.getElementById('fc-date').textContent = d.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) + ' ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    setTimeout(tick, 30000);
+  })();
 
-  // Calcul coffre en temps réel
-  function updateCoffre(){
-    const recu   = parseInt(document.getElementById('fc-recu').value)   || 0;
-    const banque = parseInt(document.getElementById('fc-banque').value) || 0;
+  // Mappage type → formulaire à afficher
+  const FORM_MAP = {
+    'remise_caisse':        'form-remise_caisse',
+    'prelevement_direction':'form-prelevement_direction',
+    'salaire':              'form-salaire',
+    'facture_cie':          'form-facture',
+    'facture_sodeci':       'form-facture',
+    'facture_internet':     'form-facture',
+    'travaux':              'form-travaux',
+    'divers':               'form-divers',
+  };
+  const BTN_CONFIG = {
+    'remise_caisse':        {icon:'✅', label:'Enregistrer la remise', cls:''},
+    'prelevement_direction':{icon:'👤', label:'Enregistrer le prélèvement', cls:' sortie'},
+    'salaire':              {icon:'👷', label:'Enregistrer le salaire', cls:' sortie'},
+    'facture_cie':          {icon:'💡', label:'Enregistrer la facture CIE', cls:' sortie'},
+    'facture_sodeci':       {icon:'🚰', label:'Enregistrer la facture SODECI', cls:' sortie'},
+    'facture_internet':     {icon:'🌐', label:'Enregistrer la facture Internet', cls:' sortie'},
+    'travaux':              {icon:'🔧', label:'Enregistrer les travaux', cls:' sortie'},
+    'divers':               {icon:'📦', label:'Enregistrer la dépense', cls:' sortie'},
+  };
+
+  let currentType = 'remise_caisse';
+
+  function selectType(el) {
+    document.querySelectorAll('.fc-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    currentType = el.dataset.type;
+
+    // Masquer tous les sous-formulaires
+    document.querySelectorAll('[id^="form-"]').forEach(f => { if(f.id !== 'form-section') f.style.display = 'none'; });
+    const target = FORM_MAP[currentType];
+    if(target) document.getElementById(target).style.display = 'block';
+
+    // Mettre à jour le bouton
+    const cfg = BTN_CONFIG[currentType] || {icon:'✅',label:'Enregistrer',cls:''};
+    document.getElementById('btn-icon').textContent  = cfg.icon;
+    document.getElementById('btn-label').textContent = cfg.label;
+    const btn = document.getElementById('btn-submit');
+    btn.className = 'fc-btn-submit' + cfg.cls;
+
+    // Labels facture selon type
+    if(currentType.startsWith('facture_')) {
+      const labels = {facture_cie:'💡 CIE',facture_sodeci:'🚰 SODECI',facture_internet:'🌐 Internet'};
+      document.querySelector('#form-facture label').textContent = (labels[currentType]||'Facture') + ' — Montant réglé (FCFA)';
+    }
+  }
+
+  // Calcul coffre en temps réel (remise caissière)
+  function calcCoffre() {
+    const recu   = parseInt(document.getElementById('rc-recu').value)   || 0;
+    const banque = parseInt(document.getElementById('rc-banque').value) || 0;
     const coffre = Math.max(0, recu - banque);
-    document.getElementById('fc-coffre-calc').value = coffre;
-    document.getElementById('fc-coffre-big').textContent = coffre.toLocaleString('fr-FR');
-  }
-  updateCoffre();
-
-  // Scroll vers le formulaire
-  function scrollToForm(){
-    document.getElementById('form-remise').scrollIntoView({ behavior:'smooth', block:'start' });
-    setTimeout(() => document.getElementById('fc-recu').focus(), 400);
+    document.getElementById('rc-coffre').value = coffre;
+    document.getElementById('rc-big').textContent = coffre.toLocaleString('fr-FR');
   }
 
-  function resetForm(){
-    document.getElementById('fc-recu').value   = '';
-    document.getElementById('fc-banque').value = '0';
-    document.getElementById('fc-notes').value  = '';
-    updateCoffre();
+  // Auto-fill salaire
+  function fillSalaire() {
+    const opt = document.querySelector('#sal-emp option:checked');
+    const sal = opt ? (parseInt(opt.dataset.salaire) || 0) : 0;
+    if(sal > 0) {
+      document.getElementById('sal-montant').value = sal;
+      document.getElementById('sal-hint').textContent = 'Salaire configuré : ' + sal.toLocaleString('fr-FR') + ' FCFA — modifiable';
+    } else {
+      document.getElementById('sal-montant').value = '';
+      document.getElementById('sal-hint').textContent = 'Saisissez le montant manuellement';
+    }
   }
 
-  function showToast(msg, ok=true){
+  function resetAllForms() {
+    ['rc-recu','rc-banque','rc-coffre','rc-notes',
+     'pd-montant','pd-desc','pd-notes',
+     'sal-montant','sal-notes',
+     'fac-montant','fac-ref','fac-notes',
+     'trx-montant','trx-fourn','trx-desc','trx-ref',
+     'div-montant','div-desc','div-fourn','div-notes'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = id.endsWith('banque') ? '0' : '';
+    });
+    const se = document.getElementById('sal-emp');
+    if(se) se.selectedIndex = 0;
+    document.getElementById('rc-big').textContent = '0';
+  }
+
+  function showToast(msg, ok=true) {
     const el = document.getElementById('fc-toast');
     document.getElementById('fc-toast-msg').textContent = msg;
-    el.style.background = ok ? '#15803d' : '#dc2626';
-    el.style.display = 'flex';
+    el.style.cssText = `display:flex;background:${ok?'#15803d':'#dc2626'};animation:fc-slide .3s ease;
+      position:fixed;bottom:28px;right:28px;z-index:9999;color:white;border-radius:12px;
+      padding:14px 22px;font-weight:700;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.2);align-items:center;gap:10px`;
     setTimeout(() => el.style.display = 'none', 4000);
   }
 
-  async function submitRemise(){
-    const recu   = parseInt(document.getElementById('fc-recu').value)   || 0;
-    const banque = parseInt(document.getElementById('fc-banque').value) || 0;
-    const notes  = document.getElementById('fc-notes').value.trim();
+  function buildPayload() {
+    const base = {type: currentType};
+    if(currentType === 'remise_caisse') {
+      const recu   = parseInt(document.getElementById('rc-recu').value)   || 0;
+      const banque = parseInt(document.getElementById('rc-banque').value) || 0;
+      if(recu <= 0) { showToast('Saisissez le montant reçu de la caissière', false); return null; }
+      if(banque > recu) { showToast('Montant banque > montant reçu', false); return null; }
+      return {...base, montant_recu: recu, montant_banque: banque, montant: recu - banque,
+        notes: document.getElementById('rc-notes').value.trim()};
+    }
+    if(currentType === 'prelevement_direction') {
+      const m = parseInt(document.getElementById('pd-montant').value) || 0;
+      if(m <= 0) { showToast('Saisissez le montant', false); return null; }
+      return {...base, montant: m, description: document.getElementById('pd-desc').value.trim(),
+        notes: document.getElementById('pd-notes').value.trim()};
+    }
+    if(currentType === 'salaire') {
+      const m = parseInt(document.getElementById('sal-montant').value) || 0;
+      const e = parseInt(document.getElementById('sal-emp').value) || 0;
+      if(m <= 0) { showToast('Saisissez le montant du salaire', false); return null; }
+      return {...base, montant: m, employe_id: e || null,
+        notes: document.getElementById('sal-notes').value.trim()};
+    }
+    if(currentType.startsWith('facture_')) {
+      const m = parseInt(document.getElementById('fac-montant').value) || 0;
+      if(m <= 0) { showToast('Saisissez le montant', false); return null; }
+      return {...base, montant: m, reference: document.getElementById('fac-ref').value.trim(),
+        notes: document.getElementById('fac-notes').value.trim()};
+    }
+    if(currentType === 'travaux') {
+      const m = parseInt(document.getElementById('trx-montant').value) || 0;
+      if(m <= 0) { showToast('Saisissez le montant', false); return null; }
+      return {...base, montant: m, fournisseur: document.getElementById('trx-fourn').value.trim(),
+        description: document.getElementById('trx-desc').value.trim(),
+        reference: document.getElementById('trx-ref').value.trim()};
+    }
+    if(currentType === 'divers') {
+      const m = parseInt(document.getElementById('div-montant').value) || 0;
+      if(m <= 0) { showToast('Saisissez le montant', false); return null; }
+      return {...base, montant: m, description: document.getElementById('div-desc').value.trim(),
+        fournisseur: document.getElementById('div-fourn').value.trim(),
+        notes: document.getElementById('div-notes').value.trim()};
+    }
+    return null;
+  }
 
-    if(recu <= 0){ showToast('Saisissez le montant reçu de la caissière', false); return; }
-    if(banque > recu){ showToast('Le montant banque ne peut pas dépasser le montant reçu', false); return; }
+  async function submitMouvement() {
+    const payload = buildPayload();
+    if(!payload) return;
 
-    const btn = document.querySelector('.fc-btn-submit');
-    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    const origLabel = document.getElementById('btn-label').textContent;
+    document.getElementById('btn-label').textContent = 'Enregistrement…';
 
     try {
-      const resp = await fetch("{% url 'caisse:api_remise_soir' %}", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-        body: JSON.stringify({ montant_recu: recu, montant_banque: banque, notes })
+      const r = await fetch("{% url 'caisse:api_mouvement_coffre' %}", {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+        body: JSON.stringify(payload)
       });
-      const d = await resp.json();
-      if(d.ok){
-        showToast(`Remise enregistrée — ${d.montant_coffre.toLocaleString('fr-FR')} FCFA en coffre`);
-        resetForm();
-        // Recharger la page pour mettre à jour l'historique et les KPI
-        setTimeout(() => location.reload(), 1500);
+      const d = await r.json();
+      if(d.ok) {
+        const sens = d.sens === 'entree' ? '+' : '−';
+        showToast(`${d.label} enregistré — ${sens}${d.montant.toLocaleString('fr-FR')} FCFA`);
+        resetAllForms();
+        setTimeout(() => location.reload(), 1600);
       } else {
-        showToast(d.error || 'Erreur lors de l\'enregistrement', false);
+        showToast(d.error || 'Erreur', false);
       }
-    } catch(e){
-      showToast('Erreur réseau', false);
-    } finally {
-      btn.disabled = false; btn.innerHTML = '<span>✅</span> Enregistrer la remise';
+    } catch(e) { showToast('Erreur réseau', false); }
+    finally {
+      btn.disabled = false;
+      document.getElementById('btn-label').textContent = origLabel;
     }
   }
 </script>

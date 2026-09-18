@@ -245,49 +245,98 @@ class PrelevementBanque(models.Model):
         return f"Prélèvement banque {self.montant} F — {self.date.strftime('%d/%m/%Y')}"
 
 
-class RemiseSoir(models.Model):
-    """Flux du coffre direction enregistrés chaque soir par le manager.
+class Employe(models.Model):
+    """Employé du complexe — référentiel pour les paiements de salaires depuis le coffre."""
+    nom_complet  = models.CharField(max_length=200)
+    poste        = models.CharField(max_length=100, blank=True)
+    salaire_base = models.PositiveIntegerField(
+        default=0, help_text="Salaire mensuel configuré en FCFA"
+    )
+    actif        = models.BooleanField(default=True)
+    notes        = models.TextField(blank=True)
 
-    Chaque soir après la clôture de la caissière :
-      - le manager reçoit les espèces (montant_recu)
-      - en dépose une partie en banque (montant_banque)
-      - garde le reste en coffre direction (montant_coffre = recu − banque)
-    C'est l'unique source de vérité pour le solde cumulatif du coffre.
+    class Meta:
+        ordering = ['nom_complet']
+        verbose_name = 'Employé'
+        verbose_name_plural = 'Employés'
+
+    def __str__(self):
+        return f"{self.nom_complet} — {self.poste}" if self.poste else self.nom_complet
+
+
+class MouvementCoffre(models.Model):
+    """Mouvement du coffre direction (General Cashier ERP).
+
+    Entrées  : remise_caisse (espèces reçues de la caissière, net de la part banque)
+    Sorties  : prélèvement direction, salaire, factures utilitaires, travaux, divers
+    Le solde cumulatif du coffre = SUM(entrées) − SUM(sorties).
     """
-    date           = models.DateField(default=timezone.localdate)
-    session        = models.ForeignKey(
-        CaisseSession, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='remises_soir',
-        help_text="Session centrale clôturée correspondante"
+
+    TYPE_CHOICES = [
+        # ── Entrées ──────────────────────────────────────────
+        ('remise_caisse',         '💵 Remise caissière → Coffre'),
+        # ── Sorties ──────────────────────────────────────────
+        ('prelevement_direction', '👤 Prélèvement Direction'),
+        ('salaire',               '👷 Paiement Salaire'),
+        ('facture_cie',           '💡 Facture CIE (Électricité)'),
+        ('facture_sodeci',        '🚰 Facture SODECI (Eau)'),
+        ('facture_internet',      '🌐 Facture Internet'),
+        ('travaux',               '🔧 Travaux / Entretien'),
+        ('divers',                '📦 Dépense Diverse'),
+    ]
+    TYPES_ENTREE = frozenset({'remise_caisse'})
+
+    date        = models.DateField(default=timezone.localdate)
+    type        = models.CharField(max_length=30, choices=TYPE_CHOICES)
+
+    # Montant net impactant le coffre (toujours positif ; le sens dépend de TYPES_ENTREE)
+    montant     = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
+
+    # Champs spécifiques aux remises caisse
+    montant_recu   = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
+                        help_text="Espèces totales reçues de la caissière")
+    montant_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
+                        help_text="Part immédiatement déposée en banque")
+
+    # Champ spécifique aux salaires
+    employe     = models.ForeignKey(
+        Employe, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='paiements_salaire'
     )
-    montant_recu   = models.DecimalField(
-        max_digits=12, decimal_places=3, default=Decimal('0'),
-        help_text="Espèces reçues de la caissière (= fond_caisse_reel de la clôture)"
-    )
-    montant_banque = models.DecimalField(
-        max_digits=12, decimal_places=3, default=Decimal('0'),
-        help_text="Montant versé à la banque"
-    )
-    montant_coffre = models.DecimalField(
-        max_digits=12, decimal_places=3, default=Decimal('0'),
-        help_text="Montant gardé en coffre direction (calculé = recu − banque)"
-    )
-    notes          = models.TextField(blank=True)
+
+    # Champs communs sorties
+    fournisseur = models.CharField(max_length=200, blank=True,
+                    help_text="Prestataire, banque, bénéficiaire…")
+    reference   = models.CharField(max_length=100, blank=True,
+                    help_text="N° facture, bordereau, reçu…")
+    description = models.CharField(max_length=300, blank=True)
+    notes       = models.TextField(blank=True)
+
     enregistre_par = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True,
-        related_name='remises_soir_enregistrees'
+        related_name='mouvements_coffre'
     )
-    created_at     = models.DateTimeField(auto_now_add=True)
-    valide         = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    valide      = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['-date', '-created_at']
-        verbose_name = 'Remise soir (coffre)'
-        verbose_name_plural = 'Remises soir (coffre)'
+        verbose_name = 'Mouvement coffre'
+        verbose_name_plural = 'Mouvements coffre'
 
     def __str__(self):
-        return f"Remise soir {self.date} — {int(self.montant_coffre):,} F coffre"
+        sens = '↑' if self.est_entree else '↓'
+        return f"{sens} {self.get_type_display()} — {int(self.montant):,} F — {self.date}"
+
+    @property
+    def est_entree(self):
+        return self.type in self.TYPES_ENTREE
+
+    @property
+    def est_sortie(self):
+        return self.type not in self.TYPES_ENTREE
 
     def save(self, *args, **kwargs):
-        self.montant_coffre = self.montant_recu - self.montant_banque
+        if self.type == 'remise_caisse':
+            self.montant = max(Decimal('0'), self.montant_recu - self.montant_banque)
         super().save(*args, **kwargs)

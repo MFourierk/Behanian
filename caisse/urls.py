@@ -32,5 +32,6 @@ urlpatterns = [
     path('api/annuler-verrouillage/', views.api_annuler_verrouillage, name='api_annuler_verrouillage'),
     path('rapport-passation/<int:session_id>/', views.rapport_passation, name='rapport_passation'),
     path('flux-coffre/', views.flux_coffre, name='flux_coffre'),
-    path('api/remise-soir/', views.api_remise_soir, name='api_remise_soir'),
+    path('api/mouvement-coffre/', views.api_mouvement_coffre, name='api_mouvement_coffre'),
+    path('api/employes-coffre/', views.api_employes_coffre, name='api_employes_coffre'),
 ]

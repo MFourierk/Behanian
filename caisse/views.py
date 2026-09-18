@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from utils.permissions import require_module_access, require_manager, GROUPE_MANAGER_GENERAL
 from facturation.models import Ticket
 from facturation.services import aggregate_par_mode as _aggregate_par_mode
-from .models import CaisseSession, MouvementCaisse, PrelevementBanque, RemiseSoir
+from .models import CaisseSession, MouvementCaisse, PrelevementBanque, Employe, MouvementCoffre
 
 
 _MODE_LABELS = {
@@ -2290,30 +2290,52 @@ def rapport_passation(request, session_id):
 @login_required
 @require_module_access('caisse')
 def flux_coffre(request):
-    """Page manager : formulaire des flux du coffre direction (remises soir)."""
+    """Page manager/directeur : General Cashier — tous les flux du coffre direction."""
     from utils.permissions import _is_manager
     if not _is_manager(request.user):
         return redirect('caisse:index')
 
-    remises = RemiseSoir.objects.filter(valide=True).select_related('enregistre_par')
+    mouvements = MouvementCoffre.objects.filter(valide=True).select_related('employe', 'enregistre_par')
+    employes   = Employe.objects.filter(actif=True)
 
-    totaux = RemiseSoir.objects.filter(valide=True).aggregate(
-        total_recu=Sum('montant_recu'),
-        total_banque=Sum('montant_banque'),
-        total_coffre=Sum('montant_coffre'),
+    agg = MouvementCoffre.objects.filter(valide=True).aggregate(
+        s_entrees=Sum('montant', filter=Q(type='remise_caisse')),
+        s_sorties=Sum('montant', filter=~Q(type='remise_caisse')),
+        s_recu=Sum('montant_recu', filter=Q(type='remise_caisse')),
+        s_banque=Sum('montant_banque', filter=Q(type='remise_caisse')),
     )
+    net_entrees  = int(agg['s_entrees'] or 0)
+    net_sorties  = int(agg['s_sorties'] or 0)
+    total_recu   = int(agg['s_recu']   or 0)
+    total_banque = int(agg['s_banque'] or 0)
+    solde_coffre = net_entrees - net_sorties
 
     return render(request, 'caisse/flux_coffre.html', {
-        'remises': remises,
-        'totaux':  totaux,
-        'today':   timezone.localdate(),
+        'mouvements':  mouvements,
+        'employes':    employes,
+        'net_entrees': net_entrees,
+        'net_sorties': net_sorties,
+        'total_recu':  total_recu,
+        'total_banque':total_banque,
+        'solde_coffre':solde_coffre,
+        'today':       timezone.localdate(),
     })
 
 
 @login_required
+def api_employes_coffre(request):
+    """API JSON : liste des employés actifs avec salaire (pour auto-fill)."""
+    from utils.permissions import _is_manager
+    if not _is_manager(request.user):
+        return JsonResponse({'ok': False}, status=403)
+    data = list(Employe.objects.filter(actif=True).values('id', 'nom_complet', 'poste', 'salaire_base'))
+    return JsonResponse({'ok': True, 'employes': data})
+
+
+@login_required
 @require_POST
-def api_remise_soir(request):
-    """API JSON : enregistrer une remise soir (manager)."""
+def api_mouvement_coffre(request):
+    """API JSON : enregistrer un mouvement du coffre direction (manager/directeur)."""
     from utils.permissions import _is_manager
     if not _is_manager(request.user):
         return JsonResponse({'ok': False, 'error': 'Accès refusé'}, status=403)
@@ -2323,35 +2345,56 @@ def api_remise_soir(request):
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'JSON invalide'}, status=400)
 
+    type_ = data.get('type', '')
+    valid_types = {t[0] for t in MouvementCoffre.TYPE_CHOICES}
+    if type_ not in valid_types:
+        return JsonResponse({'ok': False, 'error': 'Type invalide'})
+
     try:
-        montant_recu   = int(Decimal(str(data.get('montant_recu', 0))))
-        montant_banque = int(Decimal(str(data.get('montant_banque', 0))))
+        montant = int(Decimal(str(data.get('montant', 0))))
     except (InvalidOperation, ValueError):
-        return JsonResponse({'ok': False, 'error': 'Montants invalides'}, status=400)
+        return JsonResponse({'ok': False, 'error': 'Montant invalide'})
 
-    if montant_recu <= 0:
-        return JsonResponse({'ok': False, 'error': 'Le montant reçu doit être positif'})
-    if montant_banque < 0 or montant_banque > montant_recu:
-        return JsonResponse({'ok': False, 'error': 'Montant banque invalide (> reçu)'})
+    if montant <= 0:
+        return JsonResponse({'ok': False, 'error': 'Le montant doit être positif'})
 
-    session_id = data.get('session_id')
-    session = None
-    if session_id:
-        session = CaisseSession.objects.filter(pk=session_id).first()
-
-    remise = RemiseSoir.objects.create(
+    kwargs = dict(
         date           = timezone.localdate(),
-        session        = session,
-        montant_recu   = montant_recu,
-        montant_banque = montant_banque,
+        type           = type_,
+        description    = data.get('description', '').strip()[:300],
+        fournisseur    = data.get('fournisseur', '').strip()[:200],
+        reference      = data.get('reference', '').strip()[:100],
         notes          = data.get('notes', '').strip()[:500],
         enregistre_par = request.user,
     )
 
+    if type_ == 'remise_caisse':
+        try:
+            montant_recu   = int(Decimal(str(data.get('montant_recu', 0))))
+            montant_banque = int(Decimal(str(data.get('montant_banque', 0))))
+        except (InvalidOperation, ValueError):
+            return JsonResponse({'ok': False, 'error': 'Montants remise invalides'})
+        if montant_recu <= 0:
+            return JsonResponse({'ok': False, 'error': 'Montant reçu requis'})
+        if montant_banque < 0 or montant_banque > montant_recu:
+            return JsonResponse({'ok': False, 'error': 'Montant banque invalide'})
+        kwargs.update(montant_recu=montant_recu, montant_banque=montant_banque)
+        # montant sera recalculé dans save()
+        kwargs['montant'] = montant_recu  # sera écrasé par save()
+    else:
+        kwargs['montant'] = montant
+
+    if type_ == 'salaire':
+        emp_id = data.get('employe_id')
+        if emp_id:
+            kwargs['employe'] = Employe.objects.filter(pk=emp_id, actif=True).first()
+
+    mv = MouvementCoffre.objects.create(**kwargs)
+
     return JsonResponse({
-        'ok':             True,
-        'id':             remise.pk,
-        'montant_recu':   int(remise.montant_recu),
-        'montant_banque': int(remise.montant_banque),
-        'montant_coffre': int(remise.montant_coffre),
+        'ok':      True,
+        'id':      mv.pk,
+        'montant': int(mv.montant),
+        'sens':    'entree' if mv.est_entree else 'sortie',
+        'label':   mv.get_type_display(),
     })
