@@ -271,17 +271,6 @@
     </div>
   </div>
 
-  <!-- Alerte session non remisée -->
-  {% if session_sans_remise %}
-  <div class="fc-alert">
-    <span class="fc-alert-icon">⚠️</span>
-    <div class="fc-alert-text">
-      <strong>Session clôturée ce jour sans remise enregistrée</strong>
-      <span>La caissière a clôturé sa session aujourd'hui mais aucune remise soir n'a été saisie. Enregistrez-la ci-dessous.</span>
-    </div>
-  </div>
-  {% endif %}
-
   <!-- KPI totaux cumulatifs -->
   <div class="fc-kpi-row">
     <div class="fc-kpi kpi-recu">
@@ -318,11 +307,7 @@
         <div class="fc-field">
           <label>💵 Montant reçu de la caissière (FCFA)</label>
           <input type="number" id="fc-recu" min="0" placeholder="0"
-            oninput="updateCoffre()"
-            value="{{ derniere_session.fond_caisse_reel|floatformat:0|default:'' }}">
-          {% if derniere_session %}
-          <p class="fc-hint">Pré-rempli : fond_caisse_reel dernière clôture ({{ derniere_session.date_session|date:"d/m/Y" }})</p>
-          {% endif %}
+            oninput="updateCoffre()">
         </div>
         <div class="fc-field">
           <label>🏛️ Versé en banque (FCFA) <span style="font-weight:400;color:#94a3b8">— optionnel</span></label>
@@ -376,7 +361,6 @@
       <thead>
         <tr>
           <th>Date</th>
-          <th>Session</th>
           <th class="r">Reçu caissière</th>
           <th class="r">Versé banque</th>
           <th class="r">Coffre direction</th>
@@ -390,9 +374,6 @@
         <td>
           <strong>{{ r.date|date:"d/m/Y" }}</strong>
           {% if r.date == today %}<span style="background:#dcfce7;color:#15803d;font-size:.7rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px">Aujourd'hui</span>{% endif %}
-        </td>
-        <td style="color:var(--muted);font-size:.82rem">
-          {% if r.session %}{{ r.session.numero_session }}{% else %}—{% endif %}
         </td>
         <td class="r" style="color:var(--blue)">{{ r.montant_recu|floatformat:0|intcomma }} F</td>
         <td class="r">
@@ -415,7 +396,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="2">TOTAL</td>
+          <td>TOTAL</td>
           <td class="r" style="color:var(--blue)">{{ totaux.total_recu|default:0|floatformat:0|intcomma }} F</td>
           <td class="r" style="color:var(--muted)">{{ totaux.total_banque|default:0|floatformat:0|intcomma }} F</td>
           <td class="r" style="color:#92400e">{{ totaux.total_coffre|default:0|floatformat:0|intcomma }} F</td>

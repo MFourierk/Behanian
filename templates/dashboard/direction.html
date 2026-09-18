@@ -229,18 +229,6 @@
       </a>
     </div>
 
-    <!-- Alerte : session clôturée sans remise soir -->
-    {% if coffre_sans_remise %}
-    <div style="background:#fef3c7;border-bottom:2px solid #f59e0b;padding:10px 18px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:1.2rem">⚠️</span>
-      <div>
-        <strong style="color:#92400e;font-size:.85rem">Remise soir manquante</strong>
-        <span style="color:#78350f;font-size:.8rem;margin-left:8px">La caissière a clôturé sa session aujourd'hui — le manager n'a pas encore enregistré la remise.</span>
-      </div>
-      <a href="{% url 'caisse:flux_coffre' %}" style="margin-left:auto;font-size:.8rem;font-weight:700;color:#92400e;text-decoration:underline;">Enregistrer →</a>
-    </div>
-    {% endif %}
-
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:1px solid var(--border)">
       <!-- Colonne 1 : En coffre -->
       <div style="padding:18px 20px;border-right:1px solid var(--border)">

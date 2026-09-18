@@ -253,7 +253,6 @@ def direction_view(request):
     total_non_verse      = 0
     coffre_session       = None
     coffre_lignes_solde  = []
-    coffre_sans_remise   = False
     derniere_remise_date = None
     try:
         from caisse.models import CaisseSession as _CS, RemiseSoir as _RS
@@ -263,19 +262,12 @@ def direction_view(request):
         _sess = _CS.objects.filter(is_open=True, type_caisse='centrale').first()
         coffre_session = _sess
 
-        # En coffre = somme des montants gardés en coffre via les remises soir (saisie manager)
+        # En coffre = ce que le manager a déclaré garder en coffre (saisie libre, indépendante)
         net_caisse_coffre = int(
             _RS.objects.filter(valide=True).aggregate(s=_Sum('montant_coffre'))['s'] or 0
         )
 
-        # Alerte : session clôturée aujourd'hui mais aucune remise soir du jour
-        _sess_cloturee = _CS.objects.filter(
-            is_open=False, type_caisse='centrale', date_session=today_local
-        ).exists()
-        _remise_today = _RS.objects.filter(date=today_local, valide=True).exists()
-        coffre_sans_remise = _sess_cloturee and not _remise_today
-
-        # Date de la dernière remise
+        # Date de la dernière saisie du manager (information, pas alerte)
         _last_remise = _RS.objects.filter(valide=True).first()
         derniere_remise_date = _last_remise.date if _last_remise else None
 
@@ -310,7 +302,6 @@ def direction_view(request):
         'total_coffre_theorique': total_coffre_theorique,
         'coffre_session':         coffre_session,
         'coffre_lignes_solde':    coffre_lignes_solde,
-        'coffre_sans_remise':     coffre_sans_remise,
         'derniere_remise_date':   derniere_remise_date,
         'active_tab': active_tab,
         'date_debut': date_debut.isoformat(),

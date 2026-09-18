@@ -2295,22 +2295,8 @@ def flux_coffre(request):
     if not _is_manager(request.user):
         return redirect('caisse:index')
 
-    # Historique des remises
-    remises = RemiseSoir.objects.filter(valide=True).select_related('session', 'enregistre_par')
+    remises = RemiseSoir.objects.filter(valide=True).select_related('enregistre_par')
 
-    # Dernière session centrale clôturée (pour pré-remplir le montant reçu)
-    derniere_session = CaisseSession.objects.filter(
-        is_open=False, type_caisse='centrale'
-    ).order_by('-closed_at').first()
-
-    # Alerte : session clôturée aujourd'hui sans remise enregistrée
-    today = timezone.localdate()
-    session_sans_remise = (
-        CaisseSession.objects.filter(is_open=False, type_caisse='centrale', date_session=today).exists()
-        and not RemiseSoir.objects.filter(date=today, valide=True).exists()
-    )
-
-    # Totaux
     totaux = RemiseSoir.objects.filter(valide=True).aggregate(
         total_recu=Sum('montant_recu'),
         total_banque=Sum('montant_banque'),
@@ -2318,11 +2304,9 @@ def flux_coffre(request):
     )
 
     return render(request, 'caisse/flux_coffre.html', {
-        'remises':            remises,
-        'derniere_session':   derniere_session,
-        'session_sans_remise': session_sans_remise,
-        'totaux':             totaux,
-        'today':              today,
+        'remises': remises,
+        'totaux':  totaux,
+        'today':   timezone.localdate(),
     })
 
 
