@@ -249,37 +249,37 @@ def direction_view(request):
         pass
 
     # ── État du coffre en temps réel ───────────────────────────
-    net_caisse_coffre   = 0
-    total_non_verse     = 0
-    coffre_session      = None
-    coffre_lignes_solde = []
+    net_caisse_coffre    = 0
+    total_non_verse      = 0
+    coffre_session       = None
+    coffre_lignes_solde  = []
+    coffre_sans_remise   = False
+    derniere_remise_date = None
     try:
-        from caisse.models import CaisseSession as _CS, MouvementCaisse as _MC
-        from caisse.views import get_caisse_flux as _gcf, get_reconciliation_jour as _grj
+        from caisse.models import CaisseSession as _CS, RemiseSoir as _RS
+        from caisse.views import get_reconciliation_jour as _grj
         from django.db.models import Sum as _Sum
         today_local = timezone.localdate()
         _sess = _CS.objects.filter(is_open=True, type_caisse='centrale').first()
         coffre_session = _sess
-        # Solde cumulatif du coffre = capital initial + tout ce qui est entré − tout ce qui est sorti
-        # fond_caisse de session 2, 3, … = même argent recirculé → on prend seulement le 1er
-        _fond_initial_qs = _MC.objects.filter(
-            type='fond_caisse', valide=True
-        ).exclude(reference__startswith='CONSOLIDATION').order_by('date')
-        _fond_initial = int(_fond_initial_qs.values_list('montant', flat=True).first() or 0)
 
-        _cash_in = int(_MC.objects.filter(
-            valide=True, type__in=['versement', 'encaissement', 'ajustement']
-        ).exclude(reference__startswith='CONSOLIDATION').aggregate(s=_Sum('montant'))['s'] or 0)
+        # En coffre = somme des montants gardés en coffre via les remises soir (saisie manager)
+        net_caisse_coffre = int(
+            _RS.objects.filter(valide=True).aggregate(s=_Sum('montant_coffre'))['s'] or 0
+        )
 
-        _cash_out = int(_MC.objects.filter(
-            valide=True, type__in=['depense', 'prelevement', 'remboursement']
-        ).exclude(reference__startswith='CONSOLIDATION').aggregate(s=_Sum('montant'))['s'] or 0)
+        # Alerte : session clôturée aujourd'hui mais aucune remise soir du jour
+        _sess_cloturee = _CS.objects.filter(
+            is_open=False, type_caisse='centrale', date_session=today_local
+        ).exists()
+        _remise_today = _RS.objects.filter(date=today_local, valide=True).exists()
+        coffre_sans_remise = _sess_cloturee and not _remise_today
 
-        net_caisse_coffre = _fond_initial + _cash_in - _cash_out
+        # Date de la dernière remise
+        _last_remise = _RS.objects.filter(valide=True).first()
+        derniere_remise_date = _last_remise.date if _last_remise else None
 
-        if _sess:
-            # Session ouverte : idem mais on identifie la session pour l'affichage
-            pass  # net_caisse_coffre déjà calculé ci-dessus, inclut session en cours
+        # Montants non versés du jour (modules → caisse)
         _recon = _grj(today_local)
         if _recon:
             coffre_lignes_solde = [
@@ -310,6 +310,8 @@ def direction_view(request):
         'total_coffre_theorique': total_coffre_theorique,
         'coffre_session':         coffre_session,
         'coffre_lignes_solde':    coffre_lignes_solde,
+        'coffre_sans_remise':     coffre_sans_remise,
+        'derniere_remise_date':   derniere_remise_date,
         'active_tab': active_tab,
         'date_debut': date_debut.isoformat(),
         'date_fin':   date_fin.isoformat(),

@@ -31,4 +31,6 @@ urlpatterns = [
     path('api/preparer-cloture/', views.api_preparer_cloture, name='api_preparer_cloture'),
     path('api/annuler-verrouillage/', views.api_annuler_verrouillage, name='api_annuler_verrouillage'),
     path('rapport-passation/<int:session_id>/', views.rapport_passation, name='rapport_passation'),
+    path('flux-coffre/', views.flux_coffre, name='flux_coffre'),
+    path('api/remise-soir/', views.api_remise_soir, name='api_remise_soir'),
 ]

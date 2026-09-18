@@ -243,3 +243,51 @@ class PrelevementBanque(models.Model):
 
     def __str__(self):
         return f"Prélèvement banque {self.montant} F — {self.date.strftime('%d/%m/%Y')}"
+
+
+class RemiseSoir(models.Model):
+    """Flux du coffre direction enregistrés chaque soir par le manager.
+
+    Chaque soir après la clôture de la caissière :
+      - le manager reçoit les espèces (montant_recu)
+      - en dépose une partie en banque (montant_banque)
+      - garde le reste en coffre direction (montant_coffre = recu − banque)
+    C'est l'unique source de vérité pour le solde cumulatif du coffre.
+    """
+    date           = models.DateField(default=timezone.localdate)
+    session        = models.ForeignKey(
+        CaisseSession, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='remises_soir',
+        help_text="Session centrale clôturée correspondante"
+    )
+    montant_recu   = models.DecimalField(
+        max_digits=12, decimal_places=3, default=Decimal('0'),
+        help_text="Espèces reçues de la caissière (= fond_caisse_reel de la clôture)"
+    )
+    montant_banque = models.DecimalField(
+        max_digits=12, decimal_places=3, default=Decimal('0'),
+        help_text="Montant versé à la banque"
+    )
+    montant_coffre = models.DecimalField(
+        max_digits=12, decimal_places=3, default=Decimal('0'),
+        help_text="Montant gardé en coffre direction (calculé = recu − banque)"
+    )
+    notes          = models.TextField(blank=True)
+    enregistre_par = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True,
+        related_name='remises_soir_enregistrees'
+    )
+    created_at     = models.DateTimeField(auto_now_add=True)
+    valide         = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        verbose_name = 'Remise soir (coffre)'
+        verbose_name_plural = 'Remises soir (coffre)'
+
+    def __str__(self):
+        return f"Remise soir {self.date} — {int(self.montant_coffre):,} F coffre"
+
+    def save(self, *args, **kwargs):
+        self.montant_coffre = self.montant_recu - self.montant_banque
+        super().save(*args, **kwargs)

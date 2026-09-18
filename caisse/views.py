@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from utils.permissions import require_module_access, require_manager, GROUPE_MANAGER_GENERAL
 from facturation.models import Ticket
 from facturation.services import aggregate_par_mode as _aggregate_par_mode
-from .models import CaisseSession, MouvementCaisse, PrelevementBanque
+from .models import CaisseSession, MouvementCaisse, PrelevementBanque, RemiseSoir
 
 
 _MODE_LABELS = {
@@ -2284,4 +2284,90 @@ def rapport_passation(request, session_id):
         'declared_mobile':  declared_mobile,
         'declared_total':   declared_total,
         'fond_fixe_suivant': fond_fixe_suivant,
+    })
+
+
+@login_required
+@require_module_access('caisse')
+def flux_coffre(request):
+    """Page manager : formulaire des flux du coffre direction (remises soir)."""
+    from utils.permissions import _is_manager
+    if not _is_manager(request.user):
+        return redirect('caisse:index')
+
+    # Historique des remises
+    remises = RemiseSoir.objects.filter(valide=True).select_related('session', 'enregistre_par')
+
+    # Dernière session centrale clôturée (pour pré-remplir le montant reçu)
+    derniere_session = CaisseSession.objects.filter(
+        is_open=False, type_caisse='centrale'
+    ).order_by('-closed_at').first()
+
+    # Alerte : session clôturée aujourd'hui sans remise enregistrée
+    today = timezone.localdate()
+    session_sans_remise = (
+        CaisseSession.objects.filter(is_open=False, type_caisse='centrale', date_session=today).exists()
+        and not RemiseSoir.objects.filter(date=today, valide=True).exists()
+    )
+
+    # Totaux
+    totaux = RemiseSoir.objects.filter(valide=True).aggregate(
+        total_recu=Sum('montant_recu'),
+        total_banque=Sum('montant_banque'),
+        total_coffre=Sum('montant_coffre'),
+    )
+
+    return render(request, 'caisse/flux_coffre.html', {
+        'remises':            remises,
+        'derniere_session':   derniere_session,
+        'session_sans_remise': session_sans_remise,
+        'totaux':             totaux,
+        'today':              today,
+    })
+
+
+@login_required
+@require_POST
+def api_remise_soir(request):
+    """API JSON : enregistrer une remise soir (manager)."""
+    from utils.permissions import _is_manager
+    if not _is_manager(request.user):
+        return JsonResponse({'ok': False, 'error': 'Accès refusé'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'JSON invalide'}, status=400)
+
+    try:
+        montant_recu   = int(Decimal(str(data.get('montant_recu', 0))))
+        montant_banque = int(Decimal(str(data.get('montant_banque', 0))))
+    except (InvalidOperation, ValueError):
+        return JsonResponse({'ok': False, 'error': 'Montants invalides'}, status=400)
+
+    if montant_recu <= 0:
+        return JsonResponse({'ok': False, 'error': 'Le montant reçu doit être positif'})
+    if montant_banque < 0 or montant_banque > montant_recu:
+        return JsonResponse({'ok': False, 'error': 'Montant banque invalide (> reçu)'})
+
+    session_id = data.get('session_id')
+    session = None
+    if session_id:
+        session = CaisseSession.objects.filter(pk=session_id).first()
+
+    remise = RemiseSoir.objects.create(
+        date           = timezone.localdate(),
+        session        = session,
+        montant_recu   = montant_recu,
+        montant_banque = montant_banque,
+        notes          = data.get('notes', '').strip()[:500],
+        enregistre_par = request.user,
+    )
+
+    return JsonResponse({
+        'ok':             True,
+        'id':             remise.pk,
+        'montant_recu':   int(remise.montant_recu),
+        'montant_banque': int(remise.montant_banque),
+        'montant_coffre': int(remise.montant_coffre),
     })
