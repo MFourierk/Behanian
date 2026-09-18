@@ -255,34 +255,59 @@ def direction_view(request):
     coffre_lignes_solde  = []
     derniere_remise_date = None
     try:
-        from caisse.models import CaisseSession as _CS, MouvementCoffre as _MCoffre
-        from caisse.views import get_reconciliation_jour as _grj
+        from caisse.models import CaisseSession as _CS, MouvementCoffre as _MCoffre, MouvementCaisse as _MC
+        from caisse.views import _debut_fenetre_session as _dvs
+        from facturation.models import Ticket as _Ticket
         from django.db.models import Sum as _Sum, Q as _Q
         today_local = timezone.localdate()
         _sess = _CS.objects.filter(is_open=True, type_caisse='centrale').first()
         coffre_session = _sess
 
-        # En coffre = entrées (remises caissière nettes) − toutes les sorties
+        # En coffre = entrées (dépôts nets) − toutes les sorties (cumulatif)
         _agg = _MCoffre.objects.filter(valide=True).aggregate(
             s_entrees=_Sum('montant', filter=_Q(type='remise_caisse')),
             s_sorties=_Sum('montant', filter=~_Q(type='remise_caisse')),
         )
         net_caisse_coffre = int(_agg['s_entrees'] or 0) - int(_agg['s_sorties'] or 0)
 
-        # Date de la dernière saisie du manager (information, pas alerte)
+        # Date du dernier dépôt validé (information, pas alerte)
         _last = _MCoffre.objects.filter(valide=True).first()
         derniere_remise_date = _last.date if _last else None
 
-        # Montants non versés du jour (modules → caisse)
-        _recon = _grj(today_local)
-        if _recon:
-            coffre_lignes_solde = [
-                {'label': l['label'], 'emoji': l['emoji'],
-                 'total_tx': l['total_tx'], 'total_verse': l['total_verse'],
-                 'solde': max(0, l['solde'])}
-                for l in _recon['lignes'] if l['total_tx'] > 0 and l['solde'] > 0
-            ]
-            total_non_verse = sum(l['solde'] for l in coffre_lignes_solde)
+        # Non versés : basé uniquement sur les sessions CLÔTURÉES du jour
+        # (exclut la session ouverte en cours pour ne pas mélanger les shifts)
+        _MODULES = [
+            ('restaurant', 'restaurant', 'Restaurant', '🍽️'),
+            ('hotel',      'hotel',      'Hôtel',       '🏨'),
+            ('cave',       'cave',       'Cave / Bar',  '🍷'),
+            ('piscine',    'piscine',    'Piscine',     '🏊'),
+            ('espace',     'espaces',    'Espaces',     '🎪'),
+        ]
+        _closed_today = list(_CS.objects.filter(date_session=today_local, is_open=False).order_by('closed_at'))
+        _mod_data = {}
+        for _csess in _closed_today:
+            _dt_deb = _dvs(_csess)
+            _dt_fin = _csess.closed_at
+            for _tmod, _cmod, _lbl, _ico in _MODULES:
+                _k = _tmod
+                if _k not in _mod_data:
+                    _mod_data[_k] = {'label': _lbl, 'emoji': _ico, 'total_tx': 0, 'total_verse': 0}
+                _mod_data[_k]['total_tx'] += int(
+                    _Ticket.objects.filter(
+                        date_creation__gte=_dt_deb, date_creation__lte=_dt_fin, module=_tmod
+                    ).aggregate(s=_Sum('montant_total'))['s'] or 0
+                )
+                _mod_data[_k]['total_verse'] += int(
+                    _MC.objects.filter(
+                        session=_csess, type='versement', module=_cmod, valide=True
+                    ).aggregate(s=_Sum('montant'))['s'] or 0
+                )
+        coffre_lignes_solde = []
+        for _d in _mod_data.values():
+            _solde = max(0, _d['total_tx'] - _d['total_verse'])
+            if _d['total_tx'] > 0 and _solde > 0:
+                coffre_lignes_solde.append({**_d, 'solde': _solde})
+        total_non_verse = sum(l['solde'] for l in coffre_lignes_solde)
     except Exception:
         pass
     total_coffre_theorique = net_caisse_coffre + total_non_verse

@@ -951,9 +951,9 @@ def cloturer_caisse(request):
                 cree_par=request.user,
             )
 
-        # Auto-créer une reddition de caisse en attente de validation manager
-        # Montant = espèces comptées − fond fixe remis au shift suivant
-        montant_reddition = max(0, int(fond_reel) - int(session.fond_fixe_applique))
+        # Auto-créer un dépôt en coffre en attente de validation manager
+        # Montant = (espèces + mobile déclaré) − fond fixe remis au shift suivant
+        montant_reddition = max(0, int(fond_reel_total) - int(session.fond_fixe_applique))
         if montant_reddition > 0:
             caissiere = session.user.get_full_name() or session.user.username
             MouvementCoffre.objects.get_or_create(
@@ -964,8 +964,9 @@ def cloturer_caisse(request):
                     montant_recu=montant_reddition,
                     montant=montant_reddition,
                     description=f'{caissiere} — {session.numero_session}',
-                    notes=(f'Auto-généré à la clôture. '
-                           f'Fond compté : {int(fond_reel):,} F | '
+                    notes=(f'Auto-généré. '
+                           f'Esp : {int(fond_reel):,} F | '
+                           f'Mobile : {int(mobile_total_dec):,} F | '
                            f'Fond fixe : {int(session.fond_fixe_applique):,} F'),
                     valide=False,
                     enregistre_par=request.user,
