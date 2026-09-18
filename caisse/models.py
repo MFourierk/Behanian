@@ -255,7 +255,7 @@ class MouvementCoffre(models.Model):
 
     TYPE_CHOICES = [
         # ── Entrées ──────────────────────────────────────────
-        ('remise_caisse',         '💰 Reddition de caisse → Coffre'),
+        ('remise_caisse',         '💰 Dépôt en coffre'),
         # ── Sorties ──────────────────────────────────────────
         ('versement_banque',      '🏛️ Versement en Banque'),
         ('prelevement_direction', '👤 Prélèvement Direction'),

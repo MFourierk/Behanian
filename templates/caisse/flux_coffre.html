@@ -187,7 +187,7 @@
           <div class="fc-type-btn entree selected" data-type="remise_caisse" onclick="selectType(this)">
             <span class="tb-badge in">ENTRÉE</span>
             <span class="tb-icon">💰</span>
-            <span class="tb-label">Reddition de caisse</span>
+            <span class="tb-label">Dépôt en coffre</span>
           </div>
           <div class="fc-type-btn" data-type="versement_banque" onclick="selectType(this)">
             <span class="tb-badge out">SORTIE</span>
@@ -232,7 +232,7 @@
         </div>
       </div>
 
-      <!-- Formulaire dynamique : Reddition de caisse -->
+      <!-- Formulaire dynamique : Dépôt en coffre -->
       <div id="form-remise_caisse">
         <div class="fc-field-row">
           <div class="fc-field">
@@ -242,7 +242,7 @@
           </div>
           <div class="fc-field">
             <label>📝 Notes</label>
-            <input type="text" id="rc-notes" placeholder="Ex : Reddition shift soir du 18/09…">
+            <input type="text" id="rc-notes" placeholder="Ex : Dépôt shift soir du 18/09…">
           </div>
         </div>
       </div>
@@ -545,7 +545,7 @@
     'divers':               'form-divers',
   };
   const BTN_CONFIG = {
-    'remise_caisse':        {icon:'💰', label:'Enregistrer la reddition', cls:''},
+    'remise_caisse':        {icon:'💰', label:'Enregistrer le dépôt en coffre', cls:''},
     'versement_banque':     {icon:'🏛️', label:'Enregistrer le versement banque', cls:' sortie'},
     'prelevement_direction':{icon:'👤', label:'Enregistrer le prélèvement', cls:' sortie'},
     'salaire':              {icon:'👷', label:'Enregistrer le salaire', cls:' sortie'},
