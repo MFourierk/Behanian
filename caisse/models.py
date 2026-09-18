@@ -245,25 +245,6 @@ class PrelevementBanque(models.Model):
         return f"Prélèvement banque {self.montant} F — {self.date.strftime('%d/%m/%Y')}"
 
 
-class Employe(models.Model):
-    """Employé du complexe — référentiel pour les paiements de salaires depuis le coffre."""
-    nom_complet  = models.CharField(max_length=200)
-    poste        = models.CharField(max_length=100, blank=True)
-    salaire_base = models.PositiveIntegerField(
-        default=0, help_text="Salaire mensuel configuré en FCFA"
-    )
-    actif        = models.BooleanField(default=True)
-    notes        = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ['nom_complet']
-        verbose_name = 'Employé'
-        verbose_name_plural = 'Employés'
-
-    def __str__(self):
-        return f"{self.nom_complet} — {self.poste}" if self.poste else self.nom_complet
-
-
 class MouvementCoffre(models.Model):
     """Mouvement du coffre direction (General Cashier ERP).
 
@@ -298,9 +279,9 @@ class MouvementCoffre(models.Model):
     montant_banque = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'),
                         help_text="Part immédiatement déposée en banque")
 
-    # Champ spécifique aux salaires
+    # Champ spécifique aux salaires (référence vers le référentiel RH dans parametres)
     employe     = models.ForeignKey(
-        Employe, on_delete=models.SET_NULL, null=True, blank=True,
+        'parametres.Employe', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='paiements_salaire'
     )
 

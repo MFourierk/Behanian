@@ -11,7 +11,8 @@ from decimal import Decimal, InvalidOperation
 from utils.permissions import require_module_access, require_manager, GROUPE_MANAGER_GENERAL
 from facturation.models import Ticket
 from facturation.services import aggregate_par_mode as _aggregate_par_mode
-from .models import CaisseSession, MouvementCaisse, PrelevementBanque, Employe, MouvementCoffre
+from .models import CaisseSession, MouvementCaisse, PrelevementBanque, MouvementCoffre
+from parametres.models import Employe
 
 
 _MODE_LABELS = {

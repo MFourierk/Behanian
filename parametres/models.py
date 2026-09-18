@@ -37,3 +37,24 @@ class Coordonnees(models.Model):
             # Prevent creating a new instance if one already exists
             return
         super(Coordonnees, self).save(*args, **kwargs)
+
+
+class Employe(models.Model):
+    """Référentiel RH — tous les employés du complexe, avec ou sans compte utilisateur."""
+    nom_complet  = models.CharField(max_length=200, verbose_name='Nom complet')
+    poste        = models.CharField(max_length=100, blank=True, verbose_name='Poste / Fonction')
+    salaire_base = models.PositiveIntegerField(default=0, verbose_name='Salaire mensuel (FCFA)')
+    actif        = models.BooleanField(default=True, verbose_name='Actif',
+                     help_text="Décocher pour retirer de la liste de paiement")
+    notes        = models.TextField(blank=True, verbose_name='Notes')
+
+    class Meta:
+        ordering = ['nom_complet']
+        verbose_name = 'Employé'
+        verbose_name_plural = 'Employés (RH)'
+
+    def __str__(self):
+        s = self.nom_complet
+        if self.poste:
+            s += f' — {self.poste}'
+        return s
