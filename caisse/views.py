@@ -2313,7 +2313,7 @@ def flux_coffre(request):
         s_entrees=Sum('montant', filter=Q(type='remise_caisse')),
         s_sorties=Sum('montant', filter=~Q(type='remise_caisse')),
         s_recu=Sum('montant_recu', filter=Q(type='remise_caisse')),
-        s_banque=Sum('montant_banque', filter=Q(type='remise_caisse')),
+        s_banque=Sum('montant', filter=Q(type='versement_banque')),
     )
     net_entrees  = int(agg['s_entrees'] or 0)
     net_sorties  = int(agg['s_sorties'] or 0)

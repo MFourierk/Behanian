@@ -320,5 +320,5 @@ class MouvementCoffre(models.Model):
 
     def save(self, *args, **kwargs):
         if self.type == 'remise_caisse':
-            self.montant = max(Decimal('0'), self.montant_recu - self.montant_banque)
+            self.montant = max(Decimal('0'), self.montant_recu)
         super().save(*args, **kwargs)

@@ -234,30 +234,16 @@
 
       <!-- Formulaire dynamique : Remise caissière -->
       <div id="form-remise_caisse">
-        <div class="fc-field-row fc-field-row-3">
+        <div class="fc-field-row">
           <div class="fc-field">
             <label>💵 Montant reçu de la caissière (FCFA)</label>
-            <input type="number" id="rc-recu" min="0" placeholder="0" oninput="calcCoffre()">
+            <input type="number" id="rc-recu" min="0" placeholder="0">
+            <p class="fc-hint">Tout le montant reçu est enregistré en coffre. Pour déposer en banque, utilisez le bouton 🏛️ Versement Banque.</p>
           </div>
           <div class="fc-field">
-            <label>🏛️ Versé en banque (FCFA) <span style="font-weight:400;color:#94a3b8">optionnel</span></label>
-            <input type="number" id="rc-banque" min="0" placeholder="0" value="0" oninput="calcCoffre()">
+            <label>📝 Notes</label>
+            <input type="text" id="rc-notes" placeholder="Ex : Remise shift soir du 18/09…">
           </div>
-          <div class="fc-field">
-            <label>🔐 Net coffre (calculé)</label>
-            <input type="number" id="rc-coffre" readonly value="0" style="font-weight:800;color:#15803d">
-          </div>
-        </div>
-        <div class="fc-coffre-preview">
-          <div>
-            <div class="fc-preview-label">🔐 Entre dans le coffre</div>
-            <div style="font-size:.78rem;color:#166534;margin-top:2px">= Reçu − Banque</div>
-          </div>
-          <div><span class="fc-preview-val" id="rc-big">0</span> <span style="color:#16a34a;font-weight:600">FCFA</span></div>
-        </div>
-        <div class="fc-field">
-          <label>📝 Notes</label>
-          <input type="text" id="rc-notes" placeholder="Ex : Remise shift soir, dépôt banque BNI lundi…">
         </div>
       </div>
 
@@ -432,7 +418,7 @@
           {% if m.description %}{{ m.description }}{% endif %}
           {% if m.fournisseur %}<span style="color:#475569">{{ m.fournisseur }}</span>{% endif %}
           {% if m.reference %}<span style="color:#94a3b8"> · {{ m.reference }}</span>{% endif %}
-          {% if m.type == 'remise_caisse' %}<span style="color:#94a3b8">Reçu {{ m.montant_recu|floatformat:0|intcomma }} · Banque {{ m.montant_banque|floatformat:0|intcomma }}</span>{% endif %}
+          {% if m.type == 'remise_caisse' %}<span style="color:#94a3b8">Reçu {{ m.montant_recu|floatformat:0|intcomma }} FCFA</span>{% endif %}
         </td>
         <td class="r">
           {% if m.est_entree %}<span class="badge badge-in">+{{ m.montant|floatformat:0|intcomma }} F</span>{% else %}<span style="color:#d1d5db">—</span>{% endif %}
@@ -534,15 +520,6 @@
     }
   }
 
-  // Calcul coffre en temps réel (remise caissière)
-  function calcCoffre() {
-    const recu   = parseInt(document.getElementById('rc-recu').value)   || 0;
-    const banque = parseInt(document.getElementById('rc-banque').value) || 0;
-    const coffre = Math.max(0, recu - banque);
-    document.getElementById('rc-coffre').value = coffre;
-    document.getElementById('rc-big').textContent = coffre.toLocaleString('fr-FR');
-  }
-
   // Auto-fill salaire
   function fillSalaire() {
     const opt = document.querySelector('#sal-emp option:checked');
@@ -557,18 +534,18 @@
   }
 
   function resetAllForms() {
-    ['rc-recu','rc-banque','rc-coffre','rc-notes',
+    ['rc-recu','rc-notes',
+     'vb-montant','vb-banque','vb-ref','vb-notes',
      'pd-montant','pd-desc','pd-notes',
      'sal-montant','sal-notes',
      'fac-montant','fac-ref','fac-notes',
      'trx-montant','trx-fourn','trx-desc','trx-ref',
      'div-montant','div-desc','div-fourn','div-notes'].forEach(id => {
       const el = document.getElementById(id);
-      if(el) el.value = id.endsWith('banque') ? '0' : '';
+      if(el) el.value = '';
     });
     const se = document.getElementById('sal-emp');
     if(se) se.selectedIndex = 0;
-    document.getElementById('rc-big').textContent = '0';
   }
 
   function showToast(msg, ok=true) {
@@ -583,11 +560,9 @@
   function buildPayload() {
     const base = {type: currentType};
     if(currentType === 'remise_caisse') {
-      const recu   = parseInt(document.getElementById('rc-recu').value)   || 0;
-      const banque = parseInt(document.getElementById('rc-banque').value) || 0;
+      const recu = parseInt(document.getElementById('rc-recu').value) || 0;
       if(recu <= 0) { showToast('Saisissez le montant reçu de la caissière', false); return null; }
-      if(banque > recu) { showToast('Montant banque > montant reçu', false); return null; }
-      return {...base, montant_recu: recu, montant_banque: banque, montant: recu - banque,
+      return {...base, montant_recu: recu, montant: recu,
         notes: document.getElementById('rc-notes').value.trim()};
     }
     if(currentType === 'versement_banque') {
