@@ -257,6 +257,7 @@ class MouvementCoffre(models.Model):
         # ── Entrées ──────────────────────────────────────────
         ('remise_caisse',         '💵 Remise caissière → Coffre'),
         # ── Sorties ──────────────────────────────────────────
+        ('versement_banque',      '🏛️ Versement en Banque'),
         ('prelevement_direction', '👤 Prélèvement Direction'),
         ('salaire',               '👷 Paiement Salaire'),
         ('facture_cie',           '💡 Facture CIE (Électricité)'),

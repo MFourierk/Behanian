@@ -48,8 +48,10 @@
 
   /* Type selector */
   .fc-type-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 10px; margin-bottom: 20px;
+    display: flex; flex-wrap: nowrap; gap: 10px; margin-bottom: 20px;
+    overflow-x: auto; padding-bottom: 6px;
   }
+  .fc-type-btn { flex: 0 0 auto; min-width: 120px; }
   .fc-type-btn {
     border: 2px solid var(--border); border-radius: 12px; padding: 12px 10px;
     cursor: pointer; background: var(--card); text-align: center;
@@ -187,6 +189,11 @@
             <span class="tb-icon">💵</span>
             <span class="tb-label">Remise caissière</span>
           </div>
+          <div class="fc-type-btn" data-type="versement_banque" onclick="selectType(this)">
+            <span class="tb-badge out">SORTIE</span>
+            <span class="tb-icon">🏛️</span>
+            <span class="tb-label">Versement Banque</span>
+          </div>
           <div class="fc-type-btn" data-type="prelevement_direction" onclick="selectType(this)">
             <span class="tb-badge out">SORTIE</span>
             <span class="tb-icon">👤</span>
@@ -251,6 +258,30 @@
         <div class="fc-field">
           <label>📝 Notes</label>
           <input type="text" id="rc-notes" placeholder="Ex : Remise shift soir, dépôt banque BNI lundi…">
+        </div>
+      </div>
+
+      <!-- Formulaire dynamique : Versement Banque -->
+      <div id="form-versement_banque" style="display:none">
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>💰 Montant déposé en banque (FCFA)</label>
+            <input type="number" id="vb-montant" min="0" placeholder="0">
+          </div>
+          <div class="fc-field">
+            <label>🏛️ Banque / Établissement</label>
+            <input type="text" id="vb-banque" placeholder="Ex : BNI, SGBCI, Ecobank…">
+          </div>
+        </div>
+        <div class="fc-field-row">
+          <div class="fc-field">
+            <label>🔢 N° Bordereau / Référence <span style="font-weight:400;color:#94a3b8">optionnel</span></label>
+            <input type="text" id="vb-ref" placeholder="N° bordereau de versement">
+          </div>
+          <div class="fc-field">
+            <label>📝 Notes</label>
+            <input type="text" id="vb-notes" placeholder="Ex : Versement recettes semaine du 15/09…">
+          </div>
         </div>
       </div>
 
@@ -456,6 +487,7 @@
   // Mappage type → formulaire à afficher
   const FORM_MAP = {
     'remise_caisse':        'form-remise_caisse',
+    'versement_banque':     'form-versement_banque',
     'prelevement_direction':'form-prelevement_direction',
     'salaire':              'form-salaire',
     'facture_cie':          'form-facture',
@@ -466,6 +498,7 @@
   };
   const BTN_CONFIG = {
     'remise_caisse':        {icon:'✅', label:'Enregistrer la remise', cls:''},
+    'versement_banque':     {icon:'🏛️', label:'Enregistrer le versement banque', cls:' sortie'},
     'prelevement_direction':{icon:'👤', label:'Enregistrer le prélèvement', cls:' sortie'},
     'salaire':              {icon:'👷', label:'Enregistrer le salaire', cls:' sortie'},
     'facture_cie':          {icon:'💡', label:'Enregistrer la facture CIE', cls:' sortie'},
@@ -556,6 +589,13 @@
       if(banque > recu) { showToast('Montant banque > montant reçu', false); return null; }
       return {...base, montant_recu: recu, montant_banque: banque, montant: recu - banque,
         notes: document.getElementById('rc-notes').value.trim()};
+    }
+    if(currentType === 'versement_banque') {
+      const m = parseInt(document.getElementById('vb-montant').value) || 0;
+      if(m <= 0) { showToast('Saisissez le montant', false); return null; }
+      return {...base, montant: m, fournisseur: document.getElementById('vb-banque').value.trim(),
+        reference: document.getElementById('vb-ref').value.trim(),
+        notes: document.getElementById('vb-notes').value.trim()};
     }
     if(currentType === 'prelevement_direction') {
       const m = parseInt(document.getElementById('pd-montant').value) || 0;
