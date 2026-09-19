@@ -80,7 +80,10 @@ def restaurant_index(request):
                 plat.stock_quantity = int(ing.quantite_stock) if ing else 999
             except Exception:
                 plat.stock_quantity = 999
-        
+        # Si pas assez de stock pour 1 portion entière, bloquer la commande
+        if plat.stock_quantity == 0:
+            plat.en_stock = False
+
     # Accompagnements — extraits de la liste déjà évaluée pour conserver en_stock/stock_quantity
     accompagnements = [p for p in plats if p.is_accompagnement]
 
@@ -1414,6 +1417,9 @@ def restaurant_tpe(request):
                 plat.stock_quantity = int(ing.quantite_stock) if ing else 999
             except Exception:
                 plat.stock_quantity = 999
+        # Si pas assez de stock pour 1 portion entière, bloquer la commande
+        if plat.stock_quantity == 0:
+            plat.en_stock = False
 
     # ── top_cat_id pour chaque plat (pour le filtre niveau 1) ──
     for plat in plats:
