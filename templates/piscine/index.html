@@ -1136,9 +1136,8 @@ async function validerEntree(){
   try {
     r = await fetch('{% url "piscine:entree" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},body:JSON.stringify(payload)});
     if(!r.ok){
-      let errMsg = 'Erreur serveur (' + r.status + ')';
-      if(r.status === 403) errMsg = 'Session expirée — rechargez la page (F5).';
-      piscineNotif(errMsg, 'error');
+      try { const e=await r.json(); piscineNotif(e.error||'Erreur '+r.status,'error'); }
+      catch { piscineNotif(r.status===403?'Session expirée — rechargez la page (F5).':'Erreur serveur ('+r.status+').','error'); }
       if(btnVal){ btnVal.disabled=false; btnVal.innerHTML='<i class="fas fa-check"></i> Enregistrer l\'entrée'; }
       return;
     }
@@ -1730,7 +1729,8 @@ async function validerSortie(){
       body:JSON.stringify(payload)
     });
     if(!r.ok){
-      piscineNotif(r.status===403?'Session expirée — rechargez la page (F5).':'Erreur serveur ('+r.status+').','error');
+      try { const e = await r.json(); piscineNotif(e.error || 'Erreur '+r.status, 'error'); }
+      catch { piscineNotif(r.status===403?'Session expirée — rechargez la page (F5).':'Erreur serveur ('+r.status+').','error'); }
       return;
     }
     d = await r.json();
