@@ -1031,38 +1031,34 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </select>
     </div>
 
-    <!-- Section espèces -->
-    <div id="sectionEspeces">
-      <div class="rendu-section">
-        <label>MONTANT REÇU (FCFA)</label>
-        <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
-        <div class="rendu-display" id="renduDisplay">Rendu : <span id="renduVal">0</span> F</div>
+    <!-- Section paiement universel (espèces + mobile + carte) -->
+    <div id="sectionPay">
+      <!-- Espèces : billets rapides + champ montant -->
+      <div id="barBilletsSection">
+        <div class="billets-grid" id="billetsGrid">
+          <button class="billet-btn" onclick="setBillet(500)">500</button>
+          <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
+          <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
+          <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
+          <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
+          <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
+          <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
+          <button class="billet-btn" onclick="setBillet(0, true)">Exact</button>
+        </div>
       </div>
-      <div class="billets-grid" id="billetsGrid">
-        <button class="billet-btn" onclick="setBillet(500)">500</button>
-        <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
-        <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
-        <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
-        <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
-        <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
-        <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
-        <button class="billet-btn" onclick="setBillet(0, true)">Exact</button>
-      </div>
-    </div>
-
-    <!-- Section mobile money — widget 3 étapes -->
-    <div id="sectionMobile" style="display:none">
       <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">
-        Montant <span id="labelMode1Bar">mobile</span>
+        Montant <span id="labelMode1Bar">reçu</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
         <input type="number" id="barMontantM1" class="mixte-input" placeholder="0" min="0" oninput="barCalcPay()" style="flex:1">
         <button type="button" onclick="barSetToutM1()" style="padding:9px 14px;border-radius:9px;border:1.5px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#c9a84c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Tout →</button>
       </div>
+      <div id="barRenduDisplay" style="display:none;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px"></div>
       <div id="barResteBar" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;justify-content:space-between;align-items:center">
-        <span style="color:#93c5fd;font-size:12px;font-weight:600">Reste à répartir</span>
+        <span style="color:#93c5fd;font-size:12px;font-weight:600">Reste à payer</span>
         <strong id="barResteVal" style="color:white;font-size:14px">0 F</strong>
       </div>
+      <!-- 2ème paiement — max 2 modes -->
       <div id="barP2Section" style="display:none">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
@@ -1070,18 +1066,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
         </div>
         <div id="barP2Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-        <input type="number" id="barMontantM2" class="mixte-input" placeholder="Montant" min="0" oninput="barCalcPay()">
-        <div id="barP3Section" style="display:none;margin-top:12px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
-            <span style="font-size:10px;font-weight:700;color:#34d399;letter-spacing:.8px">3ÈME PAIEMENT (auto)</span>
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
-          </div>
-          <div id="barP3Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px">
-            <span style="color:#34d399;font-size:13px">Montant (automatique)</span>
-            <strong id="barM3Auto" style="color:white;font-size:15px">0 F</strong>
-          </div>
+        <!-- Montant 2 : affiché automatiquement (= reste), non modifiable -->
+        <div id="barM2Display" style="display:none;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px">
+          <span style="color:#34d399;font-size:13px">Montant <span id="barM2ModeLabel">—</span> (automatique)</span>
+          <strong id="barM2Auto" style="color:white;font-size:15px">0 F</strong>
         </div>
       </div>
     </div>
@@ -1172,7 +1160,7 @@ let ticketActifId = 1;
 let ticketCounter = 1;
 let modePaiement  = 'especes';
 let _barP2Mode    = '';
-let _barP3Mode    = '';
+const _BAR_MODE_NAMES = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov',especes:'Espèces',carte:'Carte'};
 
 function _barGetTotalFull() { return (typeof getTotal === 'function' ? getTotal() : 0) + (_barSalonFrais||0) + (typeof barGetFraisAdditionnels === 'function' ? barGetFraisAdditionnels() : 0); }
 
@@ -1200,86 +1188,80 @@ function barBuildBtns(containerId, excludeModes, onclickFn) {
 }
 
 function barCalcPay() {
-  const mode = modePaiement;
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  if (!isMobile) return;
   const total = _barGetTotalFull();
-  const m1 = parseFloat(document.getElementById('barMontantM1')?.value) || 0;
+  const m1    = parseFloat(document.getElementById('barMontantM1')?.value) || 0;
+  const reste = total - m1;
+  // Indicateur rendu / manque
+  const rend = document.getElementById('barRenduDisplay');
+  if (m1 > 0 && rend) {
+    rend.style.display = 'block';
+    if (m1 >= total) {
+      Object.assign(rend.style, {background:'rgba(22,163,74,0.15)',color:'#4ade80',border:'none'});
+      rend.textContent = m1 > total ? 'Monnaie à rendre : ' + formatF(m1 - total) : '✓ Montant exact';
+    } else {
+      Object.assign(rend.style, {background:'rgba(220,38,38,0.15)',color:'#f87171',border:'none'});
+      rend.textContent = 'Manque : ' + formatF(reste);
+    }
+  } else if (rend) { rend.style.display = 'none'; }
+  // Reste à payer
   const resteBar = document.getElementById('barResteBar');
   if (m1 > 0 && m1 < total) {
     resteBar.style.display = 'flex';
-    document.getElementById('barResteVal').textContent = formatF(Math.max(0, total - m1));
+    document.getElementById('barResteVal').textContent = formatF(reste);
   } else { resteBar.style.display = 'none'; }
+  // 2ème paiement
   const p2Sect = document.getElementById('barP2Section');
   if (m1 > 0 && m1 < total) {
     p2Sect.style.display = '';
     const p2Btns = document.getElementById('barP2Btns');
-    if (!p2Btns.children.length) barBuildBtns('barP2Btns', [mode], barSetPay2);
-    const m2 = parseFloat(document.getElementById('barMontantM2')?.value) || 0;
-    const p3Sect = document.getElementById('barP3Section');
-    if (_barP2Mode && m2 > 0 && m2 < (total - m1)) {
-      p3Sect.style.display = '';
-      const p3Btns = document.getElementById('barP3Btns');
-      if (!p3Btns.children.length) barBuildBtns('barP3Btns', [mode, _barP2Mode], barSetPay3);
-      document.getElementById('barM3Auto').textContent = formatF(Math.max(0, total - m1 - m2));
-    } else { p3Sect.style.display = 'none'; }
+    if (!p2Btns.children.length) barBuildBtns('barP2Btns', [modePaiement], barSetPay2);
+    // Réinitialiser M2 display si M1 change
+    _barP2Mode = '';
+    document.getElementById('barM2Display').style.display = 'none';
+    document.querySelectorAll('#barP2Btns .bar-px-btn').forEach(b => {
+      b.style.background = '#1a2535'; b.style.borderColor = 'rgba(255,255,255,0.12)';
+    });
   } else { p2Sect.style.display = 'none'; }
 }
 
 function barSetPay2(btn) {
   _barP2Mode = btn.dataset.mode;
+  const total = _barGetTotalFull();
+  const m1    = parseFloat(document.getElementById('barMontantM1')?.value) || 0;
+  const reste = Math.max(0, total - m1);
   document.querySelectorAll('#barP2Btns .bar-px-btn').forEach(b => {
     const sel = b.dataset.mode === _barP2Mode;
     b.style.background = sel ? '#2563eb' : '#1a2535';
     b.style.borderColor = sel ? '#3b82f6' : 'rgba(255,255,255,0.12)';
   });
-  _barP3Mode = '';
-  document.getElementById('barP3Btns').innerHTML = '';
-  document.getElementById('barP3Section').style.display = 'none';
-  barCalcPay();
-}
-
-function barSetPay3(btn) {
-  _barP3Mode = btn.dataset.mode;
-  document.querySelectorAll('#barP3Btns .bar-px-btn').forEach(b => {
-    const sel = b.dataset.mode === _barP3Mode;
-    b.style.background = sel ? '#059669' : '#1a2535';
-    b.style.borderColor = sel ? '#10b981' : 'rgba(255,255,255,0.12)';
-  });
+  document.getElementById('barM2ModeLabel').textContent = _BAR_MODE_NAMES[_barP2Mode] || _barP2Mode;
+  document.getElementById('barM2Auto').textContent = formatF(reste);
+  document.getElementById('barM2Display').style.display = 'flex';
 }
 
 function barSetToutM1() {
-  const total = _barGetTotalFull();
-  if (total <= 0) return;
   const inp = document.getElementById('barMontantM1');
-  if (inp) { inp.value = total; barCalcPay(); }
+  if (inp) { inp.value = _barGetTotalFull(); barCalcPay(); }
 }
 
 function barGetLignesPay() {
   const total = _barGetTotalFull();
-  const mode = modePaiement;
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  if (!isMobile) return null;
   const m1 = parseFloat(document.getElementById('barMontantM1')?.value) || 0;
-  const m2 = parseFloat(document.getElementById('barMontantM2')?.value) || 0;
-  const m3 = Math.max(0, total - m1 - m2);
+  const m2 = Math.max(0, total - m1);
   if (m1 <= 0 || m1 >= total) return null;
-  const lignes = [];
-  if (m1 > 0) lignes.push({mode: mode,       montant: m1});
+  const lignes = [{mode: modePaiement, montant: m1}];
   if (_barP2Mode && m2 > 0) lignes.push({mode: _barP2Mode, montant: m2});
-  if (_barP3Mode && m3 > 0) lignes.push({mode: _barP3Mode, montant: m3});
   return lignes.length > 1 ? lignes : null;
 }
 
 function _resetMobileBar() {
-  _barP2Mode = ''; _barP3Mode = '';
+  _barP2Mode = '';
   const m1 = document.getElementById('barMontantM1'); if(m1) m1.value = '';
-  const m2 = document.getElementById('barMontantM2'); if(m2) m2.value = '';
   const rb = document.getElementById('barResteBar'); if(rb) rb.style.display = 'none';
+  const rd = document.getElementById('barRenduDisplay'); if(rd) rd.style.display = 'none';
   const p2 = document.getElementById('barP2Section'); if(p2) p2.style.display = 'none';
-  const p3 = document.getElementById('barP3Section'); if(p3) p3.style.display = 'none';
   const b2 = document.getElementById('barP2Btns'); if(b2) b2.innerHTML = '';
-  const b3 = document.getElementById('barP3Btns'); if(b3) b3.innerHTML = '';
+  const m2d = document.getElementById('barM2Display'); if(m2d) m2d.style.display = 'none';
 }
 let chambreLieeId  = null;
 let chambreLieeNom = null;
@@ -1722,30 +1704,13 @@ function majBarFraisAddit() {
   else barCalcPay();
 }
 
-function calcRendu() {
-  const total = getTotal() + _barSalonFrais + barGetFraisAdditionnels();
-  const recu  = parseFloat(document.getElementById('montantRecu').value) || 0;
-  const rendu = recu - total;
-  const div   = document.getElementById('renduDisplay');
-  if (recu >= total) {
-    div.classList.add('show');
-    div.style.background = 'rgba(22,163,74,0.15)';
-    div.style.color = '#4ade80';
-    document.getElementById('renduVal').textContent = formatF(rendu);
-  } else if (recu > 0) {
-    div.classList.add('show');
-    div.style.background = 'rgba(220,38,38,0.15)';
-    div.style.color = '#f87171';
-    document.getElementById('renduVal').textContent = `Manque ${formatF(total - recu)}`;
-  } else {
-    div.classList.remove('show');
-  }
-}
+function calcRendu() { barCalcPay(); }
 
 function setBillet(val, exact = false) {
-  if (exact) { document.getElementById('montantRecu').value = getTotal() + _barSalonFrais + barGetFraisAdditionnels(); }
-  else       { document.getElementById('montantRecu').value = val; }
-  calcRendu();
+  const inp = document.getElementById('barMontantM1');
+  if (!inp) return;
+  inp.value = exact ? _barGetTotalFull() : val;
+  barCalcPay();
 }
 
 
@@ -1755,19 +1720,16 @@ function setModalMode(mode) {
   tickets[ticketActifId].paiement = mode;
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
   document.querySelectorAll('.mmt').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  document.getElementById('sectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
-  document.getElementById('sectionMobile').style.display  = isMobile ? '' : 'none';
-  document.getElementById('chambreSection').style.display = (mode === 'chambre') ? 'block' : 'none';
+  const isChambre = mode === 'chambre';
+  document.getElementById('sectionPay').style.display    = isChambre ? 'none' : '';
+  document.getElementById('chambreSection').style.display = isChambre ? 'block' : 'none';
   _resetMobileBar();
-  if (mode === 'especes') {
-    document.getElementById('montantRecu').value = '';
-    document.getElementById('renduDisplay').classList.remove('show');
-  }
-  if (isMobile) {
+  if (!isChambre) {
+    const isEsp = mode === 'especes';
+    const billetsSection = document.getElementById('barBilletsSection');
+    if (billetsSection) billetsSection.style.display = isEsp ? '' : 'none';
     const lbl = document.getElementById('labelMode1Bar');
-    if (lbl) { const nm = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov'}; lbl.textContent = nm[mode] || 'mobile'; }
-    barCalcPay();
+    if (lbl) lbl.textContent = _BAR_MODE_NAMES[mode] || mode;
   }
 }
 
@@ -1945,15 +1907,16 @@ async function confirmerPaiement() {
   let _lignesPayBar = null;
   const isMobile = MOBILE_MODES.includes(modePaiement) || ['moov_money','mobile_money','mobile'].includes(modePaiement);
 
-  if (modePaiement === 'especes') {
-    montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
-    if (montantRecu < total) { toast('Montant reçu insuffisant', 'error'); _paiementEnCours=false; return; }
-  } else if (isMobile) {
-    montantRecu = total;
+  const m1Bar = parseFloat(document.getElementById('barMontantM1')?.value) || 0;
+  if (modePaiement !== 'chambre') {
+    if (m1Bar <= 0) { toast('Veuillez saisir le montant reçu', 'error'); _paiementEnCours=false; return; }
     _lignesPayBar = barGetLignesPay();
     if (_lignesPayBar) {
       const espLigne = _lignesPayBar.find(l => l.mode === 'especes');
       montantEspeces = espLigne ? espLigne.montant : 0;
+    } else if (modePaiement === 'especes') {
+      if (m1Bar < total) { toast('Montant reçu insuffisant', 'error'); _paiementEnCours=false; return; }
+      montantEspeces = total;
     }
   }
 

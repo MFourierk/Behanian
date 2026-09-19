@@ -552,109 +552,38 @@
       </div>
     </div>
 
-    <div id="sortiePaiementDirect" style="display:none">
-      <div class="form-row">
-        <label>Mode de paiement</label>
-        <select id="sortieMode" onchange="piscSortieSetMode(this,'direct')">
-          <option value="especes">Espèces</option>
-          <option value="wave">Wave</option>
-          <option value="orange_money">Orange Money</option>
-          <option value="mtn_money">MTN Mobile Money</option>
-          <option value="carte_bancaire">Carte Bancaire</option>
-        </select>
+    <!-- Widget paiement unifié (hébergé direct + non-résident) -->
+    <div id="sortiePayWidget" style="display:none">
+      <!-- Étape 1 : choix du mode -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px">Mode de paiement</div>
+        <div id="pisMode1Btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
-      <div class="form-row" id="sortieRecuRow">
-        <label>Montant reçu (FCFA)</label>
-        <input type="number" id="sortieRecu" placeholder="0">
-      </div>
-      <div id="sortieRendu" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
-      <!-- Widget multi-paiement direct -->
-      <div id="sortieEspecesRowDirect" style="display:none">
-        <div class="form-row" style="margin-bottom:6px">
-          <label id="piscM1LabelDirect">Montant mobile (FCFA)</label>
-          <div style="display:flex;gap:6px">
-            <input type="number" id="sortieEspecesDirect" placeholder="0" oninput="piscCalcPay('direct')" style="flex:1">
-            <button type="button" onclick="piscSetToutM1('direct')" style="padding:8px 12px;border-radius:8px;border:1.5px solid #c9a84c;background:rgba(201,168,76,0.08);color:#92400e;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Tout →</button>
-          </div>
-        </div>
-        <div id="piscResteBarDirect" style="display:none;margin-bottom:8px;padding:6px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;justify-content:space-between;align-items:center">
-          <span style="color:#2563eb;font-size:12px;font-weight:600">Reste</span>
-          <strong id="piscResteValDirect" style="color:#1e40af;font-size:13px">0 F</strong>
-        </div>
-        <div id="piscP2SectionDirect" style="display:none;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-            <div style="flex:1;height:1px;background:#e5e7eb"></div>
-            <span style="font-size:9px;font-weight:700;color:#2563eb;letter-spacing:.7px">2ÈME PAIEMENT</span>
-            <div style="flex:1;height:1px;background:#e5e7eb"></div>
-          </div>
-          <div id="piscP2BtnsDirect" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
-          <input type="number" id="piscMontant2eDirect" placeholder="Montant" oninput="piscCalcPay('direct')" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;box-sizing:border-box">
-          <div id="piscP3SectionDirect" style="display:none;margin-top:8px">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-              <div style="flex:1;height:1px;background:#e5e7eb"></div>
-              <span style="font-size:9px;font-weight:700;color:#059669;letter-spacing:.7px">3ÈME PAIEMENT (auto)</span>
-              <div style="flex:1;height:1px;background:#e5e7eb"></div>
-            </div>
-            <div id="piscP3BtnsDirect" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
-            <div style="padding:7px 10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;display:flex;justify-content:space-between">
-              <span style="font-size:12px;color:#059669">Montant (auto)</span>
-              <strong id="piscM3AutoDirect" style="color:#065f46;font-size:13px">0 F</strong>
-            </div>
-          </div>
+      <!-- Étape 2 : montant mode 1 -->
+      <div id="pisM1Row" style="display:none" class="form-row">
+        <label id="pisM1Label">Montant (FCFA)</label>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="pisM1Amt" placeholder="0" oninput="pisNewCalc()" style="flex:1">
+          <button type="button" onclick="pisNewSetTout()" style="padding:8px 12px;border-radius:8px;border:1.5px solid #c9a84c;background:rgba(201,168,76,0.08);color:#92400e;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Tout →</button>
         </div>
       </div>
-    </div>
-
-    <!-- Paiement direct non-résident -->
-    <div id="sortiePaiementNonResident">
-      <div class="form-row">
-        <label>Mode de paiement</label>
-        <select id="sortieModeNR" onchange="piscSortieSetMode(this,'nr')">
-          <option value="especes">Espèces</option>
-          <option value="wave">Wave</option>
-          <option value="orange_money">Orange Money</option>
-          <option value="mtn_money">MTN Mobile Money</option>
-          <option value="carte_bancaire">Carte Bancaire</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>Montant reçu (FCFA)</label>
-        <input type="number" id="sortieRecuNR" placeholder="0">
-      </div>
-      <div id="sortieRenduNR" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:12px"></div>
-      <!-- Widget multi-paiement NR -->
-      <div id="sortieEspecesRowNR" style="display:none">
-        <div class="form-row" style="margin-bottom:6px">
-          <label id="piscM1LabelNR">Montant mobile (FCFA)</label>
-          <div style="display:flex;gap:6px">
-            <input type="number" id="sortieEspecesNR" placeholder="0" oninput="piscCalcPay('nr')" style="flex:1">
-            <button type="button" onclick="piscSetToutM1('nr')" style="padding:8px 12px;border-radius:8px;border:1.5px solid #c9a84c;background:rgba(201,168,76,0.08);color:#92400e;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Tout →</button>
-          </div>
+      <!-- Indicateur manque / monnaie -->
+      <div id="pisIndicator" style="display:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px"></div>
+      <!-- Étape 3 : 2ème paiement (si M1 < total) -->
+      <div id="pisP2Section" style="display:none;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <div style="flex:1;height:1px;background:#e5e7eb"></div>
+          <span style="font-size:9px;font-weight:700;color:#2563eb;letter-spacing:.7px">2ÈME PAIEMENT</span>
+          <div style="flex:1;height:1px;background:#e5e7eb"></div>
         </div>
-        <div id="piscResteBarNR" style="display:none;margin-bottom:8px;padding:6px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;justify-content:space-between;align-items:center">
-          <span style="color:#2563eb;font-size:12px;font-weight:600">Reste</span>
-          <strong id="piscResteValNR" style="color:#1e40af;font-size:13px">0 F</strong>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;margin-bottom:8px">
+          <span style="color:#2563eb;font-size:12px;font-weight:600">Reste à payer</span>
+          <strong id="pisResteVal" style="color:#1e40af;font-size:13px">0 F</strong>
         </div>
-        <div id="piscP2SectionNR" style="display:none;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-            <div style="flex:1;height:1px;background:#e5e7eb"></div>
-            <span style="font-size:9px;font-weight:700;color:#2563eb;letter-spacing:.7px">2ÈME PAIEMENT</span>
-            <div style="flex:1;height:1px;background:#e5e7eb"></div>
-          </div>
-          <div id="piscP2BtnsNR" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
-          <input type="number" id="piscMontant2eNR" placeholder="Montant" oninput="piscCalcPay('nr')" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;box-sizing:border-box">
-          <div id="piscP3SectionNR" style="display:none;margin-top:8px">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-              <div style="flex:1;height:1px;background:#e5e7eb"></div>
-              <span style="font-size:9px;font-weight:700;color:#059669;letter-spacing:.7px">3ÈME PAIEMENT (auto)</span>
-              <div style="flex:1;height:1px;background:#e5e7eb"></div>
-            </div>
-            <div id="piscP3BtnsNR" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
-            <div style="padding:7px 10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;display:flex;justify-content:space-between">
-              <span style="font-size:12px;color:#059669">Montant (auto)</span>
-              <strong id="piscM3AutoNR" style="color:#065f46;font-size:13px">0 F</strong>
-            </div>
-          </div>
+        <div id="pisMode2Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+        <div id="pisM2Display" style="display:none;padding:7px 10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:6px;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;color:#059669">Montant <span id="pisM2ModeLabel">—</span></span>
+          <strong id="pisM2Val" style="color:#065f46;font-size:13px">0 F</strong>
         </div>
       </div>
     </div>
@@ -1529,8 +1458,7 @@ function onSortieSalonChange() {
   const apayerEl = document.querySelector('#sortieDetail [data-apayer]');
   if (apayerEl) apayerEl.textContent = totalFinal.toLocaleString('fr-FR') + ' F';
   // Mettre à jour les champs montant reçu
-  if (!_sortieIsHeberge) document.getElementById('sortieRecuNR').value = totalFinal;
-  else if (_sortiePayChoice === 'direct') document.getElementById('sortieRecu').value = totalFinal;
+  if (document.getElementById('sortiePayWidget')?.style.display !== 'none') pisNewCalc();
 }
 
 function piscineOuvrirRecuDepot(chambreNom, module, lignes, total) {
@@ -1546,10 +1474,12 @@ function setPaymentChoice(choice){
   _sortiePayChoice = choice;
   document.getElementById('choixChambre').className='payment-choice'+(choice==='chambre'?' active chambre':'');
   document.getElementById('choixDirect').className='payment-choice'+(choice==='direct'?' active direct':'');
-  document.getElementById('sortiePaiementDirect').style.display=choice==='direct'?'block':'none';
-  if(choice==='direct'){
-    document.getElementById('sortieRecu').value=_sortieTotal;
-    document.getElementById('sortieRendu').style.display='none';
+  const widget = document.getElementById('sortiePayWidget');
+  if (choice === 'direct') {
+    widget.style.display = 'block';
+    pisNewReset();
+  } else {
+    widget.style.display = 'none';
   }
 }
 
@@ -1566,166 +1496,128 @@ function _calcRendu(recuEl, totalV, renduEl){
   _calcRenduVal(parseFloat(recuEl.value)||0, totalV, renduEl);
 }
 
-const _piscP2Mode = {direct: '', nr: ''};
-const _piscP3Mode = {direct: '', nr: ''};
-
-const _PISC_ALL_MODES = [
-  {mode:'wave',         label:'🌊 Wave'},
-  {mode:'orange_money', label:'🟠 Orange'},
-  {mode:'mtn_money',    label:'🟡 MTN'},
-  {mode:'moov_money',   label:'🟣 Moov'},
-  {mode:'especes',      label:'💵 Espèces'},
-  {mode:'carte_bancaire', label:'💳 Carte'},
+// ═══ Widget paiement unifié piscine ═══
+let _pisMode1 = '', _pisMode2 = '';
+const _PIS_MODES = [
+  {mode:'especes',       label:'💵 Espèces'},
+  {mode:'wave',          label:'🌊 Wave'},
+  {mode:'orange_money',  label:'🟠 Orange'},
+  {mode:'mtn_money',     label:'🟡 MTN'},
+  {mode:'moov_money',    label:'🟣 Moov'},
+  {mode:'carte_bancaire',label:'💳 Carte'},
 ];
+const _PIS_NAMES = {especes:'Espèces',wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov',carte_bancaire:'Carte'};
 
-function piscBuildBtns(containerId, excludeModes, onclickFn) {
-  const c = document.getElementById(containerId);
+function pisNewInitBtns() {
+  const c = document.getElementById('pisMode1Btns');
   if (!c) return;
   c.innerHTML = '';
-  _PISC_ALL_MODES.filter(x => !excludeModes.includes(x.mode)).forEach(x => {
+  _PIS_MODES.forEach(x => {
     const b = document.createElement('button');
     b.type = 'button'; b.textContent = x.label; b.dataset.mode = x.mode;
-    b.className = 'pisc-px-btn';
-    b.style.cssText = 'padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1.5px solid #cbd5e1;background:#f8fafc;color:#374151;cursor:pointer;transition:all .15s';
-    b.onclick = () => onclickFn(b, containerId.includes('NR') ? 'nr' : 'direct');
+    b.style.cssText = 'padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid #cbd5e1;background:#f8fafc;color:#374151;cursor:pointer;transition:all .15s;';
+    b.onclick = () => pisNewSelectMode1(b);
     c.appendChild(b);
   });
 }
 
-function piscCalcPay(which) {
-  const selId  = which==='direct' ? 'sortieMode' : 'sortieModeNR';
-  const espId  = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
-  const m2Id   = which==='direct' ? 'piscMontant2eDirect' : 'piscMontant2eNR';
-  const mode   = document.getElementById(selId)?.value || '';
-  const total  = _sortieTotal + _sortieSalonFrais;
-  const m1     = parseFloat(document.getElementById(espId)?.value||0)||0;
-  const reste  = Math.max(0, total - m1);
-  const rbId   = which==='direct' ? 'piscResteBarDirect' : 'piscResteBarNR';
-  const rvId   = which==='direct' ? 'piscResteValDirect' : 'piscResteValNR';
-  const p2Id   = which==='direct' ? 'piscP2SectionDirect' : 'piscP2SectionNR';
-  const p2BId  = which==='direct' ? 'piscP2BtnsDirect' : 'piscP2BtnsNR';
-  const p3Id   = which==='direct' ? 'piscP3SectionDirect' : 'piscP3SectionNR';
-  const p3BId  = which==='direct' ? 'piscP3BtnsDirect' : 'piscP3BtnsNR';
-  const m3AId  = which==='direct' ? 'piscM3AutoDirect' : 'piscM3AutoNR';
-  const rb = document.getElementById(rbId), rv = document.getElementById(rvId);
-  if (rb && rv) {
-    if (m1 > 0 && m1 < total) { rb.style.display = 'flex'; rv.textContent = reste.toLocaleString('fr-FR')+' F'; }
-    else rb.style.display = 'none';
-  }
-  const p2 = document.getElementById(p2Id);
-  if (!p2) return;
+function pisNewSelectMode1(btn) {
+  _pisMode1 = btn.dataset.mode; _pisMode2 = '';
+  document.querySelectorAll('#pisMode1Btns button').forEach(b => {
+    b.style.background = b===btn ? '#dbeafe' : '#f8fafc';
+    b.style.borderColor = b===btn ? '#3b82f6' : '#cbd5e1';
+    b.style.color = b===btn ? '#1e40af' : '#374151';
+  });
+  document.getElementById('pisM1Label').textContent = 'Montant ' + (_PIS_NAMES[_pisMode1] || _pisMode1) + ' (FCFA)';
+  document.getElementById('pisM1Row').style.display = '';
+  const amt = document.getElementById('pisM1Amt');
+  amt.value = ''; amt.focus();
+  document.getElementById('pisP2Section').style.display = 'none';
+  document.getElementById('pisIndicator').style.display = 'none';
+  document.getElementById('pisM2Display').style.display = 'none';
+}
+
+function pisNewCalc() {
+  const total = _sortieTotal + _sortieSalonFrais;
+  const m1    = parseFloat(document.getElementById('pisM1Amt')?.value) || 0;
+  const reste = total - m1;
+  const ind   = document.getElementById('pisIndicator');
+  if (m1 > 0 && ind) {
+    ind.style.display = 'block';
+    if (m1 >= total) {
+      Object.assign(ind.style, {background:'#f0fdf4',color:'#15803d',border:'1px solid #bbf7d0'});
+      ind.textContent = m1 > total ? 'Monnaie à rendre : ' + (m1 - total).toLocaleString('fr-FR') + ' F' : '✓ Montant exact';
+    } else {
+      Object.assign(ind.style, {background:'#fef2f2',color:'#dc2626',border:'1px solid #fecaca'});
+      ind.textContent = 'Manque : ' + reste.toLocaleString('fr-FR') + ' F';
+    }
+  } else if (ind) { ind.style.display = 'none'; }
+  const p2 = document.getElementById('pisP2Section');
   if (m1 > 0 && m1 < total) {
     p2.style.display = '';
-    const p2b = document.getElementById(p2BId);
-    if (p2b && !p2b.children.length) piscBuildBtns(p2BId, [mode], piscSetPay2);
-    const m2 = parseFloat(document.getElementById(m2Id)?.value||0)||0;
-    const p3 = document.getElementById(p3Id);
-    if (p3) {
-      if (_piscP2Mode[which] && m2 > 0 && m2 < (total - m1)) {
-        p3.style.display = '';
-        const p3b = document.getElementById(p3BId);
-        if (p3b && !p3b.children.length) piscBuildBtns(p3BId, [mode, _piscP2Mode[which]], piscSetPay3);
-        const m3a = document.getElementById(m3AId);
-        if (m3a) m3a.textContent = Math.max(0,total-m1-m2).toLocaleString('fr-FR')+' F';
-      } else p3.style.display = 'none';
+    document.getElementById('pisResteVal').textContent = reste.toLocaleString('fr-FR') + ' F';
+    const m2c = document.getElementById('pisMode2Btns');
+    if (m2c && !m2c.children.length) {
+      _PIS_MODES.filter(x => x.mode !== _pisMode1).forEach(x => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = x.label; b.dataset.mode = x.mode;
+        b.style.cssText = 'padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1.5px solid #cbd5e1;background:#f8fafc;color:#374151;cursor:pointer;transition:all .15s;';
+        b.onclick = () => pisNewSelectMode2(b);
+        m2c.appendChild(b);
+      });
     }
-  } else p2.style.display = 'none';
+    // Réinitialiser mode 2 si M1 change
+    _pisMode2 = '';
+    document.getElementById('pisM2Display').style.display = 'none';
+    document.querySelectorAll('#pisMode2Btns button').forEach(b => {
+      Object.assign(b.style, {background:'#f8fafc',borderColor:'#cbd5e1',color:'#374151'});
+    });
+  } else { p2.style.display = 'none'; }
 }
 
-function piscSetPay2(btn, which) {
-  _piscP2Mode[which] = btn.dataset.mode;
-  const p2BId = which==='direct' ? 'piscP2BtnsDirect' : 'piscP2BtnsNR';
-  document.querySelectorAll('#'+p2BId+' .pisc-px-btn').forEach(b => {
-    const sel = b.dataset.mode === _piscP2Mode[which];
-    b.style.background = sel ? '#dbeafe' : '#f8fafc';
-    b.style.borderColor = sel ? '#3b82f6' : '#cbd5e1';
-    b.style.color = sel ? '#1e40af' : '#374151';
-  });
-  _piscP3Mode[which] = '';
-  const p3BId = which==='direct' ? 'piscP3BtnsDirect' : 'piscP3BtnsNR';
-  const p3b = document.getElementById(p3BId); if (p3b) p3b.innerHTML = '';
-  const p3Id = which==='direct' ? 'piscP3SectionDirect' : 'piscP3SectionNR';
-  const p3 = document.getElementById(p3Id); if (p3) p3.style.display = 'none';
-  piscCalcPay(which);
-}
-
-function piscSetPay3(btn, which) {
-  _piscP3Mode[which] = btn.dataset.mode;
-  const p3BId = which==='direct' ? 'piscP3BtnsDirect' : 'piscP3BtnsNR';
-  document.querySelectorAll('#'+p3BId+' .pisc-px-btn').forEach(b => {
-    const sel = b.dataset.mode === _piscP3Mode[which];
-    b.style.background = sel ? '#d1fae5' : '#f8fafc';
-    b.style.borderColor = sel ? '#10b981' : '#cbd5e1';
-    b.style.color = sel ? '#065f46' : '#374151';
-  });
-}
-
-function piscSetToutM1(which) {
+function pisNewSelectMode2(btn) {
+  _pisMode2 = btn.dataset.mode;
   const total = _sortieTotal + _sortieSalonFrais;
-  if (total <= 0) return;
-  const espId = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
-  const inp = document.getElementById(espId);
-  if (inp) { inp.value = total; piscCalcPay(which); }
+  const m1    = parseFloat(document.getElementById('pisM1Amt')?.value) || 0;
+  const reste = Math.max(0, total - m1);
+  document.querySelectorAll('#pisMode2Btns button').forEach(b => {
+    b.style.background = b===btn ? '#d1fae5' : '#f8fafc';
+    b.style.borderColor = b===btn ? '#10b981' : '#cbd5e1';
+    b.style.color = b===btn ? '#065f46' : '#374151';
+  });
+  document.getElementById('pisM2ModeLabel').textContent = _PIS_NAMES[_pisMode2] || _pisMode2;
+  document.getElementById('pisM2Val').textContent = reste.toLocaleString('fr-FR') + ' F';
+  const d = document.getElementById('pisM2Display');
+  d.style.display = 'flex';
 }
 
-function piscGetLignesPay(which) {
-  const selId = which==='direct' ? 'sortieMode' : 'sortieModeNR';
-  const espId = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
-  const m2Id  = which==='direct' ? 'piscMontant2eDirect' : 'piscMontant2eNR';
-  const mode  = document.getElementById(selId)?.value || '';
+function pisNewSetTout() {
+  const inp = document.getElementById('pisM1Amt');
+  if (inp) { inp.value = _sortieTotal + _sortieSalonFrais; pisNewCalc(); }
+}
+
+function pisNewReset() {
+  _pisMode1 = ''; _pisMode2 = '';
+  ['pisM1Row','pisIndicator','pisP2Section','pisM2Display'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const m1a = document.getElementById('pisM1Amt'); if (m1a) m1a.value = '';
+  const m2c = document.getElementById('pisMode2Btns'); if (m2c) m2c.innerHTML = '';
+  pisNewInitBtns();
+}
+
+function pisNewGetLignes() {
   const total = _sortieTotal + _sortieSalonFrais;
-  const m1 = parseFloat(document.getElementById(espId)?.value||0)||0;
-  const m2 = parseFloat(document.getElementById(m2Id)?.value||0)||0;
-  const m3 = Math.max(0, total - m1 - m2);
-  if (!piscSortieIsMobile(mode) || m1 <= 0 || m1 >= total) return null;
-  const lignes = [];
-  if (m1 > 0) lignes.push({mode: mode,            montant: m1});
-  if (_piscP2Mode[which] && m2 > 0) lignes.push({mode: _piscP2Mode[which], montant: m2});
-  if (_piscP3Mode[which] && m3 > 0) lignes.push({mode: _piscP3Mode[which], montant: m3});
-  return lignes.length > 1 ? lignes : null;
+  const m1 = parseFloat(document.getElementById('pisM1Amt')?.value) || 0;
+  const m2 = Math.max(0, total - m1);
+  if (!_pisMode1 || m1 <= 0) return null;
+  if (_pisMode2 && m2 > 0 && m1 < total)
+    return [{mode: _pisMode1, montant: m1}, {mode: _pisMode2, montant: m2}];
+  return null;
 }
 
-function _piscResetWidget(which) {
-  _piscP2Mode[which] = ''; _piscP3Mode[which] = '';
-  const espId = which==='direct' ? 'sortieEspecesDirect' : 'sortieEspecesNR';
-  const m2Id  = which==='direct' ? 'piscMontant2eDirect' : 'piscMontant2eNR';
-  const ei = document.getElementById(espId); if(ei) ei.value = '';
-  const mi = document.getElementById(m2Id);  if(mi) mi.value = '';
-  const rbId = which==='direct' ? 'piscResteBarDirect'   : 'piscResteBarNR';
-  const p2Id = which==='direct' ? 'piscP2SectionDirect'  : 'piscP2SectionNR';
-  const p3Id = which==='direct' ? 'piscP3SectionDirect'  : 'piscP3SectionNR';
-  const p2BId= which==='direct' ? 'piscP2BtnsDirect'     : 'piscP2BtnsNR';
-  const p3BId= which==='direct' ? 'piscP3BtnsDirect'     : 'piscP3BtnsNR';
-  const rb = document.getElementById(rbId); if(rb) rb.style.display='none';
-  const p2 = document.getElementById(p2Id); if(p2) p2.style.display='none';
-  const p3 = document.getElementById(p3Id); if(p3) p3.style.display='none';
-  const b2 = document.getElementById(p2BId); if(b2) b2.innerHTML='';
-  const b3 = document.getElementById(p3BId); if(b3) b3.innerHTML='';
-}
+// Les event listeners pour l'ancien widget (supprimés avec le nouveau widget pisNew*)
 
-function piscSortieIsMobile(mode){return['wave','orange_money','mtn_money','moov_money'].includes(mode);}
-function piscSortieSetMode(sel, which){
-  const isMobile = piscSortieIsMobile(sel.value);
-  const rowId = which==='direct' ? 'sortieEspecesRowDirect' : 'sortieEspecesRowNR';
-  document.getElementById(rowId).style.display = isMobile ? '' : 'none';
-  if (!isMobile) _piscResetWidget(which);
-  else {
-    const lbl = document.getElementById(which==='direct' ? 'piscM1LabelDirect' : 'piscM1LabelNR');
-    if (lbl) { const nm={wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov'}; lbl.textContent='Montant '+(nm[sel.value]||'mobile')+' (FCFA)'; }
-    piscCalcPay(which);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('sortieRecu').addEventListener('input',function(){
-    const esp = parseFloat(document.getElementById('sortieEspecesDirect')?.value||0)||0;
-    _calcRenduVal((parseFloat(this.value)||0)+esp, _sortieTotal+_sortieSalonFrais, document.getElementById('sortieRendu'));
-  });
-  document.getElementById('sortieRecuNR').addEventListener('input',function(){
-    const esp = parseFloat(document.getElementById('sortieEspecesNR')?.value||0)||0;
-    _calcRenduVal((parseFloat(this.value)||0)+esp, _sortieTotal+_sortieSalonFrais, document.getElementById('sortieRenduNR'));
-  });
-});
 
 function togglePiscFrais(force) {
   const inner = document.getElementById('piscFraisInner');
@@ -1796,13 +1688,12 @@ async function ouvrirSortie(id, nom, prixEntree){
   det.innerHTML=html;
   // Gérer affichage selon type
   document.getElementById('sortieChoixResident').style.display=_sortieIsHeberge?'block':'none';
-  document.getElementById('sortiePaiementNonResident').style.display=_sortieIsHeberge?'none':'block';
-  document.getElementById('sortiePaiementDirect').style.display='none';
   if(_sortieIsHeberge){
+    document.getElementById('sortiePayWidget').style.display='none';
     setPaymentChoice('chambre');
   } else {
-    document.getElementById('sortieRecuNR').value=d.total;
-    document.getElementById('sortieRenduNR').style.display='none';
+    pisNewReset();
+    document.getElementById('sortiePayWidget').style.display='block';
   }
   document.getElementById('modalSortie').classList.add('open');
 }
@@ -1810,21 +1701,21 @@ async function ouvrirSortie(id, nom, prixEntree){
 async function validerSortie(){
   const id=document.getElementById('sortieAccesId').value;
   let mode, recu, surChambre;
+  const _total = _sortieTotal + _sortieSalonFrais;
   if(_sortieIsHeberge){
     surChambre = _sortiePayChoice === 'chambre';
-    mode = surChambre ? 'chambre' : document.getElementById('sortieMode').value;
-    recu = surChambre ? 0 : parseFloat(document.getElementById('sortieRecu').value)||0;
+    mode = surChambre ? 'chambre' : (_pisMode1 || 'especes');
+    recu = surChambre ? 0 : _total;
   } else {
     surChambre = false;
-    mode = document.getElementById('sortieModeNR').value;
-    recu = parseFloat(document.getElementById('sortieRecuNR').value)||0;
+    mode = _pisMode1 || 'especes';
+    recu = _total;
   }
   const sortieSalonId = document.getElementById('sortieSalonVIP')?.value || '';
   const sortieSalonH  = sortieSalonId ? (parseInt(document.getElementById('sortieSalonH')?.value) || 1) : 0;
-  const which = _sortieIsHeberge ? 'direct' : 'nr';
-  const lignesPaiement = surChambre ? null : piscGetLignesPay(which);
+  const lignesPaiement = surChambre ? null : pisNewGetLignes();
   const espLigne = lignesPaiement?.find(l => l.mode === 'especes');
-  const montantEspeces = espLigne ? espLigne.montant : 0;
+  const montantEspeces = espLigne ? espLigne.montant : (mode === 'especes' ? recu : 0);
   let r, d;
   try {
     const payload = {

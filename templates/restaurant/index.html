@@ -1376,39 +1376,33 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
       </select>
     </div>
 
-    <!-- Section espèces -->
-    <div id="sectionEspeces">
-      <div class="rendu-section">
-        <label>MONTANT REÇU (FCFA)</label>
-        <input type="number" id="montantRecu" placeholder="Saisir le montant" oninput="calcRendu()">
-        <div class="rendu-display" id="renduDisplay">Rendu : <span id="renduVal">0</span> F</div>
+    <!-- Section paiement universel (espèces + mobile + carte) -->
+    <div id="sectionPay">
+      <div id="restoBilletsSection">
+        <div class="billets-grid" id="billetsGrid">
+          <button class="billet-btn" onclick="setBillet(500)">500</button>
+          <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
+          <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
+          <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
+          <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
+          <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
+          <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
+          <button class="billet-btn" onclick="setBillet(0,true)">Exact</button>
+        </div>
       </div>
-      <div class="billets-grid" id="billetsGrid">
-        <button class="billet-btn" onclick="setBillet(500)">500</button>
-        <button class="billet-btn" onclick="setBillet(1000)">1 000</button>
-        <button class="billet-btn" onclick="setBillet(2000)">2 000</button>
-        <button class="billet-btn" onclick="setBillet(5000)">5 000</button>
-        <button class="billet-btn" onclick="setBillet(10000)">10 000</button>
-        <button class="billet-btn" onclick="setBillet(25000)">25 000</button>
-        <button class="billet-btn" onclick="setBillet(50000)">50 000</button>
-        <button class="billet-btn" onclick="setBillet(0,true)">Exact</button>
-      </div>
-    </div>
-
-    <!-- Section mobile money (Wave / Orange / MTN) — widget 3 étapes -->
-    <div id="sectionMobile" style="display:none">
       <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">
-        Montant <span id="labelMode1Resto">mobile</span>
+        Montant <span id="labelMode1Resto">reçu</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
         <input type="number" id="restoMontantM1" class="mixte-input" placeholder="0" min="0" oninput="restoCalcPay()" style="flex:1">
         <button type="button" onclick="restoSetToutM1()" style="padding:9px 14px;border-radius:9px;border:1.5px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#c9a84c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Tout →</button>
       </div>
+      <div id="restoRenduDisplay" style="display:none;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px"></div>
       <div id="restoResteBar" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;justify-content:space-between;align-items:center">
-        <span style="color:#93c5fd;font-size:12px;font-weight:600">Reste à répartir</span>
+        <span style="color:#93c5fd;font-size:12px;font-weight:600">Reste à payer</span>
         <strong id="restoResteVal" style="color:white;font-size:14px">0 F</strong>
       </div>
-      <!-- 2ème paiement -->
+      <!-- 2ème paiement — max 2 modes -->
       <div id="restoP2Section" style="display:none">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
@@ -1416,19 +1410,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
           <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
         </div>
         <div id="restoP2Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-        <input type="number" id="restoMontantM2" class="mixte-input" placeholder="Montant" min="0" oninput="restoCalcPay()">
-        <!-- 3ème paiement (automatique) -->
-        <div id="restoP3Section" style="display:none;margin-top:12px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
-            <span style="font-size:10px;font-weight:700;color:#34d399;letter-spacing:.8px">3ÈME PAIEMENT (auto)</span>
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
-          </div>
-          <div id="restoP3Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px">
-            <span style="color:#34d399;font-size:13px">Montant (automatique)</span>
-            <strong id="restoM3Auto" style="color:white;font-size:15px">0 F</strong>
-          </div>
+        <!-- Montant 2 : affiché automatiquement (= reste), non modifiable -->
+        <div id="restoM2Display" style="display:none;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px">
+          <span style="color:#34d399;font-size:13px">Montant <span id="restoM2ModeLabel">—</span> (automatique)</span>
+          <strong id="restoM2Auto" style="color:white;font-size:15px">0 F</strong>
         </div>
       </div>
     </div>
@@ -1518,28 +1503,21 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
         <button class="mmt sd-pay"        data-mode="mtn_money"    onclick="sdSetMode('mtn_money')">🟡 MTN</button>
         <button class="mmt sd-pay"        data-mode="carte"        onclick="sdSetMode('carte')">💳 Carte</button>
       </div>
-      <div id="sdSectionEspeces">
-        <div class="rendu-section" style="margin:0;">
-          <label>MONTANT REÇU (FCFA)</label>
-          <input type="number" id="sdMontantRecu" placeholder="Saisir le montant" oninput="sdCalcRendu()"
-                 style="width:100%;padding:10px 14px;background:#0f172a;border:1px solid #2d3f55;border-radius:10px;color:white;font-size:1rem;box-sizing:border-box;margin-bottom:8px;">
-          <div class="rendu-display" id="sdRenduDisplay">Rendu : <span id="sdRenduVal">0</span> F</div>
-        </div>
-      </div>
-      <!-- Widget multi-paiement SD (mobile) -->
-      <div id="sdSectionMobile" style="display:none">
+      <!-- Widget paiement SD unifié -->
+      <div id="sdSectionPay">
         <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">
-          Montant <span id="sdLabelMode1">mobile</span>
+          Montant <span id="sdLabelMode1">reçu</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
           <input type="number" id="sdMontantM1" class="mixte-input" placeholder="0" min="0" oninput="sdCalcPay()" style="flex:1">
           <button type="button" onclick="sdSetToutM1()" style="padding:9px 14px;border-radius:9px;border:1.5px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.1);color:#c9a84c;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Tout →</button>
         </div>
+        <div id="sdRenduDisplay" style="display:none;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px"></div>
         <div id="sdResteBar" style="display:none;margin-bottom:12px;padding:8px 12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;justify-content:space-between;align-items:center">
-          <span style="color:#93c5fd;font-size:12px;font-weight:600">Reste à répartir</span>
+          <span style="color:#93c5fd;font-size:12px;font-weight:600">Reste à payer</span>
           <strong id="sdResteVal" style="color:white;font-size:14px">0 F</strong>
         </div>
-        <!-- 2ème paiement -->
+        <!-- 2ème paiement — max 2 modes -->
         <div id="sdP2Section" style="display:none">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
@@ -1547,19 +1525,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cave-light); color:
             <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
           </div>
           <div id="sdP2Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-          <input type="number" id="sdMontantM2" class="mixte-input" placeholder="Montant" min="0" oninput="sdCalcPay()">
-          <!-- 3ème paiement (automatique) -->
-          <div id="sdP3Section" style="display:none;margin-top:12px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-              <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
-              <span style="font-size:10px;font-weight:700;color:#34d399;letter-spacing:.8px">3ÈME PAIEMENT (auto)</span>
-              <div style="flex:1;height:1px;background:rgba(255,255,255,0.08)"></div>
-            </div>
-            <div id="sdP3Btns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px">
-              <span style="color:#34d399;font-size:13px">Montant (automatique)</span>
-              <strong id="sdM3Auto" style="color:white;font-size:15px">0 F</strong>
-            </div>
+          <div id="sdM2Display" style="display:none;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:10px">
+            <span style="color:#34d399;font-size:13px">Montant <span id="sdM2ModeLabel">—</span> (automatique)</span>
+            <strong id="sdM2Auto" style="color:white;font-size:15px">0 F</strong>
           </div>
         </div>
       </div>
@@ -1602,15 +1570,23 @@ let ticketActifId = 1;
 let ticketCounter = 1;
 let modePaiement  = 'especes';
 let _restoP2Mode  = '';
-let _restoP3Mode  = '';
+const _RESTO_MODE_NAMES = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov',especes:'Espèces',carte:'Carte'};
 
 function restoCalcPay() {
-  const mode = modePaiement;
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  if (!isMobile) return;
-  const total = getTotalAvecSalon();
-  const m1 = parseFloat(document.getElementById('restoMontantM1')?.value) || 0;
-  const reste = Math.max(0, total - m1);
+  const total  = getTotalAvecSalon();
+  const m1     = parseFloat(document.getElementById('restoMontantM1')?.value) || 0;
+  const reste  = total - m1;
+  const rend   = document.getElementById('restoRenduDisplay');
+  if (m1 > 0 && rend) {
+    rend.style.display = 'block';
+    if (m1 >= total) {
+      Object.assign(rend.style, {background:'rgba(22,163,74,0.15)',color:'#4ade80',border:'none'});
+      rend.textContent = m1 > total ? 'Monnaie à rendre : ' + formatF(m1 - total) : '✓ Montant exact';
+    } else {
+      Object.assign(rend.style, {background:'rgba(220,38,38,0.15)',color:'#f87171',border:'none'});
+      rend.textContent = 'Manque : ' + formatF(reste);
+    }
+  } else if (rend) { rend.style.display = 'none'; }
   const resteBar = document.getElementById('restoResteBar');
   if (m1 > 0 && m1 < total) {
     resteBar.style.display = 'flex';
@@ -1620,16 +1596,12 @@ function restoCalcPay() {
   if (m1 > 0 && m1 < total) {
     p2Sect.style.display = '';
     const p2Btns = document.getElementById('restoP2Btns');
-    if (!p2Btns.children.length) restosBuildBtns('restoP2Btns', [mode], restoSetPay2);
-    const m2 = parseFloat(document.getElementById('restoMontantM2')?.value) || 0;
-    const reste3 = Math.max(0, total - m1 - m2);
-    const p3Sect = document.getElementById('restoP3Section');
-    if (_restoP2Mode && m2 > 0 && m2 < (total - m1)) {
-      p3Sect.style.display = '';
-      const p3Btns = document.getElementById('restoP3Btns');
-      if (!p3Btns.children.length) restosBuildBtns('restoP3Btns', [mode, _restoP2Mode], restoSetPay3);
-      document.getElementById('restoM3Auto').textContent = formatF(reste3);
-    } else { p3Sect.style.display = 'none'; }
+    if (!p2Btns.children.length) restosBuildBtns('restoP2Btns', [modePaiement], restoSetPay2);
+    _restoP2Mode = '';
+    document.getElementById('restoM2Display').style.display = 'none';
+    document.querySelectorAll('#restoP2Btns .resto-px-btn').forEach(b => {
+      b.style.background = '#1a2535'; b.style.borderColor = 'rgba(255,255,255,0.12)';
+    });
   } else { p2Sect.style.display = 'none'; }
 }
 
@@ -1649,58 +1621,42 @@ function restosBuildBtns(containerId, excludeModes, onclickFn) {
 
 function restoSetPay2(btn) {
   _restoP2Mode = btn.dataset.mode;
+  const total = getTotalAvecSalon();
+  const m1    = parseFloat(document.getElementById('restoMontantM1')?.value) || 0;
+  const reste = Math.max(0, total - m1);
   document.querySelectorAll('#restoP2Btns .resto-px-btn').forEach(b => {
     const sel = b.dataset.mode === _restoP2Mode;
     b.style.background = sel ? '#2563eb' : '#1a2535';
     b.style.borderColor = sel ? '#3b82f6' : 'rgba(255,255,255,0.12)';
   });
-  _restoP3Mode = '';
-  document.getElementById('restoP3Btns').innerHTML = '';
-  document.getElementById('restoP3Section').style.display = 'none';
-  restoCalcPay();
-}
-
-function restoSetPay3(btn) {
-  _restoP3Mode = btn.dataset.mode;
-  document.querySelectorAll('#restoP3Btns .resto-px-btn').forEach(b => {
-    const sel = b.dataset.mode === _restoP3Mode;
-    b.style.background = sel ? '#059669' : '#1a2535';
-    b.style.borderColor = sel ? '#10b981' : 'rgba(255,255,255,0.12)';
-  });
+  document.getElementById('restoM2ModeLabel').textContent = _RESTO_MODE_NAMES[_restoP2Mode] || _restoP2Mode;
+  document.getElementById('restoM2Auto').textContent = formatF(reste);
+  document.getElementById('restoM2Display').style.display = 'flex';
 }
 
 function restoSetToutM1() {
-  const total = getTotalAvecSalon();
-  if (total <= 0) return;
   const inp = document.getElementById('restoMontantM1');
-  if (inp) { inp.value = total; restoCalcPay(); }
+  if (inp) { inp.value = getTotalAvecSalon(); restoCalcPay(); }
 }
 
 function restoGetLignesPay() {
   const total = getTotalAvecSalon();
-  const mode = modePaiement;
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  if (!isMobile) return null;
   const m1 = parseFloat(document.getElementById('restoMontantM1')?.value) || 0;
-  const m2 = parseFloat(document.getElementById('restoMontantM2')?.value) || 0;
-  const m3 = Math.max(0, total - m1 - m2);
+  const m2 = Math.max(0, total - m1);
   if (m1 <= 0 || m1 >= total) return null;
-  const lignes = [];
-  if (m1 > 0) lignes.push({mode: mode,        montant: m1});
+  const lignes = [{mode: modePaiement, montant: m1}];
   if (_restoP2Mode && m2 > 0) lignes.push({mode: _restoP2Mode, montant: m2});
-  if (_restoP3Mode && m3 > 0) lignes.push({mode: _restoP3Mode, montant: m3});
   return lignes.length > 1 ? lignes : null;
 }
 
 function _resetMobileResto() {
-  _restoP2Mode = ''; _restoP3Mode = '';
+  _restoP2Mode = '';
   const m1 = document.getElementById('restoMontantM1'); if(m1) m1.value = '';
-  const m2 = document.getElementById('restoMontantM2'); if(m2) m2.value = '';
   const rb = document.getElementById('restoResteBar'); if(rb) rb.style.display = 'none';
+  const rd = document.getElementById('restoRenduDisplay'); if(rd) rd.style.display = 'none';
   const p2 = document.getElementById('restoP2Section'); if(p2) p2.style.display = 'none';
-  const p3 = document.getElementById('restoP3Section'); if(p3) p3.style.display = 'none';
   const b2 = document.getElementById('restoP2Btns'); if(b2) b2.innerHTML = '';
-  const b3 = document.getElementById('restoP3Btns'); if(b3) b3.innerHTML = '';
+  const m2d = document.getElementById('restoM2Display'); if(m2d) m2d.style.display = 'none';
 }
 let chambreLieeId  = null;
 let chambreLieeNom = null;
@@ -2983,7 +2939,7 @@ function fermerModal() {
 // ── PAIEMENT DIRECT SANS CONSO ──
 let sdModePaiement = 'especes';
 let _sdPay2Mode = '';
-let _sdPay3Mode = '';
+const _SD_MODE_NAMES = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov',especes:'Espèces',carte:'Carte'};
 
 const _SD_ALL_MODES = [
   {mode:'wave',         label:'🌊 Wave'},
@@ -3009,54 +2965,46 @@ function sdBuildBtns(containerId, excludeModes, onclickFn) {
 }
 
 function sdCalcPay() {
-  const total = sdGetTotal();
-  const mode = sdModePaiement;
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  if (!isMobile) return;
-  const m1 = parseFloat(document.getElementById('sdMontantM1')?.value) || 0;
-  const reste = Math.max(0, total - m1);
+  const total   = sdGetTotal();
+  const m1      = parseFloat(document.getElementById('sdMontantM1')?.value) || 0;
+  const reste   = total - m1;
+  const rend    = document.getElementById('sdRenduDisplay');
+  if (m1 >= total && total > 0) {
+    rend.style.display = ''; rend.style.background = 'rgba(22,163,74,0.15)'; rend.style.color = '#4ade80';
+    rend.textContent = `Rendu : ${formatF(m1 - total)}`;
+  } else if (m1 > 0) {
+    rend.style.display = ''; rend.style.background = 'rgba(220,38,38,0.15)'; rend.style.color = '#f87171';
+    rend.textContent = `Manque : ${formatF(total - m1)}`;
+  } else { rend.style.display = 'none'; }
   const resteBar = document.getElementById('sdResteBar');
   const resteVal = document.getElementById('sdResteVal');
+  const p2Sect   = document.getElementById('sdP2Section');
   if (m1 > 0 && m1 < total) {
-    resteBar.style.display = 'flex'; resteVal.textContent = formatF(reste);
-  } else { resteBar.style.display = 'none'; }
-  const p2Sect = document.getElementById('sdP2Section');
-  if (m1 > 0 && m1 < total) {
+    resteBar.style.display = 'flex'; resteVal.textContent = formatF(Math.max(0, reste));
     p2Sect.style.display = '';
     const p2Btns = document.getElementById('sdP2Btns');
-    if (!p2Btns.children.length) sdBuildBtns('sdP2Btns', [mode], sdSetPay2);
-    const m2 = parseFloat(document.getElementById('sdMontantM2')?.value) || 0;
-    const reste3 = Math.max(0, total - m1 - m2);
-    const p3Sect = document.getElementById('sdP3Section');
-    if (_sdPay2Mode && m2 > 0 && m2 < (total - m1)) {
-      p3Sect.style.display = '';
-      const p3Btns = document.getElementById('sdP3Btns');
-      if (!p3Btns.children.length) sdBuildBtns('sdP3Btns', [mode, _sdPay2Mode], sdSetPay3);
-      document.getElementById('sdM3Auto').textContent = formatF(reste3);
-    } else { p3Sect.style.display = 'none'; }
-  } else { p2Sect.style.display = 'none'; }
+    if (!p2Btns.children.length) sdBuildBtns('sdP2Btns', [sdModePaiement], sdSetPay2);
+  } else {
+    resteBar.style.display = 'none';
+    p2Sect.style.display = 'none';
+    _sdPay2Mode = '';
+    const b2 = document.getElementById('sdP2Btns'); if (b2) b2.innerHTML = '';
+    const m2d = document.getElementById('sdM2Display'); if (m2d) m2d.style.display = 'none';
+  }
 }
 
 function sdSetPay2(btn) {
   _sdPay2Mode = btn.dataset.mode;
   document.querySelectorAll('#sdP2Btns .sd-px-btn').forEach(b => {
     const sel = b.dataset.mode === _sdPay2Mode;
-    b.style.background = sel ? '#2563eb' : '#1a2535';
+    b.style.background  = sel ? '#2563eb' : '#1a2535';
     b.style.borderColor = sel ? '#3b82f6' : 'rgba(255,255,255,0.12)';
   });
-  _sdPay3Mode = '';
-  document.getElementById('sdP3Btns').innerHTML = '';
-  document.getElementById('sdP3Section').style.display = 'none';
-  sdCalcPay();
-}
-
-function sdSetPay3(btn) {
-  _sdPay3Mode = btn.dataset.mode;
-  document.querySelectorAll('#sdP3Btns .sd-px-btn').forEach(b => {
-    const sel = b.dataset.mode === _sdPay3Mode;
-    b.style.background = sel ? '#059669' : '#1a2535';
-    b.style.borderColor = sel ? '#10b981' : 'rgba(255,255,255,0.12)';
-  });
+  const total = sdGetTotal();
+  const m1    = parseFloat(document.getElementById('sdMontantM1')?.value) || 0;
+  document.getElementById('sdM2ModeLabel').textContent = _SD_MODE_NAMES[_sdPay2Mode] || _sdPay2Mode;
+  document.getElementById('sdM2Auto').textContent = formatF(Math.max(0, total - m1));
+  document.getElementById('sdM2Display').style.display = 'flex';
 }
 
 function sdSetToutM1() {
@@ -3068,29 +3016,22 @@ function sdSetToutM1() {
 
 function sdGetLignesPay() {
   const total = sdGetTotal();
-  const mode = sdModePaiement;
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  if (!isMobile) return null;
-  const m1 = parseFloat(document.getElementById('sdMontantM1')?.value) || 0;
-  const m2 = parseFloat(document.getElementById('sdMontantM2')?.value) || 0;
-  const m3 = Math.max(0, total - m1 - m2);
+  const m1    = parseFloat(document.getElementById('sdMontantM1')?.value) || 0;
   if (m1 <= 0 || m1 >= total) return null;
-  const lignes = [];
-  if (m1 > 0) lignes.push({mode: mode,       montant: m1});
+  const m2 = Math.max(0, total - m1);
+  const lignes = [{mode: sdModePaiement, montant: m1}];
   if (_sdPay2Mode && m2 > 0) lignes.push({mode: _sdPay2Mode, montant: m2});
-  if (_sdPay3Mode && m3 > 0) lignes.push({mode: _sdPay3Mode, montant: m3});
   return lignes.length > 1 ? lignes : null;
 }
 
 function _sdResetPayWidget() {
-  _sdPay2Mode = ''; _sdPay3Mode = '';
-  const m1 = document.getElementById('sdMontantM1'); if(m1) m1.value = '';
-  const m2 = document.getElementById('sdMontantM2'); if(m2) m2.value = '';
-  const rb = document.getElementById('sdResteBar'); if(rb) rb.style.display = 'none';
-  const p2 = document.getElementById('sdP2Section'); if(p2) p2.style.display = 'none';
-  const p3 = document.getElementById('sdP3Section'); if(p3) p3.style.display = 'none';
-  const b2 = document.getElementById('sdP2Btns'); if(b2) b2.innerHTML = '';
-  const b3 = document.getElementById('sdP3Btns'); if(b3) b3.innerHTML = '';
+  _sdPay2Mode = '';
+  const m1 = document.getElementById('sdMontantM1'); if (m1) m1.value = '';
+  const rb = document.getElementById('sdResteBar'); if (rb) rb.style.display = 'none';
+  const rd = document.getElementById('sdRenduDisplay'); if (rd) rd.style.display = 'none';
+  const p2 = document.getElementById('sdP2Section'); if (p2) p2.style.display = 'none';
+  const b2 = document.getElementById('sdP2Btns'); if (b2) b2.innerHTML = '';
+  const m2 = document.getElementById('sdM2Display'); if (m2) m2.style.display = 'none';
 }
 
 function sdGetTotal() {
@@ -3113,16 +3054,13 @@ function ouvrirModalSalonDirect() {
   sdModePaiement = 'especes';
   document.getElementById('sdSalonActif').checked = false;
   document.getElementById('sdSalonSection').style.display = 'none';
-  document.getElementById('sdSalon').value       = '';
-  document.getElementById('sdHeures').value      = 1;
-  document.getElementById('sdBouchon').value     = 0;
-  document.getElementById('sdPlace').value       = 0;
-  document.getElementById('sdNomClient').value   = '';
-  document.getElementById('sdMontantRecu').value = '';
-  document.getElementById('sdRenduDisplay').classList.remove('show');
+  document.getElementById('sdSalon').value   = '';
+  document.getElementById('sdHeures').value  = 1;
+  document.getElementById('sdBouchon').value = 0;
+  document.getElementById('sdPlace').value   = 0;
+  document.getElementById('sdNomClient').value = '';
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === 'especes'));
-  document.getElementById('sdSectionEspeces').style.display = '';
-  document.getElementById('sdSectionMobile').style.display  = 'none';
+  const lbl = document.getElementById('sdLabelMode1'); if (lbl) lbl.textContent = 'Espèces';
   _sdResetPayWidget();
   document.getElementById('btnSdConfirmer').disabled = false;
   document.getElementById('btnSdConfirmer').innerHTML = '<i class="fas fa-check"></i> Encaisser & Imprimer';
@@ -3147,47 +3085,18 @@ function sdMajTotal() {
   document.getElementById('sdTarif').textContent        = formatF(tarif).replace(' F', '');
   document.getElementById('sdMontantSalon').textContent = formatF(fraisSalon);
   document.getElementById('sdMontantTotal').textContent = formatF(sdGetTotal());
-  if (sdModePaiement === 'especes') sdCalcRendu();
-  else sdCalcPay();
+  sdCalcPay();
 }
 
 function sdSetMode(mode) {
-  const prevMode = sdModePaiement;
   sdModePaiement = mode;
   document.querySelectorAll('.sd-pay').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-
-  const total = sdGetTotal();
-
-  if (mode === 'especes') {
-    document.getElementById('sdSectionEspeces').style.display = '';
-    document.getElementById('sdSectionMobile').style.display  = 'none';
-    sdCalcRendu();
-  } else if (MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode)) {
-    _sdResetPayWidget();
-    document.getElementById('sdSectionEspeces').style.display = 'none';
-    document.getElementById('sdSectionMobile').style.display  = '';
-    const lbl = document.getElementById('sdLabelMode1');
-    if (lbl) { const nm = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov'}; lbl.textContent = nm[mode] || 'mobile'; }
-    sdCalcPay();
-  } else {
-    // Carte : pas d'espèces partielles
-    document.getElementById('sdSectionEspeces').style.display = 'none';
-    document.getElementById('sdSectionMobile').style.display  = 'none';
-  }
+  _sdResetPayWidget();
+  const lbl = document.getElementById('sdLabelMode1');
+  if (lbl) lbl.textContent = _SD_MODE_NAMES[mode] || 'reçu';
 }
 
-function sdCalcRendu() {
-  const total = sdGetTotal();
-  const recu  = parseFloat(document.getElementById('sdMontantRecu').value) || 0;
-  const div   = document.getElementById('sdRenduDisplay');
-  if (recu >= total && total > 0) {
-    div.classList.add('show'); div.style.background='rgba(22,163,74,0.15)'; div.style.color='#4ade80';
-    document.getElementById('sdRenduVal').textContent = formatF(recu - total);
-  } else if (recu > 0) {
-    div.classList.add('show'); div.style.background='rgba(220,38,38,0.15)'; div.style.color='#f87171';
-    document.getElementById('sdRenduVal').textContent = `Manque ${formatF(total - recu)}`;
-  } else { div.classList.remove('show'); }
-}
+function sdCalcRendu() { sdCalcPay(); }
 
 async function confirmerSalonDirect() {
   const total         = sdGetTotal();
@@ -3203,14 +3112,15 @@ async function confirmerSalonDirect() {
 
   let montantEncaisse = total;
   let montantEspeces  = 0;
-  let _sdLignesPay    = null;
-  if (sdModePaiement === 'especes') {
-    montantEncaisse = parseFloat(document.getElementById('sdMontantRecu').value) || total;
-  } else if (MOBILE_MODES.includes(sdModePaiement) || ['moov_money','mobile_money','mobile'].includes(sdModePaiement)) {
-    _sdLignesPay = sdGetLignesPay();
-    if (_sdLignesPay) {
-      const espLigne = _sdLignesPay.find(l => l.mode === 'especes');
-      montantEspeces = espLigne ? espLigne.montant : 0;
+  let _sdLignesPay    = sdGetLignesPay();
+  if (_sdLignesPay) {
+    const espLigne = _sdLignesPay.find(l => l.mode === 'especes');
+    montantEspeces = espLigne ? espLigne.montant : 0;
+  } else {
+    const m1Sd = parseFloat(document.getElementById('sdMontantM1')?.value) || 0;
+    if (sdModePaiement === 'especes') {
+      montantEncaisse = m1Sd > 0 ? m1Sd : total;
+      montantEspeces  = montantEncaisse;
     }
   }
 
@@ -3253,22 +3163,13 @@ async function confirmerSalonDirect() {
   }
 }
 
-function calcRendu() {
-  const total = getTotalAvecSalon();
-  const recu = parseFloat(document.getElementById('montantRecu').value) || 0;
-  const div = document.getElementById('renduDisplay');
-  if (recu >= total) {
-    div.classList.add('show'); div.style.background='rgba(22,163,74,0.15)'; div.style.color='#4ade80';
-    document.getElementById('renduVal').textContent = formatF(recu - total);
-  } else if (recu > 0) {
-    div.classList.add('show'); div.style.background='rgba(220,38,38,0.15)'; div.style.color='#f87171';
-    document.getElementById('renduVal').textContent = `Manque ${formatF(total - recu)}`;
-  } else { div.classList.remove('show'); }
-}
+function calcRendu() { restoCalcPay(); }
 
 function setBillet(val, exact=false) {
-  document.getElementById('montantRecu').value = exact ? getTotalAvecSalon() : val;
-  calcRendu();
+  const inp = document.getElementById('restoMontantM1');
+  if (!inp) return;
+  inp.value = exact ? getTotalAvecSalon() : val;
+  restoCalcPay();
 }
 
 
@@ -3278,19 +3179,16 @@ function setModalMode(mode) {
   if (tickets[ticketActifId]) tickets[ticketActifId].paiement = mode;
   document.querySelectorAll('.pay-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
   document.querySelectorAll('.mmt').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  const isMobile = MOBILE_MODES.includes(mode) || ['moov_money','mobile_money','mobile'].includes(mode);
-  document.getElementById('sectionEspeces').style.display = (mode === 'especes') ? '' : 'none';
-  document.getElementById('sectionMobile').style.display  = isMobile ? '' : 'none';
-  document.getElementById('chambreSection').style.display = (mode === 'chambre') ? 'block' : 'none';
+  const isChambre = mode === 'chambre';
+  document.getElementById('sectionPay').style.display    = isChambre ? 'none' : '';
+  document.getElementById('chambreSection').style.display = isChambre ? 'block' : 'none';
   _resetMobileResto();
-  if (mode === 'especes') {
-    document.getElementById('montantRecu').value = '';
-    document.getElementById('renduDisplay').classList.remove('show');
-  }
-  if (isMobile) {
+  if (!isChambre) {
+    const isEsp = mode === 'especes';
+    const billetsSection = document.getElementById('restoBilletsSection');
+    if (billetsSection) billetsSection.style.display = isEsp ? '' : 'none';
     const lbl = document.getElementById('labelMode1Resto');
-    if (lbl) { const nm = {wave:'Wave',orange_money:'Orange',mtn_money:'MTN',moov_money:'Moov',mobile_money:'Mobile'}; lbl.textContent = nm[mode] || 'mobile'; }
-    restoCalcPay();
+    if (lbl) lbl.textContent = _RESTO_MODE_NAMES[mode] || mode;
   }
 }
 
@@ -3423,18 +3321,18 @@ function confirmerPaiement() {
 
     let montantRecu = total;
     let montantEspeces = 0;
-    const isMobile = MOBILE_MODES.includes(modePaiement) || ['moov_money','mobile_money','mobile'].includes(modePaiement);
     let _lignesPay = null;
 
-    if (modePaiement === 'especes') {
-      montantRecu = parseFloat(document.getElementById('montantRecu').value) || total;
-      if (montantRecu < total) { toast('❌ Montant insuffisant', 'error'); _restoPaiementEnCours = false; return; }
-    } else if (isMobile) {
-      montantRecu = total;
+    const m1Resto = parseFloat(document.getElementById('restoMontantM1')?.value) || 0;
+    if (modePaiement !== 'chambre') {
+      if (m1Resto <= 0) { toast('❌ Veuillez saisir le montant reçu', 'error'); _restoPaiementEnCours = false; return; }
       _lignesPay = restoGetLignesPay();
       if (_lignesPay) {
         const espLigne = _lignesPay.find(l => l.mode === 'especes');
         montantEspeces = espLigne ? espLigne.montant : 0;
+      } else if (modePaiement === 'especes') {
+        if (m1Resto < total) { toast('❌ Montant insuffisant', 'error'); _restoPaiementEnCours = false; return; }
+        montantEspeces = total;
       }
     }
 
