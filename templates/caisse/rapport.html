@@ -302,13 +302,12 @@ window.addEventListener('afterprint', function(){
         <td class="c-ok" style="font-weight:700">{{ billetage_total|montant }}</td>
       </tr>
       <tr><td colspan="2" style="color:#64748b;font-size:10px">Espèces versées (déclaré)</td><td style="color:#64748b">{{ declared_especes|montant }}</td></tr>
-      <tr><td colspan="2" style="color:#64748b;font-size:10px">Espèces théoriques (appli)</td><td style="color:#64748b">{{ stats.especes|montant }}</td></tr>
       </tbody>
       <tfoot>
-        <tr style="background:{% if ecart_especes < 0 %}#7f1d1d{% elif ecart_especes > 0 %}#78350f{% else %}#14532d{% endif %}">
-          <td colspan="2" style="text-align:left">Écart espèces</td>
-          <td style="color:{% if ecart_especes < 0 %}#fca5a5{% elif ecart_especes > 0 %}#fde68a{% else %}#86efac{% endif %}">
-            {% if ecart_especes > 0 %}+{% endif %}{{ ecart_especes|montant }}
+        <tr style="background:{% if ecart_billetage < 0 %}#7f1d1d{% elif ecart_billetage > 0 %}#78350f{% else %}#14532d{% endif %}">
+          <td colspan="2" style="text-align:left">Écart billetage</td>
+          <td style="color:{% if ecart_billetage < 0 %}#fca5a5{% elif ecart_billetage > 0 %}#fde68a{% else %}#86efac{% endif %}">
+            {% if ecart_billetage > 0 %}+{% endif %}{{ ecart_billetage|montant }}
           </td>
         </tr>
       </tfoot>
