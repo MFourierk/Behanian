@@ -6,7 +6,8 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.urls import reverse
-from .models import Facture, Proforma, Avoir, Client, Service, Article, LigneFacture, LigneProforma, LigneAvoir, Ticket
+from .models import Facture, Proforma, Avoir, Client, Service, Article, LigneFacture, LigneProforma, LigneAvoir, Ticket, Reglement
+from django.core.paginator import Paginator
 from .services import supprimer_ticket, consolider_tickets_en_facture, creer_facture_depuis_proforma, get_or_create_client
 from decimal import Decimal
 from django.utils import timezone
@@ -121,6 +122,8 @@ def index(request):
 def facture_list(request):
     date_debut_str = request.GET.get('date_debut', '')
     date_fin_str   = request.GET.get('date_fin', '')
+    statut_filter  = request.GET.get('statut', '')
+    q_filter       = request.GET.get('q', '')
     date_debut = date_fin = None
     try:
         if date_debut_str:
@@ -135,6 +138,10 @@ def facture_list(request):
         factures = factures.filter(date_facturation__gte=date_debut)
     if date_fin:
         factures = factures.filter(date_facturation__lte=date_fin)
+    if statut_filter:
+        factures = factures.filter(statut=statut_filter)
+    if q_filter:
+        factures = factures.filter(Q(client__nom__icontains=q_filter) | Q(numero__icontains=q_filter))
 
     total_ttc  = factures.aggregate(s=Sum('total'))['s'] or Decimal('0')
     total_paye = factures.aggregate(s=Sum('montant_paye'))['s'] or Decimal('0')
@@ -144,11 +151,15 @@ def facture_list(request):
         'total_paye': total_paye,
         'reste_du': total_ttc - total_paye,
     }
+    page_obj = Paginator(factures, 30).get_page(request.GET.get('page', 1))
     return render(request, 'facturation/facture_list.html', {
-        'factures':   factures,
-        'stats':      stats,
-        'date_debut': date_debut_str,
-        'date_fin':   date_fin_str,
+        'factures':      page_obj,
+        'page_obj':      page_obj,
+        'stats':         stats,
+        'date_debut':    date_debut_str,
+        'date_fin':      date_fin_str,
+        'statut_filter': statut_filter,
+        'q_filter':      q_filter,
     })
 
 @require_module_access('facturation')
@@ -262,6 +273,8 @@ def facture_enregistrer_paiement(request, pk):
             return JsonResponse({'success': False, 'error': 'Le montant doit être supérieur à 0.'})
         if montant > facture.montant_restant:
             return JsonResponse({'success': False, 'error': f'Montant ({int(montant)} F) supérieur au solde restant ({int(facture.montant_restant)} F).'})
+        mode_paiement = data.get('mode_paiement', 'especes')
+        reference = (data.get('notes') or '').strip()[:100]
         with transaction.atomic():
             facture.montant_paye += montant
             facture.date_paiement = timezone.now()
@@ -270,6 +283,14 @@ def facture_enregistrer_paiement(request, pk):
             else:
                 facture.statut = 'partielle'
             facture.save(update_fields=['montant_paye', 'date_paiement', 'statut'])
+            Reglement.objects.create(
+                facture=facture,
+                date=timezone.now().date(),
+                montant=montant,
+                mode_paiement=mode_paiement,
+                reference=reference,
+                cree_par=request.user,
+            )
         return JsonResponse({
             'success': True,
             'statut': facture.statut,
@@ -348,8 +369,10 @@ def proforma_list(request):
         'total_ttc':    proformas.aggregate(s=Sum('total'))['s'] or Decimal('0'),
         'nb_convertis': proformas.filter(statut='convertie').count(),
     }
+    page_obj = Paginator(proformas, 30).get_page(request.GET.get('page', 1))
     return render(request, 'facturation/proforma_list.html', {
-        'proformas':  proformas,
+        'proformas':  page_obj,
+        'page_obj':   page_obj,
         'stats':      stats,
         'date_debut': date_debut_str,
         'date_fin':   date_fin_str,
@@ -571,8 +594,10 @@ def avoir_list(request):
         'total_credits': avoirs.aggregate(s=Sum('total'))['s'] or Decimal('0'),
         'nb_traites':   avoirs.filter(statut='traitee').count(),
     }
+    page_obj = Paginator(avoirs, 30).get_page(request.GET.get('page', 1))
     return render(request, 'facturation/avoir_list.html', {
-        'avoirs':     avoirs,
+        'avoirs':     page_obj,
+        'page_obj':   page_obj,
         'stats':      stats,
         'date_debut': date_debut_str,
         'date_fin':   date_fin_str,
@@ -749,8 +774,10 @@ def ticket_list(request):
         'net_total':           total_collected - total_avoirs,
     }
 
+    page_obj = Paginator(tickets, 50).get_page(request.GET.get('page', 1))
     context = {
-        'tickets':        tickets,
+        'tickets':        page_obj,
+        'page_obj':       page_obj,
         'module_choices': Ticket.MODULE_CHOICES,
         'module_filter':  module_filter,
         'date_debut':     date_debut_str,
@@ -1205,88 +1232,3 @@ def get_document_details(request, doc_type, pk):
 def receipt_depot(request):
     """Page de reçu de dépôt universel (chambre)."""
     return render(request, 'receipt_depot.html')
-
-
-# ── Consolidation multi-tickets → une facture globale ────────────────────────
-
-@require_module_access('facturation')
-def facture_consolider(request):
-    """
-    Page de sélection de tickets à regrouper en une facture globale (client B2B).
-    GET  : affiche le formulaire de sélection.
-    POST : traite la consolidation (appelé en AJAX depuis le template).
-    """
-    if request.method == 'POST':
-        return _api_consolider_tickets(request)
-
-    # Filtres GET (date_debut, date_fin, module)
-    date_debut = request.GET.get('date_debut', '')
-    date_fin   = request.GET.get('date_fin', '')
-    module     = request.GET.get('module', '')
-
-    tickets_qs = Ticket.objects.filter(facture_consolidee__isnull=True).select_related('client', 'cree_par')
-
-    if date_debut:
-        try:
-            from django.utils.dateparse import parse_date
-            d = parse_date(date_debut)
-            if d:
-                tickets_qs = tickets_qs.filter(date_creation__date__gte=d)
-        except Exception:
-            pass
-    if date_fin:
-        try:
-            from django.utils.dateparse import parse_date
-            d = parse_date(date_fin)
-            if d:
-                tickets_qs = tickets_qs.filter(date_creation__date__lte=d)
-        except Exception:
-            pass
-    if module:
-        tickets_qs = tickets_qs.filter(module=module)
-
-    tickets_qs = tickets_qs.order_by('-date_creation')[:200]
-
-    MODULE_LABELS = dict(Ticket.MODULE_CHOICES)
-
-    return render(request, 'facturation/facture_consolider.html', {
-        'tickets': tickets_qs,
-        'module_choices': Ticket.MODULE_CHOICES,
-        'date_debut': date_debut,
-        'date_fin':   date_fin,
-        'module_sel': module,
-        'module_labels': MODULE_LABELS,
-    })
-
-
-def _api_consolider_tickets(request):
-    """Handler POST interne pour la consolidation — appelé depuis facture_consolider."""
-    try:
-        data        = json.loads(request.body)
-        ticket_ids  = [int(x) for x in data.get('ticket_ids', [])]
-        client_nom  = data.get('client_nom', '').strip()
-        client_tel  = data.get('client_telephone', '').strip()
-        notes       = data.get('notes', '').strip()
-
-        if not ticket_ids:
-            return JsonResponse({'success': False, 'error': 'Sélectionnez au moins un ticket.'})
-        if not client_nom:
-            return JsonResponse({'success': False, 'error': 'Le nom du client est obligatoire.'})
-
-        with transaction.atomic():
-            facture = consolider_tickets_en_facture(
-                ticket_ids, client_nom, client_tel, request.user, notes
-            )
-
-        return JsonResponse({
-            'success': True,
-            'message': f'Facture {facture.numero} créée — {len(ticket_ids)} ticket(s) regroupé(s).',
-            'facture_id': facture.id,
-            'numero': facture.numero,
-            'total': int(facture.total),
-            'detail_url': reverse('facturation:facture_detail', args=[facture.id]),
-        })
-    except ValueError as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': f'Erreur inattendue : {e}'})

@@ -112,10 +112,11 @@ class Facture(models.Model):
     # Métadonnées
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     notes = models.TextField(blank=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         ordering = ['-date_creation']
-    
+
     def __str__(self):
         return f"Facture {self.numero} - {self.client.nom_complet}"
     
@@ -139,6 +140,26 @@ class Facture(models.Model):
     @property
     def est_payee(self):
         return self.montant_restant <= 0
+
+    def marquer_envoyee(self):
+        if self.statut != 'brouillon':
+            raise ValueError(f"Seul un brouillon peut être envoyé (statut actuel : {self.get_statut_display()}).")
+        self.statut = 'envoyee'
+        self.save(update_fields=['statut'])
+
+    def marquer_payee(self):
+        if self.statut == 'annulee':
+            raise ValueError("Une facture annulée ne peut pas être marquée payée.")
+        self.statut = 'payee'
+        self.montant_paye = self.total
+        self.date_paiement = timezone.now()
+        self.save(update_fields=['statut', 'montant_paye', 'date_paiement'])
+
+    def annuler(self):
+        if self.statut == 'payee':
+            raise ValueError("Une facture payée ne peut pas être annulée directement — émettez un avoir.")
+        self.statut = 'annulee'
+        self.save(update_fields=['statut'])
 
 
 class LigneFacture(models.Model):
@@ -198,6 +219,7 @@ class Proforma(models.Model):
     # Métadonnées
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     notes = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-date_creation']
@@ -308,10 +330,11 @@ class Avoir(models.Model):
     # Métadonnées
     cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     notes = models.TextField(blank=True)
-    
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         ordering = ['-date_creation']
-    
+
     def __str__(self):
         origine = self.facture_origine.numero if self.facture_origine else "—"
         return f"Avoir {self.numero} — {self.client.nom if self.client else origine}"
@@ -584,3 +607,20 @@ def generate_avoir_numero():
 Facture.generate_numero = staticmethod(generate_facture_numero)
 Proforma.generate_numero = staticmethod(generate_proforma_numero)
 Avoir.generate_numero = staticmethod(generate_avoir_numero)
+
+
+class Reglement(models.Model):
+    """Journal des encaissements sur une facture (une ligne par versement)."""
+    facture = models.ForeignKey(Facture, on_delete=models.CASCADE, related_name='reglements')
+    date = models.DateField(default=timezone.now)
+    montant = models.DecimalField(max_digits=10, decimal_places=3)
+    mode_paiement = models.CharField(max_length=30, choices=LignePaiement.MODES)
+    reference = models.CharField(max_length=100, blank=True)
+    cree_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date_creation']
+
+    def __str__(self):
+        return f"Règlement {self.montant} F — {self.facture.numero} ({self.get_mode_paiement_display()})"
