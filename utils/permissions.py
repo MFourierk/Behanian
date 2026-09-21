@@ -89,11 +89,11 @@ _KDS = [
 # ── Matrice d'accès (groupe → modules) ───────────────────────
 _RULES = [
     (_MANAGERS,              ['*']),
-    (['Manager Cuisine'],     ['cuisine']),
+    (['Manager Cuisine'],     ['cuisine', 'facturation']),
     (_RECEPTIONNISTE,         ['hotel']),
     (_RESPONSABLE_HOTEL,      ['hotel', 'parametres']),
-    # Responsable Cave : accès complet au module Cave (stock, articles, inventaire, commandes, fournisseurs)
-    (_RESPONSABLE_CAVE,       ['bar']),
+    # Responsable Cave : accès complet au module Cave + facturation (proformas/factures)
+    (_RESPONSABLE_CAVE,       ['bar', 'facturation']),
     # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale)
     (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse']),
     # Caissière : TPE uniquement, PAS de caisse centrale
@@ -284,7 +284,7 @@ def require_gestion_access(module):
             if _is_receptionniste(user) and module != 'hotel':
                 messages.error(request, "Accès refusé.")
                 return redirect('hotel:index')
-            if _is_manager_cuisine(user) and module not in ['cuisine']:
+            if _is_manager_cuisine(user) and module not in ['cuisine', 'facturation']:
                 messages.error(request, "Accès refusé.")
                 return redirect('cuisine:index')
             return view_func(request, *args, **kwargs)
