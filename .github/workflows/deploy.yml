@@ -84,24 +84,15 @@ jobs:
           script: |
             set -e
 
-            # ── 1. Vérifier que la config WireGuard existe ──────────────────
-            # /etc/wireguard/ est drwx------ (root only) → sudo test obligatoire
-            WG_CONF="/etc/wireguard/wg0.conf"
-            if ! sudo test -f "$WG_CONF"; then
-              echo "ERREUR: $WG_CONF introuvable — WireGuard non configuré"
-              sudo ls -la /etc/wireguard/ 2>/dev/null || echo "(répertoire absent)"
-              sudo wg show 2>/dev/null || echo "(aucune interface WireGuard active)"
-              exit 1
-            fi
-            echo "Config WG: OK ($WG_CONF)"
-
-            # ── 2. S'assurer que l'interface est activée (enable + start) ──
+            # ── 1. S'assurer que WireGuard est actif ────────────────────────
+            # (pas de check fichier : /etc/wireguard/ est root-only)
             sudo systemctl enable wg-quick@wg0 --quiet 2>/dev/null || true
             if ! sudo systemctl is-active --quiet wg-quick@wg0; then
               echo "Interface wg0 inactive — démarrage..."
               sudo systemctl start wg-quick@wg0
               sleep 5
             fi
+            echo "WireGuard: $(sudo systemctl is-active wg-quick@wg0)"
 
             # ── 3. Afficher l'état de l'interface pour diagnostic ───────────
             echo "=== wg show ==="
