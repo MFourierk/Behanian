@@ -173,7 +173,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 8m
+          command_timeout: 10m
           script: |
             ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 behanian@10.8.0.2 bash << 'REMOTE'
               set -e
@@ -193,7 +193,19 @@ jobs:
               python manage.py init_boissons_bar
               python manage.py init_plats_simples
               python manage.py init_plats_gibier
-              echo "=== Redémarrage ==="
+              echo "=== Service gunicorn (timeout + max-requests) ==="
+              sudo cp /opt/behanian/deploy/gunicorn-complexe.service /etc/systemd/system/gunicorn.service
+              echo "=== Kernel : panic sur hang, reboot auto ==="
+              sudo cp /opt/behanian/deploy/99-behanian.conf /etc/sysctl.d/99-behanian.conf
+              sudo sysctl -p /etc/sysctl.d/99-behanian.conf --quiet
+              echo "=== Watchdog systemd ==="
+              sudo cp /opt/behanian/deploy/behanian-watchdog.service /etc/systemd/system/behanian-watchdog.service
+              sudo cp /opt/behanian/deploy/behanian-watchdog.timer   /etc/systemd/system/behanian-watchdog.timer
+              sudo cp /opt/behanian/deploy/behanian-watchdog.sh      /usr/local/bin/behanian-watchdog
+              sudo chmod +x /usr/local/bin/behanian-watchdog
+              sudo systemctl daemon-reload
+              sudo systemctl enable --now behanian-watchdog.timer
+              echo "=== Redémarrage gunicorn ==="
               sudo systemctl restart gunicorn
               echo "COMPLEXE_OK"
             REMOTE

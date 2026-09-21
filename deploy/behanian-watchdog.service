@@ -1,0 +1,6 @@
+[Unit]
+Description=Behanian Watchdog — gunicorn + santé système
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/behanian-watchdog
