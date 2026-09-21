@@ -88,6 +88,12 @@ jobs:
             WG_CONF="/etc/wireguard/wg0.conf"
             if [ ! -f "$WG_CONF" ]; then
               echo "ERREUR: $WG_CONF introuvable — WireGuard non configuré"
+              echo "=== Contenu /etc/wireguard/ ==="
+              ls -la /etc/wireguard/ 2>/dev/null || echo "(répertoire absent)"
+              echo "=== Interfaces WG actives ==="
+              sudo wg show 2>/dev/null || echo "(aucune interface WireGuard active)"
+              echo "=== WireGuard installé ? ==="
+              dpkg -l wireguard-tools 2>/dev/null | tail -1 || echo "(paquet non trouvé)"
               exit 1
             fi
             echo "Config WG: OK ($WG_CONF)"
