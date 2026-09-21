@@ -236,6 +236,7 @@ def ingredient_create(request):
         'unites':        unites,
         'fournisseurs':  fournisseurs,
         'mode':          'create',
+        'ingredient':    Ingredient(),
     }
     return render(request, 'cuisine/ingredient_form.html', context)
 
