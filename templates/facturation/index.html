@@ -934,7 +934,34 @@ async function proOnServiceChange(serviceId, sel) {
     const r = await fetch('/facturation/api/articles/module/' + moduleKey + '/');
     const d = await r.json();
     proArticlesMap[serviceId] = d.articles || [];
+    proRefreshLignesArticles(serviceId);
   } catch(e) { proArticlesMap[serviceId] = []; }
+}
+
+function proRefreshLignesArticles(serviceId) {
+  const articles = proArticlesMap[serviceId] || [];
+  if (!articles.length) return;
+  document.querySelectorAll(`#proService_${serviceId} .pro-ligne`).forEach(ligne => {
+    if (ligne.querySelector('.pro-article')) return;
+    const desgInput = ligne.querySelector('.pro-designation');
+    if (!desgInput) return;
+    const colDesg = desgInput.parentElement;
+    const artSel = document.createElement('select');
+    artSel.className = 'fc pro-article';
+    artSel.style.cssText = 'padding:5px 8px;font-size:11px;color:#4a5b6e;margin-bottom:3px';
+    const defOpt = document.createElement('option');
+    defOpt.value = '';
+    defOpt.textContent = '— Choisir un article —';
+    artSel.appendChild(defOpt);
+    articles.forEach((a, i) => {
+      const opt = document.createElement('option');
+      opt.value = serviceId + ':' + i;
+      opt.textContent = a.name + ' — ' + Math.round(a.price).toLocaleString('fr-FR') + ' F';
+      artSel.appendChild(opt);
+    });
+    artSel.addEventListener('change', function() { proSelectionnerArticle(this); });
+    colDesg.insertBefore(artSel, desgInput);
+  });
 }
 
 function proSelectionnerArticle(sel) {
