@@ -1917,6 +1917,7 @@ async function confirmerPaiement() {
     } else if (modePaiement === 'especes') {
       if (m1Bar < total) { toast('Montant reçu insuffisant', 'error'); _paiementEnCours=false; return; }
       montantEspeces = total;
+      montantRecu = m1Bar;
     }
   }
 

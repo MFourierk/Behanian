@@ -194,7 +194,10 @@ def get_reconciliation_jour(date=None):
         carte    = _m.get('carte_bancaire', 0) + _m.get('carte', 0)
         virement = _m.get('virement', 0)
         # Tickets esp+mobile (affichage info — total ticket pour ces lignes)
-        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement__in=['especes', 'mixte']).aggregate(s=Sum('montant_total'))['s'] or 0)
+        mixte    = int(qs.filter(
+            Q(mode_paiement='mixte') |
+            (Q(montant_especes__gt=0) & ~Q(mode_paiement__in=['especes', 'mixte']))
+        ).aggregate(s=Sum('montant_total'))['s'] or 0)
 
         vs_qs = MouvementCaisse.objects.filter(
             date__date=date, type='versement', module=caisse_mod, valide=True,
@@ -469,7 +472,10 @@ def get_reconciliation_session(session):
         mobile   = wave + orange + mtn + moov + _m.get('mobile_money', 0) + _m.get('mobile', 0)
         carte    = _m.get('carte_bancaire', 0) + _m.get('carte', 0)
         virement = _m.get('virement', 0)
-        mixte    = int(qs.filter(montant_especes__gt=0).exclude(mode_paiement__in=['especes', 'mixte']).aggregate(s=Sum('montant_total'))['s'] or 0)
+        mixte    = int(qs.filter(
+            Q(mode_paiement='mixte') |
+            (Q(montant_especes__gt=0) & ~Q(mode_paiement__in=['especes', 'mixte']))
+        ).aggregate(s=Sum('montant_total'))['s'] or 0)
 
         vs_qs = MouvementCaisse.objects.filter(
             session=session, type='versement', module=caisse_mod, valide=True,

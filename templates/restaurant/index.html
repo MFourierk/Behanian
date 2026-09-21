@@ -3333,6 +3333,7 @@ function confirmerPaiement() {
       } else if (modePaiement === 'especes') {
         if (m1Resto < total) { toast('❌ Montant insuffisant', 'error'); _restoPaiementEnCours = false; return; }
         montantEspeces = total;
+        montantRecu = m1Resto;
       }
     }
 

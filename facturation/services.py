@@ -84,7 +84,7 @@ def creer_lignes_paiement(ticket, lignes):
         esp_ticket  = Decimal('0')
     elif len(modes_mobiles) == 1 and montant_esp > 0:
         # espèces + un mobile
-        mode_ticket = modes_mobiles[0]
+        mode_ticket = 'mixte'
         esp_ticket  = montant_esp
     else:
         # multi-mobile OU autre combinaison complexe

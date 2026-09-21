@@ -1715,6 +1715,11 @@ async function validerSortie(){
   const lignesPaiement = surChambre ? null : pisNewGetLignes();
   const espLigne = lignesPaiement?.find(l => l.mode === 'especes');
   const montantEspeces = espLigne ? espLigne.montant : (mode === 'especes' ? recu : 0);
+  // Pour espèces pures, enregistrer le montant réel donné (pas seulement le total)
+  if (!surChambre && !lignesPaiement && mode === 'especes') {
+    const m1Pis = parseFloat(document.getElementById('pisM1Amt')?.value) || 0;
+    if (m1Pis >= _total) recu = m1Pis;
+  }
   let r, d;
   try {
     const payload = {
