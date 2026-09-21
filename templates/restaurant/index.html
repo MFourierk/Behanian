@@ -3387,7 +3387,7 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
   const telephone   = "{{ config.telephone|default:'07 58 29 11 10 / 01 43 09 76 16' }}";
   const logoUrl     = "{% static 'images/Logo.png' %}";
   const date        = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  const renduVal    = (!isMixte && modePrint === 'especes' && montantRecu > total) ? Math.round(montantRecu - total) : 0;
+  const renduVal    = (modePrint === 'especes' && montantRecu > total) ? Math.round(montantRecu - total) : 0;
   const showRendu   = renduVal > 0;
   const apiUrl      = "{% url 'restaurant:valider_commande' %}";
   const payloadJson = JSON.stringify(payload).replace(/<\//g, '<\\/');
@@ -3402,26 +3402,11 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
     </tr>`;
   }).join('');
 
-  const MBMODES = ['wave','orange_money','mtn_money','moov_money','mobile_money','mobile'];
-  const modeLabelsLocal = {especes:'Espèces',carte:'Carte / TPE',mobile:'Mobile Money',wave:'Wave',orange_money:'Orange Money',mtn_money:'MTN Mobile Money',moov_money:'Moov Money',chambre:'Report Chambre'};
-  const _shortLabels = {wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN',moov_money:'MOOV',mobile_money:'MOBILE',mobile:'MOBILE'};
-  // Détecter paiement mixte depuis les lignes (gère les deux cas : primaire=Espèces ou primaire=Mobile)
-  const _lignesPrev = payload.lignes_paiement;
-  const _espL = _lignesPrev?.find(l => l.mode === 'especes');
-  const _mobL = _lignesPrev?.find(l => MBMODES.includes(l.mode));
-  const isMixte = !!(Array.isArray(_lignesPrev) && _lignesPrev.length > 1 && _espL && _mobL);
-  let reglementLabel, _showEspMob = false, _espAmt = 0, _mobAmt = 0, _mobMode = '';
-  if (isMixte) {
-    _espAmt = _espL.montant; _mobAmt = _mobL.montant; _mobMode = _mobL.mode;
-    reglementLabel = `Mixte — Espèces + ${modeLabelsLocal[_mobMode] || _mobMode}`;
-    _showEspMob = true;
-  } else if (MBMODES.includes(modePrint) && montantEspeces > 0) {
-    _espAmt = montantEspeces; _mobAmt = Math.max(0, total - montantEspeces); _mobMode = modePrint;
-    reglementLabel = `Mixte — Espèces + ${modeLabelsLocal[_mobMode] || _mobMode}`;
-    _showEspMob = true;
-  } else {
-    reglementLabel = modeLabelsLocal[modePrint] || modePrint;
-  }
+  const MBMODES = ['wave','orange_money','mtn_money'];
+  const modeLabelsLocal = {especes:'Espèces',carte:'Carte / TPE',mobile:'Mobile Money',wave:'Wave',orange_money:'Orange Money',mtn_money:'MTN Mobile Money',chambre:'Report Chambre'};
+  const reglementLabel = (MBMODES.includes(modePrint) && montantEspeces > 0)
+    ? `Mixte — Espèces + ${modeLabelsLocal[modePrint] || modePrint}`
+    : (modeLabelsLocal[modePrint] || modePrint);
 
   const html = `<!DOCTYPE html><html lang="fr"><head>
   <meta charset="UTF-8"><title>Aperçu ticket</title>
@@ -3538,10 +3523,10 @@ function _ouvrirApercuResto(t, total, montantRecu, montantEspeces, payload, mode
   ${salonNom && salonFrais > 0 ? `
   <hr class="sep-dash">
   <div class="paiement-row" style="font-size:10px;"><span>Salon VIP — ${salonNom} (${salonHeures}h) :</span><span>${parseInt(salonFrais).toLocaleString('fr-FR')} F</span></div>` : ''}
-  ${_showEspMob ? `
+  ${(MBMODES.includes(modePrint) && montantEspeces > 0) ? `
   <hr class="sep-dash">
-  <div class="paiement-row"><span>ESP :</span><span>${parseInt(_espAmt).toLocaleString('fr-FR')} F</span></div>
-  <div class="paiement-row"><span>${_shortLabels[_mobMode]||_mobMode.toUpperCase()} :</span><span>${parseInt(_mobAmt).toLocaleString('fr-FR')} F</span></div>` : ''}
+  <div class="paiement-row"><span>ESP :</span><span>${parseInt(montantEspeces).toLocaleString('fr-FR')} F</span></div>
+  <div class="paiement-row"><span>${{wave:'WAVE',orange_money:'ORANGE',mtn_money:'MTN'}[modePrint]||modePrint} :</span><span>${parseInt(Math.max(0,total-montantEspeces)).toLocaleString('fr-FR')} F</span></div>` : ''}
   ${showRendu ? `
   <hr class="sep-dash">
   <div class="paiement-row"><span>Reçu :</span><span>${parseInt(montantRecu).toLocaleString('fr-FR')} F</span></div>

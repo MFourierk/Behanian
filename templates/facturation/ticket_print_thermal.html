@@ -140,7 +140,7 @@
     <div class="meta-row">
         <span class="meta-label">Règlement :</span>
         {% with lignes=ticket.lignes_paiement.all %}
-        <span>{% if ticket.mode_paiement == 'mixte' %}{{ ticket.get_mode_paiement_display }}{% elif lignes|length > 1 %}Mixte{% elif montant_especes %}Mixte — Espèces + {{ ticket.get_mode_paiement_display }}{% else %}{{ ticket.get_mode_paiement_display }}{% endif %}</span>
+        <span>{% if lignes|length > 1 %}Multi-mode{% elif montant_especes %}Mixte — Espèces + {{ ticket.get_mode_paiement_display }}{% else %}{{ ticket.get_mode_paiement_display }}{% endif %}</span>
         {% endwith %}
     </div>
     {% if ticket.client %}
