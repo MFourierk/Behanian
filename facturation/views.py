@@ -435,14 +435,10 @@ def proforma_to_facture(request, pk):
     proforma = get_object_or_404(Proforma, pk=pk)
     try:
         with transaction.atomic():
-            annee = timezone.now().year
-            last = Facture.objects.filter(numero__startswith=f'FAC-{annee}-').order_by('numero').last()
-            seq = int(last.numero.split('-')[-1]) + 1 if last else 1
-            numero = f'FAC-{annee}-{seq:04d}'
-
+            from .models import generate_facture_numero
             from datetime import date, timedelta
             facture = Facture.objects.create(
-                numero=numero,
+                numero=generate_facture_numero(),
                 client=proforma.client,
                 date_facturation=date.today(),
                 date_echeance=date.today() + timedelta(days=30),

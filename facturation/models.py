@@ -125,12 +125,13 @@ class Facture(models.Model):
         super().save(*args, **kwargs)
 
     def calculate_totals(self):
-        self.sous_total = sum(line.montant_ht for line in self.lignes.all())
-        subtotal_after_remise = self.sous_total - self.remise
+        # montant_total applique la remise ligne (taux_remise) — montant_ht ne l'applique pas
+        self.sous_total = sum(line.montant_total for line in self.lignes.all())
+        subtotal_after_remise = max(Decimal('0.00'), self.sous_total - self.remise)
         self.montant_tva = subtotal_after_remise * (self.taux_tva / 100)
         self.total = subtotal_after_remise + self.montant_tva
         self.save()
-    
+
     @property
     def montant_restant(self):
         return self.total - self.montant_paye
@@ -205,12 +206,12 @@ class Proforma(models.Model):
         return f"Proforma {self.numero} - {self.client.nom_complet}"
     
     def calculate_totals(self):
-        self.sous_total = sum(line.montant_ht for line in self.lignes.all())
-        subtotal_after_remise = self.sous_total - self.remise
+        self.sous_total = sum(line.montant_total for line in self.lignes.all())
+        subtotal_after_remise = max(Decimal('0.00'), self.sous_total - self.remise)
         self.montant_tva = subtotal_after_remise * (self.taux_tva / 100)
         self.total = subtotal_after_remise + self.montant_tva
         self.save()
-    
+
     def convert_to_facture(self):
         """Convertir le proforma en facture"""
         if self.statut not in ('acceptee', 'validee'):
@@ -229,15 +230,16 @@ class Proforma(models.Model):
             notes=f"Converti depuis le proforma {self.numero}"
         )
         
-        # Copier les lignes
+        # Copier les lignes (designation incluse — champ libre B2B)
         for ligne_proforma in self.lignes.all():
             LigneFacture.objects.create(
                 facture=facture,
                 article=ligne_proforma.article,
+                designation=ligne_proforma.designation,
                 description=ligne_proforma.description,
                 quantite=ligne_proforma.quantite,
                 prix_unitaire=ligne_proforma.prix_unitaire,
-                taux_remise=ligne_proforma.taux_remise
+                taux_remise=ligne_proforma.taux_remise,
             )
         
         # Marquer le proforma comme converti
@@ -320,24 +322,32 @@ class Avoir(models.Model):
         super().save(*args, **kwargs)
 
     def calculate_totals(self):
-        self.sous_total = sum(line.montant_ht for line in self.lignes.all())
-        subtotal_after_remise = self.sous_total - self.remise
+        self.sous_total = sum(line.montant_total for line in self.lignes.all())
+        subtotal_after_remise = max(Decimal('0.00'), self.sous_total - self.remise)
         self.montant_tva = subtotal_after_remise * (self.taux_tva / 100)
         self.total = subtotal_after_remise + self.montant_tva
         self.save()
-    
+
     def apply_refund(self):
-        """Appliquer le remboursement à la facture originale"""
+        """Appliquer l'avoir à la facture d'origine.
+        L'avoir diminue ce que le client doit (réduit facture.total),
+        pas l'encaissement déjà reçu (montant_paye reste intact).
+        """
         if self.statut != 'accepted':
             raise ValueError("L'avoir doit être accepté pour être appliqué")
 
         if self.facture_origine:
             facture = self.facture_origine
-            facture.montant_paye = max(Decimal('0.00'), facture.montant_paye - self.total)
-            facture.save()
+            facture.total = max(Decimal('0.00'), facture.total - self.total)
+            # Mise à jour du statut en fonction du solde restant
+            if facture.total <= facture.montant_paye:
+                facture.statut = 'payee'
+            elif facture.montant_paye > 0:
+                facture.statut = 'partielle'
+            facture.save(update_fields=['total', 'statut'])
 
         self.statut = 'refunded'
-        self.save()
+        self.save(update_fields=['statut'])
 
 
 class LigneAvoir(models.Model):
@@ -463,16 +473,17 @@ class LignePaiement(models.Model):
     Anciens tickets sans lignes : se référer à Ticket.mode_paiement / montant_especes.
     """
     MODES = [
-        ('especes',      'Espèces'),
-        ('wave',         'Wave'),
-        ('orange_money', 'Orange Money'),
-        ('mtn_money',    'MTN Mobile Money'),
-        ('moov_money',   'Moov Money'),
-        ('mobile_money', 'Mobile Money'),
+        ('especes',       'Espèces'),
+        ('wave',          'Wave'),
+        ('orange_money',  'Orange Money'),
+        ('mtn_money',     'MTN Mobile Money'),
+        ('moov_money',    'Moov Money'),
+        ('mobile_money',  'Mobile Money'),
         ('carte_bancaire','Carte Bancaire'),
-        ('cheque',       'Chèque'),
-        ('virement',     'Virement'),
-        ('autre',        'Autre'),
+        ('cheque',        'Chèque'),
+        ('virement',      'Virement'),
+        ('cave',          'Cave (consommation bar)'),
+        ('autre',         'Autre'),
     ]
     ticket        = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='lignes_paiement')
     mode_paiement = models.CharField(max_length=30, choices=MODES)
@@ -488,18 +499,22 @@ class LignePaiement(models.Model):
 
 # Méthodes utilitaires pour la génération de numéros
 def generate_facture_numero():
-    """Générer un numéro de facture unique — format FAC-YYYY-XXXX"""
+    """Générer un numéro de facture unique — format FAC-YYYY-XXXX (atomique)"""
     from django.utils import timezone as tz
+    from django.db import transaction
     annee = tz.now().year
-    last = Facture.objects.filter(numero__startswith=f'FAC-{annee}-').order_by('numero').last()
-    if last:
-        try:
-            seq = int(last.numero.split('-')[-1]) + 1
-        except (ValueError, AttributeError):
-            seq = Facture.objects.count() + 1
-    else:
-        seq = 1
-    return f'FAC-{annee}-{seq:04d}'
+    with transaction.atomic():
+        last = (Facture.objects.select_for_update()
+                .filter(numero__startswith=f'FAC-{annee}-')
+                .order_by('numero').last())
+        if last:
+            try:
+                seq = int(last.numero.split('-')[-1]) + 1
+            except (ValueError, AttributeError):
+                seq = Facture.objects.count() + 1
+        else:
+            seq = 1
+        return f'FAC-{annee}-{seq:04d}'
 
 
 def generate_ticket_numero():
@@ -528,33 +543,41 @@ def generate_ticket_numero():
 
 
 def generate_proforma_numero():
-    """Générer un numéro de proforma unique — format PRO-YYYY-XXXX"""
+    """Générer un numéro de proforma unique — format PRO-YYYY-XXXX (atomique)"""
     from django.utils import timezone as tz
+    from django.db import transaction
     annee = tz.now().year
-    last = Proforma.objects.filter(numero__startswith=f'PRO-{annee}-').order_by('numero').last()
-    if last:
-        try:
-            seq = int(last.numero.split('-')[-1]) + 1
-        except (ValueError, AttributeError):
-            seq = Proforma.objects.count() + 1
-    else:
-        seq = 1
-    return f'PRO-{annee}-{seq:04d}'
+    with transaction.atomic():
+        last = (Proforma.objects.select_for_update()
+                .filter(numero__startswith=f'PRO-{annee}-')
+                .order_by('numero').last())
+        if last:
+            try:
+                seq = int(last.numero.split('-')[-1]) + 1
+            except (ValueError, AttributeError):
+                seq = Proforma.objects.count() + 1
+        else:
+            seq = 1
+        return f'PRO-{annee}-{seq:04d}'
 
 
 def generate_avoir_numero():
-    """Générer un numéro d'avoir unique — format AVO-YYYY-XXXX"""
+    """Générer un numéro d'avoir unique — format AVO-YYYY-XXXX (atomique)"""
     from django.utils import timezone as tz
+    from django.db import transaction
     annee = tz.now().year
-    last = Avoir.objects.filter(numero__startswith=f'AVO-{annee}-').order_by('numero').last()
-    if last:
-        try:
-            seq = int(last.numero.split('-')[-1]) + 1
-        except (ValueError, AttributeError):
-            seq = Avoir.objects.count() + 1
-    else:
-        seq = 1
-    return f'AVO-{annee}-{seq:04d}'
+    with transaction.atomic():
+        last = (Avoir.objects.select_for_update()
+                .filter(numero__startswith=f'AVO-{annee}-')
+                .order_by('numero').last())
+        if last:
+            try:
+                seq = int(last.numero.split('-')[-1]) + 1
+            except (ValueError, AttributeError):
+                seq = Avoir.objects.count() + 1
+        else:
+            seq = 1
+        return f'AVO-{annee}-{seq:04d}'
 
 
 # Ajouter les méthodes de génération aux modèles
