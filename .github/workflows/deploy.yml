@@ -82,17 +82,15 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 5m
           script: |
-            set -e
-
             # ── 1. S'assurer que WireGuard est actif ────────────────────────
-            # (pas de check fichier : /etc/wireguard/ est root-only)
             sudo systemctl enable wg-quick@wg0 --quiet 2>/dev/null || true
-            if ! sudo systemctl is-active --quiet wg-quick@wg0; then
+            WG_STATE=$(sudo systemctl is-active wg-quick@wg0 2>/dev/null || echo "inactive")
+            echo "WireGuard état: $WG_STATE"
+            if [ "$WG_STATE" != "active" ]; then
               echo "Interface wg0 inactive — démarrage..."
-              sudo systemctl start wg-quick@wg0
+              sudo systemctl start wg-quick@wg0 || true
               sleep 5
             fi
-            echo "WireGuard: $(sudo systemctl is-active wg-quick@wg0)"
 
             # ── 3. Afficher l'état de l'interface pour diagnostic ───────────
             echo "=== wg show ==="
@@ -144,6 +142,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 8m
           script: |
+            set -e
             echo "=== Création archive depuis VPS ==="
             tar -czf /tmp/behanian_code.tar.gz \
               --exclude='.git' \
