@@ -149,6 +149,16 @@
 .btn-modal-confirm:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(201,168,76,.45)}
 .btn-modal-confirm:disabled{opacity:.55;cursor:not-allowed;transform:none}
 
+/* Sélecteurs service/article dans le tableau */
+.sel-svc,.sel-art{
+  width:100%;padding:5px 7px;border:1px solid #d4dce8;border-radius:6px;
+  font-size:11px;color:#3d4f63;box-sizing:border-box;background:#fff;
+  cursor:pointer;transition:border-color .12s;
+}
+.sel-svc:focus,.sel-art:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.1)}
+.sel-art{display:none;margin-top:3px}
+.desg-picker{display:flex;flex-direction:column;gap:0}
+
 /* Alerte stock */
 .stock-info{
   background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;
@@ -294,9 +304,14 @@
         </tbody>
       </table>
 
-      <button class="btn-add-row" onclick="ajouterLigne()">
-        <i class="fas fa-plus"></i> Ajouter une ligne
-      </button>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn-add-row" onclick="ajouterLigneArticle()" style="margin-bottom:0">
+          <i class="fas fa-box-open"></i> Article catalogue
+        </button>
+        <button class="btn-add-row" onclick="ajouterLigne()" style="margin-bottom:0;border-color:#9aa5b1;color:#64748b">
+          <i class="fas fa-pencil-alt"></i> Ligne libre
+        </button>
+      </div>
 
       <!-- Ajustements -->
       <div class="adj-grid">
@@ -354,8 +369,10 @@ const LIGNES_INIT = [
   {% endfor %}
 ];
 
-const URL_EDIT    = "{% url 'facturation:proforma_to_facture_edit' proforma.pk %}";
-const CSRF_TOKEN  = "{{ csrf_token }}";
+const URL_EDIT      = "{% url 'facturation:proforma_to_facture_edit' proforma.pk %}";
+const URL_ARTICLES  = "/facturation/api/articles/";
+const CSRF_TOKEN    = "{{ csrf_token }}";
+const SERVICES = [{% for s in services %}{"id":{{ s.id }},"nom":"{{ s.nom|escapejs }}"},{% endfor %}];
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -426,6 +443,90 @@ function ajouterLigne() {
   const row = creerLigne({ designation: '', quantite: 1, prix_unitaire: 0 });
   document.getElementById('editBody').appendChild(row);
   row.querySelector('input').focus();
+}
+
+// ── Ligne avec sélecteur service → article ───────────────────────────────────
+function creerLigneArticle() {
+  const id = ++_rowId;
+  const opts = SERVICES.map(s =>
+    `<option value="${s.id}">${escHtml(s.nom)}</option>`
+  ).join('');
+  const row = document.createElement('tr');
+  row.id = 'row-' + id;
+  row.innerHTML = `
+    <td class="td-num">${id}</td>
+    <td class="td-desg">
+      <input type="text" placeholder="Désignation (saisie libre ou article sélectionné)" oninput="recalcTotal()" style="margin-bottom:5px">
+      <div class="desg-picker">
+        <select class="sel-svc" onchange="chargerArticles(${id}, this)">
+          <option value="">— Choisir un service —</option>
+          ${opts}
+        </select>
+        <select class="sel-art" id="art-sel-${id}" onchange="selectionnerArticle(${id}, this)">
+          <option value="">— Choisir un article —</option>
+        </select>
+      </div>
+    </td>
+    <td class="td-qty">
+      <input type="number" min="0.01" step="0.01" value="1" oninput="recalcRow(${id});recalcTotal()">
+    </td>
+    <td class="td-pu">
+      <input type="number" min="0" step="1" value="0" oninput="recalcRow(${id});recalcTotal()">
+    </td>
+    <td class="td-tot" id="tot-${id}">0 F</td>
+    <td class="td-del">
+      <button class="btn-del-row" onclick="supprimerLigne(${id})" title="Supprimer">✕</button>
+    </td>
+  `;
+  return row;
+}
+
+function ajouterLigneArticle() {
+  const row = creerLigneArticle();
+  document.getElementById('editBody').appendChild(row);
+  row.querySelector('.sel-svc').focus();
+}
+
+async function chargerArticles(rowId, svcSel) {
+  const serviceId = svcSel.value;
+  const artSel = document.getElementById('art-sel-' + rowId);
+  if (!serviceId) {
+    artSel.style.display = 'none';
+    return;
+  }
+  artSel.innerHTML = '<option value="">Chargement…</option>';
+  artSel.style.display = 'block';
+  try {
+    const r = await fetch(URL_ARTICLES + serviceId + '/');
+    const d = await r.json();
+    const arts = d.articles || [];
+    if (arts.length === 0) {
+      artSel.innerHTML = '<option value="">Aucun article disponible</option>';
+      return;
+    }
+    artSel.innerHTML = '<option value="">— Choisir un article —</option>';
+    arts.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({ name: a.name, price: a.price });
+      opt.textContent = a.name + ' — ' + Math.round(a.price).toLocaleString('fr-FR') + ' F';
+      artSel.appendChild(opt);
+    });
+  } catch(e) {
+    artSel.innerHTML = '<option value="">Erreur de chargement</option>';
+  }
+}
+
+function selectionnerArticle(rowId, artSel) {
+  if (!artSel.value) return;
+  try {
+    const a = JSON.parse(artSel.value);
+    const row = document.getElementById('row-' + rowId);
+    const ins = row.querySelectorAll('input');
+    ins[0].value = a.name;        // désignation
+    ins[2].value = Math.round(a.price); // prix unitaire
+    recalcRow(rowId);
+    recalcTotal();
+  } catch(e) {}
 }
 
 function supprimerLigne(id) {

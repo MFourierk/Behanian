@@ -476,7 +476,12 @@ def proforma_create(request):
 def proforma_detail(request, pk):
     proforma = get_object_or_404(Proforma, pk=pk)
     lignes = proforma.lignes.order_by('id')
-    return render(request, 'facturation/proforma_detail.html', {'proforma': proforma, 'lignes': lignes})
+    services = Service.objects.all().order_by('nom')
+    return render(request, 'facturation/proforma_detail.html', {
+        'proforma': proforma,
+        'lignes': lignes,
+        'services': services,
+    })
 
 
 @require_module_access('facturation')
