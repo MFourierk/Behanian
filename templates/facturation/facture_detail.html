@@ -29,6 +29,38 @@
 .btn-gold{background:#c9a84c;color:#1a2535}
 .total-row{background:#f8fafc;font-weight:700}
 .grand-total td{background:#1a2535;color:white!important;font-size:14px!important;font-weight:700!important;padding:14px 16px}
+/* Panneau solde */
+.solde-panel{background:white;border:1px solid #d4dce8;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.solde-inner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.solde-cell{padding:18px 20px;border-right:1px solid #f0f3f7;text-align:center}
+.solde-cell:last-child{border-right:none}
+.solde-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7a8b9c;margin-bottom:6px}
+.solde-val{font-size:1.35rem;font-weight:800;color:#1a2535;line-height:1}
+.solde-val.green{color:#16a34a}.solde-val.red{color:#dc2626}.solde-val.gold{color:#c9a84c}
+/* Modal paiement */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,15,30,.72);backdrop-filter:blur(6px);z-index:9000;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal-card{background:white;border-radius:18px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,.35);overflow:hidden;animation:mIn .22s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.mh{background:linear-gradient(135deg,#1a2535,#2d3f55);padding:20px 24px 16px;display:flex;align-items:flex-start;justify-content:space-between}
+.mh-title{font-size:1rem;font-weight:800;color:#fff}.mh-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px}
+.mh-close{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.mh-close:hover{background:rgba(255,255,255,.2);color:#fff}
+.mb{padding:22px 24px}
+.fld-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#7a8b9c;display:block;margin-bottom:6px}
+.fld-inp{width:100%;padding:10px 13px;border:1px solid #d4dce8;border-radius:9px;font-size:13px;color:#1a2535;box-sizing:border-box;transition:border-color .12s;background:#fff}
+.fld-inp:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.1)}
+.fld-group{margin-bottom:14px}
+.mf{padding:14px 24px;background:#f8fafc;border-top:1px solid #d4dce8;display:flex;gap:10px;justify-content:flex-end}
+.btn-cancel{padding:9px 18px;border-radius:9px;border:1px solid #d4dce8;background:white;color:#3d4f63;font-size:13px;font-weight:600;cursor:pointer;transition:.12s}
+.btn-cancel:hover{background:#f0f3f7}
+.btn-pay{padding:10px 22px;border-radius:9px;border:none;background:linear-gradient(135deg,#16a34a,#15803d);color:white;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(22,163,74,.3);transition:.15s;display:flex;align-items:center;gap:7px}
+.btn-pay:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(22,163,74,.4)}
+.btn-pay:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.pay-result{display:none;margin-top:12px;padding:11px 14px;border-radius:9px;font-size:12px}
+.pay-result.ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.pay-result.err{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.b-partielle{background:#ede9fe;color:#6d28d9}
 </style>
 {% endblock %}
 
@@ -47,10 +79,41 @@
 
 
   <!-- ACTIONS -->
-  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
     <a href="{% url 'facturation:facture_pdf' facture.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
+    {% if facture.statut not in 'payee,annulee' %}
+    <button class="btn-p btn-gold" onclick="ouvrirModalPaiement()"><i class="fas fa-money-bill-wave"></i> Enregistrer un paiement</button>
+    {% endif %}
     {% if facture.statut != 'annulee' %}
     <a href="{% url 'facturation:avoir_create' %}?facture={{ facture.pk }}" class="btn-p btn-danger"><i class="fas fa-undo"></i> Créer un avoir</a>
+    {% endif %}
+  </div>
+
+  <!-- PANNEAU SOLDE -->
+  <div class="solde-panel" id="soldePanel">
+    <div class="ph" style="border-bottom:1px solid #f0f3f7">
+      <h3>💳 Situation de règlement</h3>
+      <span class="badge b-{{ facture.statut }}" id="statutBadge">{{ facture.get_statut_display }}</span>
+    </div>
+    <div class="solde-inner">
+      <div class="solde-cell">
+        <div class="solde-lbl">Total TTC</div>
+        <div class="solde-val">{{ facture.total|montant }} F</div>
+      </div>
+      <div class="solde-cell">
+        <div class="solde-lbl">Encaissé</div>
+        <div class="solde-val green" id="montantPaye">{{ facture.montant_paye|montant }} F</div>
+      </div>
+      <div class="solde-cell">
+        <div class="solde-lbl">Solde restant</div>
+        <div class="solde-val {% if facture.montant_restant > 0 %}red{% else %}green{% endif %}" id="montantRestant">{{ facture.montant_restant|montant }} F</div>
+      </div>
+    </div>
+    {% if facture.date_paiement %}
+    <div style="padding:8px 20px;font-size:11px;color:#7a8b9c;border-top:1px solid #f0f3f7;background:#f8fafc">
+      <i class="fas fa-check-circle" style="color:#16a34a;margin-right:4px"></i>
+      Dernier paiement enregistré le {{ facture.date_paiement|date:"d/m/Y à H:i" }}
+    </div>
     {% endif %}
   </div>
 
@@ -126,4 +189,133 @@
   </div>
 
 </div></div>
+
+<!-- ═══ MODAL PAIEMENT ════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalPaiement" onclick="if(event.target===this)fermerModal()">
+  <div class="modal-card">
+    <div class="mh">
+      <div>
+        <div class="mh-title">💳 Enregistrer un paiement</div>
+        <div class="mh-sub">Facture {{ facture.numero }} — solde : <span id="soldeModal">{{ facture.montant_restant|montant }} F</span></div>
+      </div>
+      <button class="mh-close" onclick="fermerModal()">✕</button>
+    </div>
+    <div class="mb">
+      <div class="fld-group">
+        <label class="fld-lbl">Montant encaissé (FCFA) *</label>
+        <input class="fld-inp" type="number" id="pMontant" min="1" step="1" value="{{ facture.montant_restant|floatformat:0 }}" placeholder="Montant reçu">
+      </div>
+      <div class="fld-group">
+        <label class="fld-lbl">Mode de paiement</label>
+        <select class="fld-inp" id="pMode">
+          <option value="especes">Espèces</option>
+          <option value="wave">Wave</option>
+          <option value="orange_money">Orange Money</option>
+          <option value="mtn_money">MTN Mobile Money</option>
+          <option value="moov_money">Moov Money</option>
+          <option value="mobile_money">Mobile Money (autre)</option>
+          <option value="carte_bancaire">Carte Bancaire</option>
+          <option value="cheque">Chèque</option>
+          <option value="virement">Virement</option>
+          <option value="cave">Cave (tab)</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="fld-group">
+        <label class="fld-lbl">Notes / référence (facultatif)</label>
+        <input class="fld-inp" type="text" id="pNotes" placeholder="Réf. virement, n° chèque…">
+      </div>
+      <div class="pay-result" id="payResult"></div>
+    </div>
+    <div class="mf">
+      <button class="btn-cancel" onclick="fermerModal()">Annuler</button>
+      <button class="btn-pay" id="btnPay" onclick="confirmerPaiement()">
+        <i class="fas fa-check"></i> Valider l'encaissement
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const URL_PAY   = "{% url 'facturation:facture_enregistrer_paiement' facture.pk %}";
+const CSRF      = "{{ csrf_token }}";
+const TOTAL_FAC = {{ facture.total|floatformat:0 }};
+
+function fmt(n){ return Math.round(n).toLocaleString('fr-FR') + ' F'; }
+
+function ouvrirModalPaiement(){
+  document.getElementById('modalPaiement').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('payResult').style.display = 'none';
+  document.getElementById('btnPay').disabled = false;
+  document.getElementById('btnPay').innerHTML = '<i class="fas fa-check"></i> Valider l\'encaissement';
+  document.getElementById('pMontant').focus();
+}
+
+function fermerModal(){
+  document.getElementById('modalPaiement').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') fermerModal(); });
+
+async function confirmerPaiement(){
+  const montant = parseFloat(document.getElementById('pMontant').value) || 0;
+  if(montant <= 0){ alert('Entrez un montant supérieur à 0.'); return; }
+
+  const btn = document.getElementById('btnPay');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
+
+  try {
+    const r = await fetch(URL_PAY, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRFToken': CSRF},
+      body: JSON.stringify({
+        montant: montant,
+        mode_paiement: document.getElementById('pMode').value,
+        notes: document.getElementById('pNotes').value.trim(),
+      }),
+    });
+    const d = await r.json();
+    const box = document.getElementById('payResult');
+    box.style.display = 'block';
+
+    if(d.success){
+      box.className = 'pay-result ok';
+      box.innerHTML = `✅ Paiement enregistré — Solde restant : <strong>${fmt(d.montant_restant)}</strong>`;
+      // Mise à jour live du panneau sans recharger
+      document.getElementById('montantPaye').textContent = fmt(d.montant_paye);
+      document.getElementById('montantRestant').textContent = fmt(d.montant_restant);
+      document.getElementById('montantRestant').className = 'solde-val ' + (d.montant_restant > 0 ? 'red' : 'green');
+      document.getElementById('soldeModal').textContent = fmt(d.montant_restant);
+      const badge = document.getElementById('statutBadge');
+      badge.textContent = d.statut_display;
+      badge.className = 'badge b-' + d.statut;
+      btn.innerHTML = '<i class="fas fa-check"></i> Payé !';
+      if(d.montant_restant <= 0){
+        // Masquer le bouton paiement dans les actions
+        document.querySelectorAll('.btn-gold').forEach(b => b.style.display='none');
+        setTimeout(fermerModal, 1800);
+      } else {
+        document.getElementById('pMontant').value = d.montant_restant;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Valider l\'encaissement';
+      }
+    } else {
+      box.className = 'pay-result err';
+      box.innerHTML = '❌ ' + d.error;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check"></i> Valider l\'encaissement';
+    }
+  } catch(err){
+    const box = document.getElementById('payResult');
+    box.style.display = 'block';
+    box.className = 'pay-result err';
+    box.innerHTML = '❌ Erreur réseau.';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check"></i> Valider l\'encaissement';
+  }
+}
+</script>
 {% endblock %}

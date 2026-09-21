@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.urls import reverse
 from .models import Facture, Proforma, Avoir, Client, Service, Article, LigneFacture, LigneProforma, LigneAvoir, Ticket
-from .services import supprimer_ticket, consolider_tickets_en_facture, creer_facture_depuis_proforma
+from .services import supprimer_ticket, consolider_tickets_en_facture, creer_facture_depuis_proforma, get_or_create_client
 from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
@@ -162,13 +162,10 @@ def facture_create(request):
                 client_email = request.POST.get('client_email')
                 client_address = request.POST.get('client_address')
 
-                client, created = Client.objects.get_or_create(
+                client, created = get_or_create_client(
                     nom=client_name,
-                    defaults={
-                        'telephone': client_phone,
-                        'email': client_email,
-                        'adresse': client_address or ''
-                    }
+                    telephone=client_phone or '',
+                    email=client_email or '',
                 )
 
                 # 2. Créer l'objet Facture principal
@@ -248,6 +245,41 @@ def facture_detail(request, pk):
         facture.client = SimpleNamespace(nom='Client anonyme', telephone='', email='', adresse='')
     lignes = facture.lignes.order_by('id')
     return render(request, 'facturation/facture_detail.html', {'facture': facture, 'lignes': lignes})
+
+
+@require_module_access('facturation')
+def facture_enregistrer_paiement(request, pk):
+    """POST JSON — Enregistre un encaissement sur une facture et met à jour son statut."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requis'})
+    facture = get_object_or_404(Facture, pk=pk)
+    if facture.statut in ('payee', 'annulee'):
+        return JsonResponse({'success': False, 'error': f'Facture déjà {facture.get_statut_display().lower()}.'})
+    try:
+        data = json.loads(request.body)
+        montant = Decimal(str(data.get('montant') or 0))
+        if montant <= 0:
+            return JsonResponse({'success': False, 'error': 'Le montant doit être supérieur à 0.'})
+        if montant > facture.montant_restant:
+            return JsonResponse({'success': False, 'error': f'Montant ({int(montant)} F) supérieur au solde restant ({int(facture.montant_restant)} F).'})
+        with transaction.atomic():
+            facture.montant_paye += montant
+            facture.date_paiement = timezone.now()
+            if facture.montant_paye >= facture.total:
+                facture.statut = 'payee'
+            else:
+                facture.statut = 'partielle'
+            facture.save(update_fields=['montant_paye', 'date_paiement', 'statut'])
+        return JsonResponse({
+            'success': True,
+            'statut': facture.statut,
+            'statut_display': facture.get_statut_display(),
+            'montant_paye': int(facture.montant_paye),
+            'montant_restant': int(facture.montant_restant),
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
 
 @require_module_access('facturation')
 def facture_pdf(request, pk):
@@ -351,13 +383,10 @@ def proforma_create(request):
 
         with transaction.atomic():
             # Client
-            client, _ = Client.objects.get_or_create(
+            client, _ = get_or_create_client(
                 nom=client_name,
-                defaults={
-                    'telephone': data.get('client_phone', ''),
-                    'email': data.get('client_email', ''),
-                    'adresse': data.get('client_address', ''),
-                }
+                telephone=data.get('client_phone', ''),
+                email=data.get('client_email', ''),
             )
 
             # Dates
@@ -587,9 +616,9 @@ def avoir_create(request):
             motif = 'Avoir'
 
         with transaction.atomic():
-            client_obj, _ = Client.objects.get_or_create(
+            client_obj, _ = get_or_create_client(
                 nom=client_name,
-                defaults={'telephone': data.get('client_phone', '')}
+                telephone=data.get('client_phone', ''),
             )
 
             # Facture ou ticket d'origine
@@ -863,7 +892,7 @@ def create_avoir_from_ticket(request, pk):
                 client=client,
                 cree_par=request.user,
                 motif=f"Remboursement Ticket {ticket.numero}",
-                statut='accepted', # On suppose qu'un avoir créé depuis un ticket est validé immédiatement
+                statut='accepte',  # avoir créé depuis ticket = validé immédiatement
                 date_creation=timezone.now(),
                 date_avoir=timezone.now().date()
             )
@@ -1056,13 +1085,10 @@ def facture_from_ticket(request):
         ticket = get_object_or_404(Ticket, id=ticket_id)
 
         # Créer ou récupérer le client
-        client, _ = Client.objects.get_or_create(
+        client, _ = get_or_create_client(
             nom=client_name,
-            defaults={'telephone': client_phone}
+            telephone=client_phone or '',
         )
-        if client_phone and not client.telephone:
-            client.telephone = client_phone
-            client.save()
 
         # Générer numéro facture
         from django.utils import timezone as tz

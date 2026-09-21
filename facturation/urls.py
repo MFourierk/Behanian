@@ -10,6 +10,7 @@ urlpatterns = [
     path('factures/nouvelle/', views.facture_create, name='facture_create'),
     path('factures/<int:pk>/', views.facture_detail, name='facture_detail'),
     path('factures/<int:pk>/pdf/', views.facture_pdf, name='facture_pdf'),
+    path('factures/<int:pk>/paiement/', views.facture_enregistrer_paiement, name='facture_enregistrer_paiement'),
     
     path('proformas/', views.proforma_list, name='proforma_list'),
     path('proformas/nouveau/', views.proforma_create, name='proforma_create'),

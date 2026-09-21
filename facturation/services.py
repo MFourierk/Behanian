@@ -14,6 +14,44 @@ from .models import Ticket, Article, LignePaiement, Facture, LigneFacture, Profo
 _MODES_MOBILES = {'wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money', 'mobile'}
 
 
+def get_or_create_client(nom, telephone='', email='', nif=''):
+    """
+    Recherche un client existant par NIF, téléphone ou nom (insensible à la casse)
+    avant d'en créer un nouveau — évite les doublons par variation de casse/espaces.
+    Retourne (client, created) comme get_or_create.
+    """
+    nom = (nom or '').strip()
+    telephone = (telephone or '').strip()
+    email = (email or '').strip()
+    nif = (nif or '').strip()
+
+    if not nom and not nif and not telephone:
+        raise ValueError("Au moins un critère d'identification client est requis.")
+
+    client = None
+    if nif:
+        client = Client.objects.filter(nif=nif).first()
+    if not client and telephone:
+        client = Client.objects.filter(telephone=telephone).first()
+    if not client and nom:
+        client = Client.objects.filter(nom__iexact=nom).first()
+
+    if client:
+        fields_to_update = []
+        if telephone and not client.telephone:
+            client.telephone = telephone; fields_to_update.append('telephone')
+        if email and not client.email:
+            client.email = email; fields_to_update.append('email')
+        if nif and not client.nif:
+            client.nif = nif; fields_to_update.append('nif')
+        if fields_to_update:
+            client.save(update_fields=fields_to_update)
+        return client, False
+
+    client = Client.objects.create(nom=nom, telephone=telephone, email=email, nif=nif)
+    return client, True
+
+
 def creer_lignes_paiement(ticket, lignes):
     """
     Crée les LignePaiement pour un ticket et met à jour les champs de
@@ -475,13 +513,10 @@ def consolider_tickets_en_facture(ticket_ids, client_nom, client_telephone, user
     if not client_nom:
         raise ValueError("Le nom du client est obligatoire.")
 
-    client, _ = Client.objects.get_or_create(
+    client, _ = get_or_create_client(
         nom=client_nom,
-        defaults={'telephone': client_telephone.strip() if client_telephone else ''},
+        telephone=client_telephone or '',
     )
-    if client_telephone and not client.telephone:
-        client.telephone = client_telephone.strip()
-        client.save(update_fields=['telephone'])
 
     total = sum(t.montant_total for t in tickets)
 

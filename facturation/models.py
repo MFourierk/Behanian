@@ -281,9 +281,9 @@ class LigneProforma(models.Model):
 class Avoir(models.Model):
     STATUT_CHOICES = [
         ('en_attente', 'En attente'),
-        ('accepted', 'Accepté'),
+        ('accepte', 'Accepté'),
         ('traitee', 'Traitée'),
-        ('refunded', 'Remboursé'),
+        ('rembourse', 'Remboursé'),
         ('annulee', 'Annulée'),
     ]
     
@@ -333,7 +333,7 @@ class Avoir(models.Model):
         L'avoir diminue ce que le client doit (réduit facture.total),
         pas l'encaissement déjà reçu (montant_paye reste intact).
         """
-        if self.statut != 'accepted':
+        if self.statut != 'accepte':
             raise ValueError("L'avoir doit être accepté pour être appliqué")
 
         if self.facture_origine:
@@ -346,7 +346,7 @@ class Avoir(models.Model):
                 facture.statut = 'partielle'
             facture.save(update_fields=['total', 'statut'])
 
-        self.statut = 'refunded'
+        self.statut = 'rembourse'
         self.save(update_fields=['statut'])
 
 

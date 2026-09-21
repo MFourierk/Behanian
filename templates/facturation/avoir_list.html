@@ -21,9 +21,9 @@
 .tbl tbody tr:hover td{background:#f5f8ff}
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .b-en_attente{background:#fef3c7;color:#d97706}
-.b-accepted{background:#dcfce7;color:#15803d}
+.b-accepte{background:#dcfce7;color:#15803d}
 .b-traitee{background:#dcfce7;color:#15803d}
-.b-refunded{background:#d1fae5;color:#065f46}
+.b-rembourse{background:#d1fae5;color:#065f46}
 .b-annulee{background:#fee2e2;color:#dc2626}
 .btn-p{padding:6px 12px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;text-decoration:none;transition:all .12s}
 .btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
@@ -88,9 +88,9 @@
       <select id="filtreStatut" onchange="filtrer()">
         <option value="">Tous statuts</option>
         <option value="en_attente">En attente</option>
-        <option value="accepted">Accepté</option>
+        <option value="accepte">Accepté</option>
         <option value="traitee">Traité</option>
-        <option value="refunded">Remboursé</option>
+        <option value="rembourse">Remboursé</option>
         <option value="annulee">Annulé</option>
       </select>
       <input type="text" id="filtreClient" placeholder="Rechercher client…" oninput="filtrer()">
