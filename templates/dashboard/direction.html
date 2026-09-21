@@ -111,6 +111,18 @@
     <div class="kl">🏨 Occupation Hôtel</div>
     <div class="ks" style="color:var(--muted)">{{ chambres_occupees }} / {{ total_chambres }} chambres</div>
   </div>
+  <div class="kpi-card {% if nb_factures_impayees > 0 %}k-orange{% else %}k-vert{% endif %}">
+    <div class="kv">{{ ca_factures_mois|floatformat:0 }} <span style="font-size:13px;font-weight:400">FCFA</span></div>
+    <div class="kl">📄 CA Facturation B2B</div>
+    <div class="ks">
+      {{ nb_factures_mois }} facture(s) ce mois ·
+      {% if nb_factures_impayees > 0 %}
+        <span style="color:#dc2626;font-weight:700">{{ nb_factures_impayees }} impayée(s)</span>
+      {% else %}
+        <span style="color:#16a34a">Tout réglé</span>
+      {% endif %}
+    </div>
+  </div>
   <div class="kpi-card {% if caisse_ouverte %}k-vert{% else %}k-rouge{% endif %}">
     <div class="kv" style="font-size:18px">{% if caisse_ouverte %}🟢 Ouverte{% else %}🔴 Fermée{% endif %}</div>
     <div class="kl">🏦 Caisse · {{ caisse_type|default:"—" }}</div>

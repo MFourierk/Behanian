@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.urls import reverse
 from .models import Facture, Proforma, Avoir, Client, Service, Article, LigneFacture, LigneProforma, LigneAvoir, Ticket
-from .services import supprimer_ticket, consolider_tickets_en_facture
+from .services import supprimer_ticket, consolider_tickets_en_facture, creer_facture_depuis_proforma
 from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
@@ -470,6 +470,47 @@ def proforma_to_facture(request, pk):
             return JsonResponse({'success': True, 'detail_url': reverse('facturation:facture_detail', kwargs={'pk': facture.pk})})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+@require_module_access('facturation')
+def proforma_to_facture_edit(request, pk):
+    """
+    POST — Convertit un proforma en facture avec les lignes modifiées par la caissière.
+    Reçoit en JSON : { lignes:[{designation,quantite,prix_unitaire,description}],
+                       remise, taux_tva, notes }
+    Crée la Facture, consomme le stock cave/cuisine, marque le proforma 'convertie'.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requis'})
+    proforma = get_object_or_404(Proforma, pk=pk)
+    try:
+        data     = json.loads(request.body)
+        lignes   = data.get('lignes', [])
+        remise   = data.get('remise', 0)
+        taux_tva = data.get('taux_tva', 0)
+        notes    = data.get('notes', '')
+
+        with transaction.atomic():
+            facture, mouvements = creer_facture_depuis_proforma(
+                proforma, lignes, remise, taux_tva, notes, request.user
+            )
+
+        msg = f'Facture {facture.numero} créée.'
+        if mouvements:
+            msg += f' Stock mouvementé : {", ".join(mouvements)}.'
+
+        return JsonResponse({
+            'success': True,
+            'message': msg,
+            'facture_id': facture.id,
+            'numero': facture.numero,
+            'total': int(facture.total),
+            'detail_url': reverse('facturation:facture_detail', kwargs={'pk': facture.pk}),
+        })
+    except ValueError as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Erreur : {e}'})
+
 
 @require_module_access('facturation')
 def proforma_pdf(request, pk):

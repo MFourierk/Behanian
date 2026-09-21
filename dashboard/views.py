@@ -312,6 +312,26 @@ def direction_view(request):
         pass
     total_coffre_theorique = net_caisse_coffre + total_non_verse
 
+    # ── CA Facturation B2B (factures issues de proformas) ──────────────────
+    ca_factures_mois        = 0
+    ca_factures_impayees    = 0
+    nb_factures_mois        = 0
+    nb_factures_impayees    = 0
+    try:
+        from facturation.models import Facture as _Facture
+        from django.db.models import Sum as _SumF
+        _fac_mois = _Facture.objects.filter(
+            date_facturation__month=today.month,
+            date_facturation__year=today.year,
+        )
+        ca_factures_mois     = int(_fac_mois.aggregate(s=_SumF('total'))['s'] or 0)
+        nb_factures_mois     = _fac_mois.count()
+        _fac_imp = _Facture.objects.filter(statut__in=['envoyee', 'en_attente', 'impayee'])
+        ca_factures_impayees = int(_fac_imp.aggregate(s=_SumF('total'))['s'] or 0)
+        nb_factures_impayees = _fac_imp.count()
+    except Exception:
+        pass
+
     context = {
         **stats,
         'today': today,
@@ -333,6 +353,10 @@ def direction_view(request):
         'active_tab': active_tab,
         'date_debut': date_debut.isoformat(),
         'date_fin':   date_fin.isoformat(),
+        'ca_factures_mois':     ca_factures_mois,
+        'ca_factures_impayees': ca_factures_impayees,
+        'nb_factures_mois':     nb_factures_mois,
+        'nb_factures_impayees': nb_factures_impayees,
     }
     return render(request, 'dashboard/direction.html', context)
 

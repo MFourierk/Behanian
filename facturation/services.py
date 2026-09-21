@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from django.contrib.contenttypes.models import ContentType
 
-from .models import Ticket, Article, LignePaiement
+from .models import Ticket, Article, LignePaiement, Facture, LigneFacture, Proforma, Client
 
 _MODES_MOBILES = {'wave', 'orange_money', 'mtn_money', 'moov_money', 'mobile_money', 'mobile'}
 
@@ -324,6 +324,123 @@ def _parser_contenu_ticket(contenu):
                 except Exception:
                     pass
     return lignes
+
+
+def _consommer_stock_facture(lignes_data, numero_facture, user):
+    """
+    Tente de consommer le stock cave/cuisine pour chaque ligne d'une facture.
+    Identification best-effort par nom (exact puis partiel).
+    Retourne la liste des mouvements effectués (pour log/info).
+    """
+    from bar.models import BoissonBar, MouvementStockBar
+    from restaurant.models import PlatMenu
+    from cuisine.utils import process_stock_movement
+
+    mouvements = []
+    for ligne in lignes_data:
+        designation = str(ligne.get('designation', '')).strip()
+        try:
+            quantite = Decimal(str(ligne.get('quantite', 1) or 1))
+        except Exception:
+            continue
+        if not designation or quantite <= 0:
+            continue
+
+        # 1. Chercher dans la cave (BoissonBar)
+        boisson = (BoissonBar.objects.filter(nom__iexact=designation).first()
+                   or BoissonBar.objects.filter(nom__icontains=designation).first())
+        if boisson:
+            MouvementStockBar.objects.create(
+                boisson=boisson,
+                type_mouvement='sortie',
+                quantite=max(1, int(quantite)),
+                commentaire=f"Facture {numero_facture}",
+                utilisateur=user,
+            )
+            mouvements.append(f"Cave : {boisson.nom} ×{int(quantite)}")
+            continue
+
+        # 2. Chercher dans la cuisine (PlatMenu)
+        plat = (PlatMenu.objects.filter(nom__iexact=designation).first()
+                or PlatMenu.objects.filter(nom__icontains=designation.split('(')[0].strip()).first())
+        if plat:
+            process_stock_movement(plat, quantite, 'sortie', user, f"Facture {numero_facture}")
+            mouvements.append(f"Cuisine : {plat.nom} ×{int(quantite)}")
+
+    return mouvements
+
+
+def creer_facture_depuis_proforma(proforma, lignes_data, remise, taux_tva, notes, user):
+    """
+    Crée une Facture depuis un Proforma avec les lignes modifiées par la caissière
+    (quantités ajustées, articles ajoutés/supprimés le jour de l'événement).
+
+    - Consomme le stock cave/cuisine pour les articles identifiables (best-effort).
+    - Marque le proforma 'convertie'.
+    - Retourne (facture, mouvements_stock).
+
+    Appelée dans une transaction atomique par l'appelant.
+    """
+    from .models import generate_facture_numero
+    from django.utils import timezone as tz
+    from datetime import timedelta
+
+    if proforma.statut in ('convertie', 'annulee'):
+        raise ValueError(
+            f"Le proforma {proforma.numero} est déjà {proforma.get_statut_display().lower()}."
+        )
+
+    remise   = Decimal(str(remise   or 0))
+    taux_tva = Decimal(str(taux_tva or 0))
+
+    lignes_valides = [
+        l for l in lignes_data
+        if str(l.get('designation', '')).strip()
+        and Decimal(str(l.get('quantite', 0) or 0)) > 0
+    ]
+    if not lignes_valides:
+        raise ValueError("La facture doit contenir au moins une ligne.")
+
+    sous_total = sum(
+        Decimal(str(l['quantite'])) * Decimal(str(l['prix_unitaire'] or 0))
+        for l in lignes_valides
+    )
+    base_hr    = max(Decimal('0'), sous_total - remise)
+    montant_tva = base_hr * taux_tva / 100
+    total       = base_hr + montant_tva
+
+    today   = tz.now().date()
+    facture = Facture.objects.create(
+        numero=generate_facture_numero(),
+        client=proforma.client,
+        date_facturation=today,
+        date_echeance=today + timedelta(days=30),
+        statut='envoyee',
+        sous_total=sous_total,
+        remise=remise,
+        taux_tva=taux_tva,
+        montant_tva=montant_tva,
+        total=total,
+        notes=(f"Converti depuis proforma {proforma.numero}" +
+               (f" — {notes}" if notes else "")),
+        cree_par=user,
+    )
+
+    for ligne in lignes_valides:
+        LigneFacture.objects.create(
+            facture=facture,
+            designation=str(ligne['designation']).strip(),
+            description=str(ligne.get('description', '') or '').strip(),
+            quantite=Decimal(str(ligne['quantite'])),
+            prix_unitaire=Decimal(str(ligne['prix_unitaire'] or 0)),
+        )
+
+    mouvements = _consommer_stock_facture(lignes_valides, facture.numero, user)
+
+    proforma.statut = 'convertie'
+    proforma.save(update_fields=['statut'])
+
+    return facture, mouvements
 
 
 def consolider_tickets_en_facture(ticket_ids, client_nom, client_telephone, user, notes=''):

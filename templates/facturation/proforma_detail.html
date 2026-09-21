@@ -1,4 +1,4 @@
-﻿{% extends 'dashboard/base_dashboard.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 {% load breadcrumb %}
 {% block title %}Proforma {{ proforma.numero }} — Facturation{% endblock %}
 
@@ -22,13 +22,145 @@
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
 .b-en_attente{background:#fef3c7;color:#d97706}.b-acceptee{background:#dcfce7;color:#15803d}
 .b-convertie{background:#f3e8ff;color:#7c3aed}.b-annulee{background:#fee2e2;color:#dc2626}
-.b-validee{background:#dcfce7;color:#15803d}
+.b-validee{background:#dcfce7;color:#15803d}.b-brouillon{background:#f1f5f9;color:#64748b}
 .btn-p{padding:9px 18px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .12s;text-decoration:none}
 .btn-primary{background:#2563eb;color:white}.btn-success{background:#16a34a;color:white}
 .btn-gold{background:#c9a84c;color:#1a2535}.btn-outline{background:white;color:#3d4f63;border:1px solid #d4dce8}
+.btn-p:hover{opacity:.88;transform:translateY(-1px)}
 .total-row{background:#f8fafc;font-weight:700}
 .grand-total{background:#1a2535;color:white}
 .grand-total td{color:white!important;font-size:14px!important;font-weight:700!important}
+
+/* ═══ MODAL GLAMOUR ═══════════════════════════════════════════════════════════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(10,15,30,.72);backdrop-filter:blur(6px);
+  z-index:9000;align-items:center;justify-content:center;padding:16px;
+}
+.modal-overlay.open{display:flex}
+.modal-card{
+  background:white;border-radius:18px;width:100%;max-width:820px;
+  box-shadow:0 32px 80px rgba(0,0,0,.35);overflow:hidden;
+  display:flex;flex-direction:column;max-height:92vh;
+  animation:modalIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+
+/* Header modal */
+.mh{
+  background:linear-gradient(135deg,#1a2535 0%,#2d3f55 100%);
+  padding:22px 28px 18px;flex-shrink:0;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
+.mh-left{}
+.mh-title{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.3px;margin-bottom:3px}
+.mh-sub{font-size:12px;color:rgba(255,255,255,.5)}
+.mh-close{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);
+  width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:17px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.mh-close:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Corps scrollable */
+.mb{overflow-y:auto;padding:24px 28px;flex:1;min-height:0}
+.mb::-webkit-scrollbar{width:5px}
+.mb::-webkit-scrollbar-thumb{background:#d4dce8;border-radius:3px}
+
+/* Table éditable */
+.edit-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.edit-table th{
+  padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:#4a5b6e;background:#f8fafc;border-bottom:2px solid #d4dce8;text-align:left;
+}
+.edit-table th.r{text-align:right}
+.edit-table td{padding:7px 10px;border-bottom:1px solid #f0f3f7;vertical-align:middle}
+.edit-table tbody tr:hover{background:#f9fafb}
+.edit-table input[type=text],.edit-table input[type=number]{
+  width:100%;padding:6px 9px;border:1px solid #d4dce8;border-radius:7px;
+  font-size:12px;color:#1a2535;box-sizing:border-box;transition:border-color .12s;background:#fff;
+}
+.edit-table input:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.12)}
+.edit-table .td-num{width:32px;text-align:center;font-size:10px;color:#9aabb8;font-weight:700}
+.edit-table .td-desg{min-width:180px}
+.edit-table .td-qty{width:70px}
+.edit-table .td-pu{width:110px}
+.edit-table .td-tot{width:110px;text-align:right;font-weight:700;color:#1a2535;white-space:nowrap}
+.edit-table .td-del{width:34px;text-align:center}
+
+.btn-del-row{
+  width:26px;height:26px;border-radius:6px;border:none;cursor:pointer;
+  background:#fee2e2;color:#dc2626;font-size:14px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;transition:.12s;
+}
+.btn-del-row:hover{background:#dc2626;color:#fff}
+
+.btn-add-row{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
+  border:1.5px dashed #c9a84c;background:transparent;color:#c9a84c;
+  font-size:12px;font-weight:700;cursor:pointer;transition:.12s;margin-bottom:16px;
+}
+.btn-add-row:hover{background:#fffbeb;border-color:#b8963e}
+
+/* Totaux */
+.tot-section{background:#f8fafc;border-radius:10px;padding:16px 18px;margin-top:4px}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #eef1f5;font-size:12px}
+.tot-row:last-child{border-bottom:none}
+.tot-lbl{color:#7a8b9c}
+.tot-val{font-weight:700;color:#1a2535;white-space:nowrap}
+
+.tot-grand{
+  background:linear-gradient(135deg,#1a2535,#2d3f55);
+  border-radius:10px;padding:14px 18px;margin-top:10px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.tot-grand-lbl{color:rgba(255,255,255,.65);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.tot-grand-val{color:#c9a84c;font-size:1.3rem;font-weight:800;white-space:nowrap}
+
+/* Champs remise/TVA */
+.adj-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.adj-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#7a8b9c;display:block;margin-bottom:5px}
+.adj-inp{width:100%;padding:8px 11px;border:1px solid #d4dce8;border-radius:8px;font-size:13px;box-sizing:border-box}
+.adj-inp:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.1)}
+
+/* Notes */
+.notes-area{width:100%;padding:9px 12px;border:1px solid #d4dce8;border-radius:9px;
+  font-size:12px;color:#1a2535;box-sizing:border-box;resize:vertical;height:52px;margin-top:14px}
+.notes-area:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.1)}
+
+/* Footer modal */
+.mf{
+  padding:16px 28px;background:#f8fafc;border-top:1px solid #d4dce8;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;flex-wrap:wrap;
+}
+.mf-info{font-size:11px;color:#7a8b9c}
+.mf-btns{display:flex;gap:10px}
+
+.btn-modal-cancel{
+  padding:10px 20px;border-radius:9px;border:1px solid #d4dce8;background:white;
+  color:#3d4f63;font-size:13px;font-weight:600;cursor:pointer;transition:.12s;
+}
+.btn-modal-cancel:hover{background:#f0f3f7}
+.btn-modal-confirm{
+  padding:10px 24px;border-radius:9px;border:none;
+  background:linear-gradient(135deg,#c9a84c,#e0b85a);
+  color:#1a2535;font-size:13px;font-weight:800;cursor:pointer;
+  box-shadow:0 4px 14px rgba(201,168,76,.35);transition:.15s;
+  display:flex;align-items:center;gap:7px;
+}
+.btn-modal-confirm:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(201,168,76,.45)}
+.btn-modal-confirm:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+/* Alerte stock */
+.stock-info{
+  background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;
+  padding:11px 14px;font-size:11px;color:#1e40af;margin-bottom:14px;
+  display:flex;align-items:flex-start;gap:8px;
+}
+.stock-info i{flex-shrink:0;margin-top:1px}
+
+/* Résultat */
+.modal-result{display:none;margin:12px 0;padding:12px 16px;border-radius:9px;font-size:12px}
+.modal-result.success{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.modal-result.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
 </style>
 {% endblock %}
 
@@ -45,12 +177,15 @@
   </div>
 {% breadcrumb "Facturation" "facturation:index" "Proformas" "facturation:proforma_list" proforma.numero "" %}
 
-
   <!-- ACTIONS -->
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn-p btn-outline" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
-    {% if proforma.statut != 'convertie' and proforma.statut != 'annulee' %}
-    <button class="btn-p btn-success" onclick="convertirEnFacture()"><i class="fas fa-file-invoice"></i> → Facture</button>
+    <a href="{% url 'facturation:proforma_pdf' proforma.pk %}" class="btn-p btn-outline" target="_blank">
+      <i class="fas fa-file-pdf"></i> Imprimer / PDF
+    </a>
+    {% if proforma.statut not in 'convertie,annulee' %}
+    <button class="btn-p btn-gold" onclick="ouvrirModalFacture()">
+      <i class="fas fa-file-invoice"></i> Convertir en Facture
+    </button>
     {% endif %}
   </div>
 
@@ -84,50 +219,302 @@
     <div style="overflow-x:auto">
       <table class="tbl">
         <thead>
-          <tr><th>#</th><th>Désignation</th><th>Service</th><th class="r" style="text-align:right">Qté</th><th class="r" style="text-align:right">Prix U.</th><th class="r" style="text-align:right">Total HT</th></tr>
+          <tr><th>#</th><th>Désignation</th><th class="r" style="text-align:right">Qté</th><th class="r" style="text-align:right">Prix U.</th><th class="r" style="text-align:right">Total HT</th></tr>
         </thead>
         <tbody>
           {% for ligne in lignes %}
           <tr>
             <td style="color:#7a8b9c">{{ forloop.counter }}</td>
             <td>
-              <div style="font-weight:600">{{ ligne.article.nom }}</div>
+              <div style="font-weight:600">{% if ligne.designation %}{{ ligne.designation }}{% elif ligne.article %}{{ ligne.article.nom }}{% else %}—{% endif %}</div>
               {% if ligne.description %}<div style="font-size:11px;color:#7a8b9c">{{ ligne.description }}</div>{% endif %}
             </td>
-            <td><span style="background:#f0f3f7;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;color:#3d4f63">{{ ligne.article.service.nom|default:"—" }}</span></td>
             <td style="text-align:right">{{ ligne.quantite|floatformat:2 }}</td>
             <td style="text-align:right">{{ ligne.prix_unitaire|montant }} F</td>
             <td style="text-align:right;font-weight:600">{{ ligne.montant_ht|montant }} F</td>
           </tr>
           {% empty %}
-          <tr><td colspan="6" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
+          <tr><td colspan="5" style="text-align:center;padding:24px;color:#7a8b9c">Aucune ligne</td></tr>
           {% endfor %}
         </tbody>
         <tfoot>
-          <tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ proforma.sous_total|montant }} F</td></tr>
-          {% if proforma.remise > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ proforma.remise|montant }} F</td></tr>{% endif %}
-          {% if proforma.taux_tva > 0 %}<tr class="total-row"><td colspan="5" style="text-align:right;padding:10px 16px">TVA {{ proforma.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ proforma.montant_tva|montant }} F</td></tr>{% endif %}
-          <tr class="grand-total"><td colspan="5" style="text-align:right;padding:14px 16px">TOTAL TTC</td><td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important">{{ proforma.total|montant }} FCFA</td></tr>
+          <tr class="total-row"><td colspan="4" style="text-align:right;padding:10px 16px">Sous-total HT</td><td style="text-align:right;padding:10px 16px">{{ proforma.sous_total|montant }} F</td></tr>
+          {% if proforma.remise > 0 %}<tr class="total-row"><td colspan="4" style="text-align:right;padding:10px 16px;color:#16a34a">Remise</td><td style="text-align:right;padding:10px 16px;color:#16a34a">- {{ proforma.remise|montant }} F</td></tr>{% endif %}
+          {% if proforma.taux_tva > 0 %}<tr class="total-row"><td colspan="4" style="text-align:right;padding:10px 16px">TVA {{ proforma.taux_tva }}%</td><td style="text-align:right;padding:10px 16px">{{ proforma.montant_tva|montant }} F</td></tr>{% endif %}
+          <tr class="grand-total"><td colspan="4" style="text-align:right;padding:14px 16px">TOTAL TTC</td><td style="text-align:right;padding:14px 16px;color:#c9a84c!important;font-size:16px!important">{{ proforma.total|montant }} FCFA</td></tr>
         </tfoot>
       </table>
     </div>
     {% if proforma.notes %}
-    <div style="padding:16px 20px;border-top:1px solid #d4dce8;background:#f8fafc;font-size:12px;color:#3d4f63"><strong>Notes :</strong> {{ proforma.notes }}</div>
+    <div style="padding:16px 20px;border-top:1px solid #d4dce8;background:#f8fafc;font-size:12px;color:#3d4f63">
+      <strong>Notes :</strong> {{ proforma.notes }}
+    </div>
     {% endif %}
   </div>
 
 </div></div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MODAL GLAMOUR — Conversion Proforma → Facture
+═══════════════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalConversion" onclick="if(event.target===this)fermerModal()">
+  <div class="modal-card">
+
+    <!-- Header -->
+    <div class="mh">
+      <div class="mh-left">
+        <div class="mh-title">📄 Conversion en Facture</div>
+        <div class="mh-sub">Proforma {{ proforma.numero }} · {{ proforma.client.nom|default:"Client" }} — Ajustez les quantités et articles si nécessaire</div>
+      </div>
+      <button class="mh-close" onclick="fermerModal()">✕</button>
+    </div>
+
+    <!-- Corps -->
+    <div class="mb">
+
+      <div class="stock-info">
+        <i class="fas fa-info-circle"></i>
+        <div>Les boissons et plats identifiés dans les désignations seront automatiquement déduits du stock cave/cuisine à la validation.</div>
+      </div>
+
+      <!-- Table éditable -->
+      <table class="edit-table">
+        <thead>
+          <tr>
+            <th class="td-num">#</th>
+            <th class="td-desg">Désignation</th>
+            <th class="td-qty r">Qté</th>
+            <th class="td-pu r">Prix U. (F)</th>
+            <th class="td-tot r">Total HT</th>
+            <th class="td-del"></th>
+          </tr>
+        </thead>
+        <tbody id="editBody">
+          <!-- Lignes injectées par JS -->
+        </tbody>
+      </table>
+
+      <button class="btn-add-row" onclick="ajouterLigne()">
+        <i class="fas fa-plus"></i> Ajouter une ligne
+      </button>
+
+      <!-- Ajustements -->
+      <div class="adj-grid">
+        <div>
+          <label class="adj-lbl">Remise globale (FCFA)</label>
+          <input class="adj-inp" type="number" id="mRemise" min="0" value="{{ proforma.remise|floatformat:0 }}" oninput="recalcTotal()">
+        </div>
+        <div>
+          <label class="adj-lbl">TVA (%)</label>
+          <input class="adj-inp" type="number" id="mTva" min="0" max="100" step="0.5" value="{{ proforma.taux_tva|floatformat:1 }}" oninput="recalcTotal()">
+        </div>
+      </div>
+
+      <label class="adj-lbl" style="margin-top:6px">Notes / observations (facultatif)</label>
+      <textarea class="notes-area" id="mNotes" placeholder="Ajustements effectués, informations complémentaires…"></textarea>
+
+      <!-- Totaux live -->
+      <div class="tot-section" style="margin-top:16px">
+        <div class="tot-row"><span class="tot-lbl">Sous-total HT</span><span class="tot-val" id="mSousTotal">0 F</span></div>
+        <div class="tot-row"><span class="tot-lbl">Remise</span><span class="tot-val" id="mRemiseAff" style="color:#16a34a">0 F</span></div>
+        <div class="tot-row"><span class="tot-lbl">TVA</span><span class="tot-val" id="mTvaAff">0 F</span></div>
+      </div>
+      <div class="tot-grand">
+        <span class="tot-grand-lbl">Total TTC</span>
+        <span class="tot-grand-val" id="mTotal">0 FCFA</span>
+      </div>
+
+      <div class="modal-result" id="mResult"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mf">
+      <div class="mf-info"><i class="fas fa-shield-alt" style="margin-right:5px;color:#c9a84c"></i>Le stock sera mouvementé automatiquement à la confirmation.</div>
+      <div class="mf-btns">
+        <button class="btn-modal-cancel" onclick="fermerModal()">Annuler</button>
+        <button class="btn-modal-confirm" id="btnConfirm" onclick="confirmerConversion()">
+          <i class="fas fa-check"></i> Créer la Facture
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script>
-async function convertirEnFacture(){
-  if(!confirm('Convertir le proforma {{ proforma.numero }} en facture ?')) return;
-  const r = await fetch("{% url 'facturation:proforma_to_facture' proforma.pk %}", {
-    method:'POST',
-    headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'}
+// ── Données proforma initiales ──────────────────────────────────────────────
+const LIGNES_INIT = [
+  {% for l in lignes %}
+  {
+    designation: "{% if l.designation %}{{ l.designation|escapejs }}{% elif l.article %}{{ l.article.nom|escapejs }}{% endif %}",
+    description: "{{ l.description|escapejs }}",
+    quantite:    {{ l.quantite|floatformat:3 }},
+    prix_unitaire: {{ l.prix_unitaire|floatformat:3 }},
+  },
+  {% endfor %}
+];
+
+const URL_EDIT    = "{% url 'facturation:proforma_to_facture_edit' proforma.pk %}";
+const CSRF_TOKEN  = "{{ csrf_token }}";
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function fmt(n) {
+  return Math.round(n).toLocaleString('fr-FR') + ' F';
+}
+
+let _rowId = 0;
+function creerLigne(l) {
+  const id  = ++_rowId;
+  const qty = parseFloat(l.quantite)  || 1;
+  const pu  = parseFloat(l.prix_unitaire) || 0;
+  const row = document.createElement('tr');
+  row.id = 'row-' + id;
+  row.innerHTML = `
+    <td class="td-num">${_rowId}</td>
+    <td class="td-desg">
+      <input type="text" value="${escHtml(l.designation || '')}" placeholder="Désignation" oninput="recalcTotal()">
+    </td>
+    <td class="td-qty">
+      <input type="number" min="0.01" step="0.01" value="${qty}" oninput="recalcRow(${id});recalcTotal()">
+    </td>
+    <td class="td-pu">
+      <input type="number" min="0" step="1" value="${pu}" oninput="recalcRow(${id});recalcTotal()">
+    </td>
+    <td class="td-tot" id="tot-${id}">${fmt(qty * pu)}</td>
+    <td class="td-del">
+      <button class="btn-del-row" onclick="supprimerLigne(${id})" title="Supprimer">✕</button>
+    </td>
+  `;
+  return row;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function recalcRow(id) {
+  const row = document.getElementById('row-' + id);
+  if (!row) return;
+  const qty = parseFloat(row.querySelectorAll('input')[1].value) || 0;
+  const pu  = parseFloat(row.querySelectorAll('input')[2].value) || 0;
+  document.getElementById('tot-' + id).textContent = fmt(qty * pu);
+}
+
+function recalcTotal() {
+  let sous = 0;
+  document.querySelectorAll('#editBody tr').forEach(row => {
+    const ins = row.querySelectorAll('input');
+    if (ins.length >= 3) {
+      const qty = parseFloat(ins[1].value) || 0;
+      const pu  = parseFloat(ins[2].value) || 0;
+      sous += qty * pu;
+    }
   });
-  const d = await r.json();
-  if(d.success){ window.location = d.detail_url; }
-  else alert('Erreur: ' + (d.error||'Inconnue'));
+  const remise  = parseFloat(document.getElementById('mRemise').value) || 0;
+  const tva_pct = parseFloat(document.getElementById('mTva').value)    || 0;
+  const base    = Math.max(0, sous - remise);
+  const tva_amt = base * tva_pct / 100;
+  const total   = base + tva_amt;
+
+  document.getElementById('mSousTotal').textContent = fmt(sous);
+  document.getElementById('mRemiseAff').textContent = remise > 0 ? '− ' + fmt(remise) : '0 F';
+  document.getElementById('mTvaAff').textContent    = fmt(tva_amt);
+  document.getElementById('mTotal').textContent     = Math.round(total).toLocaleString('fr-FR') + ' FCFA';
+}
+
+function ajouterLigne() {
+  const row = creerLigne({ designation: '', quantite: 1, prix_unitaire: 0 });
+  document.getElementById('editBody').appendChild(row);
+  row.querySelector('input').focus();
+}
+
+function supprimerLigne(id) {
+  const r = document.getElementById('row-' + id);
+  if (r) r.remove();
+  recalcTotal();
+}
+
+// ── Ouverture / fermeture ────────────────────────────────────────────────────
+function ouvrirModalFacture() {
+  const body = document.getElementById('editBody');
+  body.innerHTML = '';
+  _rowId = 0;
+  LIGNES_INIT.forEach(l => body.appendChild(creerLigne(l)));
+  recalcTotal();
+  document.getElementById('mResult').style.display = 'none';
+  document.getElementById('btnConfirm').disabled = false;
+  document.getElementById('btnConfirm').innerHTML = '<i class="fas fa-check"></i> Créer la Facture';
+  document.getElementById('modalConversion').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function fermerModal() {
+  document.getElementById('modalConversion').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerModal(); });
+
+// ── Confirmation ─────────────────────────────────────────────────────────────
+async function confirmerConversion() {
+  const lignes = [];
+  document.querySelectorAll('#editBody tr').forEach(row => {
+    const ins = row.querySelectorAll('input');
+    if (ins.length < 3) return;
+    const desg = ins[0].value.trim();
+    const qty  = parseFloat(ins[1].value) || 0;
+    const pu   = parseFloat(ins[2].value) || 0;
+    if (desg && qty > 0) {
+      lignes.push({ designation: desg, quantite: qty, prix_unitaire: pu, description: '' });
+    }
+  });
+
+  if (lignes.length === 0) {
+    alert('Ajoutez au moins une ligne valide.');
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirm');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…';
+
+  const payload = {
+    lignes,
+    remise:   parseFloat(document.getElementById('mRemise').value) || 0,
+    taux_tva: parseFloat(document.getElementById('mTva').value)    || 0,
+    notes:    document.getElementById('mNotes').value.trim(),
+  };
+
+  try {
+    const r = await fetch(URL_EDIT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    const box = document.getElementById('mResult');
+    box.style.display = 'block';
+
+    if (d.success) {
+      box.className = 'modal-result success';
+      box.innerHTML = `✅ <strong>${d.message}</strong> — <a href="${d.detail_url}" style="color:#15803d;font-weight:700">Voir la facture ${d.numero} →</a>`;
+      btn.innerHTML = '<i class="fas fa-check"></i> Facture créée !';
+      // Redirection après 1.8 s
+      setTimeout(() => { window.location = d.detail_url; }, 1800);
+    } else {
+      box.className = 'modal-result error';
+      box.innerHTML = `❌ ${d.error}`;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check"></i> Créer la Facture';
+    }
+  } catch(err) {
+    const box = document.getElementById('mResult');
+    box.style.display = 'block';
+    box.className = 'modal-result error';
+    box.innerHTML = '❌ Erreur réseau.';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check"></i> Créer la Facture';
+  }
 }
 </script>
 {% endblock %}
