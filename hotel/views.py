@@ -915,11 +915,17 @@ def ticket_preview(request, reservation_id):
     preview = TicketPreview(data, request.user)
     finalize_url = reverse('hotel:finalize_checkout', kwargs={'reservation_id': reservation_id})
 
+    _mont_esp = Decimal(data.get('montant_especes', '0') or '0')
+    _mode = data.get('mode_paiement', 'especes')
+    _short_labels = {'wave':'WAVE','orange_money':'ORANGE','mtn_money':'MTN','moov_money':'MOOV','mobile_money':'MOBILE','mobile':'MOBILE'}
     return render(request, 'facturation/ticket_print_thermal.html', {
         'ticket': preview,
         'serveur': data.get('serveur_nom', ''),
         'receptionniste': data.get('receptionniste_nom', ''),
         'finalize_url': finalize_url,
+        'montant_especes': _mont_esp if _mont_esp > 0 else None,
+        'montant_mobile':  (preview.montant_total - _mont_esp) if _mont_esp > 0 else None,
+        'mode_short':      _short_labels.get(_mode, 'MOBILE'),
     })
 
 

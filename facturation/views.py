@@ -798,7 +798,12 @@ def ticket_list(request):
 @require_module_access('facturation')
 def ticket_detail(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
-    return render(request, 'facturation/ticket_detail.html', {'ticket': ticket})
+    esp = ticket.montant_especes if ticket.montant_especes and ticket.montant_especes > 0 else None
+    return render(request, 'facturation/ticket_detail.html', {
+        'ticket': ticket,
+        'montant_especes': esp,
+        'montant_mobile':  (ticket.montant_total - ticket.montant_especes) if esp else None,
+    })
 
 @require_superuser
 @require_POST
@@ -865,12 +870,13 @@ def ticket_print_thermal(request, pk):
         serveur = ticket.cree_par.get_full_name() or ticket.cree_par.username
 
     esp = ticket.montant_especes if ticket.montant_especes and ticket.montant_especes > 0 else None
+    _short_labels = {'wave':'WAVE','orange_money':'ORANGE','mtn_money':'MTN','moov_money':'MOOV','mobile_money':'MOBILE','mobile':'MOBILE'}
     return render(request, 'facturation/ticket_print_thermal.html', {
         'ticket':          ticket,
         'serveur':         serveur,
         'montant_especes': esp,
         'montant_mobile':  (ticket.montant_total - ticket.montant_especes) if esp else None,
-        'mode_short':      'MOBILE',
+        'mode_short':      _short_labels.get(ticket.mode_paiement, 'MOBILE'),
     })
 
 @require_module_access('facturation')

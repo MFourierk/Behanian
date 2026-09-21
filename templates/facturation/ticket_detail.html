@@ -88,9 +88,9 @@
             {% else %}
               <div class="meta-row"><span class="meta-lbl">Mode paiement</span><span class="meta-val">{{ lignes.0.get_mode_paiement_display }}</span></div>
             {% endif %}
-          {% elif montant_especes %}
+          {% elif ticket.montant_especes %}
             <div class="meta-row"><span class="meta-lbl">Mode paiement</span><span class="meta-val">🔀 Mixte — Espèces + {{ ticket.get_mode_paiement_display }}</span></div>
-            <div class="meta-row"><span class="meta-lbl">Part espèces</span><span class="meta-val">{{ montant_especes|montant }} F</span></div>
+            <div class="meta-row"><span class="meta-lbl">Part espèces</span><span class="meta-val">{{ ticket.montant_especes|montant }} F</span></div>
             <div class="meta-row"><span class="meta-lbl">Part {{ ticket.get_mode_paiement_display }}</span><span class="meta-val">{{ montant_mobile|montant }} F</span></div>
           {% else %}
             <div class="meta-row"><span class="meta-lbl">Mode paiement</span><span class="meta-val">{{ ticket.get_mode_paiement_display }}</span></div>
