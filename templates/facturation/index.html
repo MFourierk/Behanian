@@ -811,7 +811,15 @@ function convertirProformaEnFacture(proformaId){
 // ============================================================
 // PROFORMA MULTI-SERVICES
 // ============================================================
-const SERVICES = [{% for s in services %}{"id":{{ s.id }},"nom":"{{ s.nom }}"},{% endfor %}];
+const SERVICES = [
+  {"id":"hotel",      "nom":"Hôtel"},
+  {"id":"restaurant", "nom":"Restaurant"},
+  {"id":"cave",       "nom":"Cave / Bar"},
+  {"id":"piscine",    "nom":"Piscine"},
+  {"id":"espace",     "nom":"Espaces Événementiels"},
+  {"id":"caisse",     "nom":"Caisse"},
+  {"id":"autre",      "nom":"Autre"},
+];
 let proServiceCount = 0;
 
 function proAjouterService(nomPreselect='') {
