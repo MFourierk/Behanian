@@ -20,6 +20,7 @@ from django.db.models import Sum, Q
 from hotel.models import Chambre
 from restaurant.models import PlatMenu
 from espaces_evenementiels.models import EspaceEvenementiel
+from bar.models import BoissonBar
 
 from django.conf import settings
 import os
@@ -1039,12 +1040,8 @@ def get_articles_by_module(request, module):
                     'price': float(chambre.prix_nuit),
                 })
         elif module == 'cave':
-            query = Q()
-            for kw in drink_keywords:
-                query |= Q(categorie__nom__icontains=kw)
-            query |= Q(categorie__nom__icontains="bar") | Q(categorie__nom__icontains="cave")
-            for plat in PlatMenu.objects.filter(query, disponible=True):
-                articles.append({'name': f"{plat.nom} ({plat.categorie.nom})", 'price': float(plat.prix)})
+            for b in BoissonBar.objects.filter(statut='actif', disponible=True).select_related('categorie').order_by('categorie__nom', 'nom'):
+                articles.append({'name': f"{b.nom} ({b.categorie.nom})", 'price': float(b.prix)})
         elif module == 'restaurant':
             q_exc = Q()
             for kw in drink_keywords:
