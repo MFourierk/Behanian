@@ -1,0 +1,360 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load breadcrumb %}
+
+{% block title %}Facture globale — Regroupement de tickets{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --dark:   #1a2535;
+  --gold:   #c9a84c;
+  --border: #d4dce8;
+  --muted:  #7a8b9c;
+  --light:  #f8fafc;
+  --red:    #dc2626;
+  --green:  #16a34a;
+}
+
+.csl-body { background: #eef1f5; padding: 20px 0 60px; }
+.csl-wrap { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+
+/* ── Hero ── */
+.csl-hero {
+  background: linear-gradient(135deg, var(--dark), #2d3f55);
+  padding: 20px 28px 18px;
+  border-radius: 14px 14px 0 0;
+  display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 0;
+}
+.csl-hero-title h1 { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0 0 3px; }
+.csl-hero-title p  { font-size: 0.78rem; color: rgba(255,255,255,.5); margin: 0; }
+
+/* ── Filtres ── */
+.csl-filters {
+  background: white; border: 1px solid var(--border); border-top: 0;
+  padding: 14px 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+  margin-bottom: 16px;
+}
+.csl-filters label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px; }
+.csl-filters input[type="date"],
+.csl-filters select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 0.83rem; background: white; }
+.btn-filter { padding: 8px 18px; background: var(--dark); color: #fff; border: none; border-radius: 7px; font-size: 0.83rem; font-weight: 600; cursor: pointer; }
+.btn-filter:hover { background: #2d3f55; }
+.btn-reset  { padding: 8px 14px; background: transparent; border: 1px solid var(--border); border-radius: 7px; font-size: 0.83rem; color: var(--muted); cursor: pointer; text-decoration: none; display: inline-block; }
+
+/* ── Layout 2 colonnes ── */
+.csl-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
+@media (max-width: 1024px) { .csl-grid { grid-template-columns: 1fr; } }
+
+/* ── Panel tickets ── */
+.panel { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.ph { padding: 11px 18px; background: var(--light); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ph-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--dark); }
+.tbl-wrap { overflow-x: auto; max-height: 540px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+thead th { background: #1a2535; color: rgba(255,255,255,.75); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding: 9px 12px; text-align: left; white-space: nowrap; }
+thead th.r { text-align: right; }
+tbody tr:hover { background: #f6f8fb; }
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: #3d4f63; vertical-align: middle; }
+tbody td.r { text-align: right; font-weight: 700; }
+tbody tr.selected td { background: #eff6ff !important; }
+
+.cb-cell { width: 36px; text-align: center !important; }
+input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #1d4ed8; }
+
+/* Badges modules */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.badge-hotel     { background: #dbeafe; color: #1e40af; }
+.badge-restaurant{ background: #dcfce7; color: #15803d; }
+.badge-cave      { background: #fce7f3; color: #9d174d; }
+.badge-piscine   { background: #e0f2fe; color: #0369a1; }
+.badge-espace    { background: #fef9c3; color: #854d0e; }
+.badge-caisse    { background: #f1f5f9; color: #475569; }
+.badge-autre     { background: #f3f4f6; color: #6b7280; }
+
+/* Sélection tout */
+.sel-all-btn { font-size: 11px; color: #1d4ed8; cursor: pointer; text-decoration: underline; user-select: none; }
+
+/* ── Panel résumé / formulaire ── */
+.csl-summary { display: flex; flex-direction: column; gap: 12px; }
+
+.sum-panel { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.sum-ph { padding: 11px 18px; background: var(--light); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--dark); }
+.sum-body { padding: 16px 18px; }
+
+.sum-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.82rem; }
+.sum-row:last-child { border-bottom: none; }
+.sum-lbl { color: var(--muted); }
+.sum-val { font-weight: 700; color: var(--dark); }
+
+.sum-total { background: var(--dark); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.sum-total-lbl { color: rgba(255,255,255,.7); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+.sum-total-val { color: #fff; font-size: 1.2rem; font-weight: 800; }
+
+/* Formulaire client */
+.form-group { margin-bottom: 12px; }
+.form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 5px; letter-spacing: .4px; }
+.form-group input,
+.form-group textarea { width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 0.83rem; box-sizing: border-box; }
+.form-group textarea { height: 60px; resize: vertical; }
+.form-group input:focus,
+.form-group textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+
+.btn-create { width: 100%; padding: 13px; background: var(--gold); color: var(--dark); border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 800; cursor: pointer; letter-spacing: .3px; }
+.btn-create:hover { background: #e0b85a; }
+.btn-create:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Résultat ── */
+.result-box { padding: 16px 18px; border-radius: 8px; font-size: 0.87rem; display: none; margin-top: 10px; }
+.result-box.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.result-box.error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+.empty-state { padding: 48px 20px; text-align: center; color: var(--muted); font-size: 0.88rem; font-style: italic; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="csl-body">
+<div class="csl-wrap">
+
+  <!-- Hero -->
+  <div class="csl-hero">
+    <div class="csl-hero-title">
+      <h1>📋 Facture Globale — Regroupement multi-services</h1>
+      <p>Sélectionnez les tickets à regrouper en une seule facture pour un client B2B (espace + restaurant + cave + hôtel…)</p>
+    </div>
+    <a href="{% url 'facturation:index' %}" style="color:rgba(255,255,255,.6);font-size:0.82rem;text-decoration:none">← Retour</a>
+  </div>
+
+  <!-- Filtres -->
+  <form method="get" class="csl-filters">
+    <div>
+      <label>Du</label>
+      <input type="date" name="date_debut" value="{{ date_debut }}">
+    </div>
+    <div>
+      <label>Au</label>
+      <input type="date" name="date_fin" value="{{ date_fin }}">
+    </div>
+    <div>
+      <label>Module</label>
+      <select name="module">
+        <option value="">Tous</option>
+        {% for val, label in module_choices %}
+        <option value="{{ val }}" {% if val == module_sel %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-filter">🔍 Filtrer</button>
+    <a href="{% url 'facturation:facture_consolider' %}" class="btn-reset">Réinitialiser</a>
+  </form>
+
+  <!-- Grille principale -->
+  <div class="csl-grid">
+
+    <!-- Colonne gauche : liste des tickets -->
+    <div>
+      <div class="panel">
+        <div class="ph">
+          <span class="ph-title">Tickets disponibles <span id="nbDisponible" style="color:#64748b;font-weight:400">({{ tickets|length }})</span></span>
+          <span class="sel-all-btn" onclick="toggleAll()">Tout sélectionner / Tout désélectionner</span>
+        </div>
+        <div class="tbl-wrap">
+          {% if tickets %}
+          <table>
+            <thead>
+              <tr>
+                <th class="cb-cell"><input type="checkbox" id="chkAll" onchange="toggleAll(this.checked)"></th>
+                <th>Ticket</th>
+                <th>Module</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Créé par</th>
+                <th class="r">Montant</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for t in tickets %}
+            <tr id="row-{{ t.id }}" onclick="toggleRow({{ t.id }}, {{ t.montant_total }})" style="cursor:pointer">
+              <td class="cb-cell" onclick="event.stopPropagation()">
+                <input type="checkbox" class="tck-cb" data-id="{{ t.id }}" data-amount="{{ t.montant_total }}"
+                  onchange="onCbChange({{ t.id }}, {{ t.montant_total }})">
+              </td>
+              <td style="font-weight:600;font-family:monospace;font-size:0.8rem;color:#1d4ed8">{{ t.numero }}</td>
+              <td>
+                <span class="badge badge-{{ t.module }}">{{ t.get_module_display }}</span>
+              </td>
+              <td style="color:var(--muted);white-space:nowrap">{{ t.date_creation|date:"d/m/Y H:i" }}</td>
+              <td>{{ t.client.nom_complet|default:"—" }}</td>
+              <td style="font-size:0.78rem;color:var(--muted)">{{ t.cree_par.get_full_name|default:t.cree_par.username|default:"—" }}</td>
+              <td class="r" style="color:#c9760a;white-space:nowrap">{{ t.montant_total|floatformat:0 }} F</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty-state">
+            Aucun ticket disponible pour les critères sélectionnés.<br>
+            {% if date_debut or date_fin or module_sel %}Essayez de modifier les filtres.{% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne droite : résumé + formulaire -->
+    <div class="csl-summary">
+
+      <!-- Résumé sélection -->
+      <div class="sum-panel">
+        <div class="sum-ph">Résumé de la sélection</div>
+        <div class="sum-body">
+          <div class="sum-row"><span class="sum-lbl">Tickets sélectionnés</span><span class="sum-val" id="sumNb">0</span></div>
+          <div class="sum-total">
+            <span class="sum-total-lbl">Total à facturer</span>
+            <span class="sum-total-val" id="sumTotal">0 F</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulaire client -->
+      <div class="sum-panel">
+        <div class="sum-ph">Informations client</div>
+        <div class="sum-body">
+          <div class="form-group">
+            <label>Nom / Raison sociale <span style="color:var(--red)">*</span></label>
+            <input type="text" id="clientNom" placeholder="Ex: Société ABC">
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input type="text" id="clientTel" placeholder="Ex: 07 00 00 00 00">
+          </div>
+          <div class="form-group">
+            <label>Notes (facultatif)</label>
+            <textarea id="cslNotes" placeholder="Informations complémentaires…"></textarea>
+          </div>
+          <button class="btn-create" id="btnCreate" onclick="creerFacture()" disabled>
+            📄 Créer la facture globale
+          </button>
+          <div class="result-box" id="resultBox"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const selectedIds   = new Set();
+const amountMap     = {};
+const fmt = n => parseInt(n).toLocaleString('fr-FR') + ' F';
+
+function refreshSummary() {
+  const nb = selectedIds.size;
+  const total = [...selectedIds].reduce((s, id) => s + (amountMap[id] || 0), 0);
+  document.getElementById('sumNb').textContent    = nb;
+  document.getElementById('sumTotal').textContent = fmt(total);
+  document.getElementById('btnCreate').disabled   = nb === 0;
+}
+
+function onCbChange(id, amount) {
+  const cb = document.querySelector(`.tck-cb[data-id="${id}"]`);
+  const row = document.getElementById(`row-${id}`);
+  if (cb.checked) {
+    selectedIds.add(id);
+    amountMap[id] = parseFloat(amount);
+    row.classList.add('selected');
+  } else {
+    selectedIds.delete(id);
+    row.classList.remove('selected');
+  }
+  refreshSummary();
+}
+
+function toggleRow(id, amount) {
+  const cb = document.querySelector(`.tck-cb[data-id="${id}"]`);
+  cb.checked = !cb.checked;
+  onCbChange(id, amount);
+}
+
+let _allSelected = false;
+function toggleAll(force) {
+  const cbs = document.querySelectorAll('.tck-cb');
+  const state = (force !== undefined) ? force : !_allSelected;
+  _allSelected = state;
+  cbs.forEach(cb => {
+    const id     = parseInt(cb.dataset.id);
+    const amount = parseFloat(cb.dataset.amount);
+    cb.checked   = state;
+    const row = document.getElementById(`row-${id}`);
+    if (state) {
+      selectedIds.add(id); amountMap[id] = amount;
+      row.classList.add('selected');
+    } else {
+      selectedIds.delete(id);
+      row.classList.remove('selected');
+    }
+  });
+  document.getElementById('chkAll').checked = state;
+  refreshSummary();
+}
+
+function creerFacture() {
+  const clientNom = document.getElementById('clientNom').value.trim();
+  if (!clientNom) { alert('Le nom du client est obligatoire.'); return; }
+  if (selectedIds.size === 0) { alert('Sélectionnez au moins un ticket.'); return; }
+
+  const btn = document.getElementById('btnCreate');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Création en cours…';
+
+  fetch("{% url 'facturation:facture_consolider' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+    body: JSON.stringify({
+      ticket_ids:        [...selectedIds],
+      client_nom:        clientNom,
+      client_telephone:  document.getElementById('clientTel').value.trim(),
+      notes:             document.getElementById('cslNotes').value.trim(),
+    }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    const box = document.getElementById('resultBox');
+    box.style.display = 'block';
+    if (d.success) {
+      box.className = 'result-box success';
+      box.innerHTML = `✅ <strong>${d.message}</strong><br>
+        <a href="${d.detail_url}" style="color:#15803d;font-weight:700">Voir la facture ${d.numero} →</a>`;
+      // Retirer les tickets consolidés de la liste
+      selectedIds.forEach(id => {
+        const row = document.getElementById(`row-${id}`);
+        if (row) row.remove();
+      });
+      selectedIds.clear();
+      btn.textContent = '📄 Créer la facture globale';
+      refreshSummary();
+    } else {
+      box.className = 'result-box error';
+      box.innerHTML = `❌ ${d.error}`;
+      btn.disabled    = false;
+      btn.textContent = '📄 Créer la facture globale';
+    }
+  })
+  .catch(() => {
+    document.getElementById('resultBox').style.display = 'block';
+    document.getElementById('resultBox').className     = 'result-box error';
+    document.getElementById('resultBox').innerHTML     = '❌ Erreur réseau.';
+    btn.disabled    = false;
+    btn.textContent = '📄 Créer la facture globale';
+  });
+}
+
+function getCsrf() {
+  const m = document.cookie.match(/csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+</script>
+{% endblock %}

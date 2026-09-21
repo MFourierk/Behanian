@@ -111,6 +111,18 @@
       </table>
     </div>
     {% if facture.notes %}<div style="padding:16px 20px;border-top:1px solid #d4dce8;background:#f8fafc;font-size:12px;color:#3d4f63"><strong>Notes :</strong> {{ facture.notes }}</div>{% endif %}
+    {% with consolides=facture.tickets_consolides.all %}
+    {% if consolides %}
+    <div style="padding:12px 20px;border-top:1px solid #d4dce8;background:#f0fdf4;font-size:12px;color:#15803d">
+      <strong><i class="fas fa-layer-group" style="margin-right:6px"></i>Tickets regroupés dans cette facture :</strong>
+      {% for t in consolides %}
+        <a href="{% url 'facturation:ticket_detail' t.pk %}" style="display:inline-block;margin:2px 4px;padding:2px 8px;background:#dcfce7;border-radius:5px;color:#15803d;font-weight:700;text-decoration:none">
+          {{ t.numero }} ({{ t.get_module_display }} — {{ t.montant_total|floatformat:0 }} F)
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
   </div>
 
 </div></div>

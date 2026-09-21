@@ -150,6 +150,9 @@
     <button class="btn-action btn-violet" onclick="setTab('avoirs',document.getElementById('tab-avoirs'));ouvrirModal('modalAvoir')">
       <i class="fas fa-undo"></i> Nouvel Avoir
     </button>
+    <a class="btn-action btn-outline" href="{% url 'facturation:facture_consolider' %}">
+      <i class="fas fa-layer-group"></i> Facture globale (multi-services)
+    </a>
   </div>
 
   <!-- ONGLETS -->

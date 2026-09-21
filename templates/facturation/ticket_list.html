@@ -213,6 +213,10 @@
             {% if ticket.est_duplicata %}
               <span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:4px;margin-left:4px">DUP</span>
             {% endif %}
+            {% if ticket.facture_consolidee %}
+              <span style="font-size:9px;background:#dcfce7;color:#15803d;padding:1px 5px;border-radius:4px;margin-left:4px"
+                title="Regroupé dans {{ ticket.facture_consolidee.numero }}">FAC</span>
+            {% endif %}
           </td>
           <td>
             <span class="mod-badge mod-{{ ticket.module }}">

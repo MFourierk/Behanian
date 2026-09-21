@@ -4,6 +4,7 @@ par la vue `ticket_delete` (bouton Facturation) et par `TicketAdmin` (Django
 Admin), afin que TOUTE suppression d'un ticket restaure le stock et supprime
 les transactions liées, quelle que soit l'interface utilisée.
 """
+import re
 from decimal import Decimal
 
 from django.contrib.contenttypes.models import ContentType
@@ -286,3 +287,126 @@ def supprimer_ticket(ticket, user):
     ticket.delete()
 
     return infos, avertissement
+
+
+def _parser_contenu_ticket(contenu):
+    """Parse le contenu d'un ticket — retourne une liste de (designation, prix)."""
+    if not contenu:
+        return []
+    lignes = []
+    if '<div class="row">' in contenu or '<div class=' in contenu:
+        noms = re.findall(r'<span[^>]*class=[^>]*item-name[^>]*>(.*?)</span>', contenu, re.DOTALL)
+        prix_list = re.findall(r'<span[^>]*class=[^>]*item-price[^>]*>(.*?)</span>', contenu, re.DOTALL)
+        for i, nom in enumerate(noms):
+            nom_clean = re.sub(r'<[^>]+>', '', nom).strip()
+            if not nom_clean:
+                continue
+            prix_val = Decimal('0')
+            if i < len(prix_list):
+                prix_str = re.sub(r'[^\d]', '', prix_list[i].replace(',', '').replace(' ', '').strip())
+                try:
+                    prix_val = Decimal(prix_str) if prix_str else Decimal('0')
+                except Exception:
+                    pass
+            lignes.append((nom_clean, prix_val))
+    else:
+        for line in contenu.split('\n'):
+            line = line.strip()
+            if not line or line.startswith(('=', 'TOTAL', 'Reglement', 'Recu', 'Rendu',
+                                            'COMPLEXE', 'Ticket', 'Date', 'Espace', 'Ref')):
+                continue
+            match = re.match(r'^(.+?)\s+([\d,\s]+)\s*F\s*$', line)
+            if match:
+                nom = match.group(1).strip()
+                prix_str = match.group(2).replace(',', '').replace(' ', '').strip()
+                try:
+                    lignes.append((nom, Decimal(prix_str)))
+                except Exception:
+                    pass
+    return lignes
+
+
+def consolider_tickets_en_facture(ticket_ids, client_nom, client_telephone, user, notes=''):
+    """
+    Regroupe N tickets de modules différents (restaurant, cave, espace, hôtel…)
+    en une seule Facture globale pour un client B2B.
+
+    - Les lignes de chaque ticket sont parsées et ajoutées à la facture avec
+      un préfixe [Module] pour garder la traçabilité.
+    - Chaque ticket est marqué `facture_consolidee = facture` : il sera ensuite
+      exclu des totaux CA dans les rapports caisse (évite le double-comptage).
+
+    Retourne la Facture créée.
+    Lève ValueError si aucun ticket valide n'est trouvé ou si un ticket est
+    déjà consolidé dans une autre facture.
+    """
+    from .models import Facture, LigneFacture, Client, generate_facture_numero
+    from django.utils import timezone as tz
+    from datetime import timedelta
+
+    tickets = list(Ticket.objects.filter(id__in=ticket_ids).select_related('client'))
+    if not tickets:
+        raise ValueError("Aucun ticket trouvé pour les identifiants fournis.")
+
+    deja_consolidees = [t.numero for t in tickets if t.facture_consolidee_id]
+    if deja_consolidees:
+        raise ValueError(
+            f"Les tickets {', '.join(deja_consolidees)} sont déjà regroupés dans une facture."
+        )
+
+    client_nom = client_nom.strip()
+    if not client_nom:
+        raise ValueError("Le nom du client est obligatoire.")
+
+    client, _ = Client.objects.get_or_create(
+        nom=client_nom,
+        defaults={'telephone': client_telephone.strip() if client_telephone else ''},
+    )
+    if client_telephone and not client.telephone:
+        client.telephone = client_telephone.strip()
+        client.save(update_fields=['telephone'])
+
+    total = sum(t.montant_total for t in tickets)
+
+    today = tz.now().date()
+    facture = Facture.objects.create(
+        numero=generate_facture_numero(),
+        client=client,
+        date_facturation=today,
+        date_echeance=today + timedelta(days=30),
+        statut='envoyee',
+        sous_total=total,
+        remise=Decimal('0'),
+        taux_tva=Decimal('0'),
+        montant_tva=Decimal('0'),
+        total=total,
+        notes=(
+            (notes + '\n' if notes else '')
+            + f"Regroupement de {len(tickets)} ticket(s) : "
+            + ', '.join(t.numero for t in tickets)
+        ),
+        cree_par=user,
+    )
+
+    for ticket in tickets:
+        lignes_parsed = _parser_contenu_ticket(ticket.contenu)
+        prefix = f"[{ticket.get_module_display()}]"
+        if lignes_parsed:
+            for designation, prix in lignes_parsed:
+                LigneFacture.objects.create(
+                    facture=facture,
+                    designation=f"{prefix} {designation}",
+                    quantite=1,
+                    prix_unitaire=prix,
+                )
+        else:
+            LigneFacture.objects.create(
+                facture=facture,
+                designation=f"{prefix} {ticket.numero}",
+                quantite=1,
+                prix_unitaire=ticket.montant_total,
+            )
+        ticket.facture_consolidee = facture
+        ticket.save(update_fields=['facture_consolidee'])
+
+    return facture

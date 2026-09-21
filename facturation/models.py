@@ -419,6 +419,17 @@ class Ticket(models.Model):
     
     # Référence à l'objet original
     objet_id = models.IntegerField(blank=True, null=True, help_text="ID de l'objet dans le module d'origine")
+
+    # Facture globale dans laquelle ce ticket a été regroupé (multi-services B2B)
+    # Quand ce champ est renseigné, le ticket est exclu des totaux caisse (le paiement
+    # passe par la facture) — évite le double-comptage CA.
+    facture_consolidee = models.ForeignKey(
+        'Facture',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='tickets_consolides',
+        help_text="Facture globale regroupant ce ticket (exclut du CA caisse)",
+    )
     
     class Meta:
         ordering = ['-date_creation']

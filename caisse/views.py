@@ -180,7 +180,8 @@ def get_reconciliation_jour(date=None):
     g = _grand_totals_init()
 
     for ticket_mod, caisse_mod, label, emoji in MODULES_RECONCILIATION:
-        qs = Ticket.objects.filter(date_creation__date=date, module=ticket_mod)
+        qs = Ticket.objects.filter(date_creation__date=date, module=ticket_mod,
+                                   facture_consolidee__isnull=True)
         total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
 
         _m = _aggregate_par_mode(qs)
@@ -283,7 +284,8 @@ def get_stats_jour(date=None, type_caisse=None, user=None):
     if date is None:
         date = timezone.now().date()
 
-    tickets = Ticket.objects.filter(date_creation__date=date)
+    tickets = Ticket.objects.filter(date_creation__date=date,
+                                    facture_consolidee__isnull=True)
 
     if user is not None:
         tickets = tickets.filter(cree_par=user)
@@ -382,6 +384,7 @@ def get_stats_session(session):
     tickets  = Ticket.objects.filter(
         date_creation__gte=debut,
         date_creation__lt=date_fin,
+        facture_consolidee__isnull=True,
     )
 
     total   = tickets.aggregate(s=Sum('montant_total'))['s'] or 0
@@ -453,6 +456,7 @@ def get_reconciliation_session(session):
             date_creation__gte=debut,
             date_creation__lt=date_fin,
             module=ticket_mod,
+            facture_consolidee__isnull=True,
         )
         total_tx = int(qs.aggregate(s=Sum('montant_total'))['s'] or 0)
 
@@ -1862,6 +1866,7 @@ def rapport_transactions(request):
     tickets_qs = Ticket.objects.filter(
         date_creation__date__gte=date_debut,
         date_creation__date__lte=date_fin,
+        facture_consolidee__isnull=True,
     ).select_related('cree_par')
 
     if filtre_module:

@@ -22,6 +22,7 @@ urlpatterns = [
     path('avoirs/<int:pk>/', views.avoir_detail, name='avoir_detail'),
     path('avoirs/<int:pk>/pdf/', views.avoir_pdf, name='avoir_pdf'),
     
+    path('factures/consolider/', views.facture_consolider, name='facture_consolider'),
     path('tickets/', views.ticket_list, name='ticket_list'),
     path('tickets/<int:pk>/', views.ticket_detail, name='ticket_detail'),
     path('tickets/<int:pk>/create_avoir/', views.create_avoir_from_ticket, name='create_avoir_from_ticket'),

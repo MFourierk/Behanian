@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.urls import reverse
 from .models import Facture, Proforma, Avoir, Client, Service, Article, LigneFacture, LigneProforma, LigneAvoir, Ticket
-from .services import supprimer_ticket
+from .services import supprimer_ticket, consolider_tickets_en_facture
 from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
@@ -54,11 +54,13 @@ def index(request):
     from django.db.models import Sum, Count, Q
     today = timezone.now().date()
 
-    # KPIs tickets
-    tickets_jour = Ticket.objects.filter(date_creation__date=today)
+    # KPIs tickets — tickets consolidés dans une facture globale exclus (paiement via facture)
+    tickets_jour = Ticket.objects.filter(date_creation__date=today,
+                                         facture_consolidee__isnull=True)
     ca_jour = tickets_jour.aggregate(s=Sum('montant_total'))['s'] or 0
     tickets_mois = Ticket.objects.filter(
-        date_creation__month=today.month, date_creation__year=today.year
+        date_creation__month=today.month, date_creation__year=today.year,
+        facture_consolidee__isnull=True,
     )
     ca_mois = tickets_mois.aggregate(s=Sum('montant_total'))['s'] or 0
 
@@ -1140,3 +1142,88 @@ def get_document_details(request, doc_type, pk):
 def receipt_depot(request):
     """Page de reçu de dépôt universel (chambre)."""
     return render(request, 'receipt_depot.html')
+
+
+# ── Consolidation multi-tickets → une facture globale ────────────────────────
+
+@require_module_access('facturation')
+def facture_consolider(request):
+    """
+    Page de sélection de tickets à regrouper en une facture globale (client B2B).
+    GET  : affiche le formulaire de sélection.
+    POST : traite la consolidation (appelé en AJAX depuis le template).
+    """
+    if request.method == 'POST':
+        return _api_consolider_tickets(request)
+
+    # Filtres GET (date_debut, date_fin, module)
+    date_debut = request.GET.get('date_debut', '')
+    date_fin   = request.GET.get('date_fin', '')
+    module     = request.GET.get('module', '')
+
+    tickets_qs = Ticket.objects.filter(facture_consolidee__isnull=True).select_related('client', 'cree_par')
+
+    if date_debut:
+        try:
+            from django.utils.dateparse import parse_date
+            d = parse_date(date_debut)
+            if d:
+                tickets_qs = tickets_qs.filter(date_creation__date__gte=d)
+        except Exception:
+            pass
+    if date_fin:
+        try:
+            from django.utils.dateparse import parse_date
+            d = parse_date(date_fin)
+            if d:
+                tickets_qs = tickets_qs.filter(date_creation__date__lte=d)
+        except Exception:
+            pass
+    if module:
+        tickets_qs = tickets_qs.filter(module=module)
+
+    tickets_qs = tickets_qs.order_by('-date_creation')[:200]
+
+    MODULE_LABELS = dict(Ticket.MODULE_CHOICES)
+
+    return render(request, 'facturation/facture_consolider.html', {
+        'tickets': tickets_qs,
+        'module_choices': Ticket.MODULE_CHOICES,
+        'date_debut': date_debut,
+        'date_fin':   date_fin,
+        'module_sel': module,
+        'module_labels': MODULE_LABELS,
+    })
+
+
+def _api_consolider_tickets(request):
+    """Handler POST interne pour la consolidation — appelé depuis facture_consolider."""
+    try:
+        data        = json.loads(request.body)
+        ticket_ids  = [int(x) for x in data.get('ticket_ids', [])]
+        client_nom  = data.get('client_nom', '').strip()
+        client_tel  = data.get('client_telephone', '').strip()
+        notes       = data.get('notes', '').strip()
+
+        if not ticket_ids:
+            return JsonResponse({'success': False, 'error': 'Sélectionnez au moins un ticket.'})
+        if not client_nom:
+            return JsonResponse({'success': False, 'error': 'Le nom du client est obligatoire.'})
+
+        with transaction.atomic():
+            facture = consolider_tickets_en_facture(
+                ticket_ids, client_nom, client_tel, request.user, notes
+            )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Facture {facture.numero} créée — {len(ticket_ids)} ticket(s) regroupé(s).',
+            'facture_id': facture.id,
+            'numero': facture.numero,
+            'total': int(facture.total),
+            'detail_url': reverse('facturation:facture_detail', args=[facture.id]),
+        })
+    except ValueError as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Erreur inattendue : {e}'})
