@@ -125,6 +125,7 @@
         </select>
       </div>
       <button class="btn-sv btn-sv-primary" onclick="svLoad()">🔍 Afficher</button>
+      <button class="btn-sv" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)" onclick="svPrint()">🖨️ Imprimer</button>
     </div>
   </div>
 
@@ -253,6 +254,14 @@ function svLoad() {
       document.getElementById('svTablePlats').innerHTML    = '<div class="sv-loader" style="color:#dc2626">Erreur réseau</div>';
       document.getElementById('svTableBoissons').innerHTML = '<div class="sv-loader" style="color:#dc2626">Erreur réseau</div>';
     });
+}
+
+function svPrint() {
+  const debut  = document.getElementById('svDateDebut').value;
+  const fin    = document.getElementById('svDateFin').value;
+  const limite = document.getElementById('svLimite').value;
+  if (!debut || !fin) { alert('Sélectionnez une période.'); return; }
+  window.open("{% url 'dashboard:stats_ventes_print' %}?date_debut=" + debut + "&date_fin=" + fin + "&limite=" + limite, '_blank');
 }
 
 // Charger automatiquement à l'ouverture

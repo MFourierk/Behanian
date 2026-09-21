@@ -1,0 +1,150 @@
+{% extends 'print_base.html' %}
+{% load static %}
+{% block doc_title %}Statistiques Ventes — {{ periode }}{% endblock %}
+
+{% block doc_content %}
+
+<div class="doc-title-band">
+  <div>
+    <div class="doc-title-text">Statistiques des Ventes</div>
+    <div class="doc-title-sub">Plats & Boissons les plus vendus · {{ periode }}</div>
+  </div>
+  <div class="doc-title-right">
+    <span class="doc-ref">Top {{ limite }}</span>
+  </div>
+</div>
+
+<!-- Résumé global -->
+<div class="meta-grid cols-3">
+  <div class="meta-box">
+    <div class="meta-box-title">Informations</div>
+    <div class="meta-row"><span class="meta-lbl">Date d'édition</span><span class="meta-val">{% now "d/m/Y" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Heure</span><span class="meta-val">{% now "H:i" %}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Période</span><span class="meta-val" style="color:#c0392b;font-weight:700">{{ periode }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Sélection</span><span class="meta-val">Top {{ limite }} articles</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">CA Plats — Restaurant</div>
+    <div class="meta-row"><span class="meta-lbl">CA total plats</span><span class="meta-val" style="color:#c9a84c;font-weight:800;font-size:14px">{{ total_ca_plats|floatformat:0 }} F</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb références</span><span class="meta-val">{{ top_plats|length }}</span></div>
+  </div>
+  <div class="meta-box">
+    <div class="meta-box-title">CA Boissons — Bar & Cave</div>
+    <div class="meta-row"><span class="meta-lbl">CA total boissons</span><span class="meta-val" style="color:#0ea5e9;font-weight:800;font-size:14px">{{ total_ca_boissons|floatformat:0 }} F</span></div>
+    <div class="meta-row"><span class="meta-lbl">Nb articles</span><span class="meta-val">{{ top_boissons|length }}</span></div>
+    <div class="meta-row"><span class="meta-lbl">CA total global</span>
+      <span class="meta-val" style="font-weight:800;color:#1a2535">{{ total_ca_global|floatformat:0 }} F</span>
+    </div>
+  </div>
+</div>
+
+<!-- Top Plats -->
+<div class="content-section">
+  <div class="section-title">🍽 Top Plats — Restaurant</div>
+  {% if top_plats %}
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Plat</th>
+        <th>Catégorie</th>
+        <th class="r">Qté vendue</th>
+        <th class="r">CA (F CFA)</th>
+        <th class="r">% du total</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in top_plats %}
+    <tr>
+      <td class="muted" style="text-align:center;font-weight:700;{% if forloop.counter == 1 %}color:#b8860b{% elif forloop.counter == 2 %}color:#888{% elif forloop.counter == 3 %}color:#8b4513{% endif %}">
+        {{ forloop.counter }}
+      </td>
+      <td style="font-weight:{% if forloop.counter <= 3 %}700{% else %}600{% endif %}">{{ p.nom }}</td>
+      <td class="muted">{{ p.categorie }}</td>
+      <td class="r bold">{{ p.qte }}</td>
+      <td class="r bold" style="color:#c9a84c">{{ p.ca|floatformat:0 }} F</td>
+      <td class="r muted">
+        {% if total_ca_plats %}{% widthratio p.ca total_ca_plats 100 %}%{% else %}—{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="total-label">TOTAL PLATS</td>
+        <td class="total-val r">—</td>
+        <td class="total-val r">{{ total_ca_plats|floatformat:0 }} F</td>
+        <td class="total-val r">100 %</td>
+      </tr>
+    </tfoot>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:24px;color:#8a9ab0;border:1px dashed #dde3ec;border-radius:8px;">
+    Aucune vente de plat enregistrée sur cette période.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Top Boissons -->
+<div class="content-section" style="padding-top:10px">
+  <div class="section-title">🍹 Top Boissons — Bar & Cave</div>
+  {% if top_boissons %}
+  <table class="doc-table">
+    <thead>
+      <tr>
+        <th style="width:30px">#</th>
+        <th>Boisson</th>
+        <th>Catégorie</th>
+        <th class="r">Qté vendue</th>
+        <th class="r">CA (F CFA)</th>
+        <th class="r">% du total</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for b in top_boissons %}
+    <tr>
+      <td class="muted" style="text-align:center;font-weight:700;{% if forloop.counter == 1 %}color:#b8860b{% elif forloop.counter == 2 %}color:#888{% elif forloop.counter == 3 %}color:#8b4513{% endif %}">
+        {{ forloop.counter }}
+      </td>
+      <td style="font-weight:{% if forloop.counter <= 3 %}700{% else %}600{% endif %}">{{ b.nom }}</td>
+      <td class="muted">{{ b.categorie }}</td>
+      <td class="r bold">{{ b.qte }}</td>
+      <td class="r bold" style="color:#0ea5e9">{{ b.ca|floatformat:0 }} F</td>
+      <td class="r muted">
+        {% if total_ca_boissons %}{% widthratio b.ca total_ca_boissons 100 %}%{% else %}—{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="total-label">TOTAL BOISSONS</td>
+        <td class="total-val r">—</td>
+        <td class="total-val r">{{ total_ca_boissons|floatformat:0 }} F</td>
+        <td class="total-val r">100 %</td>
+      </tr>
+    </tfoot>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:24px;color:#8a9ab0;border:1px dashed #dde3ec;border-radius:8px;">
+    Aucune vente de boisson enregistrée sur cette période.
+  </div>
+  {% endif %}
+</div>
+
+<div class="notes-box">
+  <strong>Note</strong>
+  Les plats couvrent les commandes restaurant (statut : payée). Les boissons regroupent le restaurant et la cave/bar (TPE).
+  Généré le {% now "d/m/Y à H:i" %} — Complexe Hôtelier Behanian.
+</div>
+
+{% endblock %}
+
+{% block doc_footer_right %}
+  Statistiques Ventes — {{ periode }}
+{% endblock %}
+
+{% block doc_actions %}
+<button onclick="window.print()" class="btn-doc btn-doc-print">🖨️ Imprimer / PDF</button>
+<button onclick="try{window.close()}catch(e){}; if(!window.closed){window.history.back();}" class="btn-doc btn-doc-close">✕ Fermer</button>
+{% endblock %}

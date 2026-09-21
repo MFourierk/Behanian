@@ -983,3 +983,102 @@ def api_stats_ventes(request):
         'nb_plats':         len(top_plats),
         'nb_boissons':      len(top_boissons),
     })
+
+
+@login_required
+def stats_ventes_print(request):
+    """État imprimable — Top plats et top boissons."""
+    from utils.permissions import _is_manager
+    from datetime import datetime
+    from django.db.models import F, ExpressionWrapper, DecimalField as DField
+    from django.contrib import messages as _msg
+    from restaurant.models import LigneCommande
+    from bar.models import LigneVenteCave
+
+    if not (_is_manager(request.user) or request.user.is_superuser):
+        _msg.error(request, "Accès réservé aux managers et à la Direction.")
+        return redirect('dashboard:index')
+
+    today = timezone.now().date()
+
+    def parse_date(p, fb):
+        try: return datetime.strptime(request.GET[p], '%Y-%m-%d').date()
+        except: return fb
+
+    date_debut = parse_date('date_debut', today - timedelta(days=29))
+    date_fin   = parse_date('date_fin', today)
+    if date_fin < date_debut:
+        date_fin = date_debut
+    limite = min(int(request.GET.get('limite', 20)), 50)
+
+    expr_ca = ExpressionWrapper(F('quantite') * F('prix_unitaire'), output_field=DField())
+
+    qs_plats = (
+        LigneCommande.objects
+        .filter(
+            commande__statut='payee',
+            plat__isnull=False,
+            commande__date_creation__date__gte=date_debut,
+            commande__date_creation__date__lte=date_fin,
+        )
+        .values('plat__id', 'plat__nom', 'plat__categorie__nom')
+        .annotate(total_qte=Sum('quantite'), total_ca=Sum(expr_ca))
+        .order_by('-total_ca')[:limite]
+    )
+    top_plats = [
+        {'nom': r['plat__nom'], 'categorie': r['plat__categorie__nom'] or '—',
+         'qte': r['total_qte'], 'ca': int(r['total_ca'] or 0)}
+        for r in qs_plats
+    ]
+
+    boissons: dict = {}
+    for r in (
+        LigneCommande.objects
+        .filter(
+            commande__statut='payee', boisson__isnull=False,
+            commande__date_creation__date__gte=date_debut,
+            commande__date_creation__date__lte=date_fin,
+        )
+        .values('boisson__id', 'boisson__nom', 'boisson__categorie__nom')
+        .annotate(total_qte=Sum('quantite'), total_ca=Sum(expr_ca))
+    ):
+        bid = r['boisson__id']
+        boissons[bid] = {'nom': r['boisson__nom'], 'categorie': r['boisson__categorie__nom'] or '—',
+                         'qte': r['total_qte'], 'ca': int(r['total_ca'] or 0)}
+
+    expr_ca_cave = ExpressionWrapper(F('quantite') * F('prix_unitaire'), output_field=DField())
+    for r in (
+        LigneVenteCave.objects
+        .filter(
+            vente__date_vente__date__gte=date_debut,
+            vente__date_vente__date__lte=date_fin,
+            boisson__isnull=False,
+        )
+        .values('boisson__id', 'boisson__nom', 'boisson__categorie__nom')
+        .annotate(total_qte=Sum('quantite'), total_ca=Sum(expr_ca_cave))
+    ):
+        bid = r['boisson__id']
+        if bid in boissons:
+            boissons[bid]['qte'] += r['total_qte']
+            boissons[bid]['ca']  += int(r['total_ca'] or 0)
+        else:
+            boissons[bid] = {'nom': r['boisson__nom'], 'categorie': r['boisson__categorie__nom'] or '—',
+                             'qte': r['total_qte'], 'ca': int(r['total_ca'] or 0)}
+
+    top_boissons = sorted(boissons.values(), key=lambda x: -x['ca'])[:limite]
+
+    same_day = date_debut == date_fin
+    periode = (date_debut.strftime('%d/%m/%Y') if same_day
+               else f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}")
+
+    return render(request, 'dashboard/stats_ventes_print.html', {
+        'date_debut':        date_debut,
+        'date_fin':          date_fin,
+        'periode':           periode,
+        'limite':            limite,
+        'top_plats':         top_plats,
+        'top_boissons':      top_boissons,
+        'total_ca_plats':    sum(p['ca'] for p in top_plats),
+        'total_ca_boissons': sum(b['ca'] for b in top_boissons),
+        'total_ca_global':   sum(p['ca'] for p in top_plats) + sum(b['ca'] for b in top_boissons),
+    })
