@@ -1,0 +1,261 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block title %}Statistiques Ventes{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --gold:   #c9a84c;
+  --dark:   #1a2535;
+  --purple: #2d3f55;
+  --light:  #eef1f5;
+  --border: #d4dce8;
+  --muted:  #7a8b9c;
+  --text:   #3d4f63;
+}
+
+.sv-page { padding: 0 0 48px; }
+
+/* ── Hero ── */
+.sv-hero {
+  background: linear-gradient(135deg, var(--dark), var(--purple));
+  padding: 26px 36px 20px;
+  display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+}
+.sv-hero-title h1 { font-size: 1.35rem; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.sv-hero-title p  { font-size: 0.8rem; color: rgba(255,255,255,.5); }
+.sv-hero-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sv-hero-form label { font-size: 0.78rem; color: rgba(255,255,255,.6); margin-right: 4px; }
+.sv-hero-form input[type="date"] {
+  padding: 7px 10px; border: none; border-radius: 6px;
+  background: rgba(255,255,255,.12); color: #fff; font-size: 0.82rem;
+}
+.sv-hero-form input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .7; }
+.sv-hero-form select {
+  padding: 7px 10px; border: none; border-radius: 6px;
+  background: rgba(255,255,255,.12); color: #fff; font-size: 0.82rem;
+}
+.sv-hero-form select option { background: var(--dark); }
+.btn-sv { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.83rem; font-weight: 600; }
+.btn-sv-primary { background: var(--gold); color: var(--dark); }
+.btn-sv-primary:hover { background: #e0b85a; }
+
+/* ── KPI strip ── */
+.sv-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-bottom: 2px solid var(--border); }
+.sv-kpi-cell { padding: 16px 22px; border-right: 1px solid var(--border); }
+.sv-kpi-cell:last-child { border-right: none; }
+.sv-kpi-lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 5px; }
+.sv-kpi-val { font-size: 1.3rem; font-weight: 800; color: var(--dark); }
+.sv-kpi-val.gold { color: #c9760a; }
+
+/* ── Grid ── */
+.sv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px 24px 0; }
+@media (max-width: 900px) { .sv-grid { grid-template-columns: 1fr; } }
+
+.sv-panel { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.sv-panel-head {
+  background: var(--dark); padding: 12px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sv-panel-head-title { font-size: 0.85rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: .6px; }
+.sv-panel-head-sub   { font-size: 0.75rem; color: rgba(255,255,255,.4); }
+
+.sv-table { width: 100%; border-collapse: collapse; }
+.sv-table thead th {
+  background: var(--purple); color: rgba(255,255,255,.7);
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: .5px;
+  padding: 8px 12px; text-align: right; font-weight: 600;
+}
+.sv-table thead th:first-child,
+.sv-table thead th:nth-child(2) { text-align: left; }
+.sv-table tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 0.88rem; text-align: right; color: var(--text); }
+.sv-table tbody td:nth-child(2) { text-align: left; font-weight: 600; }
+.sv-table tbody td:nth-child(3) { text-align: left; color: var(--muted); font-size: 0.8rem; }
+.sv-table tbody tr:last-child td { border-bottom: none; }
+.sv-table tbody tr:hover td { background: #f6f8fb; }
+.sv-table tfoot td { background: var(--light); padding: 9px 12px; font-size: 0.82rem; font-weight: 700; color: var(--dark); text-align: right; border-top: 2px solid var(--border); }
+.sv-table tfoot td:first-child,
+.sv-table tfoot td:nth-child(2) { text-align: left; }
+
+/* Médailles top 3 */
+.sv-medal { display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; }
+.sv-medal-1 { background: #fbbf24; color: #78350f; }
+.sv-medal-2 { background: #d1d5db; color: #374151; }
+.sv-medal-3 { background: #cd7c3b; color: #fff; }
+.sv-medal-n { background: transparent; color: var(--muted); font-size: 0.78rem; }
+
+/* Barre de progression relative */
+.sv-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.sv-bar { height: 5px; border-radius: 3px; background: #e9f0f7; flex: 1; overflow: hidden; }
+.sv-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+.sv-bar-fill.plats    { background: linear-gradient(90deg, #f97316, #fb923c); }
+.sv-bar-fill.boissons { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+
+/* Vide / chargement */
+.sv-loader { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.9rem; }
+.sv-empty  { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.85rem; font-style: italic; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sv-page">
+
+  <!-- ── Hero ─────────────────────────────────────────────────── -->
+  <div class="sv-hero">
+    <div class="sv-hero-title">
+      <h1>📊 Statistiques de Ventes</h1>
+      <p>Plats & Boissons les plus vendus · Admin / Manager / Direction</p>
+    </div>
+    <div class="sv-hero-form">
+      <div>
+        <label>Du</label>
+        <input type="date" id="svDateDebut" value="{{ date_debut_default }}">
+      </div>
+      <div>
+        <label>Au</label>
+        <input type="date" id="svDateFin" value="{{ date_fin_default }}">
+      </div>
+      <div>
+        <label>Top</label>
+        <select id="svLimite">
+          <option value="10">10</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <button class="btn-sv btn-sv-primary" onclick="svLoad()">🔍 Afficher</button>
+    </div>
+  </div>
+
+  <!-- ── KPI strip ─────────────────────────────────────────────── -->
+  <div class="sv-kpi" id="svKpi">
+    <div class="sv-kpi-cell">
+      <div class="sv-kpi-lbl">Période</div>
+      <div class="sv-kpi-val" id="svKpiPeriode" style="font-size:1rem">—</div>
+    </div>
+    <div class="sv-kpi-cell">
+      <div class="sv-kpi-lbl">CA Plats</div>
+      <div class="sv-kpi-val gold" id="svKpiCaPlats">—</div>
+    </div>
+    <div class="sv-kpi-cell">
+      <div class="sv-kpi-lbl">CA Boissons</div>
+      <div class="sv-kpi-val gold" id="svKpiCaBoissons">—</div>
+    </div>
+    <div class="sv-kpi-cell">
+      <div class="sv-kpi-lbl">Articles distincts</div>
+      <div class="sv-kpi-val" id="svKpiArticles">—</div>
+    </div>
+  </div>
+
+  <!-- ── Grille plats / boissons ───────────────────────────────── -->
+  <div class="sv-grid">
+
+    <!-- Top Plats -->
+    <div class="sv-panel">
+      <div class="sv-panel-head">
+        <span class="sv-panel-head-title">🍽 Top Plats — Restaurant</span>
+        <span class="sv-panel-head-sub" id="svNbPlats"></span>
+      </div>
+      <div id="svTablePlats">
+        <div class="sv-loader">Sélectionnez une période et cliquez sur <strong>Afficher</strong></div>
+      </div>
+    </div>
+
+    <!-- Top Boissons -->
+    <div class="sv-panel">
+      <div class="sv-panel-head">
+        <span class="sv-panel-head-title">🍹 Top Boissons — Bar & Cave</span>
+        <span class="sv-panel-head-sub" id="svNbBoissons"></span>
+      </div>
+      <div id="svTableBoissons">
+        <div class="sv-loader">Sélectionnez une période et cliquez sur <strong>Afficher</strong></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function fmt(n) {
+  if (!n) return '0 F';
+  return n.toLocaleString('fr-FR') + ' F';
+}
+
+function medal(rang) {
+  if (rang === 1) return '<span class="sv-medal sv-medal-1">1</span>';
+  if (rang === 2) return '<span class="sv-medal sv-medal-2">2</span>';
+  if (rang === 3) return '<span class="sv-medal sv-medal-3">3</span>';
+  return '<span class="sv-medal sv-medal-n">' + rang + '</span>';
+}
+
+function buildTable(items, type, totalCa) {
+  if (!items || items.length === 0) {
+    return '<div class="sv-empty">Aucune vente sur cette période.</div>';
+  }
+  const maxCa = items[0].ca || 1;
+  let html = '<table class="sv-table"><thead><tr>';
+  html += '<th>#</th><th>Article</th><th>Catégorie</th><th>Qté</th><th>CA (FCFA)</th>';
+  html += '</tr></thead><tbody>';
+  items.forEach((item, i) => {
+    const pct = Math.round((item.ca / maxCa) * 100);
+    const barHtml = '<div class="sv-bar-wrap"><div class="sv-bar"><div class="sv-bar-fill ' + type + '" style="width:' + pct + '%"></div></div></div>';
+    html += '<tr>';
+    html += '<td style="text-align:center;width:36px">' + medal(i + 1) + '</td>';
+    html += '<td>' + (item.nom || '—') + '</td>';
+    html += '<td>' + (item.categorie || '—') + '</td>';
+    html += '<td>' + item.qte + '</td>';
+    html += '<td>' + barHtml + '<span style="font-weight:700;white-space:nowrap">' + fmt(item.ca) + '</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  html += '<tfoot><tr><td colspan="3">TOTAL</td>';
+  html += '<td>' + items.reduce((s, r) => s + r.qte, 0) + '</td>';
+  html += '<td style="color:#c9760a">' + fmt(totalCa) + '</td>';
+  html += '</tr></tfoot></table>';
+  return html;
+}
+
+function svLoad() {
+  const debut  = document.getElementById('svDateDebut').value;
+  const fin    = document.getElementById('svDateFin').value;
+  const limite = document.getElementById('svLimite').value;
+
+  if (!debut || !fin) { alert('Sélectionnez une période.'); return; }
+
+  const loader = '<div class="sv-loader">⏳ Chargement…</div>';
+  document.getElementById('svTablePlats').innerHTML    = loader;
+  document.getElementById('svTableBoissons').innerHTML = loader;
+  document.getElementById('svKpiPeriode').textContent  = '…';
+  document.getElementById('svKpiCaPlats').textContent  = '…';
+  document.getElementById('svKpiCaBoissons').textContent = '…';
+  document.getElementById('svKpiArticles').textContent = '…';
+
+  const url = "{% url 'dashboard:api_stats_ventes' %}?date_debut=" + debut + "&date_fin=" + fin + "&limite=" + limite;
+
+  fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) { alert(d.error || 'Erreur serveur'); return; }
+
+      document.getElementById('svKpiPeriode').textContent    = d.periode;
+      document.getElementById('svKpiCaPlats').textContent    = fmt(d.total_ca_plats);
+      document.getElementById('svKpiCaBoissons').textContent = fmt(d.total_ca_boissons);
+      document.getElementById('svKpiArticles').textContent   = (d.nb_plats + d.nb_boissons) + ' articles';
+
+      document.getElementById('svNbPlats').textContent    = d.nb_plats + ' plat(s)';
+      document.getElementById('svNbBoissons').textContent = d.nb_boissons + ' boisson(s)';
+
+      document.getElementById('svTablePlats').innerHTML    = buildTable(d.top_plats,    'plats',    d.total_ca_plats);
+      document.getElementById('svTableBoissons').innerHTML = buildTable(d.top_boissons, 'boissons', d.total_ca_boissons);
+    })
+    .catch(err => {
+      document.getElementById('svTablePlats').innerHTML    = '<div class="sv-loader" style="color:#dc2626">Erreur réseau</div>';
+      document.getElementById('svTableBoissons').innerHTML = '<div class="sv-loader" style="color:#dc2626">Erreur réseau</div>';
+    });
+}
+
+// Charger automatiquement à l'ouverture
+document.addEventListener('DOMContentLoaded', svLoad);
+</script>
+{% endblock %}

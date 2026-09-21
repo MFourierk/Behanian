@@ -14,4 +14,6 @@ urlpatterns = [
     path('direction/resume-ventes/api/', views.api_resume_ventes, name='api_resume_ventes'),
     path('direction/resume-ventes/excel/', views.resume_ventes_excel, name='resume_ventes_excel'),
     path('direction/resume-ventes/print/', views.resume_ventes_print, name='resume_ventes_print'),
+    path('direction/stats-ventes/', views.stats_ventes, name='stats_ventes'),
+    path('direction/stats-ventes/api/', views.api_stats_ventes, name='api_stats_ventes'),
 ]
