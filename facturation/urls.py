@@ -34,6 +34,7 @@ urlpatterns = [
     
     # API
     path('api/articles/<int:service_id>/', views.get_articles_by_service, name='get_articles_by_service'),
+    path('api/articles/module/<str:module>/', views.get_articles_by_module, name='get_articles_by_module'),
     path('api/document/<str:doc_type>/<int:pk>/', views.get_document_details, name='get_document_details'),
     path('api/client/<int:client_id>/', views.client_detail_api, name='client_detail_api'),
     path('api/create_document/<str:doc_type>/', views.create_document, name='create_document'),

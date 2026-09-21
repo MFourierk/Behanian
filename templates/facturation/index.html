@@ -820,6 +820,7 @@ const SERVICES = [
   {"id":"caisse",     "nom":"Caisse"},
   {"id":"autre",      "nom":"Autre"},
 ];
+const proArticlesMap = {};
 let proServiceCount = 0;
 
 function proAjouterService(nomPreselect='') {
@@ -838,7 +839,7 @@ function proAjouterService(nomPreselect='') {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:10px">
         <i class="fas fa-layer-group" style="color:#c9a84c"></i>
-        <select class="fc" style="width:180px;padding:6px 10px" onchange="proCalculerTotal()" data-service-select>
+        <select class="fc" style="width:180px;padding:6px 10px" onchange="proOnServiceChange(${id}, this)" data-service-select>
           <option value="">— Service —</option>
           ${optionsHtml}
         </select>
@@ -866,15 +867,85 @@ function proAjouterService(nomPreselect='') {
 
 function proAjouterLigne(serviceId) {
   const container = document.querySelector(`.pro-lignes-${serviceId}`);
+  const articles = proArticlesMap[serviceId] || [];
+
   const ligne = document.createElement('div');
   ligne.style.cssText = 'display:grid;grid-template-columns:1fr 70px 110px 28px;gap:6px;margin-bottom:5px';
   ligne.className = 'pro-ligne';
-  ligne.innerHTML = `
-    <input type="text" class="fc pro-designation" placeholder="Désignation *" style="padding:7px 10px" oninput="proCalculerTotal()">
-    <input type="number" class="fc pro-qte" value="1" min="0.01" step="0.001" style="padding:7px 8px;text-align:right" oninput="proCalculerTotal()">
-    <input type="number" class="fc pro-prix" placeholder="Prix" min="0" style="padding:7px 8px;text-align:right" oninput="proCalculerTotal()">
-    <button onclick="this.closest('.pro-ligne').remove();proCalculerTotal()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px">×</button>`;
+
+  const colDesg = document.createElement('div');
+  colDesg.style.cssText = 'display:flex;flex-direction:column;gap:3px';
+
+  if (articles.length > 0) {
+    const artSel = document.createElement('select');
+    artSel.className = 'fc pro-article';
+    artSel.style.cssText = 'padding:5px 8px;font-size:11px;color:#4a5b6e';
+    const defOpt = document.createElement('option');
+    defOpt.value = '';
+    defOpt.textContent = '— Choisir un article —';
+    artSel.appendChild(defOpt);
+    articles.forEach((a, i) => {
+      const opt = document.createElement('option');
+      opt.value = serviceId + ':' + i;
+      opt.textContent = a.name + ' — ' + Math.round(a.price).toLocaleString('fr-FR') + ' F';
+      artSel.appendChild(opt);
+    });
+    artSel.addEventListener('change', function() { proSelectionnerArticle(this); });
+    colDesg.appendChild(artSel);
+  }
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'fc pro-designation';
+  inp.placeholder = 'Désignation *';
+  inp.style.cssText = 'padding:7px 10px';
+  inp.addEventListener('input', proCalculerTotal);
+  colDesg.appendChild(inp);
+
+  const qte = document.createElement('input');
+  qte.type = 'number'; qte.className = 'fc pro-qte'; qte.value = '1';
+  qte.min = '0.01'; qte.step = '0.001';
+  qte.style.cssText = 'padding:7px 8px;text-align:right';
+  qte.addEventListener('input', proCalculerTotal);
+
+  const prix = document.createElement('input');
+  prix.type = 'number'; prix.className = 'fc pro-prix'; prix.placeholder = 'Prix'; prix.min = '0';
+  prix.style.cssText = 'padding:7px 8px;text-align:right';
+  prix.addEventListener('input', proCalculerTotal);
+
+  const delBtn = document.createElement('button');
+  delBtn.style.cssText = 'background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px';
+  delBtn.innerHTML = '×';
+  delBtn.onclick = function() { ligne.remove(); proCalculerTotal(); };
+
+  ligne.appendChild(colDesg);
+  ligne.appendChild(qte);
+  ligne.appendChild(prix);
+  ligne.appendChild(delBtn);
   container.appendChild(ligne);
+}
+
+async function proOnServiceChange(serviceId, sel) {
+  proCalculerTotal();
+  const moduleKey = SERVICES.find(s => s.nom === sel.value)?.id || '';
+  proArticlesMap[serviceId] = [];
+  if (!moduleKey || ['piscine', 'caisse', 'autre'].includes(moduleKey)) return;
+  try {
+    const r = await fetch('/facturation/api/articles/module/' + moduleKey + '/');
+    const d = await r.json();
+    proArticlesMap[serviceId] = d.articles || [];
+  } catch(e) { proArticlesMap[serviceId] = []; }
+}
+
+function proSelectionnerArticle(sel) {
+  if (!sel.value) return;
+  const [sid, idx] = sel.value.split(':');
+  const a = (proArticlesMap[sid] || [])[parseInt(idx)];
+  if (!a) return;
+  const ligne = sel.closest('.pro-ligne');
+  ligne.querySelector('.pro-designation').value = a.name;
+  ligne.querySelector('.pro-prix').value = Math.round(a.price);
+  proCalculerTotal();
 }
 
 function proCalculerTotal() {

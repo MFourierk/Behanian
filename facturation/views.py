@@ -1027,6 +1027,44 @@ def get_articles_by_service(request, service_id):
         return JsonResponse({'articles': []}, status=404)
 
 @require_module_access('facturation')
+def get_articles_by_module(request, module):
+    """Retourne les articles disponibles pour un module clé (hotel, restaurant, cave, piscine, espace)."""
+    articles = []
+    drink_keywords = ['boisson', 'bière', 'biere', 'vin', 'alcool', 'champagne', 'liqueur', 'whisky', 'vodka', 'gin', 'soda', 'jus', 'eau', 'café', 'the', 'thé', 'cocktail', 'aperitif', 'digestif']
+    try:
+        if module == 'hotel':
+            for chambre in Chambre.objects.exclude(statut='maintenance'):
+                articles.append({
+                    'name': f"Chambre {chambre.numero} ({chambre.get_type_chambre_display()})",
+                    'price': float(chambre.prix_nuit),
+                })
+        elif module == 'cave':
+            query = Q()
+            for kw in drink_keywords:
+                query |= Q(categorie__nom__icontains=kw)
+            query |= Q(categorie__nom__icontains="bar") | Q(categorie__nom__icontains="cave")
+            for plat in PlatMenu.objects.filter(query, disponible=True):
+                articles.append({'name': f"{plat.nom} ({plat.categorie.nom})", 'price': float(plat.prix)})
+        elif module == 'restaurant':
+            q_exc = Q()
+            for kw in drink_keywords:
+                q_exc |= Q(categorie__nom__icontains=kw)
+            q_exc |= Q(categorie__nom__icontains="bar") | Q(categorie__nom__icontains="cave")
+            for plat in PlatMenu.objects.filter(disponible=True).exclude(q_exc):
+                articles.append({'name': f"{plat.nom} ({plat.categorie.nom})", 'price': float(plat.prix)})
+        elif module == 'espace':
+            for espace in EspaceEvenementiel.objects.all():
+                articles.append({
+                    'name': f"{espace.nom} ({espace.capacite} pers.)",
+                    'price': float(espace.prix_jour),
+                })
+        # piscine, caisse, autre → liste vide (pas de catalogue)
+        return JsonResponse({'articles': articles})
+    except Exception as e:
+        return JsonResponse({'articles': [], 'error': str(e)})
+
+
+@require_module_access('facturation')
 def client_detail_api(request, client_id):
     client = get_object_or_404(Client, pk=client_id)
     data = {
