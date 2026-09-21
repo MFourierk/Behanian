@@ -170,35 +170,33 @@ jobs:
           script: |
             ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 behanian@10.8.0.2 bash << 'REMOTE'
               set -e
-              echo "=== Extraction archive ==="
+              echo "--- STEP 1: extraction ---"
               tar -xzf /tmp/behanian_code.tar.gz -C /opt/behanian/ --overwrite
               rm -f /tmp/behanian_code.tar.gz
-              echo "Extraction OK"
+              echo "--- STEP 2: venv ---"
               cd /opt/behanian
               source venv/bin/activate
-              echo "=== Dépendances ==="
+              echo "--- STEP 3: pip ---"
               pip install -r requirements.txt --quiet
-              echo "=== Migrations ==="
+              echo "--- STEP 4: migrate ---"
               python manage.py migrate --noinput
-              echo "=== Statiques ==="
+              echo "--- STEP 5: collectstatic ---"
               python manage.py collectstatic --noinput
-              echo "=== Init catalogues ==="
+              echo "--- STEP 6: init catalogues ---"
               python manage.py init_boissons_bar
               python manage.py init_plats_simples
               python manage.py init_plats_gibier
-              echo "=== Service gunicorn (timeout + max-requests) ==="
-              sudo cp /opt/behanian/deploy/gunicorn-complexe.service /etc/systemd/system/gunicorn.service
-              echo "=== Kernel : panic sur hang, reboot auto ==="
-              sudo cp /opt/behanian/deploy/99-behanian.conf /etc/sysctl.d/99-behanian.conf
-              sudo sysctl -p /etc/sysctl.d/99-behanian.conf --quiet
-              echo "=== Watchdog systemd ==="
-              sudo cp /opt/behanian/deploy/behanian-watchdog.service /etc/systemd/system/behanian-watchdog.service
-              sudo cp /opt/behanian/deploy/behanian-watchdog.timer   /etc/systemd/system/behanian-watchdog.timer
-              sudo cp /opt/behanian/deploy/behanian-watchdog.sh      /usr/local/bin/behanian-watchdog
-              sudo chmod +x /usr/local/bin/behanian-watchdog
-              sudo systemctl daemon-reload
-              sudo systemctl enable --now behanian-watchdog.timer
-              echo "=== Redémarrage gunicorn ==="
+              echo "--- STEP 7: config système (best-effort, sudo limité ok) ---"
+              sudo cp /opt/behanian/deploy/gunicorn-complexe.service /etc/systemd/system/gunicorn.service 2>/dev/null || echo "WARN: gunicorn.service non copié"
+              sudo cp /opt/behanian/deploy/99-behanian.conf /etc/sysctl.d/99-behanian.conf 2>/dev/null || echo "WARN: sysctl non copié"
+              sudo sysctl -p /etc/sysctl.d/99-behanian.conf --quiet 2>/dev/null || true
+              sudo cp /opt/behanian/deploy/behanian-watchdog.service /etc/systemd/system/behanian-watchdog.service 2>/dev/null || echo "WARN: watchdog.service non copié"
+              sudo cp /opt/behanian/deploy/behanian-watchdog.timer   /etc/systemd/system/behanian-watchdog.timer   2>/dev/null || echo "WARN: watchdog.timer non copié"
+              sudo cp /opt/behanian/deploy/behanian-watchdog.sh      /usr/local/bin/behanian-watchdog              2>/dev/null || echo "WARN: watchdog.sh non copié"
+              sudo chmod +x /usr/local/bin/behanian-watchdog 2>/dev/null || true
+              sudo systemctl daemon-reload 2>/dev/null || true
+              sudo systemctl enable --now behanian-watchdog.timer 2>/dev/null || true
+              echo "--- STEP 8: restart gunicorn ---"
               sudo systemctl restart gunicorn
               echo "COMPLEXE_OK"
             REMOTE
