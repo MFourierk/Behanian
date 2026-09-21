@@ -18,9 +18,10 @@ from weasyprint import HTML
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Sum, Q
 from hotel.models import Chambre
-from restaurant.models import PlatMenu
+from restaurant.models import PlatMenu, Forfait
 from espaces_evenementiels.models import EspaceEvenementiel
 from bar.models import BoissonBar
+from piscine.models import TarifPiscine
 
 from django.conf import settings
 import os
@@ -1055,7 +1056,12 @@ def get_articles_by_module(request, module):
                     'name': f"{espace.nom} ({espace.capacite} pers.)",
                     'price': float(espace.prix_jour),
                 })
-        # piscine, caisse, autre → liste vide (pas de catalogue)
+        elif module == 'piscine':
+            for t in TarifPiscine.objects.all():
+                articles.append({'name': t.get_type_tarif_display(), 'price': float(t.prix_unitaire)})
+            for f in Forfait.objects.filter(module='piscine', disponible=True):
+                articles.append({'name': f"Menu VIP — {f.nom}", 'price': float(f.prix)})
+        # caisse, autre → liste vide (pas de catalogue)
         return JsonResponse({'articles': articles})
     except Exception as e:
         return JsonResponse({'articles': [], 'error': str(e)})

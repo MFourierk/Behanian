@@ -929,7 +929,7 @@ async function proOnServiceChange(serviceId, sel) {
   proCalculerTotal();
   const moduleKey = SERVICES.find(s => s.nom === sel.value)?.id || '';
   proArticlesMap[serviceId] = [];
-  if (!moduleKey || ['piscine', 'caisse', 'autre'].includes(moduleKey)) return;
+  if (!moduleKey || ['caisse', 'autre'].includes(moduleKey)) return;
   try {
     const r = await fetch('/facturation/api/articles/module/' + moduleKey + '/');
     const d = await r.json();
