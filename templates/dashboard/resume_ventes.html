@@ -169,6 +169,15 @@
   .rv-hero, .rv-filters, .rv-body { padding-left: 16px; padding-right: 16px; }
   .rv-kpi-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* Stats par chambre */
+.rv-occ-bar { display:inline-flex; align-items:center; gap:6px; width:100%; }
+.rv-occ-track { flex:1; height:8px; background:#e8ecf2; border-radius:4px; overflow:hidden; min-width:50px; }
+.rv-occ-fill  { height:100%; border-radius:4px; transition:width 0.3s; }
+.rv-occ-fill.green  { background:#16a34a; }
+.rv-occ-fill.orange { background:#f59e0b; }
+.rv-occ-fill.gray   { background:#94a3b8; }
+.rv-occ-pct { font-size:0.72rem; font-weight:700; white-space:nowrap; min-width:34px; text-align:right; }
 </style>
 {% endblock %}
 
@@ -576,7 +585,62 @@ async function chargerResume() {
       </div>
     </div>`;
 
-  body.innerHTML = kpiHtml + tablesHtml + chartsHtml + ticketsHtml;
+  // Statistiques par chambre (hotel uniquement)
+  let chambresHtml = '';
+  if (Array.isArray(d.stats_chambres) && d.stats_chambres.length) {
+    let chRows = '';
+    let totNb = 0, totCa = 0, totRepos = 0, totJournee = 0, totNuitee = 0;
+    d.stats_chambres.forEach(s => {
+      totNb += s.nb; totCa += s.ca; totRepos += s.repos; totJournee += s.journee; totNuitee += s.nuitee;
+      const fillCls = s.taux >= 70 ? 'green' : s.taux >= 40 ? 'orange' : 'gray';
+      const pctColor = s.taux >= 70 ? '#16a34a' : s.taux >= 40 ? '#f59e0b' : '#94a3b8';
+      chRows += `<tr>
+        <td><strong>Ch. ${s.numero}</strong></td>
+        <td style="color:var(--muted);font-size:0.8rem;">${s.type}</td>
+        <td class="num">${s.nb}</td>
+        <td class="num gold-val">${fmt(s.ca)}</td>
+        <td class="num">${s.repos || '—'}</td>
+        <td class="num">${s.journee || '—'}</td>
+        <td class="num">${s.nuitee || '—'}</td>
+        <td>
+          <div class="rv-occ-bar">
+            <div class="rv-occ-track"><div class="rv-occ-fill ${fillCls}" style="width:${s.taux}%;"></div></div>
+            <span class="rv-occ-pct" style="color:${pctColor};">${s.taux}%</span>
+          </div>
+        </td>
+      </tr>`;
+    });
+    chRows += `<tr style="background:#f8f9fb;font-weight:700;border-top:2px solid var(--border);">
+      <td colspan="2">TOTAL</td>
+      <td class="num">${totNb}</td>
+      <td class="num gold-val">${fmt(totCa)}</td>
+      <td class="num">${totRepos || '—'}</td>
+      <td class="num">${totJournee || '—'}</td>
+      <td class="num">${totNuitee || '—'}</td>
+      <td></td>
+    </tr>`;
+    chambresHtml = `
+    <div class="rv-tickets-panel" style="margin-bottom:24px;">
+      <div class="rv-panel-hdr">
+        <i class="fas fa-bed" style="color:#2563eb;"></i>
+        <h3>Statistiques par chambre — Hôtel</h3>
+        <span style="margin-left:auto;font-size:0.72rem;color:var(--muted);">${d.stats_chambres.length} chambre(s) active(s)</span>
+      </div>
+      <div class="rv-tickets-scroll">
+        <table class="rv-table">
+          <thead><tr>
+            <th>Chambre</th><th>Type</th>
+            <th class="num">Séjours</th><th class="num">CA</th>
+            <th class="num">Repos</th><th class="num">Journée</th><th class="num">Nuitée</th>
+            <th>Taux occup.</th>
+          </tr></thead>
+          <tbody>${chRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  body.innerHTML = kpiHtml + chambresHtml + tablesHtml + chartsHtml + ticketsHtml;
 
   // Charts
   const modeLabels = Object.keys(parMode);

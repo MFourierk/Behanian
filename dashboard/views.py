@@ -644,6 +644,33 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
             'montant':  montant,
         })
 
+    # Stats par chambre — uniquement quand hotel est dans les modules filtrés
+    stats_chambres = []
+    if 'hotel' in modules_filter:
+        from hotel.models import Reservation
+        hotel_tk_map = {tk.objet_id: float(tk.montant_total or 0) for tk in qs if tk.module == 'hotel' and tk.objet_id}
+        if hotel_tk_map:
+            res_list = Reservation.objects.filter(pk__in=hotel_tk_map.keys()).select_related('chambre')
+            ch_agg = {}
+            for res in res_list:
+                ch = res.chambre
+                if ch.pk not in ch_agg:
+                    ch_agg[ch.pk] = {
+                        'numero': ch.numero,
+                        'type': ch.get_type_chambre_display(),
+                        'nb': 0, 'ca': 0, 'repos': 0, 'journee': 0, 'nuitee': 0, 'jours': 0,
+                    }
+                s = ch_agg[ch.pk]
+                s['nb'] += 1
+                s['ca'] += hotel_tk_map.get(res.pk, 0)
+                ts = res.type_sejour if res.type_sejour in ('repos', 'journee', 'nuitee') else 'nuitee'
+                s[ts] += 1
+                s['jours'] += max((res.date_depart - res.date_arrivee).days, 1)
+            nb_jours = max((date_fin - date_debut).days + 1, 1)
+            for s in sorted(ch_agg.values(), key=lambda x: -x['ca']):
+                s['taux'] = min(round(s['jours'] / nb_jours * 100), 100)
+                stats_chambres.append(s)
+
     periode = (date_debut.strftime('%d/%m/%Y') if same_day
                else f"{date_debut.strftime('%d/%m/%Y')} → {date_fin.strftime('%d/%m/%Y')}")
     return {
@@ -651,6 +678,7 @@ def _parse_resume_ventes_data(modules_filter, date_debut, date_fin):
         'par_module': par_module, 'par_mode': par_mode,
         'par_caissier': par_caissier, 'par_serveur': par_serveur,
         'par_module_mode': par_module_mode, 'tickets': tickets,
+        'stats_chambres': stats_chambres,
     }
 
 
@@ -704,6 +732,7 @@ def api_resume_ventes(request):
             'par_serveur':     [{'nom': k, **v} for k, v in data['par_serveur'].items()],
             'par_module_mode': data['par_module_mode'],
             'tickets':         [{k: v for k, v in t.items() if k != 'date'} for t in data['tickets']],
+            'stats_chambres':  data['stats_chambres'],
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
