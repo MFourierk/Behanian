@@ -196,7 +196,9 @@ jobs:
               sudo chmod +x /usr/local/bin/behanian-watchdog 2>/dev/null || true
               sudo systemctl daemon-reload 2>/dev/null || true
               sudo systemctl enable --now behanian-watchdog.timer 2>/dev/null || true
-              echo "--- STEP 8: restart gunicorn ---"
+              echo "--- STEP 8: liberer chambre 16 (one-shot, sans impact CA) ---"
+              python manage.py shell -c "from hotel.models import Chambre,Reservation; ch=Chambre.objects.filter(numero='16').first(); res=Reservation.objects.filter(chambre=ch,statut='en_cours').first() if ch else None; res and [setattr(res,'statut','terminee'),res.save(update_fields=['statut']),setattr(ch,'statut','disponible'),ch.save(update_fields=['statut']),print('OK chambre 16 liberee res',res.id)]; not res and print('Deja libre')" || true
+              echo "--- STEP 9: restart gunicorn ---"
               sudo systemctl restart gunicorn
               echo "COMPLEXE_OK"
             REMOTE
