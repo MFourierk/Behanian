@@ -195,6 +195,42 @@ def hotel_index(request):
     except Group.DoesNotExist:
         serveurs_restaurant = AuthUser.objects.none()
 
+    # ── Statistiques par chambre ──
+    from datetime import date as _date
+    _stats_debut_raw = request.GET.get('stats_debut', '')
+    _stats_fin_raw   = request.GET.get('stats_fin', '')
+    try:
+        stats_debut = _date.fromisoformat(_stats_debut_raw)
+    except Exception:
+        stats_debut = _date(today.year, today.month, 1)
+    try:
+        stats_fin = _date.fromisoformat(_stats_fin_raw)
+    except Exception:
+        stats_fin = today
+
+    nb_jours_periode = max((stats_fin - stats_debut).days + 1, 1)
+    stats_par_chambre = []
+    for _ch in Chambre.objects.all().order_by('numero'):
+        _qs = Reservation.objects.filter(
+            chambre=_ch,
+            statut='terminee',
+            date_arrivee__gte=stats_debut,
+            date_arrivee__lte=stats_fin,
+        )
+        _nb = _qs.count()
+        _ca = int(sum(r.get_total_general() for r in _qs))
+        _jours = sum(max((r.date_depart - r.date_arrivee).days, 1) for r in _qs)
+        stats_par_chambre.append({
+            'chambre':    _ch,
+            'nb':         _nb,
+            'ca':         _ca,
+            'nb_repos':   _qs.filter(type_sejour='repos').count(),
+            'nb_journee': _qs.filter(type_sejour='journee').count(),
+            'nb_nuitee':  _qs.filter(type_sejour='nuitee').count(),
+            'taux_occup': min(round(_jours / nb_jours_periode * 100), 100),
+        })
+    stats_par_chambre.sort(key=lambda x: -x['ca'])
+
     from utils.permissions import _is_receptionniste
     context = {
         'total_chambres': total_chambres,
@@ -222,8 +258,11 @@ def hotel_index(request):
         'receptionnistes': receptionnistes,
         'serveurs_restaurant': serveurs_restaurant,
         'personnel_actif': personnel_actif,
+        'stats_par_chambre': stats_par_chambre,
+        'stats_debut': stats_debut,
+        'stats_fin':   stats_fin,
     }
-    
+
     return render(request, 'hotel/index.html', context)
 
 @require_module_access('hotel')

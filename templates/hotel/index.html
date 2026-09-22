@@ -330,6 +330,7 @@
           <div class="nav-tab-hotel" data-tab="reservations">📅 Réservations</div>
           <div class="nav-tab-hotel" data-tab="checkinout">🔑 Check-in / out</div>
           <div class="nav-tab-hotel" data-tab="historique">📜 Historique</div>
+          <div class="nav-tab-hotel" data-tab="statistiques">📊 Statistiques</div>
         </div>
 
         <!-- TAB CHAMBRES -->
@@ -638,6 +639,112 @@
             </table>
             {% else %}
             <div class="empty-state"><i class="fas fa-history"></i><p>Aucun historique disponible.</p></div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- ONGLET STATISTIQUES PAR CHAMBRE -->
+        <div class="tab-content-hotel" id="tab-statistiques">
+          <div class="historique-wrap">
+
+            <!-- Filtre période -->
+            <form method="get" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+              <input type="hidden" name="tab" value="statistiques">
+              <label style="font-size:13px;font-weight:600;color:#1a2535">Période :</label>
+              <input type="date" name="stats_debut" value="{{ stats_debut|date:'Y-m-d' }}"
+                style="padding:6px 10px;border:1.5px solid #dde4ed;border-radius:7px;font-size:13px">
+              <span style="color:#64748b">→</span>
+              <input type="date" name="stats_fin" value="{{ stats_fin|date:'Y-m-d' }}"
+                style="padding:6px 10px;border:1.5px solid #dde4ed;border-radius:7px;font-size:13px">
+              <button type="submit" style="padding:6px 18px;background:#1a2535;color:#c9a84c;border:1.5px solid #c9a84c;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">Appliquer</button>
+              <a href="?tab=statistiques" style="padding:6px 14px;background:#f1f5f9;color:#64748b;border:1.5px solid #dde4ed;border-radius:7px;font-size:13px;text-decoration:none">Ce mois</a>
+            </form>
+
+            {% if stats_par_chambre %}
+            <!-- Totaux globaux (remplis par JS) -->
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+              <div style="background:#f0f6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:10px 20px;min-width:140px">
+                <div style="font-size:11px;color:#2563eb;font-weight:600;text-transform:uppercase;letter-spacing:.5px">CA Total</div>
+                <div style="font-size:20px;font-weight:700;color:#1a2535" id="stat-ca-total">—</div>
+              </div>
+              <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:10px 20px;min-width:140px">
+                <div style="font-size:11px;color:#059669;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Séjours terminés</div>
+                <div style="font-size:20px;font-weight:700;color:#1a2535" id="stat-nb-total">—</div>
+              </div>
+            </div>
+
+            <table class="table-new" style="font-size:13px">
+              <thead>
+                <tr>
+                  <th>Chambre</th>
+                  <th>Type</th>
+                  <th style="text-align:center">Séjours</th>
+                  <th style="text-align:right">CA (FCFA)</th>
+                  <th style="text-align:center">Repos</th>
+                  <th style="text-align:center">Journée</th>
+                  <th style="text-align:center">Nuitée</th>
+                  <th style="text-align:center">Taux occup.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in stats_par_chambre %}
+                <tr{% if s.nb == 0 %} style="opacity:.45"{% endif %}>
+                  <td><strong>Ch. {{ s.chambre.numero }}</strong></td>
+                  <td style="color:#64748b">{{ s.chambre.get_type_chambre_display }}</td>
+                  <td style="text-align:center">
+                    {% if s.nb %}
+                    <span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-weight:600">{{ s.nb }}</span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td style="text-align:right;font-weight:600;color:{% if s.ca > 0 %}#059669{% else %}#9ca3af{% endif %}">
+                    {% if s.ca %}{{ s.ca|montant }}{% else %}—{% endif %}
+                  </td>
+                  <td style="text-align:center;color:#7c3aed">{% if s.nb_repos %}{{ s.nb_repos }}{% else %}—{% endif %}</td>
+                  <td style="text-align:center;color:#0891b2">{% if s.nb_journee %}{{ s.nb_journee }}{% else %}—{% endif %}</td>
+                  <td style="text-align:center;color:#d97706">{% if s.nb_nuitee %}{{ s.nb_nuitee }}{% else %}—{% endif %}</td>
+                  <td style="text-align:center">
+                    {% if s.taux_occup > 0 %}
+                    <div style="display:flex;align-items:center;gap:6px;justify-content:center">
+                      <div style="width:60px;height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+                        <div style="height:100%;width:{{ s.taux_occup }}%;background:{% if s.taux_occup >= 70 %}#059669{% elif s.taux_occup >= 40 %}#d97706{% else %}#64748b{% endif %};border-radius:4px"></div>
+                      </div>
+                      <span style="font-size:11px;color:#64748b;font-weight:600">{{ s.taux_occup }}%</span>
+                    </div>
+                    {% else %}—{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0">
+                  <td colspan="2">TOTAL</td>
+                  <td style="text-align:center" id="foot-nb"></td>
+                  <td style="text-align:right;color:#059669" id="foot-ca"></td>
+                  <td style="text-align:center" id="foot-repos"></td>
+                  <td style="text-align:center" id="foot-journee"></td>
+                  <td style="text-align:center" id="foot-nuitee"></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <script>
+            (function(){
+              const rows = {{ stats_par_chambre|length }};
+              const data = [{% for s in stats_par_chambre %}{nb:{{ s.nb }},ca:{{ s.ca }},repos:{{ s.nb_repos }},journee:{{ s.nb_journee }},nuitee:{{ s.nb_nuitee }}},{% endfor %}];
+              const sum = (k) => data.reduce((a,d)=>a+d[k],0);
+              const fmt = (n) => n.toLocaleString('fr-FR');
+              document.getElementById('foot-nb').textContent      = sum('nb');
+              document.getElementById('foot-ca').textContent      = fmt(sum('ca')) + ' F';
+              document.getElementById('foot-repos').textContent   = sum('repos') || '—';
+              document.getElementById('foot-journee').textContent = sum('journee') || '—';
+              document.getElementById('foot-nuitee').textContent  = sum('nuitee') || '—';
+              document.getElementById('stat-ca-total').textContent = fmt(sum('ca')) + ' F';
+              document.getElementById('stat-nb-total').textContent = sum('nb');
+            })();
+            </script>
+            {% else %}
+            <div class="empty-state"><i class="fas fa-chart-bar"></i><p>Aucun séjour terminé sur cette période.</p></div>
             {% endif %}
           </div>
         </div>
