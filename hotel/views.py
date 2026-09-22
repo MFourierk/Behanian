@@ -130,8 +130,31 @@ def hotel_index(request):
     chambres_dispo_list = Chambre.objects.filter(statut='disponible').order_by('numero')
     
     # Données pour les Services (Consommations)
-    boissons = BoissonBar.objects.filter(disponible=True).order_by('categorie__nom', 'nom')
-    plats = PlatMenu.objects.filter(disponible=True).order_by('categorie__ordre', 'nom')
+    boissons = BoissonBar.objects.filter(statut='actif', disponible=True).order_by('categorie__nom', 'nom')
+    # Vérification stock par plat (même logique que restaurant)
+    from cuisine.utils import check_stock_availability
+    from cuisine.models import Ingredient
+    _plats_qs = PlatMenu.objects.filter(disponible=True).order_by('categorie__ordre', 'nom').select_related('categorie')
+    plats = []
+    for _p in _plats_qs:
+        if _p.is_simple:
+            _p.en_stock = True
+            _p.stock_quantity = 999
+        else:
+            _ok, _ = check_stock_availability(_p, 1)
+            _p.en_stock = _ok
+            _ft = _p.fiche_technique
+            if _ft is not None and _ft.lignes.exists():
+                _p.stock_quantity = _ft.max_portions_possibles()
+            else:
+                try:
+                    _ing = Ingredient.objects.filter(nom__iexact=_p.nom).first()
+                    _p.stock_quantity = int(_ing.quantite_stock) if _ing else 0
+                except Exception:
+                    _p.stock_quantity = 0
+            if _p.stock_quantity == 0:
+                _p.en_stock = False
+        plats.append(_p)
     espaces = EspaceEvenementiel.objects.filter(statut='disponible').order_by('nom')
 
     # ── Revenus chambres du jour (check-outs effectués) ──

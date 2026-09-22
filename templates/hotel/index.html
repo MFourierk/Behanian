@@ -215,6 +215,8 @@
 .art-stock.low { color:#dc2626; }
 .art-item.hidden { display:none; }
 .art-item.panier-added { background:#d1fae5;border-left:3px solid #10b981;transition:background 0.15s; }
+.art-item.art-rupture { opacity:0.45;cursor:not-allowed; }
+.art-item.art-rupture:hover { background:inherit; }
 
 /* ── TABS CONTENT ── */
 .tab-content-hotel { display: none; }
@@ -1383,9 +1385,10 @@
         </div>
         <div id="bar-list" style="max-height:220px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px">
           {% for b in boissons %}
-          <div class="art-item" data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
+          <div class="art-item{% if b.quantite_stock <= 0 %} art-rupture{% endif %}"
+               data-id="{{ b.id }}" data-cat="{{ b.categorie.nom }}"
                data-nom="{{ b.nom|escapejs }}" data-prix="{{ b.prix }}" data-stock="{{ b.quantite_stock }}"
-               onclick="ajouterAuPanier('bar', this)">
+               {% if b.quantite_stock > 0 %}onclick="ajouterAuPanier('bar', this)"{% endif %}>
             <div style="flex:1;min-width:0">
               <div class="art-nom">{{ b.nom }}</div>
               <div class="art-cat">{{ b.categorie.nom }}</div>
@@ -1393,9 +1396,13 @@
             <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
               <div style="text-align:right">
                 <div class="art-prix">{{ b.prix|montant }} F</div>
+                {% if b.quantite_stock <= 0 %}
+                <div class="art-stock low">Rupture</div>
+                {% else %}
                 <div class="art-stock {% if b.quantite_stock < 5 %}low{% endif %}">Stock: {{ b.quantite_stock }}</div>
+                {% endif %}
               </div>
-              <div style="width:28px;height:28px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:300;flex-shrink:0;pointer-events:none">+</div>
+              <div style="width:28px;height:28px;background:{% if b.quantite_stock <= 0 %}#9ca3af{% else %}#2563eb{% endif %};border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:300;flex-shrink:0;pointer-events:none">+</div>
             </div>
           </div>
           {% endfor %}
@@ -1419,16 +1426,24 @@
         </div>
         <div id="resto-list" style="max-height:220px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:10px">
           {% for p in plats %}
-          <div class="art-item" data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
-               data-nom="{{ p.nom|escapejs }}" data-prix="{{ p.prix }}"
-               onclick="ajouterAuPanier('restaurant', this)">
+          <div class="art-item{% if not p.en_stock %} art-rupture{% endif %}"
+               data-id="{{ p.id }}" data-cat="{{ p.categorie.nom }}"
+               data-nom="{{ p.nom|escapejs }}" data-prix="{{ p.prix }}" data-stock="{{ p.stock_quantity }}"
+               {% if p.en_stock %}onclick="ajouterAuPanier('restaurant', this)"{% endif %}>
             <div style="flex:1;min-width:0">
               <div class="art-nom">{{ p.nom }}</div>
               <div class="art-cat">{{ p.categorie.nom }}</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-              <div class="art-prix">{{ p.prix|montant }} F</div>
-              <div style="width:28px;height:28px;background:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:300;flex-shrink:0;pointer-events:none">+</div>
+              <div style="text-align:right">
+                <div class="art-prix">{{ p.prix|montant }} F</div>
+                {% if not p.en_stock %}
+                <div class="art-stock low">Rupture</div>
+                {% elif p.stock_quantity < 999 %}
+                <div class="art-stock {% if p.stock_quantity < 3 %}low{% endif %}">Stock: {{ p.stock_quantity }}</div>
+                {% endif %}
+              </div>
+              <div style="width:28px;height:28px;background:{% if not p.en_stock %}#9ca3af{% else %}#059669{% endif %};border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:300;flex-shrink:0;pointer-events:none">+</div>
             </div>
           </div>
           {% endfor %}
