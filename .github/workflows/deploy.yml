@@ -251,6 +251,16 @@ jobs:
               echo "── Processus top RAM ────────────────────"
               ps aux --sort=-%mem 2>/dev/null | head -8 || echo "(ps indisponible)"
 
+              echo ""
+              echo "── Watchdog timer (actif ?) ─────────────"
+              systemctl list-timers behanian-watchdog.timer --no-pager 2>/dev/null || echo "(timer non trouvé)"
+              echo "État service watchdog :"
+              systemctl is-active behanian-watchdog.timer 2>/dev/null || echo "INACTIF"
+
+              echo ""
+              echo "── Log watchdog (20 dernières lignes) ───"
+              sudo tail -20 /var/log/behanian-watchdog.log 2>/dev/null || echo "(log vide ou absent — watchdog jamais déclenché)"
+
               echo "════════════════════════════════════════"
               echo "  FIN DIAGNOSTIC"
               echo "════════════════════════════════════════"
