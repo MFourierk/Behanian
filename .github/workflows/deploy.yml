@@ -200,3 +200,58 @@ jobs:
               sudo systemctl restart gunicorn
               echo "COMPLEXE_OK"
             REMOTE
+
+      - name: Diagnostic système complexe
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 3m
+          script: |
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 behanian@10.8.0.2 bash << 'DIAG'
+              echo "════════════════════════════════════════"
+              echo "  DIAGNOSTIC SYSTÈME COMPLEXE"
+              echo "════════════════════════════════════════"
+
+              echo ""
+              echo "── Mémoire RAM ──────────────────────────"
+              free -h
+
+              echo ""
+              echo "── Espace disque ────────────────────────"
+              df -h / /opt 2>/dev/null | head -5
+
+              echo ""
+              echo "── Uptime & charge ──────────────────────"
+              uptime
+
+              echo ""
+              echo "── Derniers redémarrages ────────────────"
+              last reboot | head -8 2>/dev/null || echo "(last non disponible)"
+
+              echo ""
+              echo "── Tués par OOM (7 derniers jours) ──────"
+              sudo journalctl -k --since "7 days ago" 2>/dev/null \
+                | grep -i "killed process\|out of memory\|oom.kill" \
+                | tail -10 \
+                || echo "(aucun OOM détecté ou journalctl indisponible)"
+
+              echo ""
+              echo "── Erreurs critiques système (48h) ──────"
+              sudo journalctl -p err..emerg --since "48 hours ago" --no-pager 2>/dev/null \
+                | grep -v "^--" | tail -15 \
+                || echo "(journalctl indisponible)"
+
+              echo ""
+              echo "── État gunicorn ────────────────────────"
+              sudo systemctl status gunicorn --no-pager -l 2>/dev/null | head -20 || echo "(gunicorn status indisponible)"
+
+              echo ""
+              echo "── Processus top RAM ────────────────────"
+              ps aux --sort=-%mem 2>/dev/null | head -8 || echo "(ps indisponible)"
+
+              echo "════════════════════════════════════════"
+              echo "  FIN DIAGNOSTIC"
+              echo "════════════════════════════════════════"
+            DIAG
