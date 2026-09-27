@@ -94,8 +94,8 @@ _RULES = [
     (_RESPONSABLE_HOTEL,      ['hotel', 'parametres']),
     # Responsable Cave : accès complet au module Cave + facturation (proformas/factures)
     (_RESPONSABLE_CAVE,       ['bar', 'facturation']),
-    # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale)
-    (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse']),
+    # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale + facturation)
+    (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse', 'facturation']),
     # Caissière : TPE uniquement, PAS de caisse centrale
     (_CAISSIERE,              ['restaurant', 'bar', 'piscine', 'espaces']),
     # Utilisateur Simple + personnel terrain : aucun module
