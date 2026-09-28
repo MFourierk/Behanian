@@ -270,13 +270,28 @@ def facture_enregistrer_paiement(request, pk):
         return JsonResponse({'success': False, 'error': f'Facture déjà {facture.get_statut_display().lower()}.'})
     try:
         data = json.loads(request.body)
-        montant = Decimal(str(data.get('montant') or 0))
-        if montant <= 0:
-            return JsonResponse({'success': False, 'error': 'Le montant doit être supérieur à 0.'})
+        reference = (data.get('notes') or '').strip()[:100]
+
+        # Support paiement mixte : lignes_paiement=[{mode, montant}, ...]
+        lignes_paiement = data.get('lignes_paiement', [])
+        if lignes_paiement:
+            # Valider chaque ligne
+            reglements_a_creer = []
+            for l in lignes_paiement:
+                m = Decimal(str(l.get('montant') or 0))
+                if m <= 0:
+                    return JsonResponse({'success': False, 'error': 'Chaque montant doit être supérieur à 0.'})
+                reglements_a_creer.append({'mode': l.get('mode', 'especes'), 'montant': m})
+            montant = sum(r['montant'] for r in reglements_a_creer)
+        else:
+            montant = Decimal(str(data.get('montant') or 0))
+            if montant <= 0:
+                return JsonResponse({'success': False, 'error': 'Le montant doit être supérieur à 0.'})
+            reglements_a_creer = [{'mode': data.get('mode_paiement', 'especes'), 'montant': montant}]
+
         if montant > facture.montant_restant:
             return JsonResponse({'success': False, 'error': f'Montant ({int(montant)} F) supérieur au solde restant ({int(facture.montant_restant)} F).'})
-        mode_paiement = data.get('mode_paiement', 'especes')
-        reference = (data.get('notes') or '').strip()[:100]
+
         with transaction.atomic():
             facture.montant_paye += montant
             facture.date_paiement = timezone.now()
@@ -285,14 +300,15 @@ def facture_enregistrer_paiement(request, pk):
             else:
                 facture.statut = 'partielle'
             facture.save(update_fields=['montant_paye', 'date_paiement', 'statut'])
-            Reglement.objects.create(
-                facture=facture,
-                date=timezone.now().date(),
-                montant=montant,
-                mode_paiement=mode_paiement,
-                reference=reference,
-                cree_par=request.user,
-            )
+            for reg in reglements_a_creer:
+                Reglement.objects.create(
+                    facture=facture,
+                    date=timezone.now().date(),
+                    montant=reg['montant'],
+                    mode_paiement=reg['mode'],
+                    reference=reference,
+                    cree_par=request.user,
+                )
         return JsonResponse({
             'success': True,
             'statut': facture.statut,
@@ -565,6 +581,55 @@ def proforma_to_facture_edit(request, pk):
         return JsonResponse({'success': False, 'error': str(e)})
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Erreur : {e}'})
+
+
+@require_module_access('facturation')
+def proforma_update(request, pk):
+    """POST JSON — Met à jour un proforma non encore converti ni annulé."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST requis'})
+    proforma = get_object_or_404(Proforma, pk=pk)
+    if proforma.statut in ('convertie', 'annulee'):
+        return JsonResponse({'success': False, 'error': f'Proforma {proforma.get_statut_display().lower()} — modification impossible.'})
+    try:
+        data     = json.loads(request.body)
+        lignes   = data.get('lignes', [])
+        remise   = Decimal(str(data.get('remise', 0) or 0))
+        taux_tva = Decimal(str(data.get('taux_tva', 0) or 0))
+        notes    = data.get('notes', '')
+
+        lignes_valides = [l for l in lignes if str(l.get('designation', '')).strip() and Decimal(str(l.get('quantite', 0) or 0)) > 0]
+        if not lignes_valides:
+            return JsonResponse({'success': False, 'error': 'Au moins une ligne est requise.'})
+
+        with transaction.atomic():
+            proforma.lignes.all().delete()
+            sous_total = Decimal('0')
+            for ld in lignes_valides:
+                qte = Decimal(str(ld['quantite']))
+                pu  = Decimal(str(ld.get('prix_unitaire', 0) or 0))
+                LigneProforma.objects.create(
+                    proforma=proforma,
+                    article=None,
+                    designation=str(ld['designation']).strip(),
+                    description=str(ld.get('description', '') or '').strip(),
+                    quantite=qte,
+                    prix_unitaire=pu,
+                )
+                sous_total += qte * pu
+
+            proforma.remise   = remise
+            proforma.taux_tva = taux_tva
+            proforma.notes    = notes
+            proforma.sous_total = sous_total
+            base = max(Decimal('0'), sous_total - remise)
+            proforma.montant_tva = base * taux_tva / 100
+            proforma.total = base + proforma.montant_tva
+            proforma.save()
+
+        return JsonResponse({'success': True, 'message': 'Proforma mis à jour.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @require_module_access('facturation')

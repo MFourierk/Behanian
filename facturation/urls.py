@@ -18,6 +18,7 @@ urlpatterns = [
     path('proformas/<int:pk>/pdf/', views.proforma_pdf, name='proforma_pdf'),
     path('proformas/<int:pk>/to-facture/', views.proforma_to_facture, name='proforma_to_facture'),
     path('proformas/<int:pk>/to-facture/edit/', views.proforma_to_facture_edit, name='proforma_to_facture_edit'),
+    path('proformas/<int:pk>/modifier/', views.proforma_update, name='proforma_update'),
     
     path('avoirs/', views.avoir_list, name='avoir_list'),
     path('avoirs/nouveau/', views.avoir_create, name='avoir_create'),

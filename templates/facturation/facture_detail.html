@@ -235,26 +235,64 @@
       <button class="mh-close" onclick="fermerModal()">✕</button>
     </div>
     <div class="mb">
-      <div class="fld-group">
-        <label class="fld-lbl">Montant encaissé (FCFA) *</label>
-        <input class="fld-inp" type="number" id="pMontant" min="1" step="1" value="{{ facture.montant_restant|floatformat:0 }}" placeholder="Montant reçu">
+      <!-- Mode simple -->
+      <div id="zoneSingle">
+        <div class="fld-group">
+          <label class="fld-lbl">Montant encaissé (FCFA) *</label>
+          <input class="fld-inp" type="number" id="pMontant" min="1" step="1" value="{{ facture.montant_restant|floatformat:0 }}" placeholder="Montant reçu" oninput="syncMixteFromSingle()">
+        </div>
+        <div class="fld-group">
+          <label class="fld-lbl">Mode de paiement</label>
+          <select class="fld-inp" id="pMode">
+            <option value="especes">Espèces</option>
+            <option value="wave">Wave</option>
+            <option value="orange_money">Orange Money</option>
+            <option value="mtn_money">MTN Mobile Money</option>
+            <option value="moov_money">Moov Money</option>
+            <option value="mobile_money">Mobile Money (autre)</option>
+            <option value="carte_bancaire">Carte Bancaire</option>
+            <option value="cheque">Chèque</option>
+            <option value="virement">Virement</option>
+            <option value="cave">Cave (tab)</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
       </div>
-      <div class="fld-group">
-        <label class="fld-lbl">Mode de paiement</label>
-        <select class="fld-inp" id="pMode">
-          <option value="especes">Espèces</option>
-          <option value="wave">Wave</option>
-          <option value="orange_money">Orange Money</option>
-          <option value="mtn_money">MTN Mobile Money</option>
-          <option value="moov_money">Moov Money</option>
-          <option value="mobile_money">Mobile Money (autre)</option>
-          <option value="carte_bancaire">Carte Bancaire</option>
-          <option value="cheque">Chèque</option>
-          <option value="virement">Virement</option>
-          <option value="cave">Cave (tab)</option>
-          <option value="autre">Autre</option>
-        </select>
+
+      <!-- Mode mixte (Espèces + Mobile) -->
+      <div id="zoneMixte" style="display:none;border:1.5px solid #e0e7ef;border-radius:10px;padding:14px;background:#f8fafc">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7a8b9c;margin-bottom:10px">Paiement mixte</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="fld-lbl">Espèces (FCFA)</label>
+            <input class="fld-inp" type="number" id="pEsp" min="0" step="1" value="0" oninput="recalcMixte()">
+          </div>
+          <div>
+            <label class="fld-lbl">Mobile Money (FCFA)</label>
+            <input class="fld-inp" type="number" id="pMob" min="0" step="1" value="{{ facture.montant_restant|floatformat:0 }}" oninput="recalcMixte()">
+          </div>
+        </div>
+        <div class="fld-group" style="margin-bottom:0">
+          <label class="fld-lbl">Opérateur Mobile</label>
+          <select class="fld-inp" id="pModeMob">
+            <option value="wave">Wave</option>
+            <option value="orange_money">Orange Money</option>
+            <option value="mtn_money">MTN Mobile Money</option>
+            <option value="moov_money">Moov Money</option>
+            <option value="mobile_money">Mobile Money (autre)</option>
+          </select>
+        </div>
+        <div id="mixteInfo" style="font-size:11px;color:#7a8b9c;margin-top:8px;text-align:right"></div>
       </div>
+
+      <!-- Toggle mixte -->
+      <div style="text-align:right;margin:8px 0">
+        <button type="button" id="btnToggleMixte" onclick="toggleMixte()"
+          style="background:none;border:none;color:#3b82f6;font-size:11px;font-weight:600;cursor:pointer;padding:0">
+          <i class="fas fa-layer-group"></i> Paiement mixte (Espèces + Mobile)
+        </button>
+      </div>
+
       <div class="fld-group">
         <label class="fld-lbl">Notes / référence (facultatif)</label>
         <input class="fld-inp" type="text" id="pNotes" placeholder="Réf. virement, n° chèque…">
@@ -274,10 +312,36 @@
 const URL_PAY   = "{% url 'facturation:facture_enregistrer_paiement' facture.pk %}";
 const CSRF      = "{{ csrf_token }}";
 const TOTAL_FAC = {{ facture.total|floatformat:0 }};
+let isMixte = false;
 
 function fmt(n){ return Math.round(n).toLocaleString('fr-FR') + ' F'; }
 
+function toggleMixte(){
+  isMixte = !isMixte;
+  document.getElementById('zoneSingle').style.display = isMixte ? 'none' : '';
+  document.getElementById('zoneMixte').style.display  = isMixte ? '' : 'none';
+  document.getElementById('btnToggleMixte').innerHTML = isMixte
+    ? '<i class="fas fa-times"></i> Mode simple'
+    : '<i class="fas fa-layer-group"></i> Paiement mixte (Espèces + Mobile)';
+  if(isMixte) recalcMixte();
+}
+
+function syncMixteFromSingle(){
+  // si on bascule en mixte après avoir changé le montant simple
+}
+
+function recalcMixte(){
+  const esp = parseFloat(document.getElementById('pEsp').value) || 0;
+  const mob = parseFloat(document.getElementById('pMob').value) || 0;
+  const total = esp + mob;
+  document.getElementById('mixteInfo').textContent = `Total : ${Math.round(total).toLocaleString('fr-FR')} F`;
+}
+
 function ouvrirModalPaiement(){
+  isMixte = false;
+  document.getElementById('zoneSingle').style.display = '';
+  document.getElementById('zoneMixte').style.display  = 'none';
+  document.getElementById('btnToggleMixte').innerHTML = '<i class="fas fa-layer-group"></i> Paiement mixte (Espèces + Mobile)';
   document.getElementById('modalPaiement').classList.add('open');
   document.body.style.overflow = 'hidden';
   document.getElementById('payResult').style.display = 'none';
@@ -294,10 +358,23 @@ function fermerModal(){
 document.addEventListener('keydown', e => { if(e.key==='Escape') fermerModal(); });
 
 async function confirmerPaiement(){
-  const montant = parseFloat(document.getElementById('pMontant').value) || 0;
-  if(montant <= 0){ alert('Entrez un montant supérieur à 0.'); return; }
-
   const btn = document.getElementById('btnPay');
+  let payload;
+
+  if(isMixte){
+    const esp = parseFloat(document.getElementById('pEsp').value) || 0;
+    const mob = parseFloat(document.getElementById('pMob').value) || 0;
+    if(esp <= 0 && mob <= 0){ alert('Entrez au moins un montant supérieur à 0.'); return; }
+    const lignes = [];
+    if(esp > 0) lignes.push({mode:'especes', montant: esp});
+    if(mob > 0) lignes.push({mode: document.getElementById('pModeMob').value, montant: mob});
+    payload = { lignes_paiement: lignes, notes: document.getElementById('pNotes').value.trim() };
+  } else {
+    const montant = parseFloat(document.getElementById('pMontant').value) || 0;
+    if(montant <= 0){ alert('Entrez un montant supérieur à 0.'); return; }
+    payload = { montant, mode_paiement: document.getElementById('pMode').value, notes: document.getElementById('pNotes').value.trim() };
+  }
+
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement…';
 
@@ -305,11 +382,7 @@ async function confirmerPaiement(){
     const r = await fetch(URL_PAY, {
       method: 'POST',
       headers: {'Content-Type':'application/json','X-CSRFToken': CSRF},
-      body: JSON.stringify({
-        montant: montant,
-        mode_paiement: document.getElementById('pMode').value,
-        notes: document.getElementById('pNotes').value.trim(),
-      }),
+      body: JSON.stringify(payload),
     });
     const d = await r.json();
     const box = document.getElementById('payResult');
@@ -328,11 +401,13 @@ async function confirmerPaiement(){
       badge.className = 'badge b-' + d.statut;
       btn.innerHTML = '<i class="fas fa-check"></i> Payé !';
       if(d.montant_restant <= 0){
-        // Masquer le bouton paiement dans les actions
         document.querySelectorAll('.btn-gold').forEach(b => b.style.display='none');
         setTimeout(fermerModal, 1800);
       } else {
         document.getElementById('pMontant').value = d.montant_restant;
+        document.getElementById('pEsp').value = 0;
+        document.getElementById('pMob').value = d.montant_restant;
+        recalcMixte();
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-check"></i> Valider l\'encaissement';
       }

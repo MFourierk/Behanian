@@ -193,6 +193,9 @@
       <i class="fas fa-file-pdf"></i> Imprimer / PDF
     </a>
     {% if proforma.statut not in 'convertie,annulee' %}
+    <button class="btn-p btn-outline" onclick="ouvrirModalEdition()" style="border-color:#3b82f6;color:#3b82f6">
+      <i class="fas fa-pencil-alt"></i> Modifier
+    </button>
     <button class="btn-p btn-gold" onclick="ouvrirModalFacture()">
       <i class="fas fa-file-invoice"></i> Convertir en Facture
     </button>
@@ -370,9 +373,12 @@ const LIGNES_INIT = [
 ];
 
 const URL_EDIT      = "{% url 'facturation:proforma_to_facture_edit' proforma.pk %}";
+const URL_UPDATE    = "{% url 'facturation:proforma_update' proforma.pk %}";
 const URL_ARTICLES  = "/facturation/api/articles/";
 const CSRF_TOKEN    = "{{ csrf_token }}";
 const SERVICES = [{% for s in services %}{"id":{{ s.id }},"nom":"{{ s.nom|escapejs }}"},{% endfor %}];
+
+let currentMode = 'convert'; // 'convert' | 'edit'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(n) {
@@ -537,14 +543,41 @@ function supprimerLigne(id) {
 
 // ── Ouverture / fermeture ────────────────────────────────────────────────────
 function ouvrirModalFacture() {
+  currentMode = 'convert';
   const body = document.getElementById('editBody');
   body.innerHTML = '';
   _rowId = 0;
   LIGNES_INIT.forEach(l => body.appendChild(creerLigne(l)));
+  document.getElementById('mRemise').value = '{{ proforma.remise|floatformat:0 }}';
+  document.getElementById('mTva').value    = '{{ proforma.taux_tva|floatformat:1 }}';
+  document.getElementById('mNotes').value  = '';
   recalcTotal();
   document.getElementById('mResult').style.display = 'none';
   document.getElementById('btnConfirm').disabled = false;
   document.getElementById('btnConfirm').innerHTML = '<i class="fas fa-check"></i> Créer la Facture';
+  document.querySelector('#modalConversion .mh-title').textContent = '📄 Conversion en Facture';
+  document.querySelector('#modalConversion .mh-sub').textContent   = 'Proforma {{ proforma.numero }} · {{ proforma.client.nom|default:"Client"|escapejs }} — Ajustez les quantités et articles si nécessaire';
+  document.querySelector('#modalConversion .mf-info').innerHTML    = '<i class="fas fa-shield-alt" style="margin-right:5px;color:#c9a84c"></i>Le stock sera mouvementé automatiquement à la confirmation.';
+  document.getElementById('modalConversion').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function ouvrirModalEdition() {
+  currentMode = 'edit';
+  const body = document.getElementById('editBody');
+  body.innerHTML = '';
+  _rowId = 0;
+  LIGNES_INIT.forEach(l => body.appendChild(creerLigne(l)));
+  document.getElementById('mRemise').value = '{{ proforma.remise|floatformat:0 }}';
+  document.getElementById('mTva').value    = '{{ proforma.taux_tva|floatformat:1 }}';
+  document.getElementById('mNotes').value  = '{{ proforma.notes|escapejs }}';
+  recalcTotal();
+  document.getElementById('mResult').style.display = 'none';
+  document.getElementById('btnConfirm').disabled = false;
+  document.getElementById('btnConfirm').innerHTML = '<i class="fas fa-save"></i> Enregistrer les modifications';
+  document.querySelector('#modalConversion .mh-title').textContent = '✏️ Modifier le Proforma';
+  document.querySelector('#modalConversion .mh-sub').textContent   = 'Proforma {{ proforma.numero }} · {{ proforma.client.nom|default:"Client"|escapejs }} — Modifiez les lignes puis enregistrez';
+  document.querySelector('#modalConversion .mf-info').textContent  = 'Les modifications seront enregistrées sur le proforma (sans impact sur le stock).';
   document.getElementById('modalConversion').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -577,7 +610,9 @@ async function confirmerConversion() {
 
   const btn = document.getElementById('btnConfirm');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création…';
+  btn.innerHTML = currentMode === 'edit'
+    ? '<i class="fas fa-spinner fa-spin"></i> Enregistrement…'
+    : '<i class="fas fa-spinner fa-spin"></i> Création…';
 
   const payload = {
     lignes,
@@ -586,8 +621,10 @@ async function confirmerConversion() {
     notes:    document.getElementById('mNotes').value.trim(),
   };
 
+  const url = currentMode === 'edit' ? URL_UPDATE : URL_EDIT;
+
   try {
-    const r = await fetch(URL_EDIT, {
+    const r = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
       body: JSON.stringify(payload),
@@ -598,15 +635,22 @@ async function confirmerConversion() {
 
     if (d.success) {
       box.className = 'modal-result success';
-      box.innerHTML = `✅ <strong>${d.message}</strong> — <a href="${d.detail_url}" style="color:#15803d;font-weight:700">Voir la facture ${d.numero} →</a>`;
-      btn.innerHTML = '<i class="fas fa-check"></i> Facture créée !';
-      // Redirection après 1.8 s
-      setTimeout(() => { window.location = d.detail_url; }, 1800);
+      if (currentMode === 'edit') {
+        box.innerHTML = `✅ <strong>Proforma mis à jour.</strong> Rechargement…`;
+        btn.innerHTML = '<i class="fas fa-check"></i> Enregistré !';
+        setTimeout(() => { location.reload(); }, 1200);
+      } else {
+        box.innerHTML = `✅ <strong>${d.message}</strong> — <a href="${d.detail_url}" style="color:#15803d;font-weight:700">Voir la facture ${d.numero} →</a>`;
+        btn.innerHTML = '<i class="fas fa-check"></i> Facture créée !';
+        setTimeout(() => { window.location = d.detail_url; }, 1800);
+      }
     } else {
       box.className = 'modal-result error';
       box.innerHTML = `❌ ${d.error}`;
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-check"></i> Créer la Facture';
+      btn.innerHTML = currentMode === 'edit'
+        ? '<i class="fas fa-save"></i> Enregistrer les modifications'
+        : '<i class="fas fa-check"></i> Créer la Facture';
     }
   } catch(err) {
     const box = document.getElementById('mResult');
@@ -614,7 +658,9 @@ async function confirmerConversion() {
     box.className = 'modal-result error';
     box.innerHTML = '❌ Erreur réseau.';
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-check"></i> Créer la Facture';
+    btn.innerHTML = currentMode === 'edit'
+      ? '<i class="fas fa-save"></i> Enregistrer les modifications'
+      : '<i class="fas fa-check"></i> Créer la Facture';
   }
 }
 </script>
