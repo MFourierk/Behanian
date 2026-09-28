@@ -493,12 +493,26 @@ def proforma_create(request):
 @require_module_access('facturation')
 def proforma_detail(request, pk):
     proforma = get_object_or_404(Proforma, pk=pk)
-    lignes = proforma.lignes.order_by('id')
+    lignes = proforma.lignes.select_related('article').order_by('id')
     services = Service.objects.all().order_by('nom')
+    lignes_json = json.dumps([
+        {
+            'designation': l.designation or (l.article.nom if l.article else ''),
+            'description': l.description or '',
+            'quantite':    float(l.quantite),
+            'prix_unitaire': float(l.prix_unitaire),
+        }
+        for l in lignes
+    ], ensure_ascii=False)
+    services_json = json.dumps(
+        [{'id': s.id, 'nom': s.nom} for s in services],
+        ensure_ascii=False
+    )
     return render(request, 'facturation/proforma_detail.html', {
         'proforma': proforma,
         'lignes': lignes,
-        'services': services,
+        'lignes_json': lignes_json,
+        'services_json': services_json,
     })
 
 

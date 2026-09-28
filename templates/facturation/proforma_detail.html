@@ -361,22 +361,13 @@
 
 <script>
 // ── Données proforma initiales ──────────────────────────────────────────────
-const LIGNES_INIT = [
-  {% for l in lignes %}
-  {
-    designation: "{% if l.designation %}{{ l.designation|escapejs }}{% elif l.article %}{{ l.article.nom|escapejs }}{% endif %}",
-    description: "{{ l.description|escapejs }}",
-    quantite:    {{ l.quantite|floatformat:3 }},
-    prix_unitaire: {{ l.prix_unitaire|floatformat:3 }},
-  },
-  {% endfor %}
-];
+const LIGNES_INIT = {{ lignes_json|safe }};
 
 const URL_EDIT      = "{% url 'facturation:proforma_to_facture_edit' proforma.pk %}";
 const URL_UPDATE    = "{% url 'facturation:proforma_update' proforma.pk %}";
 const URL_ARTICLES  = "/facturation/api/articles/";
 const CSRF_TOKEN    = "{{ csrf_token }}";
-const SERVICES = [{% for s in services %}{"id":{{ s.id }},"nom":"{{ s.nom|escapejs }}"},{% endfor %}];
+const SERVICES = {{ services_json|safe }};
 
 let currentMode = 'convert'; // 'convert' | 'edit'
 
