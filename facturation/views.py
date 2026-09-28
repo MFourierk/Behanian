@@ -1056,24 +1056,15 @@ def get_articles_by_service(request, service_id):
                     'object_id': chambre.id
                 })
                 
-        # 2. Cave (Anciennement Bar - Boissons uniquement)
+        # 2. Cave / Bar — BoissonBar uniquement
         elif "cave" in service.nom.lower() or "bar" in service.nom.lower():
-            drink_keywords = ['boisson', 'bière', 'biere', 'vin', 'alcool', 'champagne', 'liqueur', 'whisky', 'vodka', 'gin', 'soda', 'jus', 'eau', 'café', 'the', 'thé', 'cocktail', 'aperitif', 'digestif']
-            query = Q()
-            for keyword in drink_keywords:
-                query |= Q(categorie__nom__icontains=keyword)
-            
-            # On cherche aussi les catégories qui contiennent "Bar" ou "Cave"
-            query |= Q(categorie__nom__icontains="bar")
-            query |= Q(categorie__nom__icontains="cave")
-
-            for plat in PlatMenu.objects.filter(query, disponible=True):
+            for boisson in BoissonBar.objects.filter(disponible=True, statut='actif').select_related('categorie').order_by('categorie__nom', 'nom'):
                 articles.append({
-                    'id': plat.id,
-                    'name': f"{plat.nom} ({plat.categorie.nom})",
-                    'price': float(plat.prix),
-                    'content_type_id': ContentType.objects.get_for_model(PlatMenu).id,
-                    'object_id': plat.id
+                    'id': boisson.id,
+                    'name': f"{boisson.nom} ({boisson.categorie.nom})",
+                    'price': float(boisson.prix),
+                    'content_type_id': ContentType.objects.get_for_model(BoissonBar).id,
+                    'object_id': boisson.id,
                 })
 
         # 3. Restaurant (Nourriture, exclusion des boissons de la Cave)
@@ -1104,11 +1095,19 @@ def get_articles_by_service(request, service_id):
                     'name': f"{espace.nom} ({espace.capacite} pers.)",
                     'price': float(espace.prix_jour),
                     'content_type_id': ContentType.objects.get_for_model(EspaceEvenementiel).id,
-                    'object_id': espace.id
+                    'object_id': espace.id,
                 })
-        
-        # 4. Fallback (Services génériques ou autres)
-        # Si on avait un modèle "Produit" générique, on l'ajouterait ici.
+
+        # 4. Piscine — tarifs d'entrée
+        elif "piscine" in service.nom.lower():
+            for tarif in TarifPiscine.objects.all():
+                articles.append({
+                    'id': tarif.id,
+                    'name': tarif.get_type_tarif_display(),
+                    'price': float(tarif.prix_unitaire),
+                    'content_type_id': ContentType.objects.get_for_model(TarifPiscine).id,
+                    'object_id': tarif.id,
+                })
         
         return JsonResponse({'articles': articles})
     except Service.DoesNotExist:
