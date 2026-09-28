@@ -634,15 +634,24 @@ async function confirmerConversion() {
     box.style.display = 'block';
 
     if (d.success) {
-      box.className = 'modal-result success';
       if (currentMode === 'edit') {
+        box.className = 'modal-result success';
         box.innerHTML = `✅ <strong>Proforma mis à jour.</strong> Rechargement…`;
         btn.innerHTML = '<i class="fas fa-check"></i> Enregistré !';
         setTimeout(() => { location.reload(); }, 1200);
       } else {
-        box.innerHTML = `✅ <strong>${d.message}</strong> — <a href="${d.detail_url}" style="color:#15803d;font-weight:700">Voir la facture ${d.numero} →</a>`;
+        // Avertissements stock éventuels (non bloquants)
+        let avertHtml = '';
+        if (d.avertissements && d.avertissements.length > 0) {
+          avertHtml = `<div style="margin-top:8px;padding:8px 12px;background:#fef9c3;border:1px solid #fde047;border-radius:8px;font-size:11px;color:#92400e">
+            <strong>⚠️ Stock insuffisant :</strong><br>
+            ${d.avertissements.map(a => `• ${a}`).join('<br>')}
+          </div>`;
+        }
+        box.className = 'modal-result success';
+        box.innerHTML = `✅ <strong>${d.message}</strong> — <a href="${d.detail_url}" style="color:#15803d;font-weight:700">Voir la facture ${d.numero} →</a>${avertHtml}`;
         btn.innerHTML = '<i class="fas fa-check"></i> Facture créée !';
-        setTimeout(() => { window.location = d.detail_url; }, 1800);
+        setTimeout(() => { window.location = d.detail_url; }, d.avertissements && d.avertissements.length > 0 ? 4000 : 1800);
       }
     } else {
       box.className = 'modal-result error';

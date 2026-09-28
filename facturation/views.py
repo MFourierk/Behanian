@@ -561,7 +561,7 @@ def proforma_to_facture_edit(request, pk):
         notes    = data.get('notes', '')
 
         with transaction.atomic():
-            facture, mouvements = creer_facture_depuis_proforma(
+            facture, mouvements, avertissements = creer_facture_depuis_proforma(
                 proforma, lignes, remise, taux_tva, notes, request.user
             )
 
@@ -572,6 +572,7 @@ def proforma_to_facture_edit(request, pk):
         return JsonResponse({
             'success': True,
             'message': msg,
+            'avertissements': avertissements,
             'facture_id': facture.id,
             'numero': facture.numero,
             'total': int(facture.total),

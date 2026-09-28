@@ -368,13 +368,15 @@ def _consommer_stock_facture(lignes_data, numero_facture, user):
     """
     Tente de consommer le stock cave/cuisine pour chaque ligne d'une facture.
     Identification best-effort par nom (exact puis partiel).
-    Retourne la liste des mouvements effectués (pour log/info).
+    Retourne (mouvements, avertissements) — la conversion n'est jamais bloquée.
     """
     from bar.models import BoissonBar, MouvementStockBar
     from restaurant.models import PlatMenu
     from cuisine.utils import process_stock_movement
 
     mouvements = []
+    avertissements = []
+
     for ligne in lignes_data:
         designation = str(ligne.get('designation', '')).strip()
         try:
@@ -388,6 +390,11 @@ def _consommer_stock_facture(lignes_data, numero_facture, user):
         boisson = (BoissonBar.objects.filter(nom__iexact=designation).first()
                    or BoissonBar.objects.filter(nom__icontains=designation).first())
         if boisson:
+            stock_dispo = boisson.stock_disponible
+            if stock_dispo < quantite:
+                avertissements.append(
+                    f"Cave « {boisson.nom} » : stock {int(stock_dispo)}, demandé {int(quantite)}."
+                )
             MouvementStockBar.objects.create(
                 boisson=boisson,
                 type_mouvement='sortie',
@@ -402,10 +409,20 @@ def _consommer_stock_facture(lignes_data, numero_facture, user):
         plat = (PlatMenu.objects.filter(nom__iexact=designation).first()
                 or PlatMenu.objects.filter(nom__icontains=designation.split('(')[0].strip()).first())
         if plat:
+            # Vérifier les ingrédients de la fiche technique avant déstockage
+            if hasattr(plat, 'fiche_technique') and plat.fiche_technique:
+                lignes_ft = list(plat.fiche_technique.lignes.select_related('ingredient').all())
+                for lft in lignes_ft:
+                    ing = lft.ingredient
+                    qte_necessaire = lft.quantite * quantite
+                    if Decimal(str(ing.quantite_stock)) < qte_necessaire:
+                        avertissements.append(
+                            f"Cuisine « {ing.nom} » (pour {plat.nom}) : stock {ing.quantite_stock}, nécessaire {qte_necessaire:.1f}."
+                        )
             process_stock_movement(plat, quantite, 'sortie', user, f"Facture {numero_facture}")
             mouvements.append(f"Cuisine : {plat.nom} ×{int(quantite)}")
 
-    return mouvements
+    return mouvements, avertissements
 
 
 def creer_facture_depuis_proforma(proforma, lignes_data, remise, taux_tva, notes, user):
@@ -473,12 +490,12 @@ def creer_facture_depuis_proforma(proforma, lignes_data, remise, taux_tva, notes
             prix_unitaire=Decimal(str(ligne['prix_unitaire'] or 0)),
         )
 
-    mouvements = _consommer_stock_facture(lignes_valides, facture.numero, user)
+    mouvements, avertissements = _consommer_stock_facture(lignes_valides, facture.numero, user)
 
     proforma.statut = 'convertie'
     proforma.save(update_fields=['statut'])
 
-    return facture, mouvements
+    return facture, mouvements, avertissements
 
 
 def consolider_tickets_en_facture(ticket_ids, client_nom, client_telephone, user, notes=''):
