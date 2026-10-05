@@ -533,7 +533,7 @@
           <button type="button" onclick="this.closest('.article-line').remove();calculerTotalFacture()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px">×</button>
         </div>
       </div>
-      <button type="button" class="btn-p outline" style="margin:8px 0" onclick="ajouterLigne('facArticlesContainer','calculerTotalFacture')">
+      <button type="button" class="btn-p outline" style="margin:8px 0" onclick="ajouterLigne('facArticlesContainer','calculerTotalFacture');_ajouterSelArticle(document.querySelector('#facArticlesContainer .article-line:last-child'))">
         <i class="fas fa-plus"></i> Ajouter une ligne
       </button>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px">
@@ -759,6 +759,42 @@ function calculerTotal(formId, totalId){
 }
 function calculerTotalFacture(){calculerTotal('factureForm','facTotal');}
 function calculerTotalProforma(){calculerTotal('proformaForm','proTotal');}
+
+// Catalogue articles pour la modale Facture
+let _facArticles = [];
+async function chargerArticles(selectEl, containerId) {
+  const serviceId = selectEl.value;
+  const container = document.getElementById(containerId);
+  _facArticles = [];
+  container.querySelectorAll('.fac-art-sel').forEach(el => el.remove());
+  if (!serviceId) return;
+  try {
+    const r = await fetch(`/facturation/api/articles/${serviceId}/`);
+    const d = await r.json();
+    _facArticles = d.articles || [];
+  } catch(e) { return; }
+  container.querySelectorAll('.article-line').forEach(l => _ajouterSelArticle(l));
+}
+function _ajouterSelArticle(ligne) {
+  if (!_facArticles.length || !ligne || ligne.querySelector('.fac-art-sel')) return;
+  const desgInput = ligne.querySelector('[name="designations[]"]');
+  if (!desgInput) return;
+  const sel = document.createElement('select');
+  sel.className = 'fc fac-art-sel';
+  sel.style.cssText = 'margin-bottom:4px;font-size:11px;color:#4a5b6e';
+  sel.innerHTML = '<option value="">— Article du catalogue —</option>' +
+    _facArticles.map((a, i) =>
+      `<option value="${i}">${a.name} — ${Math.round(a.price).toLocaleString('fr-FR')} F</option>`
+    ).join('');
+  sel.addEventListener('change', function() {
+    const a = _facArticles[parseInt(this.value)];
+    if (!a) return;
+    ligne.querySelector('[name="designations[]"]').value = a.name;
+    ligne.querySelector('[name="prix_unitaires[]"]').value = Math.round(a.price);
+    calculerTotalFacture();
+  });
+  desgInput.parentElement.insertBefore(sel, desgInput);
+}
 
 // Motif avoir
 function toggleMotifAvoir(sel){

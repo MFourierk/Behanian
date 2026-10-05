@@ -117,6 +117,7 @@ def index(request):
         'services': services,
         'services_json': services_json,
         'clients': clients,
+        'today': today,
     }
     return render(request, 'facturation/index.html', context)
 
