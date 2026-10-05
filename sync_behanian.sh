@@ -6,7 +6,7 @@ set -euo pipefail
 
 LOG="/opt/behanian/sync.log"
 VPS_HOST="10.8.0.1"
-VPS_USER="root"
+VPS_USER="behanian"
 VPS_KEY="$HOME/.ssh/vps_tunnel"
 mkdir -p "$(dirname "$LOG")"
 
