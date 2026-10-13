@@ -982,10 +982,17 @@ function choisirSubBoisson(ligneId, sel){
 
 function annulerSubBoisson(ligneId){
   delete vipSubstitutions[ligneId];
-  if(vipForfaitId || vipForfaitNom){
-    const pill = document.querySelector('.type-pill.vip.active');
-    if(pill) pill.click();
-  }
+  // Remettre le bouton "Choisir ▾" sans rappeler setVip (qui efface tous les autres choix)
+  const div = document.getElementById('ligne_' + ligneId);
+  if(!div) return;
+  const last = div.lastElementChild;
+  if(!last) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.onclick = () => ouvrirChoixBoisson(ligneId);
+  btn.style.cssText = 'margin-left:8px;padding:2px 8px;border:1px solid #d97706;border-radius:6px;background:white;color:#92400e;font-size:11px;font-weight:600;cursor:pointer';
+  btn.textContent = 'Choisir ▾';
+  last.replaceWith(btn);
 }
 
 function _renderSubSelect(l){
