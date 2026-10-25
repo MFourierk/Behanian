@@ -33,7 +33,14 @@ class CaisseOuverteMiddleware:
 
             if not _is_manager(user) and _is_caissiere_any(user):
                 path = request.path
-                if not any(path.startswith(p) for p in _SESSION_EXEMPT_PREFIXES):
+                
+                # Déterminer les URLs exemptées selon le niveau de caisse
+                exempt_paths = list(_SESSION_EXEMPT_PREFIXES)
+                if user_has_access(user, 'caisse'):
+                    # La Caissière Principale / Chef peut naviguer entre les TPE sans session forcée
+                    exempt_paths += ['/restaurant/', '/bar/', '/piscine/', '/espaces-evenementiels/', '/facturation/']
+
+                if not any(path.startswith(p) for p in exempt_paths):
                     today = timezone.localdate()
                     has_active = CaisseSession.objects.filter(
                         user=user, is_open=True, date_session=today
