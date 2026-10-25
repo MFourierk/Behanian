@@ -1,4 +1,4 @@
-{% extends 'dashboard/base_dashboard.html' %}
+﻿{% extends 'dashboard/base_dashboard.html' %}
 {% load static %}
 {% load l10n %}
 {% block title %}Caisse — BEHANIAN{% endblock %}
@@ -876,18 +876,6 @@
           <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Aucun prélèvement aujourd'hui</div>
           {% endfor %}
         </div>
-
-        {% if is_manager or is_chef_caissiere %}
-        <!-- MENU VIP (Paramétrage) -->
-        <div class="panel">
-          <div class="ph"><h3>⭐ Paramétrage Rapide</h3></div>
-          <div style="padding:14px 16px">
-            <a href="{% url 'parametres:forfait_list' %}" class="btn-a btn-outline" style="width:100%;justify-content:center;gap:10px">
-              <span style="font-size:16px">⭐</span> Menus VIP
-            </a>
-          </div>
-        </div>
-        {% endif %}
       </div>
     </div>
   </div>

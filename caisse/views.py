@@ -578,9 +578,8 @@ def _session_centrale_non_cloturee():
 @require_module_access('caisse')
 def index(request):
     today = timezone.localdate()
-    from utils.permissions import _is_manager as _chk_manager, _is_caissier_principal
+    from utils.permissions import _is_manager as _chk_manager
     is_manager = _chk_manager(request.user)
-    is_chef_caissiere = _is_caissier_principal(request.user)
     # Session d'aujourd'hui (ou session oubliée d'une journée précédente)
     session_oubliee = CaisseSession.objects.filter(
         user=request.user, is_open=True, date_session__lt=today
@@ -706,7 +705,6 @@ def index(request):
         'today': today,
         'session_active': session_active,
         'is_manager': is_manager,
-        'is_chef_caissiere': is_chef_caissiere,
         'can_open_caisse': can_open_caisse,
         'stats': stats,
         'sessions_jour': sessions_jour,
