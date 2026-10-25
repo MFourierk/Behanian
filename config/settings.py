@@ -4,7 +4,6 @@ Django settings for Behanian_Project project.
 
 import os
 from pathlib import Path
-from datetime import timedelta
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -245,9 +244,9 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-AXES_FAILURE_LIMIT = 3          # nombre de tentatives autorisées
-AXES_COOLOFF_TIME = timedelta(minutes=15)  # durée du blocage (15 minutes)
-AXES_LOCKOUT_PARAMETERS = ['username']
+AXES_FAILURE_LIMIT = 5          # nombre de tentatives autorisées
+AXES_COOLOFF_TIME = 1           # durée du blocage en heures
+AXES_LOCKOUT_PARAMETERS = ['ip_address', 'username']
 AXES_RESET_ON_SUCCESS = True    # réinitialise le compteur après connexion réussie
 
 AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'
