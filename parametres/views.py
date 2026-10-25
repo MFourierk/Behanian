@@ -1,5 +1,8 @@
 import unicodedata
-from utils.permissions import require_module_access, require_manager, require_chambre_access, _is_responsable_hotel
+from utils.permissions import (
+    require_module_access, require_manager, require_chambre_access, 
+    _is_responsable_hotel, require_vip_config_access
+)
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -25,7 +28,8 @@ def parametres_index(request):
         return render(request, 'parametres/index.html', {'is_admin': True})
 
     if user_has_access(u, 'parametres'):
-        is_admin = u.is_superuser or _is_manager(u)
+        from utils.permissions import _is_caissier_principal
+        is_admin = u.is_superuser or _is_manager(u) or _is_caissier_principal(u)
         return render(request, 'parametres/index.html', {'is_admin': is_admin})
 
     if user_has_access(u, 'hotel') and not _is_receptionniste(u):
@@ -618,7 +622,7 @@ from cuisine.models import Plat
 from bar.models import BoissonBar as BoissonBarModel
 
 
-@require_manager
+@require_vip_config_access
 def forfait_list(request):
     module_filter = request.GET.get('module', '')
     forfaits = Forfait.objects.prefetch_related('lignes__plat', 'lignes__boisson').all()
@@ -638,7 +642,7 @@ def forfait_list(request):
     })
 
 
-@require_manager
+@require_vip_config_access
 def forfait_create(request):
     plats    = Plat.objects.filter(statut='disponible').order_by('nom')
     boissons = BoissonBarModel.objects.filter(disponible=True).order_by('nom')
@@ -662,7 +666,7 @@ def forfait_create(request):
     })
 
 
-@require_manager
+@require_vip_config_access
 def forfait_edit(request, pk):
     forfait  = get_object_or_404(Forfait, pk=pk)
     plats    = Plat.objects.filter(statut='disponible').order_by('nom')
@@ -687,7 +691,7 @@ def forfait_edit(request, pk):
     })
 
 
-@require_manager
+@require_vip_config_access
 def forfait_delete(request, pk):
     forfait = get_object_or_404(Forfait, pk=pk)
     if request.method == 'POST':
