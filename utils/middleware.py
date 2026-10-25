@@ -39,7 +39,6 @@ HOME_BY_GROUP = {
 # Chemins URL autorisés par groupe (None = tout autorisé)
 _TPE = ['/bar/', '/restaurant/', '/piscine/', '/espaces-evenementiels/', '/facturation/', '/dashboard/']
 _CAISSE_PLUS_TPE = ['/caisse/'] + _TPE
-_CHEF_CAISSIERE = _CAISSE_PLUS_TPE + ['/parametres/forfaits/']
 
 ALLOWED_PATHS = {
     # Managers — tout
@@ -54,12 +53,12 @@ ALLOWED_PATHS = {
     'Receptionniste':              ['/hotel/'],
     'Réceptionniste':              ['/hotel/'],
     'Responsable Hôtel':           ['/hotel/', '/parametres/'],
-    # Caissière Principale — caisse centrale + TPE + configuration forfaits
-    'Caissiere Principale':        _CHEF_CAISSIERE,
-    'Caissier(ère) Principal(e)':  _CHEF_CAISSIERE,
-    'Caissier(ere) Principal(e)':  _CHEF_CAISSIERE,
-    # Chef caissier(e) — caisse centrale + tous TPE + configuration forfaits
-    'Chef caissier(e)':            _CHEF_CAISSIERE,
+    # Caissière Principale — caisse centrale + TPE
+    'Caissiere Principale':        _CAISSE_PLUS_TPE,
+    'Caissier(ère) Principal(e)':  _CAISSE_PLUS_TPE,
+    'Caissier(ere) Principal(e)':  _CAISSE_PLUS_TPE,
+    # Chef caissier(e) — caisse centrale + tous TPE (bar géré par require_bar_gestion)
+    'Chef caissier(e)':            _CAISSE_PLUS_TPE,
     # Caissière — TPE uniquement (PAS /caisse/)
     'Caissiere':                   _TPE,
     'Caissier(e)':                 _TPE,

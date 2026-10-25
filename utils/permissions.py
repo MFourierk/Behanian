@@ -94,8 +94,8 @@ _RULES = [
     (_RESPONSABLE_HOTEL,      ['hotel', 'parametres']),
     # Responsable Cave : accès complet au module Cave + facturation (proformas/factures)
     (_RESPONSABLE_CAVE,       ['bar', 'facturation']),
-    # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale + facturation + parametres)
-    (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse', 'facturation', 'parametres']),
+    # Caissière Principale : tout (restaurant, bar, piscine, espaces + caisse centrale + facturation)
+    (_CAISSIERE_PRINCIPALE,   ['restaurant', 'bar', 'piscine', 'espaces', 'caisse', 'facturation']),
     # Caissière : TPE uniquement, PAS de caisse centrale
     (_CAISSIERE,              ['restaurant', 'bar', 'piscine', 'espaces']),
     # Utilisateur Simple + personnel terrain : aucun module
@@ -181,18 +181,6 @@ def require_manager(view_func):
                 "Accès refusé — réservé aux managers et directeurs.")
             return redirect('dashboard:index')
         return view_func(request, *args, **kwargs)
-    return wrapper
-
-
-def require_vip_config_access(view_func):
-    """Autorise les managers ET la caissière principale (Chef caissière) pour les forfaits VIP."""
-    @wraps(view_func)
-    @login_required
-    def wrapper(request, *args, **kwargs):
-        if _is_manager(request.user) or _is_caissier_principal(request.user):
-            return view_func(request, *args, **kwargs)
-        messages.error(request, "Accès refusé — réservé aux managers et à la Chef caissière.")
-        return redirect('dashboard:index')
     return wrapper
 
 
